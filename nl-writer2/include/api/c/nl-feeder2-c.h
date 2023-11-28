@@ -16,7 +16,10 @@ extern "C" {
 
 /// Declare callbacks
 
-/// Write sparse vector entry
+/// Write sparse vector(int) entry
+void NLW2_WriteSparseIntEntry(
+    void* p_api_data_, int index, int value);
+/// Write sparse vector(double) entry
 void NLW2_WriteSparseDblEntry(
     void* p_api_data_, int index, double value);
 /// Write next variable's Lb, Ub
@@ -85,6 +88,13 @@ typedef struct NLW2_AlgConRange_C {
 
 /// Callback: write next constraint's range
 void NLW2_WriteAlgConRange(void* , NLW2_AlgConRange_C*);
+
+/// Callback: start int suffix
+void* NLW2_StartIntSuffix(void* p_api_1,
+    const char* suf_name, int kind, int nnz);
+/// Callback: start dbl suffix
+void* NLW2_StartDblSuffix(void* p_api_1,
+    const char* suf_name, int kind, int nnz);
 
 
 /** Wrap mp::NLFeeder2 for C API.
@@ -419,16 +429,16 @@ typedef struct NLW2_NLFeeder2_C {
   /** Initial primal guesses.
    *
    *  Implementation:
-   *      if (ini_guess.size()) {
-   *        auto ig = igw.MakeVectorWriter(ini_guess.size());
-   *        for (size_t i=0; i<ini_guess.size(); ++i)
-   *          ig.Write(i, ini_guess[i]);
-   *      }
+   *      for (size_t i=0; i<n_ini_guess; ++i)
+   *        NLW2_WriteSparseDblEntry(p_api_data, i, ini_guess[i]);
    */
-//  void FeedInitialGuesses(IGWriter& ) { }
+  int (*InitialGuessesNNZ)(void* p_user_data);
+  void (*FeedInitialGuesses)(void* p_user_data, void* p_api_data);
 
-  /** Initial dual guesses. */
-//  void FeedInitialDualGuesses(IDGWriter& ) { }
+  /// Initial dual guesses
+  int (*InitialDualGuessesNNZ)(void* p_user_data);
+  void (*FeedInitialDualGuesses)(
+      void* p_user_data, void* p_api_data);
 
 
   ///////////////////// 13. SUFFIXES /////////////////////
@@ -439,13 +449,14 @@ typedef struct NLW2_NLFeeder2_C {
    *
    *  Implementation:
    *      while (....) {
-   *        auto sw = swf.StartIntSuffix(  // or ...DblSuffix
-   *          suf_name, kind, n_nonzeros);
+   *        void* p_api_2 = NLW2_StartIntSuffix(  // or ...DblSuffix
+   *          p_api_data, suf_name, kind, n_nonzeros);
    *        for (int i=0; i<n_nonzeros; ++i)
-   *          sw.Write(index[i], value[i]);
+   *          NLW2_WriteSparseIntEntry(p_api_2,   // or ...DblEntry
+   *            index[i], value[i]);              // <- new API pointer
    *      }
    */
-//  void FeedSuffixes(SuffixWriterFactory& ) { }
+  void (*FeedSuffixes)(void* p_user_data, void* p_api_data);
 
 
   //////////////////// 14. ROW/COLUMN NAMES ETC /////////////////////

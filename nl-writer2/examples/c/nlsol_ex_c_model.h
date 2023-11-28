@@ -26,12 +26,16 @@ subj to C3:
        22*x + 14536*y <= 3e5;
 
 ## Initial guess
-let x := 1.5;
-let y := 0.11;
+let x := 30.15;
+let y := 15.11;
+
+## Dual initial guess
+let C2 := -10;
+let C3 := -120;
 
 ## A suffix
 suffix zork;
-let C2.zork := 5;
+let C2.zork := 5.3;
 
  *
  */
@@ -42,6 +46,15 @@ typedef struct SparseEntry {
   int index_;
   double value_;
 } SparseEntry;
+
+
+/// Suffix
+typedef struct Suffix {
+  const char* name_;
+  int kind_;
+  int n_val_;
+  const SparseEntry* values_;   // store double's always
+} Suffix;
 
 
 /// C API example data
@@ -96,6 +109,15 @@ typedef struct CAPIExample {
   const SparseEntry* obj_linpart;
   int n_obj_nz;
   const char* obj_name;
+
+  /// Primal initial guess (dense vector).
+  const double* ini_x;
+  /// Primal dual guess (dense vector).
+  const double* ini_y;
+
+  /// Suffixes.
+  int n_suf;
+  const Suffix* suf;
 
   /// Some technical stuff
   int binary_nl;

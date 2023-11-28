@@ -601,14 +601,14 @@ template <typename Params>
 template <class Index, class Value>
 NLWriter2<Params>::SparseVectorWriter<Index, Value>::
 SparseVectorWriter(NLWriter2& nlw, size_t n)
-  : nlw_(nlw), n_entries_(n) { }
+  : p_nlw_(&nlw), n_entries_(n) { }
 
 template <typename Params>
 template <class Index, class Value>
 void NLWriter2<Params>::SparseVectorWriter<Index, Value>::
 Write(Index i, Value v) {
   --n_entries_;
-  nlw_.WriteSparseEntry(nlw_.nm, i, v);
+  p_nlw_->WriteSparseEntry(p_nlw_->nm, i, v);
 }
 
 

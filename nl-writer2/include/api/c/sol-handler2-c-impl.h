@@ -16,13 +16,13 @@ namespace mp {
 template <class Value>
 class VecReader;
 
-/// Wrap SOLHandler2_C into a C++ class,
+/// Wrap NLW2_SOLHandler2_C into a C++ class,
 /// in order to interface it for mp::SOLReader2
-class SOLHandler2_C_Impl
+class NLW2_SOLHandler2_C_Impl
     : public SOLHandler2 {
 public:
   /// Construct
-  SOLHandler2_C_Impl(NLW2_SOLHandler2_C* psh2)
+  NLW2_SOLHandler2_C_Impl(NLW2_SOLHandler2_C* psh2)
     : solh2_c_(*psh2) { }
 
   /** The NLHeader used to write the NL file. */

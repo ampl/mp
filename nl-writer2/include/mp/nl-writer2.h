@@ -178,18 +178,39 @@ protected:
   template <class Index, class Value>
   class SparseVectorWriter {
   public:
+    /// Construct
+    SparseVectorWriter() { }
+    /// Not construct(const&)
+    SparseVectorWriter(const SparseVectorWriter& ) = delete;
+    /// Construct(&&)
+    SparseVectorWriter(SparseVectorWriter&& other) {
+      SparseVectorWriter svw;
+      svw = std::move(other);
+    }
     /// Constructor
     SparseVectorWriter(NLWriter2& nlw, size_t n);
     /// Destructor
     ~SparseVectorWriter() { assert(0 == n_entries_); }
+    /// No operator=(const&)
+    SparseVectorWriter& operator=(
+        const SparseVectorWriter& vw) = delete;
+    /// operator=(&&)
+    SparseVectorWriter& operator=(
+        SparseVectorWriter&& other) {
+      if (this!=&other) {
+        std::swap(p_nlw_, other.p_nlw_);
+        std::swap(n_entries_, other.n_entries_);
+      }
+      return *this;
+    }
     /// Write next entry
     void Write(Index , Value );
     /// Number of outstanding elements
     int NLeft() const { return n_entries_; }
 
   private:
-    NLWriter2& nlw_;
-    size_t n_entries_;
+    NLWriter2* p_nlw_ = nullptr;
+    size_t n_entries_ = 0;
   };
 
   /// Typedef SparseDblVecWriter

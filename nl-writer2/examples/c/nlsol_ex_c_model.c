@@ -38,6 +38,17 @@ CAPIExample MakeCAPIExample_Linear_01(void) {
   static const SparseEntry obj_linpart[]
       = { {0, 13}, {1, 1.0} };
 
+  static const double ini_x[] = {30.15, 15.11};
+  static const double ini_y[] = {-10, -120};
+
+  static const SparseEntry suf_val[] = {{0, 5.3}};
+
+  static int n_suf = 1;
+  static const Suffix suf[] = {
+    {"zork", 1+4,   // constraints, float-valued
+     1, suf_val}
+  };
+
   /// Solution
   static double sol_dual[] = {NAN, NAN};
   static double sol_primal[] = {NAN, NAN};
@@ -65,6 +76,12 @@ CAPIExample MakeCAPIExample_Linear_01(void) {
     .obj_linpart = obj_linpart,
     .n_obj_nz = 2,
     .obj_name = "TotalSum",
+
+    .ini_x = ini_x,
+    .ini_y = ini_y,
+
+    .n_suf = n_suf,
+    .suf = suf,
 
     .binary_nl = 1,
 
@@ -98,5 +115,5 @@ void PrintSolution_C(CAPIExample* pex, const char* stub) {
            pex->var_name[i], pex->sol_primal_[i]);
 
   printf("\nObjno used: %d, solve_result_num: %d\n",
-         pex->objno_, pex->solve_code_);
+         pex->objno_+1, pex->solve_code_);
 }

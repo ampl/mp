@@ -184,7 +184,7 @@ void ExampleSOLHandler2::PrintSolution(
     printf("%.17g\t", x);
 
   printf("\nObjno used: %d, solve_result_num: %d\n",
-         Model().objno_, Model().solve_result_);
+         Model().objno_+1, Model().solve_result_);
 
   printf("\n%s\n", "Suffixes:");
   for (auto suf: Model().suf_out_) {
