@@ -1,6 +1,8 @@
 #ifndef MP2MIP_H
 #define MP2MIP_H
 
+#include <climits>
+
 #include "mp/flat/converter.h"
 #include "mp/flat/redef/MIP/redefs_mip_std.h"
 #include "mp/flat/redef/encodings.h"
@@ -267,7 +269,7 @@ protected:
   /// @return true if don't need UEnc for var
   bool DontNeedEqEncForVar(int var, const SingleVarEqConstMap& map) {
     double dom_rng = MPCD(ub(var))-MPCD(lb(var))+1;
-    if (3 * map.size()   // Use UEnc if we have >1/3 of the domain values
+    if (options_.NoUEncPosCtxRatio_ * map.size()   // Use UEnc if >
         > dom_rng)
       return false;
     int nNegCtx = 0;
@@ -279,7 +281,7 @@ protected:
     }  // When up to 1 value in negative ctx, allow indicators.
     // Example:
     // x==5 ==> ...
-    return nNegCtx <= 1;
+    return nNegCtx <= options_.NoUEncNegCtxMax_;
   }
 
   /// Manually convert all comparisons for this variable
@@ -356,6 +358,8 @@ private:
     double bigM_default_ { -1 };
     double PLApproxRelTol_ { 1e-2 };
     double PLApproxDomain_ { 1e6 };
+    double NoUEncPosCtxRatio_ { 0.0 };
+    int NoUEncNegCtxMax_ { 1 };
   };
   Options options_;
 
@@ -379,6 +383,19 @@ private:
                        "For piecewise-linear approximated functions, both arguments and result "
                        "are bounded to +-[pladomain]. Default 1e6.",
                        options_.PLApproxDomain_, 0.0, 1e100);
+    this->GetEnv().AddOption("cvt:uenc:ratio uenc:ratio",
+                       "Min ratio (ub-lb)/Nvalues to skip unary encoding "
+                       "for a variable x, where Nvalues is the number of constants "
+                       "used in conditional comparisons x==const. Instead, "
+                       "indicator constraints (or big-Ms) are used, if "
+                       "uenc:negctx also applies. Default 0.",
+                       options_.NoUEncPosCtxRatio_, 0.0, 1e100);
+    this->GetEnv().AddOption("cvt:uenc:negctx:max uenc:negctx:max uenc:negctx",
+                       "If cvt:uenc:ratio applies, max number of constants "
+                       "in comparisons x==const in negative context "
+                       "(equivalently, x!=const in positive context) to skip "
+                       "UEnc(x). Default 1.",
+                       options_.NoUEncNegCtxMax_, 0, INT_MAX);
   }
 };
 
