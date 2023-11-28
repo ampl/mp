@@ -335,7 +335,8 @@ public:
       }
       con.GetArguments() = arg1;
     }
-    IntegrateNested(con);            // flatten nested
+    if (MPCD( IfPreproNestedAndsOrs() ))
+      IntegrateNested(con);            // flatten nested
   }
 
   template <class PreprocessInfo>
@@ -362,7 +363,8 @@ public:
       }
       con.GetArguments() = arg1;
     }
-    IntegrateNested(con);            // flatten nested
+    if (MPCD( IfPreproNestedAndsOrs() ))
+      IntegrateNested(con);            // flatten nested
   }
 
   /// Count N fixed binary vars

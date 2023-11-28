@@ -921,6 +921,7 @@ private:
     int preprocessAnything_ = 1;
     int preprocessEqualityResultBounds_ = 1;
     int preprocessEqualityBvar_ = 1;
+    int preproNestedAndOrs_ = 1;
 
     int passQuadObj_ = ModelAPIAcceptsQuadObj();
 		int passQuadCon_ = ModelAPIAcceptsQC();
@@ -987,6 +988,10 @@ private:
     GetEnv().AddOption("cvt:pre:eqbinary",
         "0/1*: Preprocess reified equality comparison with a binary variable.",
         options_.preprocessEqualityBvar_, 0, 1);
+    GetEnv().AddOption("cvt:pre:unnest",
+        "0/1*: Inline nested expressions, currently Ands/Ors.",
+        options_.preproNestedAndOrs_, 0, 1);
+
     GetEnv().AddOption("cvt:quadobj passquadobj",
                        ModelAPIAcceptsQuadObj() ?
         "0/1*: Multiply out and pass quadratic objective terms to the solver, "
@@ -1090,6 +1095,11 @@ public:
   /// Whether preprocess conditional equality of a binary variable
   bool IfPreproEqBinVar() const
   { return MPCD( CanPreprocess(options_.preprocessEqualityBvar_) ); }
+
+  /// Whether inline nested forall, exists
+  bool IfPreproNestedAndsOrs() const
+  { return MPCD( CanPreprocess(options_.preproNestedAndOrs_) ); }
+
 
   /// Whether we pass quad obj terms to the solver without linearization
   bool IfPassQuadObj() const { return options_.passQuadObj_; }
