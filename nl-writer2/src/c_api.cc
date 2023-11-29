@@ -527,6 +527,7 @@ void NLW2_DestroyNLUtils_C_Default(NLW2_NLUtils_C* )
 
 /////////////////// SOLHandler2_C /////////////////////
 
+///////////////////////////////////////////////////////
 /// Callbacks
 
 double NLW2_ReadSolVal(void* p_api_data) {
@@ -535,8 +536,62 @@ double NLW2_ReadSolVal(void* p_api_data) {
   return ((mp::VecReader<double>*)p_api_data)
       ->ReadNext();
 }
+/// Number of suffix non-zero elements
+int NLW2_IntSuffixNNZ(void* p_api_data) {
+  return ((mp::SuffixReader<int>*)p_api_data)
+      ->Size();
+}
+/// Number of suffix non-zero elements
+int NLW2_DblSuffixNNZ(void* p_api_data) {
+  return ((mp::SuffixReader<double>*)p_api_data)
+      ->Size();
+}
+/// Read suffix entry
+void NLW2_ReadIntSuffixEntry(
+    void* p_api_data, int* pi, int* pv) {
+  auto iv = ((mp::SuffixReader<int>*)p_api_data)
+      ->ReadNext();
+  *pi = iv.first;
+  *pv = iv.second;
+}
+/// Read suffix entry
+void NLW2_ReadDblSuffixEntry(
+    void* p_api_data, int* pi, double* pv) {
+  auto iv = ((mp::SuffixReader<double>*)p_api_data)
+      ->ReadNext();
+  *pi = iv.first;
+  *pv = iv.second;
+}
+/// Report suffix error.
+/// This causes NLW2_DblSuffixNNZ() to return 0.
+void NLW2_ReportDblSuffixError(
+    void* p_api_data, const char* msg) {
+  ((mp::SuffixReader<double>*)p_api_data)
+      ->SetError(mp::SOL_Read_Bad_Suffix, msg);
+}
+/// Report suffix error.
+/// This causes NLW2_IntSuffixNNZ() to return 0.
+void NLW2_ReportIntSuffixError(
+    void* p_api_data, const char* msg) {
+  ((mp::SuffixReader<int>*)p_api_data)
+      ->SetError(mp::SOL_Read_Bad_Suffix, msg);
+}
+/// Check suffix read result
+int NLW2_IntSuffixReadOK(void* p_api_data) {
+  return mp::SOL_Read_OK
+      == ((mp::SuffixReader<int>*)p_api_data)
+      ->ReadResult();
+}
+/// Check suffix read result
+int NLW2_DblSuffixReadOK(void* p_api_data) {
+  return mp::SOL_Read_OK
+      == ((mp::SuffixReader<double>*)p_api_data)
+      ->ReadResult();
+}
 
 
+
+///////////////////////////////////////////////////////
 /// Default methods
 static void NLW2_OnSolveMessage_C_Default(
     void* p_user_data, const char* s, int nbs) {
@@ -548,13 +603,28 @@ static void NLW2_OnSolveMessage_C_Default(
 static int NLW2_OnAMPLOptions_C_Default(
     void* p_user_data, AMPLOptions_C ) { return 0; }
 static void NLW2_OnDualSolution_C_Default(
-    void* p_user_data, int nvals, void* p_api_data) { }
+    void* p_user_data, int nvals, void* p_api_data) {
+  while (nvals--)
+    NLW2_ReadSolVal(p_api_data);
+}
 static void NLW2_OnPrimalSolution_C_Default(
     void* p_user_data, int nvals, void* p_api_data) { }
 static void NLW2_OnObjno_C_Default(void* p_user_data, int ) { }
 static void NLW2_OnSolveCode_C_Default(void* p_user_data, int ) { }
-//  void OnIntSuffix(SuffixReader& ) { }
-//  void OnDblSuffix(SuffixReader& ) { }
+static void NLW2_OnIntSuffix_C_Default(
+    void* p_user_data, NLW2_SuffixInfo_C si, void* p_api_data) {
+  int i;
+  int v;
+  while (NLW2_IntSuffixNNZ(p_api_data))
+    NLW2_ReadIntSuffixEntry(p_api_data, &i, &v);
+}
+static void NLW2_OnDblSuffix_C_Default(
+    void* p_user_data, NLW2_SuffixInfo_C si, void* p_api_data) {
+  int i;
+  double v;
+  while (NLW2_DblSuffixNNZ(p_api_data))
+    NLW2_ReadDblSuffixEntry(p_api_data, &i, &v);
+}
 
 
 NLW2_SOLHandler2_C NLW2_MakeSOLHandler2_C_Default(void) {
@@ -572,8 +642,8 @@ NLW2_SOLHandler2_C NLW2_MakeSOLHandler2_C_Default(void) {
   result.OnPrimalSolution = NLW2_OnPrimalSolution_C_Default;
   result.OnObjno = NLW2_OnObjno_C_Default;
   result.OnSolveCode = NLW2_OnSolveCode_C_Default;
-  //  void OnIntSuffix(SuffixReader& ) { }
-  //  void OnDblSuffix(SuffixReader& ) { }
+  result.OnIntSuffix = NLW2_OnIntSuffix_C_Default;
+  result.OnDblSuffix = NLW2_OnDblSuffix_C_Default;
 
   return result;
 }

@@ -159,15 +159,28 @@ public:
    * if (mp::SOL_Read_OK == sr.ReadResult())    // Can check
    *   RegisterSuffix(kind, name, table, suf);
    */
-//  template <class SuffixReader>
-//  void OnIntSuffix(SuffixReader& ) { }
+  template <class SuffixReader>
+  void OnIntSuffix(SuffixReader& sr) {
+    assert(SH().OnIntSuffix);
+    const auto& si = sr.SufInfo();
+    NLW2_SuffixInfo_C si_c
+    {si.Kind(), si.Name().c_str(), si.Table().c_str()};
+    SH().OnIntSuffix(SH().p_user_data_, si_c, &sr);
+  }
 
   /**
    * Same as OnIntSuffix(), but
    * sr.ReadNext() returns pair<int, double>
    */
-//  template <class SuffixReader>
-//  void OnDblSuffix(SuffixReader& ) { }
+  template <class SuffixReader>
+  void OnDblSuffix(SuffixReader& sr) {
+    assert(SH().OnDblSuffix);
+    const auto& si = sr.SufInfo();
+    NLW2_SuffixInfo_C si_c
+    {si.Kind(), si.Name().c_str(), si.Table().c_str()};
+    SH().OnDblSuffix(SH().p_user_data_, si_c, &sr);
+  }
+
 
 protected:
   const NLW2_SOLHandler2_C& SH() const { return solh2_c_; }
