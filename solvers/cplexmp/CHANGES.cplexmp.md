@@ -1,6 +1,9 @@
 Summary of recent updates to CPLEX MP for AMPL
 ==============================================
 
+## TBD
+- Added fixed model for `mip:basis`
+
 
 ## 20231122
 - Public beta; implemented most [features](https://mp.ampl.com/features-guide.html) in MP:

@@ -85,11 +85,13 @@ namespace mp {
     if (status)
       throw std::runtime_error(fmt::format(
         "Failed to create problem, error code {}.", status));
+
     /* Copy handlers to ModelAPI */
     copy_common_info_to_other();
   }
 
   void CplexBackend::CloseSolver() {
+
     if (lp() != nullptr) {
       CPLEX_CALL(CPXfreeprob(env(), &lp_ref()));
     }
@@ -191,7 +193,7 @@ namespace mp {
 
   ArrayRef<int> CplexBackend::ConStatii() {
     std::vector<int> cons(NumLinCons());
-    int status = CPXgetbase(env(), lp(),nullptr, cons.data());
+    int status = CPXgetbase(env(), lp(), nullptr, cons.data());
     if (status) return cons;
     for (auto& s : cons) {
       switch (s) {
@@ -222,8 +224,20 @@ namespace mp {
         break;
       case BasicStatus::low:
       case BasicStatus::equ:
-      case BasicStatus::none:
         s = CPX_AT_LOWER;
+        break;
+      case BasicStatus::none:
+        double lb, ub;
+        if (!CPXgetlb(env(), lp(), &lb, j, j) &&
+          !CPXgetub(env(), lp(), &ub, j, j))
+        {
+          if (lb > MinusInfinity())
+            s = CPX_AT_LOWER;
+          else if (ub < Infinity())
+            s = CPX_AT_UPPER;
+          else
+            s = CPX_FREE_SUPER;  
+        }
         break;
       case BasicStatus::upp:
         s = CPX_AT_UPPER;
@@ -330,9 +344,7 @@ pre::ValueMapDbl CplexBackend::DualSolution() {
 ArrayRef<double> CplexBackend::DualSolution_LP() {
   int num_cons = NumLinCons();
   std::vector<double> pi(num_cons);
-  if (IsMIP())
-    return pi; // when implementing fixed model, get rid of this clause
-  int error = CPXgetpi (env(), lp(), pi.data(), 0, num_cons-1);
+  int error = CPXgetpi (env(), lp(), pi.data(), 0, num_cons - 1);
   if (error)
     pi.clear();
   return pi;
@@ -480,6 +492,8 @@ void CplexBackend::ReportCPLEXResults() {
   AddCPLEXMessages();
   if (need_multiple_solutions())
     ReportCPLEXPool();
+  if (need_fixed_MIP())
+    ConsiderCplexFixedModel();
 }
 void CplexBackend::ReportCPLEXPool() {
   if (!IsMIP())
@@ -794,6 +808,33 @@ void CplexBackend::InputCPLEXExtras() {
     storedOptions_.poolIntensity_);
 
 
+}
+
+void CplexBackend::ConsiderCplexFixedModel() {
+  if (!IsMIP())
+    return;
+  auto msg = DoCplexFixedModel();
+  if (!msg.empty()) {
+    AddToSolverMessage(msg +
+      " failed in DoCplexFixedModel().");
+    CPXfreeprob(env(),  &lp_ref());
+    CPXchgprobtype(env(), lp(), original_model_type_);
+  }
+}
+std::string CplexBackend::DoCplexFixedModel() {
+  int status;
+
+  original_model_type_ = CPXgetprobtype(env(), lp());
+  CPLEX_CALL(CPXchgprobtype(env(), lp(), CPXPROB_FIXEDMILP));
+  CPLEX_CALL(CPXlpopt(env(), lp()));
+
+  int optimstatus = CPXgetstat(env(), lp());
+  if (optimstatus != CPX_STAT_OPTIMAL){
+  }
+  int cnt = CPXgetitcnt(env(), lp());
+  AddToSolverMessage(fmt::format("Fixed MIP for mip:basis: {} simplex iteration{}",
+    cnt, "s"[cnt == 1.]));
+  return {};
 }
 
 void CplexBackend::DoCplexFeasRelax() {

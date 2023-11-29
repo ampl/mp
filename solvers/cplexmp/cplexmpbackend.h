@@ -89,6 +89,14 @@ public:
   ALLOW_STD_FEATURE(MIPSTART, true)
   void AddMIPStart(ArrayRef<double> x0, ArrayRef<int> s0) override;
 
+  /**
+  * FixModel - duals, basis, and sensitivity for MIP.
+  * No API to overload,
+  * Impl should check need_fixed_MIP()
+  **/
+  ALLOW_STD_FEATURE(FIX_MODEL, true)
+  void ConsiderCplexFixedModel();
+  std::string DoCplexFixedModel();
 
   ALLOW_STD_FEATURE(IIS, true)
   void ComputeIIS() override;
@@ -105,8 +113,6 @@ public:
 
   ALLOW_STD_FEATURE(FEAS_RELAX, true);
   void DoCplexFeasRelax();
-
-  ALLOW_STD_FEATURE(FIX_MODEL, false); // TODO
 
   /////////////////////////// Model attributes /////////////////////////
   bool IsMIP() const override;
@@ -186,7 +192,9 @@ protected:
   void ReportCPLEXPool();
 
 private:
- 
+
+  int original_model_type_ = -1;
+  
   /// These options are stored in the class
   struct Options {
     std::string exportFile_;
