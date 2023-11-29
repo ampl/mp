@@ -858,7 +858,6 @@ void CoptBackend::AddPrimalDualStart(Solution sol0_unpres) {
   auto x0 = mv.GetVarValues()();
   auto pi0 = mv.GetConValues()(CG_Linear);
   COPT_CCALL(COPT_SetLpSolution(lp(), x0.data(), nullptr, pi0.data(), nullptr));
-
 }
 
 void CoptBackend::AddMIPStart(

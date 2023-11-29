@@ -1,6 +1,7 @@
 #include <vector>
 #include <climits>
 #include <cfloat>
+#include <cassert>
 
 #include "mp/env.h"
 #include "mp/flat/model_api_base.h"
@@ -752,19 +753,32 @@ void CplexBackend::InputExtras() {
 
 void CplexBackend::InputCPLEXExtras() {
   // Set output on screen
-  int lp, mip, bar;
+  int lp, mip, bar, mo, netw;
   GetSolverOption(CPX_PARAM_SIMDISPLAY, lp);
   GetSolverOption(CPX_PARAM_MIPDISPLAY, mip);
   GetSolverOption(CPX_PARAM_BARDISPLAY, bar);
-  assert(storedOptions_.outlev_ <= 2);
+  GetSolverOption(CPXPARAM_MultiObjective_Display, mo);
+  GetSolverOption(CPX_PARAM_NETDISPLAY, netw);
+  if (storedOptions_.outlev_ > 2)
+    storedOptions_.outlev_ = 2;
   int olp[] = { 0, 1, 2 };
   int omip[] = { 0, 3, 5 };
   lp = lp ? lp : olp[storedOptions_.outlev_];
   mip = mip ? mip : omip[storedOptions_.outlev_];
   bar = bar ? bar : olp[storedOptions_.outlev_];
+  mo = mo ? mo : olp[storedOptions_.outlev_];
+  netw = netw ? netw : olp[storedOptions_.outlev_];
+  if (lp || mip || bar || mo || netw) {
+    /* Log messages on screen */
+    CPLEX_CALL(CPXsetintparam(env(), CPXPARAM_ScreenOutput, CPX_ON));
+    /* Echo changed params before solve */
+    CPLEX_CALL(CPXsetintparam(env(), CPXPARAM_ParamDisplay, 1));
+  }
   SetSolverOption(CPX_PARAM_SIMDISPLAY, lp);
   SetSolverOption(CPX_PARAM_MIPDISPLAY, mip);
   SetSolverOption(CPX_PARAM_BARDISPLAY, bar);
+  SetSolverOption(CPXPARAM_MultiObjective_Display, mo);
+  SetSolverOption(CPX_PARAM_NETDISPLAY, netw);
   if (!storedOptions_.logFile_.empty())
   {
     if (lp < 1) SetSolverOption(CPX_PARAM_SIMDISPLAY, 1);
@@ -792,8 +806,6 @@ void CplexBackend::InputCPLEXExtras() {
   CplexPlayObjNParams();
   SetSolverOption(CPX_PARAM_SOLNPOOLINTENSITY, storedOptions_.poolIntensity_ < 0 ? 0 : 
     storedOptions_.poolIntensity_);
-
-
 }
 
 void CplexBackend::DoCplexFeasRelax() {

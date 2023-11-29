@@ -67,9 +67,12 @@ private:
 
 
 /// Convenience macro
-#define COPT_CCALL( call ) do { if (int e = (call) != COPT_RETCODE_OK) \
+#define COPT_CCALL( call ) do { if (int e = (call) != COPT_RETCODE_OK) { \
+  char buf[512] = ""; \
+  COPT_GetRetcodeMsg(e, buf, 512); \
   MP_RAISE( \
-    fmt::format("  Call failed: '{}' with code {}", #call, e )); } while (0)
+    fmt::format("  Call failed: '{}' with code {}:\n" \
+                "{}", #call, e, buf )); } } while (0)
 
 } // namespace mp
 
