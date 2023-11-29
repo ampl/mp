@@ -117,7 +117,10 @@ public:
    *     duals.push_back(rd.ReadNext());
    */
   template <class VecReader>
-  void OnDualSolution(VecReader& ) { }
+  void OnDualSolution(VecReader& rd) {
+    while (rd.Size())
+      rd.ReadNext();
+  }
 
   /**
    * Variable values, if provided.
@@ -128,7 +131,7 @@ public:
 
   /**
    * Receive notification of the objective index
-   * used by the driver (solver option 'objno').
+   * used by the driver (solver option 'objno'-1).
    */
   void OnObjno(int ) { }
 
@@ -163,14 +166,20 @@ public:
    *   RegisterSuffix(kind, name, table, suf);
    */
   template <class SuffixReader>
-  void OnIntSuffix(SuffixReader& ) { }
+  void OnIntSuffix(SuffixReader& sr) {
+    while (sr.Size())
+      sr.ReadNext();
+  }
 
   /**
    * Same as OnIntSuffix(), but
    * sr.ReadNext() returns pair<int, double>
    */
   template <class SuffixReader>
-  void OnDblSuffix(SuffixReader& ) { }
+  void OnDblSuffix(SuffixReader& sr) {
+    while (sr.Size())
+      sr.ReadNext();
+  }
 
 };
 

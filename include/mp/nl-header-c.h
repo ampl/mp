@@ -329,7 +329,7 @@ typedef struct NLHeader_C {
 
 
 /// Default NLHeader_C
-NLHeader_C MakeNLHeader_C_Default();
+NLHeader_C MakeNLHeader_C_Default(void);
 
 
 #ifdef __cplusplus

@@ -17,7 +17,7 @@
 #include "mp/sol-reader2.hpp"
 
 /// Invoke:
-///   <this_exe> ipopt ["outlev=1 timelim=500" [text [filestub]]]
+///   (this_exe) ipopt ["outlev=1 timelim=500" [text [filestub]]]
 int main(int argc, const char* const* argv) {
   if (argc<2) {
     printf("%s\n",

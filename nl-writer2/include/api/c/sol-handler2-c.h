@@ -16,6 +16,37 @@ extern "C" {
 /// Callback: read next dual/variable value
 double NLW2_ReadSolVal(void* p_api_data);
 
+/// Suffix information
+typedef struct NLW2_SuffixInfo_C {
+  int kind_;
+  const char* name_;
+  const char* table_;
+} NLW2_SuffixInfo_C;
+
+/// Number of suffix non-zero elements
+int NLW2_IntSuffixNNZ(void* p_api_data);
+/// Number of suffix non-zero elements
+int NLW2_DblSuffixNNZ(void* p_api_data);
+/// Read suffix entry
+void NLW2_ReadIntSuffixEntry(
+    void* p_api_data, int* , int*);
+/// Read suffix entry
+void NLW2_ReadDblSuffixEntry(
+    void* p_api_data, int* , double*);
+/// Report suffix error.
+/// This causes NLW2_DblSuffixNNZ() to return 0.
+void NLW2_ReportDblSuffixError(
+    void* p_api_data, const char* msg);
+/// Report suffix error.
+/// This causes NLW2_IntSuffixNNZ() to return 0.
+void NLW2_ReportIntSuffixError(
+    void* p_api_data, const char* msg);
+/// Check suffix read result
+int NLW2_IntSuffixReadOK(void* p_api_data);
+/// Check suffix read result
+int NLW2_DblSuffixReadOK(void* p_api_data);
+
+
 /**
  * AMPL internal options.
  */
@@ -93,7 +124,7 @@ typedef struct NLW2_SOLHandler2_C {
 
   /**
    * Receive notification of the objective index
-   * used by the driver (solver option 'objno').
+   * used by the driver (solver option 'objno'-1).
    */
   void (*OnObjno)(void* p_user_data, int );
 
@@ -110,37 +141,38 @@ typedef struct NLW2_SOLHandler2_C {
    * Sparse representation - can be empty
    * (i.e., all values zero.)
    *
-   * const auto& si = sr.SufInfo();
-   * int kind = si.Kind();
-   * int nmax = nitems_max[kind & 3];
-   * const std::string& name = si.Name();
-   * const std::string& table = si.Table();
-   * while (sr.Size()) {
-   *   std::pair<int, int> val = sr.ReadNext();
-   *   if (val.first<0 || val.first>=nmax) {
-   *     sr.SetError(mp::SOL_Read_Bad_Suffix,
-   *       "bad suffix element index");
+   * int kind = si.kind_;
+   * int nmax = nitems_max[kind & 3];  // {vars, cons, objs, 1}
+   * const char* name = si.name_;
+   * const char* table = si.table_;
+   * int i;
+   * int v;
+   * while (NLW2_IntSuffixNNZ(p_api_data)) {
+   *   NLW2_ReadIntSuffixEntry(p_api_data, &i, &v);
+   *   if (i<0 || i>=nmax) {
+   *     NLW2_ReportIntSuffixError(
+   *       p_api_data, "bad suffix element index");
    *     return;
    *   }
-   *   suf[val.first] = val.second;
+   *   suf[i] = v;
    * }
-   * if (mp::SOL_Read_OK == sr.ReadResult())    // Can check
+   * if (NLW2_IntSuffixReadOK(p_api_data))    // Can check
    *   RegisterSuffix(kind, name, table, suf);
    */
-//  template <class SuffixReader>
-//  void OnIntSuffix(SuffixReader& ) { }
+  void (*OnIntSuffix)(
+      void* p_user_data, NLW2_SuffixInfo_C si, void* p_api_data);
 
   /**
    * Same as OnIntSuffix(), but
-   * sr.ReadNext() returns pair<int, double>
+   * use NLW2_ReadDblSuffixEntry() etc.
    */
-//  template <class SuffixReader>
-//  void OnDblSuffix(SuffixReader& ) { }
+  void (*OnDblSuffix)(
+      void* p_user_data, NLW2_SuffixInfo_C si, void* p_api_data);
 
 } NLW2_SOLHandler2_C;
 
 /// Create an SOLHandler2_C with default methods
-NLW2_SOLHandler2_C NLW2_MakeSOLHandler2_C_Default();
+NLW2_SOLHandler2_C NLW2_MakeSOLHandler2_C_Default(void);
 
 /// Destroy an SOLHandler2_C
 /// created with NLW2_Make...Default()

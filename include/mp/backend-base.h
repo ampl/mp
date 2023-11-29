@@ -31,8 +31,6 @@ public:
   }
 
   /// Parse solver options such as "outlev=1" from env and argv.
-  /// @param filename_no_ext: basname of the .nl file
-  ///        (or whatever should be the basename of an output .sol file)
   /// @param argv: (remaining part of) vector of cmdline strings
   /// @param flags: 0 or \a Solver::NO_OPTION_ECHO
   virtual
@@ -58,7 +56,7 @@ public:
   /// Read NL.
   /// This is also used by the AMPLS C API.
   /// @param opts: 0-terminated list of extra options,
-  /// to be read after the <solver>_options nev var.
+  /// to be read after the [solver]_options nev var.
   /// All model-related options should be here
   /// (obj:.../objno/multiobj, cvt:..., acc:...),
   /// they are not effective after NL input.

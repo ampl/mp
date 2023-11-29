@@ -79,7 +79,7 @@ void gfmt(char*, size_t, double, int);
 namespace mp {
 
 extern "C"
-NLHeader_C MakeNLHeader_C_Default() {
+NLHeader_C MakeNLHeader_C_Default(void) {
   NLHeader nlh;
   NLHeader_C nlh_c;
   nlh_c.pi = *(NLProblemInfo_C*)(&nlh);

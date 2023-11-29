@@ -29,6 +29,13 @@ extern "C" {
 ///////////////////////// NLFeeder_C ///////////////////////////
 
 /// Sparse vector writers
+
+void NLW2_WriteSparseIntEntry(
+    void* svw, int index, int value) {
+  auto& f = *(std::function<void(int, int)>*)(svw);
+  f(index, value);
+}
+
 void NLW2_WriteSparseDblEntry(
     void* svw, int index, double value) {
   auto& f = *(std::function<void(int, double)>*)(svw);
@@ -52,6 +59,24 @@ void NLW2_WriteColSize(void* csw, int sz) {
   f(sz);
 }
 
+
+typedef struct NLW2_SuffixWriter_C {
+  std::function<void*(
+      const char* suf_name, int kind, int nnz)> int_suf_starter_;
+  std::function<void*(
+      const char* suf_name, int kind, int nnz)> dbl_suf_starter_;
+} NLW2_SuffixWriter_C;
+
+void* NLW2_StartIntSuffix(void* swf,
+                         const char* suf_name, int kind, int nnz) {
+  auto& f = *(NLW2_SuffixWriter_C*)(swf);
+  return f.int_suf_starter_(suf_name, kind, nnz);
+}
+void* NLW2_StartDblSuffix(void* swf,
+                          const char* suf_name, int kind, int nnz) {
+  auto& f = *(NLW2_SuffixWriter_C*)(swf);
+  return f.dbl_suf_starter_(suf_name, kind, nnz);
+}
 
 /// Default implementations
 static const char* NLW2_ObjDescription_C_Default(void* , int )
@@ -187,10 +212,11 @@ static void NLW2_FeedColumnSizes_C_Default(void* , void* )
    *          ig.Write(i, ini_guess[i]);
    *      }
    */
-//  void FeedInitialGuesses(IGWriter& ) { }
+static int NLW2_InitialGuessesNNZ_C_Default(void* ) { return 0; }
+static void NLW2_FeedInitialGuesses_C_Default(void*, void* ) { }
 
   /** Initial dual guesses. */
-//  void FeedInitialDualGuesses(IDGWriter& ) { }
+static void NLW2_FeedInitialDualGuesses_C_Default(void*, void* ) { }
 
 
   ///////////////////// 13. SUFFIXES /////////////////////
@@ -207,7 +233,7 @@ static void NLW2_FeedColumnSizes_C_Default(void* , void* )
    *          sw.Write(index[i], value[i]);
    *      }
    */
-//  void FeedSuffixes(SuffixWriterFactory& ) { }
+static void NLW2_FeedSuffixes_C_Default(void*, void* ) { }
 
 
   //////////////////// 14. ROW/COLUMN NAMES ETC /////////////////////
@@ -253,7 +279,7 @@ static void NLW2_FeedColumnSizes_C_Default(void* , void* )
 //  void FeedObjAdj(ObjOffsetWriter& ) { }
 
 
-NLW2_NLFeeder2_C NLW2_MakeNLFeeder2_C_Default() {
+NLW2_NLFeeder2_C NLW2_MakeNLFeeder2_C_Default(void) {
   NLW2_NLFeeder2_C result;
 
   std::memset(&result, 0, sizeof(result));       // all 0
@@ -382,11 +408,10 @@ NLW2_NLFeeder2_C NLW2_MakeNLFeeder2_C_Default() {
      *          ig.Write(i, ini_guess[i]);
      *      }
      */
-  //  void FeedInitialGuesses(IGWriter& ) { }
-
-    /** Initial dual guesses. */
-  //  void FeedInitialDualGuesses(IDGWriter& ) { }
-
+  result.InitialGuessesNNZ
+      = result.InitialDualGuessesNNZ = NLW2_InitialGuessesNNZ_C_Default;
+  result.FeedInitialGuesses = NLW2_FeedInitialGuesses_C_Default;
+  result.FeedInitialDualGuesses = NLW2_FeedInitialDualGuesses_C_Default;
 
     ///////////////////// 13. SUFFIXES /////////////////////
     /** Feed suffixes.
@@ -402,7 +427,7 @@ NLW2_NLFeeder2_C NLW2_MakeNLFeeder2_C_Default() {
      *          sw.Write(index[i], value[i]);
      *      }
      */
-  //  void FeedSuffixes(SuffixWriterFactory& ) { }
+  result.FeedSuffixes = NLW2_FeedSuffixes_C_Default;
 
 
     //////////////////// 14. ROW/COLUMN NAMES ETC /////////////////////
@@ -484,7 +509,7 @@ static void NLW2_myexit_C_Default(
 }
 
 
-NLW2_NLUtils_C NLW2_MakeNLUtils_C_Default() {
+NLW2_NLUtils_C NLW2_MakeNLUtils_C_Default(void) {
   NLW2_NLUtils_C result;
 
   result.p_user_data_ = NULL;
@@ -502,6 +527,7 @@ void NLW2_DestroyNLUtils_C_Default(NLW2_NLUtils_C* )
 
 /////////////////// SOLHandler2_C /////////////////////
 
+///////////////////////////////////////////////////////
 /// Callbacks
 
 double NLW2_ReadSolVal(void* p_api_data) {
@@ -510,8 +536,62 @@ double NLW2_ReadSolVal(void* p_api_data) {
   return ((mp::VecReader<double>*)p_api_data)
       ->ReadNext();
 }
+/// Number of suffix non-zero elements
+int NLW2_IntSuffixNNZ(void* p_api_data) {
+  return ((mp::SuffixReader<int>*)p_api_data)
+      ->Size();
+}
+/// Number of suffix non-zero elements
+int NLW2_DblSuffixNNZ(void* p_api_data) {
+  return ((mp::SuffixReader<double>*)p_api_data)
+      ->Size();
+}
+/// Read suffix entry
+void NLW2_ReadIntSuffixEntry(
+    void* p_api_data, int* pi, int* pv) {
+  auto iv = ((mp::SuffixReader<int>*)p_api_data)
+      ->ReadNext();
+  *pi = iv.first;
+  *pv = iv.second;
+}
+/// Read suffix entry
+void NLW2_ReadDblSuffixEntry(
+    void* p_api_data, int* pi, double* pv) {
+  auto iv = ((mp::SuffixReader<double>*)p_api_data)
+      ->ReadNext();
+  *pi = iv.first;
+  *pv = iv.second;
+}
+/// Report suffix error.
+/// This causes NLW2_DblSuffixNNZ() to return 0.
+void NLW2_ReportDblSuffixError(
+    void* p_api_data, const char* msg) {
+  ((mp::SuffixReader<double>*)p_api_data)
+      ->SetError(mp::SOL_Read_Bad_Suffix, msg);
+}
+/// Report suffix error.
+/// This causes NLW2_IntSuffixNNZ() to return 0.
+void NLW2_ReportIntSuffixError(
+    void* p_api_data, const char* msg) {
+  ((mp::SuffixReader<int>*)p_api_data)
+      ->SetError(mp::SOL_Read_Bad_Suffix, msg);
+}
+/// Check suffix read result
+int NLW2_IntSuffixReadOK(void* p_api_data) {
+  return mp::SOL_Read_OK
+      == ((mp::SuffixReader<int>*)p_api_data)
+      ->ReadResult();
+}
+/// Check suffix read result
+int NLW2_DblSuffixReadOK(void* p_api_data) {
+  return mp::SOL_Read_OK
+      == ((mp::SuffixReader<double>*)p_api_data)
+      ->ReadResult();
+}
 
 
+
+///////////////////////////////////////////////////////
 /// Default methods
 static void NLW2_OnSolveMessage_C_Default(
     void* p_user_data, const char* s, int nbs) {
@@ -523,16 +603,31 @@ static void NLW2_OnSolveMessage_C_Default(
 static int NLW2_OnAMPLOptions_C_Default(
     void* p_user_data, AMPLOptions_C ) { return 0; }
 static void NLW2_OnDualSolution_C_Default(
-    void* p_user_data, int nvals, void* p_api_data) { }
+    void* p_user_data, int nvals, void* p_api_data) {
+  while (nvals--)
+    NLW2_ReadSolVal(p_api_data);
+}
 static void NLW2_OnPrimalSolution_C_Default(
     void* p_user_data, int nvals, void* p_api_data) { }
 static void NLW2_OnObjno_C_Default(void* p_user_data, int ) { }
 static void NLW2_OnSolveCode_C_Default(void* p_user_data, int ) { }
-//  void OnIntSuffix(SuffixReader& ) { }
-//  void OnDblSuffix(SuffixReader& ) { }
+static void NLW2_OnIntSuffix_C_Default(
+    void* p_user_data, NLW2_SuffixInfo_C si, void* p_api_data) {
+  int i;
+  int v;
+  while (NLW2_IntSuffixNNZ(p_api_data))
+    NLW2_ReadIntSuffixEntry(p_api_data, &i, &v);
+}
+static void NLW2_OnDblSuffix_C_Default(
+    void* p_user_data, NLW2_SuffixInfo_C si, void* p_api_data) {
+  int i;
+  double v;
+  while (NLW2_DblSuffixNNZ(p_api_data))
+    NLW2_ReadDblSuffixEntry(p_api_data, &i, &v);
+}
 
 
-NLW2_SOLHandler2_C NLW2_MakeSOLHandler2_C_Default() {
+NLW2_SOLHandler2_C NLW2_MakeSOLHandler2_C_Default(void) {
   NLW2_SOLHandler2_C result;
 
   std::memset(&result, 0, sizeof(result));       // all 0
@@ -547,8 +642,8 @@ NLW2_SOLHandler2_C NLW2_MakeSOLHandler2_C_Default() {
   result.OnPrimalSolution = NLW2_OnPrimalSolution_C_Default;
   result.OnObjno = NLW2_OnObjno_C_Default;
   result.OnSolveCode = NLW2_OnSolveCode_C_Default;
-  //  void OnIntSuffix(SuffixReader& ) { }
-  //  void OnDblSuffix(SuffixReader& ) { }
+  result.OnIntSuffix = NLW2_OnIntSuffix_C_Default;
+  result.OnDblSuffix = NLW2_OnDblSuffix_C_Default;
 
   return result;
 }
@@ -563,8 +658,8 @@ namespace mp {
 
 /// Typedef our specialization of NLSOL
 using NLSOL_C_Impl
-  = mp::NLSOL<mp::NLFeeder2_C_Impl,
-      mp::SOLHandler2_C_Impl>;
+  = mp::NLSOL<mp::NLW2_NLFeeder2_C_Impl,
+      mp::NLW2_SOLHandler2_C_Impl>;
 
 }  // namespace mp
 
@@ -575,13 +670,13 @@ NLW2_NLSOL_C NLW2_MakeNLSOL_C(
     NLW2_NLFeeder2_C* pnlf, NLW2_SOLHandler2_C* psolh, NLW2_NLUtils_C* putl) {
   NLW2_NLSOL_C result;
 
-  result.p_nlf_ = new mp::NLFeeder2_C_Impl(pnlf);
-  result.p_solh_ = new mp::SOLHandler2_C_Impl(psolh);
+  result.p_nlf_ = new mp::NLW2_NLFeeder2_C_Impl(pnlf);
+  result.p_solh_ = new mp::NLW2_SOLHandler2_C_Impl(psolh);
   result.p_utl_ = new mp::NLUtils_C_Impl(putl);
   result.p_nlsol_
       = new mp::NLSOL_C_Impl(
-        *(mp::NLFeeder2_C_Impl*)result.p_nlf_,
-        *(mp::SOLHandler2_C_Impl*)result.p_solh_,
+        *(mp::NLW2_NLFeeder2_C_Impl*)result.p_nlf_,
+        *(mp::NLW2_SOLHandler2_C_Impl*)result.p_solh_,
         *(mp::NLUtils_C_Impl*)result.p_utl_);
 
   return result;
@@ -590,8 +685,8 @@ NLW2_NLSOL_C NLW2_MakeNLSOL_C(
 /// Destroy
 void NLW2_DestroyNLSOL_C(NLW2_NLSOL_C* pnls) {
   delete (mp::NLUtils_C_Impl*)(pnls->p_utl_);
-  delete (mp::SOLHandler2_C_Impl*)(pnls->p_solh_);
-  delete (mp::NLFeeder2_C_Impl*)(pnls->p_nlf_);
+  delete (mp::NLW2_SOLHandler2_C_Impl*)(pnls->p_solh_);
+  delete (mp::NLW2_NLFeeder2_C_Impl*)(pnls->p_nlf_);
   delete (mp::NLSOL_C_Impl*)(pnls->p_nlsol_);
 }
 
@@ -647,3 +742,62 @@ int NLW2_ReadSolution(NLW2_NLSOL_C* pnls, const char* filename) {
 #ifdef __cplusplus
 }  // extern "C"
 #endif
+
+
+///////////////////////// C++ code //////////////////////////////
+
+template <class IGWriter>
+void mp::NLW2_NLFeeder2_C_Impl::FeedInitialGuesses(IGWriter& igw) {
+  assert(NLF().InitialGuessesNNZ);
+  if (int nnz = NLF().InitialGuessesNNZ(NLF().p_user_data_)) {
+    assert(NLF().FeedInitialGuesses);
+    auto ig = igw.MakeVectorWriter(nnz);
+    std::function<void(int, double)> wrt
+        = [&ig](int i, double v){
+      ig.Write(i, v);
+    };
+    NLF().FeedInitialGuesses(NLF().p_user_data_, &wrt);
+  }
+}
+
+/** Initial dual guesses. */
+template <class IGWriter>
+void mp::NLW2_NLFeeder2_C_Impl::FeedInitialDualGuesses(IGWriter& igw) {
+  assert(NLF().InitialDualGuessesNNZ);
+  if (int nnz = NLF().InitialDualGuessesNNZ(NLF().p_user_data_)) {
+    assert(NLF().FeedInitialDualGuesses);
+    auto ig = igw.MakeVectorWriter(nnz);
+    std::function<void(int, double)> wrt
+        = [&ig](int i, double v){
+      ig.Write(i, v);
+    };
+    NLF().FeedInitialDualGuesses(NLF().p_user_data_, &wrt);
+  }
+}
+
+
+
+template <class SuffixWriterFactory>
+void mp::NLW2_NLFeeder2_C_Impl::FeedSuffixes(SuffixWriterFactory& swf) {
+  NLW2_SuffixWriter_C sw_c;
+  decltype( swf.StartIntSuffix(nullptr, 0, 0) ) int_writer;
+  decltype( swf.StartDblSuffix(nullptr, 0, 0) ) dbl_writer;
+  // These would write sparse entries
+  std::function<void(int, int)> int_write_fn
+      = [&int_writer](int i, int v) { int_writer.Write(i, v); };
+  std::function<void(int, double)> dbl_write_fn
+      = [&dbl_writer](int i, double v) { dbl_writer.Write(i, v); };
+  // There would start a suffix
+  sw_c.int_suf_starter_ = [&swf, &int_writer, &int_write_fn]
+      (const char* suf_name, int kind, int nnz) {
+    int_writer = swf.StartIntSuffix(suf_name, kind, nnz);
+    return (void*)(&int_write_fn);
+  };
+  sw_c.dbl_suf_starter_ = [&swf, &dbl_writer, &dbl_write_fn]
+      (const char* suf_name, int kind, int nnz) {
+    dbl_writer = swf.StartDblSuffix(suf_name, kind, nnz);
+    return (void*)(&dbl_write_fn);
+  };
+  assert(NLF().FeedSuffixes);
+  NLF().FeedSuffixes(NLF().p_user_data_, &sw_c);
+}

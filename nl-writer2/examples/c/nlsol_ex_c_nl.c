@@ -290,19 +290,45 @@ void FeedColumnSizes(void* p_user_data, void* p_api_data) {
 
 
   ///////////////////// 12. INITIAL GUESSES /////////////////////
-  /** Initial primal guesses.
-   *
-   *  Implementation:
-   *      if (ini_guess.size()) {
-   *        auto ig = igw.MakeVectorWriter(ini_guess.size());
-   *        for (size_t i=0; i<ini_guess.size(); ++i)
-   *          ig.Write(i, ini_guess[i]);
-   *      }
-   */
-//  void FeedInitialGuesses(IGWriter& ) { }
 
-  /** Initial dual guesses. */
-//  void FeedInitialDualGuesses(IDGWriter& ) { }
+int CountNNZ(const double* parray, int len) {
+  int result = 0;
+  for (int i=0; i<len; ++i)
+    if (parray[i])
+      ++result;
+  return result;
+}
+void WriteDenseAsSparse(
+    const double* parray, int len, void* p_api_data) {
+  for (int i=0; i<len; ++i)
+    if (parray[i])
+      NLW2_WriteSparseDblEntry(p_api_data, i, parray[i]);
+}
+
+  /**
+   *  Implementation:
+   *      for (size_t i=0; i<n_ini_guess; ++i)
+   *        NLW2_WriteSparseDblEntry(p_api_data, i, ini_guess[i]);
+   */
+int InitialGuessesNNZ(void* p_user_data) {
+  CAPIExample* pex = (CAPIExample*)p_user_data;
+  return CountNNZ(pex->ini_x, pex->n_var);
+}
+void FeedInitialGuesses(void* p_user_data, void* p_api_data) {
+  CAPIExample* pex = (CAPIExample*)p_user_data;
+  WriteDenseAsSparse(pex->ini_x, pex->n_var, p_api_data);
+}
+
+/// Initial dual guesses
+int InitialDualGuessesNNZ(void* p_user_data) {
+  CAPIExample* pex = (CAPIExample*)p_user_data;
+  return CountNNZ(pex->ini_y, pex->n_con);
+}
+void FeedInitialDualGuesses(
+    void* p_user_data, void* p_api_data) {
+  CAPIExample* pex = (CAPIExample*)p_user_data;
+  WriteDenseAsSparse(pex->ini_y, pex->n_con, p_api_data);
+}
 
 
   ///////////////////// 13. SUFFIXES /////////////////////
@@ -313,13 +339,25 @@ void FeedColumnSizes(void* p_user_data, void* p_api_data) {
    *
    *  Implementation:
    *      while (....) {
-   *        auto sw = swf.StartIntSuffix(  // or ...DblSuffix
-   *          suf_name, kind, n_nonzeros);
+   *        void* p_api_2 = NLW2_StartIntSuffix(  // or ...DblSuffix
+   *          p_api_data, suf_name, kind, n_nonzeros);
    *        for (int i=0; i<n_nonzeros; ++i)
-   *          sw.Write(index[i], value[i]);
+   *          NLW2_WriteSparseIntEntry(p_api_2,   // <- new API pointer
+   *            index[i], value[i]);              // or ...DblEntry
    *      }
    */
-//  void FeedSuffixes(SuffixWriterFactory& ) { }
+void FeedSuffixes(void* p_user_data, void* p_api_data) {
+  CAPIExample* pex = (CAPIExample*)p_user_data;
+  for (int i_suf=0; i_suf<pex->n_suf; ++i_suf) {
+    const Suffix* ps = &pex->suf[i_suf];
+    void* p_api_2 = NLW2_StartDblSuffix(
+          p_api_data, ps->name_, ps->kind_, ps->n_val_);
+    for (int i=0; i<ps->n_val_; ++i)
+      NLW2_WriteSparseDblEntry(p_api_2,
+                               ps->values_[i].index_,
+                               ps->values_[i].value_);
+  }
+}
 
 
   //////////////////// 14. ROW/COLUMN NAMES ETC /////////////////////
@@ -499,11 +537,10 @@ NLW2_NLFeeder2_C MakeNLFeeder2_C(
      *          ig.Write(i, ini_guess[i]);
      *      }
      */
-  //  void FeedInitialGuesses(IGWriter& ) { }
-
-    /** Initial dual guesses. */
-  //  void FeedInitialDualGuesses(IDGWriter& ) { }
-
+  result.InitialGuessesNNZ = InitialGuessesNNZ;
+  result.InitialDualGuessesNNZ = InitialDualGuessesNNZ;
+  result.FeedInitialGuesses = FeedInitialGuesses;
+  result.FeedInitialDualGuesses = FeedInitialDualGuesses;
 
     ///////////////////// 13. SUFFIXES /////////////////////
     /** Feed suffixes.
@@ -519,8 +556,7 @@ NLW2_NLFeeder2_C MakeNLFeeder2_C(
      *          sw.Write(index[i], value[i]);
      *      }
      */
-  //  void FeedSuffixes(SuffixWriterFactory& ) { }
-
+  result.FeedSuffixes = FeedSuffixes;
 
     //////////////////// 14. ROW/COLUMN NAMES ETC /////////////////////
     /** FeedRowAndObjNames:

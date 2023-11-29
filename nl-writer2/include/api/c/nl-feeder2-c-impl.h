@@ -16,16 +16,16 @@
 namespace mp {
 
 /// Implementation:
-/// Wrap NLFeeder2_C into a C++ class,
+/// Wrap NLW2_NLFeeder2_C into a C++ class,
 /// in order to interface it for NLWriter2
-class NLFeeder2_C_Impl
-    : public NLFeeder2<NLFeeder2_C_Impl, void*> {
+class NLW2_NLFeeder2_C_Impl
+    : public NLFeeder2<NLW2_NLFeeder2_C_Impl, void*> {
 public:
   /// typedef base class
-  using Base = NLFeeder2<NLFeeder2_C_Impl, void*>;
+  using Base = NLFeeder2<NLW2_NLFeeder2_C_Impl, void*>;
 
   /// Construct
-  NLFeeder2_C_Impl(NLW2_NLFeeder2_C* pnlf2)
+  NLW2_NLFeeder2_C_Impl(NLW2_NLFeeder2_C* pnlf2)
     : nlf2_c_(*pnlf2) { }
 
   ///////////////////// 1. NL HEADER AND OPTIONS /////////////////
@@ -338,11 +338,11 @@ public:
    *      }
    */
   template <class IGWriter>
-  void FeedInitialGuesses(IGWriter& ) { }
+  void FeedInitialGuesses(IGWriter& );
 
   /** Initial dual guesses. */
   template <class IDGWriter>
-  void FeedInitialDualGuesses(IDGWriter& ) { }
+  void FeedInitialDualGuesses(IDGWriter& );
 
 
   ///////////////////// 13. SUFFIXES /////////////////////
@@ -360,7 +360,7 @@ public:
    *      }
    */
   template <class SuffixWriterFactory>
-  void FeedSuffixes(SuffixWriterFactory& ) { }
+  void FeedSuffixes(SuffixWriterFactory& );
 
 
   //////////////////// 14. ROW/COLUMN NAMES ETC /////////////////////
