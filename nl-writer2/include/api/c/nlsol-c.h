@@ -23,9 +23,12 @@ extern "C" {
 /// model representation.
 ///
 /// To create / destroy,
-/// use NLW2_MakeNLSOL_C / NLW2_Destroy...().
+/// use NLW2_MakeNLSOL_C() / NLW2_DestroyNLSOL_C().
 ///
-/// Usage: see the C API example and the below API.
+/// To manipulate, use NLW2_SetSolver(), NLW2_SetSolverOptions(),
+/// etc, see the below API.
+///
+/// @see the C API example.
 typedef struct NLW2_NLSOL_C {
   /// Internal data
   void *p_nlf_, *p_solh_, *p_utl_, *p_nlsol_;
@@ -42,31 +45,34 @@ NLW2_NLSOL_C NLW2_MakeNLSOL_C(
 void NLW2_DestroyNLSOL_C(NLW2_NLSOL_C* );
 
 /// Set solver, such as "gurobi", "highs", "ipopt"
-void NLW2_SetSolver(NLW2_NLSOL_C* , const char* solver);
+void NLW2_NLSOL_C_SetSolver(NLW2_NLSOL_C* , const char* solver);
 
 /// Set solver options, such as "outlev=1 lim:time=500"
-void NLW2_SetSolverOptions(NLW2_NLSOL_C* , const char* sopts);
+void NLW2_NLSOL_C_SetSolverOptions(NLW2_NLSOL_C* , const char* sopts);
 
 /// Solve.
 /// @param filestub: filename stub to be used
 /// for input files (.nl, .col., .row, etc.),
 /// and output files (.sol).
 /// @return true if all ok.
-int NLW2_Solve(NLW2_NLSOL_C* , const char* filestub);
+int NLW2_NLSOL_C_Solve(NLW2_NLSOL_C* , const char* filestub);
 
 /// Get error message.
-const char* NLW2_GetErrorMessage(NLW2_NLSOL_C* );
+const char* NLW2_NLSOL_C_GetErrorMessage(NLW2_NLSOL_C* );
 
 /// Substep: write NL and any accompanying files.
-int NLW2_WriteNLFile(NLW2_NLSOL_C* , const char* filestub);
+/// @return true if all ok.
+int NLW2_NLSOL_C_WriteNLFile(NLW2_NLSOL_C* , const char* filestub);
 
 /// Substep: invoke chosen solver for \a filestub.
-int NLW2_InvokeSolver(NLW2_NLSOL_C* , const char* filestub);
+/// @return true if all ok.
+int NLW2_NLSOL_C_InvokeSolver(NLW2_NLSOL_C* , const char* filestub);
 
 /// Substep: read solution.
 /// @param filename: complete file name,
 /// normally (stub).sol.
-int NLW2_ReadSolution(NLW2_NLSOL_C* , const char* filename);
+/// @return true if all ok.
+int NLW2_NLSOL_C_ReadSolution(NLW2_NLSOL_C* , const char* filename);
 
 
 #ifdef __cplusplus

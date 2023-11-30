@@ -361,22 +361,22 @@ void FeedSuffixes(void* p_user_data, void* p_api_data) {
 
 
   //////////////////// 14. ROW/COLUMN NAMES ETC /////////////////////
-  /** FeedRowAndObjNames:
-   *  Provide constraint, then objective names.
-   *  Name information is optional.
-   *
-   *  Implementation:
-   *      if ((output_desired) && wrt)
-   *        for (i: ....)
-   *          wrt << name[i].c_str();
-   */
-//  void FeedRowAndObjNames(RowObjNameWriter& wrt) { }
+void FeedRowAndObjNames(void* p_user_data, void* p_api_data) {
+  CAPIExample* pex = (CAPIExample*)p_user_data;
+  for (int i=0; i<pex->n_con; ++i)
+    NLW2_WriteName(p_api_data, pex->con_name[i]);
+  NLW2_WriteName(p_api_data, pex->obj_name);
+}
 
   /** Provide deleted row names.*/
 //  void FeedDelRowNames(DelRowNameWriter& ) { }
 
   /** Provide variable names. */
-//  void FeedColNames(ColNameWriter& ) { }
+void FeedColNames(void* p_user_data, void* p_api_data) {
+  CAPIExample* pex = (CAPIExample*)p_user_data;
+  for (int i=0; i<pex->n_var; ++i)
+    NLW2_WriteName(p_api_data, pex->var_name[i]);
+}
 
   /** Provide unused variable names. */
 //  void FeedUnusedVarNames(UnusedVarNameWriter& ) { }
@@ -559,46 +559,11 @@ NLW2_NLFeeder2_C MakeNLFeeder2_C(
   result.FeedSuffixes = FeedSuffixes;
 
     //////////////////// 14. ROW/COLUMN NAMES ETC /////////////////////
-    /** FeedRowAndObjNames:
-     *  Provide constraint, then objective names.
-     *  Name information is optional.
-     *
-     *  Implementation:
-     *      if ((output_desired) && wrt)
-     *        for (i: ....)
-     *          wrt << name[i].c_str();
-     */
-  //  void FeedRowAndObjNames(RowObjNameWriter& wrt) { }
+  result.want_row_and_obj_names_ = 1;
+  result.want_col_names_ = 1;
 
-    /** Provide deleted row names.*/
-  //  void FeedDelRowNames(DelRowNameWriter& ) { }
-
-    /** Provide variable names. */
-  //  void FeedColNames(ColNameWriter& ) { }
-
-    /** Provide unused variable names. */
-  //  void FeedUnusedVarNames(UnusedVarNameWriter& ) { }
-
-    /** Provide {fixed variable, extra info} pairs.
-     *  This includes defined eliminated variables.
-     *
-     *  Implementation:
-     *      if ((output_desired) && wrt)
-     *        for (....)
-     *          wrt << typename Writer::StrStrValue
-     *          { name[i].c_str(), comment[i].c_str() };
-     */
-  //  void FeedFixedVarNames(FixedVarNameWriter& ) { }
-
-    /** Provide {obj name, constant term} pairs.
-     *
-     *  Implementation:
-     *      if (wrt)
-     *        for (....)
-     *          wrt << typename Writer::StrDblValue
-     *          { name[i].c_str(), (double)obj_offset[i] };
-     */
-  //  void FeedObjAdj(ObjOffsetWriter& ) { }
+  result.FeedRowAndObjNames = FeedRowAndObjNames;
+  result.FeedColNames = FeedColNames;
 
 
   return result;

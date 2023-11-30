@@ -374,19 +374,55 @@ public:
    *          wrt << name[i].c_str();
    */
   template <class RowObjNameWriter>
-  void FeedRowAndObjNames(RowObjNameWriter& wrt) { }
+  void FeedRowAndObjNames(RowObjNameWriter& wrt) {
+    assert(NLF().FeedRowAndObjNames);
+    if (NLF().want_row_and_obj_names_ && wrt) {
+      std::function<void(const char*)> wrt_c
+          = [&wrt](const char* name) {
+        wrt << name;
+      };
+      NLF().FeedRowAndObjNames(NLF().p_user_data_, &wrt_c);
+    }
+  }
 
   /** Provide deleted row names.*/
   template <class DelRowNameWriter>
-  void FeedDelRowNames(DelRowNameWriter& ) { }
+  void FeedDelRowNames(DelRowNameWriter& wrt) {
+    assert(NLF().FeedDelRowNames);
+    if (NLF().want_del_row_names_ && wrt) {
+      std::function<void(const char*)> wrt_c
+          = [&wrt](const char* name) {
+        wrt << name;
+      };
+      NLF().FeedDelRowNames(NLF().p_user_data_, &wrt_c);
+    }
+  }
 
   /** Provide variable names. */
   template <class ColNameWriter>
-  void FeedColNames(ColNameWriter& ) { }
+  void FeedColNames(ColNameWriter& wrt) {
+    assert(NLF().FeedColNames);
+    if (NLF().want_col_names_ && wrt) {
+      std::function<void(const char*)> wrt_c
+          = [&wrt](const char* name) {
+        wrt << name;
+      };
+      NLF().FeedColNames(NLF().p_user_data_, &wrt_c);
+    }
+  }
 
   /** Provide unused variable names. */
   template <class UnusedVarNameWriter>
-  void FeedUnusedVarNames(UnusedVarNameWriter& ) { }
+  void FeedUnusedVarNames(UnusedVarNameWriter& wrt) {
+    assert(NLF().FeedUnusedVarNames);
+    if (NLF().want_unused_var_names_ && wrt) {
+      std::function<void(const char*)> wrt_c
+          = [&wrt](const char* name) {
+        wrt << name;
+      };
+      NLF().FeedUnusedVarNames(NLF().p_user_data_, &wrt_c);
+    }
+  }
 
   /** Provide {fixed variable, extra info} pairs.
    *  This includes defined eliminated variables.
@@ -398,7 +434,17 @@ public:
    *          { name[i].c_str(), comment[i].c_str() };
    */
   template <class FixedVarNameWriter>
-  void FeedFixedVarNames(FixedVarNameWriter& ) { }
+  void FeedFixedVarNames(FixedVarNameWriter& wrt) {
+    assert(NLF().FeedFixedVarNames);
+    if (NLF().want_fixed_var_names_ && wrt) {
+      std::function<void(const char*, const char*)> wrt_c
+          = [&wrt](const char* name, const char* comment) {
+        wrt << typename FixedVarNameWriter::StrStrValue
+        { name, comment };
+      };
+      NLF().FeedFixedVarNames(NLF().p_user_data_, &wrt_c);
+    }
+  }
 
   /** Provide {obj name, constant term} pairs.
    *
@@ -409,7 +455,17 @@ public:
    *          { name[i].c_str(), (double)obj_offset[i] };
    */
   template <class ObjOffsetWriter>
-  void FeedObjAdj(ObjOffsetWriter& ) { }
+  void FeedObjAdj(ObjOffsetWriter& wrt) {
+    assert(NLF().FeedObjAdj);
+    if (NLF().want_obj_adj_ && wrt) {
+      std::function<void(const char*, double)> wrt_c
+          = [&wrt](const char* name, double num) {
+        wrt << typename ObjOffsetWriter::StrDblValue
+        { name, num };
+      };
+      NLF().FeedObjAdj(NLF().p_user_data_, &wrt_c);
+    }
+  }
 
 
 protected:

@@ -96,6 +96,15 @@ void* NLW2_StartIntSuffix(void* p_api_1,
 void* NLW2_StartDblSuffix(void* p_api_1,
     const char* suf_name, int kind, int nnz);
 
+/// Callback: write model item name
+void NLW2_WriteName(void* p_api_data, const char* name);
+/// Callback: write fixed var name and comment
+void NLW2_WriteNameAndComment(
+    void* p_api_data, const char* name, const char* comment);
+/// Callback: write obj name and offset
+void NLW2_WriteNameAndNumber(
+    void* p_api_data, const char* name, double val);
+
 
 /** Wrap mp::NLFeeder2 for C API.
 
@@ -453,61 +462,71 @@ typedef struct NLW2_NLFeeder2_C {
    *          p_api_data, suf_name, kind, n_nonzeros);
    *        for (int i=0; i<n_nonzeros; ++i)
    *          NLW2_WriteSparseIntEntry(p_api_2,   // or ...DblEntry
-   *            index[i], value[i]);              // <- new API pointer
+   *            index[i], value[i]);              // <- p_api_2 here
    *      }
    */
   void (*FeedSuffixes)(void* p_user_data, void* p_api_data);
 
 
   //////////////////// 14. ROW/COLUMN NAMES ETC /////////////////////
+
+  /// Want row/obj names?
+  int want_row_and_obj_names_;
+  /// Want del row names?
+  int want_del_row_names_;
+  /// Want col names?
+  int want_col_names_;
+  /// Want unused var names?
+  int want_unused_var_names_;
+  /// Want fixed var names?
+  int want_fixed_var_names_;
+  /// Want objective offsets?
+  int want_obj_adj_;
+
   /** FeedRowAndObjNames:
    *  Provide constraint, then objective names.
-   *  Name information is optional.
    *
    *  Implementation:
-   *      if ((output_desired) && wrt)
-   *        for (i: ....)
-   *          wrt << name[i].c_str();
+   *    for (i: {algcons, logcons, objs})
+   *      NLW2_WriteName( p_api_data, con_obj_name[i] );
    */
-//  void FeedRowAndObjNames(RowObjNameWriter& wrt) { }
+  void (*FeedRowAndObjNames)(void* p_user_data, void* p_api_data);
 
   /** Provide deleted row names.*/
-//  void FeedDelRowNames(DelRowNameWriter& ) { }
+  void (*FeedDelRowNames)(void* p_user_data, void* p_api_data);
 
   /** Provide variable names. */
-//  void FeedColNames(ColNameWriter& ) { }
+  void (*FeedColNames)(void* p_user_data, void* p_api_data);
 
   /** Provide unused variable names. */
-//  void FeedUnusedVarNames(UnusedVarNameWriter& ) { }
+  void (*FeedUnusedVarNames)(void* p_user_data, void* p_api_data);
 
   /** Provide {fixed variable, extra info} pairs.
    *  This includes defined eliminated variables.
    *
    *  Implementation:
-   *      if ((output_desired) && wrt)
    *        for (....)
-   *          wrt << typename Writer::StrStrValue
-   *          { name[i].c_str(), comment[i].c_str() };
+   *          NLW2_WriteNameAndComment(
+   *            p_api_data, name[i], comment[i] );
    */
-//  void FeedFixedVarNames(FixedVarNameWriter& ) { }
+  void (*FeedFixedVarNames)(void* p_user_data, void* p_api_data);
 
   /** Provide {obj name, constant term} pairs.
    *
    *  Implementation:
-   *      if (wrt)
    *        for (....)
-   *          wrt << typename Writer::StrDblValue
-   *          { name[i].c_str(), (double)obj_offset[i] };
+   *          NLW2_WriteNameAndNumber(
+   *            p_api_data, name[i], obj_offset[i] );
    */
-//  void FeedObjAdj(ObjOffsetWriter& ) { }
+  void (*FeedObjAdj)(void* p_user_data, void* p_api_data);
 
 } NLW2_NLFeeder2_C;
 
 
-/// Return NLFeeder2_C with default options / methods
+/// Return NLW2_NLFeeder2_C with default options / methods
 NLW2_NLFeeder2_C NLW2_MakeNLFeeder2_C_Default(void);
 
-/// Destroy NLFeeder2_C created by NLW2_MakeNLFeeder2_C_default()
+/// Destroy NLW2_NLFeeder2_C created by NLW2_MakeNLFeeder2_C_default()
 void NLW2_DestroyNLFeeder2_C_Default(NLW2_NLFeeder2_C* );
 
 #ifdef __cplusplus

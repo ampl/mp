@@ -28,8 +28,9 @@ extern "C" {
 
 ///////////////////////// NLFeeder_C ///////////////////////////
 
-/// Sparse vector writers
+// Callbacks
 
+/// Sparse vector writers
 void NLW2_WriteSparseIntEntry(
     void* svw, int index, int value) {
   auto& f = *(std::function<void(int, int)>*)(svw);
@@ -77,6 +78,27 @@ void* NLW2_StartDblSuffix(void* swf,
   auto& f = *(NLW2_SuffixWriter_C*)(swf);
   return f.dbl_suf_starter_(suf_name, kind, nnz);
 }
+
+/// Callback: write model item name
+void NLW2_WriteName(void* p_api_data, const char* name) {
+  auto& p_wrt_c = *(std::function<void(const char*)>*)p_api_data;
+  p_wrt_c(name);
+}
+/// Callback: write fixed var name and comment
+void NLW2_WriteNameAndComment(
+    void* p_api_data, const char* name, const char* comment) {
+  auto& p_wrt_c
+      = *(std::function<void(const char*, const char*)>*)p_api_data;
+  p_wrt_c(name, comment);
+}
+/// Callback: write obj name and offset
+void NLW2_WriteNameAndNumber(
+    void* p_api_data, const char* name, double val) {
+  auto& p_wrt_c
+      = *(std::function<void(const char*, double)>*)p_api_data;
+  p_wrt_c(name, val);
+}
+
 
 /// Default implementations
 static const char* NLW2_ObjDescription_C_Default(void* , int )
@@ -237,6 +259,8 @@ static void NLW2_FeedSuffixes_C_Default(void*, void* ) { }
 
 
   //////////////////// 14. ROW/COLUMN NAMES ETC /////////////////////
+
+static void NLW2_FeedNames_C_Default(void*, void* ) { }
   /** FeedRowAndObjNames:
    *  Provide constraint, then objective names.
    *  Name information is optional.
@@ -431,46 +455,20 @@ NLW2_NLFeeder2_C NLW2_MakeNLFeeder2_C_Default(void) {
 
 
     //////////////////// 14. ROW/COLUMN NAMES ETC /////////////////////
-    /** FeedRowAndObjNames:
-     *  Provide constraint, then objective names.
-     *  Name information is optional.
-     *
-     *  Implementation:
-     *      if ((output_desired) && wrt)
-     *        for (i: ....)
-     *          wrt << name[i].c_str();
-     */
-  //  void FeedRowAndObjNames(RowObjNameWriter& wrt) { }
 
-    /** Provide deleted row names.*/
-  //  void FeedDelRowNames(DelRowNameWriter& ) { }
+  result.want_row_and_obj_names_ = 0;
+  result.want_del_row_names_ = 0;
+  result.want_col_names_ = 0;
+  result.want_unused_var_names_ = 0;
+  result.want_fixed_var_names_ = 0;
+  result.want_obj_adj_ = 0;
 
-    /** Provide variable names. */
-  //  void FeedColNames(ColNameWriter& ) { }
-
-    /** Provide unused variable names. */
-  //  void FeedUnusedVarNames(UnusedVarNameWriter& ) { }
-
-    /** Provide {fixed variable, extra info} pairs.
-     *  This includes defined eliminated variables.
-     *
-     *  Implementation:
-     *      if ((output_desired) && wrt)
-     *        for (....)
-     *          wrt << typename Writer::StrStrValue
-     *          { name[i].c_str(), comment[i].c_str() };
-     */
-  //  void FeedFixedVarNames(FixedVarNameWriter& ) { }
-
-    /** Provide {obj name, constant term} pairs.
-     *
-     *  Implementation:
-     *      if (wrt)
-     *        for (....)
-     *          wrt << typename Writer::StrDblValue
-     *          { name[i].c_str(), (double)obj_offset[i] };
-     */
-  //  void FeedObjAdj(ObjOffsetWriter& ) { }
+  result.FeedRowAndObjNames = NLW2_FeedNames_C_Default;
+  result.FeedDelRowNames = NLW2_FeedNames_C_Default;
+  result.FeedColNames = NLW2_FeedNames_C_Default;
+  result.FeedUnusedVarNames = NLW2_FeedNames_C_Default;
+  result.FeedFixedVarNames = NLW2_FeedNames_C_Default;
+  result.FeedObjAdj = NLW2_FeedNames_C_Default;
 
   return result;
 }
@@ -479,6 +477,7 @@ void NLW2_DestroyNLFeeder2_C_Default(NLW2_NLFeeder2_C* )
 { }
 
 ///////////////////////// NLUtils_C ///////////////////////////
+
 /// log message
 static void NLW2_log_message_C_Default(
     void* p_api_data, const char* format, ...) {
@@ -691,13 +690,14 @@ void NLW2_DestroyNLSOL_C(NLW2_NLSOL_C* pnls) {
 }
 
 /// Set solver, such as "gurobi", "highs", "ipopt"
-void NLW2_SetSolver(NLW2_NLSOL_C* pnls, const char* solver) {
+void NLW2_NLSOL_C_SetSolver(NLW2_NLSOL_C* pnls, const char* solver) {
   ((mp::NLSOL_C_Impl*)(pnls->p_nlsol_))
       ->SetSolver(solver);
 }
 
 /// Set solver options, such as "outlev=1 lim:time=500"
-void NLW2_SetSolverOptions(NLW2_NLSOL_C* pnls, const char* sopts) {
+void NLW2_NLSOL_C_SetSolverOptions(
+    NLW2_NLSOL_C* pnls, const char* sopts) {
   ((mp::NLSOL_C_Impl*)(pnls->p_nlsol_))
       ->SetSolverOptions(sopts);
 }
@@ -707,25 +707,25 @@ void NLW2_SetSolverOptions(NLW2_NLSOL_C* pnls, const char* sopts) {
 /// for input files (.nl, .col., .row, etc.),
 /// and output files (.sol).
 /// @return true if all ok.
-int NLW2_Solve(NLW2_NLSOL_C* pnls, const char* filestub) {
+int NLW2_NLSOL_C_Solve(NLW2_NLSOL_C* pnls, const char* filestub) {
   return ((mp::NLSOL_C_Impl*)(pnls->p_nlsol_))
       ->Solve(filestub);
 }
 
 /// Get error message.
-const char* NLW2_GetErrorMessage(NLW2_NLSOL_C* pnls) {
+const char* NLW2_NLSOL_C_GetErrorMessage(NLW2_NLSOL_C* pnls) {
   return ((mp::NLSOL_C_Impl*)(pnls->p_nlsol_))
       ->GetErrorMessage();
 }
 
 /// Substep: write NL and any accompanying files.
-int NLW2_WriteNLFile(NLW2_NLSOL_C* pnls, const char* filestub) {
+int NLW2_NLSOL_C_WriteNLFile(NLW2_NLSOL_C* pnls, const char* filestub) {
   return ((mp::NLSOL_C_Impl*)(pnls->p_nlsol_))
       ->WriteNLFile(filestub);
 }
 
 /// Substep: invoke chosen solver for \a filestub.
-int NLW2_InvokeSolver(NLW2_NLSOL_C* pnls, const char* filestub) {
+int NLW2_NLSOL_C_InvokeSolver(NLW2_NLSOL_C* pnls, const char* filestub) {
   return ((mp::NLSOL_C_Impl*)(pnls->p_nlsol_))
       ->InvokeSolver(filestub);
 }
@@ -733,7 +733,7 @@ int NLW2_InvokeSolver(NLW2_NLSOL_C* pnls, const char* filestub) {
 /// Substep: read solution.
 /// @param filename: complete file name,
 /// normally (stub).sol.
-int NLW2_ReadSolution(NLW2_NLSOL_C* pnls, const char* filename) {
+int NLW2_NLSOL_C_ReadSolution(NLW2_NLSOL_C* pnls, const char* filename) {
   return ((mp::NLSOL_C_Impl*)(pnls->p_nlsol_))
       ->ReadSolution(filename);
 }

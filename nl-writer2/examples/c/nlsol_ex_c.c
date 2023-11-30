@@ -44,10 +44,10 @@ int main(int argc, const char* const* argv) {
   NLW2_NLSOL_C nlsol = NLW2_MakeNLSOL_C(&feeder, &solhnd, &utils);
 
   // Solve
-  NLW2_SetSolver(&nlsol, solver);
-  NLW2_SetSolverOptions(&nlsol, sopts);
-  if (0==NLW2_Solve(&nlsol, stub)) {
-    printf("%s\n", NLW2_GetErrorMessage(&nlsol));
+  NLW2_NLSOL_C_SetSolver(&nlsol, solver);
+  NLW2_NLSOL_C_SetSolverOptions(&nlsol, sopts);
+  if (0==NLW2_NLSOL_C_Solve(&nlsol, stub)) {
+    printf("%s\n", NLW2_NLSOL_C_GetErrorMessage(&nlsol));
     exit(EXIT_FAILURE);
   }
   PrintSolution_C(&example, stub);

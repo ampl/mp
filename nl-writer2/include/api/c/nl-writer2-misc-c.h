@@ -42,12 +42,12 @@ typedef struct NLW2_NLUtils_C {
 
 } NLW2_NLUtils_C;
 
-/// Create a default NLUtils_C wrapper object.
+/// Create a default NLW2_NLUtils_C wrapper object.
 /// User application might change some methods
 /// and use the p_user_data_ pointer.
 NLW2_NLUtils_C NLW2_MakeNLUtils_C_Default(void);
 
-/// Destroy the NLUtils_C object created by the API
+/// Destroy the NLW2_NLUtils_C object created by the API
 void NLW2_DestroyNLUtils_C_Default(NLW2_NLUtils_C*);
 
 #ifdef __cplusplus

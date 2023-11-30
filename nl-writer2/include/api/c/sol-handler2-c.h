@@ -18,8 +18,11 @@ double NLW2_ReadSolVal(void* p_api_data);
 
 /// Suffix information
 typedef struct NLW2_SuffixInfo_C {
+  /// Suffix kind
   int kind_;
+  /// Name
   const char* name_;
+  /// Suffix table, if provided
   const char* table_;
 } NLW2_SuffixInfo_C;
 
@@ -171,10 +174,10 @@ typedef struct NLW2_SOLHandler2_C {
 
 } NLW2_SOLHandler2_C;
 
-/// Create an SOLHandler2_C with default methods
+/// Create an NLW2_SOLHandler2_C with default methods
 NLW2_SOLHandler2_C NLW2_MakeSOLHandler2_C_Default(void);
 
-/// Destroy an SOLHandler2_C
+/// Destroy an NLW2_SOLHandler2_C
 /// created with NLW2_Make...Default()
 void NLW2_DestroySOLHandler2_C_Default(NLW2_SOLHandler2_C* );
 

@@ -4,7 +4,7 @@
 // #include "api/c/nl-header.h"
 //#include "mp/nl-opcodes.h"        // When non-linearities
 
-/**
+/*
  * A linear model for NL Writer C API example.
  * Illustrates NL variable order (continuous -> integer),
  * linear constraints, var/con/obj names.
