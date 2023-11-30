@@ -406,7 +406,7 @@ protected:
   /// Can produce a new variable/expression and specified constraints on it.
   /// Produces a conditional linear/quadratic constraint
   /// b==1 <=/=> c'x [+ x'Qx] <=/= d.
-  /// @param comp_kind: < (-2), <= (-1), == (0)
+  /// @tparam comp_kind: < (-2), <= (-1), == (0)
   /// @param ea: array of 2 expressions (comparison arguments lhs, rhs)
   template <int comp_kind, class ExprArray=std::initializer_list<Expr> >
   EExpr VisitRelationalExpression(ExprArray ea) {

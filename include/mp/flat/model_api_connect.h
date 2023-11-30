@@ -15,10 +15,10 @@ namespace mp {
 /// Currently is uses mp::Problem as intermediate storage
 /// of the NL model.
 ///
-/// @param Backend: the Backend class
-/// @param ModelAPI: the ModelAPI class to be created and
+/// @tparam Backend: the Backend class
+/// @tparam ModelAPI: the ModelAPI class to be created and
 ///   used by the ModelManager
-/// @param FlatConverter: the FlatConverter to be used
+/// @tparam FlatConverter: the FlatConverter to be used
 ///
 /// @param gc: Backend object
 /// @param e: the MP environment
