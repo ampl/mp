@@ -40,3 +40,14 @@ Namespace fmt
    :members:
 
 
+C API
+-----------
+
+.. doxygenstruct:: NLW2_NLSOL_C
+   :members:
+
+.. doxygenstruct:: NLW2_NLFeeder2_C
+   :members:
+
+.. doxygenstruct:: NLW2_SOLHandler2_C
+   :members:
