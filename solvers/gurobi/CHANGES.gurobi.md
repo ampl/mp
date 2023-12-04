@@ -1,6 +1,16 @@
 Summary of recent updates to gurobi for AMPL
 ============================================
 
+## TBD
+- Updated to Gurobi 11
+  - Non-linear models are now by default solved using spatial 
+    branch-and-bound and outer approximation. To use this set
+    the option `pre:funcnonlinear` to 1 and the suffix funcnonlinear
+    to -1
+  - Added keywords `cut:mixingcuts`,  `alg:concurrentmethod` 
+    and `alg:solutiontarget`
+
+
 ## 20231117
 - Added option lim:work (worklimit).
 - MP update: fixed graceful exit on Ctrl-C from AMPL in Linux

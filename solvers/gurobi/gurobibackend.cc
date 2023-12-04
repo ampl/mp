@@ -819,6 +819,15 @@ void GurobiBackend::InputGurobiFuncApproxParams() {
                                  mv.GetConValues()(CG_General));
     }
   }
+  #ifdef GRB_INT_PAR_FUNCNONLINEAR
+  SetSolverOption(GRB_INT_PAR_FUNCNONLINEAR, funcnonlinear());
+  auto suf_mask = suf::Kind::CON_BIT | suf::Kind::OBJ_BIT; 
+  if (auto mv0 = ReadModelSuffixInt({ "funcnonlinear", suf_mask })) {
+    auto mv = GetValuePresolver().PresolveGenericInt(mv0);
+    const auto& fp_gen = mv.GetConValues()(CG_General);
+    auto i1 = GurobiSetFuncConAttributes(GRB_INT_ATTR_FUNCNONLINEAR, fp_gen);
+  }
+  #endif
 }
 
 void GurobiBackend::InputGurobiIISForceParams() {
@@ -1279,6 +1288,19 @@ static const mp::OptionValueInfo values_method[] = {
   { "4", "Deterministic concurrent", 4},
   { "5", "Deterministic concurrent simplex.", 5}
 };
+static const mp::OptionValueInfo values_concurrentmethod[] = {
+   { "-1", "Automatic (default)", -1},
+  { "0", "Barrier, dual, primal simplex", 0},
+  { "1", "Barrier and dual simplex", 1},
+  { "2", "Barrier and primal simplex", 2},
+  { "3", "Dual and primal simplex", 3}
+};
+
+static const mp::OptionValueInfo values_solutiontarget[] = {
+   { "-1", "Automatic (default)", -1},
+  { "0", "Primal and dual optimal and basic", 0},
+  { "1", "primal and dual optimal", 1},
+};
 
 static const mp::OptionValueInfo values_mipfocus[] = {
   { "0", "Balance finding good feasible solutions and "
@@ -1328,7 +1350,7 @@ static const mp::OptionValueInfo values_nodemethod[] = {
 };
 
 static const mp::OptionValueInfo values_nonconvex[] = {
-  { "-1", "Default choice (currently the same as 1)", -1},
+  { "-1", "Default choice (currently almost the same as 2)", -1},
   { "0", "Complain about nonquadratic terms", 0},
   { "1", "Complain if Gurobi's presolve cannot discard or "
     "eliminate nonquadratic terms", 1},
@@ -1348,6 +1370,10 @@ static const mp::OptionValueInfo values_predual[] = {
   { "1", "Yes", 1},
   { "2", "Form both primal and dual and use two threads to "
     "choose heuristically between them.", 2}
+};
+static const mp::OptionValueInfo values_funcnonlinear[] = {
+  {"0", "the constraints will be approximated via piecewise-linear approximation", 0},
+  { "1", "the constraints will be treated as non linear functions", 1}
 };
 
 static const mp::OptionValueInfo values_premiqcpform[] = {
@@ -1472,11 +1498,23 @@ void GurobiBackend::InitCustomOptions() {
     "Which algorithm to use for non-MIP problems or for the root node of MIP problems:\n"
     "\n.. value-table::\n", GRB_INT_PAR_METHOD, values_method, -1);
 
+#ifdef GRB_INT_PAR_CONCURRENTMETHOD // Gurobi 11.0
+  AddSolverOption("alg:concurrentmethod concurrentmethod",
+    "Controls the methods used by the concurrent continuous solver:\n"
+    "\n.. value-table::\n", GRB_INT_PAR_CONCURRENTMETHOD, values_concurrentmethod, -1);
+#endif
 #ifdef GRB_INT_PAR_NETWORKALG // Gurobi 10.0
   AddSolverOption("alg:networkalg networkalg",
     "Whether to use network simplex if an LP is a network problem:\n"
     "\n.. value-table::\n", GRB_INT_PAR_NETWORKALG, values_autonoyes_, -1);
 #endif
+
+#ifdef GRB_INT_PAR_SOLUTIONTARGET // Gurobi 11.0
+  AddSolverOption("alg:solutiontarget solutiontarget",
+    "Specifies the solution targetfor linear programs (LP):\n"
+    "\n.. value-table::\n", GRB_INT_PAR_SOLUTIONTARGET, values_solutiontarget, -1);
+#endif
+
 
   AddSolverOption("alg:feasrelaxbigm feasrelaxbigm",
                   "Value of \"big-M\" sometimes used with constraints when doing "
@@ -1622,8 +1660,9 @@ void GurobiBackend::InitCustomOptions() {
   AddSolverOption("cut:zerohalf zerohalfcuts",
     "Zero-half cuts: overrides \"cuts\"; choices as for \"cuts\".",
     GRB_INT_PAR_ZEROHALFCUTS, PrmCutsMin, PrmCutsMax);
-
-
+  AddSolverOption("cut:mixingcuts",
+    "Mixing cuts: overrides \"cuts\" \n" "\n.. value-table::\n",
+    GRB_INT_PAR_MIXINGCUTS, values_cuts_upto2, -1);
 
 
   AddSolverOption("lim:iter iterlim iterlimit",
@@ -1659,13 +1698,11 @@ void GurobiBackend::InitCustomOptions() {
   AddSolverOption("lim:time timelim timelimit",
       "Limit on solve time (in seconds; default: no limit).",
       GRB_DBL_PAR_TIMELIMIT, 0.0, DBL_MAX);
-
   AddSolverOption("lim:work worklim worklimit",
-                  "Limit on work units. "
-                  "Roughly corresponds to seconds per thread "
-                  "but deterministic. Default: no limit).",
-                  GRB_DBL_PAR_WORKLIMIT, 0.0, DBL_MAX);
-
+    "Limit on work units. "
+    "Roughly corresponds to seconds per thread "
+    "but deterministic. Default: no limit).",
+    GRB_DBL_PAR_WORKLIMIT, 0.0, DBL_MAX);
   AddSolverOption("lim:zeroobjnodes zeroobjnodes",
     "Number of nodes to explore in the zero objective heuristic. "
     "Note that this heuristic is only applied at the end of the "
@@ -2025,6 +2062,10 @@ void GurobiBackend::InitCustomOptions() {
         "\n.. value-table::\n",
     GRB_INT_PAR_DUALREDUCTIONS, values_01_noyes_1default_, 1);
 
+  AddStoredOption("pre:funcnonlinear funcnonlinear",
+    "This attribute controls how general functions with their funcnonlinear "
+    "suffix set to -1 are treated:\n" "\n..value - table::\n",
+    storedOptions_.fFuncNonlinear_, values_funcnonlinear);
 
   AddSolverOption("pre:funcpieceerror funcpieceerror",
       "For 'funcpieces=-1' or -2, this "
@@ -2392,6 +2433,22 @@ void GurobiBackend::InitCustomOptions() {
       "Note that distributed tuning is most effective when the worker "
       "machines have similar performance.",
           GRB_INT_PAR_TUNEJOBS, 0, GRB_MAXINT);
+
+  AddSolverOption("tech:tunedynamicjobs pool_tunedynamicjobs tunedynamicjobs",
+    "Enables distributed parallel tuning, which can significantly "
+    " increase the performance of the tuning tool. A value of n causes the "
+    "tuning tool to use a dynamic set of up to n workers in parallel. "
+    "A value of -1 allows the solver to use an unlimited number of workers. "
+    "Default = 0.",
+    GRB_INT_PAR_TUNEDYNAMICJOBS, 0, GRB_MAXINT);
+
+#ifdef GRB_INT_PAR_TUNEUSEFILENAME
+  AddSolverOption("tech:tuneusefilename tuneusefilename ",
+    "Wether to use the model file name (1) o the model contents (0, default) when "
+    "displaying progress while tuning.",
+    GRB_INT_PAR_TUNEUSEFILENAME, 0,1 );
+#endif
+
   AddSolverOption("tech:tuneoutput tuneoutput",
       "Amount of tuning output when tunebase is specified:\n"
                         "\n.. value-table::\n",

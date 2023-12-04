@@ -281,6 +281,7 @@ private:
     int nFixedMethod_=-2;
 
     int fFuncPieceSuf_ = 1;
+    int fFuncNonlinear_ = 0;
     int nIISForce_ = 1;
 
     std::string cloudid_, cloudkey_, cloudpool_;
@@ -301,6 +302,7 @@ protected:  //////////// Option accessors ////////////////
   const std::string& paramfile_write() const { return storedOptions_.paramWrite_; }
 
   int funcpiecesuf() const { return storedOptions_.fFuncPieceSuf_; }
+  int funcnonlinear() const { return storedOptions_.fFuncNonlinear_; }
   int iisforce() const { return storedOptions_.nIISForce_; }
 
   const std::string& cloudid() const { return storedOptions_.cloudid_; }
