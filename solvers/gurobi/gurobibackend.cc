@@ -820,12 +820,13 @@ void GurobiBackend::InputGurobiFuncApproxParams() {
     }
   }
   #ifdef GRB_INT_PAR_FUNCNONLINEAR
-  SetSolverOption(GRB_INT_PAR_FUNCNONLINEAR, funcnonlinear());
+  if (funcnonlinear()>=0)   // not -1 ==> change default
+    SetSolverOption(GRB_INT_PAR_FUNCNONLINEAR, funcnonlinear());
   auto suf_mask = suf::Kind::CON_BIT | suf::Kind::OBJ_BIT; 
   if (auto mv0 = ReadModelSuffixInt({ "funcnonlinear", suf_mask })) {
     auto mv = GetValuePresolver().PresolveGenericInt(mv0);
     const auto& fp_gen = mv.GetConValues()(CG_General);
-    auto i1 = GurobiSetFuncConAttributes(GRB_INT_ATTR_FUNCNONLINEAR, fp_gen);
+    GurobiSetFuncConAttributes(GRB_INT_ATTR_FUNCNONLINEAR, fp_gen);
   }
   #endif
 }
@@ -873,6 +874,10 @@ void GurobiBackend::InputGurobiIISForceParams() {
   }
 }
 
+/// Gurobi accepts function constraint attributes
+/// only for functional general constraints.
+/// @return first functional constraint's index
+/// in the list of general constraints.
 template <class T>
 int GurobiBackend::GurobiSetFuncConAttributes(
     const char* attr, const std::vector<T> vals) {
@@ -1372,8 +1377,9 @@ static const mp::OptionValueInfo values_predual[] = {
     "choose heuristically between them.", 2}
 };
 static const mp::OptionValueInfo values_funcnonlinear[] = {
-  {"0", "the constraints will be approximated via piecewise-linear approximation", 0},
-  { "1", "the constraints will be treated as non linear functions", 1}
+  {"-1", "Default (Gurobi 11: piecewise-linear approximation)", -1},
+  {"0", "Piecewise-linear approximation", 0},
+  { "1", "Treated as nonlinear functions", 1}
 };
 
 static const mp::OptionValueInfo values_premiqcpform[] = {
@@ -2063,8 +2069,9 @@ void GurobiBackend::InitCustomOptions() {
     GRB_INT_PAR_DUALREDUCTIONS, values_01_noyes_1default_, 1);
 
   AddStoredOption("pre:funcnonlinear funcnonlinear",
-    "This attribute controls how general functions with their funcnonlinear "
-    "suffix set to -1 are treated:\n" "\n..value - table::\n",
+    "This attribute controls how general functions "
+    "with their constraint's or objective's .funcnonlinear "
+    "suffix set to -1 are treated:\n" "\n.. value-table::\n",
     storedOptions_.fFuncNonlinear_, values_funcnonlinear);
 
   AddSolverOption("pre:funcpieceerror funcpieceerror",
@@ -2444,7 +2451,8 @@ void GurobiBackend::InitCustomOptions() {
 
 #ifdef GRB_INT_PAR_TUNEUSEFILENAME
   AddSolverOption("tech:tuneusefilename tuneusefilename ",
-    "Wether to use the model file name (1) o the model contents (0, default) when "
+    "Whether to use the model file name (1) "
+    "or the model contents (0, default) when "
     "displaying progress while tuning.",
     GRB_INT_PAR_TUNEUSEFILENAME, 0,1 );
 #endif

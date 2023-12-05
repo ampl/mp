@@ -281,7 +281,7 @@ private:
     int nFixedMethod_=-2;
 
     int fFuncPieceSuf_ = 1;
-    int fFuncNonlinear_ = 0;
+    int fFuncNonlinear_ = -1;
     int nIISForce_ = 1;
 
     std::string cloudid_, cloudkey_, cloudpool_;
