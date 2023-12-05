@@ -118,7 +118,8 @@ std::string VisitorBackend::GetSolverVersion() {
 
 
 bool VisitorBackend::IsMIP() const {
-  // TODO
+  // TODO. Use most precise information
+  // (nonconvexities etc.)
   return getIntAttr(Solver::VARS_INT) > 0;
   //return getIntAttr(VISITOR_INTATTR_ISMIP);
 }
@@ -246,6 +247,11 @@ void VisitorBackend::AddVISITORMessages() {
 
 std::pair<int, std::string> VisitorBackend::ConvertVISITORStatus() {
   namespace sol = mp::sol;
+  /*
+   * TODO.
+     * Keep relevant result codes added
+     * in AddOptions() via AddSolveResults().
+     */
   if (IsMIP())
   {
     /*
@@ -353,6 +359,31 @@ void VisitorBackend::InitCustomOptions() {
       "Multi-valued option when repeated.",
       storedOptions_.list_option_);
 
+  ////////////////// CUSTOM RESULT CODES ///////////////////
+  AddSolveResults( {
+                     { sol::SOLVED, "optimal solution" },
+                     { sol::UNCERTAIN, "suboptimal" },
+                   },
+                   true );   // Can replace some major codes
+  AddSolveResults( {
+                     { sol::LIMIT+1, "iteration limit, feasible solution" },
+                     { sol::LIMIT+11, "iteration limit, without a feasible soluton" },
+                     { sol::LIMIT+2, "node limit, feasible solution" },
+                     { sol::LIMIT+12, "node limit, without a feasible soluton" },
+                     { sol::LIMIT+3, "time limit, feasible solution" },
+                     { sol::LIMIT+13, "time limit, without a feasible solution" },
+                     { sol::LIMIT+4, "solution limit" },
+                     { sol::LIMIT+5, "interrupted, feasible solution" },
+                     { sol::LIMIT+15, "interrupted, without a feasible solution" },
+                     { sol::LIMIT+6, "work limit, feasible solution" },
+                     { sol::LIMIT+16, "work limit, without a feasible solution" },
+                     { sol::LIMIT+7, "soft memory limit, feasible solution" },
+                     { sol::LIMIT+17, "soft memory limit, without a feasible solution" },
+                     { sol::UNCERTAIN+3,
+                       "bestobjstop or bestbndstop reached, feasible solution" },
+                     { sol::UNCERTAIN+4,
+                       "bestobjstop or bestbndstop reached, without a feasible solution" }
+                   } );     // No replacement, make sure they are new
 }
 
 

@@ -972,6 +972,10 @@ public:
 
 
 private:
+  std::string solchkfailtext_ {
+    "Fail on solution checking violations, with solve result "
+    + std::to_string(SOL_CHECK_FAIL_CODE) + '.'
+  };
   void InitOwnOptions() {
     /// Should be called after adding all constraint keepers
     FlatModel::ConsiderAcceptanceOptions(*this, GetModelAPI(), GetEnv());
@@ -1067,7 +1071,7 @@ private:
                        "whenever solver reports them.",
                        options_.solcheckinfeas_, false, true);
     GetEnv().AddOption("sol:chk:fail chk:fail checkfail",
-                       "Fail on solution checking violations.",
+                       solchkfailtext_.c_str(),
                        options_.solcheckfail_, false, true);
     GetEnv().AddOption("sol:chk:round chk:round chk:rnd",
         "AMPL solution_round option when checking: "
@@ -1078,6 +1082,11 @@ private:
         "AMPL solution_precision option when checking: "
                        "number of significant digits.",
                        options_.sol_prec_, -1000, 1000);
+
+    ////////////////////// Solve result codes ////////////////////////
+    GetEnv().AddSolveResults({
+                               {SOL_CHECK_FAIL_CODE, "Solution check failure"}
+                             });
   }
 
 

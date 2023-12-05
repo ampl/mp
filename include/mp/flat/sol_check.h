@@ -6,17 +6,19 @@
 
 #include "mp/flat/constr_std.h"
 #include "mp/flat/constr_keeper.h"
+#include "mp/common.h"
 #include "mp/valcvt.h"
 
 namespace mp {
+
+/// Solve result when failing with sol:chk:fail.
+const int SOL_CHECK_FAIL_CODE = sol::NUMERIC + 20;
 
 /// A mix-in base class
 /// for solution checking.
 template <class Impl>
 class SolutionChecker {
 public:
-
-
   /// Check unpostsolved solution
   /// in various ways.
   /// @param p_extra: !=0 means known infeas solution
@@ -136,7 +138,7 @@ public:
     // For now, do this via warnings?
     if (chk.HasAnyViols()) {
       if (MPCD( sol_check_fail() ))
-        MP_RAISE_WITH_CODE(520,    // numeric error
+        MP_RAISE_WITH_CODE(SOL_CHECK_FAIL_CODE,   // numeric error
                            chk.GetReport());
       else
         MPD( AddWarning(

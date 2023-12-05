@@ -88,7 +88,8 @@ struct Deleter {
   void operator()(mp::SolverOption* p) const { delete p; }
 };
 
-// A reStructuredText (RST) formatter.
+
+/// A reStructuredText (RST) formatter.
 class RSTFormatter : public rst::ContentHandler {
  private:
   fmt::Writer &writer_;
@@ -293,6 +294,8 @@ SolverAppOptionParser::SolverAppOptionParser(BasicSolver &s)
         '=', "show solver options and exit");
   app_options.Add<&SolverAppOptionParser::ShowSolverOptionsASL>(
     'a', "show solver options (ASL style, 1st synonyms if provided) and exit");
+  app_options.Add<&SolverAppOptionParser::ShowSolveResults>(
+    '!', "show solve result codes");
   app_options.Add<&SolverAppOptionParser::DontEchoSolverOptions>(
         'e', "suppress echoing of assignments");
   app_options.Add<&SolverAppOptionParser::WantSol>(
@@ -390,6 +393,14 @@ bool SolverAppOptionParser::ShowSolverOptions(const char* param) {
     writer << '\n';
     i->format_description(writer, DESC_INDENT);
     solver_.Print("{}", fmt::StringRef(writer.data(), writer.size()));
+  }
+  return false;
+}
+
+bool SolverAppOptionParser::ShowSolveResults() {
+  solver_.Print("Solve result table for {}\n", solver_.long_name());
+  for (const auto& sr: solver_.GetSolveResultRegistry()) {
+    solver_.Print("\t{}\t{}\n", sr.first, sr.second);
   }
   return false;
 }
@@ -672,6 +683,35 @@ static void ProcessLines_AvoidComments(std::istream& stream,
         processor(line.c_str()+(itfirstns-line.begin()));
       }
     }
+  }
+}
+
+SolveResultRegistry::SolveResultRegistry()
+  : registry_ {
+{   // Adding standard solver codes a priori
+{ sol::SOLVED,
+      "An optimal solution found for an optimization problem "
+      "or a feasible solution found for a satisfaction problem" },
+{ sol::UNCERTAIN,
+      "Solution returned but it can be non-optimal or even infeasible" },
+{ sol::INFEASIBLE, "Problem is infeasible" },
+{ sol::UNBOUNDED, "Problem is unbounded" },
+{ sol::INF_OR_UNB, "Problem is infeasible or unbounded" },
+{ sol::LIMIT, "Stopped by a limit, e.g., on iterations or time" },
+{ sol::FAILURE, "A solver error" },
+{ sol::NUMERIC, "A numeric issue" },
+{ sol::INTERRUPTED, "Interrupted by the user" }
+}
+} { }
+
+void SolveResultRegistry::AddSolveResults(
+    const SRRegMap &sm, bool ifCanReplace) {
+  for (const auto& sr : sm) {
+    if (!ifCanReplace  // Fail unless ifCanReplace
+        && registry_.end()!=registry_.find(sr.first))
+      MP_RAISE(fmt::format(
+                 "Duplicated solve code {}", sr.first));
+    registry_[sr.first] = sr.second;
   }
 }
 

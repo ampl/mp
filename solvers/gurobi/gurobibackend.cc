@@ -1129,6 +1129,7 @@ void GurobiBackend::SetPartitionValues() {
 //////////////////////////////////////////////////////////////////////
 ////////////////////////// Solution Status ///////////////////////////
 //////////////////////////////////////////////////////////////////////
+/// TODO Keep result code registry in AddOptons() up2date.
 std::pair<int, std::string> GurobiBackend::ConvertGurobiStatus() const {
   namespace sol = mp::sol;
   int optimstatus;
@@ -2503,6 +2504,44 @@ void GurobiBackend::InitCustomOptions() {
     "solving it. This file name can have extension ``.lp``, ``.mps``, etc. "
     "Default = \"\" (don't export the model).",
     storedOptions_.exportPresolvedFile_);
+
+
+  /////////////////////// Gurobi custom solve results /////////////////////////
+
+  AddSolveResults({
+                    { sol::SOLVED, "optimal solution" },
+                    { sol::UNCERTAIN, "suboptimal" },
+                    { sol::LIMIT, "objective cutoff" }
+                  },
+                  true);        // Replace main codes
+  AddSolveResults({
+                    { sol::LIMIT+1, "iteration limit, feasible solution" },
+                    { sol::LIMIT+11, "iteration limit, without a feasible soluton" },
+                    { sol::LIMIT+2, "node limit, feasible solution" },
+                    { sol::LIMIT+12, "node limit, without a feasible soluton" },
+                    { sol::LIMIT+3, "time limit, feasible solution" },
+                    { sol::LIMIT+13, "time limit, without a feasible solution" },
+                    { sol::LIMIT+4, "solution limit" },
+                    { sol::LIMIT+5, "interrupted, feasible solution" },
+                    { sol::LIMIT+15, "interrupted, without a feasible solution" },
+                    { sol::LIMIT+6, "work limit, feasible solution" },
+                    { sol::LIMIT+16, "work limit, without a feasible solution" },
+                  #ifdef GRB_MEM_LIMIT
+                    { sol::LIMIT+7, "soft memory limit, feasible solution" },
+                    { sol::LIMIT+17, "soft memory limit, without a feasible solution" },
+                  #endif  // GRB_MEM_LIMIT
+                    { sol::UNCERTAIN+3,
+                      "bestobjstop or bestbndstop reached, feasible solution" },
+                    { sol::UNCERTAIN+4,
+                      "bestobjstop or bestbndstop reached, without a feasible solution" }
+                  });
+  AddSolveResults({
+                    { 601, "Could not talk to Gurobi Instant Cloud or Gurobi Server." },
+                    { 602, "Job rejected by Gurobi Instant Cloud or Gurobi Server." },
+                    { 603, "No license for specified Gurobi Instant Cloud or Gurobi Server." },
+                    { 605, "Bad value for cloudid or cloudkey, or Gurobi Cloud out of reach." },
+                    { 604, "Surprise failure while starting the cloud/server environment." }
+                  });
 }
 
 void GurobiBackend::GrbSetObjIntParam(const SolverOption& opt, int val) {

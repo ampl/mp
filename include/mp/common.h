@@ -135,9 +135,15 @@ enum {
 }
 
 namespace sol {
-/** Solution status. */
-enum Status {
 
+/**
+ *  Solution status.
+ */
+enum Status {
+  // Keep the status registry up2date
+  // via Solver::AddSolveResults().
+
+  /** If not touched. */
   NOT_SET = -200,
 
   /** Unknown status. */

@@ -97,6 +97,30 @@ class Interrupter {
 class ASLProblem;
 
 
+/// Solve result registry
+class SolveResultRegistry {
+public:
+  /// Construct
+  SolveResultRegistry();
+  /// Destroy
+  virtual ~SolveResultRegistry() { }
+
+  /// Registry map
+  using SRRegMap = std::map<int, std::string>;
+
+  /// Add a map with result descriptions
+  void AddSolveResults(const SRRegMap& sm,
+                       bool ifCanReplace = false);
+
+  /// Get the registry
+  const SRRegMap& GetSolveResultRegistry() const
+  { return registry_; }
+
+private:
+  SRRegMap registry_;
+};
+
+
 /**
   A minimal set of standard features for AMPL solver logic.
 
@@ -128,7 +152,7 @@ class ASLProblem;
   */
 class BasicSolver : private ErrorHandler,
     private OutputHandler, private Interrupter,
-    public SolverOptionManager {
+    public SolverOptionManager, public SolveResultRegistry {
 public:
   /// Name of the file with option settings,
   /// provided by tech:optionfile

@@ -365,13 +365,14 @@ std::string XpressmpBackend::DoXpressFixedModel()
       case XPRS_MIP_OPTIMAL:
         return { sol::SOLVED, "optimal solution" };
       case XPRS_MIP_SOLUTION:
-        return { sol::SOLVED, "feasible solution" };
-      case XPRS_MIP_NO_SOL_FOUND:
+        return { sol::UNCERTAIN, "feasible solution" };
       case XPRS_MIP_INFEAS:
         return { sol::INFEASIBLE, "infeasible problem" };
       case XPRS_MIP_UNBOUNDED:
         return { sol::INF_OR_UNB, "infeasible or unbounded problem" };
       case XPRS_MIP_LP_NOT_OPTIMAL:
+      case XPRS_MIP_NO_SOL_FOUND:
+      case XPRS_MIP_LP_OPTIMAL:
         return { sol::INTERRUPTED, "interrupted" };
       }
     }
@@ -384,6 +385,10 @@ std::string XpressmpBackend::DoXpressFixedModel()
         return { sol::INFEASIBLE, "infeasible problem" };
       case XPRS_LP_UNBOUNDED:
         return { sol::UNBOUNDED, "unbounded problem" };
+      case XPRS_LP_CUTOFF:
+        return { sol::LIMIT, "objective cutoff" };
+      case XPRS_LP_CUTOFF_IN_DUAL:
+        return { sol::LIMIT+20, "objective cutoff in dual" };
       case XPRS_LP_UNFINISHED:
         return { sol::INTERRUPTED, "interrupted" };
       case XPRS_LP_UNSTARTED:

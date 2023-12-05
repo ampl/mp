@@ -37,6 +37,7 @@ class SolverAppOptionParser {
   bool ShowSolverOptions(const char*);
   bool ShowSolverOptionsASL();
 
+  bool ShowSolveResults();
 
   bool WantSol() {
     solver_.set_wantsol(1);

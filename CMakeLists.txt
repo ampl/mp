@@ -366,7 +366,8 @@ add_prefix(MP_FLAT_HEADERS include/mp/flat/
   expr_bounds.h
   model_api_base.h model_api_connect.h
   model_info.h model_info.hpp
-  obj_std.h preprocess.h problem_flattener.h)
+  obj_std.h preprocess.h problem_flattener.h
+  sol_check.h)
 
 add_prefix(MP_FLAT_REDEF_HEADERS include/mp/flat/redef/
   encodings.h redef_base.h)
