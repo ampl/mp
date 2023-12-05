@@ -184,6 +184,23 @@
   {
     "name" : "tan_01",
     "tags" : ["continuous", "nonlinear"],
+    "comment": "Gurobi 11.0.0 does not obey relative error",
+    "options": {
+      "gurobi_options": "funcpieces=-1 funcpieceerror=1e-4"
+    },
+    "values": {
+      "if abs(y-tan(x))<=1e-1 then 1 else 0": 1,
+      "if abs(x+4.0950434673490523)<=1e-1 then 1 else 0": 1,
+      "if abs(_obj[1]+0.6388867014)<=0.1 then 1 else 0": 1
+    }
+  },
+  {
+    "name" : "tan_01 funcnonlinear",
+    "tags" : ["continuous", "nonlinear"],
+    "comment": "Gurobi 11.0.0 does not obey relative error",
+    "options": {
+      "gurobi_options": "funcnonlinear=1"
+    },
     "values": {
       "if abs(y-tan(x))<=1e-1 then 1 else 0": 1,
       "if abs(x+4.0950434673490523)<=1e-1 then 1 else 0": 1,
@@ -268,6 +285,10 @@
   {
     "name" : "sinh_01",
     "tags" : ["continuous", "nonlinear"],
+    "comment": "Gurobi 11.0.0 mispresolves the PL function.",
+    "options": {
+      "gurobi_options": "presolve=0"
+    },
     "values": {
       "if abs(y-sinh(x))<=1e-2 then 1 else 0": 1,
       "if abs(_obj[1]-6.88087328277653)<=0.01 then 1 else 0": 1

@@ -54,10 +54,12 @@
   {
     "name" : "socp_09_rsoc_hyperb_eoq",
     "tags" : ["socp"],
+    "options": {
+      "gurobi_options": "numericfocus=3"
+    },
     "values": {
       "x": 3651.48
-    },
-    "comment": "Obj values are strangely different among solvers..."
+    }
   },
   {
     "name" : "expcones_01__plain",
