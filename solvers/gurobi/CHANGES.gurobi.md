@@ -1,7 +1,7 @@
 Summary of recent updates to gurobi for AMPL
 ============================================
 
-## TBD
+## 20230612
 - Updated to Gurobi 11
   - Non-linear models are now by default solved using spatial 
     branch-and-bound and outer approximation. To use this set
