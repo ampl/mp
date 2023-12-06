@@ -115,12 +115,9 @@ endif()
 ##################################################################
 # Export library include path
 set(NLW2_INCLUDE_PATH ${NLW2_INCLUDE_PATH} PARENT_SCOPE)
-# Export source files
+# Export source files, e.g., for docu
 set(NLW2_SRC
-  ${NLW2_LIB_FILES} ${NLW2_INC_FILES} ${NLSOL_CPP_EX_FILES}
-  ${NLW2_C_API_LIB_FILES} ${NLW2_C_API_INC_FILES}
-    ${NLSOL_C_EX_FILES}
-  PARENT_SCOPE)
+  ${NLW2_INC_FILES} ${NLW2_C_API_INC_FILES} PARENT_SCOPE)
 # Export library target names
 set(NLW2_LIB_NAME ${NLW2_LIB_NAME} PARENT_SCOPE)
 set(NLW2_C_API_LIB_NAME ${NLW2_C_API_LIB_NAME} PARENT_SCOPE)

@@ -75,7 +75,7 @@ namespace mp {
     `~mp::NLFeeder2` can be used as a base class for other feeders
     (see `ExampleNLFeeder2`),
     or just be an interface prototype. Also subclassed
-    in the C API implementation class `~mp::NLFeeder2_C_Impl`.
+    in the C API implementation class `~mp::NLW2_NLFeeder2_C_Impl`.
 
     @param: *Impl* is a type derived from `~mp::NLFeeder2`.
 

@@ -25,7 +25,8 @@ extern "C" {
 /// To create / destroy,
 /// use NLW2_MakeNLSOL_C() / NLW2_DestroyNLSOL_C().
 ///
-/// To manipulate, use NLW2_SetSolver(), NLW2_SetSolverOptions(),
+/// To manipulate, use NLW2_NLSOL_C_SetSolver(),
+/// NLW2_NLSOL_C_SetSolverOptions(),
 /// etc, see the below API.
 ///
 /// @see the C API example.
@@ -70,7 +71,7 @@ int NLW2_NLSOL_C_InvokeSolver(NLW2_NLSOL_C* , const char* filestub);
 
 /// Substep: read solution.
 /// @param filename: complete file name,
-/// normally (stub).sol.
+///   normally (stub).sol.
 /// @return true if all ok.
 int NLW2_NLSOL_C_ReadSolution(NLW2_NLSOL_C* , const char* filename);
 
