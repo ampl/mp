@@ -3,10 +3,10 @@ Summary of recent updates to gurobi for AMPL
 
 ## 20230612
 - Updated to Gurobi 11
-  - Non-linear models are now by default solved using spatial 
-    branch-and-bound and outer approximation. To use this set
-    the option `pre:funcnonlinear` to 1 and the suffix funcnonlinear
-    to -1
+  - Non-linear models can now be solved using spatial 
+    branch-and-bound and outer approximation instead of piecewise
+    linearizattion. To use this set the option `pre:funcnonlinear` 
+    to 1 and the suffix `funcnonlinear` to -1
   - Added keywords `cut:mixingcuts`,  `alg:concurrentmethod` 
     and `alg:solutiontarget`
 
