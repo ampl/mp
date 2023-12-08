@@ -11,9 +11,6 @@
 
 namespace mp {
 
-/// Solve result when failing with sol:chk:fail.
-const int SOL_CHECK_FAIL_CODE = sol::NUMERIC + 20;
-
 /// A mix-in base class
 /// for solution checking.
 template <class Impl>
@@ -138,7 +135,7 @@ public:
     // For now, do this via warnings?
     if (chk.HasAnyViols()) {
       if (MPCD( sol_check_fail() ))
-        MP_RAISE_WITH_CODE(SOL_CHECK_FAIL_CODE,   // numeric error
+        MP_RAISE_WITH_CODE(int(sol::SOLUTION_CHECK),   // failure
                            chk.GetReport());
       else
         MPD( AddWarning(
