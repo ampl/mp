@@ -30,7 +30,7 @@ void QuadTerms::sort_terms()  {
     return a<b ? std::pair<int, int>(a, b) : std::pair<int, int>(b, a);
   };
   std::map<std::pair<int, int>, double> var_coef_map;
-  for (size_t i=0; i<size(); ++i)
+  for (int i=0; i<size(); ++i)
     if (0.0!=std::fabs(coefs_[i]))
       var_coef_map[sort_pair(vars1_[i], vars2_[i])] += coefs_[i];
   if (true) {

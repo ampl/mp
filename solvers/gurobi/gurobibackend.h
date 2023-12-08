@@ -211,7 +211,7 @@ protected:
   /// @return the index of the first used value (-1 if none)
   template <class T>
   int GurobiSetFuncConAttributes(
-      const char* attr, const std::vector<T> vals);
+      const char* attr, const std::vector<T>& vals);
   void DoGurobiFeasRelax();
 
   void ExportFile(GRBmodel* lp, const std::string& file);
@@ -266,6 +266,12 @@ protected:
   int BarrierIterations() const;
 
 
+protected:  //  ///////////////// Utilities ///////////////////
+  /// Swap 0 with -1.
+  /// Usefule to convert option / suffix values, where we interpret
+  /// them differently, as for IISForce and FuncNonLinear.
+    void Swap_0_vs_minus1(std::vector<int>& arr);
+
 private:
   /// Fixed model to produce duals for MIP if requested
   GRBmodel *model_fixed_ = nullptr;
@@ -281,7 +287,7 @@ private:
     int nFixedMethod_=-2;
 
     int fFuncPieceSuf_ = 1;
-    int fFuncNonlinear_ = -1;
+    int fFuncNonlinear_ = 0;
     int nIISForce_ = 1;
 
     std::string cloudid_, cloudkey_, cloudpool_;
