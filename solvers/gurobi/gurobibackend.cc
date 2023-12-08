@@ -764,6 +764,23 @@ int GurobiBackend::BarrierIterations() const {
   bool f;
   return GrbGetIntAttr(GRB_INT_ATTR_BARITERCOUNT, &f);
 }
+
+
+void GurobiBackend::Swap_0_vs_minus1(std::vector<int>& arr) {
+  for (auto& v: arr)
+    switch (v) {
+    case -1:
+      v = 0;
+      break;
+    case 0:
+      v = -1;
+      break;
+    default:
+      break;
+    }
+}
+
+
 void GurobiBackend::DoWriteProblem(const std::string& name) {
   ExportFile(model(), name);
 }
@@ -820,35 +837,54 @@ void GurobiBackend::InputGurobiFuncApproxParams() {
     }
   }
   #ifdef GRB_INT_PAR_FUNCNONLINEAR
-  if (funcnonlinear()>=0)   // not -1 ==> change default
-    SetSolverOption(GRB_INT_PAR_FUNCNONLINEAR, funcnonlinear());
-  auto suf_mask = suf::Kind::CON_BIT | suf::Kind::OBJ_BIT; 
+  if (funcnonlinear() != 0)   // not 0 ==> change default
+    SetSolverOption(GRB_INT_PAR_FUNCNONLINEAR,
+                    // Convert to Gurobi scheme: swap 0 with -1
+                    funcnonlinear() > 0 ? 1 : 0);
+  auto suf_mask = suf::Kind::CON_BIT | suf::Kind::OBJ_BIT;
+  std::vector<int> suf_global;
   if (auto mv0 = ReadModelSuffixInt({ "funcnonlinear", suf_mask })) {
     auto mv = GetValuePresolver().PresolveGenericInt(mv0);
-    const auto& fp_gen = mv.GetConValues()(CG_General);
-    GurobiSetFuncConAttributes(GRB_INT_ATTR_FUNCNONLINEAR, fp_gen);
+    suf_global = mv.GetConValues()(CG_General);
+  } else if (auto mv0 = ReadModelSuffixInt({ "global", suf_mask })) {
+    auto mv = GetValuePresolver().PresolveGenericInt(mv0);
+    suf_global = mv.GetConValues()(CG_General);
+  }
+  if (suf_global.size()) {
+    Swap_0_vs_minus1(suf_global);
+    GurobiSetFuncConAttributes(GRB_INT_ATTR_FUNCNONLINEAR, suf_global);
   }
   #endif
 }
 
 void GurobiBackend::InputGurobiIISForceParams() {
   if (iisforce()) {
-    /// For each suffix, could have a mechanism
-    /// to avoid checking flattened constraints and
-    /// aux variables arising (only) from objectives.
+    // For each suffix, could have a mechanism
+    // to avoid checking flattened constraints and
+    // aux variables arising (only) from objectives. Why?
 
-    /// IISForce: from constraints and objectives
+    // IISForce: from constraints and objectives.
+    // Convert from our scheme (0: default, -1: no) to Gurobi's.
+    std::vector<int> iisf;
     if (auto mv0 = ReadModelSuffixInt(
         {"iisforce", suf::Kind::CON_BIT | suf::Kind::OBJ_BIT } )) {
       auto mv = GetValuePresolver().PresolveGenericInt( mv0 );
-      if (ArrayRef<int> iisf = mv.GetConValues()(CG_Linear))
+      if (iisf = mv.GetConValues()(CG_Linear), iisf.size()) {
+        Swap_0_vs_minus1(iisf);
         GrbSetIntAttrArray(GRB_INT_ATTR_IIS_CONSTRFORCE, iisf);
-      if (ArrayRef<int> iisf = mv.GetConValues()(CG_Quadratic))
+      }
+      if (iisf = mv.GetConValues()(CG_Quadratic), iisf.size()) {
+        Swap_0_vs_minus1(iisf);
         GrbSetIntAttrArray(GRB_INT_ATTR_IIS_QCONSTRFORCE, iisf);
-      if (ArrayRef<int> iisf = mv.GetConValues()(CG_SOS))
+      }
+      if (iisf = mv.GetConValues()(CG_SOS), iisf.size()) {
+        Swap_0_vs_minus1(iisf);
         GrbSetIntAttrArray(GRB_INT_ATTR_IIS_SOSFORCE, iisf);
-      if (ArrayRef<int> iisf = mv.GetConValues()(CG_General))
+      }
+      if (iisf = mv.GetConValues()(CG_General), iisf.size()) {
+        Swap_0_vs_minus1(iisf);
         GrbSetIntAttrArray(GRB_INT_ATTR_IIS_GENCONSTRFORCE, iisf);
+      }
     }
     /// IIS(LB/UB)Force: from vars, cons, and objectives (but only passed into vars)
     auto mv0lb = ReadModelSuffixInt( {
@@ -863,13 +899,17 @@ void GurobiBackend::InputGurobiIISForceParams() {
     std::swap(mv0lb.GetConValues()(), mv0ub.GetConValues()());
     if (mv0lb) {
       auto mv = GetValuePresolver().PresolveGenericInt( mv0lb );
-      if (ArrayRef<int> iisf = mv.GetVarValues()())
+      if (iisf = mv.GetVarValues()(), iisf.size()) {
+        Swap_0_vs_minus1(iisf);
         GrbSetIntAttrArray(GRB_INT_ATTR_IIS_LBFORCE, iisf);
+      }
     }
     if (mv0ub) {
       auto mv = GetValuePresolver().PresolveGenericInt( mv0ub );
-      if (ArrayRef<int> iisf = mv.GetVarValues()())
+      if (iisf = mv.GetVarValues()(), iisf.size()) {
+        Swap_0_vs_minus1(iisf);
         GrbSetIntAttrArray(GRB_INT_ATTR_IIS_UBFORCE, iisf);
+      }
     }
   }
 }
@@ -880,7 +920,7 @@ void GurobiBackend::InputGurobiIISForceParams() {
 /// in the list of general constraints.
 template <class T>
 int GurobiBackend::GurobiSetFuncConAttributes(
-    const char* attr, const std::vector<T> vals) {
+    const char* attr, const std::vector<T>& vals) {
   int i_first = -1;
   for (int i=0; i<(int)vals.size(); ++i) {
     int con_type=GrbGetAttrElement<int>(GRB_INT_ATTR_GENCONSTRTYPE, i);
@@ -1378,8 +1418,8 @@ static const mp::OptionValueInfo values_predual[] = {
     "choose heuristically between them.", 2}
 };
 static const mp::OptionValueInfo values_funcnonlinear[] = {
-  {"-1", "Default (Gurobi 11: piecewise-linear approximation)", -1},
-  {"0", "Piecewise-linear approximation", 0},
+  {"-1", "Piecewise-linear approximation", -1},
+  {"0", "Automatic (default)", 0},
   { "1", "Treated as nonlinear functions", 1}
 };
 
@@ -1493,9 +1533,9 @@ void GurobiBackend::InitCustomOptions() {
                   "Suffix values mean the following "
                   "(ATTENTION: different to Gurobi IIS...Force attribute!):\n"
                   "\n"
-                  "  | 0 - No influence on this bound or constraint (default)\n"
                   "  | -1 - This model item never to be in an IIS "
                   "       (careful, the remaining constraints can be feasible)\n"
+                  "  | 0 - No influence on this bound or constraint (default)\n"
                   "  | 1 - This model item always to be in the computed IIS.",
                   storedOptions_.nIISForce_, 0, 1);
 
@@ -2069,11 +2109,17 @@ void GurobiBackend::InitCustomOptions() {
         "\n.. value-table::\n",
     GRB_INT_PAR_DUALREDUCTIONS, values_01_noyes_1default_, 1);
 
-  AddStoredOption("pre:funcnonlinear funcnonlinear",
-    "This attribute controls how general functions "
-    "with their constraint's or objective's .funcnonlinear "
-    "suffix set to -1 are treated:\n" "\n.. value-table::\n",
+  AddStoredOption("pre:funcnonlinear funcnonlinear global",
+    "Controls how general functions "
+    "with their constraint's or objective's suffix .funcnonlinear "
+    "or, if not available, .global unset (or set to 0) are treated "
+    "(ATTENTION: different meaning than Gurobi FuncNonLinear "
+                  "parameter and attribute):\n"
+                  "\n.. value-table::\n"
+    "Suffix values mean the same.",
     storedOptions_.fFuncNonlinear_, values_funcnonlinear);
+
+  AddOptionSynonyms_OutOfLine("alg:global global", "pre:funcnonlinear");
 
   AddSolverOption("pre:funcpieceerror funcpieceerror",
       "For 'funcpieces=-1' or -2, this "

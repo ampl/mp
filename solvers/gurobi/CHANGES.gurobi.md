@@ -1,7 +1,15 @@
 Summary of recent updates to gurobi for AMPL
 ============================================
 
-## 20230612
+## 20231208
+- Option 'global' and suffix '.global` synonyms for
+  'funcnonlinear'
+- Changed values for 'global' / 'funcnonlinear' options
+  and suffixes: default 0 (Gurobi automatic),
+  -1 (static PL approximation), 1 (global solving).
+
+
+## 20231206
 - Updated to Gurobi 11
   - Non-linear models can now be solved using spatial 
     branch-and-bound and outer approximation instead of piecewise

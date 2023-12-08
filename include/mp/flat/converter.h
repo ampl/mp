@@ -974,7 +974,7 @@ public:
 private:
   std::string solchkfailtext_ {
     "Fail on solution checking violations, with solve result "
-    + std::to_string(SOL_CHECK_FAIL_CODE) + '.'
+    + std::to_string(sol::SOLUTION_CHECK) + '.'
   };
   void InitOwnOptions() {
     /// Should be called after adding all constraint keepers
@@ -1085,7 +1085,7 @@ private:
 
     ////////////////////// Solve result codes ////////////////////////
     GetEnv().AddSolveResults({
-                               {SOL_CHECK_FAIL_CODE, "Solution check failure"}
+                               {sol::SOLUTION_CHECK, "Solution check failure"}
                              });
   }
 

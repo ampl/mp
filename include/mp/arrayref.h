@@ -28,106 +28,109 @@
 
 namespace mp {
 
-/// A reference to an immutable array which can be
-/// stored inside if ArrayRef<> is constructed
-/// from an rvalue std::vector.
-template <typename T>
-class ArrayRef {
-  std::vector<T> save_;
-  const T *data_ = nullptr;
-  std::size_t size_ = 0;
+  /// A reference to an immutable array which can be
+  /// stored inside if ArrayRef<> is constructed
+  /// from an rvalue std::vector.
+  template <typename T>
+  class ArrayRef {
+    std::vector<T> save_;
+    const T* data_ = nullptr;
+    std::size_t size_ = 0;
 
- public:
-  ArrayRef() { }
+  public:
+    ArrayRef() { }
 
-  /// From pointer + size
-  ArrayRef(const T *data, std::size_t size) noexcept :
-    data_(data), size_(size) {}
+    /// From pointer + size
+    ArrayRef(const T* data, std::size_t size) noexcept :
+      data_(data), size_(size) {}
 
-  /// From C-array
-  template <std::size_t SIZE>
-  ArrayRef(const T (&data)[SIZE]) noexcept :
-    data_(data), size_(SIZE) {}
+    /// From C-array
+    template <std::size_t SIZE>
+    ArrayRef(const T(&data)[SIZE]) noexcept :
+      data_(data), size_(SIZE) {}
 
-  /// Rvalue ArrayRef, take over stored vector if any
-  ArrayRef(ArrayRef&& other) noexcept
-  { init_from_rvalue(std::move(other)); }
-
-  /// Lvalue ArrayRef, pure reference
-  ArrayRef(const ArrayRef& other) noexcept :
-    data_(other.data()), size_(other.size()) {}
-
-  /// Rvalue std::vector, take over
-  ArrayRef(std::vector<T> &&other) noexcept :
-    save_(std::move(other)),
-    data_(save_.data()), size_(save_.size()) {}
-
-  /// Lvalue std::vector, pure reference
-  ArrayRef(const std::vector<T> &other) noexcept :
-    data_(other.data()), size_(other.size()) {}
-
-  /// = Rvalue, take over vector if any
-  ArrayRef& operator=(ArrayRef&& other) noexcept {
-    init_from_rvalue(std::move(other));
-    return *this;
-  }
-
-  /// = Lvalue, pure reference
-  ArrayRef& operator=(const ArrayRef& other) {
-    data_ = other.data();
-    size_ = other.size();
-    return *this;
-  }
-
-  // operator bool()
-  operator bool() const { return !empty(); }
-  // bool empty()
-  bool empty() const { return 0==size(); }
-
-  /// Move the saved vector if any, otherwise copy
-  std::vector<T> move_or_copy() {
-    if (save_.size()) {
-      data_ = nullptr;
-      size_ = 0;
-      return std::move(save_);
+    /// Rvalue ArrayRef, take over stored vector if any
+    ArrayRef(ArrayRef&& other) noexcept
+    {
+      init_from_rvalue(std::move(other));
     }
-    return {begin(), end()};
-  }
 
-  operator std::vector<T>() { return move_or_copy(); }
+    /// Lvalue ArrayRef, pure reference
+    ArrayRef(const ArrayRef& other) noexcept :
+      data_(other.data()), size_(other.size()) {}
 
-  const T *data() const { return data_; }
-  std::size_t size() const { return size_; }
+    /// Rvalue std::vector, take over
+    ArrayRef(std::vector<T>&& other) noexcept :
+      save_(std::move(other)),
+      data_(save_.data()), size_(save_.size()) {}
 
-  const T* begin() const { return data(); }
-  const T* end() const { return data()+size(); }
+    /// Lvalue std::vector, pure reference
+    ArrayRef(const std::vector<T>& other) noexcept :
+      data_(other.data()), size_(other.size()) {}
 
-  const T &operator[](std::size_t i) const { return data_[i]; }
+    /// = Rvalue, take over vector if any
+    ArrayRef& operator=(ArrayRef&& other) noexcept {
+      init_from_rvalue(std::move(other));
+      return *this;
+    }
 
-protected:
-  template <class AR>
-  void init_from_rvalue(AR&& other) {
-    if (other.save_.size()) {
-      save_ = std::move(other.save_);
-      data_ = save_.data();
-      size_ = save_.size();
-    } else {
+    /// = Lvalue, pure reference
+    ArrayRef& operator=(const ArrayRef& other) noexcept {
       data_ = other.data();
       size_ = other.size();
+      return *this;
     }
+
+    // operator bool()
+    operator bool() const { return !empty(); }
+    // bool empty()
+    bool empty() const { return 0 == size(); }
+
+    /// Move the saved vector if any, otherwise copy
+    std::vector<T> move_or_copy() {
+      if (save_.size()) {
+        data_ = nullptr;
+        size_ = 0;
+        return std::move(save_);
+      }
+      return { begin(), end() };
+    }
+
+    operator std::vector<T>() { return move_or_copy(); }
+
+    const T* data() const { return data_; }
+    std::size_t size() const { return size_; }
+
+    const T* begin() const { return data(); }
+    const T* end() const { return data() + size(); }
+
+    const T& operator[](std::size_t i) const { return data_[i]; }
+
+  protected:
+    template <class AR>
+    void init_from_rvalue(AR&& other) {
+      if (other.save_.size()) {
+        save_ = std::move(other.save_);
+        data_ = save_.data();
+        size_ = save_.size();
+      }
+      else {
+        data_ = other.data();
+        size_ = other.size();
+      }
+    }
+  };
+
+  template <typename T> inline
+    ArrayRef<T> MakeArrayRef(const T* data, std::size_t size) {
+    return ArrayRef<T>(data, size);
   }
-};
 
-template <typename T> inline
-ArrayRef<T> MakeArrayRef(const T *data, std::size_t size) {
-  return ArrayRef<T>(data, size);
-}
-
-/// std::vector::data() might not return nullptr when empty
-template <class Vec> inline
-auto data_or_null(const Vec& v) -> decltype(v.data()) {
-  return v.empty() ? nullptr : v.data();
-}
+  /// std::vector::data() might not return nullptr when empty
+  template <class Vec> inline
+    auto data_or_null(const Vec& v) -> decltype(v.data()) {
+    return v.empty() ? nullptr : v.data();
+  }
 
 }  // namespace mp
 

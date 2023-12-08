@@ -31,7 +31,8 @@ namespace mp {
 
 #ifndef MP_ASSERT
   /// Debug assert
-  #define MP_ASSERT(condition, message) assert((condition) && message)
+  #define MP_ASSERT(condition, message) \
+    assert((condition) && message)
 #endif
 
 /// Assert even for Release
@@ -46,7 +47,8 @@ namespace mp {
 #define MP_RAISE(msg) throw mp::Error(msg)
 
 /// Raise with exit code
-#define MP_RAISE_WITH_CODE(exit_code, msg) throw mp::Error(msg, exit_code)
+#define MP_RAISE_WITH_CODE(exit_code, msg) \
+  throw mp::Error(msg, exit_code)
 
 /// Raise infeasibility
 #define MP_INFEAS(msg) \

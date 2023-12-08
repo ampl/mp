@@ -173,6 +173,9 @@ enum Status {
   /** A solver error. */
   FAILURE     = 500,
 
+  /** Solution check failed. */
+  SOLUTION_CHECK = FAILURE + 20,
+
   /** A numeric issue. */
   NUMERIC     = 550,
 
