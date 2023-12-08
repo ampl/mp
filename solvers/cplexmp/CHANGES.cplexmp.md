@@ -3,6 +3,10 @@ Summary of recent updates to CPLEX MP for AMPL
 
 ## TBD
 - Added fixed model for `mip:basis`
+- Added options:
+  - `alg:method` and flags to choose the solution algorithm
+  - `mip:nodemethod` to choose the algorithm used for MIP node problems
+  - `lp:solutiontype` to choose if to use crossover to get a basis basis solution after barrier
 
 
 ## 20231122

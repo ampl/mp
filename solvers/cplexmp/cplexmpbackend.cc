@@ -343,12 +343,17 @@ pre::ValueMapDbl CplexBackend::DualSolution() {
 }
 
 ArrayRef<double> CplexBackend::DualSolution_LP() {
-  int num_cons = NumLinCons();
-  std::vector<double> pi(num_cons);
-  int error = CPXgetpi (env(), lp(), pi.data(), 0, num_cons - 1);
-  if (error)
-    pi.clear();
-  return pi;
+  if (IsMIP() && need_fixed_MIP())
+  {
+    int num_cons = NumLinCons();
+    std::vector<double> pi(num_cons);
+    int error = CPXgetpi(env(), lp(), pi.data(), 0, num_cons - 1);
+    if (error)
+      pi.clear();
+    return pi;
+  }
+  else
+    return std::vector<double>();
 }
 
 double CplexBackend::ObjectiveValue() const {
@@ -370,8 +375,10 @@ double CplexBackend::SimplexIterations() const {
 }
 
 int CplexBackend::BarrierIterations() const {
-  int it= CPXgetbaritcnt (env(), lp());
-  return it;
+  if (!IsMIP() && (storedOptions_.cpxMethod_ == CPX_ALG_BARRIER))
+    return CPXgetbaritcnt(env(), lp());
+  else
+    return 0;
 }
 
 void CplexBackend::DoWriteProblem(const std::string &file) {
@@ -388,7 +395,7 @@ void CplexBackend::SetInterrupter(mp::Interrupter *inter) {
 }
 
 void CplexBackend::Solve() {
-  
+    setSolutionMethod();
     if (NumObjs() > 1)
       CPLEX_CALL(CPXmultiobjopt(env(), lp(), NULL));
     else {
@@ -559,6 +566,8 @@ std::pair<int, std::string> CplexBackend::ConvertCPLEXStatus() {
   case CPXMIP_OPTIMAL:
   case CPX_STAT_MULTIOBJ_OPTIMAL:
     return { sol::SOLVED, "optimal solution" };
+  case CPXMIP_OPTIMAL_TOL:
+    return { sol::SOLVED, "optimal solution within tolerance" };
   case CPXMIP_OPTIMAL_RELAXED_SUM:
   case CPXMIP_OPTIMAL_RELAXED_QUAD:
   case CPX_STAT_OPTIMAL_RELAXED_INF:
@@ -953,6 +962,88 @@ static const mp::OptionValueInfo values_poolreplace[] = {
   { "1", "Keep best solutions" , 1},
   { "2", "Keep most diverse solutions", 2}
 };
+
+static const mp::OptionValueInfo values_method[] = {
+  { "-1", "Automatic (default)", -1},
+  { "0", "Primal simplex", 0},
+  { "1", "Dual simplex", 1},
+  { "2", "Barrier", 2},
+  { "3", "Nondeterministic concurrent (several solves in parallel)", 3},
+  { "4", "Network simplex", 4},
+  { "5", "Sifting", 5}
+};
+
+static const mp::OptionValueInfo values_nodemethod[] = {
+  { "0", "Automatic (default)",0},
+  { "1", "Primal simplex", 1},
+  { "2", "Dual simplex", 2},
+  { "3", "Network simplex", 3},
+  { "4", "Barrier", 4},
+  { "5", "Sifting", 5}
+};
+
+static const mp::OptionValueInfo values_barcrossover[] = {
+  {"-1", "No crossover", -1},
+  { "0", "Automatic (default)", 0},
+  { "1", "Primal crossover", 1},
+  { "2", "Dual crossover", 2}
+};
+static const mp::OptionValueInfo values_solutiontype[] = {
+  { "0", "Automatic - seeks a solution with basis (default)", 0},
+  { "1", "Yes (equivalent to 0)", 1},
+  { "2", "No", 2}
+};
+
+
+void CplexBackend::setSolutionMethod() {
+  int nFlags = bool(storedOptions_.fBarrier_)
+    + bool(storedOptions_.fPrimal_)
+    + bool(storedOptions_.fDual_)
+    + bool(storedOptions_.fNetwork_)
+    + bool(storedOptions_.fSifting_);
+  if (nFlags>= 2) 
+    AddWarning("Ambiguous LP method",
+      "Only one of barrier/primal/dual/network/sifting should be specified.");
+  if (nFlags >= 1)
+  {
+    if (storedOptions_.fPrimal_)
+      storedOptions_.cpxMethod_ = CPX_ALG_PRIMAL;
+    if (storedOptions_.fDual_)
+      storedOptions_.cpxMethod_ = CPX_ALG_DUAL;
+    if (storedOptions_.fBarrier_)
+      storedOptions_.cpxMethod_ = CPX_ALG_BARRIER;
+    if (storedOptions_.fNetwork_)
+      storedOptions_.cpxMethod_ = CPX_ALG_NET;
+    if (storedOptions_.fSifting_)
+      storedOptions_.cpxMethod_ = CPX_ALG_SIFTING;
+  }
+  else {
+    int mapMethods[] = {
+      CPX_ALG_AUTOMATIC,
+      CPX_ALG_PRIMAL,
+      CPX_ALG_DUAL,
+      CPX_ALG_BARRIER,
+      CPX_ALG_CONCURRENT,
+      CPX_ALG_NET,
+      CPX_ALG_SIFTING
+    };
+    storedOptions_.cpxMethod_ = mapMethods[storedOptions_.algMethod_ + 1];
+  }
+  if (IsMIP())
+    SetSolverOption(CPX_PARAM_STARTALG, storedOptions_.cpxMethod_);
+  else if (IsQP())
+    SetSolverOption(CPX_PARAM_QPMETHOD, storedOptions_.cpxMethod_);
+  else
+    SetSolverOption(CPX_PARAM_LPMETHOD, storedOptions_.cpxMethod_);
+
+  if (storedOptions_.cpxMethod_ == CPX_ALG_BARRIER) {
+    SetSolverOption(CPX_PARAM_SOLUTIONTYPE, storedOptions_.solutionType_);
+    SetSolverOption(CPX_PARAM_BARCROSSALG, storedOptions_.crossover_);
+    if (storedOptions_.crossover_ == -1) // Emulate vestigial -1 setting  for crossover
+      SetSolverOption(CPX_PARAM_SOLUTIONTYPE, CPX_NONBASIC_SOLN);
+  }
+}
+
 ////////////////////////////// OPTIONS /////////////////////////////////
 
 void CplexBackend::InitCustomOptions() {
@@ -980,6 +1071,49 @@ void CplexBackend::InitCustomOptions() {
   AddDblOption("obj:*:abstol obj_*_abstol", "Absolute tolerance for objective with index *. "
     "Can only be applied on a multi-objective problem with obj:multi=1",
     &CplexBackend::CplexGetObjDblParam, &CplexBackend::CplexSetObjDblParam);
+
+  // Solution method
+  AddStoredOption("alg:method method lpmethod simplex",
+    "Which algorithm to use for non-MIP problems or for the root node of MIP problems, unless"
+    "primal/dual/barrier/network/sifting flags are specified:\n"
+    "\n.. value-table::\n", storedOptions_.algMethod_, values_method);
+
+  AddStoredOption("mip:nodemethod nodemethod",
+    "Algorithm used to solve relaxed MIP node problems; for MIQP problems "
+    "(quadratic objective, linear constraints), settings other than 3 and 5 " 
+    "are treated as 0. For MIQCP problems (quadratic objective and "
+		"constraints), only 0 is permitted.\n"
+    "\n.. value-table::\n", storedOptions_.nodeMethod_, values_nodemethod);
+
+  AddStoredOption("bar:crossover crossover mipcrossover",
+    "How to transform a barrier solution to a basic one:\n"
+   "\n.. value-table::\n", storedOptions_.crossover_, values_barcrossover);
+
+  AddStoredOption("lp:solutiontype solutiontype",
+    "Whether to seek a basic solution when solving an LP:\n"
+    "\n.. value-table::\n", storedOptions_.solutionType_, values_solutiontype);
+
+  AddStoredOption("alg:barrier barrier",
+    "Solve (MIP root) LPs by barrier method.",
+    storedOptions_.fBarrier_);
+
+  AddStoredOption("alg:primal primal",
+    "Solve (MIP root) LPs by primal simplex method.",
+    storedOptions_.fPrimal_);
+
+  AddStoredOption("alg:dual dual",
+    "Solve (MIP root) LPs by dual simplex method.",
+    storedOptions_.fDual_);
+
+  AddStoredOption("alg:sifting sifting",
+    "Solve (MIP root) LPs by sifting method.",
+    storedOptions_.fSifting_);
+
+  AddStoredOption("alg:network network",
+    "Solve (substructure of) (MIP node) LPs "
+    "by network simplex method.",
+    storedOptions_.fNetwork_);
+
 
   // Solution pool controls
   AddSolverOption("sol:poolgap ams_eps poolgap",

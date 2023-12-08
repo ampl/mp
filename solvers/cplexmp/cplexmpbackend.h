@@ -192,7 +192,7 @@ protected:
   void ReportCPLEXPool();
 
 private:
-
+  void setSolutionMethod();
   int original_model_type_ = -1;
   
   /// These options are stored in the class
@@ -203,6 +203,18 @@ private:
     int nPoolMode_=2;
     int populate_ = -1;
     int poolIntensity_ = -1;
+    int algMethod_ = -1;
+    int nodeMethod_ = -1;
+    int cpxMethod_ = -1; // to store actual method
+    int crossover_ = 0;
+    int solutionType_ = 0;
+
+
+    int fBarrier_ = 0;
+    int fPrimal_ = 0;
+    int fDual_ = 0;
+    int fNetwork_ = 0;
+    int fSifting_ = 0;
 
   };
   Options storedOptions_;
