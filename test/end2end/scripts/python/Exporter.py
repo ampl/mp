@@ -22,9 +22,12 @@ class Exporter(object):
             print("    <no cmp data>", end='')
         return True
 
+    def assignFile(self, filename: str):
+        self._fileName=filename
+
 
 class CSVTestExporter(Exporter):
-    def __init__(self, fileName):
+    def __init__(self, fileName=""):
         self._fileName = fileName
 
     def sanifyString(self, s):

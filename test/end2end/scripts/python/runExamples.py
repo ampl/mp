@@ -2,6 +2,7 @@ from sys import platform
 import argparse
 
 from runModels import runModels
+import Exporter
 import Solver
 import SolverCollection
 
@@ -39,6 +40,8 @@ class Tester:
                         help="number of threads in a solver")
         self._parser.add_argument("--dir", type=str, metavar="path", default="",
                         help="path to the test case folder")
+        self._parser.add_argument("--benchmark", action="store_true",
+                        help="benchmark file output")
         self._parser.add_argument("--nonrecursive", action="store_true",
                         help="non-recursive case collection")
         self._parser.add_argument("--allfiles", action="store_true",
@@ -79,10 +82,17 @@ class Tester:
         print(*(self._solvers.getSolverNames()), sep="\n  * ")
 
     def collectAndRunCases(self):
+        if self._args.benchmark:
+            from BenchmarkExporter import BenchmarkExporter
+            exporter = BenchmarkExporter()
+        else:
+            exporter = Exporter.CSVTestExporter()
+
         runModels(self._args.dir,
                   self._solvers.getSolversByNames(self._args.solvers),
                   solverOptions=self._args.options,
                   exportFile=self._args.reportstub,
+                  exporter=exporter,
                   recursive=not self._args.nonrecursive,
                   modellist=not self._args.allfiles,
                   preferAMPLModels=not self._args.preferNL,

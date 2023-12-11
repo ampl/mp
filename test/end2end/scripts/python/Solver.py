@@ -681,30 +681,31 @@ class CPLEXDirectSolver(MPDirectSolver):
 
     def __init__(self, exeName, timeout=None, nthreads=None,
                  otherOptions=None):
+
         stags = {
-                 ModelTags.continuous, ModelTags.integer, ModelTags.binary,
-                 ModelTags.plinear, ModelTags.sos,
-                 ModelTags.nonlinear,
-                 ModelTags.quadratic_obj,                 
-                 ModelTags.quadratic, ModelTags.quadraticnonconvex,
-                 
-                 
-                 #ModelTags.socp,      ## MP transforms cones to quadratics
-                 #ModelTags.socp_hard_to_recognize,
+             ModelTags.continuous, ModelTags.integer, ModelTags.binary,
+                 ModelTags.plinear,
+                 ModelTags.quadratic,
+                 ModelTags.quadratic_obj,
+                 ModelTags.quadraticnonconvex,
 
-                 
+                 ModelTags.socp,      ## MP transforms cones to quadratics
+                 ModelTags.socp_hard_to_recognize,
 
-                 
-                 ModelTags.log,
-                 # ModelTags.trigonometric
-                 ModelTags.relax,
-                 ModelTags.multiobj, ModelTags.obj_priority,
-                 ModelTags.multisol,
-                 ModelTags.sstatus,
+                 ModelTags.nonlinear, ModelTags.log, ModelTags.trigonometric,
+                 ModelTags.unbdd,
                  ModelTags.return_mipgap,
+                 ModelTags.sos,
+                 ModelTags.relax, ModelTags.warmstart, ModelTags.mipstart,
+                 ModelTags.multiobj, ModelTags.obj_priority,
+                 ModelTags.multisol, ModelTags.sstatus, 
+                 ModelTags.iis, ModelTags.feasrelax, ModelTags.fixmodel,
+                 ModelTags.writelp, ModelTags.writesol,
 
-                 ModelTags.writelp, ModelTags.writesol
+                 ModelTags.check_pl2sos2,
+                 ModelTags.check_sos2_from_pl
 
+                 
                  }
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 

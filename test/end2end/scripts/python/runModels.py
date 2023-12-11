@@ -1,3 +1,4 @@
+from cmath import e
 from ModelsDiscovery import ModelsDiscovery
 from ModelRunner import ModelRunner
 from Exporter import CSVTestExporter
@@ -48,6 +49,9 @@ def runModels(directory, solvers : list,
     exportFile += "-{}-{}-{}.csv".format(Path(directory).stem, platform, ename)
     if not exporter:
         exporter = CSVTestExporter(exportFile)
+
+    exporter.assignFile(exportFile)
+
     runner = ModelRunner(solvers, solverOptions)
 
     m = ModelsDiscovery()
