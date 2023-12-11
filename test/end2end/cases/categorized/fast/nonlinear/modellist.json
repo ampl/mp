@@ -270,6 +270,15 @@
     }
   },
   {
+    "name" : "pow_06_pow_minus0.3",
+    "tags" : ["continuous", "nonlinear", "quadraticnonconvex"],
+    "values": {
+      "if abs(_obj[1]-0.3191804229)<=0.01 then 1 else 0": 1,
+      "x": 3,
+      "y": 15
+    }
+  },
+  {
     "name" : "asin_01",
     "tags" : ["continuous", "nonlinear"],
     "values": {

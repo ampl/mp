@@ -1,7 +1,8 @@
 Summary of recent updates to the AMPL MP Library
 ================================================
 
-## unreleased
+## TBD
+- Fixed presolve of the power function #226.
 - Fixed graceful exit on Ctrl-C from AMPL in Linux.
 
 

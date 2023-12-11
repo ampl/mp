@@ -174,15 +174,32 @@ public:
 
   //////////////////////////// NONLINEAR /////////////////////////////
 
-  void PropagateResult(PowConstraint& con, double , double , Context ctx) {
+  void PropagateResult(
+      PowConstraint& con, double , double , Context ctx) {
     con.AddContext(ctx);           // merge context
     auto pwr = con.GetParameters()[0];
-    auto ctx_new = (pwr>=0.0 &&    // some monotone cases
-                    MPD( is_integer_value(pwr) ) &&
-                    !MPD( is_integer_value(pwr / 2.0) )) ||
-        MPD( lb(con.GetArguments()[0])>=0.0 ) ? ctx : Context::CTX_MIX;
+    auto arg = con.GetArguments()[0];
+    Context ctx_new;
+    bool is_pow_int = (MPD( is_integer_value(pwr) ));
+    bool is_pow_odd = is_pow_int
+        && !MPD( is_integer_value(pwr / 2.0) );
+    bool is_pow_odd_pos = (pwr >= 0.0 && is_pow_odd);
+    if (is_pow_odd_pos) {            // some monotone cases
+      ctx_new = +ctx;
+    } else
+      if (MPD( lb(arg)>=0.0 )) {     // arg >= 0
+        ctx_new = (pwr >= 0.0) ? +ctx : -ctx;
+      } else
+        if (MPD( ub(arg)<=0.0 ) && is_pow_int) {
+          if (pwr >= 0.0)
+            ctx_new = -ctx;          // arg<=0, pwr even >=0
+          else
+            ctx_new = is_pow_odd ? -ctx : +ctx;
+        } else
+          ctx_new.Add(Context::CTX_MIX);  // undecidable
     PropagateResult2Args(con.GetArguments(),
-                         MPD( MinusInfty() ), MPD( Infty() ), ctx_new);
+                         MPD( MinusInfty() ), MPD( Infty() ),
+                         ctx_new);
   }
 
   void PropagateResult(LogConstraint& con, double , double , Context ctx) {
