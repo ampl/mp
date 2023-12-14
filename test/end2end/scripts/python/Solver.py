@@ -477,8 +477,8 @@ class BaronSolver(AMPLSolver):
         self._stats["outmsg"] = st[0]
         self._stats["timelimit"] = "time limit" in st[0]
         tag = "Objective "
-        if tag in st[0]:
-            n = st[0][st[0].index(tag) + len(tag):]
+        if tag in st[1]:
+            n = st[1][st[1].index(tag) + len(tag):]
             try:
               self._stats["objective"] = float(n)
             except:

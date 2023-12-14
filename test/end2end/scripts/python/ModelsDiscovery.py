@@ -1,6 +1,7 @@
 from Model import Model, ModelTags
 import sys
 import json
+import os
 from pathlib import Path, PurePath
 from itertools import repeat
 
@@ -183,10 +184,15 @@ class ModelsDiscovery(object):
         solution = md["objective"] if "objective" in md else None
         if "files" in md:
             files = md["files"]
-            f = f.parent.joinpath(files[0])
-            files = [f.parent.joinpath(ff) for ff in files[1:]]
+            if bool(os.path.dirname(files[0])):
+                f = f.parent.joinpath(os.path.basename(files[0]))
+            else:
+                f = f.parent.joinpath(files[0])
+            
+            files = [f.parent.joinpath(os.path.basename(ff)) for ff in files[1:]]
             return Model(f, solution, ModelTags.fromString(md["tags"]),
                          otherFiles=files, description=md, overrideName=md["name"])
+
         else:
             return Model(f, solution, ModelTags.fromString(md["tags"]),
                          description=md, overrideName=md["name"])

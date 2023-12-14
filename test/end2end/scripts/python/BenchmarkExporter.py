@@ -49,6 +49,9 @@ class BenchmarkExporter(Exporter):
         return [ stats["nvars"], stats["nintvars"], stats["nconstr"], stats["nnz"]]
   
     def getStyle(self, r):
+        if not isinstance(r, str):
+            return self.font_red
+            
         if "solved" in r[-1]["timelimit"]:
             return None
         elif "limit" in r[-1]["timelimit"]:
@@ -102,13 +105,17 @@ class BenchmarkExporter(Exporter):
             sname=lastRun["solver"]
             outcome=lastRun["timelimit"]
             self.addToDict(sname, "time_all", lastRun["solutionTime"]) 
-            if "solved" in outcome:
-               self.addToDict(sname, "solved", 1)
-               self.addToDict(sname, "time_solved", lastRun["solutionTime"]) 
-            elif "limit" in outcome:
-                self.addToDict(sname, "timelimit", 1)
-            else:
+           
+            if not isinstance(r, str):
                 self.addToDict(sname, "failed", 1)
+            else:
+                if "solved" in outcome:
+                   self.addToDict(sname, "solved", 1)
+                   self.addToDict(sname, "time_solved", lastRun["solutionTime"]) 
+                elif "limit" in outcome:
+                    self.addToDict(sname, "timelimit", 1)
+                else:
+                    self.addToDict(sname, "failed", 1)
 
 
     def initSolverStats(self, runs):
