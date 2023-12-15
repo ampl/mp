@@ -49,9 +49,6 @@ class BenchmarkExporter(Exporter):
         return [ stats["nvars"], stats["nintvars"], stats["nconstr"], stats["nnz"]]
   
     def getStyle(self, r):
-        if not isinstance(r, str):
-            return self.font_red
-            
         if "solved" in r[-1]["timelimit"]:
             return None
         elif "limit" in r[-1]["timelimit"]:

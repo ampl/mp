@@ -143,6 +143,14 @@ class AMPLSolver(Solver):
     def __init__(self, exeName, timeout=None, nthreads=None,
                  otherOptions=None,
                  supportedTags=None, unsupportedTags=None):
+        sDefault = {
+            ModelTags.script,
+            ModelTags.cd}
+        if supportedTags is None:
+            supportedTags = sDefault
+        else:
+            supportedTags = supportedTags | sDefault
+
         super().__init__(exeName, timeout, nthreads, otherOptions,
                          supportedTags=supportedTags,
                          unsupportedTags=unsupportedTags)
@@ -363,9 +371,8 @@ class MPDirectSolver(AMPLSolver):
     def __init__(self, exeName, timeout=None, nthreads=None,
                  otherOptions=None, stags=None):
         sDefault = {ModelTags.continuous,
-                    ModelTags.linear,
-                    ModelTags.script,
-                    ModelTags.cd}
+                    ModelTags.linear
+                    }
         if stags is None:
             stags = sDefault
         else:
