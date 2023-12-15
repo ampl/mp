@@ -25,6 +25,7 @@ class ModelTags(enum.Enum):
 
     logical = 13
     polynomial = 14
+    polynomial_4 = 15   # Polynomial 4th degree
 
     trigonometric = 100   # subcategories of nonlinear
     htrigonometric = 101
@@ -32,6 +33,7 @@ class ModelTags(enum.Enum):
 
     ## Execution mode
     script = 1000
+    cd     = 1001 # cd to first file directory before reading the others
 
     ## Driver features
     unbdd = 10001
@@ -170,6 +172,9 @@ class Model(object):
 
     def isScript(self):
         return self.hasTag(ModelTags.script)
+
+    def doCd(self):
+        return self.hasTag(ModelTags.cd)
 
     @staticmethod
     def LINEAR(filename, expsolution,

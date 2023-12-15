@@ -364,7 +364,8 @@ class MPDirectSolver(AMPLSolver):
                  otherOptions=None, stags=None):
         sDefault = {ModelTags.continuous,
                     ModelTags.linear,
-                    ModelTags.script}
+                    ModelTags.script,
+                    ModelTags.cd}
         if stags is None:
             stags = sDefault
         else:

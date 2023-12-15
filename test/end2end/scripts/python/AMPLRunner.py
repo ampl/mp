@@ -192,7 +192,7 @@ class AMPLRunner(object):
 
     def doReadModel(self, model:Model):
         mp = str(Path(model.getFilePath()).parent.absolute().resolve())
-        if model.isScript():
+        if model.isScript() or model.doCd():
             self._ampl.cd(mp)
         return self.readModel(model)
 

@@ -2,7 +2,7 @@ from Exporter import Exporter
 import ModelRunner
 import openpyxl
 import os
-
+import Solver
 class BenchmarkExporter(Exporter):
 
     def __init__(self, fileName=""):
@@ -103,6 +103,11 @@ class BenchmarkExporter(Exporter):
         for r in runs:
             lastRun = r[-1]
             sname=lastRun["solver"]
+            if isinstance(sname, Solver.Solver):
+                sname=sname.getName()
+            if "Skipped" in lastRun["outmsg"]:
+                self.addToDict(sname, "failed", 1)
+                return
             outcome=lastRun["timelimit"]
             self.addToDict(sname, "time_all", lastRun["solutionTime"]) 
            
@@ -122,6 +127,8 @@ class BenchmarkExporter(Exporter):
          for r in runs:
             lastRun = r[-1]
             sname=lastRun["solver"]
+            if isinstance(sname, Solver.Solver):
+                sname=sname.getName()
             self.solvers[sname]={
                 "solved" : 0,
                 "failed" : 0,
