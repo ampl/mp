@@ -284,6 +284,7 @@ void MosekBackend::AddMOSEKMessages() {
 std::pair<int, std::string> MosekBackend::ConvertMOSEKStatus() {
   namespace sol = mp::sol;
   std::string term_info = ConvertMOSEKTermStatus();
+  // TODO Keep result code registry in AddOptons() up2date.
   switch (solSta_) {
   case MSK_SOL_STA_OPTIMAL:
   case MSK_SOL_STA_INTEGER_OPTIMAL:
@@ -293,7 +294,7 @@ std::pair<int, std::string> MosekBackend::ConvertMOSEKStatus() {
   case MSK_SOL_STA_DUAL_FEAS:
     return { sol::UNCERTAIN, "feasible dual" + term_info };
   case MSK_SOL_STA_PRIM_AND_DUAL_FEAS:
-    return { sol::UNCERTAIN, "feasible solution" + term_info };
+    return { sol::UNCERTAIN, "primal and dual feasible" + term_info };
   case MSK_SOL_STA_PRIM_INFEAS_CER:
     return { sol::INFEASIBLE, "primal infeasible" + term_info };
   case MSK_SOL_STA_DUAL_INFEAS_CER:
@@ -316,7 +317,7 @@ std::pair<int, std::string> MosekBackend::ConvertMOSEKStatus() {
       return { sol::INF_OR_UNB, "dual infeasible" + term_info };
     case MSK_PRO_STA_PRIM_AND_DUAL_INFEAS:
       return
-      { sol::INF_OR_UNB, "primal and dual infeasible" + term_info };
+      { sol::INFEASIBLE, "primal and dual infeasible" + term_info };
     case MSK_PRO_STA_ILL_POSED:
       return { sol::NUMERIC, "ill-posed problem" + term_info };
     case MSK_PRO_STA_PRIM_INFEAS_OR_UNBOUNDED:
@@ -346,9 +347,11 @@ std::string MosekBackend::ConvertMOSEKTermStatus() {
   case MSK_RES_TRM_NUMERICAL_PROBLEM:
     return { ", numerical issues" };
   case MSK_RES_TRM_MIO_NUM_RELAXS:
+    return { ", relaxation limit hit" };
   case MSK_RES_TRM_MIO_NUM_BRANCHES:
+    return { ", branch limit hit" };
   case MSK_RES_TRM_NUM_MAX_NUM_INT_SOLUTIONS:
-    return { ", limit hit" };
+    return { ", solution limit hit" };
   default:
     return { "termination code "
           + std::to_string(termCode_) };
@@ -432,6 +435,13 @@ void MosekBackend::InitCustomOptions() {
   AddSolverOption("tech:outlev outlev",
     "0*/1: Whether to write mosek log lines to stdout.",
     MSK_IPAR_LOG, 0, 1);
+
+  /////////////////////// Gurobi custom solve results /////////////////////////
+  AddSolveResults({
+                    { sol::SOLVED, "optimal solution" },
+                    { sol::UNCERTAIN, "suboptimal" }
+                  },
+                  true);        // Replace main codes
 }
 
 double MosekBackend::MIPGap() {

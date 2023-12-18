@@ -181,16 +181,17 @@ void GurobiBackend::OpenGurobiComputeServer() {
   if (int i = GRBstartenv(env()))
     switch (i) {
     case GRB_ERROR_NETWORK:
-      Abort(601, "Could not talk to Gurobi Compute Server(s).");
+      Abort(sol::SPECIFIC + 1,
+            "Could not talk to Gurobi Compute Server(s).");
       break;
     case GRB_ERROR_JOB_REJECTED:
-      Abort(602, "Job rejected by Gurobi Compute Server(s).");
+      Abort(sol::SPECIFIC + 2, "Job rejected by Gurobi Compute Server(s).");
       break;
     case GRB_ERROR_NO_LICENSE:
-      Abort(603, "No license for specified Gurobi Compute Server(s).");
+      Abort(sol::SPECIFIC + 3, "No license for specified Gurobi Compute Server(s).");
       break;
     default:
-      Abort(604, fmt::format(
+      Abort(sol::SPECIFIC + 4, fmt::format(
         "Surprise return {} while starting the compute server environment.", i));
     }
 }
@@ -206,19 +207,19 @@ void GurobiBackend::OpenGurobiCloud() {
   if (int i = GRBstartenv(env())) {
     switch(i) {
     case GRB_ERROR_NETWORK:
-      Abort(601, "Could not talk to Gurobi Instant Cloud.");
+      Abort(sol::SPECIFIC + 1, "Could not talk to Gurobi Instant Cloud.");
       break;
     case GRB_ERROR_JOB_REJECTED:
-      Abort(602, "Job rejected by Gurobi Instant Cloud.");
+      Abort(sol::SPECIFIC + 2, "Job rejected by Gurobi Instant Cloud.");
       break;
     case GRB_ERROR_NO_LICENSE:
-      Abort(603, "No license for specified Gurobi Instant Cloud.");
+      Abort(sol::SPECIFIC + 3, "No license for specified Gurobi Instant Cloud.");
       break;
     case GRB_ERROR_CLOUD:
-      Abort(605, "Bad value for cloudid or cloudkey, or Gurobi Cloud out of reach.");
+      Abort(sol::SPECIFIC + 5, "Bad value for cloudid or cloudkey, or Gurobi Cloud out of reach.");
       break;
     default:
-      Abort(604, fmt::format(
+      Abort(sol::SPECIFIC + 4, fmt::format(
               "Surprise return {} while starting the cloud environment", i));
     }
   }
@@ -1169,7 +1170,6 @@ void GurobiBackend::SetPartitionValues() {
 //////////////////////////////////////////////////////////////////////
 ////////////////////////// Solution Status ///////////////////////////
 //////////////////////////////////////////////////////////////////////
-/// TODO Keep result code registry in AddOptons() up2date.
 std::pair<int, std::string> GurobiBackend::ConvertGurobiStatus() const {
   namespace sol = mp::sol;
   int optimstatus;
@@ -1177,63 +1177,74 @@ std::pair<int, std::string> GurobiBackend::ConvertGurobiStatus() const {
   int solcount;
   GRB_CALL( GRBgetintattr(model(), GRB_INT_ATTR_SOLCOUNT, &solcount) );
   int has_sol = int(0<solcount);
+  // See guidelines from sol::Status.
+  // TODO Keep result code registry in AddOptons() up2date.
   switch (optimstatus) {
   default:
     if (interrupter()->Stop()) {
-      return { sol::INTERRUPTED, "interrupted" };
+      if (has_sol)
+        return{ sol::LIMIT_FEAS_INTERRUPT,
+              "interrupted, feasible solution" };
+      return { sol::LIMIT_NO_FEAS_INTERRUPT,
+            "interrupted, no feasible solution" };
     }
     if (solcount>0) {
-      return { sol::UNCERTAIN, "feasible solution" };
+      return { sol::LIMIT_FEAS, "feasible solution" };
     }
     return { sol::UNKNOWN, "unknown solution status" };
   case GRB_OPTIMAL:
     return { sol::SOLVED, "optimal solution" };
+  case GRB_SUBOPTIMAL:
+    return { sol::UNCERTAIN_NO_FEAS_CERT, "suboptimal solution, can be infeasible" };
   case GRB_INFEASIBLE:
     return { sol::INFEASIBLE, "infeasible problem" };
   case GRB_INF_OR_UNBD:
-    return { sol::INF_OR_UNB, "infeasible or unbounded problem" };
+    return { sol::LIMIT_INF_UNB, "infeasible or unbounded problem" };
   case GRB_UNBOUNDED:
-    return { sol::UNBOUNDED, "unbounded problem" };
+    if (has_sol)
+      return { sol::UNBOUNDED_FEAS, "unbounded problem, feasible solution" };
+    return { sol::UNBOUNDED_NO_FEAS,
+          "unbounded problem, no feasible solution returned" };
   case GRB_NUMERIC:
+    if (has_sol)
+      return { sol::LIMIT_FEAS_STALL, "stalling, feasible solution" };
     return { sol::NUMERIC, "terminated due to unrecoverable numerical issues" };
   case GRB_CUTOFF:
-    return { sol::LIMIT, "objective cutoff" };
+    return { sol::LIMIT_NO_FEAS_CUTOFF, "objective cutoff" };
   case GRB_ITERATION_LIMIT:
     if (has_sol)
-      return{ sol::LIMIT+1, "iteration limit, feasible solution" };
-    return { sol::LIMIT+11, "iteration limit, without a feasible soluton" };
+      return{ sol::LIMIT_FEAS_ITER, "iteration limit, feasible solution" };
+    return { sol::LIMIT_NO_FEAS_ITER, "iteration limit, without a feasible soluton" };
   case GRB_NODE_LIMIT:
     if (has_sol)
-      return { sol::LIMIT+2, "node limit, feasible solution" };
-    return { sol::LIMIT+12, "node limit, without a feasible soluton" };
+      return { sol::LIMIT_FEAS_NODES, "node limit, feasible solution" };
+    return { sol::LIMIT_NO_FEAS_NODES, "node limit, without a feasible soluton" };
   case GRB_TIME_LIMIT:
     if (has_sol)
-      return { sol::LIMIT+3, "time limit, feasible solution" };
-    return { sol::LIMIT+13, "time limit, without a feasible solution" };
+      return { sol::LIMIT_FEAS_TIME, "time limit, feasible solution" };
+    return { sol::LIMIT_NO_FEAS_TIME, "time limit, without a feasible solution" };
   case GRB_SOLUTION_LIMIT:
-    return { sol::LIMIT+4, "solution limit" };
+    return { sol::LIMIT_FEAS_NUMSOLS, "solution limit" };
   case GRB_INTERRUPTED:
     if (has_sol)
-      return { sol::LIMIT+5, "interrupted, feasible solution" };
-    return { sol::LIMIT+15, "interrupted, without a feasible solution" };
+      return { sol::LIMIT_FEAS_INTERRUPT, "interrupted, feasible solution" };
+    return { sol::LIMIT_NO_FEAS_INTERRUPT, "interrupted, without a feasible solution" };
   case GRB_WORK_LIMIT:
     if (has_sol)
-      return { sol::LIMIT+6, "work limit, feasible solution" };
-    return { sol::LIMIT+16, "work limit, without a feasible solution" };
+      return { sol::LIMIT_FEAS_WORK, "work limit, feasible solution" };
+    return { sol::LIMIT_NO_FEAS_WORK, "work limit, without a feasible solution" };
 #ifdef GRB_MEM_LIMIT
   case GRB_MEM_LIMIT:
     if (has_sol)
-      return { sol::LIMIT+7, "soft memory limit, feasible solution" };
-    return { sol::LIMIT+17, "soft memory limit, without a feasible solution" };
+      return { sol::LIMIT_FEAS_SOFTMEM, "soft memory limit, feasible solution" };
+    return { sol::LIMIT_NO_FEAS_SOFTMEM, "soft memory limit, without a feasible solution" };
 #endif  // GRB_MEM_LIMIT
-  case GRB_SUBOPTIMAL:
-    return { sol::UNCERTAIN, "suboptimal" };
   case GRB_USER_OBJ_LIMIT:
     if (has_sol)
-      return { sol::UNCERTAIN+3,
+      return { sol::LIMIT_FEAS_BESTOBJ_BESTBND,
             "bestobjstop or bestbndstop reached, feasible solution" };
-    return { sol::UNCERTAIN+4,
-          "bestobjstop or bestbndstop reached, without a feasible solution" };
+    return { sol::LIMIT_NO_FEAS_BESTBND,
+          "bestbndstop reached, without a feasible solution" };
   }
 }
 
@@ -2553,33 +2564,29 @@ void GurobiBackend::InitCustomOptions() {
 
 
   /////////////////////// Gurobi custom solve results /////////////////////////
-
+  /// Don't replace major codes, only custom ones
   AddSolveResults({
-                    { sol::SOLVED, "optimal solution" },
-                    { sol::UNCERTAIN, "suboptimal" },
-                    { sol::LIMIT, "objective cutoff" }
-                  },
-                  true);        // Replace main codes
-  AddSolveResults({
-                    { sol::LIMIT+1, "iteration limit, feasible solution" },
-                    { sol::LIMIT+11, "iteration limit, without a feasible soluton" },
-                    { sol::LIMIT+2, "node limit, feasible solution" },
-                    { sol::LIMIT+12, "node limit, without a feasible soluton" },
-                    { sol::LIMIT+3, "time limit, feasible solution" },
-                    { sol::LIMIT+13, "time limit, without a feasible solution" },
-                    { sol::LIMIT+4, "solution limit" },
-                    { sol::LIMIT+5, "interrupted, feasible solution" },
-                    { sol::LIMIT+15, "interrupted, without a feasible solution" },
-                    { sol::LIMIT+6, "work limit, feasible solution" },
-                    { sol::LIMIT+16, "work limit, without a feasible solution" },
+                    { sol::LIMIT_FEAS_ITER, "iteration limit, feasible solution" },
+                    { sol::LIMIT_NO_FEAS_ITER, "iteration limit, without a feasible soluton" },
+                    { sol::LIMIT_FEAS_NODES, "node limit, feasible solution" },
+                    { sol::LIMIT_NO_FEAS_NODES, "node limit, without a feasible soluton" },
+                    { sol::LIMIT_FEAS_TIME, "time limit, feasible solution" },
+                    { sol::LIMIT_NO_FEAS_TIME, "time limit, without a feasible solution" },
+                    { sol::LIMIT_FEAS_NUMSOLS, "solution limit" },
+                    { sol::LIMIT_NO_FEAS_CUTOFF, "objective cutoff" },
+                    { sol::LIMIT_FEAS_INTERRUPT, "interrupted, feasible solution" },
+                    { sol::LIMIT_NO_FEAS_INTERRUPT, "interrupted, without a feasible solution" },
+                    { sol::LIMIT_FEAS_WORK, "work limit, feasible solution" },
+                    { sol::LIMIT_NO_FEAS_WORK, "work limit, without a feasible solution" },
                   #ifdef GRB_MEM_LIMIT
-                    { sol::LIMIT+7, "soft memory limit, feasible solution" },
-                    { sol::LIMIT+17, "soft memory limit, without a feasible solution" },
+                    { sol::LIMIT_FEAS_SOFTMEM, "soft memory limit, feasible solution" },
+                    { sol::LIMIT_NO_FEAS_SOFTMEM, "soft memory limit, without a feasible solution" },
                   #endif  // GRB_MEM_LIMIT
-                    { sol::UNCERTAIN+3,
+                    { sol::LIMIT_FEAS_BESTOBJ_BESTBND,
                       "bestobjstop or bestbndstop reached, feasible solution" },
-                    { sol::UNCERTAIN+4,
-                      "bestobjstop or bestbndstop reached, without a feasible solution" }
+                    { sol::LIMIT_NO_FEAS_BESTBND,
+                      "bestbndstop reached, without a feasible solution" },
+                    { sol::LIMIT_FEAS_STALL, "stalling, feasible solution" }
                   });
   AddSolveResults({
                     { 601, "Could not talk to Gurobi Instant Cloud or Gurobi Server." },

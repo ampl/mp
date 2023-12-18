@@ -690,17 +690,34 @@ SolveResultRegistry::SolveResultRegistry()
   : registry_ {
 {   // Adding standard solver codes a priori
 { sol::SOLVED,
-      "An optimal solution found for an optimization problem "
-      "or a feasible solution found for a satisfaction problem" },
-{ sol::UNCERTAIN,
-      "Solution returned but it can be non-optimal or even infeasible" },
-{ sol::INFEASIBLE, "Problem is infeasible" },
-{ sol::UNBOUNDED, "Problem is unbounded" },
-{ sol::INF_OR_UNB, "Problem is infeasible or unbounded" },
-{ sol::LIMIT, "Stopped by a limit, e.g., on iterations or time" },
-{ sol::FAILURE, "A solver error" },
-{ sol::NUMERIC, "A numeric issue" },
-{ sol::INTERRUPTED, "Interrupted by the user" }
+      "solved. An optimal solution found for an optimization problem "
+      "or a feasible solution found for a satisfaction problem. "
+      "Codes 0-99. " },
+{ sol::UNCERTAIN_FEAS,
+      "solved? Feasible candidate returned but optimality not certified. "
+      "Codes 100-149. " },
+{ sol::UNCERTAIN_NO_FEAS_CERT,
+      "solved? Solution candidate returned but feasibility not certified. "
+      "Codes 150-199. " },
+{ sol::INFEASIBLE, "infeasible. Codes 200-299. " },
+{ sol::UNBOUNDED_FEAS,
+      "unbounded, feasible solution returned. "
+      "Codes 300-349. " },
+{ sol::UNBOUNDED_NO_FEAS,
+      "unbounded, no feasible solution returned. "
+      "Codes 350-399. " },
+{ sol::LIMIT_FEAS,
+      "limit. Feasible solution returned. "
+      "Stopped by a limit, e.g., on iterations or Ctrl-C. "
+      "Codes 400-449. " },
+{ sol::LIMIT_INF_UNB,
+      "infeasible or unbounded. "
+      "Codes 450-469. " },
+{ sol::LIMIT_NO_FEAS,
+      "limit. No feasible solution returned. Codes 470-499. " },
+{ sol::FAILURE, "error without a feasible solution. "
+      "Codes 500-599. " },
+{ sol::NUMERIC, "numeric issue without a feasible solution. " }
 }
 } { }
 

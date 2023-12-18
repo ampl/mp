@@ -1085,7 +1085,8 @@ private:
 
     ////////////////////// Solve result codes ////////////////////////
     GetEnv().AddSolveResults({
-                               {sol::SOLUTION_CHECK, "Solution check failure"}
+                               {sol::SOLUTION_CHECK,
+                                "MP solution check failure. Codes 520-529."}
                              });
   }
 

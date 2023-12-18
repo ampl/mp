@@ -138,50 +138,165 @@ namespace sol {
 
 /**
  *  Solution status.
+ *
+ *  Every solution driver should register its solve_result codes
+ *  via BasicSolver::AddSolveResults(). Only non-major codes
+ *  should normally be registered (those with _LAST defined
+ *  are pre-registered automatically.)
+ *
+ *  The meaning ideally should be the same for existing codes
+ *  (use description from the comment.) For extra codes, use
+ *  passing ranges (e.g., for stopping with a feasible solution
+ *  on a limit, use 400-449), otherwise SPECIFIC+ codes.
  */
 enum Status {
-  // Keep the status registry up2date
-  // via Solver::AddSolveResults().
-
-  /** If not touched. */
+  /** If not touched. Don't register this code. */
   NOT_SET = -200,
 
-  /** Unknown status. */
+  /** Unknown status. Don't register this code. */
   UNKNOWN     =  -1,
 
   /**
-    An optimal solution found for an optimization problem or a feasible
-    solution found for a satisfaction problem.
+   *  Solved.
+   *  An optimal solution found for an optimization problem or a feasible
+   *  solution found for a satisfaction problem.
+   *  Codes 0-99.
    */
   SOLVED      =   0,
+  /** End of the 'solved' range. */
+  SOLVED_LAST =  99,
 
-  /** Solution returned but it can be non-optimal or even infeasible. */
-  UNCERTAIN   = 100,
+  /** Solved?
+      Feasible candidate returned but optimality not certified.
+      Codes 100-149. */
+  UNCERTAIN_FEAS   = 100,
+  /** Deprecated. */
+  UNCERTAIN   = UNCERTAIN_FEAS,
+  /** End of the 'uncertain_feas' range. */
+  UNCERTAIN_FEAS_LAST = 149,
+  /** Solved?
+      Solution candidate returned but feasibility not certified.
+      Codes 150-199. */
+  UNCERTAIN_NO_FEAS_CERT   = 150,
+  /** End of the 'uncertain_no_feas_cert' range. */
+  UNCERTAIN_NO_FEAS_CERT_LAST = 199,
 
-  /** Problem is infeasible. */
+  /** Problem is infeasible. Codes 200-299. */
   INFEASIBLE  = 200,
+  /** End of the 'infeasible' range. */
+  INFEASIBLE_LAST = 299,
+  /** Problem is infeasible, IIS computation not attempted. */
+  INFEASIBLE_NO_IIS  = INFEASIBLE + 1,
+  /** Problem is infeasible, IIS returned. */
+  INFEASIBLE_IIS  = INFEASIBLE + 2,
+  /** Problem is infeasible, IIS finder failed. */
+  INFEASIBLE_IIS_FAILED  = INFEASIBLE + 3,
 
-  /** Problem is unbounded. */
-  UNBOUNDED   = 300,
+  /** Problem is unbounded, feasible solution returned.
+      Codes 300-349. */
+  UNBOUNDED_FEAS      = 300,
+  /** End of the 'unbounded-feas' range. */
+  UNBOUNDED_FEAS_LAST = 349,
+  /** Deprecated. */
+  UNBOUNDED           = UNBOUNDED_FEAS,
 
-  /** Problem is infeasible or unbounded. */
-  INF_OR_UNB  = UNBOUNDED+1,
+  /** Problem is unbounded, no feasible solution returned.
+      Codes 350-399.
+      For undecidedly inf/unb, use LIMIT_INF_UNB. */
+  UNBOUNDED_NO_FEAS      = 350,
+  /** End of the 'unbounded-no-feas' range. */
+  UNBOUNDED_NO_FEAS_LAST = 399,
 
-  /** Stopped by a limit, e.g. on iterations or time. */
-  LIMIT       = 400,
+  /** Limit.
+   *  Feasible solution, stopped by a limit, e.g., on iterations or Ctrl-C.
+   *  Codes 400-449.  */
+  LIMIT_FEAS       = 400,
+  /** End of the 'limit_feas' range.  */
+  LIMIT_FEAS_LAST  = 449,
+  /** Deprecated. */
+  LIMIT = LIMIT_FEAS,
+  /** User interrupt, feasible solution. */
+  LIMIT_FEAS_INTERRUPT = LIMIT_FEAS + 1,
+  /** Time limit, feasible solution. */
+  LIMIT_FEAS_TIME = LIMIT_FEAS + 2,
+  /** Iteration limit, feasible solution. */
+  LIMIT_FEAS_ITER = LIMIT_FEAS + 3,
+  /** Node limit, feasible solution. */
+  LIMIT_FEAS_NODES = LIMIT_FEAS + 4,
+  /** Best obj/bound reached, feasible solution. */
+  LIMIT_FEAS_BESTOBJ_BESTBND = LIMIT_FEAS + 5,
+  /** Best obj reached, feasible solution. */
+  LIMIT_FEAS_BESTOBJ = LIMIT_FEAS + 6,
+  /** Best bound reached, feasible solution. */
+  LIMIT_FEAS_BESTBND = LIMIT_FEAS + 7,
+  /** Solution number bound reached. */
+  LIMIT_FEAS_NUMSOLS = LIMIT_FEAS + 8,
+  /** Work limit reached, feasible solution. */
+  LIMIT_FEAS_WORK = LIMIT_FEAS + 9,
+  /** Soft memory limit reached, feasible solution. */
+  LIMIT_FEAS_SOFTMEM = LIMIT_FEAS + 10,
+  /** Stalling, feasible solution. */
+  LIMIT_FEAS_STALL = LIMIT_FEAS + 11,
+  /** Unrecoverable failure, feasible solution found. */
+  LIMIT_FEAS_FAILURE = LIMIT_FEAS + 12,
 
-  /** A solver error. */
+  /** Limit.
+      Problem is infeasible or unbounded.
+      Codes 450-469.  */
+  LIMIT_INF_UNB  = LIMIT_FEAS + 50,
+  /** End of the 'limit inf/unb' range.  */
+  LIMIT_INF_UNB_LAST = LIMIT_FEAS + 69,
+  /** Deprecated. */
+  INF_OR_UNB  = LIMIT_INF_UNB,
+
+  /** Limit.
+      No feasible solution returned.
+      Codes 470-499.  */
+  LIMIT_NO_FEAS  = LIMIT_FEAS + 70,
+  /** End of the 'limit-no-feas' range.  */
+  LIMIT_NO_FEAS_LAST  = LIMIT_FEAS + 99,
+  /** User interrupt, no feasible solution. */
+  LIMIT_NO_FEAS_INTERRUPT = LIMIT_NO_FEAS + 1,
+  /** Time limit, no feasible solution. */
+  LIMIT_NO_FEAS_TIME = LIMIT_NO_FEAS + 2,
+  /** Iteration limit, no feasible solution. */
+  LIMIT_NO_FEAS_ITER = LIMIT_NO_FEAS + 3,
+  /** Node limit, no feasible solution. */
+  LIMIT_NO_FEAS_NODES = LIMIT_NO_FEAS + 4,
+  /** Objective cutoff, no feasible solution. */
+  LIMIT_NO_FEAS_CUTOFF = LIMIT_NO_FEAS + 5,
+  /** Best bound reached, no feasible solution. */
+  LIMIT_NO_FEAS_BESTBND = LIMIT_NO_FEAS + 7,
+  /** Work limit reached, no feasible solution. */
+  LIMIT_NO_FEAS_WORK = LIMIT_NO_FEAS + 9,
+  /** Soft memory limit reached, no feasible solution. */
+  LIMIT_NO_FEAS_SOFTMEM = LIMIT_NO_FEAS + 10,
+  /** Stalling, no feasible solution. */
+  LIMIT_NO_FEAS_STALL = LIMIT_NO_FEAS + 11,
+
+  /** An error without a feasible solution.
+      Codes 500-599.
+      With a feasible solution, use LIMIT_FEAS_FAILURE. */
   FAILURE     = 500,
+  /** End of the 'failure' range. */
+  FAILURE_LAST     = 599,
 
-  /** Solution check failed. */
+  /** MP Solution check failed. Codes 520-529. */
   SOLUTION_CHECK = FAILURE + 20,
 
-  /** A numeric issue. */
-  NUMERIC     = 550,
+  /** A numeric issue without a feasible solution.
+   *  With a feasible solution, use LIMIT_FEAS_STALL. */
+  NUMERIC     = FAILURE + 50,
 
-  /** Interrupted by the user. */
-  INTERRUPTED = 600
+  /** Specific.
+   *  Use for specific codes not fitting in above categories. */
+  SPECIFIC = 600,
+  /** Deprecated.
+   *  Use LIMIT_FEAS_INTERRUPT, LIMIT_NOFEAS_INTERRUPT instead.
+   */
+  INTERRUPTED = SPECIFIC
 };
+
 }
 
 /** Expression information. */

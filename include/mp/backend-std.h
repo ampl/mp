@@ -550,33 +550,47 @@ protected:
       satisfaction problem */
   virtual bool IsProblemSolved() const {
     assert(IsSolStatusRetrieved());
-    return sol::SOLVED==SolveCode();
+    return sol::SOLVED<=SolveCode()
+        && SolveCode()<=sol::SOLVED_LAST;
   }
   /// Solved or feasible
   virtual bool IsProblemSolvedOrFeasible() const {
     assert( IsSolStatusRetrieved() );
-    return sol::INFEASIBLE > SolveCode() &&
-        sol::UNKNOWN < SolveCode();
+    return
+        (sol::UNCERTAIN_FEAS_LAST>=SolveCode() &&
+         sol::SOLVED<=SolveCode())
+        ||
+        (sol::LIMIT_FEAS>=SolveCode() &&
+         sol::LIMIT_FEAS_LAST<=SolveCode())
+        ||
+        (sol::UNBOUNDED_FEAS>=SolveCode() &&
+         sol::UNBOUNDED_NO_FEAS_LAST<=SolveCode());
   }
+  /// Undecidedly infeas or unbnd
   virtual bool IsProblemIndiffInfOrUnb() const {
     assert( IsSolStatusRetrieved() );
-    return sol::INF_OR_UNB==SolveCode();
+    return sol::LIMIT_INF_UNB<=SolveCode()
+        && SolveCode()<=sol::LIMIT_INF_UNB_LAST;
   }
+  /// Infeasible or unbounded
   virtual bool IsProblemInfOrUnb() const {
     assert( IsSolStatusRetrieved() );
     auto sc = SolveCode();
-    return sol::INFEASIBLE<=sc && sol::LIMIT>sc;
+    return
+        (sol::INFEASIBLE<=sc
+         && sol::UNBOUNDED_NO_FEAS_LAST>=sc)
+        || IsProblemIndiffInfOrUnb();
   }
   virtual bool IsProblemInfeasible() const {
     assert( IsSolStatusRetrieved() );
     auto sc = SolveCode();
-    return sol::INFEASIBLE<=sc && sol::UNBOUNDED>sc;
+    return sol::INFEASIBLE<=sc && sol::INFEASIBLE_LAST>sc;
   }
   virtual bool IsProblemUnbounded() const {
     assert( IsSolStatusRetrieved() );
     auto sc = SolveCode();
-    return sol::UNBOUNDED==sc ||
-        (sol::UNBOUNDED+2<=sc && sol::LIMIT>sc);
+    return sol::UNBOUNDED_FEAS<=sc
+        && sol::UNBOUNDED_NO_FEAS_LAST>=sc;
   }
   virtual bool IsSolStatusRetrieved() const {
     return sol::NOT_SET!=SolveCode();
