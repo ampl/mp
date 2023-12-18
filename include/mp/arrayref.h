@@ -33,12 +33,9 @@ namespace mp {
   /// from an rvalue std::vector.
   template <typename T>
   class ArrayRef {
-    std::vector<T> save_;
-    const T* data_ = nullptr;
-    std::size_t size_ = 0;
-
   public:
-    ArrayRef() { }
+    /// Construct
+    ArrayRef() noexcept { }
 
     /// From pointer + size
     ArrayRef(const T* data, std::size_t size) noexcept :
@@ -81,12 +78,30 @@ namespace mp {
       return *this;
     }
 
-    // operator bool()
+    /// operator bool()
     operator bool() const { return !empty(); }
-    // bool empty()
+    /// bool empty()
     bool empty() const { return 0 == size(); }
 
-    /// Move the saved vector if any, otherwise copy
+    /// Get vector<> as copy from a lvalue ArrayRef
+    operator std::vector<T>() const & { return {begin(), end()}; }
+    /// Get vector<> as copy/move from an rvalue ArrayRef
+    operator std::vector<T>() && { return move_or_copy(); }
+
+    /// data()
+    const T* data() const { return data_; }
+    /// size()
+    std::size_t size() const { return size_; }
+
+    /// begin()
+    const T* begin() const { return data(); }
+    /// end()
+    const T* end() const { return data() + size(); }
+
+    /// operator[]
+    const T& operator[](std::size_t i) const { return data_[i]; }
+
+  protected:
     std::vector<T> move_or_copy() {
       if (save_.size()) {
         data_ = nullptr;
@@ -96,17 +111,6 @@ namespace mp {
       return { begin(), end() };
     }
 
-    operator std::vector<T>() { return move_or_copy(); }
-
-    const T* data() const { return data_; }
-    std::size_t size() const { return size_; }
-
-    const T* begin() const { return data(); }
-    const T* end() const { return data() + size(); }
-
-    const T& operator[](std::size_t i) const { return data_[i]; }
-
-  protected:
     template <class AR>
     void init_from_rvalue(AR&& other) {
       if (other.save_.size()) {
@@ -119,10 +123,16 @@ namespace mp {
         size_ = other.size();
       }
     }
+
+  private:
+    std::vector<T> save_;
+    const T* data_ = nullptr;
+    std::size_t size_ = 0;
   };
 
   template <typename T> inline
-    ArrayRef<T> MakeArrayRef(const T* data, std::size_t size) {
+  ArrayRef<T> MakeArrayRef(
+      const T* data, std::size_t size) noexcept {
     return ArrayRef<T>(data, size);
   }
 
