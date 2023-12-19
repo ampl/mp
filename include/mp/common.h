@@ -139,7 +139,8 @@ namespace sol {
 /**
  *  Solution status.
  *
- *  Every solution driver should register its solve_result codes
+ *  For printing solve result codes with the `-!` command-line switch,
+ *  every solution driver should register its solve_result codes
  *  via BasicSolver::AddSolveResults(). Only non-major codes
  *  should normally be registered (those with _LAST defined
  *  are pre-registered automatically.)
@@ -148,6 +149,11 @@ namespace sol {
  *  (use description from the comment.) For extra codes, use
  *  passing ranges (e.g., for stopping with a feasible solution
  *  on a limit, use 400-449), otherwise SPECIFIC+ codes.
+ *
+ *  If a code description's 2nd-last word is 'codes' (case-sensitive),
+ *  for example:
+ *  'solved? solution candidate may be infeasible; codes 100-199',
+ *  this code is printed as a header.
  */
 enum Status {
   /** If not touched. Don't register this code. */
@@ -267,14 +273,14 @@ enum Status {
   /** Soft memory limit reached, no feasible solution. */
   LIMIT_NO_FEAS_SOFTMEM = LIMIT_NO_FEAS + 10,
 
-  /** An error without a feasible solution.
+  /** Failure, without a feasible solution.
       Codes 500-599.
       With a feasible solution, use LIMIT_FEAS_FAILURE. */
   FAILURE     = 500,
   /** End of the 'failure' range. */
   FAILURE_LAST     = 599,
 
-  /** A numeric issue without a feasible solution.
+  /** Failure. A numeric issue without a feasible solution.
    *  With a feasible solution, use UNCERTAIN. */
   NUMERIC     = FAILURE + 50,
 

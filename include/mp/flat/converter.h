@@ -1086,7 +1086,8 @@ private:
     ////////////////////// Solve result codes ////////////////////////
     GetEnv().AddSolveResults({
                                {sol::MP_SOLUTION_CHECK,
-                                "solved? MP solution check failed; codes 150-159 "}
+                                "solved? MP solution check failed "
+                                "(option sol:chk:fail); codes 150-159 "}
                              });
   }
 

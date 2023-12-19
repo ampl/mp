@@ -400,7 +400,26 @@ bool SolverAppOptionParser::ShowSolverOptions(const char* param) {
 bool SolverAppOptionParser::ShowSolveResults() {
   solver_.Print("Solve result table for {}\n", solver_.long_name());
   for (const auto& sr: solver_.GetSolveResultRegistry()) {
-    solver_.Print("\t{}\t{}\n", sr.first, sr.second);
+    const auto& desc = sr.second;
+    bool fHeader = false;
+    auto p2=desc.size()-1;            // find 2nd last word
+    while (p2<desc.size() && desc[p2]==' ')
+      --p2;
+    if (p2<desc.size()) {
+      p2 = desc.rfind(' ', p2);
+      while (p2<desc.size() && desc[p2]==' ')
+        --p2;
+      if (p2<desc.size()) {
+        auto p1 = desc.rfind(' ', p2);
+        if (p1<desc.size()) {
+          fHeader = "codes"==desc.substr(p1+1, p2-p1);
+        }
+      }
+    }
+    if (fHeader)
+      solver_.Print("\t{}\t{}\n", sr.first, sr.second);
+    else
+      solver_.Print("\t\t{}\t{}\n", sr.first, sr.second);
   }
   return false;
 }
@@ -712,8 +731,7 @@ SolveResultRegistry::SolveResultRegistry()
       "codes 450-469 " },
 { sol::LIMIT_NO_FEAS,
       "limit, no solution returned; codes 470-499 " },
-{ sol::FAILURE, "failure, no solution returned; codes 500-599 " },
-{ sol::NUMERIC, "failure: numeric issue, no solution returned " }
+{ sol::FAILURE, "failure, no solution returned; codes 500-999 " }
 }
 } { }
 
