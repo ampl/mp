@@ -557,7 +557,7 @@ protected:
   virtual bool IsProblemSolvedOrFeasible() const {
     assert( IsSolStatusRetrieved() );
     return
-        (sol::UNCERTAIN_FEAS_LAST>=SolveCode() &&
+        (sol::SOLVED_LAST>=SolveCode() &&
          sol::SOLVED<=SolveCode())
         ||
         (sol::LIMIT_FEAS>=SolveCode() &&

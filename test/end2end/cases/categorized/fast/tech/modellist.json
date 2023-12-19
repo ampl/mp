@@ -35,7 +35,7 @@
         "sol:chk:fail sol:chk:mode=1023 sol:chk:feastol=1e-7 sol:chk:inttol=1e-4 feasrelax=1"
     },
     "values": {
-      "solve_result_num": 520
+      "solve_result_num": 150
     }
   }
 ]

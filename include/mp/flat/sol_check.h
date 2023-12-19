@@ -135,7 +135,7 @@ public:
     // For now, do this via warnings?
     if (chk.HasAnyViols()) {
       if (MPCD( sol_check_fail() ))
-        MP_RAISE_WITH_CODE(int(sol::SOLUTION_CHECK),   // failure
+        MP_RAISE_WITH_CODE(int(sol::MP_SOLUTION_CHECK),   // failure
                            chk.GetReport());
       else
         MPD( AddWarning(

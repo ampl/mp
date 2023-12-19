@@ -1195,7 +1195,7 @@ std::pair<int, std::string> GurobiBackend::ConvertGurobiStatus() const {
   case GRB_OPTIMAL:
     return { sol::SOLVED, "optimal solution" };
   case GRB_SUBOPTIMAL:
-    return { sol::UNCERTAIN_NO_FEAS_CERT, "suboptimal solution, can be infeasible" };
+    return { sol::UNCERTAIN, "suboptimal solution, can be infeasible" };
   case GRB_INFEASIBLE:
     return { sol::INFEASIBLE, "infeasible problem" };
   case GRB_INF_OR_UNBD:
@@ -1207,7 +1207,7 @@ std::pair<int, std::string> GurobiBackend::ConvertGurobiStatus() const {
           "unbounded problem, no feasible solution returned" };
   case GRB_NUMERIC:
     if (has_sol)
-      return { sol::LIMIT_FEAS_STALL, "stalling, feasible solution" };
+      return { sol::UNCERTAIN, "stalling, solution candidate returned" };
     return { sol::NUMERIC, "terminated due to unrecoverable numerical issues" };
   case GRB_CUTOFF:
     return { sol::LIMIT_NO_FEAS_CUTOFF, "objective cutoff" };
@@ -2585,8 +2585,7 @@ void GurobiBackend::InitCustomOptions() {
                     { sol::LIMIT_FEAS_BESTOBJ_BESTBND,
                       "bestobjstop or bestbndstop reached, feasible solution" },
                     { sol::LIMIT_NO_FEAS_BESTBND,
-                      "bestbndstop reached, without a feasible solution" },
-                    { sol::LIMIT_FEAS_STALL, "stalling, feasible solution" }
+                      "bestbndstop reached, without a feasible solution" }
                   });
   AddSolveResults({
                     { 601, "Could not talk to Gurobi Instant Cloud or Gurobi Server." },

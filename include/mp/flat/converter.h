@@ -973,8 +973,8 @@ public:
 
 private:
   std::string solchkfailtext_ {
-    "Fail on solution checking violations, with solve result "
-    + std::to_string(sol::SOLUTION_CHECK) + '.'
+    "Fail on MP solution check violations, with solve result "
+    + std::to_string(sol::MP_SOLUTION_CHECK) + '.'
   };
   void InitOwnOptions() {
     /// Should be called after adding all constraint keepers
@@ -1085,8 +1085,8 @@ private:
 
     ////////////////////// Solve result codes ////////////////////////
     GetEnv().AddSolveResults({
-                               {sol::SOLUTION_CHECK,
-                                "MP solution check failure. Codes 520-529."}
+                               {sol::MP_SOLUTION_CHECK,
+                                "solved? MP solution check failed; codes 150-159 "}
                              });
   }
 

@@ -167,19 +167,16 @@ enum Status {
   SOLVED_LAST =  99,
 
   /** Solved?
-      Feasible candidate returned but optimality not certified.
-      Codes 100-149. */
-  UNCERTAIN_FEAS   = 100,
-  /** Deprecated. */
-  UNCERTAIN   = UNCERTAIN_FEAS,
-  /** End of the 'uncertain_feas' range. */
-  UNCERTAIN_FEAS_LAST = 149,
-  /** Solved?
-      Solution candidate returned but feasibility not certified.
-      Codes 150-199. */
-  UNCERTAIN_NO_FEAS_CERT   = 150,
-  /** End of the 'uncertain_no_feas_cert' range. */
-  UNCERTAIN_NO_FEAS_CERT_LAST = 199,
+      Solution candidate returned but error likely.
+      Codes 100-199. */
+  UNCERTAIN   = 100,
+  /** End of the 'uncertain' range. */
+  UNCERTAIN_LAST = 199,
+
+  /** MP Solution check failed. Codes 150-159. */
+  MP_SOLUTION_CHECK = UNCERTAIN + 50,
+  /** End of the 'mp-solution-check' range. */
+  MP_SOLUTION_CHECK_LAST     = UNCERTAIN + 59,
 
   /** Problem is infeasible. Codes 200-299. */
   INFEASIBLE  = 200,
@@ -235,10 +232,8 @@ enum Status {
   LIMIT_FEAS_WORK = LIMIT_FEAS + 9,
   /** Soft memory limit reached, feasible solution. */
   LIMIT_FEAS_SOFTMEM = LIMIT_FEAS + 10,
-  /** Stalling, feasible solution. */
-  LIMIT_FEAS_STALL = LIMIT_FEAS + 11,
   /** Unrecoverable failure, feasible solution found. */
-  LIMIT_FEAS_FAILURE = LIMIT_FEAS + 12,
+  LIMIT_FEAS_FAILURE = LIMIT_FEAS + 20,
 
   /** Limit.
       Problem is infeasible or unbounded.
@@ -271,8 +266,6 @@ enum Status {
   LIMIT_NO_FEAS_WORK = LIMIT_NO_FEAS + 9,
   /** Soft memory limit reached, no feasible solution. */
   LIMIT_NO_FEAS_SOFTMEM = LIMIT_NO_FEAS + 10,
-  /** Stalling, no feasible solution. */
-  LIMIT_NO_FEAS_STALL = LIMIT_NO_FEAS + 11,
 
   /** An error without a feasible solution.
       Codes 500-599.
@@ -281,11 +274,8 @@ enum Status {
   /** End of the 'failure' range. */
   FAILURE_LAST     = 599,
 
-  /** MP Solution check failed. Codes 520-529. */
-  SOLUTION_CHECK = FAILURE + 20,
-
   /** A numeric issue without a feasible solution.
-   *  With a feasible solution, use LIMIT_FEAS_STALL. */
+   *  With a feasible solution, use UNCERTAIN. */
   NUMERIC     = FAILURE + 50,
 
   /** Specific.

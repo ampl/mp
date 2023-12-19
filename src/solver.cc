@@ -690,34 +690,30 @@ SolveResultRegistry::SolveResultRegistry()
   : registry_ {
 {   // Adding standard solver codes a priori
 { sol::SOLVED,
-      "solved. An optimal solution found for an optimization problem "
-      "or a feasible solution found for a satisfaction problem. "
-      "Codes 0-99. " },
-{ sol::UNCERTAIN_FEAS,
-      "solved? Feasible candidate returned but optimality not certified. "
-      "Codes 100-149. " },
-{ sol::UNCERTAIN_NO_FEAS_CERT,
-      "solved? Solution candidate returned but feasibility not certified. "
-      "Codes 150-199. " },
-{ sol::INFEASIBLE, "infeasible. Codes 200-299. " },
+      "solved: optimal for an optimization problem, "
+      "feasible for a satisfaction problem; "
+      "codes 0-99 " },
+{ sol::UNCERTAIN,
+      "solved? solution candidate returned but error likely; "
+      "codes 100-199 " },
+{ sol::INFEASIBLE, "infeasible; codes 200-299 " },
 { sol::UNBOUNDED_FEAS,
-      "unbounded, feasible solution returned. "
-      "Codes 300-349. " },
+      "unbounded, feasible solution returned; "
+      "codes 300-349 " },
 { sol::UNBOUNDED_NO_FEAS,
-      "unbounded, no feasible solution returned. "
-      "Codes 350-399. " },
+      "unbounded, no feasible solution returned; "
+      "codes 350-399 " },
 { sol::LIMIT_FEAS,
-      "limit. Feasible solution returned. "
-      "Stopped by a limit, e.g., on iterations or Ctrl-C. "
-      "Codes 400-449. " },
+      "limit, feasible: "
+      "stopped by a limit, e.g., on iterations or Ctrl-C; "
+      "codes 400-449 " },
 { sol::LIMIT_INF_UNB,
-      "infeasible or unbounded. "
-      "Codes 450-469. " },
+      "limit, problem is either infeasible or unbounded; "
+      "codes 450-469 " },
 { sol::LIMIT_NO_FEAS,
-      "limit. No feasible solution returned. Codes 470-499. " },
-{ sol::FAILURE, "error without a feasible solution. "
-      "Codes 500-599. " },
-{ sol::NUMERIC, "numeric issue without a feasible solution. " }
+      "limit, no solution returned; codes 470-499 " },
+{ sol::FAILURE, "failure, no solution returned; codes 500-599 " },
+{ sol::NUMERIC, "failure: numeric issue, no solution returned " }
 }
 } { }
 

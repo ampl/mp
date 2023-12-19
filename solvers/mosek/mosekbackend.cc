@@ -346,6 +346,8 @@ std::string MosekBackend::ConvertMOSEKTermStatus() {
     return { ", stalling" };
   case MSK_RES_TRM_NUMERICAL_PROBLEM:
     return { ", numerical issues" };
+  case MSK_RES_TRM_MAX_NUM_SETBACKS:
+    return { ", numerical issues (too many setbacks)" };
   case MSK_RES_TRM_MIO_NUM_RELAXS:
     return { ", relaxation limit hit" };
   case MSK_RES_TRM_MIO_NUM_BRANCHES:
