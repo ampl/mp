@@ -731,7 +731,8 @@ SolveResultRegistry::SolveResultRegistry()
       "codes 450-469 " },
 { sol::LIMIT_NO_FEAS,
       "limit, no solution returned; codes 470-499 " },
-{ sol::FAILURE, "failure, no solution returned; codes 500-999 " }
+{ sol::FAILURE, "failure, no solution returned; codes 500-999 " },
+{ sol::NUMERIC, "failure: numeric issue, no feasible solution" }
 }
 } { }
 

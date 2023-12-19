@@ -249,43 +249,73 @@ std::pair<int, std::string> VisitorBackend::ConvertVISITORStatus() {
   namespace sol = mp::sol;
   /*
    * TODO.
-     * Keep relevant result codes added
+   * Follow guidelines from mp::sol::Status.
+     * Keep new result codes added
      * in AddOptions() via AddSolveResults().
      */
   if (IsMIP())
   {
     /*
-    int optstatus = getIntAttr(VISITOR_INTATTR_MIPSTATUS);
+    int optstatus = getIntAttr(COPT_INTATTR_MIPSTATUS);
+    int solstatus
+        = getIntAttr(COPT_INTATTR_HASMIPSOL)
+        | getIntAttr(COPT_INTATTR_HASFEASRELAXSOL);
     switch (optstatus) {
-    case VISITOR_MIPSTATUS_OPTIMAL:
+    case COPT_MIPSTATUS_OPTIMAL:
       return { sol::SOLVED, "optimal solution" };
-    case VISITOR_MIPSTATUS_INFEASIBLE:
+    case COPT_MIPSTATUS_INFEASIBLE:
       return { sol::INFEASIBLE, "infeasible problem" };
-    case VISITOR_MIPSTATUS_INF_OR_UNB:
+    case COPT_MIPSTATUS_INF_OR_UNB:
       return { sol::INF_OR_UNB, "infeasible or unbounded problem" };
-    case VISITOR_MIPSTATUS_UNBOUNDED:
-      return { sol::UNBOUNDED, "unbounded problem" };
-    case VISITOR_MIPSTATUS_TIMEOUT:
-    case VISITOR_MIPSTATUS_NODELIMIT:
-    case VISITOR_MIPSTATUS_INTERRUPTED:
-      return { sol::INTERRUPTED, "interrupted" };
+    case COPT_MIPSTATUS_UNBOUNDED:
+      if (solstatus)
+        return { sol::UNBOUNDED_FEAS, "unbounded problem, feasible solution" };
+      return { sol::UNBOUNDED_NO_FEAS, "unbounded problem, no solution" };
+    case COPT_MIPSTATUS_TIMEOUT:
+    case COPT_MIPSTATUS_NODELIMIT:
+    case COPT_MIPSTATUS_INTERRUPTED:
+    case COPT_MIPSTATUS_UNSTARTED:
+      if (solstatus)
+        return { sol::LIMIT_FEAS, "interrupted, feasible solution" };
+      return { sol::LIMIT_NO_FEAS, "interrupted, no solution" };
+    case COPT_MIPSTATUS_UNFINISHED:
+      return { sol::NUMERIC, "failure, numeric issues" };
+    default:
+      return { sol::UNKNOWN, "unknown" };
     }
     */
   }
   else {
     /*
-    int optstatus = getIntAttr(VISITOR_INTATTR_LPSTATUS);
+    int optstatus = getIntAttr(COPT_INTATTR_LPSTATUS);
+    int solstatus
+        = getIntAttr(COPT_INTATTR_HASLPSOL)
+        | getIntAttr(COPT_INTATTR_HASFEASRELAXSOL);
     switch (optstatus) {
-    case VISITOR_LPSTATUS_OPTIMAL:
+    case COPT_LPSTATUS_OPTIMAL:
       return { sol::SOLVED, "optimal solution" };
-    case VISITOR_LPSTATUS_INFEASIBLE:
+    case COPT_LPSTATUS_INFEASIBLE:
       return { sol::INFEASIBLE, "infeasible problem" };
-    case VISITOR_LPSTATUS_UNBOUNDED:
-      return { sol::UNBOUNDED, "unbounded problem" };
-    case VISITOR_LPSTATUS_TIMEOUT:
-      return { sol::INTERRUPTED, "interrupted" };
+    case COPT_LPSTATUS_UNBOUNDED:
+      if (solstatus)
+        return { sol::UNBOUNDED_FEAS, "unbounded problem, feasible solution" };
+      return { sol::UNBOUNDED_NO_FEAS, "unbounded problem, no solution" };
+    case COPT_LPSTATUS_TIMEOUT:
+    case COPT_LPSTATUS_INTERRUPTED:
+    case COPT_LPSTATUS_UNSTARTED:
+      if (solstatus)
+        return { sol::LIMIT_FEAS, "interrupted, feasible solution" };
+      return { sol::LIMIT_NO_FEAS, "interrupted, no solution" };
+    case COPT_LPSTATUS_UNFINISHED:
+      return { sol::NUMERIC, "failure, numeric issues" };
+    case COPT_LPSTATUS_IMPRECISE:
+      return { sol::UNCERTAIN, "solution is imprecise" };
+    case COPT_LPSTATUS_NUMERICAL:
+      if (solstatus)
+        return { sol::UNCERTAIN, "solution returned but error likely" };
+      return { sol::NUMERIC, "failure, numeric issues" };
     default:
-      return { sol::UNKNOWN, "unfinished" };
+      return { sol::UNKNOWN, "unknown" };
     }
     */
   }

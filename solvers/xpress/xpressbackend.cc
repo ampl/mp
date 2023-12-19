@@ -358,22 +358,28 @@ std::string XpressmpBackend::DoXpressFixedModel()
 
   std::pair<int, std::string> XpressmpBackend::ConvertXPRESSMPStatus() {
     namespace sol = mp::sol;
-    if (IsMIP())
+    auto solstatus = getIntAttr(XPRS_SOLSTATUS);
+    bool fFeasible = (XPRS_SOLSTATUS_FEASIBLE==solstatus);
+    if (IsMIP())    // TODO also XPRS_NLPSTATUS
     {
       auto status = getIntAttr(XPRS_MIPSTATUS);
       switch (status) {
       case XPRS_MIP_OPTIMAL:
         return { sol::SOLVED, "optimal solution" };
       case XPRS_MIP_SOLUTION:
-        return { sol::UNCERTAIN, "feasible solution" };
+        return { sol::LIMIT_FEAS, "limit, feasible solution" };
       case XPRS_MIP_INFEAS:
         return { sol::INFEASIBLE, "infeasible problem" };
       case XPRS_MIP_UNBOUNDED:
-        return { sol::INF_OR_UNB, "infeasible or unbounded problem" };
+        if (fFeasible)
+          return { sol::UNBOUNDED_FEAS,
+                "unbounded problem, feasible solution returned" };
+        return { sol::UNBOUNDED_NO_FEAS,
+              "unbounded problem, no solution returned" };
       case XPRS_MIP_LP_NOT_OPTIMAL:
       case XPRS_MIP_NO_SOL_FOUND:
       case XPRS_MIP_LP_OPTIMAL:
-        return { sol::INTERRUPTED, "interrupted" };
+        return { sol::LIMIT_NO_FEAS, "interrupted, no solution" };
       }
     }
     else {
@@ -384,17 +390,27 @@ std::string XpressmpBackend::DoXpressFixedModel()
       case XPRS_LP_INFEAS:
         return { sol::INFEASIBLE, "infeasible problem" };
       case XPRS_LP_UNBOUNDED:
-        return { sol::UNBOUNDED, "unbounded problem" };
+        if (fFeasible)
+          return { sol::UNBOUNDED_FEAS,
+                "unbounded problem, feasible solution returned" };
+        return { sol::UNBOUNDED_NO_FEAS,
+              "unbounded problem, no solution returned" };
       case XPRS_LP_CUTOFF:
-        return { sol::LIMIT, "objective cutoff" };
+        return { sol::UNCERTAIN, "objective cutoff" };
       case XPRS_LP_CUTOFF_IN_DUAL:
-        return { sol::LIMIT+20, "objective cutoff in dual" };
+        return { sol::UNCERTAIN, "objective cutoff in dual" };
       case XPRS_LP_UNFINISHED:
-        return { sol::INTERRUPTED, "interrupted" };
+        if (fFeasible)
+          return { sol::LIMIT_FEAS, "unfinished, feasible solution" };
+        return { sol::LIMIT_NO_FEAS, "unfinished, no solution" };
+      case XPRS_LP_UNSOLVED:
+        return { sol::NUMERIC, "numerical issues" };
       case XPRS_LP_UNSTARTED:
         return { sol::UNKNOWN, "unstarted" };
+      case XPRS_LP_NONCONVEX:
+        return { sol::FAILURE, "problem is nonconvex, consider using FICO Xpress Global" };
       default:
-        return { sol::UNKNOWN, "unfinished" };
+        return { sol::UNKNOWN, "unknown" };
       }
     }
     return { sol::UNKNOWN, "not solved" };
@@ -2431,6 +2447,10 @@ AddSolverOption("mip:varselection varselection",
     "\n.. value-table::\n",
     XPRS_TUNERVERBOSE, values_01_noyes_1default_, 1);
 
+  /////////////////////// Custom solve results /////////////////////////
+//  AddSolveResults({
+//                    { sol::NUMERIC, "failure: numeric issue, no feasible solution" }
+//                  });
 }
 
 

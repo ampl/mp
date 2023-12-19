@@ -2585,8 +2585,7 @@ void GurobiBackend::InitCustomOptions() {
                     { sol::LIMIT_FEAS_BESTOBJ_BESTBND,
                       "bestobjstop or bestbndstop reached, feasible solution" },
                     { sol::LIMIT_NO_FEAS_BESTBND,
-                      "bestbndstop reached, without a feasible solution" },
-                    { sol::NUMERIC, "failure: numeric issue, no feasible solution" }
+                      "bestbndstop reached, without a feasible solution" }
                   });
   AddSolveResults({
                     { 601, "Could not talk to Gurobi Instant Cloud or Gurobi Server." },

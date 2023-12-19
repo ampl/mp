@@ -552,21 +552,22 @@ std::pair<int, std::string> CplexBackend::ConvertCPLEXStatus() {
   int optimstatus = CPXgetstat(env(), lp());
   switch (optimstatus) {
   default:
-    // Fall through.
-    if (interrupter()->Stop()) {
-      return { sol::INTERRUPTED, "interrupted" };
-    }
     int solcount;
     solcount = CPXgetsolnpoolnumsolns (env(), lp());  // Can we use it without CPXpopulate?
     if (solcount>0) {
-      return { sol::UNCERTAIN, "feasible solution" };
+      return { sol::LIMIT_FEAS, "feasible solution" };
+    }
+    if (interrupter()->Stop()) {
+      return { sol::LIMIT_NO_FEAS, "interrupted" };
     }
     return { sol::UNKNOWN, "unknown solution status" };
   case CPX_STAT_OPTIMAL:
   case CPXMIP_OPTIMAL:
+  case CPXMIP_OPTIMAL_POPULATED:
   case CPX_STAT_MULTIOBJ_OPTIMAL:
     return { sol::SOLVED, "optimal solution" };
   case CPXMIP_OPTIMAL_TOL:
+  case CPXMIP_OPTIMAL_POPULATED_TOL:
     return { sol::SOLVED, "optimal solution within tolerance" };
   case CPXMIP_OPTIMAL_RELAXED_SUM:
   case CPXMIP_OPTIMAL_RELAXED_QUAD:
@@ -582,17 +583,30 @@ std::pair<int, std::string> CplexBackend::ConvertCPLEXStatus() {
   case CPX_STAT_INForUNBD:
   case CPXMIP_INForUNBD:
   case CPX_STAT_MULTIOBJ_INForUNBD:
-    return { sol::INF_OR_UNB, "infeasible or unbounded problem" };
+    return { sol::LIMIT_INF_UNB, "infeasible or unbounded problem" };
   case CPX_STAT_UNBOUNDED:
   case CPXMIP_UNBOUNDED:
   case CPX_STAT_MULTIOBJ_UNBOUNDED:
-    return { sol::UNBOUNDED, "unbounded problem" };
+    if (solcount>0)
+      return { sol::UNBOUNDED_FEAS,
+            "unbounded problem, feasible solution returned" };
+    return { sol::UNBOUNDED_NO_FEAS,
+          "unbounded problem, no feasible solution returned" };
+  case CPX_STAT_OPTIMAL_FACE_UNBOUNDED:
+    return { sol::UNBOUNDED_NO_FEAS, "model has an unbounded optimal face" };
+  case CPX_STAT_FEASIBLE:
+  case CPXMIP_FEASIBLE:
   case CPX_STAT_FEASIBLE_RELAXED_INF:
   case CPX_STAT_FEASIBLE_RELAXED_QUAD:
   case CPX_STAT_FEASIBLE_RELAXED_SUM:
+  case CPXMIP_FEASIBLE_RELAXED_INF:
+  case CPXMIP_FEASIBLE_RELAXED_QUAD:
+  case CPXMIP_FEASIBLE_RELAXED_SUM:
+    return { sol::LIMIT_FEAS, "limit, feasible solution" };
   case CPX_STAT_NUM_BEST:
   case CPX_STAT_OPTIMAL_INFEAS:
-    return { sol::UNCERTAIN, "feasible or optimal but numeric issue" };
+  case CPXMIP_OPTIMAL_INFEAS:
+    return { sol::UNCERTAIN, "reported feasible or optimal but numeric issue" };
   }
 }
 
@@ -1222,6 +1236,10 @@ void CplexBackend::InitCustomOptions() {
     "Type of solution to compute for a QP problem",
     CPXPARAM_OptimalityTarget, optimalitytarget_values_, 0);
 
+  /// Custom solve results here...
+  //  AddSolveResults({
+  //                    { sol::NUMERIC, "failure: numeric issue, no feasible solution" }
+  //                  });
 }
 
 void CplexBackend::CplexSetObjIntParam(const SolverOption& opt, int val) {

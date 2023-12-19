@@ -285,30 +285,37 @@ std::pair<int, std::string> MosekBackend::ConvertMOSEKStatus() {
   namespace sol = mp::sol;
   std::string term_info = ConvertMOSEKTermStatus();
   // TODO Keep result code registry in AddOptons() up2date.
+  // See guidelines in mp::sol.
   switch (solSta_) {
   case MSK_SOL_STA_OPTIMAL:
   case MSK_SOL_STA_INTEGER_OPTIMAL:
     return { sol::SOLVED, "optimal" + term_info };
   case MSK_SOL_STA_PRIM_FEAS:
-    return { sol::UNCERTAIN, "feasible primal" + term_info };
+    return { sol::LIMIT_FEAS, "feasible primal" + term_info };
   case MSK_SOL_STA_DUAL_FEAS:
     return { sol::UNCERTAIN, "feasible dual" + term_info };
   case MSK_SOL_STA_PRIM_AND_DUAL_FEAS:
     return { sol::UNCERTAIN, "primal and dual feasible" + term_info };
   case MSK_SOL_STA_PRIM_INFEAS_CER:
-    return { sol::INFEASIBLE, "primal infeasible" + term_info };
+    return { sol::INFEASIBLE,
+          "the solution is a primal infeasibility certificate" + term_info };
   case MSK_SOL_STA_DUAL_INFEAS_CER:
-    return { sol::INF_OR_UNB, "dual infeasible" + term_info };
-  case MSK_SOL_STA_UNKNOWN:
+    return { sol::LIMIT_INF_UNB,
+          "the solution is a dual infeasibility certificate" + term_info };
   case MSK_SOL_STA_PRIM_ILLPOSED_CER:
+    return { sol::NUMERIC,
+          "the solution is a primal ill-posedness certificate" + term_info };
   case MSK_SOL_STA_DUAL_ILLPOSED_CER:
+    return { sol::NUMERIC,
+          "the solution is a dual ill-posedness certificate" + term_info };
+  case MSK_SOL_STA_UNKNOWN:
   default:
     switch (proSta_) {
     case MSK_PRO_STA_PRIM_AND_DUAL_FEAS:
       return
       { sol::UNCERTAIN, "primal and dual feasible" + term_info };
     case MSK_PRO_STA_PRIM_FEAS:
-      return { sol::UNCERTAIN, "feasible primal" + term_info };
+      return { sol::LIMIT_FEAS, "feasible primal" + term_info };
     case MSK_PRO_STA_DUAL_FEAS:
       return { sol::UNCERTAIN, "feasible dual" + term_info };
     case MSK_PRO_STA_PRIM_INFEAS:
@@ -325,8 +332,8 @@ std::pair<int, std::string> MosekBackend::ConvertMOSEKStatus() {
     case MSK_PRO_STA_UNKNOWN:
     default:
       return { sol::UNKNOWN,
-            "unknown (" + std::to_string(solSta_)
-            + ", problem status: " + std::to_string(proSta_)
+            "unknown status (solution: " + std::to_string(solSta_)
+            + ", problem: " + std::to_string(proSta_)
             + ")" + term_info };
     }
   }
@@ -355,7 +362,7 @@ std::string MosekBackend::ConvertMOSEKTermStatus() {
   case MSK_RES_TRM_NUM_MAX_NUM_INT_SOLUTIONS:
     return { ", solution limit hit" };
   default:
-    return { "termination code "
+    return { ", termination code "
           + std::to_string(termCode_) };
   }
   return {};
@@ -438,12 +445,10 @@ void MosekBackend::InitCustomOptions() {
     "0*/1: Whether to write mosek log lines to stdout.",
     MSK_IPAR_LOG, 0, 1);
 
-  /////////////////////// Gurobi custom solve results /////////////////////////
-  AddSolveResults({
-                    { sol::SOLVED, "optimal solution" },
-                    { sol::UNCERTAIN, "suboptimal" }
-                  },
-                  true);        // Replace main codes
+  /////////////////////// Custom solve results /////////////////////////
+//  AddSolveResults({
+//                    { sol::NUMERIC, "failure: numeric issue, no feasible solution" }
+//                  });
 }
 
 double MosekBackend::MIPGap() {
