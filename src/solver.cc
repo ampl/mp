@@ -400,26 +400,11 @@ bool SolverAppOptionParser::ShowSolverOptions(const char* param) {
 bool SolverAppOptionParser::ShowSolveResults() {
   solver_.Print("Solve result table for {}\n", solver_.long_name());
   for (const auto& sr: solver_.GetSolveResultRegistry()) {
-    const auto& desc = sr.second;
-    bool fHeader = false;
-    auto p2=desc.size()-1;            // find 2nd last word
-    while (p2<desc.size() && desc[p2]==' ')
-      --p2;
-    if (p2<desc.size()) {
-      p2 = desc.rfind(' ', p2);
-      while (p2<desc.size() && desc[p2]==' ')
-        --p2;
-      if (p2<desc.size()) {
-        auto p1 = desc.rfind(' ', p2);
-        if (p1<desc.size()) {
-          fHeader = "codes"==desc.substr(p1+1, p2-p1);
-        }
-      }
-    }
-    if (fHeader)
-      solver_.Print("\t{}\t{}\n", sr.first, sr.second);
-    else
-      solver_.Print("\t\t{}\t{}\n", sr.first, sr.second);
+    if (sr.isSingle())
+      solver_.Print("\t    {:3}\t{}\n", sr.first(), sr.descr());
+    else     // range, printing as a header
+      solver_.Print("\t{:3}-{:3}\t{}\n",
+                    sr.first(), sr.last(), sr.descr());
   }
   return false;
 }
@@ -708,30 +693,26 @@ static void ProcessLines_AvoidComments(std::istream& stream,
 SolveResultRegistry::SolveResultRegistry()
   : registry_ {
 {   // Adding standard solver codes a priori
-{ sol::SOLVED,
+{ sol::SOLVED, sol::SOLVED_LAST,
       "solved: optimal for an optimization problem, "
-      "feasible for a satisfaction problem; "
-      "codes 0-99 " },
-{ sol::UNCERTAIN,
-      "solved? solution candidate returned but error likely; "
-      "codes 100-199 " },
-{ sol::INFEASIBLE, "infeasible; codes 200-299 " },
-{ sol::UNBOUNDED_FEAS,
-      "unbounded, feasible solution returned; "
-      "codes 300-349 " },
-{ sol::UNBOUNDED_NO_FEAS,
-      "unbounded, no feasible solution returned; "
-      "codes 350-399 " },
-{ sol::LIMIT_FEAS,
+      "feasible for a satisfaction problem " },
+{ sol::UNCERTAIN, sol::UNCERTAIN_LAST,
+      "solved? solution candidate returned but error likely " },
+{ sol::INFEASIBLE, sol::INFEASIBLE_LAST,
+      "infeasible " },
+{ sol::UNBOUNDED_FEAS, sol::UNBOUNDED_FEAS_LAST,
+      "unbounded, feasible solution returned " },
+{ sol::UNBOUNDED_NO_FEAS, sol::UNBOUNDED_NO_FEAS_LAST,
+      "unbounded, no feasible solution returned " },
+{ sol::LIMIT_FEAS, sol::LIMIT_FEAS_LAST,
       "limit, feasible: "
-      "stopped by a limit, e.g., on iterations or Ctrl-C; "
-      "codes 400-449 " },
-{ sol::LIMIT_INF_UNB,
-      "limit, problem is either infeasible or unbounded; "
-      "codes 450-469 " },
-{ sol::LIMIT_NO_FEAS,
-      "limit, no solution returned; codes 470-499 " },
-{ sol::FAILURE, "failure, no solution returned; codes 500-999 " },
+      "stopped, e.g., on iterations or Ctrl-C " },
+{ sol::LIMIT_INF_UNB, sol::LIMIT_INF_UNB_LAST,
+      "limit, problem is either infeasible or unbounded " },
+{ sol::LIMIT_NO_FEAS, sol::LIMIT_NO_FEAS_LAST,
+      "limit, no solution returned " },
+{ sol::FAILURE, sol::FAILURE_LAST,
+      "failure, no solution returned " },
 { sol::NUMERIC, "failure: numeric issue, no feasible solution" }
 }
 } { }
@@ -740,10 +721,11 @@ void SolveResultRegistry::AddSolveResults(
     const SRRegMap &sm, bool ifCanReplace) {
   for (const auto& sr : sm) {
     if (!ifCanReplace  // Fail unless ifCanReplace
-        && registry_.end()!=registry_.find(sr.first))
+        && registry_.end()!=registry_.find(sr))
       MP_RAISE(fmt::format(
-                 "Duplicated solve code {}", sr.first));
-    registry_[sr.first] = sr.second;
+                 "Duplicated solve code range {}-{}",
+                 sr.first(), sr.last()));
+    registry_.insert(sr);
   }
 }
 

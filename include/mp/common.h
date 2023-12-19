@@ -149,11 +149,6 @@ namespace sol {
  *  (use description from the comment.) For extra codes, use
  *  passing ranges (e.g., for stopping with a feasible solution
  *  on a limit, use 400-449), otherwise SPECIFIC+ codes.
- *
- *  If a code description's 2nd-last word is 'codes' (case-sensitive),
- *  for example:
- *  'solved? solution candidate may be infeasible; codes 100-199',
- *  this code is printed as a header.
  */
 enum Status {
   /** If not touched. Don't register this code. */
@@ -274,11 +269,11 @@ enum Status {
   LIMIT_NO_FEAS_SOFTMEM = LIMIT_NO_FEAS + 10,
 
   /** Failure, without a feasible solution.
-      Codes 500-599.
+      Codes 500-999.
       With a feasible solution, use LIMIT_FEAS_FAILURE. */
   FAILURE     = 500,
   /** End of the 'failure' range. */
-  FAILURE_LAST     = 599,
+  FAILURE_LAST     = 999,
 
   /** Failure. A numeric issue without a feasible solution.
    *  With a feasible solution, use UNCERTAIN. */

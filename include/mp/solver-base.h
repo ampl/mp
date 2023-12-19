@@ -2,6 +2,7 @@
 #define SOLVERBASE_H
 
 #include <map>
+#include <set>
 
 #include "solver-opt.h"
 #include "common.h"
@@ -105,8 +106,43 @@ public:
   /// Destroy
   virtual ~SolveResultRegistry() { }
 
+  /// Registry entry.
+  /// This is a pair<int, int>,
+  /// meaning a range (first-last) of result codes.
+  /// Plus a description.
+  class RegEntry {
+  public:
+    /// Construct from a range
+    RegEntry(int a, int b, std::string d)
+      : first_(a), last_(b), descr_(std::move(d))
+    { assert(a<=b); }
+    /// Construct from a single code
+    RegEntry(int a, std::string d)
+      : first_(a), last_(a), descr_(std::move(d)) { }
+    /// Is signle code?
+    bool isSingle() const { return first()==last(); }
+    /// First
+    int first() const { return first_; }
+    /// Last
+    int last() const { return last_; }
+    /// Descr
+    const std::string& descr() const { return descr_; }
+    /// operator<:
+    /// We need range 100-199 to come before range 100-149
+    /// before single code 100, etc.
+    bool operator<(const RegEntry& k) const {
+      return first() < k.first()
+          ? true : first() > k.first()
+            ? false : last() > k.last();
+    }
+  private:
+    int first_;
+    int last_;
+    std::string descr_;
+  };
+
   /// Registry map
-  using SRRegMap = std::map<int, std::string>;
+  using SRRegMap = std::set<RegEntry>;
 
   /// Add a map with result descriptions
   void AddSolveResults(const SRRegMap& sm,
