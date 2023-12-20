@@ -146,8 +146,8 @@ model information.
 NL Writer design
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The library was designed with efficiency in mind.
-It allows most efficient conversion of the user model
+The library
+allows a most efficient conversion of a user model's
 internal representation to NL format by providing
 NL component writer callbacks
 (and solution reader callbacks to receive solutions.)

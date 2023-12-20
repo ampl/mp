@@ -58,8 +58,11 @@ see example below. To enable it for constraints, use
 :ref:`option <solver-options>` ``chk:mode``.
 
 
-Warning format
+Warnings format
 ******************
+
+Example
+~~~~~~~~~~~~~~~~~~~~~~
 
 To explain the solution check warning format, let's solve a relaxed version
 of the following model:
@@ -117,12 +120,24 @@ It includes the number of violations (2), maximal absolute violation
 and variable name, as well as maximal relative violation.
 
 Paragraph ``Algebraic expression violations`` presents similar information,
-for each expression type (in the case ``:linrange``.) Paragraph
+for each expression type (see the :ref:`full list <constr-list>`). Paragraph
 ``Objective value violations`` does that for objectives.
 
 The 2nd warning is ``Solution Check (Idealistic)``.
 As the idealistic check is performed by default for objectives only,
 this warning repeats the information about objective value violation.
+
+.. _constr-list:
+
+Expression list
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The below table lists expression types which can be reported.
+
+.. csv-table::
+   :file: tables/constr_list.csv
+   :widths: 5, 25, 70
+   :header-rows: 1
 
 
 "Realistic" solution check
