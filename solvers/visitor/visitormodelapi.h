@@ -117,6 +117,39 @@ public:
   ACCEPT_CONSTRAINT(SOS2Constraint, Recommended, CG_SOS)
   void AddConstraint(const SOS2Constraint& cc);
 
+  ACCEPT_CONSTRAINT(PLConstraint, Recommended, CG_General)
+  void AddConstraint(const PLConstraint& cc);
+
+
+
+  // Non linear constraints
+  ACCEPT_CONSTRAINT(MaxConstraint, Recommended, CG_General)
+    void AddConstraint(const MaxConstraint& mc);
+  ACCEPT_CONSTRAINT(MinConstraint, Recommended, CG_General)
+    void AddConstraint(const MinConstraint& mc);
+  ACCEPT_CONSTRAINT(AbsConstraint, Recommended, CG_General)
+    void AddConstraint(const AbsConstraint& absc);
+  ACCEPT_CONSTRAINT(AndConstraint, Recommended, CG_General)
+    void AddConstraint(const AndConstraint& cc);
+  ACCEPT_CONSTRAINT(OrConstraint, Recommended, CG_General)
+    void AddConstraint(const OrConstraint& mc);
+  ACCEPT_CONSTRAINT(ExpConstraint, Recommended, CG_General)
+    void AddConstraint(const ExpConstraint& cc);
+  ACCEPT_CONSTRAINT(ExpAConstraint, Recommended, CG_General)
+    void AddConstraint(const ExpAConstraint& cc);
+  ACCEPT_CONSTRAINT(LogConstraint, Recommended, CG_General)
+    void AddConstraint(const LogConstraint& cc);
+  ACCEPT_CONSTRAINT(LogAConstraint, Recommended, CG_General)
+    void AddConstraint(const LogAConstraint& cc);
+  ACCEPT_CONSTRAINT(PowConstraint, Recommended, CG_General)
+    void AddConstraint(const PowConstraint& cc);
+  ACCEPT_CONSTRAINT(SinConstraint, Recommended, CG_General)
+    void AddConstraint(const SinConstraint& cc);
+  ACCEPT_CONSTRAINT(CosConstraint, Recommended, CG_General)
+    void AddConstraint(const CosConstraint& cc);  
+  ACCEPT_CONSTRAINT(TanConstraint, Recommended, CG_General)
+    void AddConstraint(const TanConstraint& cc);
+
 };
 
 } // namespace mp
