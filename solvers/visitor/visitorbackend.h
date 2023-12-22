@@ -205,7 +205,7 @@ private:
     std::vector<double> list_option_;
   };
   Options storedOptions_;
-
+  void printModelStats();
 
 protected:
   const std::string& get_example_option() const

@@ -31,7 +31,7 @@ namespace mp {
 /// Create Visitor Model Manager
 /// @param gc: the Visitor common handle
 /// @param e: environment
-/// @param pre: presolver to be returned,
+/// @param pre: presolver to be names[Solver::returned]= "";
 /// need it to convert solution data
 /// @return VisitorModelMgr
 std::unique_ptr<BasicModelManager>
@@ -120,12 +120,12 @@ std::string VisitorBackend::GetSolverVersion() {
 bool VisitorBackend::IsMIP() const {
   // TODO. Use most precise information
   // (nonconvexities etc.)
-  return getIntAttr(Solver::VARS_INT) > 0;
+  return getIntAttr(Solver::NVARS_INT) > 0;
   //return getIntAttr(VISITOR_INTATTR_ISMIP);
 }
 
 bool VisitorBackend::IsQCP() const {
-  return getIntAttr(Solver::CONS_QUAD) > 0;
+  return getIntAttr(Solver::NCONS_TYPE, Solver::CONS_QUAD) > 0;
 // return getIntAttr(VISITOR_INTATTR_QELEMS) > 0;
 }
 
@@ -233,8 +233,59 @@ void VisitorBackend::ReportVISITORPool() {
   */
 }
 
+void VisitorBackend::printModelStats() {
 
+  std::map<Solver::TYPE, std::string> names;
+  names[Solver::CONS_LIN] = "Linear";
+    names[Solver::CONS_QUAD]= "Quadratic";
+    names[Solver::CONS_QUAD_CONE]= "Quadratic cones";
+    names[Solver::CONS_QUAD_CONE_ROTATED]= "Quadratic cones rotated";
+    names[Solver::CONS_INDIC]= "Indicator";
+    names[Solver::CONS_SOS]= "SOS";
+
+    names[Solver::CONS_MAX]= "Max";
+    names[Solver::CONS_MIN]= "Min";
+    names[Solver::CONS_ABS]= "Abs";
+    names[Solver::CONS_AND]= "And";
+    names[Solver::CONS_OR]= "Or";
+
+    names[Solver::CONS_EXP]= "Exp";
+    names[Solver::CONS_EXPA]= "ExpA";
+    names[Solver::CONS_LOG]= "Log";
+    names[Solver::CONS_LOGA]= "LogA";
+
+    names[Solver::CONS_POW]= "Pow";
+    names[Solver::CONS_SIN]= "Sin";
+    names[Solver::CONS_COS]= "Cos";
+    names[Solver::CONS_TAN]= "Tan";
+    names[Solver::CONS_PL] = "Piecewise linear";
+
+
+    int n = 0;
+    n = getIntAttr(Solver::NVARS_CONT);
+    if (n > 0)
+      AddToSolverMessage(fmt::format("{} continuous variables\n", n));
+    n = getIntAttr(Solver::NVARS_INT);
+    if (n > 0)
+      AddToSolverMessage(fmt::format("{} integer variables\n", n));
+
+    n = getIntAttr(Solver::NOBJS);
+    AddToSolverMessage(fmt::format("{} objective{} - {}\n", n,
+      n > 1 ? "s" : "",
+      getIntAttr(Solver::ISQOBJ) ? "quadratic" : "linear"
+      ));
+
+
+
+    for (const auto& i : names) {
+      auto n = getIntAttr(Solver::NCONS_TYPE, i.first);
+      if (n == 0) continue;
+      AddToSolverMessage(fmt::format("{} {} constraints\n", n, i.second));
+    }
+
+}
 void VisitorBackend::AddVISITORMessages() {
+  printModelStats();
   AddToSolverMessage(
           fmt::format("{} simplex iterations\n", SimplexIterations()));
   if (auto nbi = BarrierIterations())
