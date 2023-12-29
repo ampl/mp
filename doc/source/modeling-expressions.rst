@@ -520,6 +520,9 @@ Mosek handles exponential conic constraints. Example:
 General nonlinear functions
 **********************************
 
+Supported functions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 - log (*expr*), log10 (*expr*)
     *expr-valued:* The natural and base-10 logarithms of *expr*.
 - exp (*expr*)
@@ -535,7 +538,10 @@ General nonlinear functions
     is decomposed into quadratic constraints if the solver supports them,
     otherwise passed to the solver natively or approximated by a piecewise-linear function.
 
-For linear-quadratic MP-based solvers (which include all those currently implemented),
+General solvers
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For linear-quadratic MP-based solvers (all those currently implemented),
 most of these nonlinear functions are handled by piecewise-linear approximation,
 except products with binary variables.
 The appoximation is constructed by the MP interface, using options
@@ -543,14 +549,43 @@ The appoximation is constructed by the MP interface, using options
 and is then processed as described in
 :ref:`piecewise_linear_modeling`.
 
+Handling in Gurobi
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 For Gurobi, the following univariate nonlinear functions are instead handled natively:
-exp, log, ^, sin, cos, tan.
+**exp**, **log**, **^**, **sin**, **cos**, **tan**.
 After suitable transformations, the MP interface sends Gurobi the expressions that use
-these functions, after which the Gurobi solver constructs the piecewise-linear approximations
-as part of its preprocessing. The choice of approximation can be influenced by setting
+these functions.
+
+Gurobi 11 defaults to piecewise-linear approximation of these functions
+as part of its preprocessing. However, Gurobi :ref:`option <solver-options>` `alg:global`
+(`pre:funcnonlinear`) sets the default to the new MINLP capability ---
+`global nonlinear solving <https://www.gurobi.com/>`_ via spatial branching::
+
+  ampl: option gurobi_options 'global=1'; solve;
+
+For individual constraints and objectives, the choice of global solving vs
+piecewise-linear approximation can be performed via the `.global` suffix::
+
+  pre:funcnonlinear (funcnonlinear, global)
+      Controls how general functions with their constraint's or objective's
+      suffix .funcnonlinear or, if not available, .global unset (or set to 0)
+      are treated (ATTENTION: different meaning than Gurobi FuncNonLinear
+      parameter and attribute):
+
+      -1 - Piecewise-linear approximation
+      0  - Automatic (default)
+      1  - Treated as nonlinear functions
+
+      Suffix values mean the same.
+
+See our `Christmas tree decorations Streamlit example <https://ampl.com/streamlit>`_
+using global optimization.
+
+Piecewise-linear aproximation can be influenced by setting
 the following options in an AMPL ``gurobi_options`` string::
 
-  funcpieces
+  pre:funcpieces
       Sets the strategy for constructing a piecewise-linear approximation of a
       function:
 
@@ -563,15 +598,15 @@ the following options in an AMPL ``gurobi_options`` string::
       -2  - Bounds the relative error of the approximation, as specified
             by the funcpieceerror option
 
-  funcpiecelength
+  pre:funcpiecelength
       When funcpieces = 1, specifies the length of each piece of the
       approximation.
 
-  funcpieceerror
+  pre:funcpieceerror
       When funcpieces = -1 or -2, specifies the maximum allowed
       error (absolute for -1, relative for -2) in the approximation.
 
-  funcpieceratio
+  pre:funcpieceratio
       Controls whether the piecewise-linear approximation is an underestimate
       of the function, an overestimate, or somewhere in between. A value of
       0.0 will always underestimate, while a value of 1.0 will always
