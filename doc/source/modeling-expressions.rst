@@ -625,12 +625,16 @@ these functions.
 Gurobi 11 defaults to piecewise-linear approximation of these functions
 as part of its preprocessing. However, Gurobi :ref:`option <solver-options>` ``alg:global``
 (``pre:funcnonlinear``) sets the default to the new MINLP capability ---
-`global nonlinear solving <https://www.gurobi.com/>`_ via spatial branching::
+`global nonlinear solving <https://www.gurobi.com/>`_ via spatial branching:
+
+.. code-block:: ampl
 
   ampl: option gurobi_options 'global=1'; solve;
 
 For individual constraints and objectives, the choice of global solving vs
-piecewise-linear approximation can be performed via the `.global` suffix::
+piecewise-linear approximation can be performed via the ``.global`` suffix:
+
+.. code-block:: text
 
   pre:funcnonlinear (funcnonlinear, global)
       Controls how general functions with their constraint's or objective's
@@ -648,7 +652,9 @@ See our `Christmas tree decorations Streamlit example <https://ampl.com/streamli
 using global optimization.
 
 Piecewise-linear aproximation can be influenced by setting
-the following options in the AMPL ``gurobi_options`` string::
+the following options in the AMPL ``gurobi_options`` string:
+
+.. code-block:: text
 
   pre:funcpieces
       Sets the strategy for constructing a piecewise-linear approximation of a

@@ -222,7 +222,7 @@ public:
     if (f_idealistic && chk.HasAnyViols())
       wrt.write(
             "AMPL may evaluate constraints/objectives differently\n"
-            "than the solver, see mp.ampl.com/solution-check.html.");
+            "than the solver, see mp.ampl.com/modeling-tools.html.");
     chk.SetReport( wrt.str() );
   }
 

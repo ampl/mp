@@ -21,7 +21,9 @@ Method 1: acceptance options
 
 List the solver's natively supported constraints,
 by running the solver executable with the ``-=acc`` command-line switch
-which lists all solver options starting with the ``acc:`` prefix::
+which lists all solver options starting with the ``acc:`` prefix:
+
+.. code-block:: bash
 
   gurobi -=acc
 
