@@ -56,8 +56,9 @@ for the following categories of operators and expressions:
   ``sin``, ``cos``, ``tan``; ``sinh``, ``cosh``, ``tanh``
 - Set membership operator: ``in``
 
-Details and examples are given in the *Expressions supported* section below.
-See also the individual solvers' documentation for details of solver-specific features:
+Modeling details and examples are given in the :ref:`expressions_supported` section below.
+Technical details and tools are in the :ref:`modeling-tools` section.
+See also the individual solvers' documentation for more details of solver-specific features:
 
 - Choice between linearization in the interface and native solver support for some operations
 - Handling of AMPL suffixes on constraints that are transformed by the interface

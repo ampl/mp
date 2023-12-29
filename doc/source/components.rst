@@ -545,12 +545,8 @@ To implement value pre- / postsolving, the following API is used:
 Reformulation graph
 ~~~~~~~~~~~~~~~~~~~
 
-The flattening and reformulation graph can be exported by the ``cvt:writegraph``
-option (WIP).
-
-At the moment only arcs are exported. Terminal nodes (variables, constraints,
-objectives) can be seen in the NL model (ampl: ``expand``) and the
-final flat model (gurobi: option ``writeprob``).
+Explore the flattening and reformulation graph for your model,
+as described in :ref:`reformulation-graph`.
 
 
 C++ ASL adapter

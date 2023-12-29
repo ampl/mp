@@ -1,8 +1,91 @@
+
+.. _modeling-tools:
+
+Tools & details
+---------------------------
+
+This section highlight some tools aiding modeling and solving.
+
+
+.. _supported-constraints:
+
+Supported constraints
+***********************************
+
+To find out which constraints are natively supported by the solver,
+or, more generally, understood by MP,
+there are two ways.
+
+Method 1: acceptance options
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+List the solver's natively supported constraints,
+by running the solver executable with the ``-=acc`` command-line switch
+which lists all solver options starting with the ``acc:`` prefix::
+
+  gurobi -=acc
+
+
+.. _full-cons-list:
+
+Method 2: full constraint list
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+List all constraints known by the MP model converter, including some
+internal ones, by running the solver executable with the ``-c``
+command-line switch. Here is a beautified summary of the resulting
+(rather technical) output for a generic solver:
+
+.. csv-table::
+   :file: tables/constr_list.csv
+   :widths: 5, 25, 70
+   :header-rows: 1
+
+
+
+.. _explore-reformulations:
+
+Explore the reformulations
+*************************************
+
+To explore the reformulations performed on your model, there are
+the following ways.
+
+
+.. _explore-final-model:
+
+Explore the final model
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To explore the model received by the solver,
+export the model
+in one of the solver's general formats:
+
+.. code-block:: ampl
+
+  ampl: option mosek_auxfiles rc;   ## To use var/con names
+  ampl: option mosek_options 'writeprob=/tmp/ell.jtask'; solve;
+
+
+.. _reformulation-graph:
+
+Reformulation graph
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The flattening and reformulation graph can be exported
+by the ``cvt:writegraph`` option (WIP).
+
+At the moment only arcs are exported. Terminal nodes (variables, constraints,
+objectives) can be seen in the NL model (ampl: ``expand``) and the
+final flat model (gurobi: option ``tech:writeprob``).
+
+
+
 .. _solution-check:
 
 
-Solution check
----------------------
+Automatic solution check
+******************************
 
 Solutions obtained from the solver are automatically checked
 for correctness with given tolerances
@@ -19,7 +102,7 @@ are recomputed.
 
 
 Motivation
-**********************
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Consider the disjunction constraint
 
@@ -59,7 +142,7 @@ see example below. To enable it for constraints, use
 
 
 Warnings format
-******************
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Example
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -132,16 +215,12 @@ this warning repeats the information about objective value violation.
 Expression list
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The below table lists expression types which can be reported.
-
-.. csv-table::
-   :file: tables/constr_list.csv
-   :widths: 5, 25, 70
-   :header-rows: 1
+The full list of expressions which can be reported is given
+in section :ref:`Full constraint list <full-cons-list>`.
 
 
 "Realistic" solution check
-******************************
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In this mode, variable values are taken as they were reported by the solver
 (with possible modifications via options
@@ -166,7 +245,7 @@ that's why the relative violation is missing).
 
 
 "Idealistic" solution check
-******************************
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In this mode, non-linear expressions are recomputed and compared to solver values.
 The recomputation is performed similar to how AMPL does it when asked to
@@ -273,7 +352,7 @@ set ``option (solver_)auxfiles rc;`` as follows:
 
 
 Remedies
-*********************
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 For "realistic" solution violations, the reason is most probably
 :ref:`numerical_accuracy`.

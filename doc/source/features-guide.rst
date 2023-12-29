@@ -1,6 +1,6 @@
 .. _features-guide:
 
-Features Guide for MP-based AMPL Solvers
+Features guide for MP-based AMPL solvers
 ****************************************
 
 .. highlight:: ampl
@@ -122,7 +122,7 @@ For example, to control Gurobi ``NumericFocus`` setting, there are two ways:
     ampl: option gurobi_options 'alg:numericfocus 3';      ## standard way
     ampl: option gurobi_options 'tech:param "NumericFocus 3"';   ## native
 
-Additionally, for some solver native options can be read / written
+Additionally, for some solvers, native options can be read / written
 from / to files using ``tech:param:read`` and ``tech:param:write``.
 
 General features
