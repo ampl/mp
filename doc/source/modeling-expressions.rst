@@ -444,7 +444,7 @@ Piecewise linearization allows handling of nonconvex QP and nonlinear models
 by convex MIP solvers.
 For convex MIQP solvers,
 to apply linearization of quadratic expressions (it is the default for linear solvers only),
-use options *cvt:quadobj=0*, *cvt:quadcon=0*.
+use options ``cvt:quadobj=0``, ``cvt:quadcon=0``.
 
 Other expressions involving these operators are converted, where possible, to simpler
 quadratic expressions and equality constraints through the use of auxiliary variables;
@@ -470,6 +470,8 @@ Conic optimization
 Some solvers can handle conic constraints with tailored algorithms:
 Mosek, Gurobi, COPT. Note that general non-linear solvers accept them too,
 but might not provide any specialized methods.
+See `conic examples <https://colab.ampl.com/tags/conic.html>`_
+at Google Colab.
 
 Second-order cone programming (SOCP)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -495,15 +497,24 @@ MP library provides additional conversion into solver-specific conic forms. Exam
      2*x[0]*x[1] >= x[2]^2 + ... + x[n]^2;
 
 
-*Note:* Mosek cannot mix SOCP and general quadratic constraints.
-:ref:`Option <solver-options>` ``cvt:socp=0`` results in second-order conic
+*Note:* Mosek cannot mix SOCP and general quadratic constraints,
+complaining::
+
+  MOSEK 10.0.43:  Error type 3, MSK_RES_ERR_MIXED_CONIC_AND_NL(1501):
+    The problem contains both conic and nonlinear constraints.
+
+
+In this case, setting :ref:`option <solver-options>` ``cvt:socp=0`` results in second-order conic
 constraints being passed to the solver as quadratics, even if
-the solver has native SOCP API.
+the solver has native SOCP API. This gives the solver a chance to recognize
+SOCP forms in preprocessing.
 
 Exponential cones
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Mosek handles exponential conic constraints. Example:
+Mosek natively handles exponential conic constraints.
+They are recognized by MP and passed to Mosek via its API.
+Example:
 
 .. code-block:: ampl
 
@@ -514,6 +525,23 @@ Mosek handles exponential conic constraints. Example:
    # conic constraints
    s.t. T1: 1 + b*w >= exp( q1 );
    s.t. T2: -1 + w +10*q2   <= -5 * q2 * exp( q1 / (q2*5) );
+
+*Note:* Mosek cannot mix conic and general quadratic constraints.
+Use :ref:`option <solver-options>` ``cvt:expcones=0`` to handle exponential conic
+constraints in other ways, even if
+the solver has native exponential conic API. For Mosek, they would be approximated
+by :ref:`piecewise_linear_modeling`.
+
+Exploring the final model
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To explore the model received by the solver,
+e.g., to see which constraints are received as conic vs quadratic, export the model
+in one of the solver's general formats::
+
+  ampl: option mosek_auxfiles rc;   ## To use var/con names
+  ampl: option mosek_options 'writeprob=/tmp/ell.jtask'; solve;
+
 
 
 
@@ -526,7 +554,7 @@ Supported functions
 - log (*expr*), log10 (*expr*)
     *expr-valued:* The natural and base-10 logarithms of *expr*.
 - exp (*expr*)
-    *expr-valued:* The base of the natural logarithms (e) raised to the power *expr*.
+    *expr-valued:* The base of the natural logarithm (e) raised to the power *expr*.
 - sin (*expr*), cos (*expr*), tan (*expr*), asin (*expr*), acos (*expr*), atan (*expr*)
     *expr-valued:* The sine, cosine, tangent of *expr* and the corresponding inverse functions.
 - sinh (*expr*), cosh (*expr*), tanh (*expr*), asinh (*expr*), acosh (*expr*), atanh (*expr*)
@@ -541,7 +569,7 @@ Supported functions
 General solvers
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-For linear-quadratic MP-based solvers (all those currently implemented),
+For linear-quadratic MP-based solvers,
 most of these nonlinear functions are handled by piecewise-linear approximation,
 except products with binary variables.
 The appoximation is constructed by the MP interface, using options
@@ -558,8 +586,8 @@ After suitable transformations, the MP interface sends Gurobi the expressions th
 these functions.
 
 Gurobi 11 defaults to piecewise-linear approximation of these functions
-as part of its preprocessing. However, Gurobi :ref:`option <solver-options>` `alg:global`
-(`pre:funcnonlinear`) sets the default to the new MINLP capability ---
+as part of its preprocessing. However, Gurobi :ref:`option <solver-options>` *alg:global*
+(*pre:funcnonlinear*) sets the default to the new MINLP capability ---
 `global nonlinear solving <https://www.gurobi.com/>`_ via spatial branching::
 
   ampl: option gurobi_options 'global=1'; solve;
@@ -583,7 +611,7 @@ See our `Christmas tree decorations Streamlit example <https://ampl.com/streamli
 using global optimization.
 
 Piecewise-linear aproximation can be influenced by setting
-the following options in an AMPL ``gurobi_options`` string::
+the following options in the AMPL ``gurobi_options`` string::
 
   pre:funcpieces
       Sets the strategy for constructing a piecewise-linear approximation of a
