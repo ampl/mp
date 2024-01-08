@@ -492,7 +492,7 @@ endif ()
 # Build NLWriter2 example
 if (BUILD_EXAMPLES)
   message(STATUS
-    "Building NLWriter2 example. Set -DBUILD_EXAMPLES=off to switch off.")
+    "Building NLWriter2 examples. Set -DBUILD_EXAMPLES=off to switch off.")
   set(NLW2_DIR nl-writer2)
   add_subdirectory(${NLW2_DIR})
   # Gather source files for docu

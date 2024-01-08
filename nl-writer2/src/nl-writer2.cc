@@ -327,15 +327,7 @@ g_fmt(char *b, double x, int prec)
   char *b0, sbuf[400], *se;
 
   b0 = b;
-#if defined(_WIN32) || defined(_WIN64)
-#ifdef IEEE_8087
-  if (!(((Long*)&x)[1] & 0x7fffffff | ((Long*)&x)[0])) {
-#else
-  if (!(((Long*)&x)[0] & 0x7fffffff | ((Long*)&x)[1])) {
-#endif /* IEEE_8087 */
-#else /* _WIN32 || _WIN64 */
-  if (! x) {
-#endif /*_WIN32 || _WIN64 */
+  if (! x) {        // Report -0 as '0'
     *b++ = '0';
     *b = 0;
     goto done;
