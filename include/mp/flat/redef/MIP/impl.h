@@ -3,7 +3,7 @@
 
 /**
  * Redefinition for MIP of
- *  <cond> ==> <constr1> [ else <constr2> ]
+ *   (cond) ==> (constr1) [ else (constr2) ]
  */
 
 #include "mp/flat/redef/redef_base.h"

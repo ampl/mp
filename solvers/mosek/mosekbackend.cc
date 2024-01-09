@@ -321,7 +321,7 @@ std::pair<int, std::string> MosekBackend::ConvertMOSEKStatus() {
     case MSK_PRO_STA_PRIM_INFEAS:
       return { sol::INFEASIBLE, "primal infeasible" + term_info };
     case MSK_PRO_STA_DUAL_INFEAS:
-      return { sol::INF_OR_UNB, "dual infeasible" + term_info };
+      return { sol::LIMIT_INF_UNB, "dual infeasible" + term_info };
     case MSK_PRO_STA_PRIM_AND_DUAL_INFEAS:
       return
       { sol::INFEASIBLE, "primal and dual infeasible" + term_info };

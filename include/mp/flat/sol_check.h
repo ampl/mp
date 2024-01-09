@@ -94,7 +94,7 @@ public:
 
   /// Check single unpostsolved solution.
   /// @param x_back: solution vector from realistic mode.
-  /// It can be changed by AMPL solution_... options.
+  /// It can be changed by the :round and :prec options.
   /// Its auxiliary vars are compared
   /// with recomputed expression values.
   bool DoCheckSol(
@@ -194,35 +194,28 @@ public:
   void GenerateViolationsReport(
       SolCheck& chk, bool f_idealistic) {
     fmt::MemoryWriter wrt;
-    if (chk.HasAnyViols())
-      wrt.write(
-            "   [ sol:chk:feastol={}, :feastolrel={}, :inttol={},\n"
-            "       :round='{}', :prec='{}' ]\n",
-            MPCD( sol_feas_tol() ), MPCD( sol_feas_tol_rel() ),
-            MPCD( sol_int_tol() ),
-            chk.x_ext().solution_round(),
-            chk.x_ext().solution_precision());
+    if (chk.HasAnyViols()) {
+      wrt.write("Type               MaxAbs [Name]   MaxRel [Name]\n");
+    }
     if (chk.HasAnyConViols()) {
       Gen1Viol(chk.VarViolBnds().at(0), wrt, true,
-               "  - {} variable(s) violate bounds");
+               "variable bounds");
       Gen1Viol(chk.VarViolBnds().at(1), wrt, true,
-               "  - {} auxiliary variable(s) violate bounds");
+               "aux var bounds");
       Gen1Viol(chk.VarViolIntty().at(0), wrt, true,
-               "  - {} variable(s) violate integrality");
+               "variable integrality");
       Gen1Viol(chk.VarViolIntty().at(1), wrt, true,
-               "  - {} auxiliary variable(s) violate integrality");
+               "aux var integrality");
     }
     GenConViol(chk.ConViolAlg(), wrt, 0);
     GenConViol(chk.ConViolLog(), wrt, 1);
     if (chk.HasAnyObjViols()) {
-      wrt.write("Objective value violations:\n");
       Gen1Viol(chk.ObjViols(), wrt, true,
-               "  - {} objective value(s) violated");
+               "objective(s)");
     }
     if (f_idealistic && chk.HasAnyViols())
       wrt.write(
-            "AMPL may evaluate constraints/objectives differently\n"
-            "than the solver, see mp.ampl.com/modeling-tools.html.");
+            "Documentation: mp.ampl.com/modeling-tools.html.");
     chk.SetReport( wrt.str() );
   }
 
@@ -231,58 +224,56 @@ public:
   /// the maximal violations.
   void Gen1Viol(
       const ViolSummary& vs, fmt::MemoryWriter& wrt,
-      bool f_max, const std::string& format) {
+      bool f_max, const std::string& type) {
     if (vs.N_) {
-      wrt.write(format, vs.N_);
-      auto vmaxabs = Gen1ViolMax(
-            f_max, vs.epsAbsMax_, vs.nameAbs_, false);
+      // wrt.write("  {:16} {:<7}", type, vs.N_);
+      wrt.write("  {:17}", type);
+      auto vmaxabs = Gen1ViolMax(  // true: 1 for logical
+            f_max, vs.epsAbsMax_, vs.nameAbs_);
       auto vmaxrel = Gen1ViolMax(
-            f_max, vs.epsRelMax_, vs.nameRel_, true);
-      if (vmaxabs.size() || vmaxrel.size())
-        wrt.write(",\n        {}", vmaxabs);
-      if (vmaxabs.size() && vmaxrel.size())
-        wrt.write(", ");
-      wrt.write("{}", vmaxrel);
+            f_max, vs.epsRelMax_, vs.nameRel_);
+      wrt.write("  {:14}", vmaxabs);
+      wrt.write("  {:14}", vmaxrel);
       wrt.write("\n");
     }
   }
 
   /// Stringify 1 maximal violation
   std::string Gen1ViolMax(
-      bool f_max, double viol, const char* nm, bool relVsAbs) {
+      bool f_max, double viol, const char* nm) {
     fmt::MemoryWriter wrt;
     if (viol>0.0) {
       if (f_max)
-        wrt.write("up to {:.0E} ({}",
-                  viol, relVsAbs ? "rel" : "abs");
+        wrt.write("{:.0E}", viol);
       if (nm && *nm != '\0') {
-        wrt.write(f_max ? ", " : "(");
-        wrt.write("item '{}')", nm);
-      } else if (f_max)
-        wrt.write(")");
+        wrt.write(f_max ? " [" : "[");
+        wrt.write("{}]", nm);
+      }
     }
+    if (0 == wrt.size())
+      wrt.write("-");
     return wrt.str();
   }
 
+  /// std::string classnm = alg_log ? "Logical" : "Algebraic";
+  /// wrt.write(classnm + " expression violations:\n");
   void GenConViol(
       const std::map< std::string, ViolSummArray<3> >& cvmap,
       fmt::MemoryWriter& wrt, int alg_log) {
-    std::string classnm = alg_log ? "Logical" : "Algebraic";
     if (cvmap.size()) {
-      wrt.write(classnm + " expression violations:\n");
       for (const auto& cva: cvmap) {
         Gen1Viol(cva.second.at(0), wrt, !alg_log,
                  0==cva.first.compare(0, 4, ":lin")
-                 ? "  - {} linear constraint(s)"
+                 ? "algebraic con(s)"
                  : 0==cva.first.compare(0, 5, ":quad")
-                   ? "  - {} quadratic constraint(s)"
-                 : "  - {} constraint(s) of type '"
+                   ? "quadratic con(s)"
+                 : "expr '"
                  + std::string(cva.first) + "'");
         Gen1Viol(cva.second.at(1), wrt, !alg_log,
-                 "  - {} intermediate auxiliary constraint(s) of type '"
+                 "interm expr '"
                  + std::string(cva.first) + "'");
         Gen1Viol(cva.second.at(2), wrt, !alg_log,
-                 "  - {} final auxiliary constraint(s) of type '"
+                 "final expr '"
                  + std::string(cva.first) + "'");
       }
     }

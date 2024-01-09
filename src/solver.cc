@@ -748,8 +748,8 @@ SolverOptionManager::~SolverOptionManager() {
 const char*
 BasicSolver::GetSolCheckWarningKey(bool f_recomp) const {
   return f_recomp
-      ? "Solution Check (Idealistic)"
-      : "Solution Check";
+      ? "Tolerance violations"
+      : "Tolerance violations (solver model)";
 }
 
 void BasicSolver::AddWarning(
