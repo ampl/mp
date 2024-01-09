@@ -443,14 +443,14 @@ protected:
     }
     if (exportKappa() && 1)
       writer.write("\nkappa value: {}", Kappa());
-    writer.write("\n");
     if (solver_msg_extra_.size()) {
+      writer.write("\n");
       writer.write(solver_msg_extra_);
     }
     /// Summary on alternative solutions
     if (kIntermSol_) {
       if (objIntermSol_.first > -1e50)
-        writer.write("{} alternative solution(s)\n"
+        writer.write("\n{} alternative solution(s)\n"
                      "  with objective values {}..{}\n"
                      "  written to '{}1.sol' ... '{}{}.sol'.\n",
                      kIntermSol_,
@@ -458,7 +458,7 @@ protected:
                      solution_stub(), solution_stub(),
                      kIntermSol_);
       else
-        writer.write("{} alternative solution(s)\n"
+        writer.write("\n{} alternative solution(s)\n"
                      "  written to '{}1.sol' ... '{}{}.sol'.\n",
                      kIntermSol_,
                      solution_stub(), solution_stub(),

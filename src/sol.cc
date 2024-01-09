@@ -29,14 +29,17 @@ void mp::internal::WriteMessage(fmt::BufferedFile &file, const char *message) {
       ++line_end;
     // Replace an empty line with a line containing a single space
     // because an empty line indicates the end of message.
-    if (line_end == line_start)
+    if (line_end == line_start
+        && *line_end)           // but not when end of string
       std::fputc(' ', file.get());
-    else
+    else {
       std::fwrite(line_start, 1, line_end - line_start, file.get());
+      if (!*line_end)
+        std::fputc('\n', file.get()); // make empty line in the end
+    }
     std::fputc('\n', file.get());
     if (!*line_end)
       break;
     line_start = line_end + 1;
   }
-  std::fputc('\n', file.get());
 }

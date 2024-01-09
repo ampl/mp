@@ -1004,13 +1004,13 @@ void GurobiBackend::ReportGurobiResults() {
 
 void GurobiBackend::AddGurobiMessage() {
   AddToSolverMessage(
-          fmt::format("{} simplex iterations\n", SimplexIterations()));
+          fmt::format("{} simplex iteration(s)\n", SimplexIterations()));
   if (auto nbi = BarrierIterations())
     AddToSolverMessage(
-          fmt::format("{} barrier iterations\n", nbi));
+          fmt::format("{} barrier iteration(s)\n", nbi));
   if (auto nnd = NodeCount())
     AddToSolverMessage(
-          fmt::format("{} branching nodes\n", nnd));
+          fmt::format("{} branching node(s)\n", nnd));
 }
 
 void GurobiBackend::DoGurobiTune() {
