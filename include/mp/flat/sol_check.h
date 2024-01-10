@@ -195,7 +195,7 @@ public:
       SolCheck& chk, bool f_idealistic) {
     fmt::MemoryWriter wrt;
     if (chk.HasAnyViols()) {
-      wrt.write("Type               MaxAbs [Name]   MaxRel [Name]\n");
+      wrt.write("Type                         MaxAbs [Name]   MaxRel [Name]\n");
     }
     if (chk.HasAnyConViols()) {
       Gen1Viol(chk.VarViolBnds().at(0), wrt, true,
@@ -227,7 +227,7 @@ public:
       bool f_max, const std::string& type) {
     if (vs.N_) {
       // wrt.write("  {:16} {:<7}", type, vs.N_);
-      wrt.write("  {:17}", type);
+      wrt.write("  {:27}", type);
       auto vmaxabs = Gen1ViolMax(  // true: 1 for logical
             f_max, vs.epsAbsMax_, vs.nameAbs_);
       auto vmaxrel = Gen1ViolMax(
