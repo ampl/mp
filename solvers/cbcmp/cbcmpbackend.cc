@@ -194,23 +194,50 @@ void CbcmpBackend::AddCBCMPMessages() {
 
 std::pair<int, std::string> CbcmpBackend::ConvertCBCMPStatus() {
   namespace sol = mp::sol;
+  auto obj = Cbc_getObjValue(lp());
+  bool hasSol = (-1e20<obj && obj<1e20);
+  if (Cbc_isAbandoned(lp())) {
+    if (hasSol)
+      return { sol::UNCERTAIN,
+            "numeric issues, solution candidate returned" };
+    return { sol::NUMERIC, "numeric issues, no solution" };
+  }
   if (Cbc_isProvenOptimal(lp()))
     return { sol::SOLVED, "optimal solution" };
   if (Cbc_isProvenInfeasible(lp()))
     return { sol::INFEASIBLE, "infeasible problem" };
-  if (Cbc_isContinuousUnbounded(lp()))
-    return { sol::UNBOUNDED, "unbounded problem" };
+  if (Cbc_isContinuousUnbounded(lp())) {
+    if (hasSol)
+      return { sol::UNBOUNDED_FEAS,
+            "unbounded problem, feasible solution returned" };
+    return { sol::UNBOUNDED_NO_FEAS, "unbounded problem, no solution" };
+  }
 
-  switch(Cbc_status(lp())){
+  switch(Cbc_status(lp())) {
   case -1:
+    if (hasSol)
+      return { sol::UNCERTAIN,
+            "unfinished, solution candidate returned" };
     return { sol::UNKNOWN, "unfinished" };
   case 1:
-    return { sol::LIMIT, "Hit a limit" };
+    if (hasSol)
+      return { sol::LIMIT_FEAS,
+            "hit a limit, feasible solution returned" };
+    return { sol::LIMIT_NO_FEAS, "Hit a limit, no solution" };
   case 2:
-    return { sol::NUMERIC, "Numeric issues" };
+    if (hasSol)
+      return { sol::UNCERTAIN,
+            "numeric issues, solution candidate returned" };
+    return { sol::NUMERIC, "numeric issues, no solution" };
   case 5:
-    return { sol::INTERRUPTED, "Interrupted" };
+    if (hasSol)
+      return { sol::LIMIT_FEAS_INTERRUPT,
+            "interrupted, feasible solution returned" };
+    return { sol::LIMIT_NO_FEAS_INTERRUPT, "interrupted, no solution" };
   default:
+    if (hasSol)
+      return { sol::UNCERTAIN,
+            "unfinished, solution candidate returned" };
     return { sol::UNKNOWN, "not solved" };
   }
 }
@@ -609,23 +636,24 @@ void CbcmpBackend::InitCustomOptions() {
 
   std::string name;
   std::string desc;
-  for (auto p : lp()->cbcData->parameters_)
+  for (const auto& p : lp()->cbcData->parameters_)
   {
+    auto p_name = p.name();
     if (p.type() >= CLP_PARAM_DBL_PRIMALTOLERANCE &&
       p.type() <= CBC_PARAM_DBL_DEXTRA5) {
       if (p.type() == CBC_PARAM_DBL_DEXTRA5)
         name = "double:dextra5 dextra5";
       else
-        name = fmt::format("double:{} {}", p.name(), p.name());
+        name = fmt::format("double:{} {}", p_name, p_name);
       desc = fmt::format("{} (default {}).", p.shortHelp(), p.doubleValue());
-      double_options.push_back({name, desc, p.name(), p.lowerDoubleValue(), p.upperDoubleValue()});
+      double_options.push_back({name, desc, p_name, p.lowerDoubleValue(), p.upperDoubleValue()});
     }
     else if (p.type() >= CLP_PARAM_INT_SOLVERLOGLEVEL &&
       p.type() <= CBC_PARAM_INT_MOREMOREMIPOPTIONS)
     {
-      name = fmt::format("int:{} {}", p.name(), p.name());
+      name = fmt::format("int:{} {}", p_name, p_name);
       desc = fmt::format("{} (default {}).", p.shortHelp(), p.intValue());
-      int_options.push_back({ name, desc, p.name(), p.lowerIntValue(), p.upperIntValue() });
+      int_options.push_back({ name, desc, p_name, p.lowerIntValue(), p.upperIntValue() });
     }
     // String options are dealt with separately
   }

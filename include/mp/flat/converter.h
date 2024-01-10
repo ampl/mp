@@ -1053,7 +1053,7 @@ private:
         "      expression values.\n"
                              "\n"
                              "Default: 1+2+8+512.",
-        options_.solcheckmode_, 0, 1024);
+        options_.solcheckmode_, 0, 1023);
     GetEnv().AddOption("sol:chk:feastol sol:chk:eps chk:eps chk:feastol",
         "Absolute tolerance to check objective values, variable "
         "and constraint bounds. Default 1e-6.",
