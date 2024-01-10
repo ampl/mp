@@ -223,6 +223,8 @@ enum Status {
   LIMIT_FEAS_NODES = LIMIT_FEAS + 4,
   /** Best obj/bound reached, feasible solution. */
   LIMIT_FEAS_BESTOBJ_BESTBND = LIMIT_FEAS + 5,
+  /** Gap reached, feasible solution. */
+  LIMIT_FEAS_GAP = LIMIT_FEAS_BESTOBJ_BESTBND,
   /** Best obj reached, feasible solution. */
   LIMIT_FEAS_BESTOBJ = LIMIT_FEAS + 6,
   /** Best bound reached, feasible solution. */
