@@ -410,11 +410,23 @@ struct IndexRange {
   /// Size()
   int Size() const { assert(IsValid()); return end_-beg_; }
 
+  /// operator==
+  bool operator==(const IndexRange& ir) const {
+    return beg_==ir.beg_ && end_==ir.end_;
+  }
+
+  /// operator!=
+  bool operator!=(const IndexRange& ir) const
+  { return !(*this==ir); }
+
   /// Represents just 1 index
   bool IsSingleIndex() const { return beg_==end_-1; }
 
   /// Return single index if it is
-  operator int() const { assert(IsSingleIndex()); return beg_; }
+  int GetSingleIndex() const { assert(IsSingleIndex()); return beg_; }
+
+  /// explicit operator int(): get single index
+  explicit operator int() const { return GetSingleIndex(); }
 
   /// begin index
   int beg_=0;

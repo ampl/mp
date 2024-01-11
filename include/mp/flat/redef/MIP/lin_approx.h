@@ -94,13 +94,13 @@ public:
             laPrm.periodicFactorRange.ub,
             var::INTEGER);
       GetMC().RedefineVariable(y,
-                               PLConstraint({rmd}, laPrm.plPoints));
+                               PLConstraint({int(rmd)}, laPrm.plPoints));
       GetMC().PropagateResultOfInitExpr(
             // propagate ctx into new constr
             con.GetResultVar(), con.GetContext());
       GetMC().AddConstraint( LinConEQ{  // x = period * factor + rmd
                                { {laPrm.periodLength, 1.0, -1.0},
-                                 {factor, rmd, x} },
+                                 {int(factor), int(rmd), x} },
                                {0.0} } );
     }
   }

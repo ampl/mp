@@ -320,7 +320,7 @@ protected:
       // which is always true TODO
       if (auto rhs_args = CheckNorm2(lint.var(0))) {
         return ContinueStdSOC(std::fabs(rhs),
-                              MC().MakeFixedVar( 1.0 ),
+                              int( MC().MakeFixedVar( 1.0 ) ),
                               lint.coef(0), rhs_args);
       }
     }
@@ -475,7 +475,7 @@ protected:
       x[1] = lhs_args.vars_[1];
     } else {                    // x is sqrt(k*x)
       c[1] = lhs_args.coef_extra * coefX_abs;
-      x[1] = MC().MakeFixedVar(1.0);
+      x[1] = int( MC().MakeFixedVar(1.0) );
     }
     auto coefY_abs = std::fabs(lint.coef(iY));
     for (size_t iPush=0; iPush<rhs_args.size(); ++iPush) {
@@ -484,7 +484,7 @@ protected:
     }
     if (constNZ) {
       assert(0.0 < rhs_args.const_term);
-      x.back() = MC().MakeFixedVar(1.0);
+      x.back() = int( MC().MakeFixedVar(1.0) );
       c.back() = coefY_abs * std::sqrt(rhs_args.const_term);
     }
     for (auto r: lhs_args.res_vars_to_delete_)
@@ -516,7 +516,7 @@ protected:
     }
     if (constNZ) {
       assert(0.0 < rhs_args.const_term);
-      x.back() = MC().MakeFixedVar(1.0);
+      x.back() = int( MC().MakeFixedVar(1.0) );
       c.back() = coefY_abs * std::sqrt(rhs_args.const_term);
     }
     for (auto r: rhs_args.res_vars_to_delete_)
@@ -539,7 +539,7 @@ protected:
     size_t iPush=1;
     if (lint.size()) {
       x[0] = lint.var(0);
-      x[1] = MC().MakeFixedVar( 1.0 );
+      x[1] = int( MC().MakeFixedVar( 1.0 ) );
       c[0] = std::fabs(lint.coef(0)) / 2.0;
       c[1] = 1.0;      // it's 2xy >= z^2 + ...
     }
@@ -557,7 +557,7 @@ protected:
     }
     if (rhsNon0) {            // Add  ... >= ... + |rhs|
       ++iPush;
-      x.at(iPush) = MC().MakeFixedVar( 1.0 );
+      x.at(iPush) = int( MC().MakeFixedVar( 1.0 ) );
       c.at(iPush) = std::sqrt( std::fabs(rhs) );
     }
     assert(iPush == x.size()-1);
@@ -581,7 +581,7 @@ protected:
     std::vector<double> c(qpterms.size() + fNewVar);
     if (fNewVar && !fRhs2) {
       c[0] = std::sqrt(std::fabs(rhs));
-      x[0] = MC().MakeFixedVar( 1.0 );
+      x[0] = int( MC().MakeFixedVar( 1.0 ) );
     }
     size_t iPush=0;
     for (int i=0; i<(int)qpterms.size(); ++i) {
@@ -597,7 +597,7 @@ protected:
     if (fNewVar && fRhs2) {
       ++iPush;
       c.at(iPush) = std::sqrt(std::fabs(rhs2));
-      x.at(iPush) = MC().MakeFixedVar( 1.0 );
+      x.at(iPush) = int( MC().MakeFixedVar( 1.0 ) );
     }
     assert(iPush == c.size()-1);
     MC().AddConstraint(
@@ -786,7 +786,7 @@ protected:
     }
     for (int i=0; i<3; ++i) {
       if (args[i]<0) {                // marked as -1?
-        args[i] = MC().MakeFixedVar(1.0);
+        args[i] = int( MC().MakeFixedVar(1.0) );
       }
     }
     MC().AddConstraint(

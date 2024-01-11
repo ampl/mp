@@ -323,7 +323,7 @@ protected:
         unaryEncVars[v-lb] =
           GET_CONSTRAINT_KEEPER(CondLinConEQ).GetResultVar(itV->second);
       } else {
-        unaryEncVars[v-lb] = this->AddVar(0.0, 1.0, var::INTEGER);
+        unaryEncVars[v-lb] = int( this->AddVar(0.0, 1.0, var::INTEGER) );
       }
     }
     assert(map.size()==(size_t)nTaken);

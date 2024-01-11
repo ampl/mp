@@ -93,7 +93,7 @@ public:
     GetConverter().PreprocessConstraint(GetConstraint(), prepro_);
   }
   void AddResultVariable() {
-    auto r = GetConverter().AddVar(lb(), ub(), type());
+    auto r = int( GetConverter().AddVar(lb(), ub(), type()) );
     SetResultVar( r );
     GetConstraint().SetResultVar( r );
 		GetConverter().IncrementVarUsage(r);

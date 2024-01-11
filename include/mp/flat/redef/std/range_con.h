@@ -241,7 +241,7 @@ protected:
   }
   void ConvertRange(const ItemType& item, int i) {
     GetMC().TurnOffAutoLinking();     // for range only
-    auto slk = GetMC().AddVar(0.0, item.ub()-item.lb());
+    auto slk = int( GetMC().AddVar(0.0, item.ub()-item.lb()) );
     auto body = item.GetBody();
     body.add_term(1.0, slk);
     AlgConEQ lceq { std::move(body), item.ub() };

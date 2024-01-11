@@ -105,7 +105,7 @@ public:
     if (ee.is_variable())
       return ee.get_representing_variable();
     if (ee.is_constant())
-      return MakeFixedVar(ee.constant_term());
+      return int( MakeFixedVar(ee.constant_term()) );
     return AssignResultVar2Args(
             LinearFunctionalConstraint(std::move(ee)));
   }
@@ -116,7 +116,7 @@ public:
     if (ee.is_variable())
       return ee.get_representing_variable();
     if (ee.is_constant())
-      return MakeFixedVar(ee.constant_term());
+      return int(MakeFixedVar(ee.constant_term()));
     if (ee.is_affine())
       return AssignResultVar2Args(
             LinearFunctionalConstraint(
@@ -148,7 +148,7 @@ public:
   AssignResultVar2Args(FuncConstraint&& fc) {
     auto vc = AssignResult2Args(std::move(fc));
     if (vc.is_const())
-      return MPD( MakeFixedVar(vc.get_const()) );
+      return int( MPD( MakeFixedVar(vc.get_const()) ) );
     return vc.get_var();
   }
 
@@ -166,7 +166,7 @@ public:
 		// if necessary.
 		auto i = MPD( MapFind(fc) );
 		if (i<0)
-			i = MPD( AddConstraint(std::move(fc)) );
+      i = int( MPD( AddConstraint(std::move(fc)) ) );
 		auto& ck = GET_CONSTRAINT_KEEPER( FuncConstraint );
     ConInfo ci{&ck, i};
     ReplaceInitExpression(res_var, ci);
@@ -634,8 +634,8 @@ public:
     if (map_fixed_vars_.end()!=it)
       return AutoLink( GetVarValueNode().Select( it->second ) );
     auto v = MPD( DoAddVar(value, value) );
-    map_fixed_vars_[value] = v;
-    return GetVarValueNode().Select( v );  // no autolink, done in DoAddVar()
+    map_fixed_vars_[value] = (int)v;
+    return GetVarValueNode().Select( (int)v );  // no autolink, done in DoAddVar()
   }
 
   /// Create or find a fixed variable
@@ -750,7 +750,7 @@ public:
                            var::Type type = var::CONTINUOUS) {
     std::vector<int> newVars(nvars);
     for (std::size_t  i=0; i<nvars; ++i)
-      newVars[i] = AddVar(lb, ub, type);
+      newVars[i] = int( AddVar(lb, ub, type) );
     return newVars;
   }
 

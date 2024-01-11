@@ -36,14 +36,23 @@ public:
   /// Get index range
   NodeIndexRange GetIndexRange() const { assert(ir_.IsValid()); return ir_; }
 
+  /// operator==
+  bool operator==(const NodeRange& nr) const {
+    return pvn_ == nr.pvn_ && ir_ == nr.ir_;
+  }
+
+  /// operator!=
+  bool operator!=(const NodeRange& nr) const
+  { return !(*this==nr); }
+
   /// check if the range represents just 1 index
   bool IsSingleIndex() const { return ir_.IsSingleIndex(); }
 
   /// Get the single index if range is just that
-  int GetSingleIndex() const { return ir_; }
+  int GetSingleIndex() const { return ir_.GetSingleIndex(); }
 
   /// Get single index if it is
-  operator int() const { return ir_; }
+  explicit operator int() const { return (int)ir_; }
 
   /// Check extendability by given range
   bool ExtendableBy(NodeRange nr) const
