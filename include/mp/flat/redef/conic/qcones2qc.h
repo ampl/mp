@@ -35,9 +35,18 @@ public:
     for (auto& coef: c)
       coef *= coef;
     c[0] = -c[0];
-    GetMC().NarrowVarBounds(x[0], 0.0, GetMC().Infty());
-    auto qc {QuadConLE{ {{}, {c, x, x}}, {0.0} }};
-    GetMC().AddConstraint(std::move(qc));
+    if (!GetMC().is_fixed(x[0])) {
+      GetMC().NarrowVarBounds(x[0], 0.0, GetMC().Infty());
+      auto qc {QuadConLE{ {{}, {c, x, x}}, {0.0} }};
+      GetMC().AddConstraint(std::move(qc));
+    } else {     // produce fixed RHS, better for Mosek
+      auto rhs = -c[0] * GetMC().fixed_value(x[0]);
+      c.erase(c.begin());
+      auto x0 = x;
+      x0.erase(x0.begin());
+      auto qc {QuadConLE{ {{}, {c, x0, x0}}, {rhs} }};
+      GetMC().AddConstraint(std::move(qc));
+    }
   }
 
   /// Reuse the stored ModelConverter

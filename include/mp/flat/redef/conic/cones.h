@@ -141,10 +141,10 @@ protected:
            && (MC().NumQC2SOCPAttempted() > MC().NumQC2SOCPSucceeded()
                || MC().HasQPObjective()))       // and quadratics left in
           ||                // Some QC -> SOCP but not all
-          (((MC().NumQC2SOCPAttempted() > MC().NumQC2SOCPSucceeded()
-             && !MC().IfConvertSOCP2QC())       // and not decided to convert
+          ((MC().NumQC2SOCPAttempted() > MC().NumQC2SOCPSucceeded()
             || MC().HasQPObjective())           // or a quadratic obj
-           && MC().NumQC2SOCPSucceeded())       // Warn only if some succeeded
+           && MC().NumQC2SOCPSucceeded()        // Warn only if some succeeded
+           && !MC().IfConvertSOCP2QC())         // and not decided to convert
           ) {
         MC().AddWarning("Mix QC+cones",
                         "Not all quadratic constraints could "

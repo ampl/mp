@@ -62,6 +62,14 @@
     }
   },
   {
+    "name" : "socp_10_qpobj",
+    "tags" : ["quadratic"],
+    "objective" : 0.0,
+    "values": {
+      "solve_result_num": 0
+    }
+  },
+  {
     "name" : "expcones_01__plain",
     "objective" : 0.7821882953,
     "tags" : ["expcones"]
