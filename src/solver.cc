@@ -355,13 +355,15 @@ bool SolverAppOptionParser::ShowSolverOptionsASL() {
   }
   return false;
 }
+
 bool contains(const char* name, const char* substr) {
   std::string n(name);
-  std::string sub = fmt::format("{}:", substr);
+  std::string sub {substr};
+  if (sub.empty() || sub.back()!=':')   // does not end with ':'
+    sub.push_back(':');
   return n.find(sub) != std::string::npos;
-
-
 }
+
 bool SolverAppOptionParser::ShowSolverOptions(const char* param) {
   fmt::MemoryWriter writer;
   const char* option_header = solver_.option_header();
