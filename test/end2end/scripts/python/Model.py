@@ -60,7 +60,7 @@ class ModelTags(enum.Enum):
     iisforce = 40014
     feasrelax = 40100
 
-    writelp = 45000              # writeprob=...lp
+    writelp = 45000              # writeprob=...lp (for Mosek, .jtask)
     writesol = 45010             # writesol=...sol
 
     check_pl_approx_exp = 50000          # Solvers natively accepting general

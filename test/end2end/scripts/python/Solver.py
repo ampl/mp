@@ -880,8 +880,7 @@ class MosekSolver(MPDirectSolver):
                  ModelTags.warmstart, ModelTags.mipstart,
                  ModelTags.return_mipgap, ModelTags.sens, ModelTags.sstatus,
 
-                 ModelTags.writelp, ModelTags.writesol,
-
+                 ModelTags.writelp,
                  }
         # ModelTags.quadratic
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
