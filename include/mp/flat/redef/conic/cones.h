@@ -21,7 +21,7 @@ namespace mp {
 ///
 /// @param MCType: ModelConverter, e.g., FlatConverter.
 /// @param Con: the source constraint type.
-/// @param ConvertBase: another class
+/// @param CvtBase: another class
 /// providing conversion methods DoRun
 /// for quadratic and linear constraints.
 template <class MCType, class Con, template <class > class CvtBase>
@@ -77,51 +77,38 @@ public:
     // We _could_ walk everything just once
     // and see which cones are there.
     // Or, even walk expression trees from exponents, etc.
-    RunQCones();
-    RunExpCones();
+    // But we walk & convert at once, because later we can
+    // reconvert SOCP to QC in std forms.
+    if (MC().IfPassSOCPCones() >= 2)
+      RunQConesFromQC();
+    if (MC().IfPassSOCPCones() >= 1)
+      RunQConesFromNonQC();
+    if (MC().IfPassExpCones())
+      RunExpCones();
+    if (IfNeedSOCP2QC())
+      SetupSOCP2QC();
+    WarnOnMix();
   }
 
 
 protected:
-  void RunQCones() {
-    if (MC().IfPassSOCPCones()) {   // convert everything to QuadraticCones.
-      Walk<QuadConRange, Convert1QC>();
-      Walk<QuadConLE, Convert1QC>();
-      Walk<QuadConGE, Convert1QC>();
+  void RunQConesFromQC() {
+    Walk<QuadConRange, Convert1QC>();
+    Walk<QuadConLE, Convert1QC>();
+    Walk<QuadConGE, Convert1QC>();
+  }
 
-      if (MC().GetNumberOfAddable((PowConstraint*)0)>0 ||
-          MC().GetNumberOfAddable((AbsConstraint*)0)>0) {
-        Walk<LinConRange, Convert1QC>();
-        Walk<LinConLE, Convert1QC>();
-        Walk<LinConGE, Convert1QC>();
-      }
-
-      if ( ! MC().ModelAPICanMixConicQCAndQC()) {  // cannot mix
-        if (MC().NumQC2SOCPAttempted() > MC().NumQC2SOCPSucceeded()
-            && MC().NumQC2SOCPSucceeded()) {
-          MC().AddWarning("Mix QC+SOCP",
-                          "Not all quadratic constraints could "
-                          "be recognized\nas quadratic cones; "
-                          "solver might not accept the model.\n"
-                          "Try option cvt:socp=0 to leave all "
-                          "as quadratic.");
-        }
-      }
-    } else
-      if (MC().IfPassQuadCon() &&
-          (MC().GetNumberOfAddable((PowConstraint*)0)>0 ||
-           MC().GetNumberOfAddable((AbsConstraint*)0)>0)) {
-        // Still collect QCones expressed by 2-norms.
-        // They are to be converted to quadratics.
-        Walk<LinConRange, Convert1QC>();
-        Walk<LinConLE, Convert1QC>();
-        Walk<LinConGE, Convert1QC>();
-      }
+  void RunQConesFromNonQC() {
+    if (MC().GetNumberOfAddable((PowConstraint*)0)>0 ||
+        MC().GetNumberOfAddable((AbsConstraint*)0)>0) {
+      Walk<LinConRange, Convert1QC>();
+      Walk<LinConLE, Convert1QC>();
+      Walk<LinConGE, Convert1QC>();
+    }
   }
 
   void RunExpCones() {
-    if (MC().IfPassExpCones() &&   // convert everything to ExpCones.
-        MC().GetNumberOfAddable((ExpConstraint*)0)>0) {
+    if (MC().GetNumberOfAddable((ExpConstraint*)0)>0) {
       Walk<QuadConRange, Convert1ExpC>();
       Walk<QuadConLE, Convert1ExpC>();    // also ExpA ??
       Walk<QuadConGE, Convert1ExpC>();
@@ -129,6 +116,47 @@ protected:
       Walk<LinConRange, Convert1ExpC>();
       Walk<LinConLE, Convert1ExpC>();
       Walk<LinConGE, Convert1ExpC>();
+    }
+  }
+
+  bool IfNeedSOCP2QC() {
+    return
+        MC().SOCP2QCMode() >= 2     // compulsory
+        || (1 == MC().SOCP2QCMode()
+            && 0 == MC().NumExpConesRecognized()
+               // Might also have SOCP from sqrt(), abs().
+               // Some QC -> SOCP but not all, even if 0 succeeded.
+            && (MC().NumQC2SOCPAttempted() > MC().NumQC2SOCPSucceeded()
+                || MC().HasQPObjective())  // or a quadratic obj
+        ); // Mosek 10 considers QP obj as a constraint for this
+  }
+
+  void SetupSOCP2QC() {
+    MC().Setup2ConvertSOCP2QC();
+  }
+
+  void WarnOnMix() {
+    if ( !MC().ModelAPICanMixConicQCAndQC()) {  // cannot mix
+      if ((MC().NumExpConesRecognized()         // exp cones
+           && (MC().NumQC2SOCPAttempted() > MC().NumQC2SOCPSucceeded()
+               || MC().HasQPObjective()))       // and quadratics left in
+          ||                // Some QC -> SOCP but not all
+          (((MC().NumQC2SOCPAttempted() > MC().NumQC2SOCPSucceeded()
+             && !MC().IfConvertSOCP2QC())       // and not decided to convert
+            || MC().HasQPObjective())           // or a quadratic obj
+           && MC().NumQC2SOCPSucceeded())       // Warn only if some succeeded
+          ) {
+        MC().AddWarning("Mix QC+cones",
+                        "Not all quadratic constraints could "
+                        "be recognized\nas quadratic cones; "
+                        "or, the objective is quadratic;\n"
+                        "additionally, further convertion back to QC\n"
+                        "not desired (option cvt:socp2qc) or other cone types present;\n"
+                        "solver might not accept the model.\n"
+                        "Try to express all SOCP cones in standard forms,\n"
+                        "not in the objective.\n"
+                        "See mp.ampl.com/model-guide.html#");
+      }
     }
   }
 
@@ -791,6 +819,7 @@ protected:
     }
     MC().AddConstraint(
           ExponentialConeConstraint(args, coefs));
+    MC().IncExpConeCounter();
     return true;
   }
 

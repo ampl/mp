@@ -86,15 +86,26 @@ public:
   ACCEPT_CONSTRAINT(QuadConGE, Recommended, CG_Quadratic)
   void AddConstraint(const QuadConGE& qc);
 
+  /// SOCP flags
+  ///////////////////////////////////////////////////////////////////////
   /// Ask if the solver can mix conic quadratic
   /// (entered via dedicated API) and direct quadratic constraints
   static constexpr bool CanMixConicQCAndQC() { return false; }
 
-  /// Cones
+  /// Ask if the solver can recognize SOCP corner cases
+  /// (non-std representations such as xy>=1, see tests)
+  /// from quadratic representations
+  static constexpr bool CanSOCPCornerCasesFromQC() { return false; }
+
+  /// Cones: SOCP
   ACCEPT_CONSTRAINT(QuadraticConeConstraint, Recommended, CG_Conic)
   void AddConstraint(const QuadraticConeConstraint& qc);
   ACCEPT_CONSTRAINT(RotatedQuadraticConeConstraint, Recommended, CG_Conic)
   void AddConstraint(const RotatedQuadraticConeConstraint& qc);
+
+  // Other cones
+  ACCEPT_CONSTRAINT(ExponentialConeConstraint, Recommended, CG_Conic)
+  void AddConstraint(const ExponentialConeConstraint& qc);
 
 
   /// Linear indicator constraints can be used as

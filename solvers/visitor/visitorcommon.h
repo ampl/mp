@@ -2,6 +2,7 @@
 #define VISITORCOMMON_H
 
 #include <string>
+#include <vector>
 
 #include "mp/backend-to-model-api.h"
 
@@ -79,7 +80,7 @@ namespace Solver {
         return nobj_;
       if (a == ISQOBJ)
         return quadObj_;
-
+      return -1;
     }
     void allocateVars(int nvars) {
       vars_.resize(nvars);

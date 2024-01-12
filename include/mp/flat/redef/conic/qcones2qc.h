@@ -23,8 +23,7 @@ public:
   /// Check whether the constraint
   /// needs to be converted despite being accepted by ModelAPI.
   bool IfNeedsConversion(const ItemType& , int ) {
-    return 0==GetMC().IfPassSOCPCones() &&
-        0!=GetMC().IfPassQuadCon();
+    return GetMC().IfConvertSOCP2QC();
   }
 
   /// Convert to
@@ -63,8 +62,7 @@ public:
   /// Check whether the constraint
   /// needs to be converted despite being accepted by ModelAPI.
   bool IfNeedsConversion(const ItemType& , int ) {
-    return 0==GetMC().IfPassSOCPCones() &&
-        0!=GetMC().IfPassQuadCon();
+    return GetMC().IfConvertSOCP2QC();
   }
 
   /// Convert to 2(c[0]*x[0]*c[1]*x[1]) >= sum(i>=2)((c[i]*x[i])^2).

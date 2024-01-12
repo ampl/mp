@@ -357,11 +357,7 @@ bool SolverAppOptionParser::ShowSolverOptionsASL() {
 }
 
 bool contains(const char* name, const char* substr) {
-  std::string n(name);
-  std::string sub {substr};
-  if (sub.empty() || sub.back()!=':')   // does not end with ':'
-    sub.push_back(':');
-  return n.find(sub) != std::string::npos;
+  return std::strstr(name, substr);
 }
 
 bool SolverAppOptionParser::ShowSolverOptions(const char* param) {

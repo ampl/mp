@@ -887,6 +887,13 @@ public:
     return ModelAPI::AcceptsNonconvexQC();
   }
 
+  /// Ask if the solver can recognize SOCP corner cases
+  /// (non-std representations such as xy>=1, see tests)
+  /// from quadratic representations
+  static bool ModelAPICanSOCPCornerCasesFromQC() {
+    return ModelAPI::CanSOCPCornerCasesFromQC();
+  }
+
   /// Whether the solver can mix conic quadratic
   /// (entered via dedicated API)
   /// and direct quadratic constraints
@@ -895,7 +902,7 @@ public:
   }
 
   /// Whether the ModelAPI accepts quadratic cones
-	int ModelAPIAcceptsQuadraticCones() {
+  int ModelAPIAcceptsQuadraticCones() const {
 		return
 				std::max(
 					(int)GetConstraintAcceptance((QuadraticConeConstraint*)nullptr),
@@ -907,6 +914,10 @@ public:
   void IncQC2SOCPSucceeded() { ++nQC2SOCPSucceeded_; }
   int NumQC2SOCPAttempted() const { return nQC2SOCPAttempted_; }
   int NumQC2SOCPSucceeded() const { return nQC2SOCPSucceeded_; }
+
+  /// Number of exp cones recognized
+  void IncExpConeCounter() { ++nExpConesRecognized_; }
+  int NumExpConesRecognized() const { return nExpConesRecognized_; }
 
 	/// Whether the ModelAPI accepts exp cones
 	int ModelAPIAcceptsExponentialCones() {
@@ -925,8 +936,9 @@ private:
 
     int passQuadObj_ = ModelAPIAcceptsQuadObj();
 		int passQuadCon_ = ModelAPIAcceptsQC();
-		int passSOCPCones_ = 0;
-		int passExpCones_ = 0;
+    int passSOCPCones_ = 0;
+    int passSOCP2QC_ = 0;
+    int passExpCones_ = 0;
 
     int relax_ = 0;
 
@@ -972,10 +984,42 @@ public:
 
 
 private:
-  std::string solchkfailtext_ {
+  const std::string solchkfailtext_ {
     "Fail on MP solution check violations, with solve result "
     + std::to_string(sol::MP_SOLUTION_CHECK) + '.'
   };
+
+  int DefaultSOCPMode() const {
+    return
+        !ModelAPIAcceptsQC() && !ModelAPIAcceptsQuadraticCones()
+        ? 0
+        : ModelAPICanSOCPCornerCasesFromQC() ? 1
+                                             : 2;
+  }
+  int DefaultSOCP2QCMode() const {
+    return
+        ((!ModelAPIAcceptsQC() || ModelAPICanMixConicQCAndQC())
+         && ModelAPIAcceptsQuadraticCones())
+        ? 0
+        : (!ModelAPICanMixConicQCAndQC()
+           && ModelAPIAcceptsQuadraticCones()) ? 1
+                                             : 2;
+  }
+  std::string socp_mode_text_;
+  std::string socp2qc_mode_text_;
+  const mp::OptionValueInfo socp_values_[3] = {
+    { "0", "Do not recognize SOCP forms", 0},
+    { "1", "Recognize from non-quadratic expressions only (sqrt, abs)", 1},
+    { "2", "Recognize from quadratic and non-quadratic SOCP forms", 2}
+  };
+  const mp::OptionValueInfo socp2qc_values_[3] = {
+    { "0", "Do not convert", 0},
+    { "1", "Convert if no other cone types found, and "
+      "not all original quadratics could be recognized as SOC, "
+      "in particular if the objective is quadratic", 1},
+    { "2", "Always convert", 2}
+  };
+
   void InitOwnOptions() {
     /// Should be called after adding all constraint keepers
     FlatModel::ConsiderAcceptanceOptions(*this, GetModelAPI(), GetEnv());
@@ -1012,23 +1056,36 @@ private:
         "0*/1: Multiply out and pass quadratic constraint terms to the solver, "
                          "vs. linear approximation.",
         options_.passQuadCon_, 0, 1);
-		if (ModelAPIAcceptsExponentialCones())
-			GetEnv().AddOption("cvt:expcones expcones",
-												 ModelAPIAcceptsExponentialCones()>1 ?
-														 "0/1*: Recognize exponential cones." :
-														 "0*/1: Recognize exponential cones.",
-												 options_.passExpCones_, 0, 1);
-		options_.passExpCones_ = ModelAPIAcceptsExponentialCones()>1;
-		if (ModelAPIAcceptsQuadraticCones())
-			GetEnv().AddOption("cvt:socp passsocp socp",
-												 ModelAPIAcceptsQuadraticCones()>1 ?
-                           "0/1*: Recognize quadratic cones vs passing them "
-                           "as pure quadratic constraints." :
-                           "0*/1: Recognize quadratic cones vs passing them "
-                           "as pure quadratic constraints.",
-					options_.passSOCPCones_, 0, 1);
-		options_.passSOCPCones_ = ModelAPIAcceptsQuadraticCones()>1;
-		GetEnv().AddOption("alg:relax relax",
+    GetEnv().AddOption("cvt:expcones expcones",
+                       ModelAPIAcceptsExponentialCones()>1 ?
+                         "0/1*: Recognize exponential cones." :
+                         "0*/1: Recognize exponential cones.",
+                       options_.passExpCones_, 0, 1);
+    options_.passExpCones_ = ModelAPIAcceptsExponentialCones()>1;
+    // Should be after construction
+    socp_mode_text_ =
+      "Second-Order Cone recognition mode:\n"
+      "\n.. value-table::\n"
+      "Recognized SOCP forms can be further converted to "
+      "(SOCP-standardized) quadratic constraints, see cvt:socp2qc. "
+      "Default: " + std::to_string(DefaultSOCPMode()) + ".";
+    GetEnv().AddStoredOption("cvt:socp socpmode socp",
+                       socp_mode_text_.c_str(),
+                       options_.passSOCPCones_, socp_values_);
+    options_.passSOCPCones_ = DefaultSOCPMode();
+    socp2qc_mode_text_ =
+      "Mode to convert recognized SOCP forms to "
+      "SOCP-standardized quadratic constraints:\n"
+      "\n.. value-table::\n"
+      "Such conversion can be necessary "
+      "if the solver does not accept "
+      "a mix of conic and quadratic constraints/objectives. "
+      "Default: " + std::to_string(DefaultSOCP2QCMode()) + ".";
+    GetEnv().AddStoredOption("cvt:socp2qc socp2qcmode socp2qc",
+                       socp2qc_mode_text_.c_str(),
+                       options_.passSOCP2QC_, socp2qc_values_);
+    options_.passSOCP2QC_ = DefaultSOCP2QCMode();
+    GetEnv().AddOption("alg:relax relax",
         "0*/1: Whether to relax integrality of variables.",
         options_.relax_, 0, 1);
     GetEnv().AddStoredOption(
@@ -1125,11 +1182,19 @@ public:
   bool IfQuadratizePowConstPosIntExp() const
   { return options_.passQuadCon_; }
 
-	/// Whether we pass SOCP cones
-	bool IfPassSOCPCones() const { return options_.passSOCPCones_; }
+  /// Recognition mode for SOCP cones
+  int IfPassSOCPCones() const { return options_.passSOCPCones_; }
 
-	/// Whether we pass exp cones
-	bool IfPassExpCones() const { return options_.passExpCones_; }
+  /// Mode for SOCP -> QC conversion
+  int SOCP2QCMode() const { return options_.passSOCP2QC_; }
+
+  /// Decide to convert SOCP -> QC
+  void Setup2ConvertSOCP2QC() { ifCvtSOCP2QC_=true; }
+  /// If decided to convert SOCP -> QC
+  bool IfConvertSOCP2QC() const { return ifCvtSOCP2QC_; }
+
+  /// Recognition mode for exp cones
+  int IfPassExpCones() const { return options_.passExpCones_; }
 
 
 public:
@@ -1180,7 +1245,8 @@ private:
 	ConicConverter<Impl> conic_cvt_ { *static_cast<Impl*>(this) };
   int nQC2SOCPAttempted_= 0;
   int nQC2SOCPSucceeded_= 0;
-
+  int nExpConesRecognized_ = 0;
+  bool ifCvtSOCP2QC_ = 0;
 
 	std::vector<int> refcnt_vars_;
   int constr_depth_ = 0;    // tree depth of new constraints
