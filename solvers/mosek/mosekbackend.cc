@@ -219,7 +219,18 @@ MSKsoltypee MosekBackend::GetSolutionTypeToFetch() {
 }
 
 void MosekBackend::Solve() {
-  MOSEK_CCALL(MSK_optimizetrm(lp(), &termCode_));
+  auto res = MSK_optimizetrm(lp(), &termCode_);
+  if (MSK_RES_ERR_CON_Q_NOT_PSD == res) {
+    AddWarning("Nonconvex QC",
+               "Mosek reported the problem as nonconvex QCP.\n"
+               "If the constraints are in fact Second-Order Cones,\n"
+               "make sure they have standard SOCP forms, and\n"
+               "the objective is linear by moving the\n"
+               "quadratic terms into auxiliary SOC constraints.\n"
+               "See mp.ampl.com/model-guide.html.");
+
+  }
+  MOSEK_CCALL( res );
   solToFetch_ = GetSolutionTypeToFetch();
   MOSEK_CCALL(MSK_getprosta(lp(), solToFetch_, &proSta_));
   MOSEK_CCALL(MSK_getsolsta(lp(), solToFetch_, &solSta_));

@@ -155,7 +155,7 @@ protected:
                         "solver might not accept the model.\n"
                         "Try to express all SOCP cones in standard forms,\n"
                         "not in the objective.\n"
-                        "See mp.ampl.com/model-guide.html#");
+                        "See mp.ampl.com/model-guide.html.");
       }
     }
   }
