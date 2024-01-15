@@ -16,7 +16,7 @@ namespace mp {
 template <class Impl>
 class SolutionChecker {
 public:
-  /// Check unpostsolved solution
+  /// Check postsolved & unpostsolved solutions
   /// in various ways.
   /// @param p_extra: !=0 means known infeas solution
   bool CheckSolution(
@@ -24,21 +24,53 @@ public:
         const pre::ValueMapDbl& duals,
         ArrayRef<double> obj,
         void* p_extra) {
-    bool result = true;
     bool fKnownInfeas = (bool)p_extra;
     if (fKnownInfeas && !MPCD( sol_check_infeas() ))
-      return result;
+      return true;
+    std::string msgreal, msgidea;
     std::string err_msg;
     try {                            // protect
       std::vector<double> x_back = x;
       if (MPCD( sol_check_mode() ) & (1+2+4+8+16)) {
-        if (!DoCheckSol(x, duals, obj, {}, x_back, false))
-          result = false;
+        msgreal = DoCheckSol(x, duals, obj, {}, x_back, false);
       }
       if (MPCD( sol_check_mode() ) & (32+64+128+256+512)) {
         auto x1 = RecomputeAuxVars(x);
-        if (!DoCheckSol(x1, duals, obj, x_back, x_back, true))
-          result = false;
+        msgidea = DoCheckSol(x1, duals, obj, x_back, x_back, true);
+      }
+      if (msgreal.size() || msgidea.size()) {     // Checks failed
+        std::string warn
+            = "Type                         MaxAbs [Name]   MaxRel [Name]\n";
+        warn += msgidea;
+        if (msgreal.size()) {
+          for (auto i=msgreal.size()-1; i--; ) {
+            if ('\n'==msgreal[i] && ' '==msgreal[i+1])
+              msgreal[i+1] = '*';
+          }
+          if (' '==msgreal.front())
+            msgreal.front() = '*';
+          warn += msgreal;
+          warn += "*: Using the solver's aux variable values.\n";
+        }
+        warn += "Documentation: mp.ampl.com/modeling-tools.html.";
+        // Should messages for realistic and idealistic
+        // modes be more coordinated?
+        // I.e., when no expressions.
+        // What if this is an intermediate solution?
+        // Should be fine - warning by default,
+        // fail if requested explicitly.
+        // If warning, we should add the report
+        // to that solution's solve message, and
+        // a summary in the final solve message.
+        // For now, do this via warnings?
+        if (MPCD( sol_check_fail() ))
+          MP_RAISE_WITH_CODE(int(sol::MP_SOLUTION_CHECK),   // failure
+                             warn);
+        else
+          MPD( AddWarning(
+                 MPD( GetEnv() ).GetSolCheckWarningKey(true),
+                 warn,
+                 true) );  // replace for multiple solutions
       }
     } catch (const mp::Error& err) {
       if (MPCD( sol_check_fail() ))
@@ -50,12 +82,13 @@ public:
       err_msg = "unknown error";
     }
     if (err_msg.size()) {
+      err_msg += '\n' + msgreal + msgidea;
       if (MPCD( sol_check_fail() ))
         MP_RAISE("Solution check aborted: " + err_msg);
       MPD( AddWarning("Solution check aborted", err_msg) );
-      result = false;
+      return false;
     }
-    return result;
+    return msgreal.empty() && msgidea.empty();
   }
 
   /// Functor to recompute auxiliary var \a i
@@ -97,7 +130,7 @@ public:
   /// It can be changed by the :round and :prec options.
   /// Its auxiliary vars are compared
   /// with recomputed expression values.
-  bool DoCheckSol(
+  std::string DoCheckSol(
       ArrayRef<double> x,
       const pre::ValueMapDbl& duals,
       ArrayRef<double> obj,
@@ -123,28 +156,8 @@ public:
     if (chk.check_mode() & 16)
       CheckObjs(chk);
     MPD( GenerateViolationsReport(chk, if_recomp_vals) );
-    // Should messages for realistic and idealistic
-    // modes be coordinated?
-    // I.e., when no expressions.
-    // What if this is an intermediate solution?
-    // Should be fine - warning by default,
-    // fail if requested explicitly.
-    // If warning, we should add the report
-    // to that solution's solve message, and
-    // a summary in the final solve message.
-    // For now, do this via warnings?
-    if (chk.HasAnyViols()) {
-      if (MPCD( sol_check_fail() ))
-        MP_RAISE_WITH_CODE(int(sol::MP_SOLUTION_CHECK),   // failure
-                           chk.GetReport());
-      else
-        MPD( AddWarning(
-              MPD( GetEnv() ).GetSolCheckWarningKey(if_recomp_vals),
-              chk.GetReport(),
-              true) );  // replace for multiple solutions
-    }
     x_back = chk.x_ext().get_x();   // to reuse 'realistic' vector
-    return !chk.HasAnyViols();
+    return chk.GetReport();
   }
 
   void CheckVars(SolCheck& chk) {
@@ -192,11 +205,8 @@ public:
   }
 
   void GenerateViolationsReport(
-      SolCheck& chk, bool f_idealistic) {
+      SolCheck& chk, bool ) {
     fmt::MemoryWriter wrt;
-    if (chk.HasAnyViols()) {
-      wrt.write("Type                         MaxAbs [Name]   MaxRel [Name]\n");
-    }
     if (chk.HasAnyConViols()) {
       Gen1Viol(chk.VarViolBnds().at(0), wrt, true,
                "variable bounds");
@@ -213,9 +223,6 @@ public:
       Gen1Viol(chk.ObjViols(), wrt, true,
                "objective(s)");
     }
-    if (f_idealistic && chk.HasAnyViols())
-      wrt.write(
-            "Documentation: mp.ampl.com/modeling-tools.html.");
     chk.SetReport( wrt.str() );
   }
 
