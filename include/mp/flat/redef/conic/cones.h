@@ -198,7 +198,7 @@ protected:
                         "Not all quadratic constraints could "
                         "be recognized\nas quadratic cones; "
                         "or, the objective is quadratic;\n"
-                        "additionally, further convertion back to QC\n"
+                        "additionally, further conversion back to QC\n"
                         "not desired (option cvt:socp2qc) or other cone types present;\n"
                         "solver might not accept the model.\n"
                         "Try to express all cones in standard forms,\n"
