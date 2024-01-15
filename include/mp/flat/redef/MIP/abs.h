@@ -25,7 +25,7 @@ public:
   void ConvertCtxPos(const ItemType& ac, int ) {
     const int arg = ac.GetArguments()[0];
     const int res = ac.GetResultVar();
-    const int flag = GetMC().AddVar(0.0, 1.0, var::INTEGER);
+    const int flag = (int)GetMC().AddVar(0.0, 1.0, var::INTEGER);
     GetMC().AddConstraint(
           IndicatorConstraintLinLE(flag, 1,
                                    {{{1.0, 1.0}, {res, arg}}, 0.0}));
