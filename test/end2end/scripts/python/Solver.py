@@ -855,7 +855,7 @@ class COPTSolver(MPDirectSolver):
                  ModelTags.socp,      ## MP transforms cones to quadratics
                  ModelTags.socp_hard_to_recognize,
 
-                 ModelTags.writelp, ModelTags.writesol,
+                 ModelTags.writelp,
 
                  }
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)

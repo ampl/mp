@@ -39,7 +39,8 @@ public:
       GetMC().NarrowVarBounds(x[0], 0.0, GetMC().Infty());
       auto qc {QuadConLE{ {{}, {c, x, x}}, {0.0} }};
       GetMC().AddConstraint(std::move(qc));
-    } else {     // produce fixed RHS, better for Mosek
+    } else {
+      // Reproduce fixed RHS, better for Mosek & COPT. conic/socp_10
       auto rhs = -c[0] * GetMC().fixed_value(x[0]);
       c.erase(c.begin());
       auto x0 = x;
@@ -85,8 +86,30 @@ public:
     c12[0] *= -2.0*c[0];
     for (auto i=c12.size(); --i; )
       c12[i] *= c12[i];
-    auto qc = QuadConLE{ {{}, {c12, x1, x2}}, {0.0} };
-    GetMC().AddConstraint(std::move(qc));
+    // Reproduce linear term, for Mosek & COPT. conic/socp_11.
+    if (GetMC().is_fixed(x1[0])) {
+      std::vector<double> clin
+          = { c12[0] * GetMC().fixed_value(x1[0]) };
+      std::vector<int> xlin = { x2[0] };
+      x1.erase(x1.begin());
+      x2.erase(x2.begin());
+      c12.erase(c12.begin());
+      GetMC().AddConstraint(
+            QuadConLE{ {{clin, xlin}, {c12, x1, x2}}, {0.0} });
+    } else
+      if (GetMC().is_fixed(x2[0])) {
+        std::vector<double> clin
+            = { c12[0] * GetMC().fixed_value(x2[0]) };
+        std::vector<int> xlin = { x1[0] };
+        x1.erase(x1.begin());
+        x2.erase(x2.begin());
+        c12.erase(c12.begin());
+        GetMC().AddConstraint(
+              QuadConLE{ {{clin, xlin}, {c12, x1, x2}}, {0.0} });
+      } else {
+        auto qc = QuadConLE{ {{}, {c12, x1, x2}}, {0.0} };
+        GetMC().AddConstraint(std::move(qc));
+      }
   }
 
   /// Reuse the stored ModelConverter
