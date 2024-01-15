@@ -26,8 +26,10 @@ public:
     name_(std::move(nm)){ }
   /// Get sense
   obj::Type obj_sense() const { return sense_; }
-  /// Get lin terms
+  /// Get lin terms, const
   const LinTerms& GetLinTerms() const { return lt_; }
+  /// Get lin terms
+  LinTerms& GetLinTerms() { return lt_; }
   /// Get N terms
   int num_terms() const { assert(check()); return (int)lt_.size(); }
   /// Validate
@@ -55,8 +57,10 @@ public:
   QuadraticObjective(LinearObjective&& lc, QuadTerms&& qt) :
     LinearObjective(std::move(lc)), qt_(std::move(qt)) { sort_qp_terms(); }
 
-  /// Get QP terms
+  /// Get QP terms, const
   const QuadTerms& GetQPTerms() const { return qt_; }
+  /// Get QP terms
+  QuadTerms& GetQPTerms() { return qt_; }
 
   /// Sort QP terms
   void sort_qp_terms() {

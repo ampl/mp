@@ -729,6 +729,7 @@ class XPRESSDirectSolver(MPDirectSolver):
                  ModelTags.continuous, ModelTags.integer, ModelTags.binary,
                  ModelTags.sos,
                  ModelTags.quadratic, ModelTags.quadratic_obj,
+                 ModelTags.socp,
 
                  ModelTags.return_mipgap, ModelTags.multiobj,
 

@@ -85,6 +85,7 @@ public:
       RunQConesFromNonQC();
     if (MC().IfPassExpCones())
       RunExpCones();
+    TryReformulateQPObjective();
     if (IfNeedSOCP2QC())
       SetupSOCP2QC();
     WarnOnMix();
@@ -119,11 +120,62 @@ protected:
     }
   }
 
+  /// Ideally also for exp/log terms
+  void TryReformulateQPObjective() {
+    if (HasAnyCones()
+        && MC().HasQPObjective() && 1==MC().num_objs()) {
+      // See if the QP objective is SOCP-easy
+      auto& obj = MC().get_objectives().at(0);
+      auto& qp = obj.GetQPTerms();
+      auto objsns = (obj::MAX==obj.obj_sense()) ? 1.0 : -1.0;
+      for (auto i=qp.size(); i--; ) {
+        if (qp.coef(i) * objsns > 0.0
+            || qp.var1(i) != qp.var2(i))       // not x1[i]==x2[i]
+          return;
+      }
+      // Set up AutoLink
+      auto obj_src =              // source value node for this obj
+          MC().GetValuePresolver().GetSourceNodes().GetObjValues()().Select(0);
+      pre::AutoLinkScope<MCType> auto_link_scope{ MC(), obj_src };
+      // Aux vars
+      int z = (int)MC().AddVar(0.0, MC().Infty());
+      int z1 = (int)MC().MakeFixedVar(1.0);
+      // Add cone
+      std::vector<double> c = {{1.0, 0.5}};
+      c.insert(c.end(), qp.coefs().begin(), qp.coefs().end());
+      if (objsns > 0)       // negate coefs if maximizing
+        for (size_t i=2; i<c.size(); ++i)
+          c[i] = -c[i];
+      std::vector<int> x = {{z, z1}};
+      x.insert(x.end(), qp.vars1().begin(), qp.vars1().end());
+      MC().AddConstraint(
+            RotatedQuadraticConeConstraint(
+              std::move(x), std::move(c)));
+      // Add linear term, remove QP terms
+      qp.clear();
+      obj.GetLinTerms().add_term(-objsns, z);
+    }
+  }
+
+  /// Any cones at all
+  bool HasAnyCones() const {
+    return MC().GetNumberOfAddable((QuadraticConeConstraint*)0)>0 ||
+        MC().GetNumberOfAddable((RotatedQuadraticConeConstraint*)0)>0 ||
+        HasAnyNonSOCPCones();
+  }
+
+  /// any non-SOCP cones?
+  bool HasAnyNonSOCPCones() const {
+    return MC().GetNumberOfAddable((ExponentialConeConstraint*)0)>0 ||
+        MC().GetNumberOfAddable((PowerConeConstraint*)0)>0 ||
+        MC().GetNumberOfAddable((GeometricConeConstraint*)0)>0;
+  }
+
   bool IfNeedSOCP2QC() {
     return
         MC().SOCP2QCMode() >= 2     // compulsory
         || (1 == MC().SOCP2QCMode()
-            && 0 == MC().NumExpConesRecognized()
+            && !HasAnyNonSOCPCones()
                // Might also have SOCP from sqrt(), abs().
                // Some QC -> SOCP but not all, even if 0 succeeded.
             && (MC().NumQC2SOCPAttempted() > MC().NumQC2SOCPSucceeded()
@@ -137,14 +189,10 @@ protected:
 
   void WarnOnMix() {
     if ( !MC().ModelAPICanMixConicQCAndQC()) {  // cannot mix
-      if ((MC().NumExpConesRecognized()         // exp cones
+      if ((HasAnyCones()                        // exp cones
            && (MC().NumQC2SOCPAttempted() > MC().NumQC2SOCPSucceeded()
                || MC().HasQPObjective()))       // and quadratics left in
-          ||                // Some QC -> SOCP but not all
-          ((MC().NumQC2SOCPAttempted() > MC().NumQC2SOCPSucceeded()
-            || MC().HasQPObjective())           // or a quadratic obj
-           && MC().NumQC2SOCPSucceeded()        // Warn only if some succeeded
-           && !MC().IfConvertSOCP2QC())         // and not decided to convert
+           && !MC().IfConvertSOCP2QC()          // and not decided to convert
           ) {
         MC().AddWarning("Mix QC+cones",
                         "Not all quadratic constraints could "
@@ -153,7 +201,7 @@ protected:
                         "additionally, further convertion back to QC\n"
                         "not desired (option cvt:socp2qc) or other cone types present;\n"
                         "solver might not accept the model.\n"
-                        "Try to express all SOCP cones in standard forms,\n"
+                        "Try to express all cones in standard forms,\n"
                         "not in the objective.\n"
                         "See mp.ampl.com/model-guide.html.");
       }

@@ -107,6 +107,13 @@ public:
   /// Sort and eliminate duplicates
   void sort_terms();
 
+  /// Clear
+  void clear() {
+    coefs_.clear();
+    vars1_.clear();
+    vars2_.clear();
+  }
+
   /// Test equality
   bool equals(const QuadTerms& qt) const {
     return *this == qt;
