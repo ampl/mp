@@ -203,7 +203,7 @@ protected:
                         "solver might not accept the model.\n"
                         "Try to express all cones in standard forms,\n"
                         "not in the objective.\n"
-                        "See mp.ampl.com/model-guide.html.");
+                        "See mp.ampl.com/modeling-expressions.html#conic-optimization.");
       }
     }
   }

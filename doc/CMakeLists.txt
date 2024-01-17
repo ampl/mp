@@ -9,7 +9,7 @@ endif ()
 
 find_package(Sphinx)
 if(NOT SPHINX_EXECUTABLE)
-  message(STATUS "Documentation generation disabled (requires sphinx)")
+  message(STATUS "Target doc disabled (requires sphinx, see requirements.txt)")
   return()
 endif()
 

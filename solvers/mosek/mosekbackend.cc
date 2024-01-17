@@ -227,7 +227,7 @@ void MosekBackend::Solve() {
                "make sure they have standard SOCP forms, and\n"
                "the objective is linear by moving the\n"
                "quadratic terms into auxiliary SOC constraints.\n"
-               "See mp.ampl.com/model-guide.html.");
+               "See mp.ampl.com/modeling-expressions.html#conic-optimization.");
 
   }
   MOSEK_CCALL( res );
