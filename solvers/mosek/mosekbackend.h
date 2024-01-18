@@ -1,6 +1,7 @@
 #ifndef MP_MOSEK_BACKEND_H_
 #define MP_MOSEK_BACKEND_H_
 
+#include <list>
 #include <string>
 
 #include "mp/backend-mip.h"
@@ -173,6 +174,9 @@ private:
   struct Options {
     // Whether to set MSK_IPAR_MIO_CONSTRUCT_SOL
     int MIPConstructSol_=0;
+
+    std::string paramRead_, paramWrite_;
+    std::list<std::string> inlineParams_;
   };
   Options storedOptions_;
 
@@ -180,6 +184,10 @@ protected:
   /**** Option accessors ****/
   int Mosek_mip_construct_sol() const { return storedOptions_.MIPConstructSol_; }
 
+  const std::list<std::string>& params_inline() const
+  { return storedOptions_.inlineParams_; }
+  const std::string& paramfile_read() const { return storedOptions_.paramRead_; }
+  const std::string& paramfile_write() const { return storedOptions_.paramWrite_; }
 };
 
 }  // namespace mp

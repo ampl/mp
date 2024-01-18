@@ -207,8 +207,12 @@ enum Status {
 
   /** Limit.
    *  Feasible solution, stopped by a limit, e.g., on iterations or Ctrl-C.
-   *  Codes 400-449.  */
+   *  Codes 400-449.
+   *  For new custom codes, use LIMIT_FEAS_CUSTOM, LIMIT_NO_FEAS_CUSTOM.
+   */
   LIMIT_FEAS       = 400,
+  /** Start of custom LIMIT_FEAS codes. */
+  LIMIT_FEAS_NEW   = LIMIT_FEAS + 20,
   /** End of the 'limit_feas' range.  */
   LIMIT_FEAS_LAST  = 449,
   /** Deprecated. */
@@ -251,6 +255,8 @@ enum Status {
       No feasible solution returned.
       Codes 470-499.  */
   LIMIT_NO_FEAS  = LIMIT_FEAS + 70,
+  /** Start of custom LIMIT_FEAS codes. */
+  LIMIT_NO_FEAS_NEW = LIMIT_NO_FEAS + 20,
   /** End of the 'limit-no-feas' range.  */
   LIMIT_NO_FEAS_LAST  = LIMIT_FEAS + 99,
   /** User interrupt, no feasible solution. */

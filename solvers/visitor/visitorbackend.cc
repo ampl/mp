@@ -378,6 +378,22 @@ void VisitorBackend::FinishOptionParsing() {
   int v=-1;
  // GetSolverOption(VISITOR_INTPARAM_LOGGING, v);
   set_verbose_mode(v>0);
+
+  // Nartive params
+  if (storedOptions_.paramread_.size()) {
+    //GRB_CALL(
+    //  GRBreadparams(GRBgetenv(model()),
+    //    paramfile_read().c_str()));
+  }
+  /// Set advanced parameters
+  for (const auto& prm : storedOptions_.inlineparams_)
+    this->SetSolverOption("Dummy", prm);
+  // Write native params
+  if (storedOptions_.paramwrite_.size()) {
+    //GRB_CALL(
+    //  GRBwriteparams(GRBgetenv(model()),
+    //    paramfile_write().c_str()));
+  }
 }
 
 
@@ -440,30 +456,37 @@ void VisitorBackend::InitCustomOptions() {
       "Multi-valued option when repeated.",
       storedOptions_.list_option_);
 
+  // Native solver options handling.
+  // Actual processing of these options can be done in FinishOptionParsing().
+  AddListOption("tech:optionnative optionnative optnative tech:param",
+      "General way to specify values of both documented and "
+      "undocumented Gurobi parameters; value should be a quoted "
+      "string (delimited by ' or \") containing a parameter name, a "
+      "space, and the value to be assigned to the parameter.  Can "
+      "appear more than once.  Cannot be used to query current "
+      "parameter values.",
+      storedOptions_.inlineparams_);
+  AddStoredOption("tech:optionnativeread tech:param:read param:read optnative:read",
+      "Name of Gurobi parameter file (surrounded by 'single' or "
+      "\"double\" quotes if the name contains blanks). "
+      "The suffix on a parameter file should be .prm, optionally followed "
+      "by .zip, .gz, .bz2, or .7z.\n"
+      "\n"
+      "Lines that start with # are ignored.  Otherwise, each nonempty "
+      "line should contain a name and a value, separated by a space.",
+      storedOptions_.paramread_);
+  AddStoredOption("tech:optionnativewrite tech:param:write param:write optnative:write",
+      "Name of Gurobi parameter file (surrounded by 'single' or \"double\" quotes if the "
+      "name contains blanks) to be written.",
+      storedOptions_.paramwrite_);
+
+
   ////////////////// CUSTOM RESULT CODES ///////////////////
   AddSolveResults( {
-                     { sol::SOLVED, "optimal solution" },
-                     { sol::UNCERTAIN, "suboptimal" },
-                   },
-                   true );   // Can replace some major codes
-  AddSolveResults( {
-                     { sol::LIMIT+1, "iteration limit, feasible solution" },
-                     { sol::LIMIT+11, "iteration limit, without a feasible soluton" },
-                     { sol::LIMIT+2, "node limit, feasible solution" },
-                     { sol::LIMIT+12, "node limit, without a feasible soluton" },
-                     { sol::LIMIT+3, "time limit, feasible solution" },
-                     { sol::LIMIT+13, "time limit, without a feasible solution" },
-                     { sol::LIMIT+4, "solution limit" },
-                     { sol::LIMIT+5, "interrupted, feasible solution" },
-                     { sol::LIMIT+15, "interrupted, without a feasible solution" },
-                     { sol::LIMIT+6, "work limit, feasible solution" },
-                     { sol::LIMIT+16, "work limit, without a feasible solution" },
-                     { sol::LIMIT+7, "soft memory limit, feasible solution" },
-                     { sol::LIMIT+17, "soft memory limit, without a feasible solution" },
-                     { sol::UNCERTAIN+3,
-                       "bestobjstop or bestbndstop reached, feasible solution" },
-                     { sol::UNCERTAIN+4,
-                       "bestobjstop or bestbndstop reached, without a feasible solution" }
+                     { sol::FAILURE+1, "fatal error 1" },
+                     { sol::FAILURE+2, "fatal error 2" },
+                     { sol::LIMIT_FEAS_NEW + 1, "AI iteration limit, feasible solution" },
+                     { sol::LIMIT_NO_FEAS_NEW + 1, "AI iteration limit, no feasible solution" }
                    } );     // No replacement, make sure they are new
 }
 

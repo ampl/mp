@@ -1,6 +1,8 @@
 #ifndef MP_VISITOR_BACKEND_H_
 #define MP_VISITOR_BACKEND_H_
 
+#include <vector>
+#include <list>
 #include <string>
 
 #include "mp/backend-mip.h"
@@ -203,6 +205,9 @@ private:
     std::string option_example_;
     bool flag_option_ = false;
     std::vector<double> list_option_;
+
+	  std::string paramread_, paramwrite_;
+    std::list<std::string> inlineparams_;
   };
   Options storedOptions_;
   void printModelStats();

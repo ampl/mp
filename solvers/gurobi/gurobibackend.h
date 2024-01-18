@@ -2,6 +2,7 @@
 #define MP_GUROBI_BACKEND_H_
 
 #include <string>
+#include <list>
 
 #include "gurobicommon.h"
 #include "mp/backend-mip.h"
@@ -279,7 +280,8 @@ private:
   /// These options are stored in the class as variables
   /// for direct access
   struct Options {
-    std::string paramRead_, paramWrite_, advancedParams_, exportPresolvedFile_, logFile_;
+    std::string paramRead_, paramWrite_, exportPresolvedFile_, logFile_;
+    std::list<std::string> inlineParams_;
 
     int nMIPStart_=1;
     int nPoolMode_=2;

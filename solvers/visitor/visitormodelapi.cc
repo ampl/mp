@@ -195,8 +195,14 @@ void VisitorModelAPI::AddConstraint( const QuadraticConeConstraint& qc ) {
 }
 
 void VisitorModelAPI::AddConstraint(
-    const RotatedQuadraticConeConstraint& qc ) {
+  const RotatedQuadraticConeConstraint& qc) {
   fmt::print("Adding rotated quadratic cone constraint \"{}\"\n", qc.GetName());
+  lp()->addEntity(Solver::CONS_QUAD_CONE_ROTATED);
+}
+
+void VisitorModelAPI::AddConstraint(
+  const ExponentialConeConstraint& qc) {
+  fmt::print("Adding exponential cone constraint \"{}\"\n", qc.GetName());
   lp()->addEntity(Solver::CONS_QUAD_CONE_ROTATED);
 }
 

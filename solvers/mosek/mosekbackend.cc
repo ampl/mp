@@ -383,6 +383,28 @@ void MosekBackend::FinishOptionParsing() {
   int v=-1;
   GetSolverOption(MSK_IPAR_LOG, v);
   set_verbose_mode(v>0);
+
+  // Nartive params
+  if (paramfile_read().size())
+    MOSEK_CCALL(
+      MSK_readparamfile(lp(), paramfile_read().c_str()));
+  /// Set advanced parameters
+  for (const auto& prm : storedOptions_.inlineParams_) {
+    auto sp1 = prm.find_first_of(' ');
+    auto sp2 = prm.find_last_of(' ');
+    if (sp1 != sp2 || std::string::npos == sp1
+      || 0==sp1 || prm.back()==' ')
+      MP_RAISE(
+        fmt::format("Bad native option assignment:\n"
+          "   '{}',\n"
+          "   need 'name value'", prm));
+    MOSEK_CCALL( MSK_putparam(lp(),
+      prm.substr(0, sp1).c_str(), prm.substr(sp1+1, prm.size()-sp1-1).c_str()));
+  }
+  // Write native params
+  if (paramfile_write().size())
+    MOSEK_CCALL(
+      MSK_writeparamfile(lp(), paramfile_write().c_str()));
 }
 
 
@@ -430,6 +452,24 @@ void MosekBackend::InitCustomOptions() {
       "fixing all integer values and solving the remaining problem."
       "Default = OFF",
       storedOptions_.MIPConstructSol_);
+
+  AddListOption("tech:optionnative optionnative optnative tech:param",
+    "General way to specify values of both documented and "
+    "undocumented Mosek parameters; value should be a quoted "
+    "string (delimited by ' or \") containing a parameter name, a "
+    "space, and the value to be assigned to the parameter.  Can "
+    "appear more than once.  Cannot be used to query current "
+    "parameter values.",
+    storedOptions_.inlineParams_);
+
+  AddStoredOption("tech:optionnativeread optionnativeread tech:param:read param:read",
+    "Name of Mosek parameter file (surrounded by 'single' or "
+    "\"double\" quotes if the name contains blanks) to be read.",
+    storedOptions_.paramRead_);
+  AddStoredOption("tech:optionnativewrite optionnativewrite tech:param:write param:write",
+    "Name of Mosek parameter file (surrounded by 'single' or \"double\" quotes if the "
+    "name contains blanks) to be written.",
+    storedOptions_.paramWrite_);
 
   AddSolverOption("mip:presolve presolve",
     "MIP presolve:\n"

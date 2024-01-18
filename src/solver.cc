@@ -595,11 +595,11 @@ void BasicSolver::InitMetaInfoAndOptions(
 
   AddStrOption(
         "tech:optionfile optionfile option:file",
-        "Name of solver option file to read "
+        "Name of an AMPL solver option file to read "
         "(surrounded by 'single' or "
         "\"double\" quotes if the name contains blanks). "
         "Lines that start with # are ignored.  Otherwise, each nonempty "
-        "line should contain \"name=value\".",
+        "line should contain \"name=value\", e.g., \"lim:iter=500\".",
         &Solver::GetOptionFile, &Solver::UseOptionFile);
 
 

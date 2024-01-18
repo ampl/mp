@@ -378,7 +378,7 @@ void ScipBackend::InitCustomOptions() {
     "Log file name.",
     storedOptions_.logFile_);
 
-  AddStoredOption("tech:param:read param:read paramfile",
+  AddStoredOption("tech:optionnativeread optionnativeread tech:param:read param:read",
     "Filename of SCIP parameter file (as path)."
     "The suffix on a parameter file should be .set.\n",
     storedOptions_.paramRead_);

@@ -20,28 +20,57 @@ Solver options
 =================
 
 Solver options are key-value pairs controlling a solver's behavior.
-Many of them are standardized across AMPL solvers
-(for solver's native options see :ref:`further <native-options>`.)
+We distinguish between :ref:`ampl-solver-options` and :ref:`native-options`.
+
+
+.. _ampl-solver-options:
+
+AMPL solver options
+-----------------------------
+
+AMPL solver options provide a unified interface to the underlying solver's
+configuration:
+
+.. code-block:: ampl
+
+    ampl: option solver gurobi;
+    ampl: option gurobi_options 'outlev=1';      ## verbose output
+    ampl: solve;
+
+Many of them are standardized across AMPL solvers.
 
 
 List all available options
-----------------------------------
+'''''''''''''''''''''''''''''''''''''''''''''
 
 Run the AMPL solver executable with ``-=`` to list all options,
-or with ``-=prefix`` to list all options starting with ``prefix``:
+or with ``-=key`` to list all options containing ``key``:
 
 .. code-block:: bash
 
-    $ highs -=acc
+    $ highs -=acc:
     .....
-    acc Options:
+    acc: Options:
 
     acc:linrange (acc:linrng)
         Solver acceptance level for 'LinConRange', default 2
 
 
+Option file
+'''''''''''''''''''''''''''''''''''
+
+It is possible to input a file with predefined AMPL solver options,
+using ``tech:optionfile``:
+
+.. code-block:: ampl
+
+    ampl: option cbc_options 'optionfile="options_experiment1.txt"';
+
+For the underlying solver's native options see :ref:`native-options`.
+
+
 Solver-specific vs common MP options
--------------------------------------------
+''''''''''''''''''''''''''''''''''''''''''''''''
 
 From AMPL, options can be passed to an MP solver in two ways.
 Solver-specific options are passed
@@ -72,7 +101,7 @@ with the possibility to override some of them for a specific solver.
 
 
 Set options from command line
---------------------------------------
+'''''''''''''''''''''''''''''''''''''''''''''''
 
 When running from command line, there are two ways to pass options:
 via the environment variable, or via arguments:
@@ -83,19 +112,8 @@ via the environment variable, or via arguments:
     gurobi.exe model.nl outlev=1 tech:writesol=model.sol                ## Method 2
 
 
-Set options from file
---------------------------
-
-It is possible to input a file with predefined solver options,
-using ``tech:optionfile``:
-
-.. code-block:: ampl
-
-    ampl: option cbc_options 'optionfile="options_experiment1.txt"';
-
-
 Query option values
---------------------------
+''''''''''''''''''''''''''''''''''''''
 
 To query the value of an option (default, or set via other methods),
 use '?' as argument:
@@ -119,11 +137,15 @@ For example, to control Gurobi ``NumericFocus`` setting, there are two ways:
 
 .. code-block:: ampl
 
-    ampl: option gurobi_options 'alg:numericfocus 3';      ## standard way
-    ampl: option gurobi_options 'tech:param "NumericFocus 3"';   ## native
+    ampl: option gurobi_options 'alg:numericfocus 3';             ## standard way
+    ampl: option gurobi_options 'tech:optionnative "NumericFocus 3"';   ## native
+    gurobi.exe model.nl optnative="numericfocus 2" optnative="Seed 500" # cmdline
 
 Additionally, for some solvers, native options can be read / written
-from / to files using ``tech:param:read`` and ``tech:param:write``.
+from / to files using ``tech:optionnativeread`` and ``tech:optionnativewrite``.
+
+
+
 
 General features
 ================
