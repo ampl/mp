@@ -28,8 +28,8 @@ We distinguish between :ref:`ampl-solver-options` and :ref:`native-options`.
 AMPL solver options
 -----------------------------
 
-AMPL solver options provide a unified interface to the underlying solver's
-configuration:
+AMPL solver options provide a unified interface to
+MP parameters, as well as underlying solver's configuration:
 
 .. code-block:: ampl
 
