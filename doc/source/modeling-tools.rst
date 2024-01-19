@@ -68,6 +68,13 @@ in one of the solver's general formats:
   ampl: option mosek_auxfiles rc;   ## To use var/con names
   ampl: option mosek_options 'writeprob=/tmp/ell.jtask'; solve;
 
+Some solvers can export their presolved model:
+
+.. code-block:: ampl
+
+  option gurobi_options 'outlev=1 writepresolved=disj_pre.lp';
+
+
 
 .. _reformulation-graph:
 

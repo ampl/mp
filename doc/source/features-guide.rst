@@ -25,10 +25,10 @@ We distinguish between :ref:`ampl-solver-options` and :ref:`native-options`.
 
 .. _ampl-solver-options:
 
-AMPL solver options
+AMPL/MP solver options
 -----------------------------
 
-AMPL solver options provide a unified interface to
+AMPL/MP solver options provide a unified interface to
 MP parameters, as well as underlying solver's configuration:
 
 .. code-block:: ampl
@@ -37,7 +37,7 @@ MP parameters, as well as underlying solver's configuration:
     ampl: option gurobi_options 'outlev=1';      ## verbose output
     ampl: solve;
 
-Many of them are standardized across AMPL solvers.
+Many of them are `standardized across AMPL solvers<https://dev.ampl.com/solvers/index.html>`_.
 
 
 List all available options
@@ -54,6 +54,9 @@ or with ``-=key`` to list all options containing ``key``:
 
     acc:linrange (acc:linrng)
         Solver acceptance level for 'LinConRange', default 2
+
+On the Web, options for AMPL solvers are published
+`here <https://dev.ampl.com/solvers/index.html>`_.
 
 
 Option file

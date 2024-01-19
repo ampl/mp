@@ -7,13 +7,23 @@ Numerical accuracy
 Mathematical Programming solvers typically work with finite-precision numbers, which
 leads to concerns on numerical stability.
 While general numerical stability is a well-established topic, below
-we highlight some common points for non-smooth models.
+we highlight some common points.
+
+
+Tight coefficients
+*****************************
+
+Try & keep the model's coefficients
+(constraint matrix, objective)
+close to :math:`\pm1` by rescaling your data.
 
 
 Importance of tight bounds: "big-M" constraints
 **************************************************
 
-The MP library simplifies relational operators into "indicator" constraints.
+Try & keep your variable and constraint bounds tight.
+
+For example, the MP library simplifies relational operators into "indicator" constraints.
 Solvers natively supporting indicators, usually handle them in a numerically stable way.
 Otherwise, they have to be linearized by the so-called "big-M" constraints, for example,
 an implication
@@ -33,12 +43,13 @@ with the big-M constant taken as the upper bound on :math:`x`.
 Thus, big-M constraints require finite bounds on participating variables.
 They should be as tight as possible, ideally between :math:`\pm10^4`.
 In any case, for numerical stability these bounds should
-not exceed the reciprocal of the integrality tolerance (:ref:`option <solver-options>` *inttol*). A default
+not exceed the reciprocal of the integrality tolerance
+(:ref:`option <solver-options>` *inttol*). A default
 big-M value can be set with the option *cvt:bigM* (use with caution).
 
 In some cases, a different formulation can help automatic detection
 of bounds. In the below example, the ``==> / else`` operator
-cannot do this for variables ``DL``:
+cannot easily do this for variables ``DL``:
 
 .. code-block:: ampl
 
