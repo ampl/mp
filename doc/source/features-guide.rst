@@ -37,7 +37,8 @@ MP parameters, as well as underlying solver's configuration:
     ampl: option gurobi_options 'outlev=1';      ## verbose output
     ampl: solve;
 
-Many of them are `standardized across AMPL solvers<https://dev.ampl.com/solvers/index.html>`_.
+Many of them are
+`standardized across AMPL solvers <https://dev.ampl.com/solvers/index.html>`_.
 
 
 List all available options
