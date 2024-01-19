@@ -8,7 +8,7 @@ Features guide for MP-based AMPL solvers
 The MP framework defines standard *solver features* that solvers might support;
 these are usually characterized by a set of :ref:`solver-options` used to control the feature,
 sometimes suffixes to pass required data and results, and may change the behaviour
-of the solution process.
+of the solution process. Furthermore, MP offers unified :ref:`solve-result-codes`.
 
 This page presents the semantics of the most common solver features; for a development
 reference see :ref:`howto`.
@@ -148,6 +148,67 @@ Additionally, for some solvers, native options can be read / written
 from / to files using ``tech:optionnativeread`` and ``tech:optionnativewrite``.
 
 
+.. _solve-result-codes:
+
+Solve result codes
+=================================
+
+The result of the last solve in AMPL can be seen as follows.
+
+.. code-block:: ampl
+
+    ampl: model party2.mod
+    ampl: data party2.dat
+    ampl: display solve_result_num, solve_result;
+    solve_result_num = -1
+    solve_result = '?'
+
+    ampl: option solver gurobi;
+    ampl: option gurobi_options 'lim:time 20';
+    ampl: solve;
+    Gurobi 11.0.0:   lim:time = 20
+    Gurobi 11.0.0: time limit, feasible solution
+    35671 simplex iteration(s)
+    1 branching node(s)
+    absmipgap=27, relmipgap=0.818182
+    ampl: display solve_result_num, solve_result;
+    solve_result_num = 402
+    solve_result = limit
+
+    ampl: option solve_result_table;
+    option solve_result_table '\
+    0       solved\
+    100     solved?\
+    200     infeasible\
+    300     unbounded\
+    400     limit\
+    500     failure\
+    ';
+
+MP details the solve result codes as follows:
+
+.. code-block:: ampl
+
+    ampl: shell "mosek -!";
+    Solve result table for MOSEK 10.0.43
+              0- 99 solved: optimal for an optimization problem, feasible for a satisfaction problem
+            100-199 solved? solution candidate returned but error likely
+                150 solved? MP solution check failed (option sol:chk:fail)
+            200-299 infeasible
+            300-349 unbounded, feasible solution returned
+            350-399 unbounded, no feasible solution returned
+            400-449 limit, feasible: stopped, e.g., on iterations or Ctrl-C
+            450-469 limit, problem is either infeasible or unbounded
+            470-499 limit, no solution returned
+            500-999 failure, no solution returned
+                550 failure: numeric issue, no feasible solution
+
+Individual solvers may add more specific values in the corresponding ranges.
+To list solver-specific codes, use command-line switch ``-!`` as above,
+or visit `AMPL Development <https://dev.ampl.com/solvers/index.html>`_.
+More information is in Chapter 14 of the
+`AMPL Book <https://ampl.com/learn/ampl-book/>`_.
+See also the roll cutting example on `AMPL Colab <https://colab.ampl.com>`_.
 
 
 General features
