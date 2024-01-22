@@ -464,7 +464,13 @@ void MosekBackend::InitCustomOptions() {
 
   AddStoredOption("tech:optionnativeread optionnativeread tech:param:read param:read",
     "Name of Mosek parameter file (surrounded by 'single' or "
-    "\"double\" quotes if the name contains blanks) to be read.",
+    "\"double\" quotes if the name contains blanks) to be read. File format:\n"
+    "\n"
+    "  BEGIN MOSEK\n"
+    "  MSK_DPAR_MIO_MAX_TIME 3\n"
+    "  END MOSEK\n"
+    "\n"
+    "Parameter descriptions: docs.mosek.com/latest/cmdtools/param-groups.html.",
     storedOptions_.paramRead_);
   AddStoredOption("tech:optionnativewrite optionnativewrite tech:param:write param:write",
     "Name of Mosek parameter file (surrounded by 'single' or \"double\" quotes if the "
