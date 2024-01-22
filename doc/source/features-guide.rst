@@ -56,8 +56,8 @@ or with ``-=key`` to list all options containing ``key``:
     acc:linrange (acc:linrng)
         Solver acceptance level for 'LinConRange', default 2
 
-On the Web, options for AMPL solvers are published
-`here <https://dev.ampl.com/solvers/index.html>`_.
+On the Web, options for AMPL solvers are published in 
+`AMPL Development <https://dev.ampl.com/solvers/index.html>`_.
 
 
 Option file
