@@ -43,7 +43,7 @@ public:
         !GetMC().IfMightUseEqualityEncodingForVar(
           args.var(0))) {
       Base::Convert(eq0c, i); // Calls ConvertCtxPos / Neg
-    } // else, using unary encoding whose flags are,
+    } // else, might use unary encoding whose flags are,
   }   // in the fixed case, fixed by PropagateResult()
 
   /// Convert in positive context

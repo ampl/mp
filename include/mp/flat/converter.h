@@ -1242,6 +1242,8 @@ private:
   pre::NodeRange auto_link_src_item_;   // the source item for autolinking
   std::vector<pre::NodeRange> auto_link_targ_items_;
 
+  pre::Many2OneLink many2one_link_ { GetValuePresolver() }; // the many-to-one links
+
 	ConicConverter<Impl> conic_cvt_ { *static_cast<Impl*>(this) };
   int nQC2SOCPAttempted_= 0;
   int nQC2SOCPSucceeded_= 0;
@@ -1367,6 +1369,11 @@ protected:
       ExponentialConeConstraint, "acc:expcone")
   STORE_CONSTRAINT_TYPE__NO_MAP(
       GeometricConeConstraint, "acc:geomcone")
+  /// Store UEncConstr
+  STORE_CONSTRAINT_TYPE__NO_MAP(
+      UnaryEncodingConstraint, "acc:uenc")
+  /// Dummy conversion for UEncConstr
+  void Convert(const UnaryEncodingConstraint& ) { }
 
 
 	protected:
@@ -1437,6 +1444,9 @@ public:
 
   /// ValuePresolve link copying values 1:many
   pre::One2ManyLink& GetOne2ManyLink() { return one2many_link_; }
+
+  /// ValuePresolve link copying values many:1
+  pre::Many2OneLink& GetMany2OneLink() { return many2one_link_; }
 };
 
 

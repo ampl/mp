@@ -190,7 +190,7 @@ public:
     const auto ub_dbl = this->ub(var);
     return (lb_dbl>std::numeric_limits<int>::min() &&
             ub_dbl<std::numeric_limits<int>::max()) &&
-        (ub_dbl-lb_dbl <= 100000);
+        (ub_dbl-lb_dbl <= 10000000);
   }
 
   /// Obtain extended column \a k of ZZI encoding C^r
@@ -214,6 +214,8 @@ private:
 
 
 protected:
+  /// Return index of CondLinEQ for this \a val,
+  /// if saved before
   int MapFind__VarConstCmp(int var, double val) {
     auto itVar = map_vars_eq_const_.find(var);
     if (map_vars_eq_const_.end() != itVar) {
@@ -302,7 +304,15 @@ protected:
     CreateUnaryEncoding(var, map);
   }
 
+  /// Create unary encoding once we go for it.
+  /// Adds a dummy UnaryEncodingConstraint for graph linking.
+  /// Another design would be to have an "EqualityEncodingConstraint"
+  /// and move all conversions there (indicators vs unary encoding.)
+  /// That would partially automate linking.
+  /// A benefit would be if some solver later supports them natively
+  /// (IloDistribute?), now they are always converted below.
   void CreateUnaryEncoding(int var, const SingleVarEqConstMap& map) {
+    auto valnode = MPD( AddConstraint( UnaryEncodingConstraint{{var}} ) );
     const Model& model = MP_DISPATCH( GetModel() );
     if (!model.is_integer_var(var))
       MP_RAISE("MP2MIP: Equality encoding: comparing non-integer variables not implemented");
