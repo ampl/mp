@@ -312,7 +312,18 @@ protected:
   /// A benefit would be if some solver later supports them natively
   /// (IloDistribute?), now they are always converted below.
   void CreateUnaryEncoding(int var, const SingleVarEqConstMap& map) {
+    // Create links from CondLinEQ's into the dummy UEnc
     auto valnode = MPD( AddConstraint( UnaryEncodingConstraint{{var}} ) );
+    auto& ck = GET_CONSTRAINT_KEEPER(CondLinConEQ);
+    for (const auto& veq : map) {
+      MPD( GetMany2OneLink().AddEntry(
+        { ck.SelectValueNodeRange(veq.second), valnode } ));
+    }
+    // Start AutoLinking from the dummy UEnc into its reformulation
+    pre::AutoLinkScope<Impl> auto_link_scope{
+      *(Impl*)this, valnode
+    };
+    // Create UEncoding
     const Model& model = MP_DISPATCH( GetModel() );
     if (!model.is_integer_var(var))
       MP_RAISE("MP2MIP: Equality encoding: comparing non-integer variables not implemented");

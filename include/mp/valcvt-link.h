@@ -219,7 +219,6 @@ public:
   /// Instead of a new entry, tries to extend the last one
   /// if exists
   void AddEntry(LinkEntry be) {
-    assert(be.first.IsSingleIndex());
     if (entries_.empty() ||
         !(
           (entries_.back().first==be.first   // same sources
