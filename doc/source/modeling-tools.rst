@@ -27,6 +27,9 @@ which lists all solver options starting with the ``acc:`` prefix:
 
   gurobi -=acc
 
+Alternatively, the full option list for each solver is published
+at `AMPL Development <https://dev.ampl.com/solvers/index.html>`_.
+
 
 .. _full-cons-list:
 
