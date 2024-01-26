@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.3)
 if (CMAKE_MAJOR_VERSION LESS 3)
   # CMake 3.0 is used for generator expressions in install(FILES).
   message(WARNING
-    "CMake version 3.0 or newer is required to install all targets")
+    "MP: CMake version 3.0 or newer is required to install all targets")
 endif ()
 
 # Set the path to CMake modules.
@@ -20,7 +20,7 @@ if(CCACHE_PROGRAM)
   set(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
   set(CMAKE_Fortran_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
 else()
-  message(STATUS "   HINT: Install ccache for faster recompilation")
+  message(STATUS "   MP HINT: Install ccache for faster recompilation")
 endif()
 
 include(init)
@@ -79,15 +79,15 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 set(MP_VERSION 3.1.0)
 if (NOT MP_VERSION MATCHES "^([0-9]+).([0-9]+).([0-9]+)$")
-  message(FATAL_ERROR "Invalid version format ${MP_VERSION}.")
+  message(FATAL_ERROR "MP: invalid version format ${MP_VERSION}.")
 endif ()
 set(MP_VERSION_MAJOR ${CMAKE_MATCH_1})
 set(MP_VERSION_MINOR ${CMAKE_MATCH_2})
 set(MP_VERSION_PATCH ${CMAKE_MATCH_3})
 
-message(STATUS "System: ${CMAKE_SYSTEM}")
-message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
-message(STATUS "Compiler version: ${CMAKE_CXX_COMPILER_VERSION}")
+message(STATUS "MP: system: ${CMAKE_SYSTEM}")
+message(STATUS "MP: build type: ${CMAKE_BUILD_TYPE}")
+message(STATUS "MP: compiler version: ${CMAKE_CXX_COMPILER_VERSION}")
 
 # Set output directories.
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
@@ -145,7 +145,7 @@ function(check_module name var)
   list(FIND MP_MODULES ${name} module_index)
   set(${var} FALSE PARENT_SCOPE)
   if (module_index EQUAL -1 AND NOT MP_MODULES STREQUAL all)
-    message(STATUS "Module ${name} disabled")
+    message(STATUS "MP: module ${name} disabled")
     return ()
   endif ()
   cmake_parse_arguments(check_module EXTERNAL "" "" ${ARGN})
@@ -153,7 +153,7 @@ function(check_module name var)
     # Get a dependency using git.
     find_package(Git)
     if (NOT GIT_FOUND)
-      message(SEND_ERROR "Git not found (required by ${name})")
+      message(SEND_ERROR "MP: git not found (required by ${name})")
       return ()
     endif ()
     set(dir ${PROJECT_SOURCE_DIR}/thirdparty/${name})
@@ -165,7 +165,7 @@ function(check_module name var)
         ${PROJECT_BINARY_DIR}/thirdparty/build/${name})
     endif ()
   endif ()
-  message(STATUS "Module ${name} enabled")
+  message(STATUS "MP: module ${name} enabled")
   set(${var} TRUE PARENT_SCOPE)
 endfunction()
 
@@ -328,7 +328,7 @@ else ()
   add_custom_command(OUTPUT
       ${MP_EXPR_INFO_FILE} ${MP_NL_OPCODES_FILE}
     COMMAND ${WINE} $<TARGET_FILE:gen-expr-info>
-      ${MP_EXPR_INFO_FILE}  ${MP_NL_OPCODES_FILE}
+      ${MP_EXPR_INFO_FILE} ${MP_NL_OPCODES_FILE}
     DEPENDS gen-expr-info)
 endif ()
 add_to_folder(${MP_FOLDER_PREFIX}util gen-expr-info)
@@ -483,18 +483,29 @@ option(BUILD_EXAMPLES "Build examples: nl reader, nl writer" ON)
 # Build NLReader example
 if (MP_VARIADIC_TEMPLATES AND BUILD_EXAMPLES AND NOT SKIP_BUILD_MP)
   message(STATUS
-    "Building nl-reader-example. Set -DBUILD_EXAMPLES=off to switch off.")
+    "MP: building nl-reader-example. Set -DBUILD_EXAMPLES=off to switch off.")
   add_executable(nl-reader-example examples/nl-reader-example.cc)
   add_to_folder(${MP_FOLDER_PREFIX}util nl-reader-example)
   target_link_libraries(nl-reader-example mp)
 endif ()
 
 # Build NLWriter2 example
-if (BUILD_EXAMPLES)
-  message(STATUS
-    "Building NLWriter2 examples. Set -DBUILD_EXAMPLES=off to switch off.")
+if (BUILD_EXAMPLES OR NLW2_LIB)
+  if (BUILD_EXAMPLES)
+    message(STATUS
+      "MP: building NLWriter2 examples. Set -DBUILD_EXAMPLES=off to switch off.")
+  endif()
+  if (NLW2_LIB)
+    message(STATUS
+      "MP: building NL-Writer2 library. Set -DNLW2_LIB=off to switch off.")
+  endif()
   set(NLW2_DIR nl-writer2)
-  add_subdirectory(${NLW2_DIR})
+  add_subdirectory(${NLW2_DIR})        ## Build NLW2 library
+  ## First, generate nl-opcodes.h useful for applications
+  ## and used in C++ API examples
+  add_custom_target(gen_nl_opcodes
+    DEPENDS ${MP_NL_OPCODES_FILE})        ## Seems we need this 2-step dep.
+  add_dependencies(${NLW2_LIB_NAME} gen_nl_opcodes)
   # Gather source files for docu
   set(NLW2_DOC_SRC ${NLW2_SRC})
   # Export library target names
@@ -539,7 +550,7 @@ if (NOT SKIP_BUILD_MP)
 	include(CTest)
 	enable_testing()
 	if(BUILD_TESTS)
-		message(STATUS "Building unit tests. Set -DBUILD_TESTS=off to switch off.")
+    message(STATUS "MP: building unit tests. Set -DBUILD_TESTS=off to switch off.")
 		add_subdirectory(test)
 	endif()
 
