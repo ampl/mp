@@ -87,9 +87,6 @@ namespace mp {
 template <typename Impl, typename ExprType>
 class NLFeeder2 {
 public:
-  /** Destroys the object. */
-  virtual ~NLFeeder2() {}
-
   /** The expression type. */
   typedef ExprType Expr;
 

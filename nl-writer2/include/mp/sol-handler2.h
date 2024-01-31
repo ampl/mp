@@ -65,9 +65,6 @@ namespace mp {
  */
 class SOLHandler2 {
 public:
-  /** Destroys the object. */
-  virtual ~SOLHandler2() { }
-
 	/** The NLHeader used to write the NL file. */
 	NLHeader Header() const { return {}; }
 

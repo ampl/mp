@@ -101,9 +101,6 @@ template <typename Params>
 class NLWriter2 :
     public Params::FormatterType {
 public:
-  /// Destructor.
-  virtual ~NLWriter2() { }
-
   using FormatterType = typename Params::FormatterType;
   using FeederType = typename Params::FeederType;
 

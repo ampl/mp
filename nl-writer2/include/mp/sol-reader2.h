@@ -178,9 +178,6 @@ struct SufRead;
 template <typename SOLHandler2>
 class SOLReader2 {
 public:
-  /// Destructor.
-  virtual ~SOLReader2() { }
-
   /// Constructor.
 	SOLReader2(SOLHandler2& sh, NLUtils& utl) :
 			solh_(sh), utils_(utl), hdr_(sh.Header()) { }
