@@ -566,24 +566,24 @@ void NLW2_ReadDblSuffixEntry(
 void NLW2_ReportDblSuffixError(
     void* p_api_data, const char* msg) {
   ((mp::SuffixReader<double>*)p_api_data)
-      ->SetError(mp::SOL_Read_Bad_Suffix, msg);
+      ->SetError(mp::SOLRead_Bad_Suffix, msg);
 }
 /// Report suffix error.
 /// This causes NLW2_IntSuffixNNZ() to return 0.
 void NLW2_ReportIntSuffixError(
     void* p_api_data, const char* msg) {
   ((mp::SuffixReader<int>*)p_api_data)
-      ->SetError(mp::SOL_Read_Bad_Suffix, msg);
+      ->SetError(mp::SOLRead_Bad_Suffix, msg);
 }
 /// Check suffix read result
 int NLW2_IntSuffixReadOK(void* p_api_data) {
-  return mp::SOL_Read_OK
+  return mp::SOLRead_OK
       == ((mp::SuffixReader<int>*)p_api_data)
       ->ReadResult();
 }
 /// Check suffix read result
 int NLW2_DblSuffixReadOK(void* p_api_data) {
-  return mp::SOL_Read_OK
+  return mp::SOLRead_OK
       == ((mp::SuffixReader<double>*)p_api_data)
       ->ReadResult();
 }
@@ -657,85 +657,60 @@ namespace mp {
 
 /// Typedef our specialization of NLSOL
 using NLSOL_C_Impl
-  = mp::NLSOL<mp::NLW2_NLFeeder2_C_Impl,
-      mp::NLW2_SOLHandler2_C_Impl>;
+  = mp::NLSOL;
 
 }  // namespace mp
 
-/// Construct.
-///
-/// Note that the argument objects are stored by value.
+
 NLW2_NLSOL_C NLW2_MakeNLSOL_C(
-    NLW2_NLFeeder2_C* pnlf, NLW2_SOLHandler2_C* psolh, NLW2_NLUtils_C* putl) {
+    NLW2_NLUtils_C* putl) {
   NLW2_NLSOL_C result;
 
-  result.p_nlf_ = new mp::NLW2_NLFeeder2_C_Impl(pnlf);
-  result.p_solh_ = new mp::NLW2_SOLHandler2_C_Impl(psolh);
   result.p_utl_ = new mp::NLUtils_C_Impl(putl);
   result.p_nlsol_
       = new mp::NLSOL_C_Impl(
-        *(mp::NLW2_NLFeeder2_C_Impl*)result.p_nlf_,
-        *(mp::NLW2_SOLHandler2_C_Impl*)result.p_solh_,
-        *(mp::NLUtils_C_Impl*)result.p_utl_);
+        (mp::NLUtils_C_Impl*)result.p_utl_);
 
   return result;
 }
 
-/// Destroy
 void NLW2_DestroyNLSOL_C(NLW2_NLSOL_C* pnls) {
-  delete (mp::NLUtils_C_Impl*)(pnls->p_utl_);
-  delete (mp::NLW2_SOLHandler2_C_Impl*)(pnls->p_solh_);
-  delete (mp::NLW2_NLFeeder2_C_Impl*)(pnls->p_nlf_);
   delete (mp::NLSOL_C_Impl*)(pnls->p_nlsol_);
+  delete (mp::NLUtils_C_Impl*)(pnls->p_utl_);
 }
 
-/// Set solver, such as "gurobi", "highs", "ipopt"
-void NLW2_NLSOL_C_SetSolver(NLW2_NLSOL_C* pnls, const char* solver) {
+void NLW2_NLSOL_C_SetFileStub(NLW2_NLSOL_C* pnls, const char* stub) {
   ((mp::NLSOL_C_Impl*)(pnls->p_nlsol_))
-      ->SetSolver(solver);
+      ->SetFileStub(stub);
 }
 
-/// Set solver options, such as "outlev=1 lim:time=500"
-void NLW2_NLSOL_C_SetSolverOptions(
-    NLW2_NLSOL_C* pnls, const char* sopts) {
-  ((mp::NLSOL_C_Impl*)(pnls->p_nlsol_))
-      ->SetSolverOptions(sopts);
-}
-
-/// Solve.
-/// @param filestub: filename stub to be used
-/// for input files (.nl, .col., .row, etc.),
-/// and output files (.sol).
-/// @return true if all ok.
-int NLW2_NLSOL_C_Solve(NLW2_NLSOL_C* pnls, const char* filestub) {
+const char* NLW2_NLSOL_C_GetFileStub(NLW2_NLSOL_C* pnls) {
   return ((mp::NLSOL_C_Impl*)(pnls->p_nlsol_))
-      ->Solve(filestub);
+      ->GetFileStub().c_str();
 }
 
-/// Get error message.
 const char* NLW2_NLSOL_C_GetErrorMessage(NLW2_NLSOL_C* pnls) {
   return ((mp::NLSOL_C_Impl*)(pnls->p_nlsol_))
       ->GetErrorMessage();
 }
 
-/// Substep: write NL and any accompanying files.
-int NLW2_NLSOL_C_WriteNLFile(NLW2_NLSOL_C* pnls, const char* filestub) {
+int NLW2_NLSOL_C_LoadModel(NLW2_NLSOL_C* pnls, NLW2_NLFeeder2_C* nlf_c) {
+  mp::NLW2_NLFeeder2_C_Impl nlf(nlf_c);
   return ((mp::NLSOL_C_Impl*)(pnls->p_nlsol_))
-      ->WriteNLFile(filestub);
+      ->LoadModel(nlf);
 }
 
-/// Substep: invoke chosen solver for \a filestub.
-int NLW2_NLSOL_C_InvokeSolver(NLW2_NLSOL_C* pnls, const char* filestub) {
+int NLW2_NLSOL_C_Solve(NLW2_NLSOL_C* pnls,
+                       const char* solver, const char* solver_opts) {
   return ((mp::NLSOL_C_Impl*)(pnls->p_nlsol_))
-      ->InvokeSolver(filestub);
+      ->Solve(solver, solver_opts);
 }
 
-/// Substep: read solution.
-/// @param filename: complete file name,
-/// normally (stub).sol.
-int NLW2_NLSOL_C_ReadSolution(NLW2_NLSOL_C* pnls, const char* filename) {
+int NLW2_NLSOL_C_ReadSolution(NLW2_NLSOL_C* pnls,
+                              NLW2_SOLHandler2_C* solh_c) {
+  mp::NLW2_SOLHandler2_C_Impl solh(solh_c);
   return ((mp::NLSOL_C_Impl*)(pnls->p_nlsol_))
-      ->ReadSolution(filename);
+      ->ReadSolution(solh);
 }
 
 

@@ -56,17 +56,17 @@
 
 namespace mp {
 
-/// WriteNLResult enum.
-enum WriteNLResult {
+/// WriteNLResultCode enum.
+enum WriteNLResultCode {
   WriteNL_Unset = 0,
   WriteNL_OK = 1,
   WriteNL_CantOpen,
   WriteNL_Failed
 };
 
-/// Typedef WriteNLReport:
+/// Typedef WriteNLResult:
 /// result code and error message
-using WriteNLReport = std::pair<WriteNLResult, std::string>;
+using WriteNLResult = std::pair<WriteNLResultCode, std::string>;
 
 /// Write NL file and any necessary auxiliary files.
 /// @param namebase: name without extension,
@@ -74,7 +74,7 @@ using WriteNLReport = std::pair<WriteNLResult, std::string>;
 /// @return Write status.
 /// Note that warnings are reported via \a utl.
 template <class NLFeeder2>
-inline WriteNLReport WriteNLFile(
+inline WriteNLResult WriteNLFile(
     const std::string& namebase,
     NLFeeder2& nlf, NLUtils& utl);
 
@@ -113,10 +113,10 @@ public:
   /// @param namebase will be used for filenames
   /// namebase.nl, namebase.row, etc.
   /// @return Write status.
-  WriteNLReport WriteFiles(const std::string& namebase);
+  WriteNLResult WriteFiles(const std::string& namebase);
 
-  /// Retrieve WriteNLResult and error message
-  WriteNLReport GetResult() const
+  /// Retrieve WriteNLResultCode and error message
+  WriteNLResult GetResult() const
   { return result_; }
 
 
@@ -632,7 +632,7 @@ private:
 
   File nm;
 
-  WriteNLReport result_ {WriteNL_Unset, ""};
+  WriteNLResult result_ {WriteNL_Unset, ""};
 };
 
 }  // namespace mp

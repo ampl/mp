@@ -17,42 +17,42 @@ inline int decstring(const char *buf, double *val) {
 }
 
 /// Read a double from text or binary file
-inline SOLReadResult Read(
+inline SOLReadResultCode Read(
     FILE* f, int binary, double& v, std::string& err) {
   err.resize(512);
   if (binary ? !std::fread((char *)&v, sizeof(double), 1, f)
        : !fgets((char*)err.data(), err.size()-1, f))
-    return SOL_Read_Early_EOF;
+    return SOLRead_Early_EOF;
   if (!binary && decstring(err.data(), &v))
-    return SOL_Read_Bad_Line;
-  return SOL_Read_OK;
+    return SOLRead_Bad_Line;
+  return SOLRead_OK;
 }
 
 
 /// Read a pair<int, El> from text or binary file
 template <class El>
-inline SOLReadResult Read(
+inline SOLReadResultCode Read(
     FILE* f, int binary,
     std::pair<int, El>& v, std::string& err) {
   err.resize(512);
   if (binary) {
     if (fread(&v.first, sizeof(int), 1, f) != 1
         || fread(&v.second, sizeof(El), 1, f) != 1)
-      return SOL_Read_Early_EOF;
+      return SOLRead_Early_EOF;
   } else {
     if (!fgets((char*)err.data(), err.size()-1, f))
-      return SOL_Read_Early_EOF;
+      return SOLRead_Early_EOF;
     const char *s;
     char *se;
     v.first = (int)strtol(s = err.c_str(), &se, 10);
     if (se <= s)
-      return SOL_Read_Bad_Line;
+      return SOLRead_Bad_Line;
     auto el = strtod(s = se, &se);
     if (se <= s)
-      return SOL_Read_Bad_Line;
+      return SOLRead_Bad_Line;
     v.second = (El)el;
   }
-  return SOL_Read_OK;
+  return SOLRead_OK;
 }
 
 
@@ -61,7 +61,7 @@ template <class Value>
 Value VecReader<Value>::ReadNext() {
   Value v;
   --n_;                // decrement counter
-  if (SOL_Read_OK !=
+  if (SOLRead_OK !=
       (rr_ = Read(f_, binary_, v, err_msg_))) {
     n_ = 0;            // return error status
   }
@@ -71,7 +71,7 @@ Value VecReader<Value>::ReadNext() {
 
 /// Some refurbished old code.
 template <class SOLHandler2>
-SOLReadResult
+SOLReadResultCode
 SOLReader2<SOLHandler2>::ReadSOLFile(
     const std::string& name) {
   File file;
@@ -82,7 +82,7 @@ SOLReader2<SOLHandler2>::ReadSOLFile(
   if (!file) {
     serror("can't open '%s'", stub_);
     internal_rv_ = 998;
-    return SOL_Read_Fail_Open;
+    return SOLRead_Fail_Open;
   }
   FILE* f = file.GetHandle();
   if (fread((char *)&L, sizeof(uiolen), 1, f)
@@ -275,7 +275,7 @@ bad_nOpts:
     // Handler says we should stop:
     if (auto rv = Handler().OnAMPLOptions(ao)) {
       internal_rv_ = rv;
-      return SOL_Read_Bad_Options;
+      return SOLRead_Bad_Options;
     }
 
     // Some checks.
@@ -349,11 +349,11 @@ bad_nOpts:
 
       if (L == 2*sizeof(integer)) {
         switch(bsufread(f)) {
-        case SOL_Read_Bad_Suffix:
+        case SOLRead_Bad_Suffix:
 badsuftable:
           serror("Bad suffix in '%s'\n", stub_);
-          return SOL_Read_Bad_Suffix;
-        case SOL_Read_OK:
+          return SOLRead_Bad_Suffix;
+        case SOLRead_OK:
           break;
         default:
           return readresult_;
@@ -391,9 +391,9 @@ bad_objno:
     Handler().OnSolveCode(Objno[1]);
 
     switch(gsufread(f)) {
-    case SOL_Read_Bad_Suffix:
+    case SOLRead_Bad_Suffix:
       goto badsuftable;
-    case SOL_Read_OK:
+    case SOLRead_OK:
       break;
     default:
       return readresult_;
@@ -401,7 +401,7 @@ bad_objno:
   }
 f_done:
   internal_rv_ = 0;
-  return SOL_Read_OK;
+  return SOLRead_OK;
 }
 
 
@@ -429,24 +429,24 @@ struct SufRead {
 };
 
 template <class SOLHandler2>
-SOLReadResult SOLReader2<SOLHandler2>::bsufread(FILE* f) {
+SOLReadResultCode SOLReader2<SOLHandler2>::bsufread(FILE* f) {
   uiolen L, L1;
 
   while(fread(&L, sizeof(uiolen), 1, f)) {
     SufRead SR;
     if (L < sizeof(SufHead))
-      return SOL_Read_Bad_Suffix;
+      return SOLRead_Bad_Suffix;
     if (fread(&SR.h, sizeof(SufHead), 1, f) != 1)
       return ReportEarlyEof();
     SR.tablines = SR.h.tablen - 1;
     if (strncmp(SR.h.sufid, "\nSuffix\n", 8)
         || sufheadcheck(&SR))
-      return SOL_Read_Bad_Suffix;
+      return SOLRead_Bad_Suffix;
     if (fread(SR.name, (size_t)SR.h.namelen, 1, f) != 1)
       return ReportEarlyEof();
     if (SR.h.tablen && fread(SR.table, (size_t)SR.h.tablen,
                              1, f) != 1)
-      return SOL_Read_Bad_Suffix;
+      return SOLRead_Bad_Suffix;
     SuffixInfo si(SR.h.kind, SR.name, SR.table);
     if (SR.h.kind & 4) {        // real-valued
       SuffixReader<double> sr(std::move(si), f, 1, SR.h.n);
@@ -463,7 +463,7 @@ SOLReadResult SOLReader2<SOLHandler2>::bsufread(FILE* f) {
       return ReportEarlyEof();
     // sufput(&SR, ac, newsufs);
   }
-  return SOL_Read_OK;
+  return SOLRead_OK;
 }
 
 /// Parse int
@@ -500,7 +500,7 @@ Lget(char **sp, int *Lp)
 
 
 template <class SOLHandler2>
-SOLReadResult SOLReader2<SOLHandler2>::gsufread(FILE* f) {
+SOLReadResultCode SOLReader2<SOLHandler2>::gsufread(FILE* f) {
   char *s, *se;
   size_t L;
   char buf[512];
@@ -559,7 +559,7 @@ SOLReadResult SOLReader2<SOLHandler2>::gsufread(FILE* f) {
     }
     //		sufput(&SR, ac, newsufs);
   }
-  return SOL_Read_OK;
+  return SOLRead_OK;
 }
 
 template <class SOLHandler2>
@@ -582,23 +582,23 @@ int SOLReader2<SOLHandler2>::sufheadcheck(SufRead* sr) {
 }
 
 template <class SOLHandler2>
-SOLReadResult SOLReader2<SOLHandler2>::ReportEarlyEof() {
+SOLReadResultCode SOLReader2<SOLHandler2>::ReportEarlyEof() {
   serror("error reading '%s' (errno=%d)", stub_, errno);
-  return readresult_ = SOL_Read_Early_EOF;
+  return readresult_ = SOLRead_Early_EOF;
 }
 
 template <class SOLHandler2>
-SOLReadResult SOLReader2<SOLHandler2>::ReportBadFormat() {
+SOLReadResultCode SOLReader2<SOLHandler2>::ReportBadFormat() {
   serror("Bad %s solution file '%s' (errno=%d)",
          bkind[binary], stub_, errno);
-  return readresult_ = SOL_Read_Bad_Format;
+  return readresult_ = SOLRead_Bad_Format;
 }
 
 template <class SOLHandler2>
-SOLReadResult SOLReader2<SOLHandler2>::
+SOLReadResultCode SOLReader2<SOLHandler2>::
 ReportBadLine(const std::string& line) {
   serror("Bad line in '%s': %s", stub_, line.c_str());
-  return readresult_ = SOL_Read_Bad_Line;
+  return readresult_ = SOLRead_Bad_Line;
 }
 
 

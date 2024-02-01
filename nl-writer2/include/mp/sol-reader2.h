@@ -51,17 +51,17 @@
 
 namespace mp {
 
-/// SOL read result
-enum SOLReadResult {
-  SOL_Read_Result_Not_Set = -1,
-  SOL_Read_OK = 0,
-  SOL_Read_Fail_Open,
-  SOL_Read_Early_EOF,
-  SOL_Read_Bad_Format,
-  SOL_Read_Bad_Line,
-  SOL_Read_Bad_Options,
-  SOL_Read_Vector_Not_Finished,
-  SOL_Read_Bad_Suffix
+/// SOL read result code
+enum SOLReadResultCode {
+  SOLRead_Result_Not_Set = -1,
+  SOLRead_OK = 0,
+  SOLRead_Fail_Open,
+  SOLRead_Early_EOF,
+  SOLRead_Bad_Format,
+  SOLRead_Bad_Line,
+  SOLRead_Bad_Options,
+  SOLRead_Vector_Not_Finished,
+  SOLRead_Bad_Suffix
 };
 
 
@@ -86,11 +86,11 @@ public:
   Value ReadNext();
 
   /// Set error status
-  void SetError(SOLReadResult res, std::string msg)
+  void SetError(SOLReadResultCode res, std::string msg)
   { rr_ = res; err_msg_ = std::move(msg); n_ = 0; }
 
   /// status
-  SOLReadResult ReadResult() const { return rr_; }
+  SOLReadResultCode ReadResult() const { return rr_; }
 
   /// error message
   const std::string& ErrorMessage() const
@@ -102,7 +102,7 @@ private:
 	int binary_;
   int n_;
 
-  SOLReadResult rr_{SOL_Read_OK};
+  SOLReadResultCode rr_{SOLRead_OK};
   std::string err_msg_;
 };
 
@@ -183,12 +183,12 @@ public:
 			solh_(sh), utils_(utl), hdr_(sh.Header()) { }
 
   /// Read .sol file.
-  SOLReadResult ReadSOLFile(const std::string& name);
+  SOLReadResultCode ReadSOLFile(const std::string& name);
 
   /// Error message, if any.
   /// Warnings are printed independently
   /// via NLUtils::log_warning().
-  const std::string& ErrorMessage(SOLReadResult ) const
+  const std::string& ErrorMessage(SOLReadResultCode ) const
   { return err_msg_; }
 
   /// Internal AMPL result code
@@ -220,16 +220,16 @@ protected:
 
   /// Check result of a [vector] reader
   template <class Reader>
-  bool CheckReader(const Reader& rd, SOLReadResult& rr) {
-    if (SOL_Read_Early_EOF == rd.ReadResult())
+  bool CheckReader(const Reader& rd, SOLReadResultCode& rr) {
+    if (SOLRead_Early_EOF == rd.ReadResult())
       return (rr=ReportEarlyEof(), false);
-    if (SOL_Read_Bad_Line == rd.ReadResult())
+    if (SOLRead_Bad_Line == rd.ReadResult())
       return (rr=ReportBadLine(rd.ErrorMessage()), false);
     if (rd.Size()) {       // unfinished
       serror("vector not read completely");
       return (rr=ReportBadFormat(), false);
     }
-    if (SOL_Read_OK != rd.ReadResult()) {
+    if (SOLRead_OK != rd.ReadResult()) {
       serror( rd.ErrorMessage().c_str() );
       ReportBadFormat();
       return (rr=rd.ReadResult(), false);
@@ -238,22 +238,22 @@ protected:
   }
 
   /// Read suffixes, binary
-  SOLReadResult bsufread(FILE* f);
+  SOLReadResultCode bsufread(FILE* f);
 
   /// Read suffixes, text
-  SOLReadResult gsufread(FILE* f);
+  SOLReadResultCode gsufread(FILE* f);
 
   /// Suffix head check
   int sufheadcheck(SufRead *sr);
 
   /// Report Early Eof
-  SOLReadResult ReportEarlyEof();
+  SOLReadResultCode ReportEarlyEof();
 
   /// Report bad format
-  SOLReadResult ReportBadFormat();
+  SOLReadResultCode ReportBadFormat();
 
   /// Report bad line
-  SOLReadResult ReportBadLine(const std::string& line);
+  SOLReadResultCode ReportBadLine(const std::string& line);
 
   /// Save error message
   void serror(const char* format, ...);
@@ -285,7 +285,7 @@ private:
   std::string solve_msg_;
   std::string err_msg_;
   int internal_rv_ {0};
-  SOLReadResult readresult_ {SOL_Read_Result_Not_Set};
+  SOLReadResultCode readresult_ {SOLRead_Result_Not_Set};
 
   const char* stub_ {nullptr};
   const char *bkind[2] = { "ASCII", "binary" };
@@ -304,7 +304,7 @@ private:
 
 /// Read SOL file.
 template <class SOLHandler2>
-inline std::pair<SOLReadResult, std::string>
+inline std::pair<SOLReadResultCode, std::string>
 ReadSOLFile(
     const std::string& name,
 		SOLHandler2& solh, NLUtils& utl, int* p_internal_rv=nullptr) {

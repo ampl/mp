@@ -29,10 +29,11 @@ int main(int argc, const char* const* argv) {
     exit(0);
   }
 
+  int result = EXIT_SUCCESS;
   const char* solver = (argc>1) ? argv[1] : "highs";
   const char* sopts = (argc>2) ? argv[2] : "";
   int binary = (argc<=3) || strcmp("text", argv[3]);
-  const char* stub = (argc>4) ? argv[4] : "stub";
+  const char* stub = (argc>4) ? argv[4] : "";
 
   // Create custom interface
   CAPIExample example = MakeCAPIExample_Linear_01();
@@ -41,16 +42,18 @@ int main(int argc, const char* const* argv) {
   NLW2_NLUtils_C utils = MakeNLUtils_C();
 
   // Create NLSOL_C
-  NLW2_NLSOL_C nlsol = NLW2_MakeNLSOL_C(&feeder, &solhnd, &utils);
+  NLW2_NLSOL_C nlsol = NLW2_MakeNLSOL_C(&utils);
 
   // Solve
-  NLW2_NLSOL_C_SetSolver(&nlsol, solver);
-  NLW2_NLSOL_C_SetSolverOptions(&nlsol, sopts);
-  if (0==NLW2_NLSOL_C_Solve(&nlsol, stub)) {
+  NLW2_NLSOL_C_SetFileStub(&nlsol, stub);
+  if (!NLW2_NLSOL_C_LoadModel(&nlsol, &feeder)
+      || !NLW2_NLSOL_C_Solve(&nlsol, solver, sopts)
+      || !NLW2_NLSOL_C_ReadSolution(&nlsol, &solhnd)) {
     printf("%s\n", NLW2_NLSOL_C_GetErrorMessage(&nlsol));
-    exit(EXIT_FAILURE);
+    result = EXIT_FAILURE;
+  } else {
+    PrintSolution_C(&example, stub);
   }
-  PrintSolution_C(&example, stub);
 
   // Destroy API-owned objects
   NLW2_DestroyNLSOL_C(&nlsol);
@@ -61,5 +64,5 @@ int main(int argc, const char* const* argv) {
   DestroyNLFeeder2_C(&feeder);
   DestroyCAPIExample_Linear_01(&example);
 
-  return 0;
+  return result;
 }

@@ -34,6 +34,7 @@
 
 #include <utility>
 #include <cassert>
+#include <cstdio>
 #include <cstdlib>
 
 #include "mp/nl-writer2.h"
@@ -46,7 +47,7 @@ namespace mp {
 /// Manager for solving optimization models via NL files.
 /// It performs zero-overhead model/solution transmission.
 /// In particular, it does not store any intermediate
-/// model representation.
+/// model/solution representation.
 ///
 /// Usage:
 ///
@@ -69,102 +70,129 @@ namespace mp {
 ///
 /// See mp::NLFeeder2 and mp::SOLHandler2 interfaces
 /// for model/solution transmission.
-///
-/// @param MyNLFeeder: a class implementing
-///   the mp::NLFeeder2 interface.
-/// @param MySOLHandler: a class implementing
-///   the mp::SOLHandler2 interface.
-template <class MyNLFeeder, class MySOLHandler>
 class NLSOL {
 public:
-  /// Construct
-  NLSOL(MyNLFeeder& fd, MySOLHandler& sh, mp::NLUtils& ut)
-    : feeder_(fd), handler_(sh), utils_(ut) { }
+  /// Construct.
+  ///
+  /// @param put: pointer to NLUtils or a derived object
+  ///   (optional).
+  NLSOL(mp::NLUtils* put=nullptr)
+    : put_(put ? put : &utils_) { Init(); }
 
-  /// NLFeederType
-  using NLFeederType = MyNLFeeder;
-  /// SOLHandlerType
-  using SOLHandlerType = MySOLHandler;
+  /// Destruct.
+  ~NLSOL() { Destroy(); }
 
-  /// Set solver, such as "gurobi", "highs", "ipopt"
-  void SetSolver(std::string solver);
+  /// Set file stub [OPTIONAL].
+  ///
+  /// Used for filename base of .nl, .col, row, etc. input files,
+  /// as well as .sol output files.
+  ///
+  /// If not provided, a temporary filename is used;
+  /// then, .nl is deleted upon object desruction.
+  void SetFileStub(std::string stub);
 
-  /// Set solver options, such as "outlev=1 lim:time=500"
-  void SetSolverOptions(std::string sopts);
-
-  /// Solve.
-  /// @param filestub: filename stub to be used
-  /// for input files (.nl, .col., .row, etc.),
-  /// and output files (.sol).
-  /// @return true if all ok.
-  bool Solve(const std::string& filestub);
+  /// Retrieve file stub.
+  const std::string& GetFileStub() const
+  { return filestub_; }
 
   /// Get error message.
+  /// Nonempty iff error occurred.
   const char* GetErrorMessage() const { return err_msg_.c_str(); }
 
-  /// Substep: write NL and any accompanying files.
-  bool WriteNLFile(const std::string& filestub);
+  /// Get model load result code.
+  WriteNLResultCode GetLoadModelResultCode() const
+  { return nl_result_; }
 
-  /// Substep: invoke chosen solver for \a filestub.
-  bool InvokeSolver(const std::string& filestub);
+  /// Get solution read result code.
+  SOLReadResultCode GetSolReadResultCode() const
+  { return sol_result_; }
 
-  /// Substep: read solution.
-  /// @param filename: complete file name,
-  /// normally (stub).sol.
-  bool ReadSolution(const std::string& filename);
+  /// Write NL and any accompanying files.
+  ///
+  /// @param nlf: NL feeder.
+  ///
+  /// @return true if all ok, otherwise see
+  ///   GetErrorMessage() and, possibly, GetLoadModelResultCode().
+  template <class NLFeeder2>
+  bool LoadModel(NLFeeder2& nlf);
 
+  /// Solve.
+  ///
+  /// @param solver: solver executable, such as "gurobi".
+  /// @param solver_opts: string of solver options,
+  ///   such as "outlev=1 writeprob=model.lp".
+  ///
+  /// @return true if all ok.
+  bool Solve(const std::string& solver,
+             const std::string& solver_opts);
+
+  /// Read solution.
+  ///
+  /// @param solh: solution handler.
+  ///
+  /// @return true if all ok, otherwise see
+  ///   GetErrorMessage() and, possibly, GetSolReadResultCode().
+  template <class SOLHandler2>
+  bool ReadSolution(SOLHandler2& solh);
+
+protected:
+  void Init() {
+    // init file stub
+    char tmpn[L_tmpnam];
+    tmpnam(tmpn);
+    filestub_ = tmpn;
+  }
+  void Destroy() {
+    // try & delete .nl
+    if (!filestubCustom_)
+      std::remove((filestub_ + ".nl").c_str());
+  }
+  mp::NLUtils& Utils() const { return *put_; }
 
 private:
-  MyNLFeeder& feeder_;
-  MySOLHandler& handler_;
-  mp::NLUtils& utils_;
+  mp::NLUtils utils_;
+  mp::NLUtils* put_ = nullptr;
 
-  std::string solver_;
-  std::string solver_options_;
+  std::string filestub_;
+  bool filestubCustom_ = false;
 
   std::string err_msg_;
+  mp::WriteNLResultCode nl_result_
+  {WriteNL_Unset};
+  mp::SOLReadResultCode sol_result_
+  {SOLRead_Result_Not_Set};
 };
 
 
-template <class MyNLFeeder, class MySOLHandler>
-void NLSOL<MyNLFeeder, MySOLHandler>::
-SetSolver(std::string solver) { solver_ = std::move(solver); }
+////////////////////// IMPLEMENTATIONS ////////////////////////
 
-template <class MyNLFeeder, class MySOLHandler>
-void NLSOL<MyNLFeeder, MySOLHandler>::
-SetSolverOptions(std::string sopts)
-{ solver_options_ = std::move(sopts); }
-
-template <class MyNLFeeder, class MySOLHandler>
-bool NLSOL<MyNLFeeder, MySOLHandler>::
-Solve(const std::string& filestub) {
-  return (WriteNLFile(filestub)
-    && InvokeSolver(filestub)
-      && ReadSolution(filestub + ".sol"));
+void NLSOL::SetFileStub(std::string stub) {
+  if (stub.size()) {
+    filestub_ = stub;
+    filestubCustom_ = true;
+  }
 }
 
-template <class MyNLFeeder, class MySOLHandler>
-bool NLSOL<MyNLFeeder, MySOLHandler>::
-WriteNLFile(const std::string& filestub) {
-  if (filestub.empty())
+template <class NLFeeder2>
+bool NLSOL::LoadModel(NLFeeder2& nlf) {
+  if (GetFileStub().empty())
     return (err_msg_="WriteNL error: provide filestub.", false);
-  auto result = mp::WriteNLFile(filestub, feeder_, utils_);
+  auto result = mp::WriteNLFile(GetFileStub(), nlf, Utils());
   if (mp::WriteNL_OK != result.first)
     return (err_msg_ = "WriteNL error: " + result.second, false);
   return true;
 }
 
-template <class MyNLFeeder, class MySOLHandler>
-bool NLSOL<MyNLFeeder, MySOLHandler>::
-InvokeSolver(const std::string& filestub) {
-  if (filestub.empty())
+bool NLSOL::Solve(const std::string& solver,
+                  const std::string& solver_opts) {
+  if (GetFileStub().empty())
     return (err_msg_="NLSOL: provide filestub.", false);
-  if (solver_.empty())
+  if (solver.empty())
     return (err_msg_="NLSOL: provide solver.", false);
-  auto call = solver_
-      + ' ' + filestub
+  auto call = solver
+      + ' ' + GetFileStub()
       + " -AMPL "
-      + solver_options_;
+      + solver_opts;
   if (auto status = std::system(call.c_str()))
     return (err_msg_="NLSOL: call \""
         + call + "\" failed (code "
@@ -172,14 +200,13 @@ InvokeSolver(const std::string& filestub) {
   return true;
 }
 
-template <class MyNLFeeder, class MySOLHandler>
-bool NLSOL<MyNLFeeder, MySOLHandler>::
-ReadSolution(const std::string& filename) {
-  if (filename.empty())
+template <class SOLHandler2>
+bool NLSOL::ReadSolution(SOLHandler2& solh) {
+  if (GetFileStub().empty())
     return (err_msg_="SOLReader: provide filename.", false);
   auto status = mp::ReadSOLFile(
-        filename, handler_, utils_);
-  if (mp::SOL_Read_OK != status.first)
+        GetFileStub() + ".sol", solh, Utils());
+  if (mp::SOLRead_OK != status.first)
     return (err_msg_="SOLReader error: "+status.second, false);
   return true;
 }

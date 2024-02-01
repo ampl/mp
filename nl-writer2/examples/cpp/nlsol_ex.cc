@@ -34,22 +34,23 @@ int main(int argc, const char* const* argv) {
   std::string solver = (argc>1) ? argv[1] : "minos";
   std::string sopts = (argc>2) ? argv[2] : "";
   bool binary = (argc<=3) || std::strcmp("text", argv[3]);
-  std::string stub = (argc>4) ? argv[4] : "stub";
+  std::string stub = (argc>4) ? argv[4] : "";
 
   ExampleModel emdl;
   ExampleNLFeeder2 nlf(emdl, binary);
   ExampleSOLHandler2 esolh(emdl);
   mp::NLUtils utils;
 
-  mp::NLSOL<ExampleNLFeeder2, ExampleSOLHandler2>
-    nlsol(nlf, esolh, utils);
-  nlsol.SetSolver(solver);
-  nlsol.SetSolverOptions(sopts);
-  if (!nlsol.Solve(stub)) {
+  mp::NLSOL nlsol(&utils);
+  nlsol.SetFileStub(stub);
+  if (!nlsol.LoadModel(nlf)
+      || !nlsol.Solve(solver, sopts)
+      || !nlsol.ReadSolution(esolh)) {
     printf("%s\n", nlsol.GetErrorMessage());
-    exit(EXIT_FAILURE);
+    return EXIT_FAILURE;
+  } else {
+    esolh.PrintSolution(stub);
   }
-  esolh.PrintSolution(stub);
 
-  return 0;
+  return EXIT_SUCCESS;
 }

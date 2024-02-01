@@ -9,7 +9,7 @@
 namespace mp {
 
 template <class NLFeeder2>
-inline WriteNLReport WriteNLFile(
+inline WriteNLResult WriteNLFile(
     const std::string& namebase,
     NLFeeder2& nlf, NLUtils& utl) {
   auto h = nlf.Header();
@@ -29,7 +29,7 @@ inline WriteNLReport WriteNLFile(
 }
 
 template <typename Params>
-WriteNLReport NLWriter2<Params>::WriteFiles(
+WriteNLResult NLWriter2<Params>::WriteFiles(
     const std::string& namebase) {
   WriteAuxFiles(namebase);
   WriteNL(namebase);
