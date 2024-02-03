@@ -3,7 +3,7 @@
  Manager for solving optimization models via NL files.
  It performs zero-overhead model/solution transmission.
  In particular, it does not store any intermediate
- model representation.
+ model/solution representation.
 
  NL is a format for representing optimization problems such as linear,
  quadratic, nonlinear, complementarity and constraint programming problems
@@ -49,24 +49,27 @@ namespace mp {
 /// In particular, it does not store any intermediate
 /// model/solution representation.
 ///
-/// Usage:
+/// This class offers full NL functionality.
+/// For simplified interface for special model classes,
+/// see NLSOL_Easy.
 ///
-///   MyNLFeeder feeder;
-///   MySOLHandler handler;
-///   mp::NLUtils nlutils;
-///   mp::NLSOL<MyNLFeeder, MySOLHandler>
-///     nlsol(feeder, handler, nlutils);
-///   nlsol.SetSolver("minos");
-///   nlsol.SetSolverOptions("outlev=1");
-///   if (!nlsol.Solve("filestub")) {
+/// Usage (see tests/examples):
+///
+///   ExampleModel emdl;
+///   ExampleNLFeeder2 nlf(emdl, binary);
+///   ExampleSOLHandler2 esolh(emdl);
+///   mp::NLUtils utils;
+///
+///   mp::NLSOL nlsol(&utils);
+///   nlsol.SetFileStub(stub);
+///   if (!nlsol.LoadModel(nlf)
+///       || !nlsol.Solve(solver, sopts)
+///       || !nlsol.ReadSolution(esolh)) {
 ///     printf("%s\n", nlsol.GetErrorMessage());
+///     return EXIT_FAILURE;
+///   } else {
+///     esolh.PrintSolution(stub);
 ///   }
-///
-/// If separate steps are needed, use a subset of
-///
-///   if (!nlsol.WriteNLFile(filestub)
-///     || !nlsol.InvokeSolver(filestub)
-///       || !nlsol.ReadSolution(filestub + ".sol")) ...
 ///
 /// See mp::NLFeeder2 and mp::SOLHandler2 interfaces
 /// for model/solution transmission.

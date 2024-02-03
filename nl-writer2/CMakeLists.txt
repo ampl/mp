@@ -18,25 +18,30 @@ set(NLW2_EXAMPLE_PATH ${NLW2_DIR}/examples)
 
 # NLW2 library C++ sources
 set(NLW2_LIB_FILES
-        ${NLW2_SRC_PATH}/nl-writer2.cc
-        ${NLW2_SRC_PATH}/nl-utils2.cc
-        ${NLW2_SRC_PATH}/dtoa.c)
+	${NLW2_SRC_PATH}/nl-writer2.cc
+	${NLW2_SRC_PATH}/nl-utils2.cc
+	${NLW2_SRC_PATH}/dtoa.c
+	${NLW2_SRC_PATH}/nlsol-easy.cc
+)
 set(NLW2_INC_FILES
-              ${NLW2_INCLUDE_PATH}/mp/nlsol.h
-              ${NLW2_INCLUDE_PATH}/mp/nl-feeder2.h
-              ${NLW2_INCLUDE_PATH}/mp/nl-writer2.h
-              ${NLW2_INCLUDE_PATH}/mp/nl-writer2.hpp
-              ${NLW2_INCLUDE_PATH}/mp/nl-writer2-misc.h
-              ${NLW2_INCLUDE_PATH}/mp/nl-utils2.h
-              ${NLW2_INCLUDE_PATH}/mp/sol-reader2.h
-              ${NLW2_INCLUDE_PATH}/mp/sol-reader2.hpp
-              ${NLW2_INCLUDE_PATH}/mp/sol-handler2.h
-              )
+	${NLW2_INCLUDE_PATH}/mp/basic-defs-c.h
+	${NLW2_INCLUDE_PATH}/mp/nlsol.h
+	${NLW2_INCLUDE_PATH}/mp/nlsol-easy.h
+	${NLW2_INCLUDE_PATH}/mp/nl-feeder2.h
+	${NLW2_INCLUDE_PATH}/mp/nl-writer2.h
+	${NLW2_INCLUDE_PATH}/mp/nl-writer2.hpp
+	${NLW2_INCLUDE_PATH}/mp/nl-writer2-misc.h
+	${NLW2_INCLUDE_PATH}/mp/nl-utils2.h
+	${NLW2_INCLUDE_PATH}/mp/sol-reader2.h
+	${NLW2_INCLUDE_PATH}/mp/sol-reader2.hpp
+	${NLW2_INCLUDE_PATH}/mp/sol-handler2.h
+)
 
 # Create C++ library
 set(NLW2_LIB_NAME "nlw2")
 add_library(${NLW2_LIB_NAME} STATIC
-  ${NLW2_LIB_FILES} ${NLW2_INC_FILES})
+	${NLW2_LIB_FILES} ${NLW2_INC_FILES}
+)
 target_include_directories(
   ${NLW2_LIB_NAME} PUBLIC ${NLW2_INCLUDE_PATH})
 if (NLW2_LIB_ORIG_HDR)

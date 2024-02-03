@@ -22,11 +22,14 @@ extern "C" {
 /// In particular, it does not store any intermediate
 /// model/solution representation.
 ///
+/// This wrapper offers full NL functionality.
+/// For simplified interface for special model classes,
+/// see NLSOL_C_Easy.
+///
 /// To create / destroy,
 /// use NLW2_MakeNLSOL_C() / NLW2_DestroyNLSOL_C().
 ///
-/// To manipulate, use NLW2_NLSOL_C_SetSolver(),
-/// NLW2_NLSOL_C_SetSolverOptions(),
+/// To manipulate, use NLW2_NLSOL_C_LoadModel(),
 /// etc, see the below API.
 ///
 /// @see the C API example.
