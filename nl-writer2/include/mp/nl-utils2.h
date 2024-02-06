@@ -65,7 +65,7 @@ public:
                      int Close, const char *mode);
   /// log message
   virtual void log_message(const char* format, ...);
-  /// log warning
+  /// log warning (e.g., cannot write name file)
   virtual void log_warning(const char* format, ...);
   /// Whether to show file names
   /// in the default openf() via log_message().

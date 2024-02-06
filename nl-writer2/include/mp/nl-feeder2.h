@@ -72,10 +72,13 @@ namespace mp {
       first algebraic (including complementarity), then logical.
     Some solvers might require nonlinear constraints first.
 
-    `~mp::NLFeeder2` can be used as a base class for other feeders
-    (see `ExampleNLFeeder2`),
-    or just be an interface prototype. Also subclassed
-    in the C API implementation class `~mp::NLW2_NLFeeder2_C_Impl`.
+    `~mp::NLFeeder2` can be used as a base class for other feeders,
+    or just be an interface prototype.
+
+    **Subclassed examples:**
+      - Simplified (MI)QP interface `~mp::NLSOL_Easy`
+      - C API implementation class `~mp::NLW2_NLFeeder2_C_Impl`
+      - Other examples/tests, e.g., see `ExampleNLFeeder2`.
 
     @param: *Impl* is a type derived from `~mp::NLFeeder2`.
 
@@ -437,8 +440,10 @@ public:
   ///////////////////// 11. COLUMN SIZES /////////////////////
 
   /** Jacobian column sizes (including potential nonzeros).
-     *  Should feed LP column sizes
+     *  Should feed LP/Jacobian column sizes
      *  for all but the last variable.
+     *
+     *  This is called before writing Jacobian rows.
    *
    *  Implementation skeleton:
    *      if (WantColumnSizes())

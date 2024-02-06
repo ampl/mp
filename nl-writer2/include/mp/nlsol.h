@@ -51,7 +51,7 @@ namespace mp {
 ///
 /// This class offers full NL functionality.
 /// For simplified interface for special model classes,
-/// see NLSOL_Easy.
+/// see `~NLSOL_Easy`.
 ///
 /// Usage (see tests/examples):
 ///

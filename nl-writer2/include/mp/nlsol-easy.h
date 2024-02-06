@@ -22,76 +22,115 @@
 #ifndef NLSOLEASY_H
 #define NLSOLEASY_H
 
+#include <string>
+
 #include "mp/basic-defs-c.h"
+#include "mp/nl-utils2.h"
 
 namespace mp {
 
-/// Class NLModelEasy.
+/// Class NLModel_Easy.
 ///
 /// Intermediate representation for special model types:
 /// LP, QP.
 ///
 /// All pointers should stay valid until
 /// loading the model into NLSOL_Easy.
-class NLModelEasy {
+class NLModel_Easy {
 public:
-  /**
-   *  Build an (MI)QP model in a single function call.
-   *  For (MI)LP, pass NULL for Q and/or integrality.
-   *
-   * @param num_col     The number of columns.
-   * @param num_row     The number of rows.
-   * @param num_nz      The number of elements in the constraint matrix.
-   * @param q_num_nz    The number of elements in the Hessian matrix.
-   * @param a_format    The format of the constraint matrix to use in the form
-   *                    of a `NLW2_MatrixFormat` constant.
-   * @param q_format    The format of the Hessian matrix to use in the form of a
-   *                    `NLW2_HessianFormat` constant.
-   * @param sense       The optimization sense in the form of a `NLW2_ObjSense`
-   *                    constant.
-   * @param offset      The constant term in the objective function.
-   * @param col_cost    An array of length [num_col] with the objective
-   *                    coefficients.
-   * @param col_lower   An array of length [num_col] with the lower column
-   *                    bounds.
-   * @param col_upper   An array of length [num_col] with the upper column
-   *                    bounds.
-   * @param row_lower   An array of length [num_row] with the upper row bounds.
-   * @param row_upper   An array of length [num_row] with the upper row bounds.
-   * @param a_start     The constraint matrix is provided in compressed
-   *                    sparse column form (if `a_format` is
-   *                    `NLW2_MatrixFormatColwise`, otherwise compressed sparse
-   *                    row form). The sparse matrix consists of three arrays,
-   *                    `a_start`, `a_index`, and `a_value`. `a_start` is an
-   * array of length [num_col] containing the starting index of each column in
-   * `a_index`. If `a_format` is `NLW2_MatrixFormatRowwise` the array is of
-   * length [num_row] corresponding to each row.
-   * @param a_index     An array of length [num_nz] with indices of matrix
-   *                    entries.
-   * @param a_value     An array of length [num_nz] with values of matrix
-   *                    entries.
-   * @param q_start     The Hessian matrix is provided in the same format as the
-   *                    constraint matrix, using `q_start`, `q_index`, and
-   *                    `q_value` in the place of `a_start`, `a_index`, and
-   *                    `a_value`. If the model is linear, pass NULL.
-   * @param q_index     An array of length [q_num_nz] with indices of matrix
-   *                    entries. If the model is linear, pass NULL.
-   * @param q_value     An array of length [q_num_nz] with values of matrix
-   *                    entries. If the model is linear, pass NULL.
-   * @param integrality An array of length [num_col] containing a
-   *                    `NLW2_VarType` constant for each column.
-   *
-   * @return true iff ok.
-   */
-  bool BuildMIQP(void *highs, const int num_col, const int num_row,
-                 const int num_nz, const int q_num_nz, const int a_format,
-                 const int q_format, const int sense, const double offset,
-                 const double *col_cost, const double *col_lower,
-                 const double *col_upper, const double *row_lower,
-                 const double *row_upper, const int *a_start,
-                 const int *a_index, const double *a_value, const int *q_start,
-                 const int *q_index, const double *q_value,
-                 const int *integrality);
+  /// Construct
+  NLModel_Easy(const char* probname = nullptr)
+    : prob_name_(probname) { }
+
+  /// Add variables (all at once.)
+  void SetCols(NLW2_ColData vd) { vars_ = vd; }
+
+  /// Add variable names
+  void SetColNames(const char *const *nm) { var_names_=nm; }
+
+  /// Add linear constraints (all at once).
+  /// Only rowwise matrix supported.
+  void SetRows(
+      int nr, const double* rlb, const double* rub,
+      NLW2_SparseMatrix A)
+  { num_row_=nr; row_lb_=rlb; row_ub_=rub; A_=A; }
+
+  /// Add constraint names
+  void SetRowNames(const char *const *nm) { row_names_=nm; }
+
+  /// Add linear objective (only single objective supported.)
+  /// Sense: NLW2_ObjSenseM....
+  /// Coefficients: dense vector.
+  void SetLinearObjective(int sense, double c0, const double* c);
+
+  /// Add Q for the objective quadratic part 0.5 @ x.T @ Q @ x.
+  /// Format: NLW2_HessianFormat...
+  void SetHessian(int format, NLW2_SparseMatrix Q)
+  { Q_format_ = format; Q_ = Q; }
+
+  /// Write to NL file.
+  /// Recommended usage via class NLSOL_Easy.
+  /// @return empty string iff ok.
+  std::string WriteNL(const std::string& fln_base,
+                      NLW2_NLOptionsBasic opts,
+                      NLUtils &ut);
+
+
+  /// Get problem name
+  const char* ProbName() const { return prob_name_; }
+  /// Get variables
+  NLW2_ColData ColData() const { return vars_; }
+  /// Get var names
+  const char *const *ColNames() const { return var_names_; }
+  /// Lin con matrix
+  NLW2_SparseMatrix GetA() const { return A_; }
+  /// N cols
+  int NumCols() const { return vars_.num_col_; }
+  /// N rows
+  int NumRows() const { return num_row_; }
+  /// Row lb
+  const double *RowLowerBounds() const { return row_lb_; }
+  /// Row ub
+  const double *RowUpperBounds() const { return row_ub_; }
+  /// Row names
+  const char *const *RowNames() const { return row_names_; }
+  /// Obj sense
+  int ObjSense() const { return obj_sense_; }
+  /// Obj offset
+  double ObjOffset() const { return obj_c0_; }
+  /// Obj coefs
+  const double *ObjCoefficients() const { return obj_c_; }
+  /// Hessian format NLW2_HessianFormat...
+  int HessianFormat() const { return Q_format_; }
+  /// Hessian matrix
+  NLW2_SparseMatrix Hessian() const { return Q_; }
+  /// Obj name
+  const char* ObjName() const { return obj_name_; }
+
+private:
+  const char* prob_name_ {"NLSOL_Easy_model"};
+  NLW2_ColData vars_ {};
+  const char *const *var_names_ {};
+  NLW2_SparseMatrix A_ {};
+  int num_row_ {};
+  const double *row_lb_ {};
+  const double *row_ub_ {};
+  const char *const *row_names_ {};
+  int obj_sense_ {};
+  double obj_c0_ {};
+  const double *obj_c_ {};
+  int Q_format_ {};
+  NLW2_SparseMatrix Q_ {};
+  const char* obj_name_ {"obj[1]"};
+};
+
+
+/// Class NLSOL_Easy.
+///
+/// A wrapper for mp::NLSOL to use AMPL solvers
+/// for (MI)QP models.
+class NLSOL_Easy {
+public:
 };
 
 }  // namespace mp
