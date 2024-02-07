@@ -28,6 +28,7 @@
 
 #include "mp/nlsol-easy.h"
 #include "mp/nlsol.h"
+#include "mp/nlsol.hpp"
 #include "mp/nl-opcodes.h"
 
 extern "C"
@@ -47,7 +48,7 @@ class NLFeeder2_Easy
     : public NLFeeder2<NLFeeder2_Easy, void*> {
 public:
   /// Construct
-  NLFeeder2_Easy(NLModel_Easy& nls, NLW2_NLOptionsBasic opts)
+  NLFeeder2_Easy(const NLModel_Easy& nls, NLW2_NLOptionsBasic opts)
     : nlme_(nls), nlopt_(opts) { Init(); }
 
   /// NL header
@@ -109,15 +110,16 @@ public:
       auto sumw = ew.OPutN(nl::SUM, num_el);
       if (if_offset)
         sumw.NPut(c0);
-      int pos_end = Q.num_nz_;
+      auto pos_end = Q.num_nz_;
       for (auto i=NLME().NumCols(); i--; ) {
         for (auto pos=Q.start_[i]; pos!=pos_end; ++pos) {
           auto coef = 0.5 * Q.value_[pos];
           auto prod1 = sumw.OPut2(nl::MUL);
           prod1.NPut(coef);
           auto prod2 = prod1.OPut2(nl::MUL);
-          prod2.VPut(VPerm(i));             // x
-          prod2.VPut(VPerm(Q.index_[pos])); // y
+          prod2.VPut(VPerm(i), NLME().ColName(i));   // x
+          prod2.VPut(VPerm(Q.index_[pos]),
+                     NLME().ColName(Q.index_[pos])); // y
         }
         pos_end = Q.start_[i];
       }
@@ -139,8 +141,8 @@ public:
   void FeedVarBounds(VarBoundsWriter& vbw) {
     auto vars = NLME().ColData();
     for (int i = 0; i < header_.num_vars; i++)
-      vbw.WriteLbUb(VPermRev(vars.lower_[i]),
-                    VPermRev(vars.upper_[i]));
+      vbw.WriteLbUb(vars.lower_[VPermInv(i)],
+                    vars.upper_[VPermInv(i)]);
   }
 
 
@@ -205,10 +207,10 @@ public:
   template <class ConLinearExprWriterFactory>
   void FeedLinearConExpr(int i, ConLinearExprWriterFactory& svw) {
     auto A = NLME().GetA();
-    assert(!A.num_nz_ || NLW2_MatrixFormatColwise == A.format_);
+    assert(!A.num_nz_ || NLW2_MatrixFormatRowwise == A.format_);
     assert(NLME().NumRows() == A.num_row_);
     auto start = A.start_[i];
-    int end = (i < A.num_row_-1) ? A.start_[i+1] : A.num_nz_;
+    auto end = (i < A.num_row_-1) ? A.start_[i+1] : A.num_nz_;
     if (start!=end) {
       auto sv = svw.MakeVectorWriter(end-start);
       for (auto pos=start; pos!=end; ++pos)
@@ -232,7 +234,7 @@ public:
   void FeedColumnSizes(ColSizeWriter& csw) {
     if (WantColumnSizes())
       for (int i=0; i < header_.num_vars-1; ++i)
-        csw.Write(col_sizes_[VPermRev(i)]);
+        csw.Write(col_sizes_[VPermInv(i)]);
   }
 
 
@@ -296,7 +298,16 @@ public:
   void FeedColNames(ColNameWriter& wrt) {
     if (NLME().ColNames() && wrt) {
       for (int i=0; i<NLME().NumCols(); ++i)
-        wrt << NLME().ColNames()[i];
+        wrt << NLME().ColNames()[VPermInv(i)];
+    }
+  }
+
+  void ExportPreproData(NLModel_Easy::PreprocessData &pd) {
+    pd.vperm_.resize(NLME().NumCols());
+    pd.vperm_inv_.resize(NLME().NumCols());
+    for (auto i=pd.vperm_.size(); i--; ) {
+      pd.vperm_[i] = VPerm(i);
+      pd.vperm_inv_[i] = VPermInv(i);
     }
   }
 
@@ -323,7 +334,7 @@ protected:
       ++header_.num_nl_objs;                // STATS
       for (auto i=Q.num_nz_; i--; ) {
         assert(i<nlv_obj_.size());
-        nlv_obj_[i] = true;
+        nlv_obj_[Q.index_[i]] = true;
         ++header_.num_nl_vars_in_objs;      // STATS
       }
     }
@@ -357,14 +368,15 @@ protected:
     for (auto i=var_perm_.size(); i--; )
       var_perm_[var_perm_[i].second].first = i;
   }
+  /// Variables info element
   using VarInfo = std::pair<int, int>;
 
-  /// Direct permutation
+  /// Var direct permutation
   int VPerm(int i) const
-  { assert(i<(int)var_perm_.size()); return var_perm_[i].second; }
-  /// Reverse permutation
-  int VPermRev(int i) const
   { assert(i<(int)var_perm_.size()); return var_perm_[i].first; }
+  /// Var inverse permutation
+  int VPermInv(int i) const
+  { assert(i<(int)var_perm_.size()); return var_perm_[i].second; }
 
   void FillObjNonzeros() {
     obj_grad_supp_.resize(NLME().NumCols());
@@ -374,7 +386,7 @@ protected:
     // QP part
     auto Q = NLME().Hessian();
     assert(Q.num_row_ == NLME().NumCols());
-    int pos_end = Q.num_nz_;
+    auto pos_end = Q.num_nz_;
     for (auto i=NLME().NumCols(); i--; ) {
       for (auto pos=Q.start_[i]; pos!=pos_end; ++pos) {
         obj_grad_supp_[i] = true;             // x
@@ -429,7 +441,7 @@ protected:
   }
 
 private:
-  NLModel_Easy& nlme_;
+  NLModel_Easy nlme_;
   NLW2_NLOptionsBasic nlopt_;
 
   std::vector<bool> nlv_obj_;      // if var nonlinear in obj
@@ -442,9 +454,186 @@ private:
 };
 
 std::string NLModel_Easy::WriteNL(
-    const std::string &fln, NLW2_NLOptionsBasic opts, NLUtils &ut) {
+    const std::string &fln, NLW2_NLOptionsBasic opts,
+    NLUtils &ut, PreprocessData &pd) {
   NLFeeder2_Easy nlf(*this, opts);
+  nlf.ExportPreproData(pd);
   return WriteNLFile(fln, nlf, ut).second;
+}
+
+double NLModel_Easy::ComputeObjValue(const double *x) const {
+  double result {obj_c0_};
+  for (auto i=NumCols(); i--; )
+    result += obj_c_[i] * x[i];
+  if (Q_.num_nz_) {
+    auto pos_end = Q_.num_nz_;
+    for (auto i=NumCols(); i--; ) {
+      for (auto pos=Q_.start_[i]; pos!=pos_end; ++pos) {
+        result
+            += 0.5 * Q_.value_[pos] * x[i] * x[Q_.index_[pos]];
+      }
+      pos_end = Q_.start_[i];
+    }
+  }
+  return result;
+}
+
+
+NLSOL_Easy::NLSOL_Easy()
+  : nl_opts_(NLW2_MakeNLOptionsBasic_Default())
+{ p_nlsol_.reset(new NLSOL()); }
+
+NLSOL_Easy::~NLSOL_Easy() { }
+
+void NLSOL_Easy::SetNLUtils(mp::NLUtils *put)
+{ p_nlsol_->SetNLUtils(put); }
+
+NLUtils* NLSOL_Easy::GetNLUtils() const
+{ return p_nlsol_->GetNLUtils(); }
+
+void NLSOL_Easy::SetFileStub(std::string stub)
+{ p_nlsol_->SetFileStub(stub); }
+
+const std::string& NLSOL_Easy::GetFileStub() const
+{ return p_nlsol_->GetFileStub(); }
+
+const char* NLSOL_Easy::GetErrorMessage() const
+{ return p_nlsol_->GetErrorMessage(); }
+
+bool NLSOL_Easy::LoadModel(const NLModel_Easy& mdl) {
+  NLFeeder2_Easy nlf(mdl, nl_opts_);
+  nlf.ExportPreproData(pd_);
+  p_nlheader_.reset(new NLHeader(nlf.Header()));
+  return p_nlsol_->LoadModel(nlf);
+}
+
+bool NLSOL_Easy::Solve(
+    const std::string &solver, const std::string &solver_opts)
+{ return p_nlsol_->Solve(solver, solver_opts); }
+
+
+/// Specialize SOLHandler2 for NLSOL_Easy
+class SOLHandler2_Easy
+    : public SOLHandler2 {
+public:
+  /// Construct
+  SOLHandler2_Easy(const NLHeader& h,
+                   const NLModel_Easy::PreprocessData& pd,
+                   NLSOL_Easy::Solution& sol)
+    : header_(h), pd_(pd), sol_(sol) { }
+
+  /** The NLHeader used to write the NL file. */
+  NLHeader Header() const { return header_; }
+
+  /** Receive solve message.
+   *  The message always ends with '\n'.
+   *
+   *  @param nbs: number of backspaces
+   *  in the original solve message.
+   *  So many characters should be skipped
+   *  from the message if printed straightaway.
+   *  AMPL solver drivers can supply the message
+   *  with initial backspaces to indicate
+   *  that so many characters should be skipped
+   *  when printing. For example, if the driver prints
+   *  MINOS 5.51:
+   *  and exits, and the message starts with that again,
+   *  this part should be skipped.
+   */
+  void OnSolveMessage(const char* s, int nbs) {
+    sol_.nbs_ = nbs;
+    sol_.solve_message_ = s;
+  }
+
+  /**
+   * Dual values for algebraic constraints,
+   * if provided in the solution.
+   * Number of values <= NumAlgCons().
+   * Implementation:
+   *
+   *   duals.reserve(rd.Size());
+   *   while (rd.Size())
+   *     duals.push_back(rd.ReadNext());
+   */
+  template <class VecReader>
+  void OnDualSolution(VecReader& rd) {
+    sol_.y_.clear();
+    sol_.y_.reserve(header_.num_algebraic_cons);
+    while (rd.Size())         // No permutation
+      sol_.y_.push_back(rd.ReadNext());
+  }
+
+  /**
+   * Variable values, if provided.
+   * Number of values <= NumVars().
+   */
+  template <class VecReader>
+  void OnPrimalSolution(VecReader& rd) {
+    sol_.x_.clear();
+    sol_.x_.resize(header_.num_vars);
+    for (int i=0; rd.Size(); ++i)    // Permute
+      sol_.x_[pd_.vperm_inv_[i]] = rd.ReadNext();
+  }
+
+  /**
+   * Receive notification of the solve code.
+   * Solve result codes docu:
+   * https://mp.ampl.com/features-guide.html#solve-result-codes
+   */
+  void OnSolveCode(int c) { sol_.solve_result_=c; }
+
+  /**
+   * OnIntSuffix().
+   *
+   * For constraints, can include values for
+   * logical constraints (after algebraic.)
+   * Sparse representation - can be empty
+   * (i.e., all values zero.)
+   *
+   * const auto& si = sr.SufInfo();
+   * int kind = si.Kind();
+   * int nmax = nitems_max[kind & 3];
+   * const std::string& name = si.Name();
+   * const std::string& table = si.Table();
+   * while (sr.Size()) {
+   *   std::pair<int, int> val = sr.ReadNext();
+   *   if (val.first<0 || val.first>=nmax) {
+   *     sr.SetError(mp::SOL_Read_Bad_Suffix,
+   *       "bad suffix element index");
+   *     return;
+   *   }
+   *   suf[val.first] = val.second;
+   * }
+   * if (mp::SOL_Read_OK == sr.ReadResult())    // Can check
+   *   RegisterSuffix(kind, name, table, suf);
+   */
+  template <class SuffixReader>
+  void OnIntSuffix(SuffixReader& sr) {
+    while (sr.Size())
+      sr.ReadNext();       // Permute
+  }
+
+  /**
+   * Same as OnIntSuffix(), but
+   * sr.ReadNext() returns pair<int, double>
+   */
+  template <class SuffixReader>
+  void OnDblSuffix(SuffixReader& sr) {
+    while (sr.Size())
+      sr.ReadNext();
+  }
+
+private:
+  NLHeader header_;
+  const NLModel_Easy::PreprocessData& pd_;
+  NLSOL_Easy::Solution& sol_;
+};
+
+NLSOL_Easy::Solution NLSOL_Easy::ReadSolution() {
+  NLSOL_Easy::Solution result;
+  SOLHandler2_Easy solh(*p_nlheader_, pd_, result);
+  p_nlsol_->ReadSolution(solh);
+  return result;
 }
 
 }  // namespace mp

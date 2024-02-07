@@ -16,11 +16,7 @@
 #include "api/c/sol-handler2-c-impl.h"
 #include "api/c/nl-writer2-misc-c-impl.h"
 #include "mp/nlsol.h"
-
-#include "mp/nl-writer2.h"
-#include "mp/nl-writer2.hpp"
-#include "mp/sol-reader2.h"
-#include "mp/sol-reader2.hpp"
+#include "mp/nlsol.hpp"
 
 #ifdef __cplusplus  // Implementing C API from C++
 extern "C" {

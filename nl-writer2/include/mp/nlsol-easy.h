@@ -23,6 +23,10 @@
 #define NLSOLEASY_H
 
 #include <string>
+#include <vector>
+#include <set>
+#include <memory>
+#include <cassert>
 
 #include "mp/basic-defs-c.h"
 #include "mp/nl-utils2.h"
@@ -61,19 +65,34 @@ public:
   /// Add linear objective (only single objective supported.)
   /// Sense: NLW2_ObjSenseM....
   /// Coefficients: dense vector.
-  void SetLinearObjective(int sense, double c0, const double* c);
+  void SetLinearObjective(int sense, double c0, const double* c)
+  { obj_sense_=sense; obj_c0_=c0; obj_c_=c; }
 
   /// Add Q for the objective quadratic part 0.5 @ x.T @ Q @ x.
   /// Format: NLW2_HessianFormat...
   void SetHessian(int format, NLW2_SparseMatrix Q)
   { Q_format_ = format; Q_ = Q; }
 
+  /// Set obj name
+  void SetObjName(const char* nm) { obj_name_=nm; }
+
+  /// Information exported by WriteNL()
+  struct PreprocessData {
+    /// var permutation
+    std::vector<int> vperm_;
+    /// var inverse permutation
+    std::vector<int> vperm_inv_;
+  };
+
   /// Write to NL file.
   /// Recommended usage via class NLSOL_Easy.
   /// @return empty string iff ok.
-  std::string WriteNL(const std::string& fln_base,
+  std::string WriteNL(const std::string& file_stub,
                       NLW2_NLOptionsBasic opts,
-                      NLUtils &ut);
+                      NLUtils &ut, PreprocessData &pd);
+
+  /// Compute objective value
+  double ComputeObjValue(const double* x) const;
 
 
   /// Get problem name
@@ -82,6 +101,11 @@ public:
   NLW2_ColData ColData() const { return vars_; }
   /// Get var names
   const char *const *ColNames() const { return var_names_; }
+  /// Get var name [i]
+  const char *ColName(int i) const {
+    assert(0<=i && i<NumCols());
+    return ColNames() ? ColNames()[i] : "";
+  }
   /// Lin con matrix
   NLW2_SparseMatrix GetA() const { return A_; }
   /// N cols
@@ -94,6 +118,11 @@ public:
   const double *RowUpperBounds() const { return row_ub_; }
   /// Row names
   const char *const *RowNames() const { return row_names_; }
+  /// Row name [i]
+  const char *RowName(int i) const {
+    assert(0<=i && i<NumRows());
+    return RowNames() ? RowNames()[i] : "";
+  }
   /// Obj sense
   int ObjSense() const { return obj_sense_; }
   /// Obj offset
@@ -125,12 +154,151 @@ private:
 };
 
 
+/// Declare NLSOL
+class NLSOL;
+
+/// Declare NLHeader
+class NLHeader;
+
 /// Class NLSOL_Easy.
 ///
 /// A wrapper for mp::NLSOL to use AMPL solvers
 /// for (MI)QP models.
 class NLSOL_Easy {
 public:
+  /// Construct.
+  NLSOL_Easy();
+  /// Destruct
+  ~NLSOL_Easy();
+
+  /// Set NLUtils [OPTIONAL].
+  ///
+  /// If not provided, default is used.
+  void SetNLUtils(mp::NLUtils* put);
+
+  /// Get NLUtils
+  NLUtils* GetNLUtils() const;
+
+  /// Set file stub [OPTIONAL].
+  ///
+  /// Used for filename base of .nl, .col, row, etc. input files,
+  /// as well as .sol output files.
+  ///
+  /// If not provided, a temporary filename is used;
+  /// then, .nl is deleted upon object destruction.
+  void SetFileStub(std::string stub);
+
+  /// Retrieve file stub.
+  const std::string& GetFileStub() const;
+
+  /// Set NL options [OPTIONAL].
+  ///
+  /// If not provided, default is used.
+  void SetNLOptions(NLW2_NLOptionsBasic nlo) { nl_opts_=nlo; }
+
+  /// Get NLOptions
+  NLW2_NLOptionsBasic GetNLOptions() const { return nl_opts_; }
+
+  /// Get error message.
+  /// Nonempty iff error occurred.
+  const char* GetErrorMessage() const;
+
+  /// Suffix type
+  struct Suffix {
+    /// Name
+    std::string name_;
+    /// Suffix table
+    std::string table_;
+    /// Kind
+    int kind_;
+    /// Values. Always double precision.
+    std::vector<double> values_;
+
+    /// operator<
+    bool operator<(const Suffix& s) const {
+      return std::make_pair(name_, kind_)
+          < std::make_pair(s.name_, s.kind_);
+    }
+  };
+
+  /// Suffix set.
+  using SuffixSet = std::set<Suffix>;
+
+  /// Solution
+  struct Solution {
+    /// Solution stored here?
+    operator bool() const { return solve_result_ > -2; }
+    /// Solve result
+    int solve_result_ {-2};   // "unset"
+    /// Number of solve_message's initial characters
+    /// already printed on the screen
+    int nbs_;
+    /// Solve message
+    std::string solve_message_;
+    /// Objective value
+    double obj_val_;
+    /// Primals
+    std::vector<double> x_;
+    /// Duals
+    std::vector<double> y_;
+    /// Suffixes
+    SuffixSet suffixes_;
+  };
+
+  /// Solve model and return result.
+  ///
+  /// @return Solution object
+  ///     (has operator bool() for checking.)
+  ///
+  /// See LoadModel(), Solve(), ReadSolution()
+  /// for details.
+  Solution Solve(const NLModel_Easy& mdl,
+                 const std::string& solver,
+                 const std::string& solver_opts) {
+    Solution sol;
+    if (LoadModel(mdl)
+        && Solve(solver, solver_opts)) {
+      sol = ReadSolution();
+      if (sol.x_.size())
+        sol.obj_val_ = mdl.ComputeObjValue(sol.x_.data());
+    }
+    return sol;
+  }
+
+  /// Write NL and any accompanying files.
+  /// NL file name base and some options
+  /// can be provided, if non-defaults desired,
+  /// via SetFileStub() and SetNLOptions().
+  ///
+  /// @return true if all ok, otherwise see
+  ///   GetErrorMessage().
+  bool LoadModel(const NLModel_Easy& mdl);
+
+  /// Solve.
+  ///
+  /// @param solver: solver executable, such as "gurobi".
+  /// @param solver_opts: string of solver options,
+  ///   such as "outlev=1 writeprob=model.lp".
+  ///
+  /// @return true if all ok.
+  bool Solve(const std::string& solver,
+             const std::string& solver_opts);
+
+  /// Read solution.
+  ///
+  /// @return true if all ok, otherwise see
+  ///   GetErrorMessage().
+  ///
+  /// @note To compute objective value,
+  ///   execute NLModel_Easy::ComputeObjValue()
+  ///   if x_ available.
+  Solution ReadSolution();
+
+private:
+  std::unique_ptr<NLSOL> p_nlsol_;
+  std::unique_ptr<NLHeader> p_nlheader_;
+  NLModel_Easy::PreprocessData pd_;
+  NLW2_NLOptionsBasic nl_opts_;
 };
 
 }  // namespace mp

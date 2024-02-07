@@ -61,6 +61,7 @@ template <class Value>
 Value VecReader<Value>::ReadNext() {
   Value v;
   --n_;                // decrement counter
+  assert(n_ >= 0);
   if (SOLRead_OK !=
       (rr_ = Read(f_, binary_, v, err_msg_))) {
     n_ = 0;            // return error status

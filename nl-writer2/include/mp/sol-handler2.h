@@ -116,7 +116,7 @@ public:
   template <class VecReader>
   void OnDualSolution(VecReader& rd) {
     while (rd.Size())
-      rd.ReadNext();
+      rd.ReadNext();       // read & forget by default
   }
 
   /**
@@ -124,7 +124,10 @@ public:
    * Number of values <= NumVars().
    */
   template <class VecReader>
-  void OnPrimalSolution(VecReader& ) { }
+  void OnPrimalSolution(VecReader& rd) {
+    while (rd.Size())
+      rd.ReadNext();       // read & forget by default
+  }
 
   /**
    * Receive notification of the objective index
@@ -134,6 +137,8 @@ public:
 
   /**
    * Receive notification of the solve code.
+   * Solve result codes docu:
+   * https://mp.ampl.com/features-guide.html#solve-result-codes
    */
   void OnSolveCode(int ) { }
 
@@ -165,7 +170,7 @@ public:
   template <class SuffixReader>
   void OnIntSuffix(SuffixReader& sr) {
     while (sr.Size())
-      sr.ReadNext();
+      sr.ReadNext();       // read & forget by default
   }
 
   /**
@@ -175,7 +180,7 @@ public:
   template <class SuffixReader>
   void OnDblSuffix(SuffixReader& sr) {
     while (sr.Size())
-      sr.ReadNext();
+      sr.ReadNext();       // read & forget by default
   }
 
 };

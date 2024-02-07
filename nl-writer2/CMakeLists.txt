@@ -26,6 +26,7 @@ set(NLW2_LIB_FILES
 set(NLW2_INC_FILES
 	${NLW2_INCLUDE_PATH}/mp/basic-defs-c.h
 	${NLW2_INCLUDE_PATH}/mp/nlsol.h
+	${NLW2_INCLUDE_PATH}/mp/nlsol.hpp
 	${NLW2_INCLUDE_PATH}/mp/nlsol-easy.h
 	${NLW2_INCLUDE_PATH}/mp/nl-feeder2.h
 	${NLW2_INCLUDE_PATH}/mp/nl-writer2.h
@@ -77,13 +78,17 @@ target_link_libraries(${NLW2_C_API_LIB_NAME} ${NLW2_LIB_NAME})
 ######################################################
 # Examples
 
-# NLW2 C++ example
+# C++ NLSOL_Easy "easy interface" example: MIQP
 set(NLW2_CPP_EXAMPLE_PATH ${NLW2_EXAMPLE_PATH}/cpp)
-set(NLSOL_CPP_EX_FILES
-  ${NLW2_CPP_EXAMPLE_PATH}/nlsol_ex.cc
-  ${NLW2_CPP_EXAMPLE_PATH}/nlsol_ex_mdl.h
-  ${NLW2_CPP_EXAMPLE_PATH}/nlsol_ex_nl.h
-  ${NLW2_CPP_EXAMPLE_PATH}/nlsol_ex_sol.h)
+set(NLSOL_CPP_EX_EASY1_FILES
+	${NLW2_CPP_EXAMPLE_PATH}/easyAPI_1_MIQP/nlsol_easy_ex.cc)
+
+# NLW2 C++ full-API example
+set(NLSOL_CPP_EX_FULL1_FILES
+	${NLW2_CPP_EXAMPLE_PATH}/fullAPI_1/nlsol_ex.cc
+	${NLW2_CPP_EXAMPLE_PATH}/fullAPI_1/nlsol_ex_mdl.h
+	${NLW2_CPP_EXAMPLE_PATH}/fullAPI_1/nlsol_ex_nl.h
+	${NLW2_CPP_EXAMPLE_PATH}/fullAPI_1/nlsol_ex_sol.h)
 
 # NLW2 C API example
 set(NLW2_C_EXAMPLE_PATH ${NLW2_EXAMPLE_PATH}/c)
@@ -106,12 +111,17 @@ if (BUILD_EXAMPLES_NLW2)         # Actually build the example
   message(STATUS
     "NLW2_LIB: building NLWriter2 examples. Set -DBUILD_EXAMPLES_NLW2=off to switch off.")
 
-  add_executable(nl-writer-example-cpp ${NLSOL_CPP_EX_FILES})
-  target_include_directories(nl-writer-example-cpp PUBLIC
-    ${NLW2_INCLUDE_PATH})
-  target_link_libraries(nl-writer-example-cpp ${NLW2_LIB_NAME})
+	add_executable(nl-writer-ex-easy-cpp ${NLSOL_CPP_EX_EASY1_FILES})
+	target_include_directories(nl-writer-ex-easy-cpp PUBLIC
+		${NLW2_INCLUDE_PATH})
+	target_link_libraries(nl-writer-ex-easy-cpp ${NLW2_LIB_NAME})
 
-  add_executable(nl-writer-example-c ${NLSOL_C_EX_FILES})
+	add_executable(nl-writer-example-cpp ${NLSOL_CPP_EX_FULL1_FILES})
+	target_include_directories(nl-writer-example-cpp PUBLIC
+		${NLW2_INCLUDE_PATH})
+	target_link_libraries(nl-writer-example-cpp ${NLW2_LIB_NAME})
+
+	add_executable(nl-writer-example-c ${NLSOL_C_EX_FILES})
   target_include_directories(nl-writer-example-c PUBLIC
     ${NLW2_INCLUDE_PATH})
   target_link_libraries(nl-writer-example-c ${NLW2_C_API_LIB_NAME})

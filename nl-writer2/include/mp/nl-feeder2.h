@@ -140,8 +140,8 @@ public:
   const char* ObjDescription(int i) { return ""; }
 
   /** Provide type of objective \a i.
-     *  0 - minimization;
-     *  1 - maximization. */
+     *  - 0 - minimization;
+     *  - 1 - maximization. */
   int ObjType(int i) { return {}; }
 
   /** Feed gradient for objective \a i.

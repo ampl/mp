@@ -16,8 +16,8 @@ const int NLW2_VarTypeInteger = 1;
 //const int NLW2_VarTypeSemiInteger = 3;
 //const int NLW2_VarTypeImplicitInteger = 4;
 
-const int NLW2_MatrixFormatColwise = 1;
-// const int NLW2_MatrixFormatRowwise = 2;
+//const int NLW2_MatrixFormatColwise = 1;
+const int NLW2_MatrixFormatRowwise = 2;
 
 const int NLW2_HessianFormatTriangular = 1;
 const int NLW2_HessianFormatSquare = 2;
@@ -46,7 +46,7 @@ struct NLW2_SparseMatrix {
   /// Nonzeros
   size_t num_nz_;
   /// Row / col starts
-  const int *start_;
+  const size_t *start_;
   /// Entry index
   const int *index_;
   /// Entry value

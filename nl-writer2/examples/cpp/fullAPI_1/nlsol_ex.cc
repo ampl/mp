@@ -1,20 +1,21 @@
 /**
- * Example using NLWriter2 and SOLReader2
+ * Example using mp::NLSOL
  * to write NL file, execute solver, and read SOL file.
  *
+ * This uses full NLSOL / NLWriter2 API.
+ * For "easy" API for MIQP, see NLSOL_Easy
+ * and related tests/examples.
  */
 
 #include <cstdlib>
+#include <cstring>
 
 #include "nlsol_ex_mdl.h"
 #include "nlsol_ex_nl.h"
 #include "nlsol_ex_sol.h"
 
 #include "mp/nlsol.h"
-#include "mp/nl-writer2.h"
-#include "mp/nl-writer2.hpp"
-#include "mp/sol-reader2.h"
-#include "mp/sol-reader2.hpp"
+#include "mp/nlsol.hpp"
 
 /// Invoke:
 ///   (this_exe) ipopt ["outlev=1 timelim=500" [text [filestub]]]
