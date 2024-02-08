@@ -32,8 +32,8 @@
 #include "mp/nl-opcodes.h"
 
 extern "C"
-NLW2_NLOptionsBasic NLW2_MakeNLOptionsBasic_Default() {
-  NLW2_NLOptionsBasic result;
+NLW2_NLOptionsBasic_C NLW2_Make_NLOptionsBasic_C_Default() {
+  NLW2_NLOptionsBasic_C result;
   result.n_text_mode_ = 0;
   result.want_nl_comments_ = 0;
   result.flags_ = 1;      // want out suffixes
@@ -48,7 +48,7 @@ class NLFeeder2_Easy
     : public NLFeeder2<NLFeeder2_Easy, void*> {
 public:
   /// Construct
-  NLFeeder2_Easy(const NLModel_Easy& nls, NLW2_NLOptionsBasic opts)
+  NLFeeder2_Easy(const NLModel_Easy& nls, NLW2_NLOptionsBasic_C opts)
     : nlme_(nls), nlopt_(opts) { Init(); }
 
   /// NL header
@@ -208,9 +208,9 @@ public:
   void FeedLinearConExpr(int i, ConLinearExprWriterFactory& svw) {
     auto A = NLME().GetA();
     assert(!A.num_nz_ || NLW2_MatrixFormatRowwise == A.format_);
-    assert(NLME().NumRows() == A.num_row_);
+    assert(NLME().NumRows() == A.num_colrow_);
     auto start = A.start_[i];
-    auto end = (i < A.num_row_-1) ? A.start_[i+1] : A.num_nz_;
+    auto end = (i < A.num_colrow_-1) ? A.start_[i+1] : A.num_nz_;
     if (start!=end) {
       auto sv = svw.MakeVectorWriter(end-start);
       for (auto pos=start; pos!=end; ++pos)
@@ -385,7 +385,7 @@ protected:
       obj_grad_supp_[i] = (NLME().ObjCoefficients()[i]);
     // QP part
     auto Q = NLME().Hessian();
-    assert(Q.num_row_ == NLME().NumCols());
+    assert(Q.num_colrow_ == NLME().NumCols());
     auto pos_end = Q.num_nz_;
     for (auto i=NLME().NumCols(); i--; ) {
       for (auto pos=Q.start_[i]; pos!=pos_end; ++pos) {
@@ -442,7 +442,7 @@ protected:
 
 private:
   NLModel_Easy nlme_;
-  NLW2_NLOptionsBasic nlopt_;
+  NLW2_NLOptionsBasic_C nlopt_;
 
   std::vector<bool> nlv_obj_;      // if var nonlinear in obj
   std::vector<VarInfo> var_perm_;
@@ -454,7 +454,7 @@ private:
 };
 
 std::string NLModel_Easy::WriteNL(
-    const std::string &fln, NLW2_NLOptionsBasic opts,
+    const std::string &fln, NLW2_NLOptionsBasic_C opts,
     NLUtils &ut, PreprocessData &pd) {
   NLFeeder2_Easy nlf(*this, opts);
   nlf.ExportPreproData(pd);
@@ -480,7 +480,7 @@ double NLModel_Easy::ComputeObjValue(const double *x) const {
 
 
 NLSOL_Easy::NLSOL_Easy()
-  : nl_opts_(NLW2_MakeNLOptionsBasic_Default())
+  : nl_opts_(NLW2_Make_NLOptionsBasic_C_Default())
 { p_nlsol_.reset(new NLSOL()); }
 
 NLSOL_Easy::~NLSOL_Easy() { }

@@ -1,7 +1,7 @@
 /**
  NL Solver "Easy", for special model classes
 
- Copyright (C) 2023 AMPL Optimization Inc.
+ Copyright (C) 2024 AMPL Optimization Inc.
 
  Permission to use, copy, modify, and distribute this software and its
  documentation for any purpose and without fee is hereby granted,
@@ -19,6 +19,7 @@
 
  Author: Gleb Belov
  */
+
 #ifndef NLSOLEASY_H
 #define NLSOLEASY_H
 
@@ -36,7 +37,7 @@ namespace mp {
 /// Class NLModel_Easy.
 ///
 /// Intermediate representation for special model types:
-/// LP, QP.
+/// (MI)LP, (MI)QP.
 ///
 /// All pointers should stay valid until
 /// loading the model into NLSOL_Easy.
@@ -44,10 +45,10 @@ class NLModel_Easy {
 public:
   /// Construct
   NLModel_Easy(const char* probname = nullptr)
-    : prob_name_(probname) { }
+    : prob_name_(probname ? probname : nullptr) { }
 
   /// Add variables (all at once.)
-  void SetCols(NLW2_ColData vd) { vars_ = vd; }
+  void SetCols(NLW2_ColData_C vd) { vars_ = vd; }
 
   /// Add variable names
   void SetColNames(const char *const *nm) { var_names_=nm; }
@@ -56,7 +57,7 @@ public:
   /// Only rowwise matrix supported.
   void SetRows(
       int nr, const double* rlb, const double* rub,
-      NLW2_SparseMatrix A)
+      NLW2_SparseMatrix_C A)
   { num_row_=nr; row_lb_=rlb; row_ub_=rub; A_=A; }
 
   /// Add constraint names
@@ -70,7 +71,7 @@ public:
 
   /// Add Q for the objective quadratic part 0.5 @ x.T @ Q @ x.
   /// Format: NLW2_HessianFormat...
-  void SetHessian(int format, NLW2_SparseMatrix Q)
+  void SetHessian(int format, NLW2_SparseMatrix_C Q)
   { Q_format_ = format; Q_ = Q; }
 
   /// Set obj name
@@ -88,7 +89,7 @@ public:
   /// Recommended usage via class NLSOL_Easy.
   /// @return empty string iff ok.
   std::string WriteNL(const std::string& file_stub,
-                      NLW2_NLOptionsBasic opts,
+                      NLW2_NLOptionsBasic_C opts,
                       NLUtils &ut, PreprocessData &pd);
 
   /// Compute objective value
@@ -98,7 +99,7 @@ public:
   /// Get problem name
   const char* ProbName() const { return prob_name_; }
   /// Get variables
-  NLW2_ColData ColData() const { return vars_; }
+  NLW2_ColData_C ColData() const { return vars_; }
   /// Get var names
   const char *const *ColNames() const { return var_names_; }
   /// Get var name [i]
@@ -107,7 +108,7 @@ public:
     return ColNames() ? ColNames()[i] : "";
   }
   /// Lin con matrix
-  NLW2_SparseMatrix GetA() const { return A_; }
+  NLW2_SparseMatrix_C GetA() const { return A_; }
   /// N cols
   int NumCols() const { return vars_.num_col_; }
   /// N rows
@@ -132,15 +133,15 @@ public:
   /// Hessian format NLW2_HessianFormat...
   int HessianFormat() const { return Q_format_; }
   /// Hessian matrix
-  NLW2_SparseMatrix Hessian() const { return Q_; }
+  NLW2_SparseMatrix_C Hessian() const { return Q_; }
   /// Obj name
   const char* ObjName() const { return obj_name_; }
 
 private:
   const char* prob_name_ {"NLSOL_Easy_model"};
-  NLW2_ColData vars_ {};
+  NLW2_ColData_C vars_ {};
   const char *const *var_names_ {};
-  NLW2_SparseMatrix A_ {};
+  NLW2_SparseMatrix_C A_ {};
   int num_row_ {};
   const double *row_lb_ {};
   const double *row_ub_ {};
@@ -149,7 +150,7 @@ private:
   double obj_c0_ {};
   const double *obj_c_ {};
   int Q_format_ {};
-  NLW2_SparseMatrix Q_ {};
+  NLW2_SparseMatrix_C Q_ {};
   const char* obj_name_ {"obj[1]"};
 };
 
@@ -159,6 +160,7 @@ class NLSOL;
 
 /// Declare NLHeader
 class NLHeader;
+
 
 /// Class NLSOL_Easy.
 ///
@@ -194,10 +196,10 @@ public:
   /// Set NL options [OPTIONAL].
   ///
   /// If not provided, default is used.
-  void SetNLOptions(NLW2_NLOptionsBasic nlo) { nl_opts_=nlo; }
+  void SetNLOptions(NLW2_NLOptionsBasic_C nlo) { nl_opts_=nlo; }
 
   /// Get NLOptions
-  NLW2_NLOptionsBasic GetNLOptions() const { return nl_opts_; }
+  NLW2_NLOptionsBasic_C GetNLOptions() const { return nl_opts_; }
 
   /// Get error message.
   /// Nonempty iff error occurred.
@@ -226,7 +228,7 @@ public:
 
   /// Solution
   struct Solution {
-    /// Solution stored here?
+    /// Any result obtained from the solver?
     operator bool() const { return solve_result_ > -2; }
     /// Solve result
     int solve_result_ {-2};   // "unset"
@@ -248,7 +250,8 @@ public:
   /// Solve model and return result.
   ///
   /// @return Solution object
-  ///     (has operator bool() for checking.)
+  ///    (has operator bool() for checking
+  ///     if any result was obtained.)
   ///
   /// See LoadModel(), Solve(), ReadSolution()
   /// for details.
@@ -286,8 +289,9 @@ public:
 
   /// Read solution.
   ///
-  /// @return true if all ok, otherwise see
-  ///   GetErrorMessage().
+  /// @return Solution object
+  ///    (has operator bool() for checking
+  ///     if any result was obtained.)
   ///
   /// @note To compute objective value,
   ///   execute NLModel_Easy::ComputeObjValue()
@@ -298,7 +302,7 @@ private:
   std::unique_ptr<NLSOL> p_nlsol_;
   std::unique_ptr<NLHeader> p_nlheader_;
   NLModel_Easy::PreprocessData pd_;
-  NLW2_NLOptionsBasic nl_opts_;
+  NLW2_NLOptionsBasic_C nl_opts_;
 };
 
 }  // namespace mp

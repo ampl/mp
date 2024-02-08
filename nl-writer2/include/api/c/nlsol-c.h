@@ -24,15 +24,15 @@ extern "C" {
 ///
 /// This wrapper offers full NL functionality.
 /// For simplified interface for special model classes,
-/// see NLSOL_C_Easy.
+/// see NLW2_NLSOL_Easy_C.
 ///
 /// To create / destroy,
 /// use NLW2_MakeNLSOL_C() / NLW2_DestroyNLSOL_C().
 ///
-/// To manipulate, use NLW2_NLSOL_C_LoadModel(),
+/// To manipulate, use NLS_LoadModel_C(),
 /// etc, see the below API.
 ///
-/// @see the C API example.
+/// @see C API tests/examples.
 typedef struct NLW2_NLSOL_C {
   /// Internal data
   void *p_utl_, *p_nlsol_;

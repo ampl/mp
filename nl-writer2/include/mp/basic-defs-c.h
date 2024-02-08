@@ -23,7 +23,7 @@ const int NLW2_HessianFormatTriangular = 1;
 const int NLW2_HessianFormatSquare = 2;
 
 /// Variables' data by pointers
-struct NLW2_ColData {
+struct NLW2_ColData_C {
   /// Num vars
   int num_col_;
   /// lower bounds
@@ -36,10 +36,11 @@ struct NLW2_ColData {
 };
 
 /// Sparse matrix.
-struct NLW2_SparseMatrix {
-  /// N rows (for rowwise) / N cols (colwise),
+struct NLW2_SparseMatrix_C {
+  /// Size of the start_ array:
+  /// N cols (for colwise) / N rows (for rowwise),
   /// depending on format_.
-  int num_row_;
+  int num_colrow_;
   /// Format (NLW2_MatrixFormat...).
   /// Only rowwise supported.
   int format_;
@@ -56,7 +57,7 @@ struct NLW2_SparseMatrix {
 
 /// Basic NL options for NLModel_Easy.
 /// Prefer to create by NLW2_MakeNLOptionsBasic_Default().
-struct NLW2_NLOptionsBasic {
+struct NLW2_NLOptionsBasic_C {
   /// NL text mode?
   int n_text_mode_;
   /// NL comments in text mode?
@@ -66,7 +67,7 @@ struct NLW2_NLOptionsBasic {
 };
 
 /// Use this to create default NL options for NLModel_Easy.
-NLW2_NLOptionsBasic NLW2_MakeNLOptionsBasic_Default();
+NLW2_NLOptionsBasic_C NLW2_Make_NLOptionsBasic_C_Default();
 
 #ifdef __cplusplus
 }  // extern "C"

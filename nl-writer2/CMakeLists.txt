@@ -54,13 +54,15 @@ endif()
 
 # C API sources
 set(NLW2_C_API_LIB_FILES
-        ${NLW2_DIR}/src/c_api.cc
-        )
+	${NLW2_DIR}/src/c-api.cc
+	${NLW2_DIR}/src/nlsol-easy-c.cc
+	)
 set(NLW2_C_API_INC_FILES
   ${NLW2_INCLUDE_PATH}/api/c/nl-feeder2-c.h
   ${NLW2_INCLUDE_PATH}/api/c/sol-handler2-c.h
   ${NLW2_INCLUDE_PATH}/api/c/nl-writer2-misc-c.h
-  ${NLW2_INCLUDE_PATH}/api/c/nlsol-c.h
+	${NLW2_INCLUDE_PATH}/api/c/nlsol-c.h
+	${NLW2_INCLUDE_PATH}/api/c/nlsol-easy-c.h
 
   ${NLW2_INCLUDE_PATH}/api/c/nl-feeder2-c-impl.h
   ${NLW2_INCLUDE_PATH}/api/c/sol-handler2-c-impl.h

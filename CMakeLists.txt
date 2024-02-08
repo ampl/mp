@@ -497,7 +497,7 @@ if (BUILD_EXAMPLES OR NLW2_LIB)
   endif()
   if (NLW2_LIB)
     message(STATUS
-      "MP: building NL-Writer2 library. Set -DNLW2_LIB=off to switch off.")
+			"MP: building NLWriter2 library. Set -DNLW2_LIB=off to switch off.")
   endif()
   set(NLW2_DIR nl-writer2)
   add_subdirectory(${NLW2_DIR})        ## Build NLW2 library
