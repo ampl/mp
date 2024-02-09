@@ -23,20 +23,24 @@ extern "C" {
 /// loading the model into NLW2_NLSOL_Easy_C.
 ///
 /// @see C API tests/examples.
-struct NLW2_NLModel_Easy_C {
+typedef struct NLW2_NLModel_Easy_C {
   void *p_data_;
-};
+} NLW2_NLModel_Easy_C;
 
 /// Construct NLW2_NLModel_Easy_C
 ///
 /// @param probname: can be NULL.
-NLW2_NLModel_Easy_C NLW2_Make_NLModel_Easy_C(const char* probname);
+NLW2_NLModel_Easy_C NLW2_MakeNLModel_Easy_C(const char* probname);
 
 /// Destroy NLW2_NLModel_Easy_C
-void NLW2_Destroy_NLModel_Easy_C(NLW2_NLModel_Easy_C* );
+void NLW2_DestroyNLModel_Easy_C(NLW2_NLModel_Easy_C* );
 
 /// Add variables (all at once.)
-void NLME_SetCols_C(NLW2_NLModel_Easy_C* , NLW2_ColData_C vd);
+void NLME_SetCols_C(NLW2_NLModel_Easy_C* ,
+                    int num_col,
+                    const double *lower,
+                    const double *upper,
+                    const int *type);
 
 /// Add variable names
 void NLME_SetColNames_C(NLW2_NLModel_Easy_C* , const char *const *nm);
@@ -44,8 +48,12 @@ void NLME_SetColNames_C(NLW2_NLModel_Easy_C* , const char *const *nm);
 /// Add linear constraints (all at once).
 /// Only rowwise matrix supported.
 void NLME_SetRows_C(NLW2_NLModel_Easy_C* ,
-    int nr, const double* rlb, const double* rub,
-    NLW2_SparseMatrix_C A);
+                    int nr, const double* rlb, const double* rub,
+                    int format_,
+                    size_t num_nz_,
+                    const size_t *start_,
+                    const int *index_,
+                    const double *value_);
 
 /// Add constraint names
 void NLME_SetRowNames_C(NLW2_NLModel_Easy_C* , const char *const *nm);
@@ -59,7 +67,12 @@ void NLME_SetLinearObjective_C(NLW2_NLModel_Easy_C* ,
 /// Add Q for the objective quadratic part 0.5 @ x.T @ Q @ x.
 /// Format: NLW2_HessianFormat...
 void NLME_SetHessian_C(NLW2_NLModel_Easy_C* ,
-                       int format, NLW2_SparseMatrix_C Q);
+                       int format,
+                       int dim,
+                       size_t num_nz_,
+                       const size_t *start_,
+                       const int *index_,
+                       const double *value_);
 
 /// Set obj name
 void NLME_SetObjName_C(NLW2_NLModel_Easy_C* , const char* nm);
@@ -109,17 +122,17 @@ const char* NLME_ObjName_C(NLW2_NLModel_Easy_C* );
 ///
 /// Provides "easy" API to use AMPL solvers
 /// for (MI)QP models.
-struct NLW2_NLSOL_Easy_C {
+typedef struct NLW2_NLSOL_Easy_C {
   void *p_nlse_;
   void *p_nlutl_;
   void *p_sol_;
-};
+} NLW2_NLSOL_Easy_C;
 
 /// Construct.
 /// @param nlu can be NULL.
-NLW2_NLSOL_Easy_C NLW2_Make_NLSOL_Easy_C(NLW2_NLUtils_C* nlu);
+NLW2_NLSOL_Easy_C NLW2_MakeNLSOL_Easy_C(NLW2_NLUtils_C* nlu);
 /// Destruct
-void NLW2_Destroy_NLSOL_Easy_C(NLW2_NLSOL_Easy_C* );
+void NLW2_DestroyNLSOL_Easy_C(NLW2_NLSOL_Easy_C* );
 
 
 /// Set file stub [OPTIONAL].
@@ -170,10 +183,18 @@ typedef struct NLSE_Solution_C {
   int nbs_;
   /// Solve message
   const char* solve_message_;
-  /// Objective value
+  /// Objective value.
+  /// Only returned by NLW2_Solve_C().
+  /// Otherwise, after NLW2_ReadSolution...,
+  /// should be manually computed, e.g.,
+  /// by NLW2_ComputeObjValue_C().
   double obj_val_;
+  /// N primal values
+  int n_primal_values_;
   /// Primals
   const double* x_;
+  /// N dual values
+  int n_dual_values_;
   /// Duals
   const double* y_;
   /// Num suffixes

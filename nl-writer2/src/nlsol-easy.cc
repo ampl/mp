@@ -32,7 +32,7 @@
 #include "mp/nl-opcodes.h"
 
 extern "C"
-NLW2_NLOptionsBasic_C NLW2_Make_NLOptionsBasic_C_Default() {
+NLW2_NLOptionsBasic_C NLW2_MakeNLOptionsBasic_C_Default() {
   NLW2_NLOptionsBasic_C result;
   result.n_text_mode_ = 0;
   result.want_nl_comments_ = 0;
@@ -385,14 +385,16 @@ protected:
       obj_grad_supp_[i] = (NLME().ObjCoefficients()[i]);
     // QP part
     auto Q = NLME().Hessian();
-    assert(Q.num_colrow_ == NLME().NumCols());
-    auto pos_end = Q.num_nz_;
-    for (auto i=NLME().NumCols(); i--; ) {
-      for (auto pos=Q.start_[i]; pos!=pos_end; ++pos) {
-        obj_grad_supp_[i] = true;             // x
-        obj_grad_supp_[Q.index_[pos]] = true; // y
+    if (Q.num_nz_) {
+      assert(Q.num_colrow_ == NLME().NumCols());
+      auto pos_end = Q.num_nz_;
+      for (auto i=NLME().NumCols(); i--; ) {
+        for (auto pos=Q.start_[i]; pos!=pos_end; ++pos) {
+          obj_grad_supp_[i] = true;             // x
+          obj_grad_supp_[Q.index_[pos]] = true; // y
+        }
+        pos_end = Q.start_[i];
       }
-      pos_end = Q.start_[i];
     }
     header_.num_obj_nonzeros
         = std::accumulate(obj_grad_supp_.begin(),
@@ -480,7 +482,7 @@ double NLModel_Easy::ComputeObjValue(const double *x) const {
 
 
 NLSOL_Easy::NLSOL_Easy()
-  : nl_opts_(NLW2_Make_NLOptionsBasic_C_Default())
+  : nl_opts_(NLW2_MakeNLOptionsBasic_C_Default())
 { p_nlsol_.reset(new NLSOL()); }
 
 NLSOL_Easy::~NLSOL_Easy() { }

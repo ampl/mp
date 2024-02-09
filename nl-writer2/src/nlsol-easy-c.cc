@@ -39,21 +39,26 @@ extern "C" {
 /// Construct NLW2_NLModel_Easy_C
 ///
 /// @param probname: can be NULL.
-NLW2_NLModel_Easy_C NLW2_Make_NLModel_Easy_C(const char* probname) {
+NLW2_NLModel_Easy_C NLW2_MakeNLModel_Easy_C(const char* probname) {
   NLW2_NLModel_Easy_C nlme;
   nlme.p_data_ = new mp::NLModel_Easy(probname);
   return nlme;
 }
 
 /// Destroy NLW2_NLModel_Easy_C
-void NLW2_Destroy_NLModel_Easy_C(NLW2_NLModel_Easy_C* nlme) {
+void NLW2_DestroyNLModel_Easy_C(NLW2_NLModel_Easy_C* nlme) {
   delete CastNZ<mp::NLModel_Easy>(nlme->p_data_);
   nlme->p_data_ = nullptr;
 }
 
 /// Add variables (all at once.)
-void NLME_SetCols_C(NLW2_NLModel_Easy_C* nlme, NLW2_ColData_C vd)
-{ CastNZ<mp::NLModel_Easy>(nlme->p_data_)->SetCols(vd); }
+void NLME_SetCols_C(NLW2_NLModel_Easy_C* nlme,
+                    int num_col,
+                    const double *lower,
+                    const double *upper,
+                    const int *type)
+{ CastNZ<mp::NLModel_Easy>(nlme->p_data_)
+      ->SetCols({num_col, lower, upper, type}); }
 
 /// Add variable names
 void NLME_SetColNames_C(NLW2_NLModel_Easy_C* nlme, const char *const *nm)
@@ -62,9 +67,15 @@ void NLME_SetColNames_C(NLW2_NLModel_Easy_C* nlme, const char *const *nm)
 /// Add linear constraints (all at once).
 /// Only rowwise matrix supported.
 void NLME_SetRows_C(NLW2_NLModel_Easy_C* nlme,
-    int nr, const double* rlb, const double* rub,
-    NLW2_SparseMatrix_C A)
-{ CastNZ<mp::NLModel_Easy>(nlme->p_data_)->SetRows(nr, rlb, rub, A); }
+                    int nr, const double* rlb, const double* rub,
+                    int format,
+                    size_t num_nz,
+                    const size_t *start,
+                    const int *index,
+                    const double *value)
+{ CastNZ<mp::NLModel_Easy>(nlme->p_data_)
+      ->SetRows(nr, rlb, rub,
+                {nr, format, num_nz, start, index, value}); }
 
 /// Add constraint names
 void NLME_SetRowNames_C(NLW2_NLModel_Easy_C* nlme, const char *const *nm)
@@ -82,8 +93,17 @@ void NLME_SetLinearObjective_C(NLW2_NLModel_Easy_C* nlme,
 /// Add Q for the objective quadratic part 0.5 @ x.T @ Q @ x.
 /// Format: NLW2_HessianFormat...
 void NLME_SetHessian_C(NLW2_NLModel_Easy_C* nlme,
-                       int format, NLW2_SparseMatrix_C Q)
-{ CastNZ<mp::NLModel_Easy>(nlme->p_data_)->SetHessian(format, Q); }
+                       int format,
+                       int dim,
+                       size_t num_nz_,
+                       const size_t *start_,
+                       const int *index_,
+                       const double *value_)
+{ CastNZ<mp::NLModel_Easy>(nlme->p_data_)
+      ->SetHessian(format, {
+                     dim, 0,
+                     num_nz_, start_, index_, value_
+                   }); }
 
 /// Set obj name
 void NLME_SetObjName_C(NLW2_NLModel_Easy_C* nlme, const char* nm)
@@ -149,8 +169,14 @@ const char* NLME_ObjName_C(NLW2_NLModel_Easy_C* nlme)
 { return CastNZ<mp::NLModel_Easy>(nlme->p_data_)->ObjName(); }
 
 
+/// Storage for NLSE_Solution_C data
+struct NLSE_Solution_C_Data {
+  mp::NLSOL_Easy::Solution sol_;
+  std::vector<NLSE_Suffix_C> suffixes_;
+};
+
 /// Construct.
-NLW2_NLSOL_Easy_C NLW2_Make_NLSOL_Easy_C(NLW2_NLUtils_C* utl) {
+NLW2_NLSOL_Easy_C NLW2_MakeNLSOL_Easy_C(NLW2_NLUtils_C* utl) {
   NLW2_NLSOL_Easy_C result {};         // p_nlutl_ = p_sol_ = 0
   result.p_nlse_ = new mp::NLSOL_Easy;
   if (utl)
@@ -158,12 +184,16 @@ NLW2_NLSOL_Easy_C NLW2_Make_NLSOL_Easy_C(NLW2_NLUtils_C* utl) {
   return result;
 }
 /// Destruct
-void NLW2_Destroy_NLSOL_Easy_C(NLW2_NLSOL_Easy_C* nlse) {
+void NLW2_DestroyNLSOL_Easy_C(NLW2_NLSOL_Easy_C* nlse) {
   delete CastNZ<mp::NLSOL_Easy>(nlse->p_nlse_);
   nlse->p_nlse_ = nullptr;
   if (nlse->p_nlutl_) {
     delete CastNZ<mp::NLUtils_C_Impl>(nlse->p_nlutl_);
     nlse->p_nlutl_ = nullptr;
+  }
+  if (nlse->p_sol_) {
+    delete CastNZ<NLSE_Solution_C_Data>(nlse->p_sol_);
+    nlse->p_sol_ = nullptr;
   }
 }
 
@@ -198,6 +228,43 @@ NLW2_NLOptionsBasic_C NLSE_GetNLOptions_C(NLW2_NLSOL_Easy_C* nlse)
 const char* NLSE_GetErrorMessage_C(NLW2_NLSOL_Easy_C* nlse)
 { return CastNZ<mp::NLSOL_Easy>(nlse->p_nlse_)->GetErrorMessage(); }
 
+/// Add solution data to NLW2_NLSOL_Easy_C
+/// and return its C wrapper, NLSE_Solution_C.
+static NLSE_Solution_C NLW2_WrapNLSOL_Solution_C
+(NLW2_NLSOL_Easy_C* nlse, mp::NLSOL_Easy::Solution sol) {
+  // Store the C++ data
+  if (!nlse->p_sol_)
+    nlse->p_sol_ = new NLSE_Solution_C_Data;
+  auto& sol_data = *CastNZ<NLSE_Solution_C_Data>(nlse->p_sol_);
+  sol_data.sol_ = std::move(sol);
+
+  NLSE_Solution_C result;
+  {
+    auto& sol=sol_data.sol_;
+    result.nbs_ = sol.nbs_;
+    result.nsuf_ = sol.suffixes_.size();
+    result.obj_val_ = sol.obj_val_;
+    result.solve_message_ = sol.solve_message_.c_str();
+    result.solve_result_ = sol.solve_result_;
+    sol_data.suffixes_.clear();
+    sol_data.suffixes_.reserve(sol.suffixes_.size());
+    result.suffixes_ = sol_data.suffixes_.data();
+    for (const auto& suf: sol.suffixes_) {
+      NLSE_Suffix_C suf_c;
+      suf_c.kind_ = suf.kind_;
+      suf_c.name_ = suf.name_.c_str();
+      suf_c.table_ = suf.table_.c_str();
+      suf_c.values_ = suf.values_.data();
+      sol_data.suffixes_.push_back(std::move(suf_c));
+    }
+    result.n_primal_values_ = sol.x_.size();
+    result.x_ = sol.x_.data();
+    result.n_dual_values_ = sol.y_.size();
+    result.y_ = sol.y_.data();
+  }
+  return result;
+}
+
 /// Load and solve model and return result.
 ///
 /// @return Solution object.
@@ -210,12 +277,9 @@ NLSE_Solution_C NLSE_Solve_C(NLW2_NLSOL_Easy_C* nlse,
                              NLW2_NLModel_Easy_C* nlme,
                              const char* solver,
                              const char* solver_opts) {
-  NLSE_Solution_C result;
-
   auto sol = CastNZ<mp::NLSOL_Easy>(nlse->p_nlse_)->Solve(
         *CastNZ<mp::NLModel_Easy>(nlme->p_data_), solver, solver_opts);
-
-  return result;
+  return NLW2_WrapNLSOL_Solution_C(nlse, std::move(sol));
 }
 
 /// Write NL and any accompanying files.
@@ -225,8 +289,11 @@ NLSE_Solution_C NLSE_Solve_C(NLW2_NLSOL_Easy_C* nlse,
 ///
 /// @return true if all ok, otherwise see
 ///   GetErrorMessage().
-int NLSE_LoadModel_C(NLW2_NLSOL_Easy_C* ,
-                     NLW2_NLModel_Easy_C* );
+int NLSE_LoadModel_C(NLW2_NLSOL_Easy_C* nlse,
+                     NLW2_NLModel_Easy_C* nlme) {
+  return CastNZ<mp::NLSOL_Easy>(nlse->p_nlse_)->LoadModel(
+        *CastNZ<mp::NLModel_Easy>(nlme->p_data_));
+}
 
 /// RunSolver: run the given solver after loading the model.
 ///
@@ -235,9 +302,12 @@ int NLSE_LoadModel_C(NLW2_NLSOL_Easy_C* ,
 ///   such as "outlev=1 writeprob=model.lp".
 ///
 /// @return true if all ok.
-int NLSE_RunSolver_C(NLW2_NLSOL_Easy_C* ,
+int NLSE_RunSolver_C(NLW2_NLSOL_Easy_C* nlse,
                      const char* solver,
-                     const char* solver_opts);
+                     const char* solver_opts) {
+  return CastNZ<mp::NLSOL_Easy>(nlse->p_nlse_)->Solve(
+        solver, solver_opts);
+}
 
 /// Read solution.
 ///
@@ -248,7 +318,11 @@ int NLSE_RunSolver_C(NLW2_NLSOL_Easy_C* ,
 /// @note To compute objective value,
 ///   execute NLME_ComputeObjValue_C()
 ///   if x_ available.
-NLSE_Solution_C NLSE_ReadSolution_C(NLW2_NLSOL_Easy_C* );
+NLSE_Solution_C NLSE_ReadSolution_C(NLW2_NLSOL_Easy_C* nlse) {
+  auto sol
+      = CastNZ<mp::NLSOL_Easy>(nlse->p_nlse_)->ReadSolution();
+  return NLW2_WrapNLSOL_Solution_C(nlse, std::move(sol));
+}
 
 #ifdef __cplusplus
 }  // extern "C"

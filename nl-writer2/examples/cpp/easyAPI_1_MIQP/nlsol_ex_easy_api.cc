@@ -119,7 +119,7 @@ bool SolveAndCheck(std::string solver, std::string sopts,
   ModelBuilder mdlbld;
   auto nlme = mdlbld.GetModel();
   mp::NLSOL_Easy nlse;
-  auto nlopts = NLW2_Make_NLOptionsBasic_C_Default();
+  auto nlopts = NLW2_MakeNLOptionsBasic_C_Default();
   nlopts.n_text_mode_ = !binary;
   nlopts.want_nl_comments_ = 1;
   nlse.SetNLOptions(nlopts);

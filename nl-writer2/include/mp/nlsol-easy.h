@@ -45,7 +45,7 @@ class NLModel_Easy {
 public:
   /// Construct
   NLModel_Easy(const char* probname = nullptr)
-    : prob_name_(probname ? probname : nullptr) { }
+    : prob_name_(probname ? probname : "NLModelInstance") { }
 
   /// Add variables (all at once.)
   void SetCols(NLW2_ColData_C vd) { vars_ = vd; }
@@ -75,7 +75,7 @@ public:
   { Q_format_ = format; Q_ = Q; }
 
   /// Set obj name
-  void SetObjName(const char* nm) { obj_name_=nm; }
+  void SetObjName(const char* nm) { obj_name_=(nm ? nm : ""); }
 
   /// Information exported by WriteNL()
   struct PreprocessData {
@@ -234,11 +234,15 @@ public:
     int solve_result_ {-2};   // "unset"
     /// Number of solve_message's initial characters
     /// already printed on the screen
-    int nbs_;
+    int nbs_{};
     /// Solve message
     std::string solve_message_;
-    /// Objective value
-    double obj_val_;
+    /// Objective value.
+    /// Only returned by Solve(NLModel).
+    /// Otherwise, after ReadSolution(),
+    /// should be manually computed, e.g.,
+    /// by NLModel::ComputeObjValue().
+    double obj_val_ {};
     /// Primals
     std::vector<double> x_;
     /// Duals
