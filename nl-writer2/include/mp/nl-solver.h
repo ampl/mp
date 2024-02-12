@@ -1,7 +1,8 @@
 /**
  mp::NLSolver.
+
  Manager for solving optimization models via NL files.
- It performs zero-overhead model/solution transmission.
+ It performs almost zero-overhead model/solution transmission.
  In particular, it does not store any intermediate
  model/solution representation.
 
@@ -11,7 +12,7 @@
  "Writing .nl Files" (http://www.cs.sandia.gov/~dmgay/nlwrite.pdf).
 
 
- Copyright (C) 2023 AMPL Optimization, Inc.
+ Copyright (C) 2024 AMPL Optimization, Inc.
 
  Permission to use, copy, modify, and distribute this software and its
  documentation for any purpose and without fee is hereby granted,

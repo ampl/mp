@@ -515,15 +515,15 @@ bool NLSolver::LoadModel(const NLModel& mdl) {
 bool NLSolver::Solve(const std::string& solver,
                   const std::string& solver_opts) {
   if (GetFileStub().empty())
-    return (err_msg_="NLSOL: provide filestub.", false);
+    return (err_msg_="NLSolver: provide filestub.", false);
   if (solver.empty())
-    return (err_msg_="NLSOL: provide solver.", false);
+    return (err_msg_="NLSolver: provide solver.", false);
   auto call = solver
       + ' ' + GetFileStub()
       + " -AMPL "
       + solver_opts;
   if (auto status = std::system(call.c_str()))
-    return (err_msg_="NLSOL: call \""
+    return (err_msg_="NLSolver: call \""
         + call + "\" failed (code "
         + std::to_string(status) + ").", false);
   return true;
@@ -649,6 +649,11 @@ private:
 
 NLSolution NLSolver::ReadSolution() {
   NLSolution result;
+  if (!p_nlheader_)
+    return (err_msg_
+            ="NLSolver: "
+             "can only ReadSolution(void) after loading NLModel",
+            result);
   SOLHandler2_Easy solh(*p_nlheader_, pd_, result);
   ReadSolution(solh);
   return result;
