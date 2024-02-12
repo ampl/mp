@@ -19,7 +19,7 @@ bool NLSOL::LoadModel(NLFeeder2& nlf) {
   if (GetFileStub().empty())
     return (err_msg_="WriteNL error: provide filestub.", false);
   auto result = mp::WriteNLFile(GetFileStub(), nlf, Utils());
-  if (mp::WriteNL_OK != result.first)
+  if (NLW2_WriteNL_OK != result.first)
     return (err_msg_ = "WriteNL error: " + result.second, false);
   return true;
 }
@@ -47,7 +47,7 @@ bool NLSOL::ReadSolution(SOLHandler2& solh) {
     return (err_msg_="SOLReader: provide filename.", false);
   auto status = mp::ReadSOLFile(
         GetFileStub() + ".sol", solh, Utils());
-  if (mp::SOLRead_OK != status.first)
+  if (NLW2_SOLRead_OK != status.first)
     return (err_msg_="SOLReader error: "+status.second, false);
   return true;
 }

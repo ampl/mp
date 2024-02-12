@@ -562,24 +562,24 @@ void NLW2_ReadDblSuffixEntry(
 void NLW2_ReportDblSuffixError(
     void* p_api_data, const char* msg) {
   ((mp::SuffixReader<double>*)p_api_data)
-      ->SetError(mp::SOLRead_Bad_Suffix, msg);
+      ->SetError(NLW2_SOLRead_Bad_Suffix, msg);
 }
 /// Report suffix error.
 /// This causes NLW2_IntSuffixNNZ() to return 0.
 void NLW2_ReportIntSuffixError(
     void* p_api_data, const char* msg) {
   ((mp::SuffixReader<int>*)p_api_data)
-      ->SetError(mp::SOLRead_Bad_Suffix, msg);
+      ->SetError(NLW2_SOLRead_Bad_Suffix, msg);
 }
 /// Check suffix read result
 int NLW2_IntSuffixReadOK(void* p_api_data) {
-  return mp::SOLRead_OK
+  return NLW2_SOLRead_OK
       == ((mp::SuffixReader<int>*)p_api_data)
       ->ReadResult();
 }
 /// Check suffix read result
 int NLW2_DblSuffixReadOK(void* p_api_data) {
-  return mp::SOLRead_OK
+  return NLW2_SOLRead_OK
       == ((mp::SuffixReader<double>*)p_api_data)
       ->ReadResult();
 }

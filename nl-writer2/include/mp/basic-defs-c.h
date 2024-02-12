@@ -69,6 +69,28 @@ typedef struct NLW2_NLOptionsBasic_C {
 /// Use this to create default NL options for NLModel_Easy.
 NLW2_NLOptionsBasic_C NLW2_MakeNLOptionsBasic_C_Default();
 
+/// NLW2_WriteNLResultCode enum.
+enum NLW2_WriteNLResultCode {
+  NLW2_WriteNL_Unset = 0,
+  NLW2_WriteNL_OK = 1,
+  NLW2_WriteNL_CantOpen,
+  NLW2_WriteNL_Failed
+};
+
+/// SOL read result code
+enum NLW2_SOLReadResultCode {
+  NLW2_SOLRead_Result_Not_Set = -1,
+  NLW2_SOLRead_OK = 0,
+  NLW2_SOLRead_Fail_Open,
+  NLW2_SOLRead_Early_EOF,
+  NLW2_SOLRead_Bad_Format,
+  NLW2_SOLRead_Bad_Line,
+  NLW2_SOLRead_Bad_Options,
+  NLW2_SOLRead_Vector_Not_Finished,
+  NLW2_SOLRead_Bad_Suffix
+};
+
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif

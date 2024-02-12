@@ -82,12 +82,12 @@ void NLWriter2<Params>::WriteNL(
     WriteRandomVariables();
 
     if (std::ferror(nm.GetHandle())) {
-      result_.first = WriteNL_Failed;
+      result_.first = NLW2_WriteNL_Failed;
       result_.second = fln + ": " + std::strerror(errno);
     } else
-      result_.first = WriteNL_OK;
+      result_.first = NLW2_WriteNL_OK;
   } else {
-    result_.first = WriteNL_CantOpen;
+    result_.first = NLW2_WriteNL_CantOpen;
     result_.second = fln + ": " + std::strerror(errno);
   }
 }

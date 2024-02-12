@@ -113,11 +113,11 @@ public:
   const char* GetErrorMessage() const { return err_msg_.c_str(); }
 
   /// Get model load result code.
-  WriteNLResultCode GetLoadModelResultCode() const
+  NLW2_WriteNLResultCode GetLoadModelResultCode() const
   { return nl_result_; }
 
   /// Get solution read result code.
-  SOLReadResultCode GetSolReadResultCode() const
+  NLW2_SOLReadResultCode GetSolReadResultCode() const
   { return sol_result_; }
 
   /// Write NL and any accompanying files.
@@ -170,10 +170,10 @@ private:
   bool filestubCustom_ = false;
 
   std::string err_msg_;
-  mp::WriteNLResultCode nl_result_
-  {WriteNL_Unset};
-  mp::SOLReadResultCode sol_result_
-  {SOLRead_Result_Not_Set};
+  NLW2_WriteNLResultCode nl_result_
+  {NLW2_WriteNL_Unset};
+  NLW2_SOLReadResultCode sol_result_
+  {NLW2_SOLRead_Result_Not_Set};
 };
 
 }  // namespace mp

@@ -49,6 +49,7 @@
 #include <cstdarg>
 #include <cassert>
 
+#include "mp/basic-defs-c.h"
 #include "mp/nl-writer2-misc.h"
 /// Just for checking compilation
 #include "mp/nl-feeder2.h"
@@ -56,17 +57,9 @@
 
 namespace mp {
 
-/// WriteNLResultCode enum.
-enum WriteNLResultCode {
-  WriteNL_Unset = 0,
-  WriteNL_OK = 1,
-  WriteNL_CantOpen,
-  WriteNL_Failed
-};
-
 /// Typedef WriteNLResult:
 /// result code and error message
-using WriteNLResult = std::pair<WriteNLResultCode, std::string>;
+using WriteNLResult = std::pair<NLW2_WriteNLResultCode, std::string>;
 
 /// Write NL file and any necessary auxiliary files.
 /// @param namebase: name without extension,
@@ -632,7 +625,7 @@ private:
 
   File nm;
 
-  WriteNLResult result_ {WriteNL_Unset, ""};
+  WriteNLResult result_ {NLW2_WriteNL_Unset, ""};
 };
 
 }  // namespace mp
