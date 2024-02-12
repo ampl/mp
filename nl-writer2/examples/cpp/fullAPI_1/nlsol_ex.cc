@@ -1,9 +1,9 @@
 /**
- * Example using mp::NLSOL
+ * Example using mp::NLSolver
  * to write NL file, execute solver, and read SOL file.
  *
- * This uses full NLSOL / NLWriter2 API.
- * For "easy" API for MIQP, see NLSOL_Easy
+ * This uses full NLSolver / NLWriter2 API.
+ * For "easy" API for MIQP, see NLModel
  * and related tests/examples.
  */
 
@@ -14,8 +14,7 @@
 #include "nlsol_ex_nl.h"
 #include "nlsol_ex_sol.h"
 
-#include "mp/nlsol.h"
-#include "mp/nlsol.hpp"
+#include "mp/nl-solver.hpp"
 
 /// Invoke:
 ///   (this_exe) ipopt ["outlev=1 timelim=500" [text [filestub]]]
@@ -42,11 +41,9 @@ int main(int argc, const char* const* argv) {
   ExampleSOLHandler2 esolh(emdl);
   mp::NLUtils utils;
 
-  mp::NLSOL nlsol(&utils);
+  mp::NLSolver nlsol(&utils);
   nlsol.SetFileStub(stub);
-  if (!nlsol.LoadModel(nlf)
-      || !nlsol.Solve(solver, sopts)
-      || !nlsol.ReadSolution(esolh)) {
+  if (!nlsol.Solve(nlf, esolh, solver, sopts)) {
     printf("%s\n", nlsol.GetErrorMessage());
     return EXIT_FAILURE;
   } else {

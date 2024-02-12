@@ -55,7 +55,7 @@ typedef struct NLW2_SparseMatrix_C {
 } NLW2_SparseMatrix_C;
 
 
-/// Basic NL options for NLModel_Easy.
+/// Basic NL options for NLModel.
 /// Prefer to create by NLW2_MakeNLOptionsBasic_Default().
 typedef struct NLW2_NLOptionsBasic_C {
   /// NL text mode?
@@ -66,7 +66,7 @@ typedef struct NLW2_NLOptionsBasic_C {
   int flags_;
 } NLW2_NLOptionsBasic_C;
 
-/// Use this to create default NL options for NLModel_Easy.
+/// Use this to create default NL options for NLModel.
 NLW2_NLOptionsBasic_C NLW2_MakeNLOptionsBasic_C_Default();
 
 /// NLW2_WriteNLResultCode enum.

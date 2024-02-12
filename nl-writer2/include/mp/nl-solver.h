@@ -1,5 +1,5 @@
 /**
- mp::NLSOL.
+ mp::NLSolver.
  Manager for solving optimization models via NL files.
  It performs zero-overhead model/solution transmission.
  In particular, it does not store any intermediate
@@ -29,18 +29,21 @@
 
  Author: Gleb Belov
  */
-#ifndef NLSOL_H
-#define NLSOL_H
+#ifndef NLSOLVER_H
+#define NLSOLVER_H
 
 #include <utility>
 #include <cassert>
 #include <cstdio>
 #include <cstdlib>
 
-#include "mp/nl-writer2.h"
-#include "mp/sol-reader2.h"
+#include "mp/nl-solver-basics-c.h"
+#include "mp/nl-model.h"
+#include "mp/nl-utils2.h"
 
 namespace mp {
+
+class NLHeader;
 
 /// \rst
 /// Class NLSOL.
@@ -52,9 +55,9 @@ namespace mp {
 ///
 /// This class offers full NL functionality.
 /// For simplified interface for special model classes,
-/// see `~NLSOL_Easy`.
+/// see `~NLModel`.
 ///
-/// Usage (see tests/examples):
+/// Usage with full API (see tests/examples):
 ///
 ///   ExampleModel emdl;
 ///   ExampleNLFeeder2 nlf(emdl, binary);
@@ -63,9 +66,7 @@ namespace mp {
 ///
 ///   mp::NLSOL nlsol(&utils);
 ///   nlsol.SetFileStub(stub);
-///   if (!nlsol.LoadModel(nlf)
-///       || !nlsol.Solve(solver, sopts)
-///       || !nlsol.ReadSolution(esolh)) {
+///   if (!nlsol.Solve(nlf, esolh, solver, sopts)) {
 ///     printf("%s\n", nlsol.GetErrorMessage());
 ///     return EXIT_FAILURE;
 ///   } else {
@@ -75,17 +76,16 @@ namespace mp {
 /// See mp::NLFeeder2 and mp::SOLHandler2 interfaces
 /// for model/solution transmission.
 /// \endrst
-class NLSOL {
+class NLSolver {
 public:
   /// Construct.
   ///
   /// @param put: pointer to NLUtils or a derived object
   ///   (optional).
-  NLSOL(mp::NLUtils* put=nullptr)
-    : p_ut_(put ? put : &utils_) { Init(); }
+  NLSolver(mp::NLUtils* put=nullptr);
 
   /// Destruct.
-  ~NLSOL() { Destroy(); }
+  ~NLSolver();
 
   /// Set NLUtils [OPTIONAL].
   ///
@@ -100,13 +100,23 @@ public:
   /// Used for filename base of .nl, .col, row, etc. input files,
   /// as well as .sol output files.
   ///
-  /// If not provided, a temporary filename is used;
+  /// @note If not provided, a temporary filename is used;
   /// then, .nl is deleted upon object destruction.
   void SetFileStub(std::string stub);
 
   /// Retrieve file stub.
   const std::string& GetFileStub() const
   { return filestub_; }
+
+  /// Set some NL options for NLModel output [OPTIONAL].
+  ///
+  /// If not provided, default is used.
+  /// @note Not used for NLFeeder2 output.
+  void SetNLOptions(NLW2_NLOptionsBasic_C nlo) { nl_opts_=nlo; }
+
+  /// Get NLOptions for NLModel output.
+  NLW2_NLOptionsBasic_C GetNLOptions() const { return nl_opts_; }
+
 
   /// Get error message.
   /// Nonempty iff error occurred.
@@ -120,16 +130,62 @@ public:
   NLW2_SOLReadResultCode GetSolReadResultCode() const
   { return sol_result_; }
 
+  /// Load and solve an NLModel instance.
+  ///
+  /// @return Solution object with computed obj_value_
+  ///    (has operator bool() for checking
+  ///     if any result was obtained.)
+  ///
+  /// See LoadModel(), Solve(), ReadSolution()
+  /// for details.
+  NLSolution Solve(const NLModel& mdl,
+                 const std::string& solver,
+                 const std::string& solver_opts) {
+    NLSolution sol;
+    if (LoadModel(mdl)
+        && Solve(solver, solver_opts)) {
+      sol = ReadSolution();
+      if (sol.x_.size())
+        sol.obj_val_ = mdl.ComputeObjValue(sol.x_.data());
+    }
+    return sol;
+  }
+
+  /// Load and solve model
+  /// using NLFeeder2 and SOLHandler2.
+  ///
+  /// @return true iff all ok.
+  ///
+  /// See LoadModel(), Solve(), ReadSolution()
+  /// for details.
+  template <class NLFeeder2, class SOLHandler2>
+  bool Solve(NLFeeder2& nlf, SOLHandler2& solh,
+             const std::string& solver,
+             const std::string& solver_opts) {
+    return LoadModel(nlf)
+      && Solve(solver, solver_opts)
+      && ReadSolution(solh);
+  }
+
+  /// Write NL and any accompanying files.
+  /// NL file name base and some options
+  /// can be provided, if non-defaults desired,
+  /// via SetFileStub() and SetNLOptions().
+  ///
+  /// @return true if all ok, otherwise see
+  ///   GetErrorMessage().
+  bool LoadModel(const NLModel& mdl);
+
   /// Write NL and any accompanying files.
   ///
   /// @param nlf: NL feeder.
   ///
   /// @return true if all ok, otherwise see
-  ///   GetErrorMessage() and, possibly, GetLoadModelResultCode().
+  ///   GetErrorMessage() and GetLoadModelResultCode().
   template <class NLFeeder2>
   bool LoadModel(NLFeeder2& nlf);
 
-  /// Solve.
+  /// Solve after loading model.
   ///
   /// @param solver: solver executable, such as "gurobi".
   /// @param solver_opts: string of solver options,
@@ -139,7 +195,20 @@ public:
   bool Solve(const std::string& solver,
              const std::string& solver_opts);
 
-  /// Read solution.
+  /// Read solution after Solve()
+  /// when the NL file was written from NLModel.
+  ///
+  /// @return Solution object
+  ///    (has operator bool() for checking
+  ///     if any result was obtained.)
+  ///
+  /// @note To compute objective value,
+  ///   execute NLModel::ComputeObjValue()
+  ///   if x_ available.
+  NLSolution ReadSolution();
+
+  /// Read solution after Solve() when NL file
+  /// was written from NLFeeder2.
   ///
   /// @param solh: solution handler.
   ///
@@ -149,17 +218,8 @@ public:
   bool ReadSolution(SOLHandler2& solh);
 
 protected:
-  void Init() {
-    // init file stub
-    char tmpn[L_tmpnam];
-    tmpnam(tmpn);
-    filestub_ = tmpn;
-  }
-  void Destroy() {
-    // try & delete .nl
-    if (!filestubCustom_)
-      std::remove((filestub_ + ".nl").c_str());
-  }
+  void Init();
+  void Destroy();
   mp::NLUtils& Utils() const { return *p_ut_; }
 
 private:
@@ -168,6 +228,11 @@ private:
 
   std::string filestub_;
   bool filestubCustom_ = false;
+  NLW2_NLOptionsBasic_C nl_opts_;
+
+  // NLModel stuff
+  std::unique_ptr<NLHeader> p_nlheader_;
+  NLModel::PreprocessData pd_;
 
   std::string err_msg_;
   NLW2_WriteNLResultCode nl_result_
@@ -178,4 +243,4 @@ private:
 
 }  // namespace mp
 
-#endif // NLSOL_H
+#endif // NLSOLVER_H

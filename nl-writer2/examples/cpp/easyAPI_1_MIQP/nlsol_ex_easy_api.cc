@@ -1,8 +1,8 @@
 /**
- * Example using "easy" NLWriter2 API, mp::NLSOL_Easy,
+ * Example using "easy" NLWriter2 API, mp::NLModel,
  * to solve MIQP.
  *
- * For full NLWriter2 API, see mp::NLSOL
+ * For full NLWriter2 API, see mp::NLFeeder2
  * and related tests/examples.
  */
 
@@ -10,7 +10,7 @@
 #include <cstring>
 #include <cmath>
 
-#include "mp/nlsol-easy.h"
+#include "mp/nl-solver.h"
 
 /// Helper class to build model
 /// and check solution
@@ -18,8 +18,8 @@ class ModelBuilder {
 public:
   /// Obtain model.
   /// Valid with *this's lifetime.
-  mp::NLModel_Easy GetModel() {
-    mp::NLModel_Easy nlme(prob_name_);
+  mp::NLModel GetModel() {
+    mp::NLModel nlme(prob_name_);
 
     nlme.SetCols({(int)var_lb_.size(),
                   var_lb_.data(), var_ub_.data(),
@@ -43,7 +43,7 @@ public:
   }
 
   /// Check solution
-  bool Check(mp::NLSOL_Easy::Solution sol) {
+  bool Check(mp::NLSolution sol) {
     if (!ApproxEqual(sol.obj_val_, obj_val_ref_)) {
       printf("MIQP 1: wrong obj val (%.17g !~ %.17g)\n",
              sol.obj_val_, obj_val_ref_);
@@ -82,7 +82,7 @@ s.t. C1: x2_5 + x3_6 + x4_3 + x6_2 == 15;
 
 s.t. C2: x2_5 -x3_6 -x4_3 + x6_2 >= 10;
    */
-  const char* prob_name_ {"NLSOL_Easy_model"};
+  const char* prob_name_ {"NLModel/NLSolver"};
   std::vector<double> var_lb_
   {0, -3, 0, -1, -1, -2};
   std::vector<double> var_ub_
@@ -118,7 +118,7 @@ bool SolveAndCheck(std::string solver, std::string sopts,
                    bool binary, std::string stub) {
   ModelBuilder mdlbld;
   auto nlme = mdlbld.GetModel();
-  mp::NLSOL_Easy nlse;
+  mp::NLSolver nlse;
   auto nlopts = NLW2_MakeNLOptionsBasic_C_Default();
   nlopts.n_text_mode_ = !binary;
   nlopts.want_nl_comments_ = 1;

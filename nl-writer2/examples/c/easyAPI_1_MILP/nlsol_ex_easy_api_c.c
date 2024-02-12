@@ -3,7 +3,7 @@
  * to write NL file, execute solver, and read SOL file
  * for a MILP model.
  *
- * For full API, see documentation of NLW2_NLSOL_C
+ * For full API, see documentation of NLW2
  * and related tests/examples.
  */
 
@@ -12,7 +12,7 @@
 #include <string.h>
 #include <math.h>
 
-#include "api/c/nlsol-easy-c.h"
+#include "api/c/nl-solver-c.h"
 
 /// Solution checking data
 typedef struct NLW2_SolCheckData_C {
@@ -21,7 +21,7 @@ typedef struct NLW2_SolCheckData_C {
 } NLW2_SolCheckData_C;
 
 /// Build model
-NLW2_NLModel_Easy_C BuildModel(NLW2_SolCheckData_C* p_solchkdata) {
+NLW2_NLModel_C BuildModel(NLW2_SolCheckData_C* p_solchkdata) {
   /*
 var x1 >=0, <=14, integer;
 var x2 >=-3, <=15;
@@ -56,20 +56,20 @@ C2: 33*x1 + 28*x2 >= 37;
   static double x_ref[] = {3, -2.21429, -1};
   static double obj_val_ref  = -2.142857142857e-01;
 
-  NLW2_NLModel_Easy_C nlme
-      = NLW2_MakeNLModel_Easy_C(prob_name_);
+  NLW2_NLModel_C nlme
+      = NLW2_MakeNLModel_C(prob_name_);
 
-  NLME_SetCols_C(&nlme, num_col,
+  NLW2_SetCols_C(&nlme, num_col,
                 var_lb_, var_ub_, var_type_);
-  NLME_SetColNames_C(&nlme, var_names_);
+  NLW2_SetColNames_C(&nlme, var_names_);
 
-  NLME_SetRows_C(&nlme, num_row, row_lb_, row_ub_,
+  NLW2_SetRows_C(&nlme, num_row, row_lb_, row_ub_,
                  A_format_, sizeof(A_index_) / sizeof(A_index_[0]),
                  A_start_, A_index_, A_value_);
-  NLME_SetRowNames_C(&nlme, row_names_);
+  NLW2_SetRowNames_C(&nlme, row_names_);
 
-  NLME_SetLinearObjective_C(&nlme, obj_sense_, obj_c0_, obj_c_);
-  NLME_SetObjName_C(&nlme, obj_name_);
+  NLW2_SetLinearObjective_C(&nlme, obj_sense_, obj_c0_, obj_c_);
+  NLW2_SetObjName_C(&nlme, obj_name_);
 
   p_solchkdata->obj_val_ref_ = obj_val_ref;
   p_solchkdata->x_ref_       = x_ref;
@@ -85,7 +85,7 @@ static int ApproxEqual(double n, double m) {
 
 /// Check solution
 int NLW2_CheckSolution_C(
-    NLSE_Solution_C* p_sol, NLW2_SolCheckData_C* p_sol_ref) {
+    NLW2_Solution_C* p_sol, NLW2_SolCheckData_C* p_sol_ref) {
   if (!ApproxEqual(p_sol->obj_val_, p_sol_ref->obj_val_ref_)) {
     printf("MILP 1: wrong obj val (%.17g !~ %.17g)\n",
            p_sol->obj_val_, p_sol_ref->obj_val_ref_);
@@ -106,27 +106,27 @@ int SolveAndCheck(const char* solver, const char* sopts,
                   int binary, const char* stub) {
   int result = 1;
   NLW2_SolCheckData_C solchkdata;
-  NLW2_NLModel_Easy_C nlme = BuildModel(&solchkdata);
+  NLW2_NLModel_C nlme = BuildModel(&solchkdata);
   NLW2_NLOptionsBasic_C nlopts = NLW2_MakeNLOptionsBasic_C_Default();
   nlopts.n_text_mode_ = !binary;
   nlopts.want_nl_comments_ = 1;
-  NLW2_NLSOL_Easy_C nlse = NLW2_MakeNLSOL_Easy_C(NULL);
-  NLSE_SetNLOptions_C(&nlse, nlopts);
-  NLSE_SetFileStub_C(&nlse, stub);
-  NLSE_Solution_C sol = NLSE_Solve_C(&nlse, &nlme, solver, sopts);
+  NLW2_NLSolver_C nlse = NLW2_MakeNLSolver_C(NULL);
+  NLW2_SetNLOptions_C(&nlse, nlopts);
+  NLW2_SetFileStub_C(&nlse, stub);
+  NLW2_Solution_C sol = NLW2_SolveNLModel_C(&nlse, &nlme, solver, sopts);
   if (sol.solve_result_ >= -1) {
     if (!NLW2_CheckSolution_C(&sol, &solchkdata)) {
       printf("Solution check failed.\n");
       result = 0;
     }
   } else {
-    printf("%s\n", NLSE_GetErrorMessage_C(&nlse));
+    printf("%s\n", NLW2_GetErrorMessage_C(&nlse));
     result = 0;
   }
 
   // Destroy NLME... etc
-  NLW2_DestroyNLSOL_Easy_C(&nlse);
-  NLW2_DestroyNLModel_Easy_C(&nlme);
+  NLW2_DestroyNLSolver_C(&nlse);
+  NLW2_DestroyNLModel_C(&nlme);
 
   return result;
 }

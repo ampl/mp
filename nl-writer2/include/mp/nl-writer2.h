@@ -49,7 +49,7 @@
 #include <cstdarg>
 #include <cassert>
 
-#include "mp/basic-defs-c.h"
+#include "mp/nl-solver-basics-c.h"
 #include "mp/nl-writer2-misc.h"
 /// Just for checking compilation
 #include "mp/nl-feeder2.h"

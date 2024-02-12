@@ -12,7 +12,7 @@
 #include "nlsol_ex_c_nl.h"
 #include "nlsol_ex_c_sol.h"
 #include "nlsol_ex_c_nlutils.h"
-#include "api/c/nlsol-c.h"
+#include "api/c/nl-solver-c.h"
 
 /// main()
 int main(int argc, const char* const* argv) {
@@ -42,21 +42,21 @@ int main(int argc, const char* const* argv) {
   NLW2_NLUtils_C utils = MakeNLUtils_C();
 
   // Create NLSOL_C
-  NLW2_NLSOL_C nlsol = NLW2_MakeNLSOL_C(&utils);
+  NLW2_NLSolver_C nlsol = NLW2_MakeNLSolver_C(&utils);
 
   // Solve
-  NLW2_NLSOL_C_SetFileStub(&nlsol, stub);
-  if (!NLW2_NLSOL_C_LoadModel(&nlsol, &feeder)
-      || !NLW2_NLSOL_C_Solve(&nlsol, solver, sopts)
-      || !NLW2_NLSOL_C_ReadSolution(&nlsol, &solhnd)) {
-    printf("%s\n", NLW2_NLSOL_C_GetErrorMessage(&nlsol));
+  NLW2_SetFileStub_C(&nlsol, stub);
+  if (!NLW2_SolveFeederHandler_C(&nlsol,
+                                 &feeder, &solhnd,
+                                 solver, sopts)) {
+    printf("%s\n", NLW2_GetErrorMessage_C(&nlsol));
     result = EXIT_FAILURE;
   } else {
     PrintSolution_C(&example, stub);
   }
 
   // Destroy API-owned objects
-  NLW2_DestroyNLSOL_C(&nlsol);
+  NLW2_DestroyNLSolver_C(&nlsol);
 
   // Destroy our custom interface and example data
   DestroyNLUtils_C(&utils);

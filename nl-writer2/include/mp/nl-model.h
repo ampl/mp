@@ -1,5 +1,5 @@
 /**
- NL Solver "Easy", for special model classes
+ NL model, for special model classes
 
  Copyright (C) 2024 AMPL Optimization Inc.
 
@@ -20,8 +20,8 @@
  Author: Gleb Belov
  */
 
-#ifndef NLSOLEASY_H
-#define NLSOLEASY_H
+#ifndef NLMODEL_H
+#define NLMODEL_H
 
 #include <string>
 #include <vector>
@@ -29,22 +29,25 @@
 #include <memory>
 #include <cassert>
 
-#include "mp/basic-defs-c.h"
-#include "mp/nl-utils2.h"
+#include "mp/nl-solver-basics-c.h"
 
 namespace mp {
 
-/// Class NLModel_Easy.
+class NLUtils;
+
+/// Class NLModel.
 ///
 /// Intermediate representation for special model types:
 /// (MI)LP, (MI)QP.
+/// For fully nonlinear models with expression trees,
+/// use NLSolver with NLWriter2/NLFeeder2.
 ///
 /// All pointers should stay valid until
-/// loading the model into NLSOL_Easy.
-class NLModel_Easy {
+/// loading the model into NLSolver.
+class NLModel {
 public:
   /// Construct
-  NLModel_Easy(const char* probname = nullptr)
+  NLModel(const char* probname = nullptr)
     : prob_name_(probname ? probname : "NLModelInstance") { }
 
   /// Add variables (all at once.)
@@ -86,7 +89,7 @@ public:
   };
 
   /// Write to NL file.
-  /// Recommended usage via class NLSOL_Easy.
+  /// Recommended usage via class NLSolver.
   /// @return empty string iff ok.
   std::string WriteNL(const std::string& file_stub,
                       NLW2_NLOptionsBasic_C opts,
@@ -138,7 +141,7 @@ public:
   const char* ObjName() const { return obj_name_; }
 
 private:
-  const char* prob_name_ {"NLSOL_Easy_model"};
+  const char* prob_name_ {"mp::NLModel"};
   NLW2_ColData_C vars_ {};
   const char *const *var_names_ {};
   NLW2_SparseMatrix_C A_ {};
@@ -155,160 +158,52 @@ private:
 };
 
 
-/// Declare NLSOL
-class NLSOL;
+/// NL suffix type
+struct NLSuffix {
+  /// Name
+  std::string name_;
+  /// Suffix table
+  std::string table_;
+  /// Kind
+  int kind_;
+  /// Values. Always double precision.
+  std::vector<double> values_;
 
-/// Declare NLHeader
-class NLHeader;
-
-
-/// Class NLSOL_Easy.
-///
-/// A wrapper for mp::NLSOL to use AMPL solvers
-/// for (MI)QP models.
-class NLSOL_Easy {
-public:
-  /// Construct.
-  NLSOL_Easy();
-  /// Destruct
-  ~NLSOL_Easy();
-
-  /// Set NLUtils [OPTIONAL].
-  ///
-  /// If not provided, default is used.
-  void SetNLUtils(mp::NLUtils* put);
-
-  /// Get NLUtils
-  NLUtils* GetNLUtils() const;
-
-  /// Set file stub [OPTIONAL].
-  ///
-  /// Used for filename base of .nl, .col, row, etc. input files,
-  /// as well as .sol output files.
-  ///
-  /// If not provided, a temporary filename is used;
-  /// then, .nl is deleted upon object destruction.
-  void SetFileStub(std::string stub);
-
-  /// Retrieve file stub.
-  const std::string& GetFileStub() const;
-
-  /// Set NL options [OPTIONAL].
-  ///
-  /// If not provided, default is used.
-  void SetNLOptions(NLW2_NLOptionsBasic_C nlo) { nl_opts_=nlo; }
-
-  /// Get NLOptions
-  NLW2_NLOptionsBasic_C GetNLOptions() const { return nl_opts_; }
-
-  /// Get error message.
-  /// Nonempty iff error occurred.
-  const char* GetErrorMessage() const;
-
-  /// Suffix type
-  struct Suffix {
-    /// Name
-    std::string name_;
-    /// Suffix table
-    std::string table_;
-    /// Kind
-    int kind_;
-    /// Values. Always double precision.
-    std::vector<double> values_;
-
-    /// operator<
-    bool operator<(const Suffix& s) const {
-      return std::make_pair(name_, kind_)
-          < std::make_pair(s.name_, s.kind_);
-    }
-  };
-
-  /// Suffix set.
-  using SuffixSet = std::set<Suffix>;
-
-  /// Solution
-  struct Solution {
-    /// Any result obtained from the solver?
-    operator bool() const { return solve_result_ > -2; }
-    /// Solve result
-    int solve_result_ {-2};   // "unset"
-    /// Number of solve_message's initial characters
-    /// already printed on the screen
-    int nbs_{};
-    /// Solve message
-    std::string solve_message_;
-    /// Objective value.
-    /// Only returned by Solve(NLModel).
-    /// Otherwise, after ReadSolution(),
-    /// should be manually computed, e.g.,
-    /// by NLModel::ComputeObjValue().
-    double obj_val_ {};
-    /// Primals
-    std::vector<double> x_;
-    /// Duals
-    std::vector<double> y_;
-    /// Suffixes
-    SuffixSet suffixes_;
-  };
-
-  /// Solve model and return result.
-  ///
-  /// @return Solution object
-  ///    (has operator bool() for checking
-  ///     if any result was obtained.)
-  ///
-  /// See LoadModel(), Solve(), ReadSolution()
-  /// for details.
-  Solution Solve(const NLModel_Easy& mdl,
-                 const std::string& solver,
-                 const std::string& solver_opts) {
-    Solution sol;
-    if (LoadModel(mdl)
-        && Solve(solver, solver_opts)) {
-      sol = ReadSolution();
-      if (sol.x_.size())
-        sol.obj_val_ = mdl.ComputeObjValue(sol.x_.data());
-    }
-    return sol;
+  /// operator<
+  bool operator<(const NLSuffix& s) const {
+    return std::make_pair(name_, kind_)
+        < std::make_pair(s.name_, s.kind_);
   }
+};
 
-  /// Write NL and any accompanying files.
-  /// NL file name base and some options
-  /// can be provided, if non-defaults desired,
-  /// via SetFileStub() and SetNLOptions().
-  ///
-  /// @return true if all ok, otherwise see
-  ///   GetErrorMessage().
-  bool LoadModel(const NLModel_Easy& mdl);
+/// NL suffix set.
+using NLSuffixSet = std::set<NLSuffix>;
 
-  /// Solve.
-  ///
-  /// @param solver: solver executable, such as "gurobi".
-  /// @param solver_opts: string of solver options,
-  ///   such as "outlev=1 writeprob=model.lp".
-  ///
-  /// @return true if all ok.
-  bool Solve(const std::string& solver,
-             const std::string& solver_opts);
-
-  /// Read solution.
-  ///
-  /// @return Solution object
-  ///    (has operator bool() for checking
-  ///     if any result was obtained.)
-  ///
-  /// @note To compute objective value,
-  ///   execute NLModel_Easy::ComputeObjValue()
-  ///   if x_ available.
-  Solution ReadSolution();
-
-private:
-  std::unique_ptr<NLSOL> p_nlsol_;
-  std::unique_ptr<NLHeader> p_nlheader_;
-  NLModel_Easy::PreprocessData pd_;
-  NLW2_NLOptionsBasic_C nl_opts_;
+/// Solution
+struct NLSolution {
+  /// Any result obtained from the solver?
+  operator bool() const { return solve_result_ > -2; }
+  /// Solve result
+  int solve_result_ {-2};   // "unset"
+  /// Number of solve_message's initial characters
+  /// already printed on the screen
+  int nbs_{};
+  /// Solve message
+  std::string solve_message_;
+  /// Objective value.
+  /// Only returned by Solve(NLModel).
+  /// Otherwise, after ReadSolution(),
+  /// should be manually computed, e.g.,
+  /// by NLModel::ComputeObjValue().
+  double obj_val_ {};
+  /// Primals
+  std::vector<double> x_;
+  /// Duals
+  std::vector<double> y_;
+  /// Suffixes
+  NLSuffixSet suffixes_;
 };
 
 }  // namespace mp
 
-#endif // NLSOLEASY_H
+#endif // NLMODEL_H

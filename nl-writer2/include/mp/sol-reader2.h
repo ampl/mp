@@ -46,7 +46,7 @@
 #include <cstdarg>
 #include <vector>
 
-#include "mp/basic-defs-c.h"
+#include "mp/nl-solver-basics-c.h"
 #include "mp/sol-handler2.h"
 #include "mp/nl-utils2.h"
 

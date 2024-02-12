@@ -1,7 +1,7 @@
 /**
- NL Solver "Easy", for special model classes
+ NL Solver, part of implementation.
 
- Copyright (C) 2023 AMPL Optimization Inc.
+ Copyright (C) 2024 AMPL Optimization Inc.
 
  Permission to use, copy, modify, and distribute this software and its
  documentation for any purpose and without fee is hereby granted,
@@ -26,9 +26,7 @@
 #include <vector>
 #include <cmath>
 
-#include "mp/nlsol-easy.h"
-#include "mp/nlsol.h"
-#include "mp/nlsol.hpp"
+#include "mp/nl-solver.hpp"
 #include "mp/nl-opcodes.h"
 
 extern "C"
@@ -43,12 +41,12 @@ NLW2_NLOptionsBasic_C NLW2_MakeNLOptionsBasic_C_Default() {
 
 namespace mp {
 
-/// Specialize NLFeeder2 for NLSOL_Easy
+/// Specialize NLFeeder2 for NLModel
 class NLFeeder2_Easy
     : public NLFeeder2<NLFeeder2_Easy, void*> {
 public:
   /// Construct
-  NLFeeder2_Easy(const NLModel_Easy& nls, NLW2_NLOptionsBasic_C opts)
+  NLFeeder2_Easy(const NLModel& nls, NLW2_NLOptionsBasic_C opts)
     : nlme_(nls), nlopt_(opts) { Init(); }
 
   /// NL header
@@ -302,7 +300,7 @@ public:
     }
   }
 
-  void ExportPreproData(NLModel_Easy::PreprocessData &pd) {
+  void ExportPreproData(NLModel::PreprocessData &pd) {
     pd.vperm_.resize(NLME().NumCols());
     pd.vperm_inv_.resize(NLME().NumCols());
     for (auto i=pd.vperm_.size(); i--; ) {
@@ -313,8 +311,8 @@ public:
 
 
 protected:
-  const NLModel_Easy& NLME() const { return nlme_; }
-  NLModel_Easy& NLME() { return nlme_; }
+  const NLModel& NLME() const { return nlme_; }
+  NLModel& NLME() { return nlme_; }
 
   /// Reorder variables, compute statistics
   void Init() {
@@ -443,7 +441,7 @@ protected:
   }
 
 private:
-  NLModel_Easy nlme_;
+  NLModel nlme_;
   NLW2_NLOptionsBasic_C nlopt_;
 
   std::vector<bool> nlv_obj_;      // if var nonlinear in obj
@@ -455,7 +453,7 @@ private:
   NLHeader header_;
 };
 
-std::string NLModel_Easy::WriteNL(
+std::string NLModel::WriteNL(
     const std::string &fln, NLW2_NLOptionsBasic_C opts,
     NLUtils &ut, PreprocessData &pd) {
   NLFeeder2_Easy nlf(*this, opts);
@@ -463,7 +461,7 @@ std::string NLModel_Easy::WriteNL(
   return WriteNLFile(fln, nlf, ut).second;
 }
 
-double NLModel_Easy::ComputeObjValue(const double *x) const {
+double NLModel::ComputeObjValue(const double *x) const {
   double result {obj_c0_};
   for (auto i=NumCols(); i--; )
     result += obj_c_[i] * x[i];
@@ -481,47 +479,65 @@ double NLModel_Easy::ComputeObjValue(const double *x) const {
 }
 
 
-NLSOL_Easy::NLSOL_Easy()
-  : nl_opts_(NLW2_MakeNLOptionsBasic_C_Default())
-{ p_nlsol_.reset(new NLSOL()); }
+NLSolver::NLSolver(mp::NLUtils* put)
+  : p_ut_(put ? put : &utils_) { Init(); }
 
-NLSOL_Easy::~NLSOL_Easy() { }
+NLSolver::~NLSolver() { Destroy(); }
 
-void NLSOL_Easy::SetNLUtils(mp::NLUtils *put)
-{ p_nlsol_->SetNLUtils(put); }
+void NLSolver::Init() {
+  // init file stub
+  char tmpn[L_tmpnam];
+  tmpnam(tmpn);
+  filestub_ = tmpn;
+}
 
-NLUtils* NLSOL_Easy::GetNLUtils() const
-{ return p_nlsol_->GetNLUtils(); }
+void NLSolver::Destroy() {
+  // try & delete .nl
+  if (!filestubCustom_)
+    std::remove((filestub_ + ".nl").c_str());
+}
 
-void NLSOL_Easy::SetFileStub(std::string stub)
-{ p_nlsol_->SetFileStub(stub); }
+void NLSolver::SetFileStub(std::string stub) {
+  if (stub.size()) {
+    filestub_ = stub;
+    filestubCustom_ = true;
+  }
+}
 
-const std::string& NLSOL_Easy::GetFileStub() const
-{ return p_nlsol_->GetFileStub(); }
 
-const char* NLSOL_Easy::GetErrorMessage() const
-{ return p_nlsol_->GetErrorMessage(); }
-
-bool NLSOL_Easy::LoadModel(const NLModel_Easy& mdl) {
+bool NLSolver::LoadModel(const NLModel& mdl) {
   NLFeeder2_Easy nlf(mdl, nl_opts_);
   nlf.ExportPreproData(pd_);
   p_nlheader_.reset(new NLHeader(nlf.Header()));
-  return p_nlsol_->LoadModel(nlf);
+  return LoadModel(nlf);
 }
 
-bool NLSOL_Easy::Solve(
-    const std::string &solver, const std::string &solver_opts)
-{ return p_nlsol_->Solve(solver, solver_opts); }
+bool NLSolver::Solve(const std::string& solver,
+                  const std::string& solver_opts) {
+  if (GetFileStub().empty())
+    return (err_msg_="NLSOL: provide filestub.", false);
+  if (solver.empty())
+    return (err_msg_="NLSOL: provide solver.", false);
+  auto call = solver
+      + ' ' + GetFileStub()
+      + " -AMPL "
+      + solver_opts;
+  if (auto status = std::system(call.c_str()))
+    return (err_msg_="NLSOL: call \""
+        + call + "\" failed (code "
+        + std::to_string(status) + ").", false);
+  return true;
+}
 
 
-/// Specialize SOLHandler2 for NLSOL_Easy
+/// Specialize SOLHandler2 for NLModel
 class SOLHandler2_Easy
     : public SOLHandler2 {
 public:
   /// Construct
   SOLHandler2_Easy(const NLHeader& h,
-                   const NLModel_Easy::PreprocessData& pd,
-                   NLSOL_Easy::Solution& sol)
+                   const NLModel::PreprocessData& pd,
+                   NLSolution& sol)
     : header_(h), pd_(pd), sol_(sol) { }
 
   /** The NLHeader used to write the NL file. */
@@ -627,14 +643,14 @@ public:
 
 private:
   NLHeader header_;
-  const NLModel_Easy::PreprocessData& pd_;
-  NLSOL_Easy::Solution& sol_;
+  const NLModel::PreprocessData& pd_;
+  NLSolution& sol_;
 };
 
-NLSOL_Easy::Solution NLSOL_Easy::ReadSolution() {
-  NLSOL_Easy::Solution result;
+NLSolution NLSolver::ReadSolution() {
+  NLSolution result;
   SOLHandler2_Easy solh(*p_nlheader_, pd_, result);
-  p_nlsol_->ReadSolution(solh);
+  ReadSolution(solh);
   return result;
 }
 

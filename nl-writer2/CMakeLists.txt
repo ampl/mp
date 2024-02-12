@@ -21,13 +21,13 @@ set(NLW2_LIB_FILES
 	${NLW2_SRC_PATH}/nl-writer2.cc
 	${NLW2_SRC_PATH}/nl-utils2.cc
 	${NLW2_SRC_PATH}/dtoa.c
-	${NLW2_SRC_PATH}/nlsol-easy.cc
+	${NLW2_SRC_PATH}/nl-solver.cc
 )
 set(NLW2_INC_FILES
-	${NLW2_INCLUDE_PATH}/mp/basic-defs-c.h
-	${NLW2_INCLUDE_PATH}/mp/nlsol.h
-	${NLW2_INCLUDE_PATH}/mp/nlsol.hpp
-	${NLW2_INCLUDE_PATH}/mp/nlsol-easy.h
+	${NLW2_INCLUDE_PATH}/mp/nl-solver-basics-c.h
+	${NLW2_INCLUDE_PATH}/mp/nl-model.h
+	${NLW2_INCLUDE_PATH}/mp/nl-solver.h
+	${NLW2_INCLUDE_PATH}/mp/nl-solver.hpp
 	${NLW2_INCLUDE_PATH}/mp/nl-feeder2.h
 	${NLW2_INCLUDE_PATH}/mp/nl-writer2.h
 	${NLW2_INCLUDE_PATH}/mp/nl-writer2.hpp
@@ -54,15 +54,15 @@ endif()
 
 # C API sources
 set(NLW2_C_API_LIB_FILES
-	${NLW2_DIR}/src/c-api.cc
-	${NLW2_DIR}/src/nlsol-easy-c.cc
+	${NLW2_DIR}/src/nl-model-c.cc
+	${NLW2_DIR}/src/nl-solver-c.cc
 	)
 set(NLW2_C_API_INC_FILES
   ${NLW2_INCLUDE_PATH}/api/c/nl-feeder2-c.h
   ${NLW2_INCLUDE_PATH}/api/c/sol-handler2-c.h
   ${NLW2_INCLUDE_PATH}/api/c/nl-writer2-misc-c.h
-	${NLW2_INCLUDE_PATH}/api/c/nlsol-c.h
-	${NLW2_INCLUDE_PATH}/api/c/nlsol-easy-c.h
+	${NLW2_INCLUDE_PATH}/api/c/nl-solver-c.h
+	${NLW2_INCLUDE_PATH}/api/c/nl-model-c.h
 
   ${NLW2_INCLUDE_PATH}/api/c/nl-feeder2-c-impl.h
   ${NLW2_INCLUDE_PATH}/api/c/sol-handler2-c-impl.h
@@ -80,7 +80,7 @@ target_link_libraries(${NLW2_C_API_LIB_NAME} ${NLW2_LIB_NAME})
 ######################################################
 # Examples
 
-# C++ NLSOL_Easy "easy interface" example: MIQP
+# C++ NLSolver "easy interface" example: MIQP
 set(NLW2_CPP_EXAMPLE_PATH ${NLW2_EXAMPLE_PATH}/cpp)
 set(NLSOL_CPP_EX_EASY1_FILES
 	${NLW2_CPP_EXAMPLE_PATH}/easyAPI_1_MIQP/nlsol_ex_easy_api.cc)
@@ -92,7 +92,7 @@ set(NLSOL_CPP_EX_FULL1_FILES
 	${NLW2_CPP_EXAMPLE_PATH}/fullAPI_1/nlsol_ex_nl.h
 	${NLW2_CPP_EXAMPLE_PATH}/fullAPI_1/nlsol_ex_sol.h)
 
-# NLW2 C fullAPI example
+# NLW2 C easyAPI example
 set(NLW2_C_EXAMPLE_PATH ${NLW2_EXAMPLE_PATH}/c)
 set(NLSOL_C_EX_EASY1_FILES
 	${NLW2_C_EXAMPLE_PATH}/easyAPI_1_MILP/nlsol_ex_easy_api_c.c

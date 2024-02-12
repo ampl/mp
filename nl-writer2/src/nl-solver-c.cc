@@ -10,13 +10,25 @@
 #include "api/c/nl-feeder2-c.h"
 #include "api/c/sol-handler2-c.h"
 #include "api/c/nl-writer2-misc-c.h"
-#include "api/c/nlsol-c.h"
 
 #include "api/c/nl-feeder2-c-impl.h"
 #include "api/c/sol-handler2-c-impl.h"
 #include "api/c/nl-writer2-misc-c-impl.h"
-#include "mp/nlsol.h"
-#include "mp/nlsol.hpp"
+
+#include "api/c/nl-solver-c.h"
+#include "mp/nl-solver.hpp"
+
+namespace {
+
+/// Cast & check
+template <class Type>
+Type* CastNZ(void* p) {
+  auto result = (Type*)p;
+  assert(result);
+  return result;
+}
+
+}
 
 #ifdef __cplusplus  // Implementing C API from C++
 extern "C" {
@@ -647,22 +659,29 @@ void NLW2_DestroySOLHandler2_C_Default(NLW2_SOLHandler2_C* )
 { }
 
 
-//////////// NLSOL_C API //////////////
-
 namespace mp {
 
 /// Typedef our specialization of NLSOL
 using NLSOL_C_Impl
-  = mp::NLSOL;
+  = mp::NLSolver;
+
+/// Storage for NLSE_Solution_C data
+struct NLW2_Solution_C_Data {
+  mp::NLSolution sol_;
+  std::vector<NLW2_Suffix_C> suffixes_;
+};
 
 }  // namespace mp
 
 
-NLW2_NLSOL_C NLW2_MakeNLSOL_C(
+NLW2_NLSolver_C NLW2_MakeNLSolver_C(
     NLW2_NLUtils_C* putl) {
-  NLW2_NLSOL_C result;
+  NLW2_NLSolver_C result;
 
-  result.p_utl_ = new mp::NLUtils_C_Impl(putl);
+  result.p_sol_ = nullptr;
+  result.p_utl_ = nullptr;
+  if (putl)
+    result.p_utl_ = new mp::NLUtils_C_Impl(putl);
   result.p_nlsol_
       = new mp::NLSOL_C_Impl(
         (mp::NLUtils_C_Impl*)result.p_utl_);
@@ -670,44 +689,133 @@ NLW2_NLSOL_C NLW2_MakeNLSOL_C(
   return result;
 }
 
-void NLW2_DestroyNLSOL_C(NLW2_NLSOL_C* pnls) {
+void NLW2_DestroyNLSolver_C(NLW2_NLSolver_C* pnls) {
+  if (pnls->p_sol_) {
+    delete (mp::NLW2_Solution_C_Data*)pnls->p_sol_;
+    pnls->p_sol_ = nullptr;
+  }
   delete (mp::NLSOL_C_Impl*)(pnls->p_nlsol_);
-  delete (mp::NLUtils_C_Impl*)(pnls->p_utl_);
+  pnls->p_nlsol_ = nullptr;
+  if (pnls->p_utl_) {
+    delete (mp::NLUtils_C_Impl*)(pnls->p_utl_);
+    pnls->p_utl_ = nullptr;
+  }
 }
 
-void NLW2_NLSOL_C_SetFileStub(NLW2_NLSOL_C* pnls, const char* stub) {
+void NLW2_SetFileStub_C(NLW2_NLSolver_C* pnls, const char* stub) {
   ((mp::NLSOL_C_Impl*)(pnls->p_nlsol_))
       ->SetFileStub(stub);
 }
 
-const char* NLW2_NLSOL_C_GetFileStub(NLW2_NLSOL_C* pnls) {
+const char* NLW2_GetFileStub_C(NLW2_NLSolver_C* pnls) {
   return ((mp::NLSOL_C_Impl*)(pnls->p_nlsol_))
       ->GetFileStub().c_str();
 }
 
-const char* NLW2_NLSOL_C_GetErrorMessage(NLW2_NLSOL_C* pnls) {
+void NLW2_SetNLOptions_C(NLW2_NLSolver_C* nlse,
+                         NLW2_NLOptionsBasic_C nlo)
+{ CastNZ<mp::NLSolver>(nlse->p_nlsol_)->SetNLOptions(nlo); }
+
+NLW2_NLOptionsBasic_C NLW2_GetNLOptions_C(NLW2_NLSolver_C* nlse)
+{ return CastNZ<mp::NLSolver>(nlse->p_nlsol_)->GetNLOptions(); }
+
+const char* NLW2_GetErrorMessage_C(NLW2_NLSolver_C* pnls) {
   return ((mp::NLSOL_C_Impl*)(pnls->p_nlsol_))
       ->GetErrorMessage();
 }
 
-int NLW2_NLSOL_C_LoadModel(NLW2_NLSOL_C* pnls, NLW2_NLFeeder2_C* nlf_c) {
+/// Add solution data to NLW2_NLSolver_C
+/// and return its C wrapper, NLW2_Solution_C.
+static NLW2_Solution_C NLW2_WrapNLSOL_Solution_C
+(NLW2_NLSolver_C* nlse, mp::NLSolution sol) {
+  // Store the C++ data
+  if (!nlse->p_sol_)
+    nlse->p_sol_ = new mp::NLW2_Solution_C_Data;
+  auto& sol_data = *CastNZ<mp::NLW2_Solution_C_Data>(nlse->p_sol_);
+  sol_data.sol_ = std::move(sol);
+
+  NLW2_Solution_C result;
+  {
+    auto& sol=sol_data.sol_;
+    result.nbs_ = sol.nbs_;
+    result.nsuf_ = sol.suffixes_.size();
+    result.obj_val_ = sol.obj_val_;
+    result.solve_message_ = sol.solve_message_.c_str();
+    result.solve_result_ = sol.solve_result_;
+    sol_data.suffixes_.clear();
+    sol_data.suffixes_.reserve(sol.suffixes_.size());
+    result.suffixes_ = sol_data.suffixes_.data();
+    for (const auto& suf: sol.suffixes_) {
+      NLW2_Suffix_C suf_c;
+      suf_c.kind_ = suf.kind_;
+      suf_c.name_ = suf.name_.c_str();
+      suf_c.table_ = suf.table_.c_str();
+      suf_c.values_ = suf.values_.data();
+      sol_data.suffixes_.push_back(std::move(suf_c));
+    }
+    result.n_primal_values_ = sol.x_.size();
+    result.x_ = sol.x_.data();
+    result.n_dual_values_ = sol.y_.size();
+    result.y_ = sol.y_.data();
+  }
+  return result;
+}
+
+NLW2_Solution_C NLW2_SolveNLModel_C(NLW2_NLSolver_C* nlse,
+                                    NLW2_NLModel_C* nlme,
+                                    const char* solver,
+                                    const char* solver_opts) {
+  auto sol = CastNZ<mp::NLSolver>(nlse->p_nlsol_)->Solve(
+        *CastNZ<mp::NLModel>(nlme->p_data_), solver, solver_opts);
+  return NLW2_WrapNLSOL_Solution_C(nlse, std::move(sol));
+}
+
+int NLW2_SolveFeederHandler_C(NLW2_NLSolver_C* pnls,
+                              NLW2_NLFeeder2_C* nlf_c,
+                              NLW2_SOLHandler2_C* solh_c,
+                              const char* solver,
+                              const char* solver_opts) {
+  mp::NLW2_NLFeeder2_C_Impl nlf(nlf_c);
+  mp::NLW2_SOLHandler2_C_Impl solh(solh_c);
+  return ((mp::NLSOL_C_Impl*)(pnls->p_nlsol_))
+      ->LoadModel(nlf)
+      && ((mp::NLSOL_C_Impl*)(pnls->p_nlsol_))
+      ->Solve(solver, solver_opts)
+      && ((mp::NLSOL_C_Impl*)(pnls->p_nlsol_))
+      ->ReadSolution(solh);
+}
+
+int NLW2_LoadNLModel_C(NLW2_NLSolver_C* nlse,
+                       NLW2_NLModel_C* nlme) {
+  return CastNZ<mp::NLSolver>(nlse->p_nlsol_)->LoadModel(
+        *CastNZ<const mp::NLModel>(nlme->p_data_));
+}
+
+int NLW2_LoadNLFeed2_C(NLW2_NLSolver_C* pnls, NLW2_NLFeeder2_C* nlf_c) {
   mp::NLW2_NLFeeder2_C_Impl nlf(nlf_c);
   return ((mp::NLSOL_C_Impl*)(pnls->p_nlsol_))
       ->LoadModel(nlf);
 }
 
-int NLW2_NLSOL_C_Solve(NLW2_NLSOL_C* pnls,
-                       const char* solver, const char* solver_opts) {
+int NLW2_RunSolver_C(NLW2_NLSolver_C* pnls,
+                     const char* solver, const char* solver_opts) {
   return ((mp::NLSOL_C_Impl*)(pnls->p_nlsol_))
       ->Solve(solver, solver_opts);
 }
 
-int NLW2_NLSOL_C_ReadSolution(NLW2_NLSOL_C* pnls,
-                              NLW2_SOLHandler2_C* solh_c) {
+NLW2_Solution_C NLW2_ReadSolution_C(NLW2_NLSolver_C* nlse) {
+  auto sol
+      = CastNZ<mp::NLSolver>(nlse->p_nlsol_)->ReadSolution();
+  return NLW2_WrapNLSOL_Solution_C(nlse, std::move(sol));
+}
+
+int NLW2_Read2SOLHandler2_C(NLW2_NLSolver_C* pnls,
+                            NLW2_SOLHandler2_C* solh_c) {
   mp::NLW2_SOLHandler2_C_Impl solh(solh_c);
   return ((mp::NLSOL_C_Impl*)(pnls->p_nlsol_))
       ->ReadSolution(solh);
 }
+
 
 
 #ifdef __cplusplus

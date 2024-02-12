@@ -76,7 +76,8 @@ namespace mp {
     or just be an interface prototype.
 
     **Subclassed examples:**
-      - Simplified (MI)QP interface `~mp::NLSOL_Easy`
+      - Simplified (MI)QP interface via `~mp::NLModel`,
+        `~mp::NLFeeder2_Easy`
       - C API implementation class `~mp::NLW2_NLFeeder2_C_Impl`
       - Other examples/tests, e.g., see `ExampleNLFeeder2`.
 
