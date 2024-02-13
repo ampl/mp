@@ -1,5 +1,5 @@
 /**
- * C API: extern "C" wrapper for mp::NLSolver class
+ * C API: extern "C" wrapper for mp::NLModel class
  *
  */
 

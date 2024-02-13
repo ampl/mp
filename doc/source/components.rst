@@ -139,44 +139,58 @@ Writing NL and reading SOL files
 
 For modeling systems and applications using AMPL solvers,
 MP provides a library to write NL and read SOL files.
-The library is zero-overhead: it does not store the model,
+The library is virtually zero-overhead: it does not store the model,
 nor does it require any intermediate objects to represent
 model information.
 
 NL Writer design
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The library
-allows a most efficient conversion of a user model's
-internal representation to NL format by providing
-NL component writer callbacks
-(and solution reader callbacks to receive solutions.)
+The NL writer library provides two approaches:
 
-In turn, the library is flexible to use because
-various components of the user model will be provided
-on the library's request from a user-specialized
-`~mp::NLFeeder2` object (for solution input,
-solution components will be received by methods
-of a custom `~mp::SOLHandler2` class.)
+1. "Straightforward" API via `~mp::NLModel` and
+   `~mp::NLSolver`. This is currently limited to
+   (MI)LP and (MI)QP models.
+
+2. Full NL API via callbacks into custom
+   `~mp::NLFeeder2`
+   and `~mp::SOLHandler2` classes,
+   optionally via `~mp::NLSolver`.
+
+   This approach
+   allows a most efficient conversion of a user model's
+   internal representation to NL format by providing
+   NL component writer callbacks
+   (and solution reader callbacks to receive solutions.)
+
+   In turn, the library is flexible to use because
+   various components of the user model are provided
+   on the library's request from a user-specialized
+   `~mp::NLFeeder2`
+   object (for solution input,
+   solution components are received by methods
+   of a custom `~mp::SOLHandler2` class.)
 
 .. image:: images/NLWriter.svg
 
 
-NL Writer APIs
+NL Writer API languages
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- **NL Writer C++ API** is provided by classes
-  `~mp::NLSolver`, `~mp::NLFeeder2`, `~mp::SOLHandler2`.
-  See
-  `C++ API example <https://github.com/ampl/mp/blob/develop/nl-writer2/examples/cpp/nlsol_ex.cc>`_
-  solving a small non-linear model.
+See the
+`NL Writer example folder <https://github.com/ampl/mp/blob/develop/nl-writer2/examples/>`_
+and tests.
 
-- **NL Writer C API** is provided by structs
-  `~NLW2_NLSolver_C`, `~NLW2_NLFeeder2_C`, `~NLW2_SOLHandler2_C`.
-  *Currently only linear models are supported.*
-  See
-  `C API example <https://github.com/ampl/mp/blob/develop/nl-writer2/examples/c/nlsol_ex_c.c>`_
-  solving a small linear model.
+- **C++ API** is provided by classes
+  `~mp::NLSolver`, `~mp::NLModel`, `~mp::NLFeeder2`, `~mp::SOLHandler2`.
+
+- **C API** is provided by structs
+  `~NLW2_NLSolver_C`, `~NLW2_NLModel_C`,
+  `~NLW2_NLFeeder2_C`, `~NLW2_SOLHandler2_C`.
+
+  - Currently only (MI)LP/(MI)QP (via `~NLW2_NLModel_C`)
+    or linear models (via `~NLW2_NLFeeder2_C`, `~NLW2_SOLHandler2_C`)
+    are supported.
 
 
 .. _recommended-driver-logic:
