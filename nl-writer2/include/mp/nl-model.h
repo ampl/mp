@@ -69,7 +69,8 @@ public:
   /// Add linear objective (only single objective supported.)
   /// Sense: NLW2_ObjSenseM....
   /// Coefficients: dense vector.
-  void SetLinearObjective(int sense, double c0, const double* c)
+  void SetLinearObjective(int sense, double c0,
+                          const double* c = nullptr)
   { obj_sense_=sense; obj_c0_=c0; obj_c_=c; }
 
   /// Add Q for the objective quadratic part 0.5 @ x.T @ Q @ x.

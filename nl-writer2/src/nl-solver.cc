@@ -83,7 +83,7 @@ public:
       auto c = NLME().ObjCoefficients();
       for (int j=0; j<header_.num_vars; ++j)
         if (obj_grad_supp_[j])
-          svw.Write(VPerm(j), c[j]);
+          svw.Write(VPerm(j), c ? c[j] : 0.0);
     }
   }
 
@@ -378,9 +378,11 @@ protected:
 
   void FillObjNonzeros() {
     obj_grad_supp_.resize(NLME().NumCols());
-    // Linear part
-    for (auto i=NLME().NumCols(); i--; )
-      obj_grad_supp_[i] = (NLME().ObjCoefficients()[i]);
+    // Linear part -- if provided
+    if (NLME().ObjCoefficients()) {
+      for (auto i=NLME().NumCols(); i--; )
+        obj_grad_supp_[i] = (NLME().ObjCoefficients()[i]);
+    }
     // QP part
     auto Q = NLME().Hessian();
     if (Q.num_nz_) {
