@@ -480,6 +480,8 @@ double NLModel::ComputeObjValue(const double *x) const {
   return result;
 }
 
+NLSolver::NLSolver()
+  : p_ut_(&utils_) { Init(); }
 
 NLSolver::NLSolver(mp::NLUtils* put)
   : p_ut_(put ? put : &utils_) { Init(); }

@@ -80,10 +80,13 @@ class NLHeader;
 class NLSolver {
 public:
   /// Construct.
+  NLSolver();
+
+  /// Construct.
   ///
   /// @param put: pointer to NLUtils or a derived object
   ///   (optional).
-  NLSolver(mp::NLUtils* put=nullptr);
+  NLSolver(mp::NLUtils* put);
 
   /// Destruct.
   ~NLSolver();
@@ -140,8 +143,8 @@ public:
   /// See LoadModel(), Solve(), ReadSolution()
   /// for details.
   NLSolution Solve(const NLModel& mdl,
-                 const std::string& solver,
-                 const std::string& solver_opts) {
+                   const std::string& solver,
+                   const std::string& solver_opts) {
     NLSolution sol;
     if (LoadModel(mdl)
         && Solve(solver, solver_opts)) {

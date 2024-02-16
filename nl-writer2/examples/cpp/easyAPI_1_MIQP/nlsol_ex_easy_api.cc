@@ -55,7 +55,8 @@ public:
                i+1, sol.x_[i], x_ref_[i]);
         return false;
       }
-    printf("MIQP 1: solution check ok.\n");
+    printf("MIQP 1: solution check ok, obj=%.17g.\n",
+           sol.obj_val_);
     return true;
   }
 
@@ -113,7 +114,7 @@ s.t. C2: x2_5 -x3_6 -x4_3 + x6_2 >= 10;
   double obj_val_ref_ {-39.76};
 };
 
-/// Solver with given parameters
+/// Solve with given parameters
 bool SolveAndCheck(std::string solver, std::string sopts,
                    bool binary, std::string stub) {
   ModelBuilder mdlbld;
