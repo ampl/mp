@@ -16,7 +16,7 @@
    }
 
  where feeder is an object that provides information on model
- components. See NLFeeder2 for an interface of a feeder class.
+ components. See NLFeeder for an interface of a feeder class.
 
  See also NLReader and NLHandler classes.
 
@@ -52,7 +52,7 @@
 #include "mp/nl-solver-basics-c.h"
 #include "mp/nl-writer2-misc.h"
 /// Just for checking compilation
-#include "mp/nl-feeder2.h"
+#include "mp/nl-feeder.h"
 
 
 namespace mp {
@@ -66,10 +66,10 @@ using WriteNLResult = std::pair<NLW2_WriteNLResultCode, std::string>;
 /// to be augmented by .nl, .col, ...etc.
 /// @return Write status.
 /// Note that warnings are reported via \a utl.
-template <class NLFeeder2>
+template <class NLFeeder>
 inline WriteNLResult WriteNLFile(
     const std::string& namebase,
-    NLFeeder2& nlf, NLUtils& utl);
+    NLFeeder& nlf, NLUtils& utl);
 
 
 /// NLWriter2.
@@ -85,7 +85,7 @@ inline WriteNLResult WriteNLFile(
 ///    WriteNLFile(filenamebase, feeder, utils);
 ///
 /// where feeder is an object that provides information on model
-/// components. See NLFeeder2 for an interface of a feeder class.
+/// components. See NLFeeder for an interface of a feeder class.
 ///
 /// See also NLReader and NLHandler classes.
 ///
@@ -427,7 +427,7 @@ protected:
   class DefVarWriterFactory {
   public:
     /// Construct.
-    /// For the meaning of \a k, see NLFeeder2.
+    /// For the meaning of \a k, see NLFeeder.
     DefVarWriterFactory(NLWriter2& nlw, int k)
       : nlw_(nlw), k_(k) { }
 

@@ -71,9 +71,9 @@ Value VecReader<Value>::ReadNext() {
 
 
 /// Some refurbished old code.
-template <class SOLHandler2>
+template <class SOLHandler>
 NLW2_SOLReadResultCode
-SOLReader2<SOLHandler2>::ReadSOLFile(
+SOLReader2<SOLHandler>::ReadSOLFile(
     const std::string& name) {
   File file;
   stub_ = name.c_str();
@@ -269,7 +269,7 @@ bad_nOpts:
     z = Options + nOpts + 1;
     internal_rv_ = 996;
     // Send options to Handler:
-    typename SOLHandler2::AMPLOptions ao;
+    typename SOLHandler::AMPLOptions ao;
     ao.options_.assign(Options, Options+nOpts+5);
     ao.has_vbtol_ = need_vbtol;
     ao.vbtol_ = vbtol;
@@ -429,8 +429,8 @@ struct SufRead {
 //  int nmax;
 };
 
-template <class SOLHandler2>
-NLW2_SOLReadResultCode SOLReader2<SOLHandler2>::bsufread(FILE* f) {
+template <class SOLHandler>
+NLW2_SOLReadResultCode SOLReader2<SOLHandler>::bsufread(FILE* f) {
   uiolen L, L1;
 
   while(fread(&L, sizeof(uiolen), 1, f)) {
@@ -500,8 +500,8 @@ Lget(char **sp, int *Lp)
 }
 
 
-template <class SOLHandler2>
-NLW2_SOLReadResultCode SOLReader2<SOLHandler2>::gsufread(FILE* f) {
+template <class SOLHandler>
+NLW2_SOLReadResultCode SOLReader2<SOLHandler>::gsufread(FILE* f) {
   char *s, *se;
   size_t L;
   char buf[512];
@@ -563,8 +563,8 @@ NLW2_SOLReadResultCode SOLReader2<SOLHandler2>::gsufread(FILE* f) {
   return NLW2_SOLRead_OK;
 }
 
-template <class SOLHandler2>
-int SOLReader2<SOLHandler2>::sufheadcheck(SufRead* sr) {
+template <class SOLHandler>
+int SOLReader2<SOLHandler>::sufheadcheck(SufRead* sr) {
   int n;
 
   n = (int)sr->h.n;
@@ -582,29 +582,29 @@ int SOLReader2<SOLHandler2>::sufheadcheck(SufRead* sr) {
   return 0;
 }
 
-template <class SOLHandler2>
-NLW2_SOLReadResultCode SOLReader2<SOLHandler2>::ReportEarlyEof() {
+template <class SOLHandler>
+NLW2_SOLReadResultCode SOLReader2<SOLHandler>::ReportEarlyEof() {
   serror("error reading '%s' (errno=%d)", stub_, errno);
   return readresult_ = NLW2_SOLRead_Early_EOF;
 }
 
-template <class SOLHandler2>
-NLW2_SOLReadResultCode SOLReader2<SOLHandler2>::ReportBadFormat() {
+template <class SOLHandler>
+NLW2_SOLReadResultCode SOLReader2<SOLHandler>::ReportBadFormat() {
   serror("Bad %s solution file '%s' (errno=%d)",
          bkind[binary], stub_, errno);
   return readresult_ = NLW2_SOLRead_Bad_Format;
 }
 
-template <class SOLHandler2>
-NLW2_SOLReadResultCode SOLReader2<SOLHandler2>::
+template <class SOLHandler>
+NLW2_SOLReadResultCode SOLReader2<SOLHandler>::
 ReportBadLine(const std::string& line) {
   serror("Bad line in '%s': %s", stub_, line.c_str());
   return readresult_ = NLW2_SOLRead_Bad_Line;
 }
 
 
-template <class SOLHandler2>
-void SOLReader2<SOLHandler2>::serror(
+template <class SOLHandler>
+void SOLReader2<SOLHandler>::serror(
     const char* format, ...) {
   va_list args;
   va_start (args, format);

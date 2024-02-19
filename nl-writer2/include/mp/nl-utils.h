@@ -1,5 +1,5 @@
-#ifndef NLUTILS2_H
-#define NLUTILS2_H
+#ifndef NLUTILS_H
+#define NLUTILS_H
 
 #include <string>
 #include <cstdio>
@@ -92,4 +92,4 @@ private:
 
 }  // namespace mp
 
-#endif // NLUTILS2_H
+#endif // NLUTILS_H

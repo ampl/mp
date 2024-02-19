@@ -1,19 +1,19 @@
 /**
- * NLFeeder2 implementation for the nlsol_ex example.
+ * NLFeeder implementation for the nlsol_ex example.
  *
  */
 
 #ifndef NLSOL_EX_NL_H
 #define NLSOL_EX_NL_H
 
-#include "mp/nl-feeder2.h"
+#include "mp/nl-feeder.h"
 #include "nlsol_ex_mdl.h"
 
-class ExampleNLFeeder2
-    : public mp::NLFeeder2<ExampleModel, void*> {
+class ExampleNLFeeder
+    : public mp::NLFeeder<ExampleModel, void*> {
 public:
   /// Construct
-  ExampleNLFeeder2(const ExampleModel& mdl, bool binary)
+  ExampleNLFeeder(const ExampleModel& mdl, bool binary)
     : mdl_(mdl), binary_(binary) { }
 
   /** Provide NLHeader.

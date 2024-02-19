@@ -51,11 +51,11 @@
   #define ssize_t int
 #endif
 
-/// Check that the stub NLFeeder2
+/// Check that the stub NLFeeder
 /// compiles with NLWriter2
-static void test_nlfeeder2_with_nlwriter2() {
+static void test_nlfeeder_with_nlwriter2() {
   using Expr = void*;
-  class TestNLF : public mp::NLFeeder2<TestNLF, Expr> {
+  class TestNLF : public mp::NLFeeder<TestNLF, Expr> {
   public:
   };
   TestNLF nlfeeder;

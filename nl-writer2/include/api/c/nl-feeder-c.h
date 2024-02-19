@@ -1,11 +1,11 @@
 /**
- * C API: extern "C" wrappers for the NLFeeder2 interface,
+ * C API: extern "C" wrappers for the NLFeeder interface,
  * as well as for NLWriter2 calls.
  *
  */
 
-#ifndef NLFEEDER2_C_H
-#define NLFEEDER2_C_H
+#ifndef NLFeeder_C_H
+#define NLFeeder_C_H
 
 #include "mp/nl-header-c.h"
 
@@ -106,15 +106,15 @@ void NLW2_WriteNameAndNumber(
     void* p_api_data, const char* name, double val);
 
 
-/** Wrap mp::NLFeeder2 for C API.
+/** Wrap mp::NLFeeder for C API.
 
-  NLW2_NLFeeder2_C: writes model details on request
+  NLW2_NLFeeder_C: writes model details on request
   via provided callback objects.
   See the examples folder.
 
   To fill some **default values and methods**,
   e.g., options and some methods like name feeders,
-  call NLW2_MakeNLFeeder2_C_Default() / NLW2_Destroy...().
+  call NLW2_MakeNLFeeder_C_Default() / NLW2_Destroy...().
 
   2023-11: CURRENT IMPLEMENTATION SUPPORTS LINEAR MODELS.
 
@@ -128,7 +128,7 @@ void NLW2_WriteNameAndNumber(
     first algebraic (including complementarity), then logical.
   Some solvers might require nonlinear constraints first.
  */
-typedef struct NLW2_NLFeeder2_C {
+typedef struct NLW2_NLFeeder_C {
   /// User data, provided as the 1st argument to the methods
   void* p_user_data_;
 
@@ -520,17 +520,17 @@ typedef struct NLW2_NLFeeder2_C {
    */
   void (*FeedObjAdj)(void* p_user_data, void* p_api_data);
 
-} NLW2_NLFeeder2_C;
+} NLW2_NLFeeder_C;
 
 
-/// Return NLW2_NLFeeder2_C with default options / methods
-NLW2_NLFeeder2_C NLW2_MakeNLFeeder2_C_Default(void);
+/// Return NLW2_NLFeeder_C with default options / methods
+NLW2_NLFeeder_C NLW2_MakeNLFeeder_C_Default(void);
 
-/// Destroy NLW2_NLFeeder2_C created by NLW2_MakeNLFeeder2_C_default()
-void NLW2_DestroyNLFeeder2_C_Default(NLW2_NLFeeder2_C* );
+/// Destroy NLW2_NLFeeder_C created by NLW2_MakeNLFeeder_C_default()
+void NLW2_DestroyNLFeeder_C_Default(NLW2_NLFeeder_C* );
 
 #ifdef __cplusplus
 }  // extern "C"
 #endif
 
-#endif // NLFEEDER2_C_H
+#endif // NLFeeder_C_H

@@ -40,7 +40,7 @@
 
 #include "mp/nl-solver-basics-c.h"
 #include "mp/nl-model.h"
-#include "mp/nl-utils2.h"
+#include "mp/nl-utils.h"
 
 namespace mp {
 
@@ -54,15 +54,18 @@ class NLHeader;
 /// In particular, it does not store any intermediate
 /// model/solution representation.
 ///
-/// This class offers full NL functionality.
-/// For simplified interface for special model classes,
+/// This class offers both full NL functionality,
+/// as well as a simplified interface for special model classes,
 /// see `~NLModel`.
 ///
-/// Usage with full API (see tests/examples):
+/// Usage with full API (see
+/// `~mp::NLFeeder` and `~mp::SOLHandler` interfaces
+/// for model/solution transmission,
+/// as well as tests/examples):
 ///
 ///   ExampleModel emdl;
-///   ExampleNLFeeder2 nlf(emdl, binary);
-///   ExampleSOLHandler2 esolh(emdl);
+///   ExampleNLFeeder nlf(emdl, binary);
+///   ExampleSOLHandler esolh(emdl);
 ///   mp::NLUtils utils;
 ///
 ///   mp::NLSOL nlsol(&utils);
@@ -73,9 +76,6 @@ class NLHeader;
 ///   } else {
 ///     esolh.PrintSolution(stub);
 ///   }
-///
-/// See mp::NLFeeder2 and mp::SOLHandler2 interfaces
-/// for model/solution transmission.
 /// \endrst
 class NLSolver {
 public:
@@ -115,7 +115,7 @@ public:
   /// Set some NL options for NLModel output [OPTIONAL].
   ///
   /// If not provided, default is used.
-  /// @note Not used for NLFeeder2 output.
+  /// @note Not used for NLFeeder output.
   void SetNLOptions(NLW2_NLOptionsBasic_C nlo) { nl_opts_=nlo; }
 
   /// Get NLOptions for NLModel output.
@@ -156,14 +156,14 @@ public:
   }
 
   /// Load and solve model
-  /// using NLFeeder2 and SOLHandler2.
+  /// using NLFeeder and SOLHandler.
   ///
   /// @return true iff all ok.
   ///
   /// See LoadModel(), Solve(), ReadSolution()
   /// for details.
-  template <class NLFeeder2, class SOLHandler2>
-  bool Solve(NLFeeder2& nlf, SOLHandler2& solh,
+  template <class NLFeeder, class SOLHandler>
+  bool Solve(NLFeeder& nlf, SOLHandler& solh,
              const std::string& solver,
              const std::string& solver_opts) {
     return LoadModel(nlf)
@@ -186,8 +186,8 @@ public:
   ///
   /// @return true if all ok, otherwise see
   ///   GetErrorMessage() and GetLoadModelResultCode().
-  template <class NLFeeder2>
-  bool LoadModel(NLFeeder2& nlf);
+  template <class NLFeeder>
+  bool LoadModel(NLFeeder& nlf);
 
   /// Solve after loading model.
   ///
@@ -212,14 +212,14 @@ public:
   NLSolution ReadSolution();
 
   /// Read solution after Solve() when NL file
-  /// was written from NLFeeder2.
+  /// was written from NLFeeder.
   ///
   /// @param solh: solution handler.
   ///
   /// @return true if all ok, otherwise see
   ///   GetErrorMessage() and, possibly, GetSolReadResultCode().
-  template <class SOLHandler2>
-  bool ReadSolution(SOLHandler2& solh);
+  template <class SOLHandler>
+  bool ReadSolution(SOLHandler& solh);
 
 protected:
   void Init();

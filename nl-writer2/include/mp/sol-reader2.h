@@ -47,8 +47,8 @@
 #include <vector>
 
 #include "mp/nl-solver-basics-c.h"
-#include "mp/sol-handler2.h"
-#include "mp/nl-utils2.h"
+#include "mp/sol-handler.h"
+#include "mp/nl-utils.h"
 
 namespace mp {
 
@@ -160,13 +160,13 @@ struct SufRead;
 ///     exit(EXIT_FAILURE);
 ///   }
 ///
-/// @param  SOLHandler2: class that receives information on solution
+/// @param  SOLHandler: class that receives information on solution
 /// components.
-template <typename SOLHandler2>
+template <typename SOLHandler>
 class SOLReader2 {
 public:
   /// Constructor.
-	SOLReader2(SOLHandler2& sh, NLUtils& utl) :
+	SOLReader2(SOLHandler& sh, NLUtils& utl) :
 			solh_(sh), utils_(utl), hdr_(sh.Header()) { }
 
   /// Read .sol file.
@@ -184,9 +184,9 @@ public:
 
 protected:
   /// Get const handler&
-  const SOLHandler2& Handler() const { return solh_; }
+  const SOLHandler& Handler() const { return solh_; }
   /// Get handler&
-  SOLHandler2& Handler() { return solh_; }
+  SOLHandler& Handler() { return solh_; }
 
   /// Get const utils&
   const NLUtils& Utils() const { return utils_; }
@@ -265,7 +265,7 @@ protected:
 #endif
 
 private:
-  SOLHandler2& solh_;
+  SOLHandler& solh_;
   NLUtils& utils_;
 	NLHeader hdr_;
 
@@ -290,12 +290,12 @@ private:
 
 
 /// Read SOL file.
-template <class SOLHandler2>
+template <class SOLHandler>
 inline std::pair<NLW2_SOLReadResultCode, std::string>
 ReadSOLFile(
     const std::string& name,
-		SOLHandler2& solh, NLUtils& utl, int* p_internal_rv=nullptr) {
-  SOLReader2<SOLHandler2> solr(solh, utl);
+		SOLHandler& solh, NLUtils& utl, int* p_internal_rv=nullptr) {
+  SOLReader2<SOLHandler> solr(solh, utl);
 	auto res = solr.ReadSOLFile(name);
 	if (p_internal_rv)
 		*p_internal_rv = solr.internal_rv();

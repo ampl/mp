@@ -403,10 +403,10 @@ void FeedColNames(void* p_user_data, void* p_api_data) {
 //  void FeedObjAdj(ObjOffsetWriter& ) { }
 
 
-NLW2_NLFeeder2_C MakeNLFeeder2_C(
+NLW2_NLFeeder_C MakeNLFeeder_C(
     CAPIExample* pex, int binary) {
-  NLW2_NLFeeder2_C result        // Fill with default values
-      = NLW2_MakeNLFeeder2_C_Default();
+  NLW2_NLFeeder_C result        // Fill with default values
+      = NLW2_MakeNLFeeder_C_Default();
 
   result.p_user_data_ = pex;
   pex->binary_nl = binary;
@@ -569,8 +569,8 @@ NLW2_NLFeeder2_C MakeNLFeeder2_C(
   return result;
 }
 
-void DestroyNLFeeder2_C(NLW2_NLFeeder2_C* pf) {
+void DestroyNLFeeder_C(NLW2_NLFeeder_C* pf) {
   pf->p_user_data_ = NULL;
 
-  NLW2_DestroyNLFeeder2_C_Default(pf);
+  NLW2_DestroyNLFeeder_C_Default(pf);
 }

@@ -8,21 +8,21 @@
 
 namespace mp {
 
-template <class NLFeeder2>
+template <class NLFeeder>
 inline WriteNLResult WriteNLFile(
     const std::string& namebase,
-    NLFeeder2& nlf, NLUtils& utl) {
+    NLFeeder& nlf, NLUtils& utl) {
   auto h = nlf.Header();
   if (NLHeader::TEXT == h.format) {
     mp::NLWriter2<
         mp::NLWriter2Params<
-        mp::TextFormatter, NLFeeder2 > >
+        mp::TextFormatter, NLFeeder > >
         writer(nlf, h, utl);
     return writer.WriteFiles(namebase);
   } else {
     mp::NLWriter2<
         mp::NLWriter2Params<
-        mp::BinaryFormatter, NLFeeder2 > >
+        mp::BinaryFormatter, NLFeeder > >
         writer(nlf, h, utl);
     return writer.WriteFiles(namebase);
   }

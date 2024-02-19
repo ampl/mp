@@ -19,7 +19,7 @@ set(NLW2_EXAMPLE_PATH ${NLW2_DIR}/examples)
 # NLW2 library C++ sources
 set(NLW2_LIB_FILES
 	${NLW2_SRC_PATH}/nl-writer2.cc
-	${NLW2_SRC_PATH}/nl-utils2.cc
+  ${NLW2_SRC_PATH}/nl-utils.cc
 	${NLW2_SRC_PATH}/dtoa.c
 	${NLW2_SRC_PATH}/nl-solver.cc
 )
@@ -28,14 +28,14 @@ set(NLW2_INC_FILES
 	${NLW2_INCLUDE_PATH}/mp/nl-model.h
 	${NLW2_INCLUDE_PATH}/mp/nl-solver.h
 	${NLW2_INCLUDE_PATH}/mp/nl-solver.hpp
-	${NLW2_INCLUDE_PATH}/mp/nl-feeder2.h
+	${NLW2_INCLUDE_PATH}/mp/nl-feeder.h
 	${NLW2_INCLUDE_PATH}/mp/nl-writer2.h
 	${NLW2_INCLUDE_PATH}/mp/nl-writer2.hpp
 	${NLW2_INCLUDE_PATH}/mp/nl-writer2-misc.h
-	${NLW2_INCLUDE_PATH}/mp/nl-utils2.h
+  ${NLW2_INCLUDE_PATH}/mp/nl-utils.h
 	${NLW2_INCLUDE_PATH}/mp/sol-reader2.h
 	${NLW2_INCLUDE_PATH}/mp/sol-reader2.hpp
-	${NLW2_INCLUDE_PATH}/mp/sol-handler2.h
+	${NLW2_INCLUDE_PATH}/mp/sol-handler.h
 )
 
 # Create C++ library
@@ -58,14 +58,14 @@ set(NLW2_C_API_LIB_FILES
 	${NLW2_DIR}/src/nl-solver-c.cc
 	)
 set(NLW2_C_API_INC_FILES
-  ${NLW2_INCLUDE_PATH}/api/c/nl-feeder2-c.h
-  ${NLW2_INCLUDE_PATH}/api/c/sol-handler2-c.h
+  ${NLW2_INCLUDE_PATH}/api/c/nl-feeder-c.h
+  ${NLW2_INCLUDE_PATH}/api/c/sol-handler-c.h
   ${NLW2_INCLUDE_PATH}/api/c/nl-writer2-misc-c.h
 	${NLW2_INCLUDE_PATH}/api/c/nl-solver-c.h
 	${NLW2_INCLUDE_PATH}/api/c/nl-model-c.h
 
-  ${NLW2_INCLUDE_PATH}/api/c/nl-feeder2-c-impl.h
-  ${NLW2_INCLUDE_PATH}/api/c/sol-handler2-c-impl.h
+  ${NLW2_INCLUDE_PATH}/api/c/nl-feeder-c-impl.h
+  ${NLW2_INCLUDE_PATH}/api/c/sol-handler-c-impl.h
   ${NLW2_INCLUDE_PATH}/api/c/nl-writer2-misc-c-impl.h
               )
 

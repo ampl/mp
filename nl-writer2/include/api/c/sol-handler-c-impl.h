@@ -1,14 +1,14 @@
 /**
- * "Implementation" of SOLHandler2_C:
+ * "Implementation" of SOLHandler_C:
  * A C++ class "wrapping" it
  * in order to interface it for NLReader2
  */
-#ifndef SOLHANDLER2CIMPL_H
-#define SOLHANDLER2CIMPL_H
+#ifndef SOLHandlerCIMPL_H
+#define SOLHandlerCIMPL_H
 
-#include "api/c/sol-handler2-c.h"
+#include "api/c/sol-handler-c.h"
 
-#include "mp/sol-handler2.h"
+#include "mp/sol-handler.h"
 
 namespace mp {
 
@@ -16,13 +16,13 @@ namespace mp {
 template <class Value>
 class VecReader;
 
-/// Wrap NLW2_SOLHandler2_C into a C++ class,
+/// Wrap NLW2_SOLHandler_C into a C++ class,
 /// in order to interface it for mp::SOLReader2
-class NLW2_SOLHandler2_C_Impl
-    : public SOLHandler2 {
+class NLW2_SOLHandler_C_Impl
+    : public SOLHandler {
 public:
   /// Construct
-  NLW2_SOLHandler2_C_Impl(NLW2_SOLHandler2_C* psh2)
+  NLW2_SOLHandler_C_Impl(NLW2_SOLHandler_C* psh2)
     : solh2_c_(*psh2) { }
 
   /** The NLHeader used to write the NL file. */
@@ -90,7 +90,7 @@ public:
     static_assert(
     std::is_same<VecReader, mp::VecReader<double> >::value,
         "internal error: "
-        "SOLHandler2_C_Impl::OnDualSolution() requires "
+        "SOLHandler_C_Impl::OnDualSolution() requires "
         "a VecReader<double>");
 
     if (auto nvals = vr.Size()) {
@@ -109,7 +109,7 @@ public:
     static_assert(
     std::is_same<VecReader, mp::VecReader<double> >::value,
         "internal error: "
-        "SOLHandler2_C_Impl::OnPrimalSolution() requires "
+        "SOLHandler_C_Impl::OnPrimalSolution() requires "
         "a VecReader<double>");
 
     if (auto nvals = vr.Size()) {
@@ -183,13 +183,13 @@ public:
 
 
 protected:
-  const NLW2_SOLHandler2_C& SH() const { return solh2_c_; }
+  const NLW2_SOLHandler_C& SH() const { return solh2_c_; }
 
 private:
   /// Just store copy
-  const NLW2_SOLHandler2_C solh2_c_;
+  const NLW2_SOLHandler_C solh2_c_;
 };
 
 }  // namespace mp
 
-#endif // SOLHANDLER2CIMPL_H
+#endif // SOLHandlerCIMPL_H

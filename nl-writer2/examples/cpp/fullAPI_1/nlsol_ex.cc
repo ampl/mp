@@ -37,8 +37,8 @@ int main(int argc, const char* const* argv) {
   std::string stub = (argc>4) ? argv[4] : "";
 
   ExampleModel emdl;
-  ExampleNLFeeder2 nlf(emdl, binary);
-  ExampleSOLHandler2 esolh(emdl);
+  ExampleNLFeeder nlf(emdl, binary);
+  ExampleSOLHandler esolh(emdl);
   mp::NLUtils utils;
 
   mp::NLSolver nlsol(&utils);

@@ -40,7 +40,7 @@ class NLUtils;
 /// Intermediate representation for special model types:
 /// (MI)LP, (MI)QP.
 /// For fully nonlinear models with expression trees,
-/// use NLSolver with NLWriter2/NLFeeder2.
+/// use NLSolver with `NLFeeder`/`SOLHandler`.
 ///
 /// @note All pointers should stay valid until
 /// loading the model into NLSolver.

@@ -1,11 +1,11 @@
 /**
- * C API: extern "C" wrappers for the SOLHandler2 interface,
+ * C API: extern "C" wrappers for the SOLHandler interface,
  * as well as SOLReader2 calls.
  *
  */
 
-#ifndef SOLHANDLER2C_H
-#define SOLHANDLER2C_H
+#ifndef SOLHandlerC_H
+#define SOLHandlerC_H
 
 #include "mp/nl-header-c.h"
 
@@ -65,15 +65,15 @@ typedef struct AMPLOptions_C {
 } AMPLOptions_C;
 
 
-/// Wrap mp::SOLHandler2 for C API.
+/// Wrap mp::SOLHandler for C API.
 ///
-/// NLW2_SOLHandler2_C: reads solution details on request
+/// NLW2_SOLHandler_C: reads solution details on request
 /// via provided callback objects.
 /// See the examples folder.
 ///
 /// To fill some **default methods**,
-/// call NLW2_MakeSOLHandler2_C_Default() / NLW2_Destroy...().
-typedef struct NLW2_SOLHandler2_C {
+/// call NLW2_MakeSOLHandler_C_Default() / NLW2_Destroy...().
+typedef struct NLW2_SOLHandler_C {
   /// User data, provided to the methods as the 1st arg
   void* p_user_data_;
 
@@ -172,17 +172,17 @@ typedef struct NLW2_SOLHandler2_C {
   void (*OnDblSuffix)(
       void* p_user_data, NLW2_SuffixInfo_C si, void* p_api_data);
 
-} NLW2_SOLHandler2_C;
+} NLW2_SOLHandler_C;
 
-/// Create an NLW2_SOLHandler2_C with default methods
-NLW2_SOLHandler2_C NLW2_MakeSOLHandler2_C_Default(void);
+/// Create an NLW2_SOLHandler_C with default methods
+NLW2_SOLHandler_C NLW2_MakeSOLHandler_C_Default(void);
 
-/// Destroy an NLW2_SOLHandler2_C
+/// Destroy an NLW2_SOLHandler_C
 /// created with NLW2_Make...Default()
-void NLW2_DestroySOLHandler2_C_Default(NLW2_SOLHandler2_C* );
+void NLW2_DestroySOLHandler_C_Default(NLW2_SOLHandler_C* );
 
 #ifdef __cplusplus
 }  // extern "C"
 #endif
 
-#endif // SOLHANDLER2C_H
+#endif // SOLHandlerC_H

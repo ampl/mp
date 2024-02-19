@@ -37,8 +37,8 @@ int main(int argc, const char* const* argv) {
 
   // Create custom interface
   CAPIExample example = MakeCAPIExample_Linear_01();
-  NLW2_NLFeeder2_C feeder = MakeNLFeeder2_C(&example, binary);
-  NLW2_SOLHandler2_C solhnd = MakeSOLHandler2_C(&example);
+  NLW2_NLFeeder_C feeder = MakeNLFeeder_C(&example, binary);
+  NLW2_SOLHandler_C solhnd = MakeSOLHandler_C(&example);
   NLW2_NLUtils_C utils = MakeNLUtils_C();
 
   // Create NLSOL_C
@@ -60,8 +60,8 @@ int main(int argc, const char* const* argv) {
 
   // Destroy our custom interface and example data
   DestroyNLUtils_C(&utils);
-  DestroySOLHandler2_C(&solhnd);
-  DestroyNLFeeder2_C(&feeder);
+  DestroySOLHandler_C(&solhnd);
+  DestroyNLFeeder_C(&feeder);
   DestroyCAPIExample_Linear_01(&example);
 
   return result;

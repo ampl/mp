@@ -41,12 +41,12 @@ NLW2_NLOptionsBasic_C NLW2_MakeNLOptionsBasic_C_Default() {
 
 namespace mp {
 
-/// Specialize NLFeeder2 for NLModel
-class NLFeeder2_Easy
-    : public NLFeeder2<NLFeeder2_Easy, void*> {
+/// Specialize NLFeeder for NLModel
+class NLFeeder_Easy
+    : public NLFeeder<NLFeeder_Easy, void*> {
 public:
   /// Construct
-  NLFeeder2_Easy(const NLModel& nls, NLW2_NLOptionsBasic_C opts)
+  NLFeeder_Easy(const NLModel& nls, NLW2_NLOptionsBasic_C opts)
     : nlme_(nls), nlopt_(opts) { Init(); }
 
   /// NL header
@@ -458,7 +458,7 @@ private:
 std::string NLModel::WriteNL(
     const std::string &fln, NLW2_NLOptionsBasic_C opts,
     NLUtils &ut, PreprocessData &pd) {
-  NLFeeder2_Easy nlf(*this, opts);
+  NLFeeder_Easy nlf(*this, opts);
   nlf.ExportPreproData(pd);
   return WriteNLFile(fln, nlf, ut).second;
 }
@@ -510,7 +510,7 @@ void NLSolver::SetFileStub(std::string stub) {
 
 
 bool NLSolver::LoadModel(const NLModel& mdl) {
-  NLFeeder2_Easy nlf(mdl, nl_opts_);
+  NLFeeder_Easy nlf(mdl, nl_opts_);
   nlf.ExportPreproData(pd_);
   p_nlheader_.reset(new NLHeader(nlf.Header()));
   return LoadModel(nlf);
@@ -534,12 +534,12 @@ bool NLSolver::Solve(const std::string& solver,
 }
 
 
-/// Specialize SOLHandler2 for NLModel
-class SOLHandler2_Easy
-    : public SOLHandler2 {
+/// Specialize SOLHandler for NLModel
+class SOLHandler_Easy
+    : public SOLHandler {
 public:
   /// Construct
-  SOLHandler2_Easy(const NLHeader& h,
+  SOLHandler_Easy(const NLHeader& h,
                    const NLModel::PreprocessData& pd,
                    NLSolution& sol)
     : header_(h), pd_(pd), sol_(sol) { }
@@ -658,7 +658,7 @@ NLSolution NLSolver::ReadSolution() {
             ="NLSolver: "
              "can only ReadSolution(void) after loading NLModel",
             result);
-  SOLHandler2_Easy solh(*p_nlheader_, pd_, result);
+  SOLHandler_Easy solh(*p_nlheader_, pd_, result);
   ReadSolution(solh);
   return result;
 }

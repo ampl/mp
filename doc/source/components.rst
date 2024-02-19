@@ -153,8 +153,8 @@ The NL writer library provides two approaches:
    (MI)LP and (MI)QP models.
 
 2. Full NL API via callbacks into custom
-   `~mp::NLFeeder2`
-   and `~mp::SOLHandler2` classes,
+   `NLFeeder`
+   and `~mp::SOLHandler` classes,
    optionally via `~mp::NLSolver`.
 
    This approach
@@ -166,10 +166,10 @@ The NL writer library provides two approaches:
    In turn, the library is flexible to use because
    various components of the user model are provided
    on the library's request from a user-specialized
-   `~mp::NLFeeder2`
+   `NLFeeder`
    object (for solution input,
    solution components are received by methods
-   of a custom `~mp::SOLHandler2` class.)
+   of a custom `~mp::SOLHandler` class.)
 
 .. image:: images/NLWriter.svg
 
@@ -182,15 +182,17 @@ See the
 and tests.
 
 - **C++ API** is provided by classes
-  `~mp::NLSolver`, `~mp::NLModel`, `~mp::NLFeeder2`, `~mp::SOLHandler2`.
+  `~mp::NLSolver`, `~mp::NLModel`, `NLFeeder`, `~mp::SOLHandler`.
 
 - **C API** is provided by structs
   `~NLW2_NLSolver_C`, `~NLW2_NLModel_C`,
-  `~NLW2_NLFeeder2_C`, `~NLW2_SOLHandler2_C`.
+  `~NLW2_NLFeeder_C`, `~NLW2_SOLHandler_C`.
 
   - Currently only (MI)LP/(MI)QP (via `~NLW2_NLModel_C`)
-    or linear models (via `~NLW2_NLFeeder2_C`, `~NLW2_SOLHandler2_C`)
+    or linear models (via `~NLW2_NLFeeder_C`, `~NLW2_SOLHandler_C`)
     are supported.
+
+- **Python API** is WIP.
 
 
 .. _recommended-driver-logic:

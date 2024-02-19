@@ -1,5 +1,5 @@
 /**
- mp::NLFeeder2.
+ mp::NLFeeder.
  Interface for a model feeder into mp::NLWriter2.
  mp::NLWriter2 is a zero-overhead NL model writer
  implemented with inline template code. In particular,
@@ -45,8 +45,8 @@
  Author: Gleb Belov
  */
 
-#ifndef NLFEEDER2_H
-#define NLFEEDER2_H
+#ifndef NLFeeder_H
+#define NLFeeder_H
 
 #include <algorithm>
 #include <cassert>
@@ -58,7 +58,7 @@ namespace mp {
 
 /**
     \rst
-    NLFeeder2: writes model details on request
+    NLFeeder: writes model details on request
     via provided callback objects.
     See the examples folder.
 
@@ -72,24 +72,24 @@ namespace mp {
       first algebraic (including complementarity), then logical.
     Some solvers might require nonlinear constraints first.
 
-    `~mp::NLFeeder2` can be used as a base class for other feeders,
+    `~mp::NLFeeder` can be used as a base class for other feeders,
     or just be an interface prototype.
 
     **Subclassed examples:**
       - Simplified (MI)QP interface via `~mp::NLModel`,
-        `~mp::NLFeeder2_Easy`
-      - C API implementation class `~mp::NLW2_NLFeeder2_C_Impl`
-      - Other examples/tests, e.g., see `ExampleNLFeeder2`.
+        `~mp::NLFeeder_Easy`
+      - C API implementation class `~mp::NLW2_NLFeeder_C_Impl`
+      - Other examples/tests, e.g., see `ExampleNLFeeder`.
 
-    @param: *Impl* is a type derived from `~mp::NLFeeder2`.
+    @param: *Impl* is a type derived from `~mp::NLFeeder`.
 
     @param: *ExprType* is a type storing expressions from
-    methods such as `~mp::NLFeeder2::FeedExpr`. If not used,
+    methods such as `~mp::NLFeeder::FeedExpr`. If not used,
     it can be any default-constructible type.
     \endrst
  */
 template <typename Impl, typename ExprType>
-class NLFeeder2 {
+class NLFeeder {
 public:
   /** The expression type. */
   typedef ExprType Expr;
@@ -543,4 +543,4 @@ public:
 
 }  // namespace mp
 
-#endif  // NLFEEDER2_H
+#endif  // NLFeeder_H

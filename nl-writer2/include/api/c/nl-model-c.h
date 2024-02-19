@@ -18,7 +18,7 @@ extern "C" {
 /// Intermediate representation for special model types:
 /// (MI)LP, (MI)QP.
 /// For full modeling capabilities
-/// use NLW2_NLFeeder2_C, NLW2_SOLHandler2_C.
+/// use NLW2_NLFeeder_C, NLW2_SOLHandler_C.
 ///
 /// @note All model data pointers should stay valid until
 /// loading the model into NLW2_NLSolver_C.

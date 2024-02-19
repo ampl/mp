@@ -8,7 +8,7 @@
 #include <cassert>
 
 #include "mp/nl-header.h"
-#include "mp/nl-utils2.h"
+#include "mp/nl-utils.h"
 
 namespace mp {
 
@@ -66,13 +66,13 @@ class StringFileWriter;
 
 /// NLWriter2 parameters.
 /// @param Formatter: low-level writer: binary or text.
-/// @param Feeder2: a class implementing the NLFeeder2
+/// @param Feeder: a class implementing the NLFeeder
 /// concept that feeds model information on request.
 /// @param Utils: writer utilities
-template <class Formatter, class Feeder2>
+template <class Formatter, class Feeder>
 struct NLWriter2Params {
   using FormatterType=Formatter;
-  using FeederType=Feeder2;
+  using FeederType=Feeder;
 };
 
 }  // namespace mp

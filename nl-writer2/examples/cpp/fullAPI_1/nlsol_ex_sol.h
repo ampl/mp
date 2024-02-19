@@ -9,14 +9,14 @@
 #include <string>
 #include <cstring>
 
-#include "mp/sol-handler2.h"
+#include "mp/sol-handler.h"
 #include "nlsol_ex_mdl.h"
 
-class ExampleSOLHandler2
-    : public mp::SOLHandler2 {
+class ExampleSOLHandler
+    : public mp::SOLHandler {
 public:
   /// Construct
-  ExampleSOLHandler2(ExampleModel& mdl)
+  ExampleSOLHandler(ExampleModel& mdl)
     : mdl_(mdl) { }
 
 	/** The NLHeader used to write the NL file. */
@@ -171,7 +171,7 @@ private:
 };
 
 
-void ExampleSOLHandler2::PrintSolution(
+void ExampleSOLHandler::PrintSolution(
     const std::string& stub) {
   printf(
         "\n     ********** SOLUTION (%s.sol) ***********\n",

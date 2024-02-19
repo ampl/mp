@@ -7,8 +7,8 @@
 
 namespace mp {
 
-template <class NLFeeder2>
-bool NLSolver::LoadModel(NLFeeder2& nlf) {
+template <class NLFeeder>
+bool NLSolver::LoadModel(NLFeeder& nlf) {
   if (GetFileStub().empty())
     return (err_msg_="WriteNL error: provide filestub.", false);
   auto result = mp::WriteNLFile(GetFileStub(), nlf, Utils());
@@ -17,8 +17,8 @@ bool NLSolver::LoadModel(NLFeeder2& nlf) {
   return true;
 }
 
-template <class SOLHandler2>
-bool NLSolver::ReadSolution(SOLHandler2& solh) {
+template <class SOLHandler>
+bool NLSolver::ReadSolution(SOLHandler& solh) {
   if (GetFileStub().empty())
     return (err_msg_="SOLReader: provide filename.", false);
   auto status = mp::ReadSOLFile(

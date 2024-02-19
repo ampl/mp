@@ -90,9 +90,9 @@ void OnDblSuffix(
 }
 
 
-NLW2_SOLHandler2_C MakeSOLHandler2_C(CAPIExample* pex) {
-  NLW2_SOLHandler2_C result
-      = NLW2_MakeSOLHandler2_C_Default();
+NLW2_SOLHandler_C MakeSOLHandler_C(CAPIExample* pex) {
+  NLW2_SOLHandler_C result
+      = NLW2_MakeSOLHandler_C_Default();
 
   result.p_user_data_ = pex;
 
@@ -109,7 +109,7 @@ NLW2_SOLHandler2_C MakeSOLHandler2_C(CAPIExample* pex) {
   return result;
 }
 
-void DestroySOLHandler2_C(NLW2_SOLHandler2_C* p) {
+void DestroySOLHandler_C(NLW2_SOLHandler_C* p) {
   p->p_user_data_ = NULL;
-  NLW2_DestroySOLHandler2_C_Default(p);
+  NLW2_DestroySOLHandler_C_Default(p);
 }

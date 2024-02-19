@@ -1,5 +1,5 @@
 /**
- mp::SOLHandler2.
+ mp::SOLHandler.
  Interface for a solution handler to be used with mp::SOLReader2.
  mp::SOLReader2 is a zero-overhead reader
  implemented with inline template code.
@@ -43,8 +43,8 @@
  Author: Gleb Belov
  */
 
-#ifndef SOLHANDLER2_H
-#define SOLHANDLER2_H
+#ifndef SOLHandler_H
+#define SOLHandler_H
 
 #include <vector>
 #include <cassert>
@@ -55,15 +55,15 @@ namespace mp {
 
 /**
   \rst
-    SOLHandler2: reads solution details on request
+    SOLHandler: reads solution details on request
     via provided callback objects.
     See the examples folder.
 
-    `~mp::SOLHandler2` can be used as a base class for other handlers,
+    `~mp::SOLHandler` can be used as a base class for other handlers,
     or just be an interface prototype.
   \endrst
  */
-class SOLHandler2 {
+class SOLHandler {
 public:
 	/** The NLHeader used to write the NL file. */
 	NLHeader Header() const { return {}; }
@@ -187,4 +187,4 @@ public:
 
 }  // namespace mp
 
-#endif // SOLHANDLER2_H
+#endif // SOLHandler_H

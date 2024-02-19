@@ -1,31 +1,31 @@
 /**
- * "Implementation" of NLFeeder2_C:
+ * "Implementation" of NLFeeder_C:
  * A C++ class "wrapping" it
  * in order to interface it for NLWriter2
  */
-#ifndef NLFEEDER2CIMPL_H
-#define NLFEEDER2CIMPL_H
+#ifndef NLFeederCIMPL_H
+#define NLFeederCIMPL_H
 
 #include <functional>
 
-#include "api/c/nl-feeder2-c.h"   // C wrapper
+#include "api/c/nl-feeder-c.h"   // C wrapper
 
-#include "mp/nl-feeder2.h"        // C++ base
+#include "mp/nl-feeder.h"        // C++ base
 
 
 namespace mp {
 
 /// Implementation:
-/// Wrap NLW2_NLFeeder2_C into a C++ class,
+/// Wrap NLW2_NLFeeder_C into a C++ class,
 /// in order to interface it for NLWriter2
-class NLW2_NLFeeder2_C_Impl
-    : public NLFeeder2<NLW2_NLFeeder2_C_Impl, void*> {
+class NLW2_NLFeeder_C_Impl
+    : public NLFeeder<NLW2_NLFeeder_C_Impl, void*> {
 public:
   /// typedef base class
-  using Base = NLFeeder2<NLW2_NLFeeder2_C_Impl, void*>;
+  using Base = NLFeeder<NLW2_NLFeeder_C_Impl, void*>;
 
   /// Construct
-  NLW2_NLFeeder2_C_Impl(NLW2_NLFeeder2_C* pnlf2)
+  NLW2_NLFeeder_C_Impl(NLW2_NLFeeder_C* pnlf2)
     : nlf2_c_(*pnlf2) { }
 
   ///////////////////// 1. NL HEADER AND OPTIONS /////////////////
@@ -469,14 +469,14 @@ public:
 
 
 protected:
-  const NLW2_NLFeeder2_C& NLF() const { return nlf2_c_; }
+  const NLW2_NLFeeder_C& NLF() const { return nlf2_c_; }
 
 
 private:
   /// Just store copy
-  const NLW2_NLFeeder2_C nlf2_c_;
+  const NLW2_NLFeeder_C nlf2_c_;
 };
 
 }  // namespace mp
 
-#endif // NLFEEDER2CIMPL_H
+#endif // NLFeederCIMPL_H

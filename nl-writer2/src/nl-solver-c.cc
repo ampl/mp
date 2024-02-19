@@ -7,12 +7,12 @@
 #include <functional>
 #include <cassert>
 
-#include "api/c/nl-feeder2-c.h"
-#include "api/c/sol-handler2-c.h"
+#include "api/c/nl-feeder-c.h"
+#include "api/c/sol-handler-c.h"
 #include "api/c/nl-writer2-misc-c.h"
 
-#include "api/c/nl-feeder2-c-impl.h"
-#include "api/c/sol-handler2-c-impl.h"
+#include "api/c/nl-feeder-c-impl.h"
+#include "api/c/sol-handler-c-impl.h"
 #include "api/c/nl-writer2-misc-c-impl.h"
 
 #include "api/c/nl-solver-c.h"
@@ -311,8 +311,8 @@ static void NLW2_FeedNames_C_Default(void*, void* ) { }
 //  void FeedObjAdj(ObjOffsetWriter& ) { }
 
 
-NLW2_NLFeeder2_C NLW2_MakeNLFeeder2_C_Default(void) {
-  NLW2_NLFeeder2_C result;
+NLW2_NLFeeder_C NLW2_MakeNLFeeder_C_Default(void) {
+  NLW2_NLFeeder_C result;
 
   std::memset(&result, 0, sizeof(result));       // all 0
 
@@ -331,7 +331,7 @@ NLW2_NLFeeder2_C NLW2_MakeNLFeeder2_C_Default(void) {
   result.ObjType = NLW2_ObjType_C_Default;
   result.ObjGradientNNZ = NLW2_ObjGradientNNZ_C_Default;
   result.FeedObjGradient = NLW2_FeedObjGradient_C_Default;
-  // ObjExpr... relying on NLFeeder2's default (0)
+  // ObjExpr... relying on NLFeeder's default (0)
 
   // DefVars...
 
@@ -481,7 +481,7 @@ NLW2_NLFeeder2_C NLW2_MakeNLFeeder2_C_Default(void) {
   return result;
 }
 
-void NLW2_DestroyNLFeeder2_C_Default(NLW2_NLFeeder2_C* )
+void NLW2_DestroyNLFeeder_C_Default(NLW2_NLFeeder_C* )
 { }
 
 ///////////////////////// NLUtils_C ///////////////////////////
@@ -532,7 +532,7 @@ void NLW2_DestroyNLUtils_C_Default(NLW2_NLUtils_C* )
 { }
 
 
-/////////////////// SOLHandler2_C /////////////////////
+/////////////////// SOLHandler_C /////////////////////
 
 ///////////////////////////////////////////////////////
 /// Callbacks
@@ -634,8 +634,8 @@ static void NLW2_OnDblSuffix_C_Default(
 }
 
 
-NLW2_SOLHandler2_C NLW2_MakeSOLHandler2_C_Default(void) {
-  NLW2_SOLHandler2_C result;
+NLW2_SOLHandler_C NLW2_MakeSOLHandler_C_Default(void) {
+  NLW2_SOLHandler_C result;
 
   std::memset(&result, 0, sizeof(result));       // all 0
 
@@ -655,7 +655,7 @@ NLW2_SOLHandler2_C NLW2_MakeSOLHandler2_C_Default(void) {
   return result;
 }
 
-void NLW2_DestroySOLHandler2_C_Default(NLW2_SOLHandler2_C* )
+void NLW2_DestroySOLHandler_C_Default(NLW2_SOLHandler_C* )
 { }
 
 
@@ -771,12 +771,12 @@ NLW2_Solution_C NLW2_SolveNLModel_C(NLW2_NLSolver_C* nlse,
 }
 
 int NLW2_SolveFeederHandler_C(NLW2_NLSolver_C* pnls,
-                              NLW2_NLFeeder2_C* nlf_c,
-                              NLW2_SOLHandler2_C* solh_c,
+                              NLW2_NLFeeder_C* nlf_c,
+                              NLW2_SOLHandler_C* solh_c,
                               const char* solver,
                               const char* solver_opts) {
-  mp::NLW2_NLFeeder2_C_Impl nlf(nlf_c);
-  mp::NLW2_SOLHandler2_C_Impl solh(solh_c);
+  mp::NLW2_NLFeeder_C_Impl nlf(nlf_c);
+  mp::NLW2_SOLHandler_C_Impl solh(solh_c);
   return ((mp::NLSOL_C_Impl*)(pnls->p_nlsol_))
       ->LoadModel(nlf)
       && ((mp::NLSOL_C_Impl*)(pnls->p_nlsol_))
@@ -791,8 +791,8 @@ int NLW2_LoadNLModel_C(NLW2_NLSolver_C* nlse,
         *CastNZ<const mp::NLModel>(nlme->p_data_));
 }
 
-int NLW2_LoadNLFeed2_C(NLW2_NLSolver_C* pnls, NLW2_NLFeeder2_C* nlf_c) {
-  mp::NLW2_NLFeeder2_C_Impl nlf(nlf_c);
+int NLW2_LoadNLFeed2_C(NLW2_NLSolver_C* pnls, NLW2_NLFeeder_C* nlf_c) {
+  mp::NLW2_NLFeeder_C_Impl nlf(nlf_c);
   return ((mp::NLSOL_C_Impl*)(pnls->p_nlsol_))
       ->LoadModel(nlf);
 }
@@ -809,9 +809,9 @@ NLW2_Solution_C NLW2_ReadSolution_C(NLW2_NLSolver_C* nlse) {
   return NLW2_WrapNLSOL_Solution_C(nlse, std::move(sol));
 }
 
-int NLW2_Read2SOLHandler2_C(NLW2_NLSolver_C* pnls,
-                            NLW2_SOLHandler2_C* solh_c) {
-  mp::NLW2_SOLHandler2_C_Impl solh(solh_c);
+int NLW2_Read2SOLHandler_C(NLW2_NLSolver_C* pnls,
+                            NLW2_SOLHandler_C* solh_c) {
+  mp::NLW2_SOLHandler_C_Impl solh(solh_c);
   return ((mp::NLSOL_C_Impl*)(pnls->p_nlsol_))
       ->ReadSolution(solh);
 }
@@ -826,7 +826,7 @@ int NLW2_Read2SOLHandler2_C(NLW2_NLSolver_C* pnls,
 ///////////////////////// C++ code //////////////////////////////
 
 template <class IGWriter>
-void mp::NLW2_NLFeeder2_C_Impl::FeedInitialGuesses(IGWriter& igw) {
+void mp::NLW2_NLFeeder_C_Impl::FeedInitialGuesses(IGWriter& igw) {
   assert(NLF().InitialGuessesNNZ);
   if (int nnz = NLF().InitialGuessesNNZ(NLF().p_user_data_)) {
     assert(NLF().FeedInitialGuesses);
@@ -841,7 +841,7 @@ void mp::NLW2_NLFeeder2_C_Impl::FeedInitialGuesses(IGWriter& igw) {
 
 /** Initial dual guesses. */
 template <class IGWriter>
-void mp::NLW2_NLFeeder2_C_Impl::FeedInitialDualGuesses(IGWriter& igw) {
+void mp::NLW2_NLFeeder_C_Impl::FeedInitialDualGuesses(IGWriter& igw) {
   assert(NLF().InitialDualGuessesNNZ);
   if (int nnz = NLF().InitialDualGuessesNNZ(NLF().p_user_data_)) {
     assert(NLF().FeedInitialDualGuesses);
@@ -857,7 +857,7 @@ void mp::NLW2_NLFeeder2_C_Impl::FeedInitialDualGuesses(IGWriter& igw) {
 
 
 template <class SuffixWriterFactory>
-void mp::NLW2_NLFeeder2_C_Impl::FeedSuffixes(SuffixWriterFactory& swf) {
+void mp::NLW2_NLFeeder_C_Impl::FeedSuffixes(SuffixWriterFactory& swf) {
   NLW2_SuffixWriter_C sw_c;
   decltype( swf.StartIntSuffix(nullptr, 0, 0) ) int_writer;
   decltype( swf.StartDblSuffix(nullptr, 0, 0) ) dbl_writer;

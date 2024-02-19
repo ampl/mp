@@ -2,7 +2,7 @@
  * Example using "easy" NLWriter2 API, mp::NLModel,
  * to solve MIQP.
  *
- * For full NLWriter2 API, see mp::NLFeeder2
+ * For full NLWriter2 API, see mp::NLFeeder
  * and related tests/examples.
  */
 
