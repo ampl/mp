@@ -300,8 +300,8 @@ int CountNNZ(const double* parray, int len) {
 }
 void WriteDenseAsSparse(
     const double* parray, int len, void* p_api_data) {
-  for (int i=0; i<len; ++i)
-    if (parray[i])
+  for (int i=0; i<len; ++i)   // actually we should also write 0
+    if (parray[i])            // initial guesses if meaningful
       NLW2_WriteSparseDblEntry(p_api_data, i, parray[i]);
 }
 

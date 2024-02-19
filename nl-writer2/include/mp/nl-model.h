@@ -33,6 +33,77 @@
 
 namespace mp {
 
+
+/// NL suffix type
+struct NLSuffix {
+  /// Construct
+  NLSuffix(std::string name, int kind, std::vector<double> v={})
+    : name_(std::move(name)), table_({}), kind_(kind),
+      values_(std::move(v)) { }
+  /// Construct
+  NLSuffix(std::string name, std::string table, int kind,
+           std::vector<double> v={})
+    : name_(std::move(name)), table_(std::move(table)),
+      kind_(kind), values_(std::move(v)) { }
+
+  /// Name
+  std::string name_{};
+  /// Suffix table
+  std::string table_{};
+  /// Kind.
+  ///
+  ///   VAR     =    0,  /**< Applies to variables. */
+  ///   CON     =    1,  /**< Applies to constraints. */
+  ///   OBJ     =    2,  /**< Applies to objectives. */
+  ///   PROBLEM =    3   /**< Applies to problems. */
+  ///
+  /// If the suffix should be delivered as real-valued,
+  /// the kind_ should be bitwise-OR'ed with 0x4.
+  int kind_{-1};
+  /// Values. Always double precision. Dense vector.
+  std::vector<double> values_ {};
+
+  /// operator<
+  bool operator<(const NLSuffix& s) const {
+    return std::make_pair(name_, kind_)
+        < std::make_pair(s.name_, s.kind_);
+  }
+};
+
+/// NL suffix set.
+class NLSuffixSet : private std::set<NLSuffix> {
+protected:
+  using Base = std::set<NLSuffix>;
+public:
+  /// Add suffix.
+  /// @return true iff new suffix (not existed before.)
+  bool Add(NLSuffix suf)
+  { return this->insert(suf).second; }
+
+  /// Find suffix.
+  /// @return NLSuffix*, nullptr if not found.
+  const NLSuffix* Find(const std::string& nm, int k) const {
+    NLSuffix tmp {nm, {}, k};
+    auto it = this->find(tmp);
+    return (this->end()!=it) ? &*it : nullptr;
+  }
+
+  /// Expose size, empty
+  using Base::size;
+  using Base::empty;
+
+  /// Expose begin, end
+  using Base::begin;
+  using Base::end;
+  using Base::rbegin;
+  using Base::rend;
+  using Base::cbegin;
+  using Base::cend;
+  using Base::crbegin;
+  using Base::crend;
+};
+
+/// Declare
 class NLUtils;
 
 /// Class NLModel.
@@ -103,6 +174,27 @@ public:
   /// loading the model into NLSolver.
   void SetObjName(const char* nm) { obj_name_=(nm ? nm : ""); }
 
+  /// Set initial solution.
+  ///
+  /// @note All pointers should stay valid until
+  /// loading the model into NLSolver.
+  void SetWarmstart(NLW2_SparseVector_C ini_x)
+  { ini_x_ = ini_x; }
+
+  /// Set dual initial solution.
+  ///
+  /// @note All pointers should stay valid until
+  /// loading the model into NLSolver.
+  void SetDualWarmstart(NLW2_SparseVector_C ini_y)
+  { ini_y_ = ini_y; }
+
+  /// Add suffix.
+  /// @return true iff new suffix added (vs replaced.)
+  /// @note SOS constraints can be modeled as suffixes
+  ///   for some AMPL solvers.
+  bool AddSuffix(NLSuffix suf)
+  { return suffixes_.Add(std::move(suf)); }
+
   /// Information exported by WriteNL()
   struct PreprocessData {
     /// var permutation
@@ -163,6 +255,15 @@ public:
   /// Obj name
   const char* ObjName() const { return obj_name_; }
 
+  /// Warm start
+  NLW2_SparseVector_C Warmstart() const
+  { return ini_x_; }
+  /// Dual warm start
+  NLW2_SparseVector_C DualWarmstart() const
+  { return ini_y_; }
+  /// Suffixes
+  const NLSuffixSet Suffixes() const { return suffixes_; }
+
 private:
   const char* prob_name_ {"mp::NLModel"};
   NLW2_ColData_C vars_ {};
@@ -178,31 +279,13 @@ private:
   int Q_format_ {};
   NLW2_SparseMatrix_C Q_ {};
   const char* obj_name_ {"obj[1]"};
+
+  NLW2_SparseVector_C ini_y_ {}, ini_x_{};
+  NLSuffixSet suffixes_;
 };
 
 
-/// NL suffix type
-struct NLSuffix {
-  /// Name
-  std::string name_;
-  /// Suffix table
-  std::string table_;
-  /// Kind
-  int kind_;
-  /// Values. Always double precision.
-  std::vector<double> values_;
-
-  /// operator<
-  bool operator<(const NLSuffix& s) const {
-    return std::make_pair(name_, kind_)
-        < std::make_pair(s.name_, s.kind_);
-  }
-};
-
-/// NL suffix set.
-using NLSuffixSet = std::set<NLSuffix>;
-
-/// Solution
+/// Returned solution.
 struct NLSolution {
   /// Any result obtained from the solver?
   operator bool() const { return solve_result_ > -2; }

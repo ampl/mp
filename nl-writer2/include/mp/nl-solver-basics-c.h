@@ -90,6 +90,16 @@ typedef struct NLW2_SparseMatrix_C {
   const double *value_;
 } NLW2_SparseMatrix_C;
 
+/// Sparse vector.
+typedef struct NLW2_SparseVector_C {
+  /// Number of entries
+  int num_;
+  /// Entry index
+  const int* index_;
+  /// Entry value
+  const double* value_;
+} NLW2_SparseVector_C;
+
 
 /// Basic NL options for NLModel.
 /// Prefer to create by NLW2_MakeNLOptionsBasic_Default().

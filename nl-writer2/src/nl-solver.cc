@@ -243,15 +243,29 @@ public:
    *      if (ini_guess.size()) {
    *        auto ig = igw.MakeVectorWriter(ini_guess.size());
    *        for (size_t i=0; i<ini_guess.size(); ++i)
-   *          ig.Write(i, ini_guess[i]);
+   *          ig.Write(ini_guess[i].index_, ini_guess[i].value_);
    *      }
    */
   template <class IGWriter>
-  void FeedInitialGuesses(IGWriter& ) { }
+  void FeedInitialGuesses(IGWriter& igw) {
+    auto ini = NLME().Warmstart();
+    if (ini.num_) {
+      auto ig = igw.MakeVectorWriter(ini.num_);
+      for (int i=0; i<ini.num_; ++i)
+        ig.Write(ini.index_[i], ini.value_[i]);
+    }
+  }
 
   /** Initial dual guesses. */
   template <class IDGWriter>
-  void FeedInitialDualGuesses(IDGWriter& ) { }
+  void FeedInitialDualGuesses(IDGWriter& igw) {
+    auto ini = NLME().DualWarmstart();
+    if (ini.num_) {
+      auto ig = igw.MakeVectorWriter(ini.num_);
+      for (int i=0; i<ini.num_; ++i)
+        ig.Write(ini.index_[i], ini.value_[i]);
+    }
+  }
 
 
   ///////////////////// 13. SUFFIXES /////////////////////
@@ -260,7 +274,7 @@ public:
      *  For constraints, assume ordering:
      *  first algebraic, then logical.
    *
-   *  Implementation:
+   *  Implementation: write all non-0 entries
    *      while (....) {
    *        auto sw = swf.StartIntSuffix(  // or ...DblSuffix
    *          suf_name, kind, n_nonzeros);
@@ -269,7 +283,27 @@ public:
    *      }
      */
   template <class SuffixWriterFactory>
-  void FeedSuffixes(SuffixWriterFactory& ) { }
+  void FeedSuffixes(SuffixWriterFactory& swf) {
+    for (const auto& suf: NLME().Suffixes()) {
+      int nnz=0;
+      for (auto v: suf.values_)
+        if (v)
+          ++nnz;
+      if (suf.kind_ & 4) {
+        auto sw = swf.StartDblSuffix(
+              suf.name_.c_str(), suf.kind_, nnz);
+        for (size_t i=0; i<suf.values_.size(); ++i)
+          if (suf.values_[i])
+            sw.Write(i, suf.values_[i]);
+      } else {
+        auto sw = swf.StartIntSuffix(
+              suf.name_.c_str(), suf.kind_, nnz);
+        for (size_t i=0; i<suf.values_.size(); ++i)
+          if (suf.values_[i])
+            sw.Write(i, std::round(suf.values_[i]));
+      }
+    }
+  }
 
 
   //////////////////// 14. ROW/COLUMN NAMES ETC /////////////////////
@@ -580,7 +614,8 @@ public:
   template <class VecReader>
   void OnDualSolution(VecReader& rd) {
     sol_.y_.clear();
-    sol_.y_.reserve(header_.num_algebraic_cons);
+    sol_.y_.reserve(header_.num_algebraic_cons
+                    + header_.num_logical_cons);
     while (rd.Size())         // No permutation
       sol_.y_.push_back(rd.ReadNext());
   }
@@ -630,20 +665,50 @@ public:
    *   RegisterSuffix(kind, name, table, suf);
    */
   template <class SuffixReader>
-  void OnIntSuffix(SuffixReader& sr) {
-    while (sr.Size())
-      sr.ReadNext();       // Permute
-  }
+  void OnIntSuffix(SuffixReader& sr)
+  { OnSuffix(sr); }
 
   /**
    * Same as OnIntSuffix(), but
    * sr.ReadNext() returns pair<int, double>
    */
   template <class SuffixReader>
-  void OnDblSuffix(SuffixReader& sr) {
-    while (sr.Size())
-      sr.ReadNext();
+  void OnDblSuffix(SuffixReader& sr)
+  { OnSuffix(sr); }
+
+protected:
+  int NItemsMax(int kind) const {
+    switch (kind & 3) {    // Without the Float bit
+    case 0: return header_.num_vars;
+    case 1: return
+          header_.num_algebraic_cons
+          + header_.num_logical_cons;
+    case 2: return header_.num_objs;
+    default: return 1;
+    }
   }
+  template <class SuffixReader>
+  void OnSuffix(SuffixReader& sr) {
+    const auto& si = sr.SufInfo();
+    int kind = si.Kind();
+    int nmax = NItemsMax(kind);
+    std::vector<double> values(nmax);
+    const std::string& name = si.Name();
+    const std::string& table = si.Table();
+    while (sr.Size()) {
+      auto val = sr.ReadNext();
+      if (val.first<0 || val.first>=nmax) {
+        sr.SetError(NLW2_SOLRead_Bad_Suffix,
+                    "bad suffix element index");
+        return;
+      }
+      values[val.first] = val.second;
+    }
+    if (NLW2_SOLRead_OK == sr.ReadResult())    // Can check
+      sol_.suffixes_.Add({name, table, kind,
+                          std::move(values)});
+  }
+
 
 private:
   NLHeader header_;

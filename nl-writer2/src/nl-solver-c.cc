@@ -736,7 +736,7 @@ static NLW2_Solution_C NLW2_WrapNLSOL_Solution_C
 
   NLW2_Solution_C result;
   {
-    auto& sol=sol_data.sol_;
+    const auto& sol=sol_data.sol_;
     result.nbs_ = sol.nbs_;
     result.nsuf_ = sol.suffixes_.size();
     result.obj_val_ = sol.obj_val_;

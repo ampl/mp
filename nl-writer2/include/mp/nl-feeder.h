@@ -81,7 +81,8 @@ namespace mp {
       - C API implementation class `~mp::NLW2_NLFeeder_C_Impl`
       - Other examples/tests, e.g., see `ExampleNLFeeder`.
 
-    @param: *Impl* is a type derived from `~mp::NLFeeder`.
+    @param: *Impl* is the final CRTP type
+    derived from `~mp::NLFeeder`.
 
     @param: *ExprType* is a type storing expressions from
     methods such as `~mp::NLFeeder::FeedExpr`. If not used,
@@ -458,11 +459,11 @@ public:
   ///////////////////// 12. INITIAL GUESSES /////////////////////
   /** Initial primal guesses.
    *
-   *  Implementation:
+   *  Implementation: write all meaningfuls entries (incl. zeros.)
    *      if (ini_guess.size()) {
    *        auto ig = igw.MakeVectorWriter(ini_guess.size());
    *        for (size_t i=0; i<ini_guess.size(); ++i)
-   *          ig.Write(i, ini_guess[i]);
+   *          ig.Write(ini_guess[i].index_, ini_guess[i].value_);
    *      }
    */
   template <class IGWriter>
@@ -479,7 +480,7 @@ public:
      *  For constraints, assume ordering:
      *  first algebraic, then logical.
    *
-   *  Implementation:
+   *  Implementation: write all non-0 entries (0 is the default.)
    *      while (....) {
    *        auto sw = swf.StartIntSuffix(  // or ...DblSuffix
    *          suf_name, kind, n_nonzeros);

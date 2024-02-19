@@ -158,13 +158,13 @@ public:
    * while (sr.Size()) {
    *   std::pair<int, int> val = sr.ReadNext();
    *   if (val.first<0 || val.first>=nmax) {
-   *     sr.SetError(mp::SOL_Read_Bad_Suffix,
+   *     sr.SetError(NLW2_SOLRead_Bad_Suffix,
    *       "bad suffix element index");
    *     return;
    *   }
    *   suf[val.first] = val.second;
    * }
-   * if (mp::SOL_Read_OK == sr.ReadResult())    // Can check
+   * if (NLW2_SOLRead_OK == sr.ReadResult())    // Can check
    *   RegisterSuffix(kind, name, table, suf);
    */
   template <class SuffixReader>

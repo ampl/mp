@@ -99,46 +99,48 @@ public:
         csw.Write(Model().col_sizes[i]);
   }
 
+  // Actually we should write all meaningful entries,
+  // including 0's
   template <class IGWriter>
   void FeedInitialGuesses(IGWriter& igw)
   { WriteDense2Sparse(igw, Model().ini_x); }
 
- template <class SuffixWriterFactory>
- void FeedSuffixes(SuffixWriterFactory& swf) {
-   for (int i=0; i<Model().n_suf; ++i) {
-     if (Model().suf[i].kind_ & 4) {     // double's
-       auto sw = swf.StartDblSuffix(
-             Model().suf[i].name_,
-             Model().suf[i].kind_,
-             CountNNZ(Model().suf[i].values_));
-       WriteDense2Sparse_Pure(sw, Model().suf[i].values_);
-     } else {                            // int's
-       auto sw = swf.StartIntSuffix(
-             Model().suf[i].name_,
-             Model().suf[i].kind_,
-             CountNNZ(Model().suf[i].values_));
-       WriteDense2Sparse_Pure(sw, Model().suf[i].values_);
-     }
-   }
- }
+  template <class SuffixWriterFactory>
+  void FeedSuffixes(SuffixWriterFactory& swf) {
+    for (int i=0; i<Model().n_suf; ++i) {
+      if (Model().suf[i].kind_ & 4) {     // double's
+        auto sw = swf.StartDblSuffix(
+              Model().suf[i].name_,
+              Model().suf[i].kind_,
+              CountNNZ(Model().suf[i].values_));
+        WriteDense2Sparse_Pure(sw, Model().suf[i].values_);
+      } else {                            // int's
+        auto sw = swf.StartIntSuffix(
+              Model().suf[i].name_,
+              Model().suf[i].kind_,
+              CountNNZ(Model().suf[i].values_));
+        WriteDense2Sparse_Pure(sw, Model().suf[i].values_);
+      }
+    }
+  }
 
- template <class RowObjNameWriter>
- void FeedRowAndObjNames(RowObjNameWriter& wrt) {
-   if (wrt) {     // && output_desired
-     for (int i=0; i<Model().n_con; ++i)
-       wrt << Model().con_name[i];
-     wrt << Model().obj_name;
-   }
- }
+  template <class RowObjNameWriter>
+  void FeedRowAndObjNames(RowObjNameWriter& wrt) {
+    if (wrt) {     // && output_desired
+      for (int i=0; i<Model().n_con; ++i)
+        wrt << Model().con_name[i];
+      wrt << Model().obj_name;
+    }
+  }
 
- /** Provide variable names. */
- template <class ColNameWriter>
- void FeedColNames(ColNameWriter& wrt) {
-   if (wrt) {     // && output_desired
-     for (int i=0; i<Model().n_var; ++i)
-       wrt << Model().var_name[i];
-   }
- }
+  /** Provide variable names. */
+  template <class ColNameWriter>
+  void FeedColNames(ColNameWriter& wrt) {
+    if (wrt) {     // && output_desired
+      for (int i=0; i<Model().n_var; ++i)
+        wrt << Model().var_name[i];
+    }
+  }
 
 
 protected:

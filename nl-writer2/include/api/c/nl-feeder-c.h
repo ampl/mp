@@ -437,9 +437,10 @@ typedef struct NLW2_NLFeeder_C {
   ///////////////////// 12. INITIAL GUESSES /////////////////////
   /** Initial primal guesses.
    *
-   *  Implementation:
+   *  Implementation: write all meaningful entries (incl. zeros.)
    *      for (size_t i=0; i<n_ini_guess; ++i)
-   *        NLW2_WriteSparseDblEntry(p_api_data, i, ini_guess[i]);
+   *        NLW2_WriteSparseDblEntry(
+   *          p_api_data, ini_index[i], ini_value[i]);
    */
   int (*InitialGuessesNNZ)(void* p_user_data);
   void (*FeedInitialGuesses)(void* p_user_data, void* p_api_data);
@@ -456,13 +457,13 @@ typedef struct NLW2_NLFeeder_C {
    *  For constraints, assume ordering:
    *  first algebraic, then logical.
    *
-   *  Implementation:
+   *  Implementation: write all non-0 entries (0 is the default.)
    *      while (....) {
    *        void* p_api_2 = NLW2_StartIntSuffix(  // or ...DblSuffix
    *          p_api_data, suf_name, kind, n_nonzeros);
    *        for (int i=0; i<n_nonzeros; ++i)
    *          NLW2_WriteSparseIntEntry(p_api_2,   // or ...DblEntry
-   *            index[i], value[i]);              // <- p_api_2 here
+   *            index[i], value[i]);              // ^<- p_api_2 here
    *      }
    */
   void (*FeedSuffixes)(void* p_user_data, void* p_api_data);
