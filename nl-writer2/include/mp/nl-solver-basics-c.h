@@ -29,20 +29,34 @@
 extern "C" {
 #endif
 
-const int NLW2_ObjSenseMinimize = 0;
-const int NLW2_ObjSenseMaximize = 1;
+/// Enum NLW2_ObjSense
+typedef enum NLW2_ObjSense {
+  NLW2_ObjSenseMinimize = 0,
+  NLW2_ObjSenseMaximize = 1
+} NLW2_ObjSense;
 
-const int NLW2_VarTypeContinuous = 0;
-const int NLW2_VarTypeInteger = 1;
+/// Enum NLW2_VarType
+typedef enum NLW2_VarType {
+  NLW2_VarTypeContinuous = 0,
+  NLW2_VarTypeInteger = 1
 //const int NLW2_VarTypeSemiContinuous = 2;
 //const int NLW2_VarTypeSemiInteger = 3;
 //const int NLW2_VarTypeImplicitInteger = 4;
+} NLW2_VarType;
 
+/// Enum NLW2_MatrixFormat
+typedef enum NLW2_MatrixFormat {
+  NLW2_MatrixFormatIrrelevant = -1,
+  NLW2_MatrixFormatUnset = 0,
 //const int NLW2_MatrixFormatColwise = 1;
-const int NLW2_MatrixFormatRowwise = 2;
+  NLW2_MatrixFormatRowwise = 2
+} NLW2_MatrixFormat;
 
-const int NLW2_HessianFormatTriangular = 1;
-const int NLW2_HessianFormatSquare = 2;
+/// Enum NLW2_HessianFormat
+typedef enum NLW2_HessianFormat {
+  NLW2_HessianFormatTriangular = 1,
+  NLW2_HessianFormatSquare = 2
+} NLW2_HessianFormat;
 
 /// Variables' data by pointers
 typedef struct NLW2_ColData_C {
@@ -52,7 +66,7 @@ typedef struct NLW2_ColData_C {
   const double *lower_;
   /// upper bounds
   const double *upper_;
-  /// type: NLW2_VarType...
+  /// type: see enum NLW2_VarType.
   /// Set to NULL if all continuous.
   const int *type_;
 } NLW2_ColData_C;
@@ -63,9 +77,9 @@ typedef struct NLW2_SparseMatrix_C {
   /// N cols (for colwise) / N rows (for rowwise),
   /// depending on format_.
   int num_colrow_;
-  /// Format (NLW2_MatrixFormat...).
+  /// Format.
   /// Only rowwise supported.
-  int format_;
+  NLW2_MatrixFormat format_;
   /// Nonzeros
   size_t num_nz_;
   /// Row / col starts

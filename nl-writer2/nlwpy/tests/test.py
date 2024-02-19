@@ -45,25 +45,26 @@ class ModelBuilder:
     nlme = m.NLW2_NLModel(self.prob_name_)
 
     nlme.SetCols(len(self.var_lb_),
-      self.var_lb_, self.var_ub_, self.var_type_)
+                 self.var_lb_, self.var_ub_, self.var_type_)
     nlme.SetColNames(self.var_names_)
 
     if self.A_ is not None:
       self.A_ = csr_matrix(self.A_)
       nlme.SetRows(len(self.row_lb_), self.row_lb_, self.row_ub_,
-        2,  ## format: row-wise
-        self.A_.nnz, self.A_.indptr, self.A_.indices, self.A_.data)
+                   self.A_format_,
+                   self.A_.nnz,
+                   self.A_.indptr, self.A_.indices, self.A_.data)
     nlme.SetRowNames(self.row_names_)
 
     nlme.SetLinearObjective(self.obj_sense_, self.obj_c0_,
-      self.obj_c_)
+                            self.obj_c_)
 
     if self.Q_ is not None:
       self.Q_ = csr_matrix(self.Q_)
       nlme.SetHessian(self.Q_.shape[0],
-        2,   ## Square format
-        self.Q_.nnz,
-        self.Q_.indptr, self.Q_.indices, self.Q_.data)
+                      self.Q_format_,
+                      self.Q_.nnz,
+                      self.Q_.indptr, self.Q_.indices, self.Q_.data)
     nlme.SetObjName(self.obj_name_)
 
     return nlme
@@ -94,17 +95,17 @@ class ModelBuilder:
     self.var_type_ = [0, 1, 1, 1, 0, 0]
     self.var_names_ = \
       ["x1_4", "x2_6", "x3_5", "x4_3", "x5_1", "x6_2"]
-    self.A_format_ = 2
+    self.A_format_ = m.NLW2_MatrixFormat.Rowwise
     self.A_ = np.array([
       [0,1,1,1,0,1],
       [0,1,-1,-1,0,1]])
     self.row_lb_ = [15, 10]
     self.row_ub_ = [15, np.inf]
     self.row_names_ = ["C1", "C2"]
-    self.obj_sense_ = 0
+    self.obj_sense_ = m.NLW2_ObjSense.Minimize
     self.obj_c0_ = 3.24
     self.obj_c_ = [0,1,0,0,0,0]
-    Q_format_ = 2
+    self.Q_format_ = m.NLW2_HessianFormat.Square
     self.Q_ = np.zeros([6, 6])
     self.Q_[3, 3] = 10
     self.Q_[3, 5] = 12
@@ -121,7 +122,7 @@ def SolveAndCheck(solver, sopts, binary, stub):
   nlse = m.NLW2_NLSolver()
   nlopts = m.NLW2_MakeNLOptionsBasic_Default()
   nlopts.n_text_mode_ = not binary
-  nlopts.want_nl_comments_ = 1;
+  nlopts.want_nl_comments_ = 1
   nlse.SetNLOptions(nlopts)
   nlse.SetFileStub(stub)
   sol = nlse.Solve(nlme, solver, sopts)

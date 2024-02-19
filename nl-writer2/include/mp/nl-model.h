@@ -82,21 +82,19 @@ public:
   void SetRowNames(const char *const *nm) { row_names_=nm; }
 
   /// Add linear objective (only single objective supported.)
-  /// Sense: NLW2_ObjSenseM....
   /// Coefficients: dense vector.
   ///
   /// @note All pointers should stay valid until
   /// loading the model into NLSolver.
-  void SetLinearObjective(int sense, double c0,
+  void SetLinearObjective(NLW2_ObjSense sense, double c0,
                           const double* c = nullptr)
   { obj_sense_=sense; obj_c0_=c0; obj_c_=c; }
 
   /// Add Q for the objective quadratic part 0.5 @ x.T @ Q @ x.
-  /// Format: NLW2_HessianFormat...
   ///
   /// @note All pointers should stay valid until
   /// loading the model into NLSolver.
-  void SetHessian(int format, NLW2_SparseMatrix_C Q)
+  void SetHessian(NLW2_HessianFormat format, NLW2_SparseMatrix_C Q)
   { Q_format_ = format; Q_ = Q; }
 
   /// Set obj name
@@ -208,7 +206,19 @@ using NLSuffixSet = std::set<NLSuffix>;
 struct NLSolution {
   /// Any result obtained from the solver?
   operator bool() const { return solve_result_ > -2; }
-  /// Solve result
+  /// Solve result.
+  /// If >-2, solver interaction successful.
+  /// Then:
+  /// -1      'unknown' unexpected termination
+  /// 0- 99   'solved' optimal solution found
+  /// 100-199 'solved?' optimal solution indicated, but error likely
+  /// 200-299 'infeasible' constraints cannot be satisfied
+  /// 300-399 'unbounded' objective can be improved without limit
+  /// 400-499 'limit' stopped by a limit that you set (such as on iterations)
+  /// 500-999 'failure' stopped by an error condition in the solver
+  ///
+  /// Individual solvers may have more specific values,
+  /// see https://ampl.com/products/solvers/solvers-we-sell/.
   int solve_result_ {-2};   // "unset"
   /// Number of solve_message's initial characters
   /// already printed on the screen

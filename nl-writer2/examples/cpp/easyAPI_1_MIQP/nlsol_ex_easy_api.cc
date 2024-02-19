@@ -34,7 +34,7 @@ public:
 
     nlme.SetLinearObjective(obj_sense_, obj_c0_, obj_c_.data());
     nlme.SetHessian(Q_format_,
-                    {(int)var_lb_.size(), 0,
+                    {(int)var_lb_.size(), NLW2_MatrixFormatIrrelevant,
                      Q_index_.size(),
                      Q_start_.data(), Q_index_.data(), Q_value_.data()});
     nlme.SetObjName(obj_name_);
@@ -92,17 +92,17 @@ s.t. C2: x2_5 -x3_6 -x4_3 + x6_2 >= 10;
   {0, 1, 1, 1, 0, 0};
   std::vector<const char*> var_names_
   {"x1_4", "x2_6", "x3_5", "x4_3", "x5_1", "x6_2"};
-  int A_format_ {NLW2_MatrixFormatRowwise};
+  NLW2_MatrixFormat A_format_ {NLW2_MatrixFormatRowwise};
   std::vector<size_t> A_start_ {0, 4};
   std::vector<int> A_index_ {1,2,3,5,1,2,3,5};
   std::vector<double> A_value_{1,1,1,1,1,-1,-1,1};
   std::vector<double> row_lb_{15, 10};
   std::vector<double> row_ub_{15, INFINITY};
   std::vector<const char*> row_names_ {"C1", "C2"};
-  int obj_sense_ {0};
+  NLW2_ObjSense obj_sense_ {NLW2_ObjSenseMinimize};
   double obj_c0_ {3.24};
   std::vector<double> obj_c_ {0,1,0,0,0,0};
-  int Q_format_ {NLW2_HessianFormatSquare};
+  NLW2_HessianFormat Q_format_ {NLW2_HessianFormatSquare};
   std::vector<size_t> Q_start_ {0,0,0,0,2,3};
   std::vector<int> Q_index_ {3, 5, 4};
   std::vector<double> Q_value_ {10, 12, 14};

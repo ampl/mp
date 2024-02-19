@@ -62,7 +62,7 @@ void NLW2_SetColNames_C(NLW2_NLModel_C* , const char *const *nm);
 /// loading the model into NLW2_NLSolver_C.
 void NLW2_SetRows_C(NLW2_NLModel_C* ,
                     int nr, const double* rlb, const double* rub,
-                    int format_,
+                    NLW2_MatrixFormat format_,
                     size_t num_nz_,
                     const size_t *start_,
                     const int *index_,
@@ -75,21 +75,20 @@ void NLW2_SetRows_C(NLW2_NLModel_C* ,
 void NLW2_SetRowNames_C(NLW2_NLModel_C* , const char *const *nm);
 
 /// Add linear objective (only single objective supported.)
-/// Sense: NLW2_ObjSenseM....
 /// Coefficients: dense vector.
 ///
 /// @note All model data pointers should stay valid until
 /// loading the model into NLW2_NLSolver_C.
 void NLW2_SetLinearObjective_C(NLW2_NLModel_C* ,
-                               int sense, double c0, const double* c);
+                               NLW2_ObjSense sense,
+                               double c0, const double* c);
 
 /// Add Q for the objective quadratic part 0.5 @ x.T @ Q @ x.
-/// Format: NLW2_HessianFormat...
 ///
 /// @note All model data pointers should stay valid until
 /// loading the model into NLW2_NLSolver_C.
 void NLW2_SetHessian_C(NLW2_NLModel_C* ,
-                       int format,
+                       NLW2_HessianFormat format,
                        int dim,
                        size_t num_nz_,
                        const size_t *start_,
@@ -159,7 +158,18 @@ typedef struct NLW2_Suffix_C {
 /// NL solution
 typedef struct NLW2_Solution_C {
   /// Solve result.
-  /// >=-1 if contains data.
+  /// If >-2, solver interaction successful.
+  /// Then:
+  /// -1      'unknown' unexpected termination
+  /// 0- 99   'solved' optimal solution found
+  /// 100-199 'solved?' optimal solution indicated, but error likely
+  /// 200-299 'infeasible' constraints cannot be satisfied
+  /// 300-399 'unbounded' objective can be improved without limit
+  /// 400-499 'limit' stopped by a limit that you set (such as on iterations)
+  /// 500-999 'failure' stopped by an error condition in the solver
+  ///
+  /// Individual solvers may have more specific values,
+  /// see https://ampl.com/products/solvers/solvers-we-sell/.
   int solve_result_;
   /// Number of solve_message's initial characters
   /// already printed on the screen

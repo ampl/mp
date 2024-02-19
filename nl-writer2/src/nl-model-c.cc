@@ -71,7 +71,7 @@ void NLW2_SetColNames_C(NLW2_NLModel_C* nlme, const char *const *nm)
 /// Only rowwise matrix supported.
 void NLW2_SetRows_C(NLW2_NLModel_C* nlme,
                     int nr, const double* rlb, const double* rub,
-                    int format,
+                    NLW2_MatrixFormat format,
                     size_t num_nz,
                     const size_t *start,
                     const int *index,
@@ -88,7 +88,8 @@ void NLW2_SetRowNames_C(NLW2_NLModel_C* nlme, const char *const *nm)
 /// Sense: NLW2_ObjSenseM....
 /// Coefficients: dense vector.
 void NLW2_SetLinearObjective_C(NLW2_NLModel_C* nlme,
-                               int sense, double c0, const double* c) {
+                               NLW2_ObjSense sense,
+                               double c0, const double* c) {
   CastNZ<mp::NLModel>(nlme->p_data_)
       ->SetLinearObjective(sense, c0, c);
 }
@@ -96,7 +97,7 @@ void NLW2_SetLinearObjective_C(NLW2_NLModel_C* nlme,
 /// Add Q for the objective quadratic part 0.5 @ x.T @ Q @ x.
 /// Format: NLW2_HessianFormat...
 void NLW2_SetHessian_C(NLW2_NLModel_C* nlme,
-                       int format,
+                       NLW2_HessianFormat format,
                        int dim,
                        size_t num_nz_,
                        const size_t *start_,
@@ -104,7 +105,7 @@ void NLW2_SetHessian_C(NLW2_NLModel_C* nlme,
                        const double *value_)
 { CastNZ<mp::NLModel>(nlme->p_data_)
       ->SetHessian(format, {
-                     dim, 0,
+                     dim, NLW2_MatrixFormatIrrelevant,
                      num_nz_, start_, index_, value_
                    }); }
 

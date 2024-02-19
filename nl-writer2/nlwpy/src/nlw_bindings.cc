@@ -23,7 +23,6 @@
 #include <string>
 
 #include <pybind11/pybind11.h>
-#include <pybind11/numpy.h>
 #include <pybind11/stl.h>
 
 #include "mp/nl-solver.h"
@@ -32,6 +31,7 @@
 #define MACRO_STRINGIFY(x) STRINGIFY(x)
 
 namespace py = pybind11;
+
 
 /// Variables' data by pointers
 struct NLWPY_ColData {
@@ -54,7 +54,7 @@ struct NLWPY_SparseMatrix {
   int num_colrow_;
   /// Format (NLW2_MatrixFormat...).
   /// Only rowwise supported.
-  int format_;
+  NLW2_MatrixFormat format_;
   /// Nonzeros
   size_t num_nz_;
   /// Row / col starts
@@ -109,7 +109,7 @@ public:
   void SetRows(
       int nr,
       std::vector<double> rlb, std::vector<double> rub,
-      int format,     // TODO enum
+      NLW2_MatrixFormat format,
       size_t nnz,
       std::vector<size_t> st,
       /// Entry index
@@ -142,7 +142,7 @@ public:
   /// Add linear objective (only single objective supported.)
   /// Sense: NLW2_ObjSenseM....
   /// Coefficients: dense vector.
-  void SetLinearObjective(int sense, double c0,
+  void SetLinearObjective(NLW2_ObjSense sense, double c0,
                           std::vector<double> c) {
     obj_sense_=sense; obj_c0_=c0; obj_c_=std::move(c);
     nlme_.SetLinearObjective(sense, c0, obj_c_.data());
@@ -151,7 +151,7 @@ public:
   /// Add Q for the objective quadratic part 0.5 @ x.T @ Q @ x.
   /// Format: NLW2_HessianFormat...
   void SetHessian(int nr,
-                  int format,     // TODO enum
+                  NLW2_HessianFormat format,     // TODO enum
                   size_t nnz,
                   std::vector<size_t> st,
                   /// Entry index
@@ -161,11 +161,11 @@ public:
                   ) {
     Q_format_ = format;
     Q_={
-      nr, 0,
+      nr, NLW2_MatrixFormatIrrelevant,
       nnz, std::move(st), std::move(ind), std::move(val)
     };
     nlme_.SetHessian(format, {
-      nr, 0, nnz,
+      nr, NLW2_MatrixFormatIrrelevant, nnz,
       Q_.start_.data(), Q_.index_.data(),
       Q_.value_.data()
     });
@@ -196,7 +196,7 @@ private:
   int obj_sense_ {};
   double obj_c0_ {};
   std::vector<double> obj_c_ {};
-  int Q_format_ {};
+  NLW2_HessianFormat Q_format_ {};
   NLWPY_SparseMatrix Q_ {};
   std::string obj_name_ {"obj[1]"};
 };
@@ -219,10 +219,33 @@ PYBIND11_MODULE(nlwpy, m) {
         .. autosummary::
            :toctree: _generate
 
+           NLW2_ObjSense
+NLW2_VarType
+NLW2_MatrixFormat
+NLW2_HessianFormat
+
+NLW2_NLOptionsBasic
            NLW2_MakeNLOptionsBasic_Default
-           add
-           subtract
+NLW2_NLModel
+NLW2_NLSolution
+NLW2_NLSolver
     )pbdoc";
+
+    py::enum_<NLW2_ObjSense>(m, "NLW2_ObjSense", py::arithmetic())
+        .value("Minimize", NLW2_ObjSenseMinimize)
+        .value("Maximize", NLW2_ObjSenseMaximize);
+        // .export_values();     -- Leave them scoped
+
+    py::enum_<NLW2_VarType>(m, "NLW2_VarType", py::arithmetic())
+        .value("Continuous", NLW2_VarTypeContinuous)
+        .value("Integer", NLW2_VarTypeInteger);
+
+    py::enum_<NLW2_MatrixFormat>(m, "NLW2_MatrixFormat", py::arithmetic())
+        .value("Rowwise", NLW2_MatrixFormatRowwise);
+
+    py::enum_<NLW2_HessianFormat>(m, "NLW2_HessianFormat", py::arithmetic())
+        .value("Triangular", NLW2_HessianFormatTriangular)
+        .value("Square", NLW2_HessianFormatSquare);
 
     /// NLOptionsBasic
     py::class_<NLW2_NLOptionsBasic_C>(m, "NLW2_NLOptionsBasic")
