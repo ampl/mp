@@ -31,12 +31,18 @@ typedef struct NLW2_NLModel_C {
 /// Construct NLW2_NLModel_C
 ///
 /// @param probname: can be NULL.
+///
+/// @note All model data pointers should stay valid until
+/// loading the model into NLW2_NLSolver_C.
 NLW2_NLModel_C NLW2_MakeNLModel_C(const char* probname);
 
 /// Destroy NLW2_NLModel_C
 void NLW2_DestroyNLModel_C(NLW2_NLModel_C* );
 
 /// Add variables (all at once.)
+///
+/// @note All model data pointers should stay valid until
+/// loading the model into NLW2_NLSolver_C.
 void NLW2_SetCols_C(NLW2_NLModel_C* ,
                     int num_col,
                     const double *lower,
@@ -44,10 +50,16 @@ void NLW2_SetCols_C(NLW2_NLModel_C* ,
                     const int *type);
 
 /// Add variable names
+///
+/// @note All model data pointers should stay valid until
+/// loading the model into NLW2_NLSolver_C.
 void NLW2_SetColNames_C(NLW2_NLModel_C* , const char *const *nm);
 
 /// Add linear constraints (all at once).
 /// Only rowwise matrix supported.
+///
+/// @note All model data pointers should stay valid until
+/// loading the model into NLW2_NLSolver_C.
 void NLW2_SetRows_C(NLW2_NLModel_C* ,
                     int nr, const double* rlb, const double* rub,
                     int format_,
@@ -57,16 +69,25 @@ void NLW2_SetRows_C(NLW2_NLModel_C* ,
                     const double *value_);
 
 /// Add constraint names
+///
+/// @note All model data pointers should stay valid until
+/// loading the model into NLW2_NLSolver_C.
 void NLW2_SetRowNames_C(NLW2_NLModel_C* , const char *const *nm);
 
 /// Add linear objective (only single objective supported.)
 /// Sense: NLW2_ObjSenseM....
 /// Coefficients: dense vector.
+///
+/// @note All model data pointers should stay valid until
+/// loading the model into NLW2_NLSolver_C.
 void NLW2_SetLinearObjective_C(NLW2_NLModel_C* ,
                                int sense, double c0, const double* c);
 
 /// Add Q for the objective quadratic part 0.5 @ x.T @ Q @ x.
 /// Format: NLW2_HessianFormat...
+///
+/// @note All model data pointers should stay valid until
+/// loading the model into NLW2_NLSolver_C.
 void NLW2_SetHessian_C(NLW2_NLModel_C* ,
                        int format,
                        int dim,
@@ -76,6 +97,9 @@ void NLW2_SetHessian_C(NLW2_NLModel_C* ,
                        const double *value_);
 
 /// Set obj name
+///
+/// @note All model data pointers should stay valid until
+/// loading the model into NLW2_NLSolver_C.
 void NLW2_SetObjName_C(NLW2_NLModel_C* , const char* nm);
 
 /// Compute objective value

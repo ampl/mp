@@ -42,43 +42,67 @@ class NLUtils;
 /// For fully nonlinear models with expression trees,
 /// use NLSolver with NLWriter2/NLFeeder2.
 ///
-/// All pointers should stay valid until
+/// @note All pointers should stay valid until
 /// loading the model into NLSolver.
 class NLModel {
 public:
-  /// Construct
+  /// Construct.
+  ///
+  /// @note All pointers should stay valid until
+  /// loading the model into NLSolver.
   NLModel(const char* probname = nullptr)
     : prob_name_(probname ? probname : "NLModelInstance") { }
 
   /// Add variables (all at once.)
+  ///
+  /// @note All pointers should stay valid until
+  /// loading the model into NLSolver.
   void SetCols(NLW2_ColData_C vd) { vars_ = vd; }
 
   /// Add variable names
+  ///
+  /// @note All pointers should stay valid until
+  /// loading the model into NLSolver.
   void SetColNames(const char *const *nm) { var_names_=nm; }
 
   /// Add linear constraints (all at once).
   /// Only rowwise matrix supported.
+  ///
+  /// @note All pointers should stay valid until
+  /// loading the model into NLSolver.
   void SetRows(
       int nr, const double* rlb, const double* rub,
       NLW2_SparseMatrix_C A)
   { num_row_=nr; row_lb_=rlb; row_ub_=rub; A_=A; }
 
   /// Add constraint names
+  ///
+  /// @note All pointers should stay valid until
+  /// loading the model into NLSolver.
   void SetRowNames(const char *const *nm) { row_names_=nm; }
 
   /// Add linear objective (only single objective supported.)
   /// Sense: NLW2_ObjSenseM....
   /// Coefficients: dense vector.
+  ///
+  /// @note All pointers should stay valid until
+  /// loading the model into NLSolver.
   void SetLinearObjective(int sense, double c0,
                           const double* c = nullptr)
   { obj_sense_=sense; obj_c0_=c0; obj_c_=c; }
 
   /// Add Q for the objective quadratic part 0.5 @ x.T @ Q @ x.
   /// Format: NLW2_HessianFormat...
+  ///
+  /// @note All pointers should stay valid until
+  /// loading the model into NLSolver.
   void SetHessian(int format, NLW2_SparseMatrix_C Q)
   { Q_format_ = format; Q_ = Q; }
 
   /// Set obj name
+  ///
+  /// @note All pointers should stay valid until
+  /// loading the model into NLSolver.
   void SetObjName(const char* nm) { obj_name_=(nm ? nm : ""); }
 
   /// Information exported by WriteNL()

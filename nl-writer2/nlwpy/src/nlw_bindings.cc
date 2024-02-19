@@ -1,3 +1,25 @@
+/**
+ NL Writer Python bindings.
+
+ Copyright (C) 2024 AMPL Optimization Inc.
+
+ Permission to use, copy, modify, and distribute this software and its
+ documentation for any purpose and without fee is hereby granted,
+ provided that the above copyright notice appear in all copies and that
+ both that the copyright notice and this permission notice and warranty
+ disclaimer appear in supporting documentation.
+
+ The author and AMPL Optimization Inc disclaim all warranties with
+ regard to this software, including all implied warranties of
+ merchantability and fitness.  In no event shall the author be liable
+ for any special, indirect or consequential damages or any damages
+ whatsoever resulting from loss of use, data or profits, whether in an
+ action of contract, negligence or other tortious action, arising out
+ of or in connection with the use or performance of this software.
+
+ Author: Gleb Belov
+ */
+
 #include <string>
 
 #include <pybind11/pybind11.h>
@@ -16,12 +38,12 @@ struct NLWPY_ColData {
   /// Num vars
   int num_col_;
   /// lower bounds
-  py::array_t<const double> lower_;
+  std::vector<double> lower_;
   /// upper bounds
-  py::array_t<const double> upper_;
+  std::vector<double> upper_;
   /// type: NLW2_VarType...
   /// Set to NULL if all continuous.
-  py::array_t<const int> type_;
+  std::vector<int> type_;
 };
 
 /// Sparse matrix.
@@ -36,33 +58,36 @@ struct NLWPY_SparseMatrix {
   /// Nonzeros
   size_t num_nz_;
   /// Row / col starts
-  py::array_t<const size_t> start_;
+  std::vector<size_t> start_;
   /// Entry index
-  py::array_t<const int> index_;
+  std::vector<int> index_;
   /// Entry value
-  py::array_t<const double> value_;
+  std::vector<double> value_;
 };
 
 /// NLWPY_NLModel.
-/// TODO check array lengths etc.
+/// @todo check array lengths etc.
+///
+/// @note In contrast to C/C++, NLWPY copies all data
+///   so the provided arrays/views can be deleted straightaway.
 class NLWPY_NLModel {
 public:
   /// Construct
-  NLWPY_NLModel(const char* nm=nullptr)
-    : prob_name_(nm ? nm : "NLWPY_Model"),
-      nlme_(prob_name_)
+  NLWPY_NLModel(std::string nm={})
+    : prob_name_(std::move(nm)),
+      nlme_(prob_name_.c_str())
   { }
 
   /// Add variables (all at once.).
-  /// TODO ty can be None.
+  /// @todo ty can be None.
   void SetCols(int n,
-               py::array_t<const double> lb,
-               py::array_t<const double> ub,
-               py::array_t<const int> ty) {
+               std::vector<double> lb,
+               std::vector<double> ub,
+               std::vector<int> ty) {
     vars_.num_col_ = n;
-    vars_.lower_ = lb;
-    vars_.upper_ = ub;
-    vars_.type_ = ty;
+    vars_.lower_ = std::move(lb);
+    vars_.upper_ = std::move(ub);
+    vars_.type_  = std::move(ty);
     nlme_.SetCols({n,
                    vars_.lower_.data(),
                    vars_.upper_.data(),
@@ -71,28 +96,31 @@ public:
   }
 
   /// Add variable names
-  void SetColNames(std::vector<const char *> nm) {
+  void SetColNames(std::vector<std::string> nm) {
     var_names_=std::move(nm);
-    nlme_.SetColNames(var_names_.data());
+    var_names_c_.resize(var_names_.size());
+    for (auto i=var_names_.size(); i--; )
+      var_names_c_[i] = var_names_[i].c_str();
+    nlme_.SetColNames(var_names_c_.data());
   }
 
   /// Add linear constraints (all at once).
   /// Only rowwise matrix supported.
   void SetRows(
       int nr,
-      py::array_t<const double> rlb, py::array_t<const double> rub,
+      std::vector<double> rlb, std::vector<double> rub,
       int format,     // TODO enum
       size_t nnz,
-      py::array_t<const size_t> st,
+      std::vector<size_t> st,
       /// Entry index
-      py::array_t<const int> ind,
+      std::vector<int> ind,
       /// Entry value
-      py::array_t<const double> val
+      std::vector<double> val
       ) {
-    num_row_=nr; row_lb_=rlb; row_ub_=rub;
+    num_row_=nr; row_lb_=std::move(rlb); row_ub_=std::move(rub);
     A_={
       nr, format,
-      nnz, st, ind, val
+      nnz, std::move(st), std::move(ind), std::move(val)
     };
     nlme_.SetRows(nr, row_lb_.data(), row_ub_.data(),
                   {
@@ -103,17 +131,20 @@ public:
   }
 
   /// Add constraint names
-  void SetRowNames(std::vector<const char *> nm) {
+  void SetRowNames(std::vector<std::string> nm) {
     row_names_=std::move(nm);
-    nlme_.SetRowNames(row_names_.data());
+    row_names_c_.resize(row_names_.size());
+    for (auto i=row_names_.size(); i--; )
+      row_names_c_[i] = row_names_[i].c_str();
+    nlme_.SetRowNames(row_names_c_.data());
   }
 
   /// Add linear objective (only single objective supported.)
   /// Sense: NLW2_ObjSenseM....
   /// Coefficients: dense vector.
   void SetLinearObjective(int sense, double c0,
-                          py::array_t<const double> c) {
-    obj_sense_=sense; obj_c0_=c0; obj_c_=c;
+                          std::vector<double> c) {
+    obj_sense_=sense; obj_c0_=c0; obj_c_=std::move(c);
     nlme_.SetLinearObjective(sense, c0, obj_c_.data());
   }
 
@@ -122,16 +153,16 @@ public:
   void SetHessian(int nr,
                   int format,     // TODO enum
                   size_t nnz,
-                  py::array_t<const size_t> st,
+                  std::vector<size_t> st,
                   /// Entry index
-                  py::array_t<const int> ind,
+                  std::vector<int> ind,
                   /// Entry value
-                  py::array_t<const double> val
+                  std::vector<double> val
                   ) {
     Q_format_ = format;
     Q_={
       nr, 0,
-      nnz, st, ind, val
+      nnz, std::move(st), std::move(ind), std::move(val)
     };
     nlme_.SetHessian(format, {
       nr, 0, nnz,
@@ -141,9 +172,9 @@ public:
   }
 
   /// Set obj name
-  void SetObjName(const char* nm) {
-    obj_name_=(nm ? nm : "");
-    nlme_.SetObjName(obj_name_);
+  void SetObjName(std::string nm) {
+    obj_name_=std::move(nm);
+    nlme_.SetObjName(obj_name_.c_str());
   }
 
   /// Get the model
@@ -151,21 +182,23 @@ public:
 
 private:
   /// Store the strings/arrays to keep the memory
-  const char* prob_name_ {"NLWPY_Model"};
+  std::string prob_name_ {"NLWPY_Model"};
   mp::NLModel nlme_;
   NLWPY_ColData vars_ {};
-  std::vector<const char *> var_names_ {};
+  std::vector<std::string> var_names_ {};
+  std::vector<const char*> var_names_c_ {};
   NLWPY_SparseMatrix A_ {};
   int num_row_ {};
-  py::array_t<const double> row_lb_ {};
-  py::array_t<const double> row_ub_ {};
-  std::vector<const char *> row_names_ {};
+  std::vector<double> row_lb_ {};
+  std::vector<double> row_ub_ {};
+  std::vector<std::string> row_names_ {};
+  std::vector<const char*> row_names_c_ {};
   int obj_sense_ {};
   double obj_c0_ {};
-  py::array_t<const double> obj_c_ {};
+  std::vector<double> obj_c_ {};
   int Q_format_ {};
   NLWPY_SparseMatrix Q_ {};
-  const char* obj_name_ {"obj[1]"};
+  std::string obj_name_ {"obj[1]"};
 };
 
 mp::NLSolution NLW2_Solve(mp::NLSolver& nls,

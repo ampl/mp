@@ -1,3 +1,25 @@
+'''
+ NL Writer Python API test.
+
+ Copyright (C) 2024 AMPL Optimization Inc.
+
+ Permission to use, copy, modify, and distribute this software and its
+ documentation for any purpose and without fee is hereby granted,
+ provided that the above copyright notice appear in all copies and that
+ both that the copyright notice and this permission notice and warranty
+ disclaimer appear in supporting documentation.
+
+ The author and AMPL Optimization Inc disclaim all warranties with
+ regard to this software, including all implied warranties of
+ merchantability and fitness.  In no event shall the author be liable
+ for any special, indirect or consequential damages or any damages
+ whatsoever resulting from loss of use, data or profits, whether in an
+ action of contract, negligence or other tortious action, arising out
+ of or in connection with the use or performance of this software.
+
+ Author: Gleb Belov
+'''
+
 import sys
 import numpy as np
 from scipy.sparse import csr_matrix
@@ -48,13 +70,13 @@ class ModelBuilder:
 
   def Check(self, sol):
     if not self.ApproxEqual(sol.obj_val_, self.obj_val_ref_):
-      print("MIQP 1: wrong obj val ({.17} !~ {.17})".format(
+      print("MIQP 1: wrong obj val ({:.17} !~ {:.17})".format(
              sol.obj_val_, self.obj_val_ref_))
       return False
 
     for i in range(len(sol.x_)):
       if not self.ApproxEqual(self.x_ref_[i], sol.x_[i]):
-        print("MIQP 1: wrong x[{}] ({.17} !~ {.17})".format(
+        print("MIQP 1: wrong x[{}] ({:.17} !~ {:.17})".format(
                i+1, sol.x_[i], self.x_ref_[i]))
         return False
 
