@@ -1,6 +1,7 @@
 # Available at setup time due to pyproject.toml
 from pybind11.setup_helpers import Pybind11Extension, build_ext
 from setuptools import setup
+import glob
 
 __version__ = "0.0.1"
 
@@ -16,10 +17,8 @@ __version__ = "0.0.1"
 ext_modules = [
     Pybind11Extension(
         "nlwpy",
-        ["src/nlw_bindings.cc"],
+        ["src/nlw_bindings.cc"] + glob.glob("../src/" + "*.cc"),
         include_dirs=["../include"],
-        library_dirs=["../../../build/lib"],
-        libraries=["nlw2"],
         # Example: passing in the version to the compiled code
         define_macros=[("VERSION_INFO", __version__)],
     ),
