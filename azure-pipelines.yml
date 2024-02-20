@@ -19,7 +19,7 @@ stages:
           cibuildwheel --platform linux --output-dir wheelhouse .
         displayName: Build wheels
       - task: PublishBuildArtifacts@1
-        inputs: {pathtoPublish: 'wheelhouse'}
+        inputs: {pathtoPublish: 'nl-writer2/nlwpy/wheelhouse'}
   - job: macos
     pool: {vmImage: 'macos-latest'}
     steps:
@@ -31,7 +31,7 @@ stages:
           cibuildwheel --platform macos --output-dir wheelhouse .
         displayName: Build wheels
       - task: PublishBuildArtifacts@1
-        inputs: {pathtoPublish: 'wheelhouse'}
+        inputs: {pathtoPublish: 'nl-writer2/nlwpy/wheelhouse'}
   - job: windows
     pool: {vmImage: 'windows-2022'}
     steps:
@@ -43,7 +43,7 @@ stages:
           cibuildwheel --platform windows --output-dir wheelhouse .
         displayName: Build wheels
       - task: PublishBuildArtifacts@1
-        inputs: {pathtoPublish: 'wheelhouse'}
+        inputs: {pathtoPublish: 'nl-writer2/nlwpy/wheelhouse'}
 
 - stage: qemu
   displayName: 'Build with QEMU'
@@ -107,7 +107,7 @@ stages:
           cibuildwheel --platform linux --output-dir wheelhouse .
         displayName: Build wheels
       - task: PublishBuildArtifacts@1
-        inputs: {pathtoPublish: 'wheelhouse'}
+        inputs: {pathtoPublish: 'nl-writer2/nlwpy/wheelhouse'}
 
 - stage: publish
   jobs:
