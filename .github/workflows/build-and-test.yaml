@@ -42,7 +42,7 @@ jobs:
     strategy:
       matrix:
         arch: [aarch64, ppc64le]
-        build: [cp36-*, cp37-*, cp38-*, cp39-*, cp310-*, cp311-*, cp312-*]
+        build: [cp37-*, cp38-*, cp39-*, cp310-*, cp311-*, cp312-*]
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v3
