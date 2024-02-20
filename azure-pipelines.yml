@@ -52,9 +52,6 @@ stages:
     pool: {vmImage: 'Ubuntu-20.04'}
     strategy:
       matrix:
-        aarch64 cp36:
-          CIBW_BUILD: cp36-*
-          CIBW_ARCHS_LINUX: aarch64
         aarch64 cp37:
           CIBW_BUILD: cp37-*
           CIBW_ARCHS_LINUX: aarch64
@@ -73,9 +70,6 @@ stages:
         aarch64 cp312:
           CIBW_BUILD: cp312-*
           CIBW_ARCHS_LINUX: aarch64
-        ppc64le cp36:
-          CIBW_BUILD: cp36-*
-          CIBW_ARCHS_LINUX: ppc64le
         ppc64le cp37:
           CIBW_BUILD: cp37-*
           CIBW_ARCHS_LINUX: ppc64le

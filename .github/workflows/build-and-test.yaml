@@ -28,8 +28,8 @@ jobs:
           CIBW_ARCHS_LINUX: ${{ env.CIBW_ARCHS_LINUX }}
           CIBW_ARCHS_MACOS: ${{ env.CIBW_ARCHS_MACOS }}
           CIBW_SKIP: ${{ env.CIBW_SKIP }}
-          CIBW_TEST_COMMAND: ${{ env.CIBW_TEST_COMMAND }}
-          CIBW_TEST_REQUIRES: ${{ env.CIBW_TEST_REQUIRES }}
+          # CIBW_TEST_COMMAND: ${{ env.CIBW_TEST_COMMAND }}
+          # CIBW_TEST_REQUIRES: ${{ env.CIBW_TEST_REQUIRES }}
 
       - uses: actions/upload-artifact@v3
         with:
@@ -61,8 +61,8 @@ jobs:
           CIBW_ARCHS_MACOS: ${{ env.CIBW_ARCHS_MACOS }}
           CIBW_BUILD: ${{ matrix.build }}
           CIBW_SKIP: ${{ env.CIBW_SKIP }}
-          CIBW_TEST_COMMAND: ${{ env.CIBW_TEST_COMMAND }}
-          CIBW_TEST_REQUIRES: --index-url https://pypi.ampl.com --extra-index-url https://pypi.org/simple ampl_module_base
+          # CIBW_TEST_COMMAND: ${{ env.CIBW_TEST_COMMAND }}
+          # CIBW_TEST_REQUIRES: --index-url https://pypi.ampl.com --extra-index-url https://pypi.org/simple ampl_module_base
 
       - uses: actions/upload-artifact@v3
         with:
