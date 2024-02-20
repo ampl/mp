@@ -1,18 +1,129 @@
-trigger:
-- master
+variables:
+  CIBW_SKIP: pp* cp27-* *_i686 *-win32 *musllinux*
+  CIBW_ARCHS_MACOS: x86_64 universal2
+#  CIBW_TEST_COMMAND: python -m amplpy.tests
+#  CIBW_TEST_REQUIRES: --index-url https://pypi.ampl.com --extra-index-url https://pypi.org/simple ampl_module_base ampl_module_highs pandas numpy
 
-jobs:
-- template: support/azure/template-build.yml  # Template reference
-  parameters:
-    name: Linux
-    vmImage: 'ubuntu-latest'
+stages:
+- stage: native
+  displayName: 'Build native'
+  jobs:
+  - job: manylinux
+    pool: {vmImage: 'Ubuntu-20.04'}
+    steps:
+      - task: UsePythonVersion@0
+      - bash: |
+          set -ex
+          cd nl-writer2/nlwpy/
+          python -m pip install --upgrade cibuildwheel==2.16.2
+          cibuildwheel --platform linux --output-dir wheelhouse .
+        displayName: Build wheels
+      - task: PublishBuildArtifacts@1
+        inputs: {pathtoPublish: 'wheelhouse'}
+  - job: macos
+    pool: {vmImage: 'macos-latest'}
+    steps:
+      - task: UsePythonVersion@0
+      - bash: |
+          set -ex
+          cd nl-writer2/nlwpy/
+          python -m pip install --upgrade cibuildwheel==2.16.2
+          cibuildwheel --platform macos --output-dir wheelhouse .
+        displayName: Build wheels
+      - task: PublishBuildArtifacts@1
+        inputs: {pathtoPublish: 'wheelhouse'}
+  - job: windows
+    pool: {vmImage: 'windows-2022'}
+    steps:
+      - task: UsePythonVersion@0
+      - bash: |
+          set -ex
+          cd nl-writer2/nlwpy/
+          python -m pip install --upgrade cibuildwheel==2.16.2
+          cibuildwheel --platform windows --output-dir wheelhouse .
+        displayName: Build wheels
+      - task: PublishBuildArtifacts@1
+        inputs: {pathtoPublish: 'wheelhouse'}
 
-- template: support/azure/template-build.yml  # Template reference
-  parameters:
-    name: windows
-    vmImage: 'windows-2019'
+- stage: qemu
+  displayName: 'Build with QEMU'
+  jobs:
+  - job: qemu
+    pool: {vmImage: 'Ubuntu-20.04'}
+    strategy:
+      matrix:
+        aarch64 cp36:
+          CIBW_BUILD: cp36-*
+          CIBW_ARCHS_LINUX: aarch64
+        aarch64 cp37:
+          CIBW_BUILD: cp37-*
+          CIBW_ARCHS_LINUX: aarch64
+        aarch64 cp38:
+          CIBW_BUILD: cp38-*
+          CIBW_ARCHS_LINUX: aarch64
+        aarch64 cp39:
+          CIBW_BUILD: cp39-*
+          CIBW_ARCHS_LINUX: aarch64
+        aarch64 cp310:
+          CIBW_BUILD: cp310-*
+          CIBW_ARCHS_LINUX: aarch64
+        aarch64 cp311:
+          CIBW_BUILD: cp311-*
+          CIBW_ARCHS_LINUX: aarch64
+        aarch64 cp312:
+          CIBW_BUILD: cp312-*
+          CIBW_ARCHS_LINUX: aarch64
+        ppc64le cp36:
+          CIBW_BUILD: cp36-*
+          CIBW_ARCHS_LINUX: ppc64le
+        ppc64le cp37:
+          CIBW_BUILD: cp37-*
+          CIBW_ARCHS_LINUX: ppc64le
+        ppc64le cp38:
+          CIBW_BUILD: cp38-*
+          CIBW_ARCHS_LINUX: ppc64le
+        ppc64le cp39:
+          CIBW_BUILD: cp39-*
+          CIBW_ARCHS_LINUX: ppc64le
+        ppc64le cp310:
+          CIBW_BUILD: cp310-*
+          CIBW_ARCHS_LINUX: ppc64le
+        ppc64le cp311:
+          CIBW_BUILD: cp311-*
+          CIBW_ARCHS_LINUX: ppc64le
+        ppc64le cp312:
+          CIBW_BUILD: cp312-*
+          CIBW_ARCHS_LINUX: ppc64le
+    # variables:
+      # CIBW_TEST_REQUIRES: --index-url https://pypi.ampl.com --extra-index-url https://pypi.org/simple ampl_module_base
+    steps:
+      - task: UsePythonVersion@0
+      - bash: docker run --rm --privileged multiarch/qemu-user-static --persistent yes
+        displayName: Configure qemu
+      - bash: |
+          set -ex
+          cd nl-writer2/nlwpy/
+          python -m pip install --upgrade cibuildwheel==2.16.2
+          cibuildwheel --platform linux --output-dir wheelhouse .
+        displayName: Build wheels
+      - task: PublishBuildArtifacts@1
+        inputs: {pathtoPublish: 'wheelhouse'}
 
-- template: support/azure/template-build.yml  # Template reference
-  parameters:
-    name: macOS
-    vmImage: 'macOS-10.15'
+- stage: publish
+  jobs:
+    - job: upload
+      pool: {vmImage: 'ubuntu-latest'}
+      steps:
+        - task: DownloadBuildArtifacts@0
+          inputs:
+              buildType: 'current'
+              downloadPath: 'artifacts/'
+              artifactName: 'drop'
+          displayName: 'Download current pipeline artifacts'
+        - bash: mv artifacts/drop artifacts/mp
+          displayName: Rename directory
+        - task: PublishPipelineArtifact@1
+          inputs:
+            targetPath: 'artifacts/'
+            artifact: 'release'
+            artifactType: 'pipeline'
