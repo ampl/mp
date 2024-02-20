@@ -1,6 +1,23 @@
-/**
- * C API: extern "C" wrapper for the NLSOL class
- *
+/*
+ C API: extern "C" wrapper for mp::NLSolver.
+
+ Copyright (C) 2024 AMPL Optimization Inc.
+
+ Permission to use, copy, modify, and distribute this software and its
+ documentation for any purpose and without fee is hereby granted,
+ provided that the above copyright notice appear in all copies and that
+ both that the copyright notice and this permission notice and warranty
+ disclaimer appear in supporting documentation.
+
+ The author and AMPL Optimization Inc disclaim all warranties with
+ regard to this software, including all implied warranties of
+ merchantability and fitness.  In no event shall the author be liable
+ for any special, indirect or consequential damages or any damages
+ whatsoever resulting from loss of use, data or profits, whether in an
+ action of contract, negligence or other tortious action, arising out
+ of or in connection with the use or performance of this software.
+
+ Author: Gleb Belov
  */
 
 #ifndef NLSOLVER_C_H
@@ -16,21 +33,18 @@
 extern "C" {
 #endif
 
-/// extern "C" wrapper of `~mp::NLSolver`.
-///
 /// Manager for solving optimization models via NL files.
 /// It performs zero-overhead model/solution transmission.
 /// In particular, it does not store any intermediate
 /// model/solution representation.
 ///
-/// This wrapper offers both "easy" but limited,
-/// as well as full NL functionality.
+/// This wrapper offers both full NL functionality,
+/// as well as "easy" but limited interface via NLW2_NLModel_C.
 ///
-/// To create / destroy,
-/// use NLW2_MakeNLSolver_C() / NLW2_DestroyNLSolver_C().
-///
-/// To manipulate, use NLW2_LoadModel_C(),
-/// etc, see the below API.
+/// @note To manipulate,
+///   use NLW2_MakeNLSolver_C() / NLW2_DestroyNLSolver_C(),
+///   NLW2_LoadNLModel_C(),
+///   etc, see the below API.
 ///
 /// @see C API tests/examples.
 typedef struct NLW2_NLSolver_C {

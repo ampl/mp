@@ -1,4 +1,4 @@
-/**
+/*
  NL model, for special model classes
 
  Copyright (C) 2024 AMPL Optimization Inc.
@@ -105,6 +105,7 @@ public:
 
 /// Declare
 class NLUtils;
+
 
 /// Class NLModel.
 ///
@@ -289,20 +290,25 @@ private:
 struct NLSolution {
   /// Any result obtained from the solver?
   operator bool() const { return solve_result_ > -2; }
-  /// Solve result.
-  /// If >-2, solver interaction successful.
-  /// Then:
-  /// -1      'unknown' unexpected termination
-  /// 0- 99   'solved' optimal solution found
-  /// 100-199 'solved?' optimal solution indicated, but error likely
-  /// 200-299 'infeasible' constraints cannot be satisfied
-  /// 300-399 'unbounded' objective can be improved without limit
-  /// 400-499 'limit' stopped by a limit that you set (such as on iterations)
-  /// 500-999 'failure' stopped by an error condition in the solver
-  ///
-  /// Individual solvers may have more specific values,
-  /// see https://ampl.com/products/solvers/solvers-we-sell/.
-  int solve_result_ {-2};   // "unset"
+  /**
+   Solve result.
+   If >-2, solver interaction successful. Then:
+
+   - -1      **unknown** - unexpected termination
+   - 0- 99   **solved** - optimal solution found
+   - 100-199 **solved?** - optimal solution indicated, but error likely
+   - 200-299 **infeasible** - constraints cannot be satisfied
+   - 300-399 **unbounded** - objective can be improved without limit
+   - 400-499 **limit** - stopped by a limit that you set (such as on iterations)
+   - 500-999 **failure** - stopped by an error condition in the solver
+
+   @note NLSolution is feasible (not proven optimal)
+     if **unbounded** or **limit** and \a x_ populated.
+
+   @note Individual solvers may have more specific values,
+     see https://ampl.com/products/solvers/solvers-we-sell/.
+  */
+  int solve_result_ {-2};   // -2: "not set"
   /// Number of solve_message's initial characters
   /// already printed on the screen
   int nbs_{};

@@ -1,6 +1,23 @@
-/**
- * C API: extern "C" wrapper for mp::NLModel class
- *
+/*
+ C API: extern "C" wrapper for mp::NLModel.
+
+ Copyright (C) 2024 AMPL Optimization Inc.
+
+ Permission to use, copy, modify, and distribute this software and its
+ documentation for any purpose and without fee is hereby granted,
+ provided that the above copyright notice appear in all copies and that
+ both that the copyright notice and this permission notice and warranty
+ disclaimer appear in supporting documentation.
+
+ The author and AMPL Optimization Inc disclaim all warranties with
+ regard to this software, including all implied warranties of
+ merchantability and fitness.  In no event shall the author be liable
+ for any special, indirect or consequential damages or any damages
+ whatsoever resulting from loss of use, data or profits, whether in an
+ action of contract, negligence or other tortious action, arising out
+ of or in connection with the use or performance of this software.
+
+ Author: Gleb Belov
  */
 
 #ifndef NLMODEL_C_H
@@ -157,19 +174,24 @@ typedef struct NLW2_Suffix_C {
 
 /// NL solution
 typedef struct NLW2_Solution_C {
-  /// Solve result.
-  /// If >-2, solver interaction successful.
-  /// Then:
-  /// -1      'unknown' unexpected termination
-  /// 0- 99   'solved' optimal solution found
-  /// 100-199 'solved?' optimal solution indicated, but error likely
-  /// 200-299 'infeasible' constraints cannot be satisfied
-  /// 300-399 'unbounded' objective can be improved without limit
-  /// 400-499 'limit' stopped by a limit that you set (such as on iterations)
-  /// 500-999 'failure' stopped by an error condition in the solver
-  ///
-  /// Individual solvers may have more specific values,
-  /// see https://ampl.com/products/solvers/solvers-we-sell/.
+  /**
+   Solve result.
+   If >-2, solver interaction successful. Then:
+
+   - -1      **unknown** - unexpected termination
+   - 0- 99   **solved** - optimal solution found
+   - 100-199 **solved?** - optimal solution indicated, but error likely
+   - 200-299 **infeasible** - constraints cannot be satisfied
+   - 300-399 **unbounded** - objective can be improved without limit
+   - 400-499 **limit** - stopped by a limit that you set (such as on iterations)
+   - 500-999 **failure** - stopped by an error condition in the solver
+
+   @note NLSolution is feasible (not proven optimal)
+     if **unbounded** or **limit** and \a x_ populated.
+
+   @note Individual solvers may have more specific values,
+     see https://ampl.com/products/solvers/solvers-we-sell/.
+  */
   int solve_result_;
   /// Number of solve_message's initial characters
   /// already printed on the screen

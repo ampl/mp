@@ -1,4 +1,4 @@
-/**
+/*
  * Example using mp::NLSolver
  * to write NL file, execute solver, and read SOL file.
  *

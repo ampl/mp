@@ -1,5 +1,6 @@
-/**
- * Convert various constraints to cones.
+/*
+ * Convert various constraints to cones:
+ * globalizing algebra to high-level constraints.
  *
  * These conversions might be run before and after other conversions.
  */

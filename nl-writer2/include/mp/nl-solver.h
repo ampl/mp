@@ -1,4 +1,4 @@
-/**
+/*
  mp::NLSolver.
 
  Manager for solving optimization models via NL files.
@@ -46,37 +46,44 @@ namespace mp {
 
 class NLHeader;
 
-/// \rst
-/// Class NLSOL.
-///
-/// Manager for solving optimization models via NL files.
-/// It performs zero-overhead model/solution transmission.
-/// In particular, it does not store any intermediate
-/// model/solution representation.
-///
-/// This class offers both full NL functionality,
-/// as well as a simplified interface for special model classes,
-/// see `~NLModel`.
-///
-/// Usage with full API (see
-/// `~mp::NLFeeder` and `~mp::SOLHandler` interfaces
-/// for model/solution transmission,
-/// as well as tests/examples):
-///
-///   ExampleModel emdl;
-///   ExampleNLFeeder nlf(emdl, binary);
-///   ExampleSOLHandler esolh(emdl);
-///   mp::NLUtils utils;
-///
-///   mp::NLSOL nlsol(&utils);
-///   nlsol.SetFileStub(stub);
-///   if (!nlsol.Solve(nlf, esolh, solver, sopts)) {
-///     printf("%s\n", nlsol.GetErrorMessage());
-///     return EXIT_FAILURE;
-///   } else {
-///     esolh.PrintSolution(stub);
-///   }
-/// \endrst
+/**
+  \rst
+  Class `~mp::NLSolver`.
+
+  Manager for solving optimization models via NL files.
+  It performs zero-overhead model/solution transmission.
+  In particular, it does not store any intermediate
+  model/solution representation.
+
+  This class offers both full NL functionality,
+  as well as a simplified interface for special model classes,
+  see `~NLModel`.
+
+  **Usage with full API** (see
+  `NLFeeder` and `~mp::SOLHandler` interfaces
+  for model/solution transmission,
+  as well as tests/examples):
+
+  .. code-block:: c++
+
+    ExampleModel emdl;
+    ExampleNLFeeder nlf(emdl, binary);
+    ExampleSOLHandler esolh(emdl);
+    mp::NLUtils utils;
+
+  .. code-block:: c++
+
+    mp::NLSolver nlsol(&utils);
+    nlsol.SetFileStub(stub);
+    if (!nlsol.Solve(nlf, esolh, solver, sopts)) {
+      printf("%s\n", nlsol.GetErrorMessage());
+      return EXIT_FAILURE;
+    } else {
+      esolh.PrintSolution(stub);
+    }
+
+  \endrst
+*/
 class NLSolver {
 public:
   /// Construct.

@@ -1,4 +1,4 @@
-/**
+/*
  NL Model C API, for special model classes
 
  Copyright (C) 2024 AMPL Optimization Inc.

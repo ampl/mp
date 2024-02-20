@@ -1,4 +1,4 @@
-/**
+/*
  mp::SOLHandler.
  Interface for a solution handler to be used with mp::SOLReader2.
  mp::SOLReader2 is a zero-overhead reader

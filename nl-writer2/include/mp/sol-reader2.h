@@ -1,4 +1,4 @@
-/**
+/*
  SOL reader2.
 
  SOL is a format for representing solutions of optimization problems

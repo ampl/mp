@@ -10,7 +10,7 @@ namespace expr = mp::expr;
 
 enum Expr {OTHER, CONST};
 
-// Count the number of divisions by non-constant expressions.
+/// Count the number of divisions by non-constant expressions.
 struct ExprCounter : mp::NullNLHandler<Expr> {
   int num_divs;
   ExprCounter() : num_divs(0) {}
@@ -22,7 +22,7 @@ struct ExprCounter : mp::NullNLHandler<Expr> {
   Expr OnNumericConstant(double) { return CONST; }
 };
 
-// Print problem dimensions: the number of constraints, variables and nonzeros
+/// Print problem dimensions: the number of constraints, variables and nonzeros
 // (in constraints).
 struct DimensionPrinter : mp::NullNLHandler<int> {
   void OnHeader(const mp::NLHeader &h) {
@@ -32,7 +32,7 @@ struct DimensionPrinter : mp::NullNLHandler<int> {
   }
 };
 
-// Print sparsity pattern of the objective and constraint gradients.
+/// Print sparsity pattern of the objective and constraint gradients.
 struct SparsityPrinter : mp::NullNLHandler<int> {
   struct LinearObjHandler {
     void AddTerm(int var_index, double) {
@@ -52,25 +52,25 @@ struct SparsityPrinter : mp::NullNLHandler<int> {
   }
 };
 
-// Print objective or constraint expression in SSA-like form.
+/// Print objective or constraint expression in SSA-like form.
 class ExprPrinter : public mp::NullNLHandler<std::string> {
  private:
-  // Next expression ID for SSA-like output.
+  /// Next expression ID for SSA-like output.
   int next_expr_id_;
 
-  // Output for the currectly formatted expression.
+  /// Output for the currectly formatted expression.
   fmt::MemoryWriter output_;
 
-  // The formatted nonlinear expression ID.
+  /// The formatted nonlinear expression ID.
   int nonlinear_expr_id_;
 
-  // Index of the objective to format or -1.
+  /// Index of the objective to format or -1.
   int obj_index_;
 
-  // Index of the constraint to format or -1.
+  /// Index of the constraint to format or -1.
   int con_index_;
 
-  // Formats arguments and appends the result to ``output``.
+  /// Formats arguments and appends the result to ``output``.
   template <typename... T>
   std::string format(const char *format_str, const T &... args) {
     std::string id = fmt::format("e{}", next_expr_id_++);
@@ -80,7 +80,7 @@ class ExprPrinter : public mp::NullNLHandler<std::string> {
     return id;
   }
 
-  // Reset the writer for the next expression.
+  /// Reset the writer for the next expression.
   void reset() {
     output_.clear();
     next_expr_id_ = 0;

@@ -1,4 +1,4 @@
-/**
+/*
  NL Solver, part of implementation.
 
  Copyright (C) 2024 AMPL Optimization Inc.
@@ -252,7 +252,8 @@ public:
     if (ini.num_) {
       auto ig = igw.MakeVectorWriter(ini.num_);
       for (int i=0; i<ini.num_; ++i)
-        ig.Write(ini.index_[i], ini.value_[i]);
+        ig.Write(VPerm( ini.index_[i] ),
+                 ini.value_[i]);
     }
   }
 
@@ -289,18 +290,21 @@ public:
       for (auto v: suf.values_)
         if (v)
           ++nnz;
+      bool ifVars = (0==(suf.kind_&3));
       if (suf.kind_ & 4) {
         auto sw = swf.StartDblSuffix(
               suf.name_.c_str(), suf.kind_, nnz);
         for (size_t i=0; i<suf.values_.size(); ++i)
           if (suf.values_[i])
-            sw.Write(i, suf.values_[i]);
+            sw.Write(ifVars ? VPerm(i) : i,
+                     suf.values_[i]);
       } else {
         auto sw = swf.StartIntSuffix(
               suf.name_.c_str(), suf.kind_, nnz);
         for (size_t i=0; i<suf.values_.size(); ++i)
           if (suf.values_[i])
-            sw.Write(i, std::round(suf.values_[i]));
+            sw.Write(ifVars ? VPerm(i) : i,
+                     std::round(suf.values_[i]));
       }
     }
   }
@@ -695,6 +699,7 @@ protected:
     std::vector<double> values(nmax);
     const std::string& name = si.Name();
     const std::string& table = si.Table();
+    bool ifVars = (0==(kind & 3));
     while (sr.Size()) {
       auto val = sr.ReadNext();
       if (val.first<0 || val.first>=nmax) {
@@ -702,7 +707,9 @@ protected:
                     "bad suffix element index");
         return;
       }
-      values[val.first] = val.second;
+      values[
+          ifVars ? pd_.vperm_inv_[ val.first ] : val.first]
+                                                 = val.second;
     }
     if (NLW2_SOLRead_OK == sr.ReadResult())    // Can check
       sol_.suffixes_.Add({name, table, kind,

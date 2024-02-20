@@ -1,4 +1,4 @@
-/**
+/*
  NL writer2
 
  NL is a format for representing optimization problems such as linear,

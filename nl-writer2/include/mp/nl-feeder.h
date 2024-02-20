@@ -1,4 +1,4 @@
-/**
+/*
  mp::NLFeeder.
  Interface for a model feeder into mp::NLWriter2.
  mp::NLWriter2 is a zero-overhead NL model writer

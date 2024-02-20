@@ -1,4 +1,4 @@
-/**
+/*
  Basic definitions for mp::NLWriter2, mp::SOLReader2, mp::NLSolver.
  As extern "C" to be used also in the C API.
 
