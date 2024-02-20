@@ -143,7 +143,7 @@ public:
 
   /// Load and solve an NLModel instance.
   ///
-  /// @return Solution object with computed obj_value_
+  /// @return NLSolution object with computed obj_value_
   ///    (has operator bool() for checking
   ///     if any result was obtained.)
   ///
@@ -209,7 +209,7 @@ public:
   /// Read solution after Solve()
   /// when the NL file was written from NLModel.
   ///
-  /// @return Solution object
+  /// @return NLSolution object
   ///    (has operator bool() for checking
   ///     if any result was obtained.)
   ///

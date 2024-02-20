@@ -93,7 +93,7 @@ const char* NLW2_GetErrorMessage_C(NLW2_NLSolver_C* );
 
 /// Load and solve NLW2_NLModel_C and return result.
 ///
-/// @return Solution object with computed obj_value_.
+/// @return NLW2_Solution_C object with computed obj_value_.
 ///   Valid as long as the NLW2_NLSolver_C object lives,
 ///   and until the next Solve() or ReadSolution().
 ///
@@ -149,7 +149,7 @@ int NLW2_RunSolver_C(NLW2_NLSolver_C* ,
 /// Read solution after solving a model
 /// loaded with NLW2_LoadNLModel_C().
 ///
-/// @return Solution object.
+/// @return NLW2_Solution_C object.
 ///   Valid as long as the NLW2_NLSolver_C object lives,
 ///   and until the next Solve() or ReadSolution().
 ///

@@ -44,15 +44,13 @@ class ModelBuilder:
   def GetModel(self):
     nlme = m.NLW2_NLModel(self.prob_name_)
 
-    nlme.SetCols(len(self.var_lb_),
-                 self.var_lb_, self.var_ub_, self.var_type_)
+    nlme.SetCols(self.var_lb_, self.var_ub_, self.var_type_)
     nlme.SetColNames(self.var_names_)
 
     if self.A_ is not None:
       self.A_ = csr_matrix(self.A_)
-      nlme.SetRows(len(self.row_lb_), self.row_lb_, self.row_ub_,
+      nlme.SetRows(self.row_lb_, self.row_ub_,
                    self.A_format_,
-                   self.A_.nnz,
                    self.A_.indptr, self.A_.indices, self.A_.data)
     nlme.SetRowNames(self.row_names_)
 
@@ -61,9 +59,7 @@ class ModelBuilder:
 
     if self.Q_ is not None:
       self.Q_ = csr_matrix(self.Q_)
-      nlme.SetHessian(self.Q_.shape[0],
-                      self.Q_format_,
-                      self.Q_.nnz,
+      nlme.SetHessian(self.Q_format_,
                       self.Q_.indptr, self.Q_.indices, self.Q_.data)
     nlme.SetObjName(self.obj_name_)
 
