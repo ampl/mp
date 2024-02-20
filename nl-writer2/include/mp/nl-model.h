@@ -294,16 +294,16 @@ struct NLSolution {
    Solve result.
    If >-2, solver interaction successful. Then:
 
-   - -1      **unknown** - unexpected termination
-   - 0- 99   **solved** - optimal solution found
-   - 100-199 **solved?** - optimal solution indicated, but error likely
-   - 200-299 **infeasible** - constraints cannot be satisfied
-   - 300-399 **unbounded** - objective can be improved without limit
-   - 400-499 **limit** - stopped by a limit that you set (such as on iterations)
-   - 500-999 **failure** - stopped by an error condition in the solver
+   - -1      *unknown* - unexpected termination
+   - 0- 99   *solved* - optimal solution found
+   - 100-199 *solved?* - optimal solution indicated, but error likely
+   - 200-299 *infeasible* - constraints cannot be satisfied
+   - 300-399 *unbounded* - objective can be improved without limit
+   - 400-499 *limit* - stopped by a limit that you set (such as on iterations)
+   - 500-999 *failure* - stopped by an error condition in the solver
 
    @note NLSolution is feasible (not proven optimal)
-     if **unbounded** or **limit** and \a x_ populated.
+     if *unbounded* or *limit* and \a x_ populated.
 
    @note Individual solvers may have more specific values,
      see https://ampl.com/products/solvers/solvers-we-sell/.

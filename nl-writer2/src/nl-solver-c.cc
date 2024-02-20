@@ -767,6 +767,7 @@ static NLW2_Solution_C NLW2_WrapNLSOL_Solution_C
       suf_c.kind_ = suf.kind_;
       suf_c.name_ = suf.name_.c_str();
       suf_c.table_ = suf.table_.c_str();
+      suf_c.numval_ = suf.values_.size();
       suf_c.values_ = suf.values_.data();
       sol_data.suffixes_.push_back(std::move(suf_c));
     }

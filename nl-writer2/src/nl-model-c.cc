@@ -113,6 +113,25 @@ void NLW2_SetHessian_C(NLW2_NLModel_C* nlme,
 void NLW2_SetObjName_C(NLW2_NLModel_C* nlme, const char* nm)
 { CastNZ<mp::NLModel>(nlme->p_data_)->SetObjName(nm); }
 
+
+void NLW2_SetWarmstart_C(NLW2_NLModel_C* nlme,
+                         NLW2_SparseVector_C ini_x)
+{ CastNZ<mp::NLModel>(nlme->p_data_)->SetWarmstart(ini_x); }
+
+void NLW2_SetDualWarmstart_C(NLW2_NLModel_C* nlme,
+                             NLW2_SparseVector_C ini_y)
+{ CastNZ<mp::NLModel>(nlme->p_data_)->SetWarmstart(ini_y); }
+
+int NLW2_AddSuffix_C(NLW2_NLModel_C* nlme,
+                     NLW2_Suffix_C suf_c) {
+  mp::NLSuffix suf{
+    suf_c.name_, suf_c.table_, suf_c.kind_,
+    {suf_c.values_, suf_c.values_+suf_c.numval_}
+  };
+  return CastNZ<mp::NLModel>(nlme->p_data_)->AddSuffix(suf);
+}
+
+
 /// Compute objective value
 double NLW2_ComputeObjValue_C(NLW2_NLModel_C* nlme,
                             const double* x) {
