@@ -20,7 +20,7 @@ ext_modules = [
         "nlwpy",
         ["src/nlw_bindings.cc"] + glob.glob("../src/" + "*.cc"),
         extra_compile_args=["-std=c++17"],
-        include_dirs=["../include", pybind11.get_include()],
+        include_dirs=["./include", pybind11.get_include()],
         # Example: passing in the version to the compiled code
         define_macros=[("VERSION_INFO", __version__)],
     ),
