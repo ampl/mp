@@ -1,6 +1,7 @@
 # Available at setup time due to pyproject.toml
-from pybind11.setup_helpers import Pybind11Extension, build_ext
-from setuptools import setup
+from pybind11.setup_helpers import build_ext
+from setuptools import setup, Extension
+import pybind11
 import glob
 
 __version__ = "0.0.1"
@@ -15,10 +16,11 @@ __version__ = "0.0.1"
 #   reproducible builds (https://github.com/pybind/python_example/pull/53)
 
 ext_modules = [
-    Pybind11Extension(
+    Extension(
         "nlwpy",
         ["src/nlw_bindings.cc"] + glob.glob("../src/" + "*.cc"),
-        include_dirs=["../include"],
+        extra_compile_args=["-std=c++17"],
+        include_dirs=["../include", pybind11.get_include()],
         # Example: passing in the version to the compiled code
         define_macros=[("VERSION_INFO", __version__)],
     ),
