@@ -79,6 +79,13 @@ using IndicatorConstraintQuadEQ = IndicatorConstraint<QuadConEQ>;
 using IndicatorConstraintQuadGE = IndicatorConstraint<QuadConGE>;
 
 
+/// Unary encoding.
+/// Currently a dummy constraint just to build
+/// the reformulation graph.
+DEF_STATIC_CONSTR(UnaryEncodingConstraint, VarArray1,
+                  "Unary encoding of an integer bounded variable");
+
+
 ////////////////////////////////////////////////////////////////////////
 /// SOS1, SOS2
 
@@ -277,17 +284,17 @@ DEF_STATIC_CONSTR_WITH_PRM( QuadraticConeConstraint, VarArray, DblParamArray,
 DEF_STATIC_CONSTR_WITH_PRM( RotatedQuadraticConeConstraint, VarArray, DblParamArray,
                             "Rotated quadratic cone "
                             "2 * p1*x1*p2*x2 >= (p3*x3)^2 + ...),"
-                            " x1, x2 >= 0, with factors p1..pn");
+                            " x1, x2 >= 0 or x1, x2 <= 0, with factors p1..pn");
 /// Exponential cone
 DEF_STATIC_CONSTR_WITH_PRM( ExponentialConeConstraint, VarArray3, DblParamArray3,
                             "Exponential cone ax >= by exp(cz / (by)),"
                             " where ax, by >= 0, with factors a,b,c");
 /// Power cone
 DEF_STATIC_CONSTR_WITH_PRM( PowerConeConstraint, VarArray, DblParamArray,
-                            "Power cone with factors ");
+                            "Power cone with factors");
 /// Geometric cone
 DEF_STATIC_CONSTR_WITH_PRM( GeometricConeConstraint, VarArray, DblParamArray,
-                            "Geometric with factors ");
+                            "Geometric with factors");
 
 } // namespace mp
 

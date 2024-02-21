@@ -1,4 +1,4 @@
-/**
+/*
  * Convert range constraints
  */
 
@@ -241,11 +241,11 @@ protected:
   }
   void ConvertRange(const ItemType& item, int i) {
     GetMC().TurnOffAutoLinking();     // for range only
-    auto slk = GetMC().AddVar(0.0, item.ub()-item.lb());
+    auto slk = int( GetMC().AddVar(0.0, item.ub()-item.lb()) );
     auto body = item.GetBody();
     body.add_term(1.0, slk);
     AlgConEQ lceq { std::move(body), item.ub() };
-    int i1 = GetMC().AddConstraint(std::move(lceq));
+    int i1 = (int)GetMC().AddConstraint(std::move(lceq));
     GetSlackLink().AddEntry({i, i1, slk});
   }
   void ConvertWithRhs(const ItemType& item, RangeRelations rr) {

@@ -16,7 +16,7 @@ namespace mp {
 template <class Impl>
 class SolutionChecker {
 public:
-  /// Check unpostsolved solution
+  /// Check postsolved & unpostsolved solutions
   /// in various ways.
   /// @param p_extra: !=0 means known infeas solution
   bool CheckSolution(
@@ -24,21 +24,53 @@ public:
         const pre::ValueMapDbl& duals,
         ArrayRef<double> obj,
         void* p_extra) {
-    bool result = true;
     bool fKnownInfeas = (bool)p_extra;
     if (fKnownInfeas && !MPCD( sol_check_infeas() ))
-      return result;
+      return true;
+    std::string msgreal, msgidea;
     std::string err_msg;
     try {                            // protect
       std::vector<double> x_back = x;
       if (MPCD( sol_check_mode() ) & (1+2+4+8+16)) {
-        if (!DoCheckSol(x, duals, obj, {}, x_back, false))
-          result = false;
+        msgreal = DoCheckSol(x, duals, obj, {}, x_back, false);
       }
       if (MPCD( sol_check_mode() ) & (32+64+128+256+512)) {
         auto x1 = RecomputeAuxVars(x);
-        if (!DoCheckSol(x1, duals, obj, x_back, x_back, true))
-          result = false;
+        msgidea = DoCheckSol(x1, duals, obj, x_back, x_back, true);
+      }
+      if (msgreal.size() || msgidea.size()) {     // Checks failed
+        std::string warn
+            = "Type                         MaxAbs [Name]   MaxRel [Name]\n";
+        warn += msgidea;
+        if (msgreal.size()) {
+          for (auto i=msgreal.size()-1; i--; ) {
+            if ('\n'==msgreal[i] && ' '==msgreal[i+1])
+              msgreal[i+1] = '*';
+          }
+          if (' '==msgreal.front())
+            msgreal.front() = '*';
+          warn += msgreal;
+          warn += "*: Using the solver's aux variable values.\n";
+        }
+        warn += "Documentation: mp.ampl.com/modeling-tools.html#automatic-solution-check.";
+        // Should messages for realistic and idealistic
+        // modes be more coordinated?
+        // I.e., when no expressions.
+        // What if this is an intermediate solution?
+        // Should be fine - warning by default,
+        // fail if requested explicitly.
+        // If warning, we should add the report
+        // to that solution's solve message, and
+        // a summary in the final solve message.
+        // For now, do this via warnings?
+        if (MPCD( sol_check_fail() ))
+          MP_RAISE_WITH_CODE(int(sol::MP_SOLUTION_CHECK),   // failure
+                             warn);
+        else
+          MPD( AddWarning(
+                 MPD( GetEnv() ).GetSolCheckWarningKey(true),
+                 warn,
+                 true) );  // replace for multiple solutions
       }
     } catch (const mp::Error& err) {
       if (MPCD( sol_check_fail() ))
@@ -50,12 +82,13 @@ public:
       err_msg = "unknown error";
     }
     if (err_msg.size()) {
+      err_msg += '\n' + msgreal + msgidea;
       if (MPCD( sol_check_fail() ))
         MP_RAISE("Solution check aborted: " + err_msg);
       MPD( AddWarning("Solution check aborted", err_msg) );
-      result = false;
+      return false;
     }
-    return result;
+    return msgreal.empty() && msgidea.empty();
   }
 
   /// Functor to recompute auxiliary var \a i
@@ -94,10 +127,10 @@ public:
 
   /// Check single unpostsolved solution.
   /// @param x_back: solution vector from realistic mode.
-  /// It can be changed by AMPL solution_... options.
+  /// It can be changed by the :round and :prec options.
   /// Its auxiliary vars are compared
   /// with recomputed expression values.
-  bool DoCheckSol(
+  std::string DoCheckSol(
       ArrayRef<double> x,
       const pre::ValueMapDbl& duals,
       ArrayRef<double> obj,
@@ -123,28 +156,8 @@ public:
     if (chk.check_mode() & 16)
       CheckObjs(chk);
     MPD( GenerateViolationsReport(chk, if_recomp_vals) );
-    // Should messages for realistic and idealistic
-    // modes be coordinated?
-    // I.e., when no expressions.
-    // What if this is an intermediate solution?
-    // Should be fine - warning by default,
-    // fail if requested explicitly.
-    // If warning, we should add the report
-    // to that solution's solve message, and
-    // a summary in the final solve message.
-    // For now, do this via warnings?
-    if (chk.HasAnyViols()) {
-      if (MPCD( sol_check_fail() ))
-        MP_RAISE_WITH_CODE(int(sol::MP_SOLUTION_CHECK),   // failure
-                           chk.GetReport());
-      else
-        MPD( AddWarning(
-              MPD( GetEnv() ).GetSolCheckWarningKey(if_recomp_vals),
-              chk.GetReport(),
-              true) );  // replace for multiple solutions
-    }
     x_back = chk.x_ext().get_x();   // to reuse 'realistic' vector
-    return !chk.HasAnyViols();
+    return chk.GetReport();
   }
 
   void CheckVars(SolCheck& chk) {
@@ -192,37 +205,24 @@ public:
   }
 
   void GenerateViolationsReport(
-      SolCheck& chk, bool f_idealistic) {
+      SolCheck& chk, bool ) {
     fmt::MemoryWriter wrt;
-    if (chk.HasAnyViols())
-      wrt.write(
-            "   [ sol:chk:feastol={}, :feastolrel={}, :inttol={},\n"
-            "       :round='{}', :prec='{}' ]\n",
-            MPCD( sol_feas_tol() ), MPCD( sol_feas_tol_rel() ),
-            MPCD( sol_int_tol() ),
-            chk.x_ext().solution_round(),
-            chk.x_ext().solution_precision());
     if (chk.HasAnyConViols()) {
       Gen1Viol(chk.VarViolBnds().at(0), wrt, true,
-               "  - {} variable(s) violate bounds");
+               "variable bounds");
       Gen1Viol(chk.VarViolBnds().at(1), wrt, true,
-               "  - {} auxiliary variable(s) violate bounds");
+               "aux var bounds");
       Gen1Viol(chk.VarViolIntty().at(0), wrt, true,
-               "  - {} variable(s) violate integrality");
+               "variable integrality");
       Gen1Viol(chk.VarViolIntty().at(1), wrt, true,
-               "  - {} auxiliary variable(s) violate integrality");
+               "aux var integrality");
     }
     GenConViol(chk.ConViolAlg(), wrt, 0);
     GenConViol(chk.ConViolLog(), wrt, 1);
     if (chk.HasAnyObjViols()) {
-      wrt.write("Objective value violations:\n");
       Gen1Viol(chk.ObjViols(), wrt, true,
-               "  - {} objective value(s) violated");
+               "objective(s)");
     }
-    if (f_idealistic && chk.HasAnyViols())
-      wrt.write(
-            "AMPL may evaluate constraints/objectives differently\n"
-            "than the solver, see mp.ampl.com/solution-check.html.");
     chk.SetReport( wrt.str() );
   }
 
@@ -231,58 +231,56 @@ public:
   /// the maximal violations.
   void Gen1Viol(
       const ViolSummary& vs, fmt::MemoryWriter& wrt,
-      bool f_max, const std::string& format) {
+      bool f_max, const std::string& type) {
     if (vs.N_) {
-      wrt.write(format, vs.N_);
-      auto vmaxabs = Gen1ViolMax(
-            f_max, vs.epsAbsMax_, vs.nameAbs_, false);
+      // wrt.write("  {:16} {:<7}", type, vs.N_);
+      wrt.write("  {:27}", type);
+      auto vmaxabs = Gen1ViolMax(  // true: 1 for logical
+            f_max, vs.epsAbsMax_, vs.nameAbs_);
       auto vmaxrel = Gen1ViolMax(
-            f_max, vs.epsRelMax_, vs.nameRel_, true);
-      if (vmaxabs.size() || vmaxrel.size())
-        wrt.write(",\n        {}", vmaxabs);
-      if (vmaxabs.size() && vmaxrel.size())
-        wrt.write(", ");
-      wrt.write("{}", vmaxrel);
+            f_max, vs.epsRelMax_, vs.nameRel_);
+      wrt.write("  {:14}", vmaxabs);
+      wrt.write("  {:14}", vmaxrel);
       wrt.write("\n");
     }
   }
 
   /// Stringify 1 maximal violation
   std::string Gen1ViolMax(
-      bool f_max, double viol, const char* nm, bool relVsAbs) {
+      bool f_max, double viol, const char* nm) {
     fmt::MemoryWriter wrt;
     if (viol>0.0) {
       if (f_max)
-        wrt.write("up to {:.0E} ({}",
-                  viol, relVsAbs ? "rel" : "abs");
+        wrt.write("{:.0E}", viol);
       if (nm && *nm != '\0') {
-        wrt.write(f_max ? ", " : "(");
-        wrt.write("item '{}')", nm);
-      } else if (f_max)
-        wrt.write(")");
+        wrt.write(f_max ? " [" : "[");
+        wrt.write("{}]", nm);
+      }
     }
+    if (0 == wrt.size())
+      wrt.write("-");
     return wrt.str();
   }
 
+  /// std::string classnm = alg_log ? "Logical" : "Algebraic";
+  /// wrt.write(classnm + " expression violations:\n");
   void GenConViol(
       const std::map< std::string, ViolSummArray<3> >& cvmap,
       fmt::MemoryWriter& wrt, int alg_log) {
-    std::string classnm = alg_log ? "Logical" : "Algebraic";
     if (cvmap.size()) {
-      wrt.write(classnm + " expression violations:\n");
       for (const auto& cva: cvmap) {
         Gen1Viol(cva.second.at(0), wrt, !alg_log,
                  0==cva.first.compare(0, 4, ":lin")
-                 ? "  - {} linear constraint(s)"
+                 ? "algebraic con(s)"
                  : 0==cva.first.compare(0, 5, ":quad")
-                   ? "  - {} quadratic constraint(s)"
-                 : "  - {} constraint(s) of type '"
+                   ? "quadratic con(s)"
+                 : "expr '"
                  + std::string(cva.first) + "'");
         Gen1Viol(cva.second.at(1), wrt, !alg_log,
-                 "  - {} intermediate auxiliary constraint(s) of type '"
+                 "interm expr '"
                  + std::string(cva.first) + "'");
         Gen1Viol(cva.second.at(2), wrt, !alg_log,
-                 "  - {} final auxiliary constraint(s) of type '"
+                 "final expr '"
                  + std::string(cva.first) + "'");
       }
     }

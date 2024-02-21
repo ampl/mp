@@ -1,6 +1,20 @@
 Summary of recent updates to CBCMP for AMPL
 ===========================================
 
+## 20240115
+- *Solve result codes*.
+  - List codes by running (solver) -!
+  - [BREAKING] Standardized codes. Major changes:
+    - 100-199 (solved?) means solution candidate
+      provided, but can be suboptimal/infeasible
+    - 300-349 means unbounded problem but
+      feasible solution returned
+    - 400-449 means limit/interrupt but feasible
+  - [BREAKING] sol:chk:fail returns code 150 (solved?)
+- Compact solution check warnings
+- Fixed presolve of the power function #226.
+
+
 ## 20231117
 - MP update: fixed graceful exit on Ctrl-C from AMPL in Linux
   and fixed issue with reading text-format NL files

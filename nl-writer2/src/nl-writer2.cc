@@ -1,4 +1,4 @@
-/**
+/*
  NL writer
 
  NL is a format for representing optimization problems such as linear,
@@ -51,11 +51,11 @@
   #define ssize_t int
 #endif
 
-/// Check that the stub NLFeeder2
+/// Check that the stub NLFeeder
 /// compiles with NLWriter2
-static void test_nlfeeder2_with_nlwriter2() {
+static void test_nlfeeder_with_nlwriter2() {
   using Expr = void*;
-  class TestNLF : public mp::NLFeeder2<TestNLF, Expr> {
+  class TestNLF : public mp::NLFeeder<TestNLF, Expr> {
   public:
   };
   TestNLF nlfeeder;
@@ -327,15 +327,7 @@ g_fmt(char *b, double x, int prec)
   char *b0, sbuf[400], *se;
 
   b0 = b;
-#if defined(_WIN32) || defined(_WIN64)
-#ifdef IEEE_8087
-  if (!(((Long*)&x)[1] & 0x7fffffff | ((Long*)&x)[0])) {
-#else
-  if (!(((Long*)&x)[0] & 0x7fffffff | ((Long*)&x)[1])) {
-#endif /* IEEE_8087 */
-#else /* _WIN32 || _WIN64 */
-  if (! x) {
-#endif /*_WIN32 || _WIN64 */
+  if (! x) {        // Report -0 as '0'
     *b++ = '0';
     *b = 0;
     goto done;

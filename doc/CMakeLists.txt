@@ -9,7 +9,7 @@ endif ()
 
 find_package(Sphinx)
 if(NOT SPHINX_EXECUTABLE)
-  message(STATUS "Documentation generation disabled (requires sphinx)")
+  message(STATUS "Target doc disabled (requires sphinx, see requirements.txt)")
   return()
 endif()
 
@@ -32,7 +32,8 @@ add_prefix(mp_docs ${DOC_BASEDIR}/
     modeling-expressions.rst
     modeling-efficiency.rst
     modeling-numerics.rst
-    solution-check.rst
+    modeling-tools.rst
+    modeling-troublesh.rst
     features-guide.rst
     models.rst
     intro.rst components.rst drivers.rst

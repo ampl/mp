@@ -38,7 +38,8 @@
     "tags" : ["linear", "continuous", "writelp"],
     "files" : ["diet.mod", "diet.dat"],
     "options": {
-      "ANYSOLVER_options": "writeprob='diet.lp'"
+      "ANYSOLVER_options": "writeprob='diet.lp'",
+      "mosek_options": "writeprob='diet.jtask'"
     },
     "comment": "Testing quoted string options"
   },

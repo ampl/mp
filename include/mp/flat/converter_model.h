@@ -179,14 +179,25 @@ public:
 
   ///////////////////////////// OBJECTIVES ////////////////////////////
 public:
+  /// List of objectives
   using ObjList = std::vector<QuadraticObjective>;
+  /// Get list of objectives, const
   const ObjList& get_objectives() const { return objs_; }
+  /// Get list of objectives
   ObjList& get_objectives() { return objs_; }
+  /// N obj
   int num_objs() const { return (int)objs_.size(); }
+  /// Get obj [i]
   const QuadraticObjective& get_obj(int i) const
   { return get_objectives().at(i); }
-
-public:
+  /// Has a QP objective?
+  bool HasQPObjective() const {
+    for (const auto& obj: get_objectives())
+      if (!obj.GetQPTerms().empty())
+        return true;
+    return false;
+  }
+  /// Add an objective
   void AddObjective(QuadraticObjective&& obj)
   { get_objectives().push_back(std::move(obj)); }
 

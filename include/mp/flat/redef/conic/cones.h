@@ -1,5 +1,6 @@
-/**
- * Convert various constraints to cones.
+/*
+ * Convert various constraints to cones:
+ * globalizing algebra to high-level constraints.
  *
  * These conversions might be run before and after other conversions.
  */
@@ -21,7 +22,7 @@ namespace mp {
 ///
 /// @param MCType: ModelConverter, e.g., FlatConverter.
 /// @param Con: the source constraint type.
-/// @param ConvertBase: another class
+/// @param CvtBase: another class
 /// providing conversion methods DoRun
 /// for quadratic and linear constraints.
 template <class MCType, class Con, template <class > class CvtBase>
@@ -77,51 +78,39 @@ public:
     // We _could_ walk everything just once
     // and see which cones are there.
     // Or, even walk expression trees from exponents, etc.
-    RunQCones();
-    RunExpCones();
+    // But we walk & convert at once, because later we can
+    // reconvert SOCP to QC in std forms.
+    if (MC().IfPassSOCPCones() >= 2)
+      RunQConesFromQC();
+    if (MC().IfPassSOCPCones() >= 1)
+      RunQConesFromNonQC();
+    if (MC().IfPassExpCones())
+      RunExpCones();
+    TryReformulateQPObjective();
+    if (IfNeedSOCP2QC())
+      SetupSOCP2QC();
+    WarnOnMix();
   }
 
 
 protected:
-  void RunQCones() {
-    if (MC().IfPassSOCPCones()) {   // convert everything to QuadraticCones.
-      Walk<QuadConRange, Convert1QC>();
-      Walk<QuadConLE, Convert1QC>();
-      Walk<QuadConGE, Convert1QC>();
+  void RunQConesFromQC() {
+    Walk<QuadConRange, Convert1QC>();
+    Walk<QuadConLE, Convert1QC>();
+    Walk<QuadConGE, Convert1QC>();
+  }
 
-      if (MC().GetNumberOfAddable((PowConstraint*)0)>0 ||
-          MC().GetNumberOfAddable((AbsConstraint*)0)>0) {
-        Walk<LinConRange, Convert1QC>();
-        Walk<LinConLE, Convert1QC>();
-        Walk<LinConGE, Convert1QC>();
-      }
-
-      if ( ! MC().ModelAPICanMixConicQCAndQC()) {  // cannot mix
-        if (MC().NumQC2SOCPAttempted() > MC().NumQC2SOCPSucceeded()
-            && MC().NumQC2SOCPSucceeded()) {
-          MC().AddWarning("Mix QC+SOCP",
-                          "Not all quadratic constraints could "
-                          "be recognized\nas quadratic cones; "
-                          "solver might not accept the model.\n"
-                          "Try option cvt:socp=0 to leave all "
-                          "as quadratic.");
-        }
-      }
-    } else
-      if (MC().IfPassQuadCon() &&
-          (MC().GetNumberOfAddable((PowConstraint*)0)>0 ||
-           MC().GetNumberOfAddable((AbsConstraint*)0)>0)) {
-        // Still collect QCones expressed by 2-norms.
-        // They are to be converted to quadratics.
-        Walk<LinConRange, Convert1QC>();
-        Walk<LinConLE, Convert1QC>();
-        Walk<LinConGE, Convert1QC>();
-      }
+  void RunQConesFromNonQC() {
+    if (MC().GetNumberOfAddable((PowConstraint*)0)>0 ||
+        MC().GetNumberOfAddable((AbsConstraint*)0)>0) {
+      Walk<LinConRange, Convert1QC>();
+      Walk<LinConLE, Convert1QC>();
+      Walk<LinConGE, Convert1QC>();
+    }
   }
 
   void RunExpCones() {
-    if (MC().IfPassExpCones() &&   // convert everything to ExpCones.
-        MC().GetNumberOfAddable((ExpConstraint*)0)>0) {
+    if (MC().GetNumberOfAddable((ExpConstraint*)0)>0) {
       Walk<QuadConRange, Convert1ExpC>();
       Walk<QuadConLE, Convert1ExpC>();    // also ExpA ??
       Walk<QuadConGE, Convert1ExpC>();
@@ -129,6 +118,94 @@ protected:
       Walk<LinConRange, Convert1ExpC>();
       Walk<LinConLE, Convert1ExpC>();
       Walk<LinConGE, Convert1ExpC>();
+    }
+  }
+
+  /// Ideally also for exp/log terms
+  void TryReformulateQPObjective() {
+    if (HasAnyCones()
+        && MC().HasQPObjective() && 1==MC().num_objs()) {
+      // See if the QP objective is SOCP-easy
+      auto& obj = MC().get_objectives().at(0);
+      auto& qp = obj.GetQPTerms();
+      auto objsns = (obj::MAX==obj.obj_sense()) ? 1.0 : -1.0;
+      for (auto i=qp.size(); i--; ) {
+        if (qp.coef(i) * objsns > 0.0
+            || qp.var1(i) != qp.var2(i))       // not x1[i]==x2[i]
+          return;
+      }
+      // Set up AutoLink
+      auto obj_src =              // source value node for this obj
+          MC().GetValuePresolver().GetSourceNodes().GetObjValues()().Select(0);
+      pre::AutoLinkScope<MCType> auto_link_scope{ MC(), obj_src };
+      // Aux vars
+      int z = (int)MC().AddVar(0.0, MC().Infty());
+      int z1 = (int)MC().MakeFixedVar(1.0);
+      // Add cone
+      std::vector<double> c = {{1.0, 0.5}};
+      c.insert(c.end(), qp.coefs().begin(), qp.coefs().end());
+      if (objsns > 0)       // negate coefs if maximizing
+        for (size_t i=2; i<c.size(); ++i)
+          c[i] = -c[i];
+      std::vector<int> x = {{z, z1}};
+      x.insert(x.end(), qp.vars1().begin(), qp.vars1().end());
+      MC().AddConstraint(
+            RotatedQuadraticConeConstraint(
+              std::move(x), std::move(c)));
+      // Add linear term, remove QP terms
+      qp.clear();
+      obj.GetLinTerms().add_term(-objsns, z);
+    }
+  }
+
+  /// Any cones at all
+  bool HasAnyCones() const {
+    return MC().GetNumberOfAddable((QuadraticConeConstraint*)0)>0 ||
+        MC().GetNumberOfAddable((RotatedQuadraticConeConstraint*)0)>0 ||
+        HasAnyNonSOCPCones();
+  }
+
+  /// any non-SOCP cones?
+  bool HasAnyNonSOCPCones() const {
+    return MC().GetNumberOfAddable((ExponentialConeConstraint*)0)>0 ||
+        MC().GetNumberOfAddable((PowerConeConstraint*)0)>0 ||
+        MC().GetNumberOfAddable((GeometricConeConstraint*)0)>0;
+  }
+
+  bool IfNeedSOCP2QC() {
+    return
+        MC().SOCP2QCMode() >= 2     // compulsory
+        || (1 == MC().SOCP2QCMode()
+            && !HasAnyNonSOCPCones()
+               // Might also have SOCP from sqrt(), abs().
+               // Some QC -> SOCP but not all, even if 0 succeeded.
+            && (MC().NumQC2SOCPAttempted() > MC().NumQC2SOCPSucceeded()
+                || MC().HasQPObjective())  // or a quadratic obj
+        ); // Mosek 10 considers QP obj as a constraint for this
+  }
+
+  void SetupSOCP2QC() {
+    MC().Setup2ConvertSOCP2QC();
+  }
+
+  void WarnOnMix() {
+    if ( !MC().ModelAPICanMixConicQCAndQC()) {  // cannot mix
+      if ((HasAnyCones()                        // exp cones
+           && (MC().NumQC2SOCPAttempted() > MC().NumQC2SOCPSucceeded()
+               || MC().HasQPObjective()))       // and quadratics left in
+           && !MC().IfConvertSOCP2QC()          // and not decided to convert
+          ) {
+        MC().AddWarning("Mix QC+cones",
+                        "Not all quadratic constraints could "
+                        "be recognized\nas quadratic cones; "
+                        "or, the objective is quadratic;\n"
+                        "additionally, further conversion back to QC\n"
+                        "not desired (option cvt:socp2qc) or other cone types present;\n"
+                        "solver might not accept the model.\n"
+                        "Try to express all cones in standard forms,\n"
+                        "not in the objective.\n"
+                        "See mp.ampl.com/modeling-expressions.html#conic-optimization.");
+      }
     }
   }
 
@@ -320,7 +397,7 @@ protected:
       // which is always true TODO
       if (auto rhs_args = CheckNorm2(lint.var(0))) {
         return ContinueStdSOC(std::fabs(rhs),
-                              MC().MakeFixedVar( 1.0 ),
+                              int( MC().MakeFixedVar( 1.0 ) ),
                               lint.coef(0), rhs_args);
       }
     }
@@ -475,7 +552,7 @@ protected:
       x[1] = lhs_args.vars_[1];
     } else {                    // x is sqrt(k*x)
       c[1] = lhs_args.coef_extra * coefX_abs;
-      x[1] = MC().MakeFixedVar(1.0);
+      x[1] = int( MC().MakeFixedVar(1.0) );
     }
     auto coefY_abs = std::fabs(lint.coef(iY));
     for (size_t iPush=0; iPush<rhs_args.size(); ++iPush) {
@@ -484,7 +561,7 @@ protected:
     }
     if (constNZ) {
       assert(0.0 < rhs_args.const_term);
-      x.back() = MC().MakeFixedVar(1.0);
+      x.back() = int( MC().MakeFixedVar(1.0) );
       c.back() = coefY_abs * std::sqrt(rhs_args.const_term);
     }
     for (auto r: lhs_args.res_vars_to_delete_)
@@ -516,7 +593,7 @@ protected:
     }
     if (constNZ) {
       assert(0.0 < rhs_args.const_term);
-      x.back() = MC().MakeFixedVar(1.0);
+      x.back() = int( MC().MakeFixedVar(1.0) );
       c.back() = coefY_abs * std::sqrt(rhs_args.const_term);
     }
     for (auto r: rhs_args.res_vars_to_delete_)
@@ -539,7 +616,7 @@ protected:
     size_t iPush=1;
     if (lint.size()) {
       x[0] = lint.var(0);
-      x[1] = MC().MakeFixedVar( 1.0 );
+      x[1] = int( MC().MakeFixedVar( 1.0 ) );
       c[0] = std::fabs(lint.coef(0)) / 2.0;
       c[1] = 1.0;      // it's 2xy >= z^2 + ...
     }
@@ -557,7 +634,7 @@ protected:
     }
     if (rhsNon0) {            // Add  ... >= ... + |rhs|
       ++iPush;
-      x.at(iPush) = MC().MakeFixedVar( 1.0 );
+      x.at(iPush) = int( MC().MakeFixedVar( 1.0 ) );
       c.at(iPush) = std::sqrt( std::fabs(rhs) );
     }
     assert(iPush == x.size()-1);
@@ -581,7 +658,7 @@ protected:
     std::vector<double> c(qpterms.size() + fNewVar);
     if (fNewVar && !fRhs2) {
       c[0] = std::sqrt(std::fabs(rhs));
-      x[0] = MC().MakeFixedVar( 1.0 );
+      x[0] = int( MC().MakeFixedVar( 1.0 ) );
     }
     size_t iPush=0;
     for (int i=0; i<(int)qpterms.size(); ++i) {
@@ -597,7 +674,7 @@ protected:
     if (fNewVar && fRhs2) {
       ++iPush;
       c.at(iPush) = std::sqrt(std::fabs(rhs2));
-      x.at(iPush) = MC().MakeFixedVar( 1.0 );
+      x.at(iPush) = int( MC().MakeFixedVar( 1.0 ) );
     }
     assert(iPush == c.size()-1);
     MC().AddConstraint(
@@ -786,11 +863,12 @@ protected:
     }
     for (int i=0; i<3; ++i) {
       if (args[i]<0) {                // marked as -1?
-        args[i] = MC().MakeFixedVar(1.0);
+        args[i] = int( MC().MakeFixedVar(1.0) );
       }
     }
     MC().AddConstraint(
           ExponentialConeConstraint(args, coefs));
+    MC().IncExpConeCounter();
     return true;
   }
 

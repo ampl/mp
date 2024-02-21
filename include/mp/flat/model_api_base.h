@@ -173,6 +173,11 @@ public:
   /// (entered via dedicated API) and direct quadratic constraints
   static constexpr bool CanMixConicQCAndQC() { return false; }
 
+  /// Ask if the solver can recognize SOCP corner cases
+  /// (non-std representations such as xy>=1, see tests)
+  /// from quadratic representations
+  static constexpr bool CanSOCPCornerCasesFromQC() { return false; }
+
 
 private:
   const FlatModelInfo* pfmi_ { nullptr };

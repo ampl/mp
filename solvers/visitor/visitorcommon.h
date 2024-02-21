@@ -2,6 +2,7 @@
 #define VISITORCOMMON_H
 
 #include <string>
+#include <vector>
 
 #include "mp/backend-to-model-api.h"
 
@@ -12,36 +13,100 @@ extern "C" {
 
 /// Instead, faking a typical solver namespace and defs:
 namespace Solver {
+
+  enum ATTRIBS {
+    NVARS_INT,
+    NVARS_CONT,
+
+    NCONS,
+    NCONS_TYPE,
+
+    NOBJS,
+    ISQOBJ
+
+  };
   enum TYPE {
-    VARS = 0,
-    VARS_INT,
     CONS_LIN,
     CONS_QUAD,
+    CONS_QUAD_CONE,
+    CONS_QUAD_CONE_ROTATED,
     CONS_INDIC,
     CONS_SOS,
 
-    OBJ
-  };
+    CONS_MAX,
+    CONS_MIN,
+    CONS_ABS,
+    CONS_AND,
+    CONS_OR,
 
+    CONS_EXP,
+    CONS_EXPA,
+    CONS_LOG,
+    CONS_LOGA,
+
+    CONS_POW,
+    CONS_SIN,
+    CONS_COS,
+    CONS_TAN,
+
+    CONS_PL
+  };
+  
+  const int NTYPES=20;
   class SolverModel {
-    int nEntities[7];
+    
+    int nEntities_[NTYPES];
+
+    std::vector<bool> vars_;
+    int nobj_ = 0;
+    bool quadObj_ = false;
   public:
-    int addEntity(int type) {
-      return ++nEntities[type];
+
+    int getAttribute(ATTRIBS a, TYPE t) {
+      if (a == NCONS)
+      {
+        int n = 0;
+        for (int i = 0; i < NTYPES; i++)
+          n += nEntities_[i];
+        return n;
+      }
+      if (a==NCONS_TYPE)
+        return nEntities_[t];
+      if (a == NVARS_CONT)
+        return getNumVars(false);
+      if (a == NVARS_INT)
+        return getNumVars(true);
+      if (a == NOBJS)
+        return nobj_;
+      if (a == ISQOBJ)
+        return quadObj_;
+      return -1;
     }
-    int getN(int type) {
-      return nEntities[type];
+    void allocateVars(int nvars) {
+      vars_.resize(nvars);
+    }
+    void setVariable(int index, bool integer) {
+      vars_[index]=integer;
+    }
+    std::size_t getNumVars(bool integer) {
+      std::size_t count = 0;
+      for (auto v : vars_)
+        if (v == integer) count++;
+      return count;
+    }
+    void addEntity(TYPE type) {
+      nEntities_[type]++;
+    }
+
+    void addObjective() {
+      nobj_++;
+    }
+    void addQuadTerms() {
+      quadObj_ = true;
     }
   };
 
-  SolverModel* CreateSolverModel();
-  int addContVar(SolverModel& s);
-  int addIntVar(SolverModel& s);
-  int addLinCon(SolverModel& s);
-  int addQuadCon(SolverModel& s);
-  int addIndicCon(SolverModel& s);
-  int addSOSCon(SolverModel& s);
-  int getSolverIntAttr(SolverModel* s, int attr);
+  SolverModel* CreateSolverModel(); 
 }
 
 
@@ -88,7 +153,7 @@ public:
   static constexpr double MinusInfinity() { return -INFINITY; }
 
 protected:
-  int getIntAttr(int name) const;
+  int getIntAttr(Solver::ATTRIBS name, Solver::TYPE subtype=Solver::CONS_ABS) const;
   double getDblAttr(const char* name) const;
 
   int NumLinCons() const;

@@ -774,6 +774,7 @@ class XPRESSDirectSolver(MPDirectSolver):
                  ModelTags.continuous, ModelTags.integer, ModelTags.binary,
                  ModelTags.sos,
                  ModelTags.quadratic, ModelTags.quadratic_obj,
+                 ModelTags.socp,
 
                  ModelTags.return_mipgap, ModelTags.multiobj,
 
@@ -900,7 +901,7 @@ class COPTSolver(MPDirectSolver):
                  ModelTags.socp,      ## MP transforms cones to quadratics
                  ModelTags.socp_hard_to_recognize,
 
-                 ModelTags.writelp, ModelTags.writesol,
+                 ModelTags.writelp,
 
                  }
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
@@ -925,8 +926,7 @@ class MosekSolver(MPDirectSolver):
                  ModelTags.warmstart, ModelTags.mipstart,
                  ModelTags.return_mipgap, ModelTags.sens, ModelTags.sstatus,
 
-                 ModelTags.writelp, ModelTags.writesol,
-
+                 ModelTags.writelp,
                  }
         # ModelTags.quadratic
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)

@@ -28,13 +28,13 @@
     "name" : "TotalVariation2D",
     "objective" : 9.569949819774543,
     "files": ["totalvariation2d.mod", "totalvar2d_4e_4.dat"],
-    "tags" : ["socp", "socp_hard_to_recognize"]
+    "tags" : ["socp"]
   },
   {
     "name" : "TotalVariation2D_Quadr",
     "objective" : 9.569949819774543,
     "files": ["totalvariation2d_quad.mod", "totalvar2d_4e_4.dat"],
-    "tags" : ["socp", "socp_hard_to_recognize"]
+    "tags" : ["socp"]
   },
   {
     "name" : "socp_06_rsoc_constants",
@@ -59,6 +59,30 @@
     },
     "values": {
       "x": 3651.48
+    }
+  },
+  {
+    "name" : "socp_10_qpobj",
+    "tags" : ["quadratic"],
+    "objective" : 0.0,
+    "values": {
+      "solve_result_num": 0
+    }
+  },
+  {
+    "name" : "socp_11_qpobj__RSOC",
+    "tags" : ["quadratic"],
+    "objective" : 27777.7949,
+    "values": {
+      "solve_result_num": 0
+    }
+  },
+  {
+    "name" : "socp_12__issue229_2",
+    "tags" : ["socp"],
+    "objective" : -1607.1428,
+    "values": {
+      "solve_result_num": 0
     }
   },
   {

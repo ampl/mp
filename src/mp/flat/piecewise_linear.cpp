@@ -1,5 +1,5 @@
 /*
- A mathematical optimization solver.
+ MP PL facilities implementation.
 
  Copyright (C) 2022 AMPL Optimization Inc
 

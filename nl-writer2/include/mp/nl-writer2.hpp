@@ -1,3 +1,22 @@
+/*
+ Copyright (C) 2024 AMPL Optimization Inc.
+
+ Permission to use, copy, modify, and distribute this software and its
+ documentation for any purpose and without fee is hereby granted,
+ provided that the above copyright notice appear in all copies and that
+ both that the copyright notice and this permission notice and warranty
+ disclaimer appear in supporting documentation.
+
+ The author and AMPL Optimization Inc disclaim all warranties with
+ regard to this software, including all implied warranties of
+ merchantability and fitness.  In no event shall the author be liable
+ for any special, indirect or consequential damages or any damages
+ whatsoever resulting from loss of use, data or profits, whether in an
+ action of contract, negligence or other tortious action, arising out
+ of or in connection with the use or performance of this software.
+
+ Author: Gleb Belov
+ */
 #ifndef NLWriter22_HPP
 #define NLWriter22_HPP
 
@@ -8,28 +27,28 @@
 
 namespace mp {
 
-template <class NLFeeder2>
-inline WriteNLReport WriteNLFile(
+template <class NLFeeder>
+inline WriteNLResult WriteNLFile(
     const std::string& namebase,
-    NLFeeder2& nlf, NLUtils& utl) {
+    NLFeeder& nlf, NLUtils& utl) {
   auto h = nlf.Header();
   if (NLHeader::TEXT == h.format) {
     mp::NLWriter2<
         mp::NLWriter2Params<
-        mp::TextFormatter, NLFeeder2 > >
+        mp::TextFormatter, NLFeeder > >
         writer(nlf, h, utl);
     return writer.WriteFiles(namebase);
   } else {
     mp::NLWriter2<
         mp::NLWriter2Params<
-        mp::BinaryFormatter, NLFeeder2 > >
+        mp::BinaryFormatter, NLFeeder > >
         writer(nlf, h, utl);
     return writer.WriteFiles(namebase);
   }
 }
 
 template <typename Params>
-WriteNLReport NLWriter2<Params>::WriteFiles(
+WriteNLResult NLWriter2<Params>::WriteFiles(
     const std::string& namebase) {
   WriteAuxFiles(namebase);
   WriteNL(namebase);
@@ -82,12 +101,12 @@ void NLWriter2<Params>::WriteNL(
     WriteRandomVariables();
 
     if (std::ferror(nm.GetHandle())) {
-      result_.first = WriteNL_Failed;
+      result_.first = NLW2_WriteNL_Failed;
       result_.second = fln + ": " + std::strerror(errno);
     } else
-      result_.first = WriteNL_OK;
+      result_.first = NLW2_WriteNL_OK;
   } else {
-    result_.first = WriteNL_CantOpen;
+    result_.first = NLW2_WriteNL_CantOpen;
     result_.second = fln + ": " + std::strerror(errno);
   }
 }

@@ -37,9 +37,9 @@ Currently available MP-based solvers include:
 Binaries for these solvers can be downloaded, in distribution
 bundles and individually, through the `AMPL Portal <https://portal.ampl.com>`_.
 Solver options and features are described
-at `AMPL Development <https://dev.ampl.com/solvers/index.html>`_
-and at :ref:`features-guide`.
-More solvers will be added.
+at :ref:`features-guide`
+and, for concrete solvers,
+at `AMPL Development <https://dev.ampl.com/solvers/index.html>`_.
 
 
 
@@ -56,8 +56,11 @@ for the following categories of operators and expressions:
   ``sin``, ``cos``, ``tan``; ``sinh``, ``cosh``, ``tanh``
 - Set membership operator: ``in``
 
-Details and examples are given in the *Expressions supported* section below.
-See also the individual solvers' documentation for details of solver-specific features:
+Modeling details and examples are given in the :ref:`expressions_supported` section below.
+Technical details and tools are in the :ref:`modeling-tools` section.
+See also the individual solvers' documentation at
+`AMPL Development <https://dev.ampl.com/solvers/index.html>`_
+for more details of solver-specific features:
 
 - Choice between linearization in the interface and native solver support for some operations
 - Handling of AMPL suffixes on constraints that are transformed by the interface

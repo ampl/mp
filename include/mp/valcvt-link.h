@@ -190,22 +190,26 @@ private:
 };
 
 
-/// A specific link: each entry just copies from 1 source value
-/// into a range of values.
-/// Useful to transfer values into expression subtree,
-/// in conversions, e.g., from 1 var / constraint / objective
-/// into several new ones
-class One2ManyLink : public BasicLink {
+/// A very general link:
+/// each entry copies values from/to
+/// *every* position of the source range
+/// into/from *every* position of the target range.
+/// Is specialized by One2Many and Many2One, and
+/// is not recommended to be used directly.
+/// In the cases when such a Many2Many connection
+/// exists, consider splitting via a (dummy) intermediate node
+/// and linking via Many2One + One2Many.
+/// Example: Unary Encoding.
+class Many2ManyLink : public BasicLink {
 public:
   /// Constructor
-  One2ManyLink(ValuePresolver& pre) : BasicLink(pre) { }
+  Many2ManyLink(ValuePresolver& pre) : BasicLink(pre) { }
 
   /// Type name
-  const char* GetTypeName() const override { return "One2ManyLink"; }
+  const char* GetTypeName() const override { return "Many2ManyLink"; }
 
   /// Single link entry,
   /// stores src + dest ranges.
-  /// HOWEVER the source range keeps just 1 node.
   using LinkEntry = std::pair<NodeRange, NodeRange>;
 
   /// Collection of entries
@@ -215,10 +219,14 @@ public:
   /// Instead of a new entry, tries to extend the last one
   /// if exists
   void AddEntry(LinkEntry be) {
-    assert(be.first.IsSingleIndex());
     if (entries_.empty() ||
-        entries_.back().first!=be.first ||
-        !entries_.back().second.TryExtendBy(be.second)) {
+        !(
+          (entries_.back().first==be.first   // same sources
+           && entries_.back().second.TryExtendBy(be.second))
+          ||
+          (entries_.back().second==be.second // same targets
+           && entries_.back().first.TryExtendBy(be.first))
+          )) {
       entries_.push_back(be);             // Add new entry
       RegisterLinkIndex(entries_.size()-1);
     }
@@ -248,25 +256,28 @@ protected:
   /// Distribute values of type T from nr1 to nr2
   template <class T>
   void Distr(NodeRange nr1, NodeRange nr2) {
-    assert(nr1.IsSingleIndex());
-    // Need reference here for reference counting
-    // in PresolveNames():
-    const auto& val = nr1.GetValueNode()->
-        GetVal<T>(nr1.GetSingleIndex());
-    for (auto i=nr2.GetIndexRange().beg_;
-         i!=nr2.GetIndexRange().end_; ++i)
-      nr2.GetValueNode()->SetVal(i, val);
+    auto ir1 = nr1.GetIndexRange();
+    auto ir2 = nr2.GetIndexRange();
+    for (auto i0=ir1.beg_; i0!=ir1.end_; ++i0) {
+      // Need reference here for reference counting
+      // in PresolveNames():
+      const auto& val = nr1.GetValueNode()->
+          GetVal<T>(i0);
+      for (auto i=ir2.beg_; i!=ir2.end_; ++i)
+        nr2.GetValueNode()->SetVal(i, val);
+    }
   }
 
   /// Collect values of type T from nr2 to nr1
   template <class T>
   void Collect(NodeRange nr1, NodeRange nr2) {
-    assert(nr1.IsSingleIndex());
-    auto nr1_idx = nr1.GetSingleIndex();
+    auto ir1 = nr1.GetIndexRange();
+    auto ir2 = nr2.GetIndexRange();
     auto& vec2 = nr2.GetValueNode()->GetValVec<T>();
-    for (auto i=nr2.GetIndexRange().beg_;
-         i!=nr2.GetIndexRange().end_; ++i)
-      nr1.GetValueNode()->SetVal(nr1_idx, vec2.at(i));
+    for (auto i0=ir1.beg_; i0!=ir1.end_; ++i0) {
+      for (auto i=ir2.beg_; i!=ir2.end_; ++i)
+        nr1.GetValueNode()->SetVal(i0, vec2.at(i));
+    }
   }
 
   /// Src -> dest for the entries index range ir
@@ -290,6 +301,49 @@ protected:
 
 private:
   CollectionOfEntries entries_;
+};
+
+
+/// A specialization of Many2ManyLink:
+/// each entry just copies from 1 source value
+/// into a range of values.
+/// Useful to transfer values into expression subtree,
+/// in conversions, e.g., from 1 var / constraint / objective
+/// into several new ones
+class One2ManyLink : public Many2ManyLink {
+public:
+  /// Constructor
+  One2ManyLink(ValuePresolver& pre) : Many2ManyLink(pre) { }
+
+  /// Type name
+  const char* GetTypeName() const override { return "One2ManyLink"; }
+
+  /// Add entry.
+  void AddEntry(LinkEntry be) {
+    assert(be.first.IsSingleIndex());
+    Many2ManyLink::AddEntry(be);
+  }
+};
+
+
+/// A specialization of Many2ManyLink:
+/// each entry just copies from a range of values
+/// into 1 target value.
+/// Useful for globalizing conversions,
+/// to transfer values from several items into a new item
+class Many2OneLink : public Many2ManyLink {
+public:
+  /// Constructor
+  Many2OneLink(ValuePresolver& pre) : Many2ManyLink(pre) { }
+
+  /// Type name
+  const char* GetTypeName() const override { return "Many2OneLink"; }
+
+  /// Add entry.
+  void AddEntry(LinkEntry be) {
+    assert(be.second.IsSingleIndex());
+    Many2ManyLink::AddEntry(be);
+  }
 };
 
 

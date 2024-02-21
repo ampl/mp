@@ -343,31 +343,57 @@ void HighsBackend::AddHIGHSMessages() {
 std::pair<int, std::string> HighsBackend::ConvertHIGHSStatus() {
   namespace sol = mp::sol;
   int optstatus = Highs_getModelStatus(lp());
-    switch (optstatus) {
-    case kHighsModelStatusOptimal:
-      return { sol::SOLVED, "optimal solution" };
-    case kHighsModelStatusInfeasible:
-      return { sol::INFEASIBLE, "infeasible problem" };
-    case kHighsModelStatusUnbounded:
-      return { sol::UNBOUNDED, "unbounded problem" };
-    case kHighsModelStatusUnboundedOrInfeasible:
-      return { sol::INF_OR_UNB, "unbounded or infeasible" };
-    case kHighsModelStatusModelError:
-    case kHighsModelStatusLoadError:
-      return { sol::FAILURE, "solver error" };
-    case kHighsModelStatusPresolveError:
-    case kHighsModelStatusSolveError:
-    case kHighsModelStatusPostsolveError:
-      return { sol::NUMERIC, "nuemric issue" };
-    case kHighsModelStatusTimeLimit:
-      return { sol::LIMIT, "time limit" };
-    case kHighsModelStatusIterationLimit:
-      return { sol::LIMIT, "iteration limit" };
-    case kHighsModelStatusSolutionLimit:
-      return { sol::LIMIT, "solution limit" };
-    default:
-      return { sol::UNKNOWN, "unknown" };
-    }
+  auto obj = Highs_getObjectiveValue(lp());
+  auto inf = Highs_getInfinity(lp());
+  bool hasSol = (-inf < obj && obj < inf);
+  switch (optstatus) {
+  case kHighsModelStatusOptimal:
+    return { sol::SOLVED, "optimal solution" };
+  case kHighsModelStatusInfeasible:
+    return { sol::INFEASIBLE, "infeasible problem" };
+  case kHighsModelStatusUnbounded:
+    if (hasSol)
+      return { sol::UNBOUNDED_FEAS, "unbounded problem, feasible solution" };
+    return { sol::UNBOUNDED_NO_FEAS, "unbounded problem, no solution" };
+  case kHighsModelStatusUnboundedOrInfeasible:
+    return { sol::LIMIT_INF_UNB, "unbounded or infeasible" };
+  case kHighsModelStatusModelError:
+  case kHighsModelStatusLoadError:
+    return { sol::FAILURE, "solver error" };
+  case kHighsModelStatusPresolveError:
+  case kHighsModelStatusSolveError:
+  case kHighsModelStatusPostsolveError:
+    if (hasSol)
+      return { sol::UNCERTAIN, "numeric issue, solution candidate returned" };
+    return { sol::NUMERIC, "numeric issue" };
+  case kHighsModelStatusTimeLimit:
+    if (hasSol)
+      return { sol::LIMIT_FEAS_TIME, "time limit, feasible solution" };
+    return { sol::LIMIT_NO_FEAS_TIME, "time limit, no solution" };
+  case kHighsModelStatusIterationLimit:
+    if (hasSol)
+      return { sol::LIMIT_FEAS_ITER, "iteration limit, feasible solution" };
+    return { sol::LIMIT_NO_FEAS_ITER, "iteration limit, no solution" };
+  case kHighsModelStatusSolutionLimit:
+    assert (hasSol);
+    return { sol::LIMIT_FEAS_NUMSOLS, "solution limit" };
+  case kHighsModelStatusInterrupt:
+    if (hasSol)
+      return { sol::LIMIT_FEAS_INTERRUPT, "interrupt, feasible solution" };
+    return { sol::LIMIT_NO_FEAS_INTERRUPT, "interrupt, no solution" };
+  case kHighsModelStatusObjectiveBound:
+    if (hasSol)
+      return { sol::LIMIT_FEAS_BESTOBJ, "objective bound, feasible solution" };
+    return { sol::LIMIT_NO_FEAS_BESTBND, "objective bound, no solution" };
+  case kHighsModelStatusObjectiveTarget:
+    if (hasSol)
+      return { sol::LIMIT_FEAS_BESTOBJ, "objective target, feasible solution" };
+    return { sol::LIMIT_NO_FEAS_CUTOFF, "objective target, no solution" };
+  default:
+    if (hasSol)
+      return { sol::UNCERTAIN, "unknown, solution candidate returned" };
+    return { sol::UNKNOWN, "unknown" };
+  }
   return { sol::UNKNOWN, "not solved" };
 }
 

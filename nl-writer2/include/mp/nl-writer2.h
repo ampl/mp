@@ -1,4 +1,4 @@
-/**
+/*
  NL writer2
 
  NL is a format for representing optimization problems such as linear,
@@ -16,7 +16,7 @@
    }
 
  where feeder is an object that provides information on model
- components. See NLFeeder2 for an interface of a feeder class.
+ components. See NLFeeder for an interface of a feeder class.
 
  See also NLReader and NLHandler classes.
 
@@ -49,34 +49,27 @@
 #include <cstdarg>
 #include <cassert>
 
+#include "mp/nl-solver-basics-c.h"
 #include "mp/nl-writer2-misc.h"
 /// Just for checking compilation
-#include "mp/nl-feeder2.h"
+#include "mp/nl-feeder.h"
 
 
 namespace mp {
 
-/// WriteNLResult enum.
-enum WriteNLResult {
-  WriteNL_Unset = 0,
-  WriteNL_OK = 1,
-  WriteNL_CantOpen,
-  WriteNL_Failed
-};
-
-/// Typedef WriteNLReport:
+/// Typedef WriteNLResult:
 /// result code and error message
-using WriteNLReport = std::pair<WriteNLResult, std::string>;
+using WriteNLResult = std::pair<NLW2_WriteNLResultCode, std::string>;
 
 /// Write NL file and any necessary auxiliary files.
 /// @param namebase: name without extension,
 /// to be augmented by .nl, .col, ...etc.
 /// @return Write status.
 /// Note that warnings are reported via \a utl.
-template <class NLFeeder2>
-inline WriteNLReport WriteNLFile(
+template <class NLFeeder>
+inline WriteNLResult WriteNLFile(
     const std::string& namebase,
-    NLFeeder2& nlf, NLUtils& utl);
+    NLFeeder& nlf, NLUtils& utl);
 
 
 /// NLWriter2.
@@ -92,7 +85,7 @@ inline WriteNLReport WriteNLFile(
 ///    WriteNLFile(filenamebase, feeder, utils);
 ///
 /// where feeder is an object that provides information on model
-/// components. See NLFeeder2 for an interface of a feeder class.
+/// components. See NLFeeder for an interface of a feeder class.
 ///
 /// See also NLReader and NLHandler classes.
 ///
@@ -101,9 +94,6 @@ template <typename Params>
 class NLWriter2 :
     public Params::FormatterType {
 public:
-  /// Destructor.
-  virtual ~NLWriter2() { }
-
   using FormatterType = typename Params::FormatterType;
   using FeederType = typename Params::FeederType;
 
@@ -116,10 +106,10 @@ public:
   /// @param namebase will be used for filenames
   /// namebase.nl, namebase.row, etc.
   /// @return Write status.
-  WriteNLReport WriteFiles(const std::string& namebase);
+  WriteNLResult WriteFiles(const std::string& namebase);
 
-  /// Retrieve WriteNLResult and error message
-  WriteNLReport GetResult() const
+  /// Retrieve WriteNLResultCode and error message
+  WriteNLResult GetResult() const
   { return result_; }
 
 
@@ -437,7 +427,7 @@ protected:
   class DefVarWriterFactory {
   public:
     /// Construct.
-    /// For the meaning of \a k, see NLFeeder2.
+    /// For the meaning of \a k, see NLFeeder.
     DefVarWriterFactory(NLWriter2& nlw, int k)
       : nlw_(nlw), k_(k) { }
 
@@ -635,7 +625,7 @@ private:
 
   File nm;
 
-  WriteNLReport result_ {WriteNL_Unset, ""};
+  WriteNLResult result_ {NLW2_WriteNL_Unset, ""};
 };
 
 }  // namespace mp

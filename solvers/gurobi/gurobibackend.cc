@@ -153,19 +153,22 @@ void GurobiBackend::FinishOptionParsing() {
     }
   }
   OpenGurobiModel();
+  // Tell the base class our verbosity
+  set_verbose_mode(GrbGetIntParam(GRB_INT_PAR_LOGTOCONSOLE));
+
+  // Nartive params
   if (paramfile_read().size())
     GRB_CALL(
           GRBreadparams(GRBgetenv(model()),
                         paramfile_read().c_str() ));
+  /// Set advanced parameters
+  for (const auto& prm: storedOptions_.inlineParams_)
+    this->SetSolverOption("Dummy", prm);
+  // Write native params
   if (paramfile_write().size())
     GRB_CALL(
-          GRBwriteparams(GRBgetenv(model()),
-                         paramfile_write().c_str() ));
-  /// Tell the base class our verbosity
-  set_verbose_mode(GrbGetIntParam(GRB_INT_PAR_LOGTOCONSOLE));
-  /// Set advanced parameters
-  if (storedOptions_.advancedParams_.size() > 0)
-    this->SetSolverOption("Dummy", storedOptions_.advancedParams_);
+      GRBwriteparams(GRBgetenv(model()),
+        paramfile_write().c_str()));
 }
 
 void GurobiBackend::OpenGurobiComputeServer() {
@@ -1004,13 +1007,13 @@ void GurobiBackend::ReportGurobiResults() {
 
 void GurobiBackend::AddGurobiMessage() {
   AddToSolverMessage(
-          fmt::format("{} simplex iterations\n", SimplexIterations()));
+          fmt::format("{} simplex iteration(s)\n", SimplexIterations()));
   if (auto nbi = BarrierIterations())
     AddToSolverMessage(
-          fmt::format("{} barrier iterations\n", nbi));
+          fmt::format("{} barrier iteration(s)\n", nbi));
   if (auto nnd = NodeCount())
     AddToSolverMessage(
-          fmt::format("{} branching nodes\n", nnd));
+          fmt::format("{} branching node(s)\n", nnd));
 }
 
 void GurobiBackend::DoGurobiTune() {
@@ -2394,16 +2397,16 @@ void GurobiBackend::InitCustomOptions() {
       "0*/1: Whether to write gurobi log lines (chatter) to stdout.",
     GRB_INT_PAR_LOGTOCONSOLE, 0, 1);
 
-  AddStoredOption("tech:param param",
+  AddListOption("tech:optionnative optionnative optnative tech:param",
                   "General way to specify values of both documented and "
     "undocumented Gurobi parameters; value should be a quoted "
     "string (delimited by ' or \") containing a parameter name, a "
     "space, and the value to be assigned to the parameter.  Can "
     "appear more than once.  Cannot be used to query current "
     "parameter values.",
-    storedOptions_.advancedParams_);
+    storedOptions_.inlineParams_);
 
-  AddStoredOption("tech:param:read param:read paramfile",
+  AddStoredOption("tech:optionnativeread optionnativeread tech:param:read param:read",
       "Name of Gurobi parameter file (surrounded by 'single' or "
       "\"double\" quotes if the name contains blanks). "
       "The suffix on a parameter file should be .prm, optionally followed "
@@ -2412,7 +2415,7 @@ void GurobiBackend::InitCustomOptions() {
       "Lines that start with # are ignored.  Otherwise, each nonempty "
       "line should contain a name and a value, separated by a space.",
           storedOptions_.paramRead_);
-  AddStoredOption("tech:param:write param:write",
+  AddStoredOption("tech:optionnativewrite optionnativewrite tech:param:write param:write",
       "Name of Gurobi parameter file (surrounded by 'single' or \"double\" quotes if the "
       "name contains blanks) to be written.",
           storedOptions_.paramWrite_);
@@ -2429,7 +2432,8 @@ void GurobiBackend::InitCustomOptions() {
       "| .mps, .rew, .lp, or .rlp - To capture the original model.\n"
       "\n"
       "The file suffix may optionally be followed by .gz, .bz2, or .7z, "
-      "which produces a compressed result.",
+      "which produces a compressed result. Use tech:writesolution "
+      "to write several files.",
       GRB_STR_PAR_RESULTFILE);
 
 

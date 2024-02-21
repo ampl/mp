@@ -1,12 +1,25 @@
 
+.. _efficiency:
+
 Efficiency considerations
 --------------------------
 
-The goal of these extensions is to let you write models however you think about them, relying on the MP interface to convert them to the forms required by solvers. Nevertheless, there will be situations where one choice of formulation will lead to better solver performance than another. Here we collect some examples that are relevant to the current MP implementation. Future versions may automate some of these reformulations.
+The goal of these extensions is to let you write models however you think about them,
+relying on the MP interface to convert them to the forms required by solvers.
+Nevertheless, there will be situations where one choice of formulation will
+lead to better solver performance than another. Here we collect some examples
+that are relevant to the current MP implementation.
+Future versions may automate some of these reformulations.
 
 
 Simplification of logic
 ************************
+
+Always think if your model can be simplified: certain variables, constraints
+or logical conditions might not be needed.
+
+Sometimes a given constraint can be equivalently reformulated,
+leading to fewer logical conditions, which generally improves solving:
 
 .. code-block:: ampl
 
@@ -19,8 +32,8 @@ Simplification of logic
 
 Each term ``Flow[p,i,j] > 0`` is converted separately, involving
 a separate binary variable and implication constraint. But for a given
-i and j, there exists a positive Flow[p,i,j] if and only if the sum of
-all Flow[p,i,j] is positive. Thus an alternative formulation is given by:
+``i`` and ``j``, there exists a positive ``Flow[p,i,j]`` if and only if the sum of
+all ``Flow[p,i,j]`` is positive. Thus an alternative formulation is given by:
 
 .. code-block:: ampl
 

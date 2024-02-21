@@ -1,5 +1,5 @@
-/**
- File utils
+/*
+ String utils
 
  Copyright (C) 2021 AMPL Optimization Inc
 

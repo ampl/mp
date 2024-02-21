@@ -31,7 +31,7 @@ namespace mp {
 /// Create Visitor Model Manager
 /// @param gc: the Visitor common handle
 /// @param e: environment
-/// @param pre: presolver to be returned,
+/// @param pre: presolver to be names[Solver::returned]= "";
 /// need it to convert solution data
 /// @return VisitorModelMgr
 std::unique_ptr<BasicModelManager>
@@ -120,12 +120,12 @@ std::string VisitorBackend::GetSolverVersion() {
 bool VisitorBackend::IsMIP() const {
   // TODO. Use most precise information
   // (nonconvexities etc.)
-  return getIntAttr(Solver::VARS_INT) > 0;
+  return getIntAttr(Solver::NVARS_INT) > 0;
   //return getIntAttr(VISITOR_INTATTR_ISMIP);
 }
 
 bool VisitorBackend::IsQCP() const {
-  return getIntAttr(Solver::CONS_QUAD) > 0;
+  return getIntAttr(Solver::NCONS_TYPE, Solver::CONS_QUAD) > 0;
 // return getIntAttr(VISITOR_INTATTR_QELEMS) > 0;
 }
 
@@ -233,8 +233,59 @@ void VisitorBackend::ReportVISITORPool() {
   */
 }
 
+void VisitorBackend::printModelStats() {
 
+  std::map<Solver::TYPE, std::string> names;
+  names[Solver::CONS_LIN] = "Linear";
+    names[Solver::CONS_QUAD]= "Quadratic";
+    names[Solver::CONS_QUAD_CONE]= "Quadratic cones";
+    names[Solver::CONS_QUAD_CONE_ROTATED]= "Quadratic cones rotated";
+    names[Solver::CONS_INDIC]= "Indicator";
+    names[Solver::CONS_SOS]= "SOS";
+
+    names[Solver::CONS_MAX]= "Max";
+    names[Solver::CONS_MIN]= "Min";
+    names[Solver::CONS_ABS]= "Abs";
+    names[Solver::CONS_AND]= "And";
+    names[Solver::CONS_OR]= "Or";
+
+    names[Solver::CONS_EXP]= "Exp";
+    names[Solver::CONS_EXPA]= "ExpA";
+    names[Solver::CONS_LOG]= "Log";
+    names[Solver::CONS_LOGA]= "LogA";
+
+    names[Solver::CONS_POW]= "Pow";
+    names[Solver::CONS_SIN]= "Sin";
+    names[Solver::CONS_COS]= "Cos";
+    names[Solver::CONS_TAN]= "Tan";
+    names[Solver::CONS_PL] = "Piecewise linear";
+
+
+    int n = 0;
+    n = getIntAttr(Solver::NVARS_CONT);
+    if (n > 0)
+      AddToSolverMessage(fmt::format("{} continuous variables\n", n));
+    n = getIntAttr(Solver::NVARS_INT);
+    if (n > 0)
+      AddToSolverMessage(fmt::format("{} integer variables\n", n));
+
+    n = getIntAttr(Solver::NOBJS);
+    AddToSolverMessage(fmt::format("{} objective{} - {}\n", n,
+      n > 1 ? "s" : "",
+      getIntAttr(Solver::ISQOBJ) ? "quadratic" : "linear"
+      ));
+
+
+
+    for (const auto& i : names) {
+      auto n = getIntAttr(Solver::NCONS_TYPE, i.first);
+      if (n == 0) continue;
+      AddToSolverMessage(fmt::format("{} {} constraints\n", n, i.second));
+    }
+
+}
 void VisitorBackend::AddVISITORMessages() {
+  printModelStats();
   AddToSolverMessage(
           fmt::format("{} simplex iterations\n", SimplexIterations()));
   if (auto nbi = BarrierIterations())
@@ -327,6 +378,22 @@ void VisitorBackend::FinishOptionParsing() {
   int v=-1;
  // GetSolverOption(VISITOR_INTPARAM_LOGGING, v);
   set_verbose_mode(v>0);
+
+  // Nartive params
+  if (storedOptions_.paramread_.size()) {
+    //GRB_CALL(
+    //  GRBreadparams(GRBgetenv(model()),
+    //    paramfile_read().c_str()));
+  }
+  /// Set advanced parameters
+  for (const auto& prm : storedOptions_.inlineparams_)
+    this->SetSolverOption("Dummy", prm);
+  // Write native params
+  if (storedOptions_.paramwrite_.size()) {
+    //GRB_CALL(
+    //  GRBwriteparams(GRBgetenv(model()),
+    //    paramfile_write().c_str()));
+  }
 }
 
 
@@ -389,30 +456,37 @@ void VisitorBackend::InitCustomOptions() {
       "Multi-valued option when repeated.",
       storedOptions_.list_option_);
 
+  // Native solver options handling.
+  // Actual processing of these options can be done in FinishOptionParsing().
+  AddListOption("tech:optionnative optionnative optnative tech:param",
+      "General way to specify values of both documented and "
+      "undocumented Gurobi parameters; value should be a quoted "
+      "string (delimited by ' or \") containing a parameter name, a "
+      "space, and the value to be assigned to the parameter.  Can "
+      "appear more than once.  Cannot be used to query current "
+      "parameter values.",
+      storedOptions_.inlineparams_);
+  AddStoredOption("tech:optionnativeread tech:param:read param:read optnative:read",
+      "Name of Gurobi parameter file (surrounded by 'single' or "
+      "\"double\" quotes if the name contains blanks). "
+      "The suffix on a parameter file should be .prm, optionally followed "
+      "by .zip, .gz, .bz2, or .7z.\n"
+      "\n"
+      "Lines that start with # are ignored.  Otherwise, each nonempty "
+      "line should contain a name and a value, separated by a space.",
+      storedOptions_.paramread_);
+  AddStoredOption("tech:optionnativewrite tech:param:write param:write optnative:write",
+      "Name of Gurobi parameter file (surrounded by 'single' or \"double\" quotes if the "
+      "name contains blanks) to be written.",
+      storedOptions_.paramwrite_);
+
+
   ////////////////// CUSTOM RESULT CODES ///////////////////
   AddSolveResults( {
-                     { sol::SOLVED, "optimal solution" },
-                     { sol::UNCERTAIN, "suboptimal" },
-                   },
-                   true );   // Can replace some major codes
-  AddSolveResults( {
-                     { sol::LIMIT+1, "iteration limit, feasible solution" },
-                     { sol::LIMIT+11, "iteration limit, without a feasible soluton" },
-                     { sol::LIMIT+2, "node limit, feasible solution" },
-                     { sol::LIMIT+12, "node limit, without a feasible soluton" },
-                     { sol::LIMIT+3, "time limit, feasible solution" },
-                     { sol::LIMIT+13, "time limit, without a feasible solution" },
-                     { sol::LIMIT+4, "solution limit" },
-                     { sol::LIMIT+5, "interrupted, feasible solution" },
-                     { sol::LIMIT+15, "interrupted, without a feasible solution" },
-                     { sol::LIMIT+6, "work limit, feasible solution" },
-                     { sol::LIMIT+16, "work limit, without a feasible solution" },
-                     { sol::LIMIT+7, "soft memory limit, feasible solution" },
-                     { sol::LIMIT+17, "soft memory limit, without a feasible solution" },
-                     { sol::UNCERTAIN+3,
-                       "bestobjstop or bestbndstop reached, feasible solution" },
-                     { sol::UNCERTAIN+4,
-                       "bestobjstop or bestbndstop reached, without a feasible solution" }
+                     { sol::FAILURE+1, "fatal error 1" },
+                     { sol::FAILURE+2, "fatal error 2" },
+                     { sol::LIMIT_FEAS_NEW + 1, "AI iteration limit, feasible solution" },
+                     { sol::LIMIT_NO_FEAS_NEW + 1, "AI iteration limit, no feasible solution" }
                    } );     // No replacement, make sure they are new
 }
 

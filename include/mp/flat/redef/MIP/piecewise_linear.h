@@ -1,7 +1,7 @@
 #ifndef PIECEWISE_LINEAR_H
 #define PIECEWISE_LINEAR_H
 
-/**
+/*
  *  Redefinition of PL flat constraint into SOS2 + linear
  */
 

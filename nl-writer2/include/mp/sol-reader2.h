@@ -1,4 +1,4 @@
-/**
+/*
  SOL reader2.
 
  SOL is a format for representing solutions of optimization problems
@@ -46,24 +46,11 @@
 #include <cstdarg>
 #include <vector>
 
-#include "mp/sol-handler2.h"
-#include "mp/nl-utils2.h"
+#include "mp/nl-solver-basics-c.h"
+#include "mp/sol-handler.h"
+#include "mp/nl-utils.h"
 
 namespace mp {
-
-/// SOL read result
-enum SOLReadResult {
-  SOL_Read_Result_Not_Set = -1,
-  SOL_Read_OK = 0,
-  SOL_Read_Fail_Open,
-  SOL_Read_Early_EOF,
-  SOL_Read_Bad_Format,
-  SOL_Read_Bad_Line,
-  SOL_Read_Bad_Options,
-  SOL_Read_Vector_Not_Finished,
-  SOL_Read_Bad_Suffix
-};
-
 
 /// Vector reader
 template <class Value>
@@ -86,11 +73,11 @@ public:
   Value ReadNext();
 
   /// Set error status
-  void SetError(SOLReadResult res, std::string msg)
+  void SetError(NLW2_SOLReadResultCode res, std::string msg)
   { rr_ = res; err_msg_ = std::move(msg); n_ = 0; }
 
   /// status
-  SOLReadResult ReadResult() const { return rr_; }
+  NLW2_SOLReadResultCode ReadResult() const { return rr_; }
 
   /// error message
   const std::string& ErrorMessage() const
@@ -102,7 +89,7 @@ private:
 	int binary_;
   int n_;
 
-  SOLReadResult rr_{SOL_Read_OK};
+  NLW2_SOLReadResultCode rr_{NLW2_SOLRead_OK};
   std::string err_msg_;
 };
 
@@ -173,25 +160,22 @@ struct SufRead;
 ///     exit(EXIT_FAILURE);
 ///   }
 ///
-/// @param  SOLHandler2: class that receives information on solution
+/// @param  SOLHandler: class that receives information on solution
 /// components.
-template <typename SOLHandler2>
+template <typename SOLHandler>
 class SOLReader2 {
 public:
-  /// Destructor.
-  virtual ~SOLReader2() { }
-
   /// Constructor.
-	SOLReader2(SOLHandler2& sh, NLUtils& utl) :
+	SOLReader2(SOLHandler& sh, NLUtils& utl) :
 			solh_(sh), utils_(utl), hdr_(sh.Header()) { }
 
   /// Read .sol file.
-  SOLReadResult ReadSOLFile(const std::string& name);
+  NLW2_SOLReadResultCode ReadSOLFile(const std::string& name);
 
   /// Error message, if any.
   /// Warnings are printed independently
   /// via NLUtils::log_warning().
-  const std::string& ErrorMessage(SOLReadResult ) const
+  const std::string& ErrorMessage(NLW2_SOLReadResultCode ) const
   { return err_msg_; }
 
   /// Internal AMPL result code
@@ -200,9 +184,9 @@ public:
 
 protected:
   /// Get const handler&
-  const SOLHandler2& Handler() const { return solh_; }
+  const SOLHandler& Handler() const { return solh_; }
   /// Get handler&
-  SOLHandler2& Handler() { return solh_; }
+  SOLHandler& Handler() { return solh_; }
 
   /// Get const utils&
   const NLUtils& Utils() const { return utils_; }
@@ -223,16 +207,16 @@ protected:
 
   /// Check result of a [vector] reader
   template <class Reader>
-  bool CheckReader(const Reader& rd, SOLReadResult& rr) {
-    if (SOL_Read_Early_EOF == rd.ReadResult())
+  bool CheckReader(const Reader& rd, NLW2_SOLReadResultCode& rr) {
+    if (NLW2_SOLRead_Early_EOF == rd.ReadResult())
       return (rr=ReportEarlyEof(), false);
-    if (SOL_Read_Bad_Line == rd.ReadResult())
+    if (NLW2_SOLRead_Bad_Line == rd.ReadResult())
       return (rr=ReportBadLine(rd.ErrorMessage()), false);
     if (rd.Size()) {       // unfinished
       serror("vector not read completely");
       return (rr=ReportBadFormat(), false);
     }
-    if (SOL_Read_OK != rd.ReadResult()) {
+    if (NLW2_SOLRead_OK != rd.ReadResult()) {
       serror( rd.ErrorMessage().c_str() );
       ReportBadFormat();
       return (rr=rd.ReadResult(), false);
@@ -241,22 +225,22 @@ protected:
   }
 
   /// Read suffixes, binary
-  SOLReadResult bsufread(FILE* f);
+  NLW2_SOLReadResultCode bsufread(FILE* f);
 
   /// Read suffixes, text
-  SOLReadResult gsufread(FILE* f);
+  NLW2_SOLReadResultCode gsufread(FILE* f);
 
   /// Suffix head check
   int sufheadcheck(SufRead *sr);
 
   /// Report Early Eof
-  SOLReadResult ReportEarlyEof();
+  NLW2_SOLReadResultCode ReportEarlyEof();
 
   /// Report bad format
-  SOLReadResult ReportBadFormat();
+  NLW2_SOLReadResultCode ReportBadFormat();
 
   /// Report bad line
-  SOLReadResult ReportBadLine(const std::string& line);
+  NLW2_SOLReadResultCode ReportBadLine(const std::string& line);
 
   /// Save error message
   void serror(const char* format, ...);
@@ -281,14 +265,14 @@ protected:
 #endif
 
 private:
-  SOLHandler2& solh_;
+  SOLHandler& solh_;
   NLUtils& utils_;
 	NLHeader hdr_;
 
   std::string solve_msg_;
   std::string err_msg_;
   int internal_rv_ {0};
-  SOLReadResult readresult_ {SOL_Read_Result_Not_Set};
+  NLW2_SOLReadResultCode readresult_ {NLW2_SOLRead_Result_Not_Set};
 
   const char* stub_ {nullptr};
   const char *bkind[2] = { "ASCII", "binary" };
@@ -306,12 +290,12 @@ private:
 
 
 /// Read SOL file.
-template <class SOLHandler2>
-inline std::pair<SOLReadResult, std::string>
+template <class SOLHandler>
+inline std::pair<NLW2_SOLReadResultCode, std::string>
 ReadSOLFile(
     const std::string& name,
-		SOLHandler2& solh, NLUtils& utl, int* p_internal_rv=nullptr) {
-  SOLReader2<SOLHandler2> solr(solh, utl);
+		SOLHandler& solh, NLUtils& utl, int* p_internal_rv=nullptr) {
+  SOLReader2<SOLHandler> solr(solh, utl);
 	auto res = solr.ReadSOLFile(name);
 	if (p_internal_rv)
 		*p_internal_rv = solr.internal_rv();

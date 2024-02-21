@@ -221,40 +221,70 @@ void ScipBackend::AddSCIPMessages() {
 std::pair<int, std::string> ScipBackend::ConvertSCIPStatus() {
   namespace sol = mp::sol;
   SCIP_STATUS status = SCIPgetStatus(getSCIP());
+  auto solu = SCIPgetBestSol(getSCIP());
+  bool hasSol = (solu != nullptr);
   switch (status) {
-    case SCIP_STATUS_UNKNOWN:
-      return { sol::UNKNOWN, "solving status not yet known" };
-    case SCIP_STATUS_USERINTERRUPT:
-      return { sol::INTERRUPTED, "unfinished" };
-    case SCIP_STATUS_NODELIMIT:
-      return { sol::LIMIT, "node limit reached" };
-    case SCIP_STATUS_TOTALNODELIMIT:
-      return { sol::LIMIT, "total node limit reached (incl. restarts)" };
-    case SCIP_STATUS_STALLNODELIMIT:
-      return { sol::LIMIT, "stalling node limit reached (no inprovement w.r.t. primal bound)" };
-    case SCIP_STATUS_TIMELIMIT:
-      return { sol::LIMIT, "time limit reached" };
-    case SCIP_STATUS_MEMLIMIT:
-      return { sol::LIMIT, "memory limit reached" };
-    case SCIP_STATUS_GAPLIMIT:
-      return { sol::LIMIT, "gap limit reached" };
-    case SCIP_STATUS_SOLLIMIT:
-      return { sol::LIMIT, "solution limit reached" };
-    case SCIP_STATUS_BESTSOLLIMIT:
-      return { sol::LIMIT, "solution improvement limit reached" };
-    case SCIP_STATUS_RESTARTLIMIT:
-      return { sol::LIMIT, "restart limit was reached" };
-    case SCIP_STATUS_OPTIMAL:
-      return { sol::SOLVED, "optimal solution" };
-    case SCIP_STATUS_INFEASIBLE:
-      return { sol::INFEASIBLE, "infeasible problem" };
-    case SCIP_STATUS_UNBOUNDED:
-      return { sol::UNBOUNDED, "unbounded problem" };
-    case SCIP_STATUS_INFORUNBD:
-      return { sol::INF_OR_UNB, "infeasible or unbounded problem" };
-    case SCIP_STATUS_TERMINATE:
-      return { sol::FAILURE, "process received a SIGTERM signal" };
-    }
+  case SCIP_STATUS_UNKNOWN:
+    return { sol::UNKNOWN, "solving status not yet known" };
+  case SCIP_STATUS_USERINTERRUPT:
+    if (hasSol)
+      return { sol::LIMIT_FEAS_INTERRUPT, "interrupted, feasible solution" };
+    return { sol::LIMIT_NO_FEAS_INTERRUPT, "interrupted, no solution" };
+  case SCIP_STATUS_NODELIMIT:
+    if (hasSol)
+      return { sol::LIMIT_FEAS_NODES, "node limit, feasible solution" };
+    return { sol::LIMIT_NO_FEAS_NODES, "node limit, no solution" };
+  case SCIP_STATUS_TOTALNODELIMIT:
+    if (hasSol)
+      return { sol::LIMIT_FEAS_NODES,
+            "total node limit (incl. restarts), feasible solution" };
+    return { sol::LIMIT_NO_FEAS_NODES,
+          "total node limit (incl. restarts), no solution" };
+  case SCIP_STATUS_STALLNODELIMIT:
+    if (hasSol)
+      return { sol::LIMIT_FEAS_NODES,
+            "stalling node limit (no improvement w.r.t. primal bound), feasible solution" };
+    return { sol::LIMIT_NO_FEAS_NODES,
+          "stalling node limit (no improvement w.r.t. primal bound), no solution" };
+  case SCIP_STATUS_TIMELIMIT:
+    if (hasSol)
+      return { sol::LIMIT_FEAS_TIME, "time limit, feasible solution" };
+    return { sol::LIMIT_NO_FEAS_TIME, "time limit, no solution" };
+  case SCIP_STATUS_MEMLIMIT:
+    if (hasSol)
+      return { sol::LIMIT_FEAS_SOFTMEM, "memory limit, feasible solution" };
+    return { sol::LIMIT_NO_FEAS_SOFTMEM, "memory limit, no solution" };
+  case SCIP_STATUS_GAPLIMIT:
+    return { sol::LIMIT_FEAS_GAP, "gap limit" };
+  case SCIP_STATUS_SOLLIMIT:
+    return { sol::LIMIT_FEAS_NUMSOLS, "solution limit" };
+  case SCIP_STATUS_BESTSOLLIMIT:
+    return { sol::LIMIT_FEAS_NUMSOLS, "solution improvement limit" };
+  case SCIP_STATUS_RESTARTLIMIT:
+    if (hasSol)
+      return { sol::LIMIT_FEAS, "restart limit, feasible solution" };
+    return { sol::LIMIT_NO_FEAS, "restart limit, no solution" };
+  case SCIP_STATUS_OPTIMAL:
+    return { sol::SOLVED, "optimal solution" };
+  case SCIP_STATUS_INFEASIBLE:
+    return { sol::INFEASIBLE, "infeasible problem" };
+  case SCIP_STATUS_UNBOUNDED:
+    if (hasSol)
+      return { sol::UNBOUNDED_FEAS, "unbounded problem, feasible solution" };
+    return { sol::UNBOUNDED_NO_FEAS, "unbounded problem, no solution" };
+  case SCIP_STATUS_INFORUNBD:
+    return { sol::INF_OR_UNB, "infeasible or unbounded problem" };
+  case SCIP_STATUS_TERMINATE:
+    if (hasSol)
+      return { sol::LIMIT_FEAS_INTERRUPT,
+            "process received a SIGTERM signal, feasible solution" };
+    return { sol::LIMIT_NO_FEAS_INTERRUPT,
+          "process received a SIGTERM signal, no solution" };
+  default:
+    if (hasSol)
+      return { sol::UNCERTAIN, "unknown, solution candidate returned" };
+    return { sol::UNKNOWN, "unknown" };
+  }
   return { sol::UNKNOWN, "not solved" };
 }
 
@@ -348,7 +378,7 @@ void ScipBackend::InitCustomOptions() {
     "Log file name.",
     storedOptions_.logFile_);
 
-  AddStoredOption("tech:param:read param:read paramfile",
+  AddStoredOption("tech:optionnativeread optionnativeread tech:param:read param:read",
     "Filename of SCIP parameter file (as path)."
     "The suffix on a parameter file should be .set.\n",
     storedOptions_.paramRead_);

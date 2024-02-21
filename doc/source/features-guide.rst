@@ -1,6 +1,6 @@
 .. _features-guide:
 
-Features Guide for MP-based AMPL Solvers
+Features guide for MP-based AMPL solvers
 ****************************************
 
 .. highlight:: ampl
@@ -8,7 +8,7 @@ Features Guide for MP-based AMPL Solvers
 The MP framework defines standard *solver features* that solvers might support;
 these are usually characterized by a set of :ref:`solver-options` used to control the feature,
 sometimes suffixes to pass required data and results, and may change the behaviour
-of the solution process.
+of the solution process. Furthermore, MP offers unified :ref:`solve-result-codes`.
 
 This page presents the semantics of the most common solver features; for a development
 reference see :ref:`howto`.
@@ -20,28 +20,61 @@ Solver options
 =================
 
 Solver options are key-value pairs controlling a solver's behavior.
-Many of them are standardized across AMPL solvers
-(for solver's native options see :ref:`further <native-options>`.)
+We distinguish between :ref:`ampl-solver-options` and :ref:`native-options`.
+
+
+.. _ampl-solver-options:
+
+AMPL/MP solver options
+-----------------------------
+
+AMPL/MP solver options provide a unified interface to
+MP parameters, as well as underlying solver's configuration:
+
+.. code-block:: ampl
+
+    ampl: option solver gurobi;
+    ampl: option gurobi_options 'outlev=1';      ## verbose output
+    ampl: solve;
+
+Many of them are
+`standardized across AMPL solvers <https://dev.ampl.com/solvers/index.html>`_.
 
 
 List all available options
-----------------------------------
+'''''''''''''''''''''''''''''''''''''''''''''
 
 Run the AMPL solver executable with ``-=`` to list all options,
-or with ``-=prefix`` to list all options starting with ``prefix``:
+or with ``-=key`` to list all options containing ``key``:
 
 .. code-block:: bash
 
-    $ highs -=acc
+    $ highs -=acc:
     .....
-    acc Options:
+    acc: Options:
 
     acc:linrange (acc:linrng)
         Solver acceptance level for 'LinConRange', default 2
 
+On the Web, options for AMPL solvers are published in 
+`AMPL Development <https://dev.ampl.com/solvers/index.html>`_.
+
+
+Option file
+'''''''''''''''''''''''''''''''''''
+
+It is possible to input a file with predefined AMPL solver options,
+using ``tech:optionfile``:
+
+.. code-block:: ampl
+
+    ampl: option cbc_options 'optionfile="options_experiment1.txt"';
+
+For the underlying solver's native options see :ref:`native-options`.
+
 
 Solver-specific vs common MP options
--------------------------------------------
+''''''''''''''''''''''''''''''''''''''''''''''''
 
 From AMPL, options can be passed to an MP solver in two ways.
 Solver-specific options are passed
@@ -72,7 +105,7 @@ with the possibility to override some of them for a specific solver.
 
 
 Set options from command line
---------------------------------------
+'''''''''''''''''''''''''''''''''''''''''''''''
 
 When running from command line, there are two ways to pass options:
 via the environment variable, or via arguments:
@@ -83,19 +116,8 @@ via the environment variable, or via arguments:
     gurobi.exe model.nl outlev=1 tech:writesol=model.sol                ## Method 2
 
 
-Set options from file
---------------------------
-
-It is possible to input a file with predefined solver options,
-using ``tech:optionfile``:
-
-.. code-block:: ampl
-
-    ampl: option cbc_options 'optionfile="options_experiment1.txt"';
-
-
 Query option values
---------------------------
+''''''''''''''''''''''''''''''''''''''
 
 To query the value of an option (default, or set via other methods),
 use '?' as argument:
@@ -119,11 +141,76 @@ For example, to control Gurobi ``NumericFocus`` setting, there are two ways:
 
 .. code-block:: ampl
 
-    ampl: option gurobi_options 'alg:numericfocus 3';      ## standard way
-    ampl: option gurobi_options 'tech:param "NumericFocus 3"';   ## native
+    ampl: option gurobi_options 'alg:numericfocus 3';             ## standard way
+    ampl: option gurobi_options 'tech:optionnative "NumericFocus 3"';   ## native
+    gurobi.exe model.nl optnative="numericfocus 2" optnative="Seed 500" # cmdline
 
-Additionally, for some solver native options can be read / written
-from / to files using ``tech:param:read`` and ``tech:param:write``.
+Additionally, for some solvers, native options can be read / written
+from / to files using ``tech:optionnativeread`` and ``tech:optionnativewrite``.
+
+
+.. _solve-result-codes:
+
+Solve result codes
+=================================
+
+The result of the last solve in AMPL can be seen as follows.
+
+.. code-block:: ampl
+
+    ampl: model party2.mod
+    ampl: data party2.dat
+    ampl: display solve_result_num, solve_result;
+    solve_result_num = -1
+    solve_result = '?'
+
+    ampl: option solver gurobi;
+    ampl: option gurobi_options 'lim:time 20';
+    ampl: solve;
+    Gurobi 11.0.0:   lim:time = 20
+    Gurobi 11.0.0: time limit, feasible solution
+    35671 simplex iteration(s)
+    1 branching node(s)
+    absmipgap=27, relmipgap=0.818182
+    ampl: display solve_result_num, solve_result;
+    solve_result_num = 402
+    solve_result = limit
+
+    ampl: option solve_result_table;
+    option solve_result_table '\
+    0       solved\
+    100     solved?\
+    200     infeasible\
+    300     unbounded\
+    400     limit\
+    500     failure\
+    ';
+
+MP details the solve result codes as follows:
+
+.. code-block:: ampl
+
+    ampl: shell "mosek -!";
+    Solve result table for MOSEK 10.0.43
+              0- 99 solved: optimal for an optimization problem, feasible for a satisfaction problem
+            100-199 solved? solution candidate returned but error likely
+                150 solved? MP solution check failed (option sol:chk:fail)
+            200-299 infeasible
+            300-349 unbounded, feasible solution returned
+            350-399 unbounded, no feasible solution returned
+            400-449 limit, feasible: stopped, e.g., on iterations or Ctrl-C
+            450-469 limit, problem is either infeasible or unbounded
+            470-499 limit, no solution returned
+            500-999 failure, no solution returned
+                550 failure: numeric issue, no feasible solution
+
+Individual solvers may add more specific values in the corresponding ranges.
+To list solver-specific codes, use command-line switch ``-!`` as above,
+or visit `AMPL Development <https://dev.ampl.com/solvers/index.html>`_.
+More information is in Chapter 14 of the
+`AMPL Book <https://ampl.com/learn/ampl-book/>`_.
+See also the roll cutting example on `AMPL Colab <https://colab.ampl.com>`_.
+
 
 General features
 ================

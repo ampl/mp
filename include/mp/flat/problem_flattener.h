@@ -1009,7 +1009,7 @@ protected:
 
   //////////////////////////// CREATE OR FIND A FIXED VARIABLE //////////////////////////////
   int MakeFixedVar(double value)
-  { return GetFlatCvt().MakeFixedVar(value); }
+  { return int(GetFlatCvt().MakeFixedVar(value)); }
 
   /// Presolve link just copying values between model items
   pre::CopyLink& GetCopyLink() { return GetFlatCvt().GetCopyLink(); }

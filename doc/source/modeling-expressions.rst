@@ -4,14 +4,23 @@
 Expressions supported
 ---------------------
 
-The MP solver interface library works with existing AMPL syntaxes, but allows them to be used in more general ways, or with a greater variety of solvers.
+The MP solver interface library works with existing AMPL syntaxes, but allows
+them to be used in more general ways, or with a greater variety of solvers.
 
-In many cases, an extension results from allowing variables to appear in more general contexts, such as with conditional, logical, or counting operators. Other extensions are enabled by providing more powerful transformations, particularly to linear or quadratic equivalents, and by providing support for extensions that are native to some solvers. A few extensions are already handled in the AMPL language translator, and are included here for completeness.
+In many cases, an extension results from allowing variables to appear in more
+general contexts, such as with conditional, logical, or counting operators.
+Other extensions are enabled by providing more powerful transformations,
+particularly to linear or quadratic equivalents, and by providing support
+for extensions that are native to some solvers. A few extensions are already
+handled in the AMPL language translator, and are included here for completeness.
 
-In the syntax summaries below, there are two main kinds of entities, representing *numerical expressions* and *constraints:*
+In the syntax summaries below, there are two main kinds of entities,
+representing *numerical expressions* and *constraints:*
 
 - **expr**
-     represents any expression that evaluates to a number. Unless otherwise indicated, it may contain variables. It may be built from familiar arithmetic operators, but also from other operators or functions that return numerical values.
+     represents any expression that evaluates to a number. Unless otherwise indicated,
+     it may contain variables. It may be built from familiar arithmetic operators,
+     but also from other operators or functions that return numerical values.
 
 - **constr**
      represents a constraint of the model, which may evaluate to true or false
@@ -19,7 +28,10 @@ In the syntax summaries below, there are two main kinds of entities, representin
      familiar relational operators ``>(=)``, ``<(=)``, and ``=``, but also from other
      operators such as ``or`` and ``alldiff`` that create constraints.
 
-The return value of an operator or function is also one of the above, as indicated by *expr-valued* or *constr-valued* at the beginning of each syntax summary. Thus it is possible to build up complex combinations of operators and functions of various kinds; for example,
+The return value of an operator or function is also one of the above,
+as indicated by *expr-valued* or *constr-valued* at the beginning of each syntax summary.
+Thus it is possible to build up complex combinations of operators and functions
+of various kinds; for example,
 
 .. code-block:: ampl
 
@@ -27,28 +39,43 @@ The return value of an operator or function is also one of the above, as indicat
                  x<=-5 else
                        max((x+1)*x*z, y, y-z)<=3 and exp(y)<=12);
 
-AMPL represents these combinations as expression trees, which are sent to MP-based solver interfaces to be processed as solvers require.
+AMPL represents these combinations as expression trees,
+which are sent to MP-based solver interfaces to be processed as solvers require.
 
-Indexing over sets is a common feature of AMPL expressions. The examples below use two kinds of indexing expressions, which are represented in the syntax summaries as follows:
+Indexing over sets is a common feature of AMPL expressions.
+The examples below use two kinds of indexing expressions,
+which are represented in the syntax summaries as follows:
 
 - { indexing }
-    This is the regular sort of AMPL indexing expression, as used in defining numerous AMPL entities such as parameters, variables, constraints, and summations. It is described in the `AMPL book <https://ampl.com/resources/the-ampl-book/>`_ beginning with `Section 5.5 Indexing expressions <https://ampl.com/BOOK/CHAPTERS/08-sets1.pdf#page=7>`_ and continuing with `Chapter 6. Compound Sets and Indexing <https://ampl.com/BOOK/CHAPTERS/09-sets2.pdf>`_. Followed by an *expr* or *constr*, an indexing expression specifies a list of expressions or constraints to which an operator applies; for example,
+    This is the regular sort of AMPL indexing expression, as used in defining
+    numerous AMPL entities such as parameters, variables, constraints,
+    and summations. It is described in the
+    `AMPL book <https://ampl.com/resources/the-ampl-book/>`_ beginning with
+    `Section 5.5 Indexing expressions <https://ampl.com/BOOK/CHAPTERS/08-sets1.pdf#page=7>`_
+    and continuing with `Chapter 6. Compound Sets and Indexing <https://ampl.com/BOOK/CHAPTERS/09-sets2.pdf>`_.
+    Followed by an *expr* or *constr*, an indexing expression specifies a list of expressions
+    or constraints to which an operator applies; for example,
     ::
 
         max {n in NODE} weight[t,n] * Use[n]
         forall {p in PROD} Trans[i,j,p] = 0
 
 - ( expr-list )
-    This is a parenthesized, comma-separated list of entries that represent numerical values. Each entry may have the form *expr* or *{indexing} expr*, or recursively *{indexing} ( expr-list )*. For example,
+    This is a parenthesized, comma-separated list of entries that represent numerical values.
+    Each entry may have the form *expr* or *{indexing} expr*, or recursively
+    *{indexing} ( expr-list )*. For example,
     ::
 
         max (cost["BRO"],cost["CAU"],cost["BRU"])
         max ({f in FOOD} cost[f], 10.0)
         max ({n in NUTR} (lim_nutr[n], {f in FOOD} amt[n,f]))
 
-As seen in the case of ``max`` above, certain operators can be used with either the ``{indexing} expr`` or the ``(expr-list)`` form.
+As seen in the case of ``max`` above, certain operators can be used with either
+the ``{indexing} expr`` or the ``(expr-list)`` form.
 
-Due to the generality of the operators recognized by the MP interface, it is possible to express constraints that do not define a closed feasible region. For example,
+Due to the generality of the operators recognized by the MP interface,
+it is possible to express constraints that do not define a closed feasible region.
+For example,
 
 .. code-block:: ampl
 
@@ -198,7 +225,9 @@ Piecewise-linear expressions
 - max ( expr-list )
     *expr-valued:* Equals the largest value among all of the operands in the *expr-list*.
 
-Expressions using these operators are transformed to use Gurobi's native ABS, MIN, and MAX "general constraints" when possible. In other cases, they are transformed to simpler constraints that use relational operators, and in particular are linearized where all of the operands are linear.
+Expressions using these operators are transformed to use Gurobi's native ABS, MIN, and MAX
+"general constraints" when possible. In other cases, they are transformed to simpler constraints
+that use relational operators, and in particular are linearized where all of the operands are linear.
 
 .. code-block:: ampl
 
@@ -278,7 +307,9 @@ AMPL’s ``count`` operator examines an indexed collection of constraints, and r
 - exactly k {indexing} *constr*
     *constr-valued:* Satisfied when the *constr* is satisfied for exactly ``k`` members of the indexing set.
 
-``k`` must be a constant arithmetic expression that evaluates to a nonnegative integer. These operators provide easier-to-read alternatives for special cases of constraints that rely on ``count``. Compare for example the ``Min_Serve`` constraint below to the one given previously using ``count``.
+``k`` must be a constant arithmetic expression that evaluates to a nonnegative integer.
+These operators provide easier-to-read alternatives for special cases of constraints that rely on ``count``.
+Compare for example the ``Min_Serve`` constraint below to the one given previously using ``count``.
 
 .. code-block:: ampl
 
@@ -364,13 +395,22 @@ Complementarity operator
 ***********************************
 
 - *constr1* complements *constr2*
-    *constr-valued:* Satisfied when both *const1* and *constr2* are satisfied, and at least one of them holds with equality. Each of *constr1* and *constr2* must have the form *expr1 <= expr2* or *expr1 >= expr2* (and the trivial special case *expr1 = expr2* is also recognized).
+    *constr-valued:* Satisfied when both *const1* and *constr2* are satisfied,
+    and at least one of them holds with equality. Each of *constr1* and *constr2*
+    must have the form *expr1 <= expr2* or *expr1 >= expr2* (and the trivial special case *expr1 = expr2* is also recognized).
 - *expr* complements *constr*,  *constr* complements *expr*
-     *constr-valued:* Satisfied when *constr* is satisfied, and when also if *expr* is positive then *constr* holds with equality at its lower bound, or if *expr* is negative then *constr* holds with equality at its upper bound. The *constr*  must have the form *lb <= expr <= ub* or *ub >= expr >= lb* where *lb* and *ub* are lower and upper bound expressions not involving variables.
+     *constr-valued:* Satisfied when *constr* is satisfied, and when also
+     if *expr* is positive then *constr* holds with equality at its lower bound,
+     or if *expr* is negative then *constr* holds with equality at its upper bound.
+     The *constr*  must have the form *lb <= expr <= ub* or *ub >= expr >= lb*
+     where *lb* and *ub* are lower and upper bound expressions not involving variables.
 
-The ``complements`` operator provides a convenient, streamlined way of expressing a common kind of relationship between two single-inequality constraints, or between an expression and a double-inequality constraint. This relationship appears in the complementary slackness conditions necessary for optimality of certain optimization problems, and in equilibrium conditions for games and for various physical systems. See `Chapter 19. Complementarity Problems <https://ampl.com/BOOK/CHAPTERS/22-complement.pdf>`_ in the `AMPL book <https://ampl.com/resources/the-ampl-book/>`_ for a detailed presentation.
+The ``complements`` operator provides a convenient, streamlined way of expressing
+a common kind of relationship between two single-inequality constraints, or between an expression and a double-inequality constraint. This relationship appears in the complementary slackness conditions necessary for optimality of certain optimization problems, and in equilibrium conditions for games and for various physical systems. See `Chapter 19. Complementarity Problems <https://ampl.com/BOOK/CHAPTERS/22-complement.pdf>`_ in the `AMPL book <https://ampl.com/resources/the-ampl-book/>`_ for a detailed presentation.
 
-Certain nonlinear solvers, notably Knitro, handle complementarity constraints natively. For MP-based solvers, the interface converts uses of ``complements`` to equivalent constraints using logical operators.
+Certain nonlinear solvers, notably Knitro, handle complementarity constraints natively.
+For MP-based solvers, the interface converts uses of ``complements`` to equivalent
+constraints using logical operators.
 
 .. code-block:: ampl
 
@@ -444,7 +484,7 @@ Piecewise linearization allows handling of nonconvex QP and nonlinear models
 by convex MIP solvers.
 For convex MIQP solvers,
 to apply linearization of quadratic expressions (it is the default for linear solvers only),
-use options *cvt:quadobj=0*, *cvt:quadcon=0*.
+use options ``cvt:quadobj=0``, ``cvt:quadcon=0``.
 
 Other expressions involving these operators are converted, where possible, to simpler
 quadratic expressions and equality constraints through the use of auxiliary variables;
@@ -470,6 +510,8 @@ Conic optimization
 Some solvers can handle conic constraints with tailored algorithms:
 Mosek, Gurobi, COPT. Note that general non-linear solvers accept them too,
 but might not provide any specialized methods.
+See `conic examples <https://colab.ampl.com/tags/conic.html>`_
+at Google Colab.
 
 Second-order cone programming (SOCP)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -495,15 +537,24 @@ MP library provides additional conversion into solver-specific conic forms. Exam
      2*x[0]*x[1] >= x[2]^2 + ... + x[n]^2;
 
 
-*Note:* Mosek cannot mix SOCP and general quadratic constraints.
-:ref:`Option <solver-options>` ``cvt:socp=0`` results in second-order conic
+*Note:* Mosek cannot mix SOCP and general quadratic constraints,
+complaining::
+
+  MOSEK 10.0.43:  Error type 3, MSK_RES_ERR_MIXED_CONIC_AND_NL(1501):
+    The problem contains both conic and nonlinear constraints.
+
+
+In this case, setting :ref:`option <solver-options>` ``cvt:socp=0`` results in second-order conic
 constraints being passed to the solver as quadratics, even if
-the solver has native SOCP API.
+the solver has native SOCP API. This gives the solver a chance to recognize
+SOCP forms in preprocessing.
 
 Exponential cones
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Mosek handles exponential conic constraints. Example:
+Mosek natively handles exponential conic constraints.
+They are recognized by MP and passed to Mosek via its API.
+Example:
 
 .. code-block:: ampl
 
@@ -515,15 +566,32 @@ Mosek handles exponential conic constraints. Example:
    s.t. T1: 1 + b*w >= exp( q1 );
    s.t. T2: -1 + w +10*q2   <= -5 * q2 * exp( q1 / (q2*5) );
 
+*Note:* Mosek cannot mix conic and general quadratic constraints.
+Use :ref:`option <solver-options>` ``cvt:expcones=0`` to handle exponential conic
+constraints in other ways, even if
+the solver has native exponential conic API. For Mosek, they would be approximated
+by :ref:`piecewise_linear_modeling`.
+
+Exploring the solver's model
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To explore the model received by the solver,
+e.g., to see which constraints are received as conic vs quadratic,
+see :ref:`explore-final-model`.
+
+
 
 
 General nonlinear functions
 **********************************
 
+Supported functions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 - log (*expr*), log10 (*expr*)
     *expr-valued:* The natural and base-10 logarithms of *expr*.
 - exp (*expr*)
-    *expr-valued:* The base of the natural logarithms (e) raised to the power *expr*.
+    *expr-valued:* The base of the natural logarithm (e) raised to the power *expr*.
 - sin (*expr*), cos (*expr*), tan (*expr*), asin (*expr*), acos (*expr*), atan (*expr*)
     *expr-valued:* The sine, cosine, tangent of *expr* and the corresponding inverse functions.
 - sinh (*expr*), cosh (*expr*), tanh (*expr*), asinh (*expr*), acosh (*expr*), atanh (*expr*)
@@ -535,22 +603,60 @@ General nonlinear functions
     is decomposed into quadratic constraints if the solver supports them,
     otherwise passed to the solver natively or approximated by a piecewise-linear function.
 
-For linear-quadratic MP-based solvers (which include all those currently implemented),
+General solvers
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For linear-quadratic MP-based solvers,
 most of these nonlinear functions are handled by piecewise-linear approximation,
 except products with binary variables.
 The appoximation is constructed by the MP interface, using options
-*cvt:plapprox:reltol* and *cvt:plapprox:domain*,
+``cvt:plapprox:reltol`` and ``cvt:plapprox:domain``,
 and is then processed as described in
 :ref:`piecewise_linear_modeling`.
 
-For Gurobi, the following univariate nonlinear functions are instead handled natively:
-exp, log, ^, sin, cos, tan.
-After suitable transformations, the MP interface sends Gurobi the expressions that use
-these functions, after which the Gurobi solver constructs the piecewise-linear approximations
-as part of its preprocessing. The choice of approximation can be influenced by setting
-the following options in an AMPL ``gurobi_options`` string::
+Handling in Gurobi
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-  funcpieces
+For Gurobi, the following univariate nonlinear functions are instead handled natively:
+**exp**, **log**, **^**, **sin**, **cos**, **tan**.
+After suitable transformations, the MP interface sends Gurobi the expressions that use
+these functions.
+
+Gurobi 11 defaults to piecewise-linear approximation of these functions
+as part of its preprocessing. However, Gurobi :ref:`option <solver-options>` ``alg:global``
+(``pre:funcnonlinear``) sets the default to the new MINLP capability ---
+`global nonlinear solving <https://www.gurobi.com/>`_ via spatial branching:
+
+.. code-block:: ampl
+
+  ampl: option gurobi_options 'global=1'; solve;
+
+For individual constraints and objectives, the choice of global solving vs
+piecewise-linear approximation can be performed via the ``.global`` suffix:
+
+.. code-block:: text
+
+  pre:funcnonlinear (funcnonlinear, global)
+      Controls how general functions with their constraint's or objective's
+      suffix .funcnonlinear or, if not available, .global unset (or set to 0)
+      are treated (ATTENTION: different meaning than Gurobi FuncNonLinear
+      parameter and attribute):
+
+      -1 - Piecewise-linear approximation
+      0  - Automatic (default)
+      1  - Treated as nonlinear functions
+
+      Suffix values mean the same.
+
+See our `Christmas tree decorations Streamlit example <https://ampl.com/streamlit>`_
+using global optimization.
+
+Piecewise-linear aproximation can be influenced by setting
+the following options in the AMPL ``gurobi_options`` string:
+
+.. code-block:: text
+
+  pre:funcpieces
       Sets the strategy for constructing a piecewise-linear approximation of a
       function:
 
@@ -563,15 +669,15 @@ the following options in an AMPL ``gurobi_options`` string::
       -2  - Bounds the relative error of the approximation, as specified
             by the funcpieceerror option
 
-  funcpiecelength
+  pre:funcpiecelength
       When funcpieces = 1, specifies the length of each piece of the
       approximation.
 
-  funcpieceerror
+  pre:funcpieceerror
       When funcpieces = -1 or -2, specifies the maximum allowed
       error (absolute for -1, relative for -2) in the approximation.
 
-  funcpieceratio
+  pre:funcpieceratio
       Controls whether the piecewise-linear approximation is an underestimate
       of the function, an overestimate, or somewhere in between. A value of
       0.0 will always underestimate, while a value of 1.0 will always

@@ -76,7 +76,7 @@ protected:
           IfThenConstraint {{      // no context as of now
                                    i_bin,
                                    i_other,
-                                   GetMC().MakeFixedVar(0.0)
+                                   int( GetMC().MakeFixedVar(0.0) )
                             }} );
     lt.add_term(c, x_ifthen);
     return lt;

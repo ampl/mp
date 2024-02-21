@@ -1,6 +1,36 @@
 Summary of recent updates to MOSEK for AMPL
 ===========================================
 
+
+## 20240118
+- *Native Mosek options*
+  - Use tech:optionnative, tech:optionnative(read/write)
+    to read/write native options inline or to/from files.
+    See mp.ampl.com/features-guide.html#solver-options.
+
+
+## 20240115
+- *Solve result codes*
+  - List codes by running (solver) -!
+  - [BREAKING] Standardized codes. Major changes:
+    - 100-199 (solved?) means solution candidate
+      provided, but can be suboptimal/infeasible
+    - 300-349 means unbounded problem but
+      feasible solution returned
+    - 400-449 means limit/interrupt but feasible
+  - [BREAKING] sol:chk:fail returns code 150 (solved?)
+- Improved translation of *SOCP vs QCP constraints*.
+  - For convex QCP problems, don't attempt SOCP form.
+    Previously some QCP problems required cvt:socp=0.
+  - For conic problems, substitute QP terms
+    from the objective as an auxiliary SOCP constraint
+    (only for simple QP terms, otherwise should be
+    done manually.)
+  - Options cvt:socp, cvt:socp2qc.
+- Compact solution check warnings
+- Fixed presolve of the power function #226.
+
+
 ## 20231117
 - MP update: fixed graceful exit on Ctrl-C from AMPL in Linux
   and fixed issue with reading text-format NL files

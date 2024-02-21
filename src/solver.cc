@@ -355,13 +355,11 @@ bool SolverAppOptionParser::ShowSolverOptionsASL() {
   }
   return false;
 }
+
 bool contains(const char* name, const char* substr) {
-  std::string n(name);
-  std::string sub = fmt::format("{}:", substr);
-  return n.find(sub) != std::string::npos;
-
-
+  return std::strstr(name, substr);
 }
+
 bool SolverAppOptionParser::ShowSolverOptions(const char* param) {
   fmt::MemoryWriter writer;
   const char* option_header = solver_.option_header();
@@ -597,11 +595,11 @@ void BasicSolver::InitMetaInfoAndOptions(
 
   AddStrOption(
         "tech:optionfile optionfile option:file",
-        "Name of solver option file to read "
+        "Name of an AMPL solver option file to read "
         "(surrounded by 'single' or "
         "\"double\" quotes if the name contains blanks). "
         "Lines that start with # are ignored.  Otherwise, each nonempty "
-        "line should contain \"name=value\".",
+        "line should contain \"name=value\", e.g., \"lim:iter=500\".",
         &Solver::GetOptionFile, &Solver::UseOptionFile);
 
 
@@ -748,8 +746,8 @@ SolverOptionManager::~SolverOptionManager() {
 const char*
 BasicSolver::GetSolCheckWarningKey(bool f_recomp) const {
   return f_recomp
-      ? "Solution Check (Idealistic)"
-      : "Solution Check";
+      ? "Tolerance violations"
+      : "Tolerance violations (solver model)";
 }
 
 void BasicSolver::AddWarning(
