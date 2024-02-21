@@ -1,6 +1,10 @@
 Summary of recent updates to GCG for AMPL
 =========================================
 
+## 20240221
+- Updated to GCG 400
+
+
 ## 20240115
 - *Solve result codes*.
   - List codes by running (solver) -!
