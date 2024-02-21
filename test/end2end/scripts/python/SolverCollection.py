@@ -34,6 +34,7 @@ def addStdSolvers(solvers: SolverCollection, binPath=""):
     solvers.addSolver(Solver.CPLEXDirectSolver(path.join(binPath,"cplexmp")))  ## Need as long as the target is there
     solvers.addSolver(Solver.BaronSolver(path.join(binPath,"baron")))
     solvers.addSolver(Solver.ConoptSolver(path.join(binPath,"conopt4")))
+    solvers.addSolver(Solver.ConoptSolver(path.join(binPath,"conopt")))
     solvers.addSolver(Solver.COPTSolver(path.join(binPath,"copt")))
     solvers.addSolver(Solver.MindoptSolver(path.join(binPath,"mindoptampl")))
     solvers.addSolver(Solver.HighsSolver(path.join(binPath,"highs")))
