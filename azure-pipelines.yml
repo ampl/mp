@@ -73,21 +73,27 @@ stages:
         ppc64le cp37:
           CIBW_BUILD: cp37-*
           CIBW_ARCHS_LINUX: ppc64le
+          CIBW_TEST_COMMAND:    ## Skip, cannot install SciPy, NumPy
         ppc64le cp38:
           CIBW_BUILD: cp38-*
           CIBW_ARCHS_LINUX: ppc64le
+          CIBW_TEST_COMMAND:
         ppc64le cp39:
           CIBW_BUILD: cp39-*
           CIBW_ARCHS_LINUX: ppc64le
+          CIBW_TEST_COMMAND:
         ppc64le cp310:
           CIBW_BUILD: cp310-*
           CIBW_ARCHS_LINUX: ppc64le
+          CIBW_TEST_COMMAND:
         ppc64le cp311:
           CIBW_BUILD: cp311-*
           CIBW_ARCHS_LINUX: ppc64le
+          CIBW_TEST_COMMAND:
         ppc64le cp312:
           CIBW_BUILD: cp312-*
           CIBW_ARCHS_LINUX: ppc64le
+          CIBW_TEST_COMMAND:
     # variables:
       # CIBW_TEST_REQUIRES: --index-url https://pypi.ampl.com --extra-index-url https://pypi.org/simple ampl_module_base
     steps:
