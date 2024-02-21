@@ -14,9 +14,9 @@ stages:
       - task: UsePythonVersion@0
       - bash: |
           set -ex
-          cd nl-writer2/nlwpy/
+          cd nl-writer2/
           python -m pip install --upgrade cibuildwheel==2.16.2
-          cibuildwheel --platform linux --output-dir wheelhouse .
+          cibuildwheel --platform linux --output-dir nlwpy/wheelhouse .
         displayName: Build wheels
       - task: PublishBuildArtifacts@1
         inputs: {pathtoPublish: 'nl-writer2/nlwpy/wheelhouse'}
@@ -26,9 +26,9 @@ stages:
       - task: UsePythonVersion@0
       - bash: |
           set -ex
-          cd nl-writer2/nlwpy/
+          cd nl-writer2/
           python -m pip install --upgrade cibuildwheel==2.16.2
-          cibuildwheel --platform macos --output-dir wheelhouse .
+          cibuildwheel --platform macos --output-dir nlwpy/wheelhouse .
         displayName: Build wheels
       - task: PublishBuildArtifacts@1
         inputs: {pathtoPublish: 'nl-writer2/nlwpy/wheelhouse'}
@@ -38,9 +38,9 @@ stages:
       - task: UsePythonVersion@0
       - bash: |
           set -ex
-          cd nl-writer2/nlwpy/
+          cd nl-writer2/
           python -m pip install --upgrade cibuildwheel==2.16.2
-          cibuildwheel --platform windows --output-dir wheelhouse .
+          cibuildwheel --platform windows --output-dir nlwpy/wheelhouse .
         displayName: Build wheels
       - task: PublishBuildArtifacts@1
         inputs: {pathtoPublish: 'nl-writer2/nlwpy/wheelhouse'}
@@ -96,9 +96,9 @@ stages:
         displayName: Configure qemu
       - bash: |
           set -ex
-          cd nl-writer2/nlwpy/
+          cd nl-writer2/
           python -m pip install --upgrade cibuildwheel==2.16.2
-          cibuildwheel --platform linux --output-dir wheelhouse .
+          cibuildwheel --platform linux --output-dir nlwpy/wheelhouse .
         displayName: Build wheels
       - task: PublishBuildArtifacts@1
         inputs: {pathtoPublish: 'nl-writer2/nlwpy/wheelhouse'}
