@@ -49,11 +49,14 @@ class BenchmarkExporter(Exporter):
         return [ stats["nvars"], stats["nintvars"], stats["nconstr"], stats["nnz"]]
   
     def getStyle(self, r):
-        if "solved" in r[-1]["timelimit"]:
-            return None
-        elif "limit" in r[-1]["timelimit"]:
-            return self.font_yellow
-        else:
+        try:
+            if "solved" in r[-1]["timelimit"]:
+                return None
+            elif "limit" in r[-1]["timelimit"]:
+                return self.font_yellow
+            else:
+                return self.font_red
+        except: 
             return self.font_red
 
     def writeLastResultLine(self, mr: ModelRunner):
