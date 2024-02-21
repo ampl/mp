@@ -204,8 +204,10 @@ public:
     if (lazy_user_cuts())
       InputLazyUserCuts();
     InputStartValues();
-    if (priorities())
-      VarPriorities( ReadSuffix(suf_varpriority) );
+    if (priorities()) {
+      if (auto pri_array = ReadSuffix(suf_varpriority))
+        VarPriorities( pri_array );
+    }
   }
 
   virtual void InputLazyUserCuts() {

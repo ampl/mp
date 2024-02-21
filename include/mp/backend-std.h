@@ -280,10 +280,14 @@ protected:
   /// Standard extras
   virtual void InputStdExtras() {
     if (multiobj()) {
-      ObjPriorities( ReadSuffix(suf_objpriority) );
-      ObjWeights( ReadSuffix(suf_objweight) );
-      ObjAbsTol( ReadSuffix(suf_objabstol) );
-      ObjRelTol( ReadSuffix(suf_objreltol) );
+      if (auto suf = ReadSuffix(suf_objpriority))
+        ObjPriorities( suf );
+      if (auto suf = ReadSuffix(suf_objweight))
+        ObjWeights( suf );
+      if (auto suf = ReadSuffix(suf_objabstol))
+        ObjAbsTol( suf );
+      if (auto suf = ReadSuffix(suf_objreltol))
+        ObjRelTol( suf );
     }
     if (feasrelax())
       InputFeasrelaxData();
