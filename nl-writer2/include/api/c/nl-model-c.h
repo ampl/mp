@@ -157,7 +157,7 @@ typedef struct NLW2_Suffix_C {
   const double* values_;
 } NLW2_Suffix_C;
 
-/// Add suffix.
+/// Add suffix, e.g., basis statuses.
 /// @return true iff new suffix added (vs replaced.)
 /// @note SOS constraints can be modeled as suffixes
 ///   for some AMPL solvers.

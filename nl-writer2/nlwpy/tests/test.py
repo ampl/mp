@@ -33,12 +33,6 @@ assert 0 == nlwo.n_text_mode_
 assert 0 == nlwo.want_nl_comments_
 assert 1 == nlwo.flags_
 
-b = 500
-if b>400:
-  b=b+400
-
-print(b)
-
 ## ---------------------------------------------------------------
 class ModelBuilder:
   def GetModel(self):
@@ -63,22 +57,35 @@ class ModelBuilder:
                       self.Q_.indptr, self.Q_.indices, self.Q_.data)
     nlme.SetObjName(self.obj_name_)
 
+    if len(self.ini_x_i_)>0:
+      nlme.SetWarmstart(self.ini_x_i_, self.ini_x_v_)
+    if len(self.ini_y_i_)>0:
+      nlme.SetDualWarmstart(self.ini_y_i_, self.ini_y_v_)
+    if len(self.bas_x_)>0:
+      suf = m.NLW2_NLSuffix("status", 0, self.bas_x_)
+      nlme.AddSuffix(suf)
+    if len(self.bas_y_)>0:
+      suf = m.NLW2_NLSuffix("status", 1, self.bas_y_)
+      nlme.AddSuffix(suf)
+
     return nlme
 
   def Check(self, sol):
+    result = True
     if not self.ApproxEqual(sol.obj_val_, self.obj_val_ref_):
-      print("MIQP 1: wrong obj val ({:.17} !~ {:.17})".format(
+      print("MIQP 1: wrong obj val ({:.17f} !~ {:.17f})".format(
              sol.obj_val_, self.obj_val_ref_))
-      return False
+      result = False
 
     for i in range(len(sol.x_)):
       if not self.ApproxEqual(self.x_ref_[i], sol.x_[i]):
-        print("MIQP 1: wrong x[{}] ({:.17} !~ {:.17})".format(
+        print("MIQP 1: wrong x[{}] ({:.17f} !~ {:.17f})".format(
                i+1, sol.x_[i], self.x_ref_[i]))
-        return False
+        result = False
 
-    print("MIQP 1: solution check ok, obj={:.17}.".format(sol.obj_val_))
-    return True
+    print("MIQP 1: solution check {}, obj={:.17f}.".format(
+      "ok" if result else "Failed", sol.obj_val_))
+    return result
 
   def ApproxEqual(self, n, m):
     return abs(n-m) \
@@ -107,6 +114,14 @@ class ModelBuilder:
     self.Q_[3, 5] = 12
     self.Q_[4, 4] = 14
     self.obj_name_ = "obj[1]"
+
+    ### Extra input
+    self.ini_x_i_ = [0,2]
+    self.ini_x_v_ = [5,4]
+    self.ini_y_i_ = [0]
+    self.ini_y_v_ = [-12]
+    self.bas_x_ = [3,4,1,4,1,3]    ### Basis statuses
+    self.bas_y_ = [1,1]
 
     ### Solution
     self.x_ref_ = [0, 5, 1, -1, -1, 10]
@@ -148,7 +163,7 @@ if argc<2:
 
 solver = argv[1] if (argc>1) else "minos"
 sopts =  argv[2] if argc>2 else ""
-binary = ((argc<=3) or "text" == argv[3])
+binary = ((argc<=3) or "text" != argv[3])
 stub = argv[4] if argc>4 else ""
 
 if not SolveAndCheck(solver, sopts, binary, stub):

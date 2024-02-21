@@ -340,7 +340,11 @@ NLW2_NLSolver
       .def("SetRowNames", &NLWPY_NLModel::SetRowNames)
       .def("SetLinearObjective", &NLWPY_NLModel::SetLinearObjective)
       .def("SetHessian", &NLWPY_NLModel::SetHessian)
-      .def("SetObjName", &NLWPY_NLModel::SetObjName);
+      .def("SetObjName", &NLWPY_NLModel::SetObjName)
+      .def("SetWarmstart", &NLWPY_NLModel::SetWarmstart)
+      .def("SetDualWarmstart", &NLWPY_NLModel::SetDualWarmstart)
+      .def("AddSuffix", &NLWPY_NLModel::AddSuffix)
+      ;
 
   /// NLSolution
   py::class_<mp::NLSolution>(m, "NLW2_NLSolution")

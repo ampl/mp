@@ -189,12 +189,15 @@ public:
   void SetDualWarmstart(NLW2_SparseVector_C ini_y)
   { ini_y_ = ini_y; }
 
-  /// Add suffix.
+  /// Add suffix, e.g., basis statuses.
   /// @return true iff new suffix added (vs replaced.)
   /// @note SOS constraints can be modeled as suffixes
   ///   for some AMPL solvers.
-  bool AddSuffix(NLSuffix suf)
-  { return suffixes_.Add(std::move(suf)); }
+  bool AddSuffix(NLSuffix suf) {
+    assert(
+          (size_t)SufSize(suf.kind_) == suf.values_.size());
+    return suffixes_.Add(std::move(suf));
+  }
 
   /// Information exported by WriteNL()
   struct PreprocessData {
@@ -264,6 +267,15 @@ public:
   { return ini_y_; }
   /// Suffixes
   const NLSuffixSet Suffixes() const { return suffixes_; }
+
+protected:
+  int SufSize(int kind) const {
+    switch (kind&3) {
+    case 0: return NumCols();
+    case 1: return NumRows();
+    default: return 1;         // objectives / problem
+    }
+  }
 
 private:
   const char* prob_name_ {"mp::NLModel"};
