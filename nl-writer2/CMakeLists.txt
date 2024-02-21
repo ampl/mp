@@ -20,7 +20,7 @@ set(NLW2_EXAMPLE_PATH ${NLW2_DIR}/examples)
 set(NLW2_LIB_FILES
 	${NLW2_SRC_PATH}/nl-writer2.cc
   ${NLW2_SRC_PATH}/nl-utils.cc
-	${NLW2_SRC_PATH}/dtoa.c
+  ${NLW2_SRC_PATH}/dtoa.cc
 	${NLW2_SRC_PATH}/nl-solver.cc
 )
 set(NLW2_INC_FILES
