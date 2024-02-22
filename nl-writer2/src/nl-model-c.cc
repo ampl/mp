@@ -123,7 +123,7 @@ void NLW2_SetDualWarmstart_C(NLW2_NLModel_C* nlme,
 { CastNZ<mp::NLModel>(nlme->p_data_)->SetWarmstart(ini_y); }
 
 int NLW2_AddSuffix_C(NLW2_NLModel_C* nlme,
-                     NLW2_Suffix_C suf_c) {
+                     NLW2_NLSuffix_C suf_c) {
   mp::NLSuffix suf{
     suf_c.name_, suf_c.table_, suf_c.kind_,
     {suf_c.values_, suf_c.values_+suf_c.numval_}

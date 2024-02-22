@@ -99,7 +99,7 @@ const char* NLW2_GetErrorMessage_C(NLW2_NLSolver_C* );
 ///
 /// @see NLW2_LoadNLModel_C(), NLW2_RunSolver_C(),
 ///   NLW2_ReadSolution_C() for details.
-NLW2_Solution_C NLW2_SolveNLModel_C(NLW2_NLSolver_C* ,
+NLW2_NLSolution_C NLW2_SolveNLModel_C(NLW2_NLSolver_C* ,
                                     NLW2_NLModel_C* ,
                                     const char* solver,
                                     const char* solver_opts);
@@ -156,7 +156,7 @@ int NLW2_RunSolver_C(NLW2_NLSolver_C* ,
 /// @note To compute objective value,
 ///   execute NLW2_ComputeObjValue_C()
 ///   if x_ available.
-NLW2_Solution_C NLW2_ReadSolution_C(NLW2_NLSolver_C* );
+NLW2_NLSolution_C NLW2_ReadSolution_C(NLW2_NLSolver_C* );
 
 /// Read solution to SOLHandler.
 ///

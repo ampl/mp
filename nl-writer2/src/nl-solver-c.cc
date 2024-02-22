@@ -685,7 +685,7 @@ using NLSOL_C_Impl
 /// Storage for NLSE_Solution_C data
 struct NLW2_Solution_C_Data {
   mp::NLSolution sol_;
-  std::vector<NLW2_Suffix_C> suffixes_;
+  std::vector<NLW2_NLSuffix_C> suffixes_;
 };
 
 }  // namespace mp
@@ -743,7 +743,7 @@ const char* NLW2_GetErrorMessage_C(NLW2_NLSolver_C* pnls) {
 
 /// Add solution data to NLW2_NLSolver_C
 /// and return its C wrapper, NLW2_Solution_C.
-static NLW2_Solution_C NLW2_WrapNLSOL_Solution_C
+static NLW2_NLSolution_C NLW2_WrapNLSOL_Solution_C
 (NLW2_NLSolver_C* nlse, mp::NLSolution sol) {
   // Store the C++ data
   if (!nlse->p_sol_)
@@ -751,7 +751,7 @@ static NLW2_Solution_C NLW2_WrapNLSOL_Solution_C
   auto& sol_data = *CastNZ<mp::NLW2_Solution_C_Data>(nlse->p_sol_);
   sol_data.sol_ = std::move(sol);
 
-  NLW2_Solution_C result;
+  NLW2_NLSolution_C result;
   {
     const auto& sol=sol_data.sol_;
     result.nbs_ = sol.nbs_;
@@ -763,7 +763,7 @@ static NLW2_Solution_C NLW2_WrapNLSOL_Solution_C
     sol_data.suffixes_.reserve(sol.suffixes_.size());
     result.suffixes_ = sol_data.suffixes_.data();
     for (const auto& suf: sol.suffixes_) {
-      NLW2_Suffix_C suf_c;
+      NLW2_NLSuffix_C suf_c;
       suf_c.kind_ = suf.kind_;
       suf_c.name_ = suf.name_.c_str();
       suf_c.table_ = suf.table_.c_str();
@@ -779,7 +779,7 @@ static NLW2_Solution_C NLW2_WrapNLSOL_Solution_C
   return result;
 }
 
-NLW2_Solution_C NLW2_SolveNLModel_C(NLW2_NLSolver_C* nlse,
+NLW2_NLSolution_C NLW2_SolveNLModel_C(NLW2_NLSolver_C* nlse,
                                     NLW2_NLModel_C* nlme,
                                     const char* solver,
                                     const char* solver_opts) {
@@ -821,7 +821,7 @@ int NLW2_RunSolver_C(NLW2_NLSolver_C* pnls,
       ->Solve(solver, solver_opts);
 }
 
-NLW2_Solution_C NLW2_ReadSolution_C(NLW2_NLSolver_C* nlse) {
+NLW2_NLSolution_C NLW2_ReadSolution_C(NLW2_NLSolver_C* nlse) {
   auto sol
       = CastNZ<mp::NLSolver>(nlse->p_nlsol_)->ReadSolution();
   return NLW2_WrapNLSOL_Solution_C(nlse, std::move(sol));

@@ -85,7 +85,7 @@ static int ApproxEqual(double n, double m) {
 
 /// Check solution
 int NLW2_CheckSolution_C(
-    NLW2_Solution_C* p_sol, NLW2_SolCheckData_C* p_sol_ref) {
+    NLW2_NLSolution_C* p_sol, NLW2_SolCheckData_C* p_sol_ref) {
   if (!ApproxEqual(p_sol->obj_val_, p_sol_ref->obj_val_ref_)) {
     printf("MILP 1: wrong obj val (%.17g !~ %.17g)\n",
            p_sol->obj_val_, p_sol_ref->obj_val_ref_);
@@ -113,7 +113,7 @@ int SolveAndCheck(const char* solver, const char* sopts,
   NLW2_NLSolver_C nlse = NLW2_MakeNLSolver_C(NULL);
   NLW2_SetNLOptions_C(&nlse, nlopts);
   NLW2_SetFileStub_C(&nlse, stub);
-  NLW2_Solution_C sol = NLW2_SolveNLModel_C(&nlse, &nlme, solver, sopts);
+  NLW2_NLSolution_C sol = NLW2_SolveNLModel_C(&nlse, &nlme, solver, sopts);
   if (sol.solve_result_ >= -1) {
     if (!NLW2_CheckSolution_C(&sol, &solchkdata)) {
       printf("Solution check failed.\n");

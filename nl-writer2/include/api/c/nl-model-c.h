@@ -135,7 +135,7 @@ void NLW2_SetDualWarmstart_C(NLW2_NLModel_C* ,
 
 
 /// NL suffix type
-typedef struct NLW2_Suffix_C {
+typedef struct NLW2_NLSuffix_C {
   /// Name
   const char* name_;
   /// Suffix table
@@ -155,14 +155,14 @@ typedef struct NLW2_Suffix_C {
   int numval_;
   /// Values. Always double precision.
   const double* values_;
-} NLW2_Suffix_C;
+} NLW2_NLSuffix_C;
 
 /// Add suffix, e.g., basis statuses.
 /// @return true iff new suffix added (vs replaced.)
 /// @note SOS constraints can be modeled as suffixes
 ///   for some AMPL solvers.
 int NLW2_AddSuffix_C(NLW2_NLModel_C* ,
-                     NLW2_Suffix_C suf_c);
+                     NLW2_NLSuffix_C suf_c);
 
 
 /// Compute objective value
@@ -207,7 +207,7 @@ const char* NLW2_ObjName_C(NLW2_NLModel_C* );
 
 
 /// NL solution
-typedef struct NLW2_Solution_C {
+typedef struct NLW2_NLSolution_C {
   /**
    Solve result.
    If >-2, solver interaction successful. Then:
@@ -249,8 +249,8 @@ typedef struct NLW2_Solution_C {
   /// Num suffixes
   int nsuf_;
   /// Suffixes
-  const NLW2_Suffix_C* suffixes_;
-} NLW2_Solution_C;
+  const NLW2_NLSuffix_C* suffixes_;
+} NLW2_NLSolution_C;
 
 
 #ifdef __cplusplus
