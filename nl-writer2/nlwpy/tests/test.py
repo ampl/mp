@@ -83,6 +83,24 @@ class ModelBuilder:
                i+1, sol.x_[i], self.x_ref_[i]))
         result = False
 
+    ### Printing suffixes.
+    ### TODO replace by checking debug suffixes and ini guesses.
+    suffixes = sol.suffixes_
+    print("Number of suffixes returned:", len(suffixes))
+    for suf in suffixes:
+      print("    SUFFIX '{}' [{}]".format(suf.name_, suf.kind_))
+      print("        Table:    ", suf.table_)
+      print("        Values:   ", *suf.values_)
+    sufMIPGapObj = suffixes.Find("relmipgap", 2) ## should be 2+4
+    if sufMIPGapObj is not None:
+      print("FOUND:    SUFFIX '{}' [{}].".format(
+        sufMIPGapObj.name_, sufMIPGapObj.kind_))
+    sufVarStatus = suffixes.Find("status", 0)
+    if sufVarStatus is not None:
+      print("FOUND:    SUFFIX '{}' [{}].".format(
+        sufVarStatus.name_, sufVarStatus.kind_))
+    suffixes.clear()
+
     print("MIQP 1: solution check {}, obj={:.17f}.".format(
       "ok" if result else "Failed", sol.obj_val_))
     return result

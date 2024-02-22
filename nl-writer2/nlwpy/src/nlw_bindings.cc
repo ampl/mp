@@ -317,19 +317,22 @@ NLW2_NLSolver
       .def_readwrite("values_", &mp::NLSuffix::values_);
 
   /// NLSuffixSet
-  /*py::class_<mp::NLSuffixSet>(m, "NLW2_NLSuffixSet")
+  py::class_<mp::NLSuffixSet>(m, "NLW2_NLSuffixSet")
       .def("Find",           // Find(): return None if not found
            [=](mp::NLSuffixSet const& ss,
            std::string const& name, int kind) -> py::object {
     auto pelem = ss.Find(name, kind);
-    if (pelem) {
-      return py::cast(*pelem);
-    }
-    return py::object(py::cast(nullptr));
+    return py::cast(pelem);
   })
-      .def("begin", &mp::NLSuffixSet::begin)
-      .def("end", &mp::NLSuffixSet::end)
-      ;*/
+      .def("__len__", // &mp::NLSuffixSet::size - does not work)
+           [](const mp::NLSuffixSet &ss) { return ss.size(); })
+      .def("__iter__", [](const mp::NLSuffixSet &ss) {
+         return py::make_iterator(ss.begin(), ss.end());
+      }, py::keep_alive<0, 1>()) /* Keep vector alive while iterator is used */
+      .def("empty",
+           [](const mp::NLSuffixSet &ss) { return ss.empty(); })
+      .def("clear", [](mp::NLSuffixSet &ss) { ss.clear(); })
+      ;
 
   /// NLModel
   py::class_<NLWPY_NLModel>(m, "NLW2_NLModel")

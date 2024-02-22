@@ -65,8 +65,8 @@ struct NLSuffix {
 
   /// operator<
   bool operator<(const NLSuffix& s) const {
-    return std::make_pair(name_, kind_)
-        < std::make_pair(s.name_, s.kind_);
+    return std::make_pair(name_, kind_&3)
+        < std::make_pair(s.name_, s.kind_&3);
   }
 };
 
@@ -81,9 +81,10 @@ public:
   { return this->insert(suf).second; }
 
   /// Find suffix.
-  /// @return NLSuffix*, nullptr if not found.
+  /// @param k: kind (only the first 2 bits are used.)
+  /// @return NLSuffix*, nullptr iff not found.
   const NLSuffix* Find(const std::string& nm, int k) const {
-    NLSuffix tmp {nm, {}, k};
+    NLSuffix tmp {nm, {}, k&3};
     auto it = this->find(tmp);
     return (this->end()!=it) ? &*it : nullptr;
   }
@@ -91,6 +92,7 @@ public:
   /// Expose size, empty
   using Base::size;
   using Base::empty;
+  using Base::clear;
 
   /// Expose begin, end
   using Base::begin;
