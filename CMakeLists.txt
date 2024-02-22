@@ -512,6 +512,9 @@ if (BUILD_EXAMPLES OR NLW2_LIB)
   # for a calling CMake project
 	set(NLW2_LIB_NAME ${NLW2_LIB_NAME} PARENT_SCOPE)
 	set(NLW2_C_API_LIB_NAME ${NLW2_C_API_LIB_NAME} PARENT_SCOPE)
+  # Add to folders to better organize project in IDEs
+  add_to_folder(${MP_FOLDER_PREFIX}nlw nlw2 nlw2_c_api nl-writer-example-c nl-writer-example-cpp)
+  add_to_folder(${MP_FOLDER_PREFIX}nlw gen_nl_opcodes nlw-ex-easy-api-c nlw-ex-easy-api-cpp nlw-ex-full-api-c nlw-ex-full-api-cpp)
 endif()
 
 
