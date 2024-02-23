@@ -554,6 +554,9 @@ void NLSolver::InitAutoStub() {
   if (!std::filesystem::create_directory(pathstr_))
     Utils().myexit("Could not create temp dir '"
                    + pathstr_ + "'");
+#elif __APPLE__
+  if (!std::filesystem::create_directory(pathstr_))
+    Utils().myexit("Could not create temp dir '" + pathstr_ + "'");
 #else
   if (!mkdtemp((char*)pathstr_.c_str()))
     Utils().myexit("Could not create a temp dir\n"
