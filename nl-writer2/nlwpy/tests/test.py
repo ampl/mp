@@ -24,11 +24,11 @@ import sys
 import numpy as np
 from scipy.sparse import csr_matrix
 
-import nlwpy as m
+import nlwpy
 
-assert m.__version__ == "0.0.1"
+assert nlwpy.__version__ == "0.0.1"
 
-nlwo = m.NLW2_MakeNLOptionsBasic_Default()
+nlwo = nlwpy.MakeNLOptionsBasic_Default()
 assert 0 == nlwo.n_text_mode_
 assert 0 == nlwo.want_nl_comments_
 assert 1 == nlwo.flags_
@@ -36,7 +36,7 @@ assert 1 == nlwo.flags_
 ## ---------------------------------------------------------------
 class ModelBuilder:
   def GetModel(self):
-    nlme = m.NLW2_NLModel(self.prob_name_)
+    nlme = nlwpy.NLModel(self.prob_name_)
 
     nlme.SetCols(self.var_lb_, self.var_ub_, self.var_type_)
     nlme.SetColNames(self.var_names_)
@@ -62,10 +62,10 @@ class ModelBuilder:
     if len(self.ini_y_i_)>0:
       nlme.SetDualWarmstart(self.ini_y_i_, self.ini_y_v_)
     if len(self.bas_x_)>0:
-      suf = m.NLW2_NLSuffix("status", 0, self.bas_x_)
+      suf = nlwpy.NLSuffix("status", 0, self.bas_x_)
       nlme.AddSuffix(suf)
     if len(self.bas_y_)>0:
-      suf = m.NLW2_NLSuffix("status", 1, self.bas_y_)
+      suf = nlwpy.NLSuffix("status", 1, self.bas_y_)
       nlme.AddSuffix(suf)
 
     return nlme
@@ -116,17 +116,17 @@ class ModelBuilder:
     self.var_type_ = [0, 1, 1, 1, 0, 0]
     self.var_names_ = \
       ["x1_4", "x2_6", "x3_5", "x4_3", "x5_1", "x6_2"]
-    self.A_format_ = m.NLW2_MatrixFormat.Rowwise
+    self.A_format_ = nlwpy.MatrixFormat.Rowwise
     self.A_ = np.array([
       [0,1,1,1,0,1],
       [0,1,-1,-1,0,1]])
     self.row_lb_ = [15, 10]
     self.row_ub_ = [15, np.inf]
     self.row_names_ = ["C1", "C2"]
-    self.obj_sense_ = m.NLW2_ObjSense.Minimize
+    self.obj_sense_ = nlwpy.ObjSense.Minimize
     self.obj_c0_ = 3.24
     self.obj_c_ = [0,1,0,0,0,0]
-    self.Q_format_ = m.NLW2_HessianFormat.Square
+    self.Q_format_ = nlwpy.HessianFormat.Square
     self.Q_ = np.zeros([6, 6])
     self.Q_[3, 3] = 10
     self.Q_[3, 5] = 12
@@ -148,8 +148,8 @@ class ModelBuilder:
 def SolveAndCheck(solver, sopts, binary, stub):
   mb = ModelBuilder()
   nlme = mb.GetModel()
-  nlse = m.NLW2_NLSolver()
-  nlopts = m.NLW2_MakeNLOptionsBasic_Default()
+  nlse = nlwpy.NLSolver()
+  nlopts = nlwpy.MakeNLOptionsBasic_Default()
   nlopts.n_text_mode_ = not binary
   nlopts.want_nl_comments_ = 1
   nlse.SetNLOptions(nlopts)

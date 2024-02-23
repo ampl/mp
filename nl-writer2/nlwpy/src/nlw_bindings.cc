@@ -267,48 +267,48 @@ PYBIND11_MODULE(nlwpy, m)
         .. autosummary::
            :toctree: _generate
 
-           NLW2_ObjSense
-NLW2_VarType
-NLW2_MatrixFormat
-NLW2_HessianFormat
+           ObjSense
+VarType
+MatrixFormat
+HessianFormat
 
-NLW2_NLOptionsBasic
-           NLW2_MakeNLOptionsBasic_Default
-NLW2_NLSuffix
-NLW2_NLModel
-NLW2_NLSolution
-NLW2_NLSolver
+NLOptionsBasic
+           MakeNLOptionsBasic_Default
+NLSuffix
+NLModel
+NLSolution
+NLSolver
     )pbdoc";
 
-  py::enum_<NLW2_ObjSense>(m, "NLW2_ObjSense", py::arithmetic())
+  py::enum_<NLW2_ObjSense>(m, "ObjSense", py::arithmetic())
       .value("Minimize", NLW2_ObjSenseMinimize)
       .value("Maximize", NLW2_ObjSenseMaximize);
   // .export_values();     -- Leave them scoped
 
-  py::enum_<NLW2_VarType>(m, "NLW2_VarType", py::arithmetic())
+  py::enum_<NLW2_VarType>(m, "VarType", py::arithmetic())
       .value("Continuous", NLW2_VarTypeContinuous)
       .value("Integer", NLW2_VarTypeInteger);
 
-  py::enum_<NLW2_MatrixFormat>(m, "NLW2_MatrixFormat", py::arithmetic())
+  py::enum_<NLW2_MatrixFormat>(m, "MatrixFormat", py::arithmetic())
       .value("Rowwise", NLW2_MatrixFormatRowwise);
 
-  py::enum_<NLW2_HessianFormat>(m, "NLW2_HessianFormat", py::arithmetic())
+  py::enum_<NLW2_HessianFormat>(m, "HessianFormat", py::arithmetic())
       .value("Triangular", NLW2_HessianFormatTriangular)
       .value("Square", NLW2_HessianFormatSquare);
 
   /// NLOptionsBasic
-  py::class_<NLW2_NLOptionsBasic_C>(m, "NLW2_NLOptionsBasic")
+  py::class_<NLW2_NLOptionsBasic_C>(m, "NLOptionsBasic")
       .def(py::init<>())
       .def_readwrite("n_text_mode_", &NLW2_NLOptionsBasic_C::n_text_mode_)
       .def_readwrite("want_nl_comments_", &NLW2_NLOptionsBasic_C::want_nl_comments_)
       .def_readwrite("flags_", &NLW2_NLOptionsBasic_C::flags_);
 
-  m.def("NLW2_MakeNLOptionsBasic_Default", &NLW2_MakeNLOptionsBasic_C_Default, R"pbdoc(
+  m.def("MakeNLOptionsBasic_Default", &NLW2_MakeNLOptionsBasic_C_Default, R"pbdoc(
         Use this to create default options for NLModel.
     )pbdoc");
 
   /// NLSuffix
-  py::class_<mp::NLSuffix>(m, "NLW2_NLSuffix")
+  py::class_<mp::NLSuffix>(m, "NLSuffix")
       .def(py::init<std::string, int, std::vector<double>>())
       .def(py::init<std::string, std::string, int, std::vector<double>>())
       .def_readwrite("name_", &mp::NLSuffix::name_)
@@ -317,7 +317,7 @@ NLW2_NLSolver
       .def_readwrite("values_", &mp::NLSuffix::values_);
 
   /// NLSuffixSet
-  py::class_<mp::NLSuffixSet>(m, "NLW2_NLSuffixSet")
+  py::class_<mp::NLSuffixSet>(m, "NLSuffixSet")
       .def("Find",           // Find(): return None if not found
            [=](mp::NLSuffixSet const& ss,
            std::string const& name, int kind) -> py::object {
@@ -335,7 +335,7 @@ NLW2_NLSolver
       ;
 
   /// NLModel
-  py::class_<NLWPY_NLModel>(m, "NLW2_NLModel")
+  py::class_<NLWPY_NLModel>(m, "NLModel")
       .def(py::init<const char *>())
       .def("SetCols", &NLWPY_NLModel::SetCols)
       .def("SetColNames", &NLWPY_NLModel::SetColNames)
@@ -350,7 +350,7 @@ NLW2_NLSolver
       ;
 
   /// NLSolution
-  py::class_<mp::NLSolution>(m, "NLW2_NLSolution")
+  py::class_<mp::NLSolution>(m, "NLSolution")
       .def_readwrite("solve_result_", &mp::NLSolution::solve_result_)
       .def_readwrite("nbs_", &mp::NLSolution::nbs_)
       .def_readwrite("solve_message_", &mp::NLSolution::solve_message_)
@@ -360,7 +360,7 @@ NLW2_NLSolver
       .def_readwrite("suffixes_", &mp::NLSolution::suffixes_);
 
   /// NLSolver
-  py::class_<mp::NLSolver>(m, "NLW2_NLSolver")
+  py::class_<mp::NLSolver>(m, "NLSolver")
       .def(py::init<>())
       .def("SetFileStub", &mp::NLSolver::SetFileStub)
       .def("SetNLOptions", &mp::NLSolver::SetNLOptions)
