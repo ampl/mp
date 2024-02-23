@@ -27,8 +27,8 @@ include(init)
 
 project(MP)
 
-# Set the c++11 flag without GNU extensions.
-set(CMAKE_CXX_STANDARD 11)
+# Set the c++17 flag without GNU extensions.
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -258,7 +258,7 @@ function (add_mp_library name)
     PUBLIC ${add_mp_library_COMPILE_DEFINITIONS})
   target_include_directories(${name}
     PUBLIC ${add_mp_library_INCLUDE_DIRECTORIES})
-  set_property(TARGET ${name}  PROPERTY CXX_STANDARD 11)
+  set_property(TARGET ${name}  PROPERTY CXX_STANDARD 17)
   if (add_mp_library_DEPENDS)
     add_dependencies(${name} ${add_mp_library_DEPENDS})
   endif ()
