@@ -1506,7 +1506,7 @@ static unsigned int maxthreads = 0;
 
 #ifdef __cplusplus
 extern "C" double strtod(const char *s00, char **se);
-extern "C" char *dtoa(double d, int mode, int ndigits,
+extern "C" char *dtoa_nlw2(double d, int mode, int ndigits,
 			int *decpt, int *sign, char **rve);
 #endif
 
@@ -6191,7 +6191,7 @@ dtoa_r_dmgay(double dd, int mode, int ndigits, int *decpt, int *sign, char **rve
 	}
 
 char *
-dtoa(double dd, int mode, int ndigits, int *decpt, int *sign, char **rve)
+dtoa_nlw2(double dd, int mode, int ndigits, int *decpt, int *sign, char **rve)
 {
 	/*	Sufficient space is allocated to the return value
 		to hold the suppressed trailing zeros.

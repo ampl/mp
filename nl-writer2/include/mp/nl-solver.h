@@ -44,7 +44,7 @@
 
 namespace mp {
 
-class NLHeader;
+struct NLHeader;
 
 /**
   \rst
@@ -229,14 +229,15 @@ public:
   bool ReadSolution(SOLHandler& solh);
 
 protected:
-  void Init();
-  void Destroy();
+  void InitAutoStub();
+  void DestroyAutoStub();
   mp::NLUtils& Utils() const { return *p_ut_; }
 
 private:
   mp::NLUtils utils_;
   mp::NLUtils* p_ut_ = nullptr;
 
+  std::string pathstr_;
   std::string filestub_;
   bool filestubCustom_ = false;
   NLW2_NLOptionsBasic_C nl_opts_;

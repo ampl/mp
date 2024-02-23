@@ -29,7 +29,7 @@ namespace mp {
 template <class NLFeeder>
 bool NLSolver::LoadModel(NLFeeder& nlf) {
   if (GetFileStub().empty())
-    return (err_msg_="WriteNL error: provide filestub.", false);
+    InitAutoStub();
   auto result = mp::WriteNLFile(GetFileStub(), nlf, Utils());
   if (NLW2_WriteNL_OK != result.first)
     return (err_msg_ = "WriteNL error: " + result.second, false);
