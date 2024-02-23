@@ -25,6 +25,14 @@
 #include <numeric>
 #include <vector>
 #include <cmath>
+#include <random>
+#include <filesystem>
+
+#if defined(_WIN32) || defined(_WIN64)
+  #include <io.h>     // _mktemp[_s]
+#else
+  #include <cstdlib>  // mkdtemp
+#endif
 
 #include "mp/nl-solver.hpp"
 #include "mp/nl-opcodes.h"
@@ -519,24 +527,54 @@ double NLModel::ComputeObjValue(const double *x) const {
 }
 
 NLSolver::NLSolver()
-  : p_ut_(&utils_) { Init(); }
+  : p_ut_(&utils_) { }
 
 NLSolver::NLSolver(mp::NLUtils* put)
-  : p_ut_(put ? put : &utils_) { Init(); }
+  : p_ut_(put ? put : &utils_) { }
 
-NLSolver::~NLSolver() { Destroy(); }
+NLSolver::~NLSolver() { DestroyAutoStub(); }
 
-void NLSolver::Init() {
+void NLSolver::InitAutoStub() {
   // init file stub
-  char tmpn[L_tmpnam];
-  tmpnam(tmpn);
-  filestub_ = tmpn;
+  std::random_device dev;
+  std::mt19937 prng(dev());
+  std::uniform_int_distribution<unsigned long> rand(0);
+  auto path = std::filesystem::temp_directory_path();
+  path /= "nlw2_"; // via '/'
+  char rnds[64] = "rndhex";
+  std::snprintf(rnds, sizeof(rnds)-1, "%lX", rand(prng));
+  path += rnds;    // no '/'
+
+  path += "_XXXXXX";
+  pathstr_ = path.string();
+
+#if defined(_WIN32) || defined(_WIN64)
+  auto p1 = _mktemp((char*)pathstr_.c_str());
+  assert(p1);
+  if (!std::filesystem::create_directory(pathstr_))
+    Utils().myexit("Could not create temp dir '"
+                   + pathstr_ + "'");
+#else
+  if (!mkdtemp((char*)pathstr_.c_str()))
+    Utils().myexit("Could not create a temp dir\n"
+                   "from pattern '" + pathstr_ + "'");
+#endif
+  path = pathstr_;
+  // Plus filename
+  std::snprintf(rnds, sizeof(rnds)-1, "%lX", rand(prng));
+  path /= rnds;
+  filestub_ = path.string();
 }
 
-void NLSolver::Destroy() {
-  // try & delete .nl
-  if (!filestubCustom_)
-    std::remove((filestub_ + ".nl").c_str());
+void NLSolver::DestroyAutoStub() {
+  // delete temp folder if created
+  if (pathstr_.size()) {
+    std::error_code ec;
+    std::filesystem::remove_all(pathstr_, ec);
+    if (ec)
+      Utils().log_warning("Failed to remove temp dir '%s': %s",
+                          pathstr_.c_str(), ec.message().c_str());
+  }
 }
 
 void NLSolver::SetFileStub(std::string stub) {
