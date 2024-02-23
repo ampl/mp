@@ -22,6 +22,8 @@ stages:
         inputs: {pathtoPublish: 'nl-writer2/nlwpy/wheelhouse'}
   - job: macos
     pool: {vmImage: 'macos-latest'}
+    variables:
+      MACOSX_DEPLOYMENT_TARGET: 10.15
     steps:
       - task: UsePythonVersion@0
       - bash: |
