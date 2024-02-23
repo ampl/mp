@@ -47,9 +47,9 @@ stages:
       - task: PublishBuildArtifacts@1
         inputs: {pathtoPublish: 'nl-writer2/nlwpy/wheelhouse'}
 
-- stage: qemu
-  displayName: 'Build with QEMU'
-  jobs:
+# - stage: qemu
+#   displayName: 'Build with QEMU'
+#   jobs:
   - job: qemu
     pool: {vmImage: 'Ubuntu-20.04'}
     strategy:
