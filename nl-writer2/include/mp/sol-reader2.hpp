@@ -556,7 +556,7 @@ NLW2_SOLReadResultCode SOLReader2<SOLHandler>::gsufread(FILE* f) {
       if (!fgets(buf, sizeof(buf)-1, f))
         return ReportEarlyEof();
       if (!(L = strlen(buf)) || buf[--L] != '\n'
-          || L >= se - s)
+          || L >= (size_t)(se - s))
         return ReportBadLine(buf);
       if (L) {
         if (buf[L-1] != '\r' || --L) {

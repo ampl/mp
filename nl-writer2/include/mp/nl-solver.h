@@ -44,7 +44,7 @@
 
 namespace mp {
 
-class NLHeader;
+struct NLHeader;
 
 /**
   \rst
