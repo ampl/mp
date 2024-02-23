@@ -4,7 +4,7 @@ from pathlib import Path
 from shutil import which
 
 from Solver import Solver
-from amplpy import AMPL, Kind, OutputHandler, ErrorHandler, ampl
+from amplpy import AMPL, Kind, OutputHandler, ErrorHandler, Runnable
 from Model import Model
 import time
 from TimeMe import TimeMe
@@ -91,21 +91,22 @@ class AMPLRunner(object):
         if not mp.exists():
             raise Exception("Model {} not found".format(model.getFilePath()))
         if model.isScript():
-          class MyInterpretIsOver(Runnable):
-            executed = False
-            def run(self):
-              self.executed = True
-              mutex.release()
-          callback = MyInterpretIsOver()
-          mutex = Lock()
-          mutex.acquire()
-          timeOut = self._solver.getTimeout()
-          self._ampl.evalAsync("include '{}';".format(str(mp.absolute().resolve())), callback)
-          mutex.acquire(timeout=timeOut)
-          if not callback.executed:
-            self._ampl.interrupt()
-            self._ampl.interrupt()
-            return None
+          
+          # class MyInterpretIsOver(Runnable):
+          #   executed = False
+          #   def run(self):
+          #     self.executed = True
+          #     mutex.release()
+          # callback = MyInterpretIsOver()
+          # mutex = Lock()
+          # mutex.acquire()
+          # timeOut = self._solver.getTimeout()
+          self._ampl.eval("include '{}';".format(str(mp.absolute().resolve())))
+          # mutex.acquire(timeout=timeOut)
+          # if not callback.executed:
+          #   self._ampl.interrupt()
+          #   self._ampl.interrupt()
+          #   return None
         else:
           self._ampl.read(str(mp.absolute().resolve()))
           files = model.getAdditionalFiles()
