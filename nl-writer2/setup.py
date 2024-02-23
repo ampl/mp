@@ -15,11 +15,36 @@ __version__ = "0.0.1"
 #   Sort input source files if you glob sources to ensure bit-for-bit
 #   reproducible builds (https://github.com/pybind/python_example/pull/53)
 
+
+def compile_args():
+    from platform import system
+
+    if system() == "Windows":
+        return ["/std:c++17"]
+    elif system() == "Linux":
+        ignore_warnings = [
+            "-Wno-stringop-truncation",
+            "-Wno-catch-value",
+            "-Wno-unused-variable",
+        ]
+        return ["-std=c++17"] + ignore_warnings
+    elif system() == "Darwin":
+        ignore_warnings = [
+            "-Wno-unused-variable",
+        ]
+        return [
+            "-std=c++17",
+            "-mmacosx-version-min=10.15",
+        ] + ignore_warnings
+    else:
+        return []
+
+
 ext_modules = [
     Extension(
         "nlwpy",
         ["nlwpy/src/nlw_bindings.cc"] + glob.glob("./src/" + "*.cc"),
-        # extra_compile_args=["-std=c++17"],  - need all platforms
+        extra_compile_args=compile_args(),
         include_dirs=["include", pybind11.get_include()],
         # Example: passing in the version to the compiled code
         define_macros=[("VERSION_INFO", __version__)],
