@@ -9,6 +9,9 @@ if (CMAKE_MAJOR_VERSION LESS 3)
     "MP: CMake version 3.0 or newer is required to install all targets")
 endif ()
 
+# Minimum MacOS target to enable C++17 std::filesystem
+set(CMAKE_OSX_DEPLOYMENT_TARGET 10.15)
+
 # Set the path to CMake modules.
 set(MP_CMAKE_MODULE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/support/cmake)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${MP_CMAKE_MODULE_DIR})
