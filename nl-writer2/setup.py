@@ -40,17 +40,6 @@ def compile_args():
         return []
 
 
-ext_modules = [
-    Extension(
-        "nlwpy",
-        ["nlwpy/src/nlw_bindings.cc"] + glob.glob("./src/" + "*.cc"),
-        extra_compile_args=compile_args(),
-        include_dirs=["include", pybind11.get_include()],
-        # Example: passing in the version to the compiled code
-        define_macros=[("VERSION_INFO", __version__)],
-    ),
-]
-
 setup(
     name="nlwpy",
     version=__version__,
@@ -59,7 +48,16 @@ setup(
     url="https://github.com/ampl/mp",
     description="Python API for the AMPL NL Writer library",
     long_description="",
-    ext_modules=ext_modules,
+    packages=["nlwpy"],
+    ext_modules=[
+        Extension(
+            "_nlwpy",
+            ["nlwpy/src/nlw_bindings.cc"] + sorted(glob.glob("./src/" + "*.cc")),
+            extra_compile_args=compile_args(),
+            include_dirs=["include", pybind11.get_include()],
+            define_macros=[("VERSION_INFO", __version__)],
+        ),
+    ],
     extras_require={"test": "pytest"},
     # Currently, build_ext only provides an optional "highest supported C++
     # level" feature, but in the future it may provide more features.
