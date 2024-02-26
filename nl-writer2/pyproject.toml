@@ -7,6 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.cibuildwheel]
 skip = ["pp*", "cp27-*", "*_i686", "*-win32", "*musllinux*"]
+archs = ["auto"]
 test-requires = [
   "--index-url https://pypi.ampl.com",
   "--extra-index-url https://pypi.org/simple",
