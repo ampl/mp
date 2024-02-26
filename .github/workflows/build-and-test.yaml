@@ -1,6 +1,6 @@
 name:  build-and-test
 run-name: ${{ github.actor }} is building "${{ github.ref_name }}"
-on: [push]
+on: [workflow_dispatch] # trigger manually
 
 jobs:
   build_native:

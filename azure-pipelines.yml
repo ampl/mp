@@ -1,3 +1,5 @@
+trigger: none # trigger manually
+
 stages:
 - stage: native
   displayName: 'Build native'
