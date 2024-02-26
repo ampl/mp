@@ -1,0 +1,2 @@
+recursive-include include *.h *.hpp
+recursive-include nlwpy *.py
