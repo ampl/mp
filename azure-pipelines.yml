@@ -1,13 +1,19 @@
-# variables:
-#   CIBW_SKIP: pp* cp27-* *_i686 *-win32 *musllinux*
-#   CIBW_ARCHS_MACOS: x86_64 universal2
-#   CIBW_TEST_COMMAND: pytest --pyargs nlwpy.test
-#   CIBW_TEST_REQUIRES: --index-url https://pypi.ampl.com --extra-index-url https://pypi.org/simple ampl_module_base ampl_module_gurobi ampl_module_highs ampl_module_minos amplpy pytest pandas numpy scipy
-
 stages:
 - stage: native
   displayName: 'Build native'
   jobs:
+  - job: sdist
+    pool: {vmImage: 'Ubuntu-20.04'}
+    steps:
+      - task: UsePythonVersion@0
+      - bash: |
+          set -ex
+          cd nl-writer2/
+          pip install pybind11 setuptools
+          python setup.py sdist -d upload
+        displayName: Build sdist
+      - task: PublishBuildArtifacts@1
+        inputs: {pathtoPublish: 'nl-writer2/nlwpy/upload'}
   - job: manylinux
     pool: {vmImage: 'Ubuntu-20.04'}
     steps:
