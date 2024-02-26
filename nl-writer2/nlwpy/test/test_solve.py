@@ -159,10 +159,8 @@ def solve_and_check(solver, sopts, binary, stub):
 
 def find_solver():
     lst = modules.installed()
-    if "gurobi" in lst:
-        return modules.find("gurobi")
-    else:
-        return modules.find("minos")
+    assert "minos" in lst
+    return modules.find("minos")
 
 
 def test_binary_nl():
