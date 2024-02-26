@@ -1,8 +1,8 @@
-variables:
-  CIBW_SKIP: pp* cp27-* *_i686 *-win32 *musllinux*
-  CIBW_ARCHS_MACOS: x86_64 universal2
-  CIBW_TEST_COMMAND: pytest --pyargs nlwpy.test
-  CIBW_TEST_REQUIRES: --index-url https://pypi.ampl.com --extra-index-url https://pypi.org/simple ampl_module_base ampl_module_gurobi ampl_module_highs ampl_module_minos amplpy pytest pandas numpy scipy
+# variables:
+#   CIBW_SKIP: pp* cp27-* *_i686 *-win32 *musllinux*
+#   CIBW_ARCHS_MACOS: x86_64 universal2
+#   CIBW_TEST_COMMAND: pytest --pyargs nlwpy.test
+#   CIBW_TEST_REQUIRES: --index-url https://pypi.ampl.com --extra-index-url https://pypi.org/simple ampl_module_base ampl_module_gurobi ampl_module_highs ampl_module_minos amplpy pytest pandas numpy scipy
 
 stages:
 - stage: native

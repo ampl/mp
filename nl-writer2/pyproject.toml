@@ -5,12 +5,22 @@ requires = [
 ]
 build-backend = "setuptools.build_meta"
 
-
 [tool.cibuildwheel]
-test-requires = "numpy scipy"
-test-command = "python {project}/nlwpy/tests/test.py"
-test-skip = "*universal2:arm64"
+skip = ["pp*", "cp27-*", "*_i686", "*-win32", "*musllinux*"]
+test-requires = [
+  "--index-url https://pypi.ampl.com",
+  "--extra-index-url https://pypi.org/simple",
+  "ampl_module_base",
+  "ampl_module_gurobi",
+  "ampl_module_highs",
+  "ampl_module_minos",
+  "amplpy", "pandas",
+  "numpy", scipy", "pytest"]
+test-command = "pytest --pyargs nlwpy.test"
 
+[tool.cibuildwheel.macos]
+test-skip = "*universal2"
+archs = ["x86_64", "universal2"]
 
 [tool.ruff]
 target-version = "py37"

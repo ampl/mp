@@ -1,4 +1,3 @@
-# Available at setup time due to pyproject.toml
 from setuptools import setup, Extension
 import pybind11
 import glob
