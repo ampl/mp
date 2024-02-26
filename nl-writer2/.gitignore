@@ -5,3 +5,5 @@
 *.so
 dist/
 build/
+__pycache__
+
