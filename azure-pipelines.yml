@@ -13,7 +13,7 @@ stages:
           python setup.py sdist -d upload
         displayName: Build sdist
       - task: PublishBuildArtifacts@1
-        inputs: {pathtoPublish: 'nl-writer2/nlwpy/upload'}
+        inputs: {pathtoPublish: 'nl-writer2/upload'}
   - job: manylinux
     pool: {vmImage: 'Ubuntu-20.04'}
     steps:
@@ -22,10 +22,10 @@ stages:
           set -ex
           cd nl-writer2/
           python -m pip install --upgrade cibuildwheel==2.16.2
-          cibuildwheel --platform linux --output-dir nlwpy/wheelhouse .
+          cibuildwheel --platform linux --output-dir wheelhouse .
         displayName: Build wheels
       - task: PublishBuildArtifacts@1
-        inputs: {pathtoPublish: 'nl-writer2/nlwpy/wheelhouse'}
+        inputs: {pathtoPublish: 'nl-writer2/wheelhouse'}
   - job: macos
     pool: {vmImage: 'macos-latest'}
     variables:
@@ -36,10 +36,10 @@ stages:
           set -ex
           cd nl-writer2/
           python -m pip install --upgrade cibuildwheel==2.16.2
-          cibuildwheel --platform macos --output-dir nlwpy/wheelhouse .
+          cibuildwheel --platform macos --output-dir wheelhouse .
         displayName: Build wheels
       - task: PublishBuildArtifacts@1
-        inputs: {pathtoPublish: 'nl-writer2/nlwpy/wheelhouse'}
+        inputs: {pathtoPublish: 'nl-writer2/wheelhouse'}
   - job: windows
     pool: {vmImage: 'windows-2022'}
     steps:
@@ -48,10 +48,10 @@ stages:
           set -ex
           cd nl-writer2/
           python -m pip install --upgrade cibuildwheel==2.16.2
-          cibuildwheel --platform windows --output-dir nlwpy/wheelhouse .
+          cibuildwheel --platform windows --output-dir wheelhouse .
         displayName: Build wheels
       - task: PublishBuildArtifacts@1
-        inputs: {pathtoPublish: 'nl-writer2/nlwpy/wheelhouse'}
+        inputs: {pathtoPublish: 'nl-writer2/wheelhouse'}
 
 # - stage: qemu
 #   displayName: 'Build with QEMU'
@@ -86,10 +86,10 @@ stages:
           set -ex
           cd nl-writer2/
           python -m pip install --upgrade cibuildwheel==2.16.2
-          cibuildwheel --platform linux --output-dir nlwpy/wheelhouse .
+          cibuildwheel --platform linux --output-dir wheelhouse .
         displayName: Build wheels
       - task: PublishBuildArtifacts@1
-        inputs: {pathtoPublish: 'nl-writer2/nlwpy/wheelhouse'}
+        inputs: {pathtoPublish: 'nl-writer2/wheelhouse'}
 
 - stage: publish
   jobs:
