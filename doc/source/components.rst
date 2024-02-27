@@ -192,7 +192,9 @@ and tests.
     or linear models (via `~NLW2_NLFeeder_C`, `~NLW2_SOLHandler_C`)
     are supported.
 
-- **Python API** is WIP.
+- **Python API** only supports (MI)LP/(MI)QP (via `nlwpy.NLModel`),
+    see
+    `NLWPY example <https://github.com/ampl/mp/blob/develop/nl-writer2/nlwpy/tests/test.py>`_.
 
 
 .. _recommended-driver-logic:

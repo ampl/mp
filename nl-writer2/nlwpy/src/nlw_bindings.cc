@@ -256,7 +256,7 @@ mp::NLSolution NLW2_Solve(mp::NLSolver &nls,
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-PYBIND11_MODULE(nlwpy, m)
+PYBIND11_MODULE(_nlwpy, m)
 {
   m.doc() = R"pbdoc(
         AMPL NL Writer library Python API
@@ -318,21 +318,25 @@ NLSolver
 
   /// NLSuffixSet
   py::class_<mp::NLSuffixSet>(m, "NLSuffixSet")
-      .def("Find",           // Find(): return None if not found
-           [=](mp::NLSuffixSet const& ss,
-           std::string const& name, int kind) -> py::object {
-    auto pelem = ss.Find(name, kind);
-    return py::cast(pelem);
-  })
+      .def("Find", // Find(): return None if not found
+           [=](mp::NLSuffixSet const &ss,
+               std::string const &name, int kind) -> py::object
+           {
+             auto pelem = ss.Find(name, kind);
+             return py::cast(pelem);
+           })
       .def("__len__", // &mp::NLSuffixSet::size - does not work)
-           [](const mp::NLSuffixSet &ss) { return ss.size(); })
-      .def("__iter__", [](const mp::NLSuffixSet &ss) {
-         return py::make_iterator(ss.begin(), ss.end());
-      }, py::keep_alive<0, 1>()) /* Keep vector alive while iterator is used */
+           [](const mp::NLSuffixSet &ss)
+           { return ss.size(); })
+      .def(
+          "__iter__", [](const mp::NLSuffixSet &ss)
+          { return py::make_iterator(ss.begin(), ss.end()); },
+          py::keep_alive<0, 1>()) /* Keep vector alive while iterator is used */
       .def("empty",
-           [](const mp::NLSuffixSet &ss) { return ss.empty(); })
-      .def("clear", [](mp::NLSuffixSet &ss) { ss.clear(); })
-      ;
+           [](const mp::NLSuffixSet &ss)
+           { return ss.empty(); })
+      .def("clear", [](mp::NLSuffixSet &ss)
+           { ss.clear(); });
 
   /// NLModel
   py::class_<NLWPY_NLModel>(m, "NLModel")
@@ -346,8 +350,7 @@ NLSolver
       .def("SetObjName", &NLWPY_NLModel::SetObjName)
       .def("SetWarmstart", &NLWPY_NLModel::SetWarmstart)
       .def("SetDualWarmstart", &NLWPY_NLModel::SetDualWarmstart)
-      .def("AddSuffix", &NLWPY_NLModel::AddSuffix)
-      ;
+      .def("AddSuffix", &NLWPY_NLModel::AddSuffix);
 
   /// NLSolution
   py::class_<mp::NLSolution>(m, "NLSolution")

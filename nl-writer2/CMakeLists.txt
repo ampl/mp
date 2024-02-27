@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.10)
 
+
+# Minimum MacOS target to enable C++17 std::filesystem
+set(CMAKE_OSX_DEPLOYMENT_TARGET 10.15)
+
+
 project(NLWriter2)
 
 
