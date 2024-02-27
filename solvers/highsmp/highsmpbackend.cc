@@ -410,7 +410,7 @@ void HighsBackend::FinishOptionParsing() {
 static const mp::OptionValueInfo lp_values_method[] = {
   { "choose", "Automatic (default)", -1},
   { "simplex", "Simplex", 1},
-  { "ipm", "Interior point method", 2},
+  { "ipm", "Interior Point Method", 2},
 };
 
 static const mp::OptionValueInfo off_on_choose_values[] = {
@@ -427,8 +427,8 @@ static const mp::OptionValueInfo run_crossover_values[] = {
 static const mp::OptionValueInfo simplex_strategy_values_[] = {
   { "0", "Choose automatically (default)", 0},
   { "1", "Dual (serial)", 1},
-  { "2", "Dual (PAMI)", 2},
-  { "3", "Dual (SIP)", 3},
+  { "2", "Dual ('PAMI' - Parallelization Across Multiple Iterations)", 2},
+  { "3", "Dual ('SIP' - Single Iteration Parallelism", 3},
   { "4", "Primal", 4}
 };
 static const mp::OptionValueInfo simplex_scale_strategy_values_[] = {
@@ -484,7 +484,7 @@ void HighsBackend::InitCustomOptions() {
     simplex_scale_strategy_values_, 1);
 
   AddSolverOption("alg:simplexcrash simplexcrash simplex_crash_strategy",
-    "Simplex crah strategy :\n"
+    "Simplex crash strategy :\n"
     "\n.. value-table::\n", "simplex_crash_strategy",
     simplex_crash_strategy_values_, 0);
 
@@ -544,7 +544,7 @@ void HighsBackend::InitCustomOptions() {
     "dual_feasibility_tolerance", 1e-10, Infinity());
 
   AddSolverOption("alg:ipmopttol ipmopttol ipm_optimality_tolerance",
-    "IMP optimality tolerance (default 1e-8).",
+    "IPM optimality tolerance (default 1e-8).",
     "ipm_optimality_tolerance", 1e-12, Infinity());
 
   AddSolverOption("bar:crossover run_crossover",
@@ -609,12 +609,12 @@ void HighsBackend::InitCustomOptions() {
     "mip_heuristic_effort", 0.0, 1.0);
 
   AddSolverOption("mip:relgaptol relgaptol mip_rel_gap",
-    "tolerance on relative gap, | ub - lb|/|ub | , to determine whether optimality has been reached for a MIP instance "
+    "Tolerance on relative gap, | ub - lb|/|ub | , to determine whether optimality has been reached for a MIP instance "
     "(default 1e-04).",
     "mip_rel_gap", 0.0, Infinity());
 
   AddSolverOption("mip:absgaptol absgaptol mip_abs_gap",
-    "tolerance on absolute gap of MIP, |ub-lb|, to determine whether optimality has been reached for a MIP instance "
+    "Tolerance on absolute gap of MIP, |ub-lb|, to determine whether optimality has been reached for a MIP instance "
     "(default 1e-06).",
     "mip_abs_gap", 0.0, Infinity());
 }
