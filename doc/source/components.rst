@@ -22,6 +22,9 @@ The details are taken care of in the
 However, a :ref:`minimal driver setup <driver-minimal-setup>` might address the
 corresponding APIs directly, as described below.
 
+
+.. _NL-format:
+
 NL format
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -138,7 +141,7 @@ Writing NL and reading SOL files
 ------------------------------------
 
 For modeling systems and applications using AMPL solvers,
-MP provides a library to write NL and read SOL files.
+MP provides a library to write :ref:`NL <nl-format>` and read SOL files.
 The library is virtually zero-overhead: it does not store the model,
 nor does it require any intermediate objects to represent
 model information.
@@ -193,8 +196,8 @@ and tests.
     are supported.
 
 - **Python API** only supports (MI)LP/(MI)QP (via `nlwpy.NLModel`),
-    see
-    `NLWPY example <https://github.com/ampl/mp/blob/develop/nl-writer2/nlwpy/tests/test.py>`_.
+  see
+  `NLWPY example <https://github.com/ampl/mp/blob/develop/nl-writer2/nlwpy/test/test_solve.py>`_.
 
 
 .. _recommended-driver-logic:
