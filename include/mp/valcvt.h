@@ -192,7 +192,7 @@ protected:
         MiniJSONWriter jw(wrt);
         jw["link_index"] = std::make_tuple(i_exported_, i_entry);
         jw["link_type"] = ln.GetTypeName();
-        WriteNodes(jw["source_nodes"], entry_items_.src_items_);
+        WriteNodes(jw["src_nodes"], entry_items_.src_items_);
         WriteNodes(jw["dest_nodes"], entry_items_.dest_items_);
       }
       /// Export record

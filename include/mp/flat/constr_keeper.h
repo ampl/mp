@@ -660,6 +660,7 @@ public:
   ConstraintKeeper(Converter& cvt, const char* nm, const char* optnm) :
       BasicConstraintKeeper(cvt.GetValuePresolver(), nm, optnm), cvt_(cvt)
   {
+    GetValueNode().SetName(GetShortTypeName());  // change value node name
     GetConverter().AddConstraintKeeper(*this, ConversionPriority());
   }
 
@@ -880,7 +881,7 @@ protected:
       fmt::MemoryWriter wrt;
       {
         MiniJSONWriter jw(wrt);
-        jw["con_type"] = GetShortTypeName();
+        jw["CON_TYPE"] = GetShortTypeName();
         jw["index"] = i_con;
         jw["depth"] = cnt.GetDepth();
         //      wrt.write("\"data\": ");

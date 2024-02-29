@@ -74,7 +74,7 @@ protected:
       fmt::MemoryWriter wrt;
       {
         MiniJSONWriter jw(wrt);
-        jw["var_index"] = i+i_start;
+        jw["VAR_INDEX"] = i+i_start;
         jw["bounds"] << lbs[i] << ubs[i];
         jw["type"] = (int)types[i];
         jw["is_from_nl"] = (int)is_var_original(i);
@@ -238,7 +238,7 @@ protected:
       fmt::MemoryWriter wrt;
       {
         MiniJSONWriter jw(wrt);
-        jw["obj_index"] = i_obj;
+        jw["OBJ_INDEX"] = i_obj;
         jw["sense"] = (int)obj.obj_sense();
         wrt.write("\"qp_terms\": ");
         WriteJSON(wrt, obj.GetQPTerms());
