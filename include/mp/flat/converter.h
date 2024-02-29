@@ -22,7 +22,6 @@
 #include "mp/flat/redef/std/range_con.h"
 #include "mp/flat/redef/conic/cones.h"
 #include "mp/flat/redef/conic/qcones2qc.h"
-#include "mp/utils-file.h"
 #include "mp/ampls-ccallbacks.h"
 
 namespace mp {
@@ -235,9 +234,9 @@ protected:
 
   void OpenGraphExporter() {
     if (graph_export_file().size()) {
-      if (!graph_exporter_app_->Open(graph_export_file().c_str(), true))
+      if (!GetModel().GetFileAppender().Open(
+            graph_export_file().c_str(), true))
         MP_RAISE("Failed to open the graph export file.");
-      value_presolver_.SetExport(true);
     }
   }
 
@@ -256,7 +255,7 @@ protected:
 
   void CloseGraphExporter() {
     value_presolver_.FinishExportingLinkEntries();
-    graph_exporter_app_->Close();
+    GetModel().GetFileAppender().Close();
   }
 
   //////////////////////// WHOLE-MODEL PREPROCESSING /////////////////////////
@@ -646,6 +645,7 @@ public:
   }
 
   /// Add several variables once.
+  /// @note this is only to be called once for the original vars.
   /// @return value node range for them
   pre::NodeRange AddVars(const typename BaseFlatModel::VarBndVec& lbs,
                const typename BaseFlatModel::VarBndVec& ubs,
@@ -1215,19 +1215,11 @@ private:
   /// We store ModelApi in the converter for speed.
   /// Should be before constraints
   ModelAPIType modelapi_;
-  /// Conversion graph exporter file appender
-  std::unique_ptr<BasicFileAppender> graph_exporter_app_{MakeFileAppender()};
-  /// Conversion graph exporter functor
-  pre::ValuePresolver::ExporterFn graph_exporter_fn_{
-    [this](const char* s){
-      graph_exporter_app_->Append(s);
-    }
-  };
   /// ValuePresolver: should be init before constraint keepers
   /// and links
   pre::ValuePresolver value_presolver_
   {
-    GetModel(), GetEnv(), graph_exporter_fn_,
+    GetModel(), GetEnv(), (BasicLogger&)GetModel().GetFileAppender(),
         [this](
         ArrayRef<double> x,
         const pre::ValueMapDbl& y,

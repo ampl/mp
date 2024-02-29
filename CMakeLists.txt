@@ -353,7 +353,9 @@ add_prefix(MP_HEADERS include/mp/
   rstparser.h safeint.h sol.h
   solver.h solver-opt.h solver-base.h solver-io.h solver-app-base.h solver-app.h
   suffix.h
-  utils-file.h utils-hash.h utils-hash-stream.h
+  utils-file.h
+  util-json-write.h util-json-write.hpp
+  utils-hash.h utils-hash-stream.h
   utils-string.h utils-math.h)
 
 add_prefix(MP_FLAT_HEADERS include/mp/flat/

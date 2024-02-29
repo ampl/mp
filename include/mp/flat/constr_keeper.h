@@ -10,6 +10,8 @@
 #include "mp/format.h"
 #include "mp/env.h"
 #include "mp/utils-math.h"
+#include "mp/utils-file.h"
+#include "mp/util-json-write.hpp"
 
 #include "mp/flat/model_api_base.h"
 #include "mp/flat/constr_hash.h"
@@ -513,6 +515,13 @@ public:
   /// Compute violations
   virtual void ComputeViolations(SolCheck& ) = 0;
 
+  /// Set logger
+  void SetLogger(BasicLogger* lg) { exporter_=lg; }
+  /// Get logger, if provided and open and ok.
+  BasicLogger* GetLogger() const {
+    return exporter_ && exporter_->IsOpen()
+        ? exporter_ : nullptr;
+  }
 
 protected:
   int& GetAccLevRef() { return acceptance_level_; }
@@ -524,6 +533,7 @@ private:
   const char* const solver_opt_nm_;
   mutable std::string type_name_short_;
   int acceptance_level_ {-1};
+  BasicLogger* exporter_{};
 };
 
 const char*
@@ -668,6 +678,7 @@ public:
   int AddConstraint(int d, Args&&... args)
   {
     cons_.emplace_back( d, std::move(args)... );
+    ExportConstraint(cons_.size()-1, cons_.back());
     return cons_.size()-1;
   }
 
@@ -860,6 +871,20 @@ protected:
     ++n_bridged_or_unused_;
   }
 
+protected:
+  /// Export last added constraint
+  void ExportConstraint(int i_con, const Container& cnt) {
+    if (GetLogger()) {
+      fmt::MemoryWriter wrt;
+      MiniJSONWriter<fmt::MemoryWriter> jw(wrt);
+      jw["con_type"] = cnt.con_.GetTypeName();
+      jw["index"] = i_con;
+      jw["depth"] = cnt.GetDepth();
+//      wrt.write("\"data\": ");
+//      WriteJSON(wrt, cnt.con_);
+      GetLogger()->Append(wrt);
+    }
+  }
 
 public:
   /// Mark cons[\a i] as reformulated.
@@ -1120,13 +1145,12 @@ bool operator==(std::reference_wrapper<
 ////////////////////////////////////////////////////////////////////////////////////
 /// Manage ConstraintKeepers for different constraint types
 class ConstraintManager {
-  std::multimap<double, BasicConstraintKeeper&> con_keepers_;
-
-
 public:
   /// Add a new CKeeper with given conversion priority (smaller = sooner)
-  void AddConstraintKeeper(BasicConstraintKeeper& ck, double priority)
-  { con_keepers_.insert( { priority, ck } ); }
+  void AddConstraintKeeper(BasicConstraintKeeper& ck, double priority) {
+    con_keepers_.insert( { priority, ck } );
+    ck.SetLogger(&*graph_exporter_app_);
+  }
 
   /// This should be called after adding all constraint keepers
   void ConsiderAcceptanceOptions(
@@ -1177,6 +1201,15 @@ public:
     for (const auto& ck: con_keepers_)
       ck.second.ComputeViolations(chk);
   }
+
+  /// Retrieve file logger
+  BasicFileAppender& GetFileAppender() { return *graph_exporter_app_; }
+
+private:
+  std::multimap<double, BasicConstraintKeeper&> con_keepers_;
+  /// Conversion graph exporter file appender
+  std::unique_ptr<BasicFileAppender>
+    graph_exporter_app_{MakeFileAppender()};
 };
 
 } // namespace mp

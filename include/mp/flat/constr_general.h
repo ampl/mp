@@ -221,6 +221,21 @@ using SOS1Constraint = SOS_1or2_Constraint<1>;
 using SOS2Constraint = SOS_1or2_Constraint<2>;
 
 
+/// Write a SOS1, SOS2 constraint
+template <class Writer, int type>
+inline void WriteJSON(Writer& wrt, const SOS_1or2_Constraint<type>& sos) {
+  wrt.write("{} ", '{');
+  wrt.write("\"sos_type\": {}, ", sos.get_sos_type());
+  wrt.write("\"vars\": ");
+  WriteJSONVec(wrt, sos.get_vars());
+  wrt.write(", \"weights\": ");
+  WriteJSONVec(wrt, sos.get_weights());
+  auto bnds = sos.get_sum_of_vars_range();
+  wrt.write(", \"sum_of_vars_range\": [{}, {}]",
+            bnds.lb_, bnds.ub_);
+  wrt.write(" {}", '}');
+}
+
 ////////////////////////////////////////////////////////////////////////
 /// Complementarity constraint.
 /// \a Expr complements a variable.

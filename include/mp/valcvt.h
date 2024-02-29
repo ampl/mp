@@ -9,6 +9,8 @@
 #include <unordered_set>
 #include <functional>
 
+#include "mp/utils-string.h"
+
 #include "valcvt-node.h"
 #include "valcvt-link.h"
 #include "mp/flat/converter_model_base.h"
@@ -58,11 +60,8 @@ public:
 /// between the original model and the presolved one.
 class ValuePresolverImpl : public BasicValuePresolver {
 public:
-  /// Exporter functor type
-  using ExporterFn = std::function< void (const char*) >;
-
   /// Constructor
-  ValuePresolverImpl(Env& env, ExporterFn bts={}) :
+  ValuePresolverImpl(Env& env, BasicLogger& bts) :
     BasicValuePresolver(env), bts_(bts) { }
 
   /// Source nodes of the conversion graph, const
@@ -86,11 +85,8 @@ public:
     }
   }
 
-  /// Switch exporting on/off.
-  void SetExport(bool onoff) { f_export_=onoff; }
-
   /// Want Export?
-  bool GetExport() const { return f_export_; }
+  bool GetExport() const { return bts_.IsOpen(); }
 
   /// Finish exporting entries, if exporting=ON.
   /// This should be called after model conversions are finished,
@@ -202,8 +198,7 @@ protected:
       wrt.write(" ]");                        // end dest nodes
       wrt.write(" {}\n", '}');                      // with EOL
       /// Export record
-      assert(bts_);
-      bts_(wrt.c_str());
+      bts_.Append(wrt);
     }
   }
 
@@ -237,11 +232,8 @@ private:
   /// The link ranges
   LinkRangeList brl_;
 
-  /// Export on/off
-  bool f_export_ { false };
-
   /// Exporter functor
-  ExporterFn const bts_{};
+  BasicLogger& bts_;
 
   /// 1-after-last exported entry
   int i_exported_=0;
@@ -266,7 +258,7 @@ using SolCheckerType = std::function<SolCheckerCall>;
 class ValuePresolver : public ValuePresolverImpl {
 public:
   ValuePresolver(BasicFlatModel& m, Env& env,
-                 ExporterFn bts={}, SolCheckerType sc={})
+                 BasicLogger& bts, SolCheckerType sc={})
     : ValuePresolverImpl(env, bts), model_(m), solchk_(sc) { }
 
   /// Override PresolveSolution().

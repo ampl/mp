@@ -1,7 +1,9 @@
 #include <map>
 
-#include "mp/flat/expr_quadratic.h"
+#include "mp/format.h"
+#include "mp/util-json-write.hpp"
 
+#include "mp/flat/expr_quadratic.h"
 #include "mp/flat/model_info.hpp"
 
 namespace mp {
@@ -44,29 +46,37 @@ void QuadTerms::sort_terms()  {
   }
 }
 
-//void print(std::ostream& os) const {
-//  os << lb_ << " <= ";
-//  for (int i=0; i<nnz(); ++i) {
-//    os << coefs_[i] << "*[" << vars_[i] << ']';
-//    if (i<nnz()-1)
-//      os << " + ";
-//  }
-//  os << " <= " << ub_;
-//}
+template <class Writer, class Vec>
+void WriteJSONVec(Writer& wrt, const Vec& vec) {
+  wrt.write("{} ", '[');
+  for (size_t i=0; i<vec.size(); ++i) {
+    if (i)
+      wrt.write(", ");
+    wrt.write("{}", vec[i]);
+  }
+  wrt.write(" {}", ']');
+}
 
-  //  void print(std::ostream& os) const {
-  //    os << lb() << " <= ";
-  //    for (int i=0; i<nnz(); ++i) {
-  //      os << coefs()[i] << "*[" << vars()[i] << ']';
-  //      if (i<nnz()-1)
-  //        os << " + ";
-  //    }
-  //    for (int i=0; i<qt_.num_terms(); ++i) {
-  //      os << " + "
-  //         << qt_.coef(i) << "*[" << qt_.var1(i) << "]*[" << qt_.var2(i) << "]";
-  //    }
-  //    os << " <= " << ub();
-  //  }
+template <>
+void WriteJSON(fmt::MemoryWriter& wrt, const QuadTerms& qt) {
+  wrt.write("{} ", '{');
+  wrt.write("\"coefs\": ");
+  WriteJSONVec(wrt, qt.coefs());
+  wrt.write(", \"vars1\": ");
+  WriteJSONVec(wrt, qt.vars1());
+  wrt.write(", \"vars2\": ");
+  WriteJSONVec(wrt, qt.vars2());
+  wrt.write(" {}", '}');
+}
 
+template <>
+void WriteJSON(fmt::MemoryWriter& wrt, const LinTerms& qt) {
+  wrt.write("{} ", '{');
+  wrt.write("\"coefs\": ");
+  WriteJSONVec(wrt, qt.coefs());
+  wrt.write(", \"vars\": ");
+  WriteJSONVec(wrt, qt.vars());
+  wrt.write(" {}", '}');
+}
 
 } // namespace mp

@@ -26,13 +26,16 @@
 #include <string>
 #include <memory>
 
+#include "mp/utils-string.h"
+
 namespace mp {
 
 /// Class appending strings to file with given name
-class BasicFileAppender {
+class BasicFileAppender
+    : public BasicLogger {
 public:
-  /// Destruct
-  virtual ~BasicFileAppender() { }
+  /// Is the log active and ok?
+  bool IsOpen() const override = 0;
 
   /// Open file
   virtual bool Open(const std::string& fln, bool fErase) = 0;
@@ -40,8 +43,16 @@ public:
   /// Close file
   virtual void Close() = 0;
 
-  /// Append string
-  virtual bool Append(const char* ) = 0;
+  /// append string.
+  ///
+  /// @return whether all ok.
+  template<class Str>
+  bool Append (const Str& s) { return Append(s.c_str()); }
+
+  /// Append string.
+  ///
+  /// @return whether all ok.
+  bool Append(const char* ) override = 0;
 };
 
 /// FileAppender maker

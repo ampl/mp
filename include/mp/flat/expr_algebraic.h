@@ -111,6 +111,15 @@ private:
   double constant_term_ = 0.0;
 };
 
+/// Very general template to write
+/// a JSON representation of anything
+template <class Writer, class Obj>
+void WriteJSON(Writer& , const Obj& );
+
+/// Write JSON string of a vector
+template <class Writer, class Vec>
+void WriteJSONVec(Writer& wrt, const Vec& vec);
+
 } // namespace mp
 
 #endif // EXPR_ALGEBRAIC_H

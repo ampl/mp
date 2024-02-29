@@ -35,6 +35,8 @@ public:
   using VarTypeVec = std::vector<var::Type>;
   using VarNameVec = std::vector<const char*>;
 
+  using ConstraintManager::GetFileAppender;
+
   ///////////////////////////// VARIABLES ////////////////////////////////
   /// Add variable, return its index
   Var AddVar__basic(double lb=MinusInf(), double ub=Inf(),
@@ -43,6 +45,7 @@ public:
     var_lb_.push_back(lb);
     var_ub_.push_back(ub);
     var_type_.push_back(type);
+    ExportVars(var_type_.size()-1, {lb}, {ub}, {type});
     return var_type_.size()-1;
   }
 
@@ -55,9 +58,32 @@ public:
     var_ub_.insert(var_ub_.end(), ubs.begin(), ubs.end());
     var_type_.insert(var_type_.end(), types.begin(), types.end());
     assert(check_vars());
+    assert(!num_vars_orig_);
     num_vars_orig_ = var_lb_.size();
+    ExportVars(var_type_.size()-1, lbs, ubs, types);
   }
 
+protected:
+  /// Export new variables
+  template <class BndVec=std::array<double, 1>,
+            class TypeVec=std::array<var::Type, 1> >
+  void ExportVars(int i_start, const BndVec& lbs, const BndVec& ubs,
+                  const TypeVec types) {
+    for (int i=0;
+         GetFileAppender().IsOpen() && i<(int)lbs.size(); ++i) {
+      fmt::MemoryWriter wrt;
+      wrt.write("{} ", '{');
+      wrt.write("\"var_index\": {}, ", i+i_start);
+      wrt.write("\"bounds\": [{}, {}], ", lbs[i], ubs[i]);
+      wrt.write("\"type\": {}, ", (int)types[i]);
+      wrt.write("\"is_from_nl\": {}, ", (int)is_var_original(i));
+      wrt.write(" {}\n", '}');                      // with EOL
+      GetFileAppender().Append(wrt);
+    }
+  }
+
+public:
+  /// Set var names vector
   void AddVarNames(const std::vector<std::string>& names) {
     var_names_storage_ = names;
   }
@@ -68,6 +94,7 @@ public:
         ? var_names_storage_[i].c_str() : nullptr;
   }
 
+  /// N vars
   int num_vars() const
   { assert(check_vars()); return (int)var_lb_.size(); }
 
@@ -198,9 +225,26 @@ public:
     return false;
   }
   /// Add an objective
-  void AddObjective(QuadraticObjective&& obj)
-  { get_objectives().push_back(std::move(obj)); }
+  void AddObjective(QuadraticObjective&& obj) {
+    get_objectives().push_back(std::move(obj));
+    ExportObjective(num_objs()-1, get_objectives().back());
+  }
 
+protected:
+  void ExportObjective(int i_obj, const QuadraticObjective& obj) {
+    if (GetFileAppender().IsOpen()) {
+      fmt::MemoryWriter wrt;
+      wrt.write("{} ", '{');
+      wrt.write("\"obj_index\": {}, ", i_obj);
+      wrt.write("\"sense\": {}, ", obj.obj_sense());
+      wrt.write("\"qp_terms\": ");
+      WriteJSON(wrt, obj.GetQPTerms());
+      wrt.write("\"lin_terms\": ");
+      WriteJSON(wrt, obj.GetLinTerms());
+      wrt.write(" {}\n", '}');                      // with EOL
+      GetFileAppender().Append(wrt);
+    }
+  }
 
   ///////////////////////////// FLAT CONSTRAINTS ////////////////////////////
 protected:
