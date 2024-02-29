@@ -876,12 +876,15 @@ protected:
   void ExportConstraint(int i_con, const Container& cnt) {
     if (GetLogger()) {
       fmt::MemoryWriter wrt;
-      MiniJSONWriter<fmt::MemoryWriter> jw(wrt);
-      jw["con_type"] = cnt.con_.GetTypeName();
-      jw["index"] = i_con;
-      jw["depth"] = cnt.GetDepth();
-//      wrt.write("\"data\": ");
-//      WriteJSON(wrt, cnt.con_);
+      {
+        MiniJSONWriter jw(wrt);
+        jw["con_type"] = cnt.con_.GetTypeName();
+        jw["index"] = i_con;
+        jw["depth"] = cnt.GetDepth();
+        //      wrt.write("\"data\": ");
+        //      WriteJSON(wrt, cnt.con_);
+      }
+      wrt.write("\n");                     // EOL
       GetLogger()->Append(wrt);
     }
   }

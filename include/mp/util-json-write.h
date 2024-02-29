@@ -25,6 +25,7 @@
 
 #include <vector>
 #include <string>
+#include <tuple>
 #include <type_traits>
 
 namespace mp {
@@ -57,26 +58,31 @@ public:
   /// operator[]: make/ensure *this a dictionary,
   /// add and return a new element at \a key.
   /// Allows the syntax `node[key] = val;`,
+  /// or `node[key] << val1 << val2 ...;`,
   /// but also writing a complex subtree manually.
-  Node operator[](const char* key);
+  Node operator[](std::string_view key);
 
   /// operator<<: make/ensure *this an array
   /// and write \a val a new element.
   ///
-  /// @param val: scalar or container.
+  /// @param val: scalar, tuple or container.
   ///   For non-supported types, define global method
-  ///   Serialize(MiniJSONWriter&, const YourType& ).
+  ///   Serialize(MiniJSONWriter& , const YourType& ).
   ///
   /// @return *this.
   template <class Value>
-  Node& operator<<(const Value& val)
-  { EnsureArray(); Write(val); return *this; }
+  Node& operator<<(const Value& val) {
+    EnsureArray();
+    InsertElementSeparator();
+    Write(val);
+    return *this;
+  }
 
   /// operator=: write \a val as a whole.
   ///
-  /// @param val: scalar or container.
+  /// @param val: scalar, tuple or container.
   ///   For non-supported types, define global method
-  ///   Serialize(MiniJSONWrt& , const YourType& ).
+  ///   Serialize(MiniJSONWriter& , const YourType& ).
   ///
   /// @note Can be called only once on a single node.
   template <class Value>
@@ -84,10 +90,12 @@ public:
   { EnsureUnset(); Write(val); Close(); }
 
   /// Write a sequence between two iterators
+  /// @return *this
   template <class It>
-  void WriteSequence(It b, It e) {
+  Node& WriteSequence(It b, It e) {
     for ( ; b!=e; ++b)
       (*this) << (*b);
+    return *this;
   }
 
   /// Close node.
@@ -117,8 +125,8 @@ protected:
 
   /// Make sure this node has not been written into.
   void EnsureUnset();
-  /// Make sure this is a scalar node.
-  void EnsureScalar();
+  /// If unset, mark scalar node.
+  void MakeScalarIfUnset();
   /// Make sure this is an array node.
   void EnsureArray();
   /// Make sure this is a dictionary node.
@@ -138,8 +146,8 @@ protected:
   /// Insert element separator if needed
   void InsertElementSeparator();
 
-  void DoWrite(const char* s) { DoWriteScalar(s); }
-  void DoWrite(const std::string& s) { DoWriteScalar(s); }
+  void DoWrite(const char* s) { DoWriteString(s); }
+  void DoWrite(const std::string& s) { DoWriteString(s); }
 
   template <typename Arithmetic,
             typename
@@ -152,9 +160,31 @@ protected:
           decltype(*begin(std::declval<C>()))> >
   void DoWrite(const C& c) { WriteSequence(c.begin(), c.end()); }
 
+  /// https://www.cppstories.com/2022/tuple-iteration-apply/
+  template <typename... Arg>
+  void DoWrite(const std::tuple<Arg...>& tup) {
+    std::apply([this](const auto&... tupleArgs) {
+      auto printElem = [this](const auto& x) {
+        (*this) << x;
+      };
+      (printElem(tupleArgs), ...);
+    }, tup
+    );
+  }
+
   template <class Value>
-  void DoWriteScalar(const Value& val)
-  { EnsureScalar(); wrt_.write("{}", val); }
+  void DoWriteScalar(const Value& val) {
+    MakeScalarIfUnset();
+    wrt_.write("{}", val);
+    ++n_written_;
+  }
+
+  template <class Str>
+  void DoWriteString(const Str& val) {
+    MakeScalarIfUnset();
+    wrt_.write("\"{}\"", val);
+    ++n_written_;
+  }
 
 private:
   Formatter& wrt_;

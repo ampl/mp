@@ -60,7 +60,7 @@ public:
     assert(check_vars());
     assert(!num_vars_orig_);
     num_vars_orig_ = var_lb_.size();
-    ExportVars(var_type_.size()-1, lbs, ubs, types);
+    ExportVars(var_type_.size()-lbs.size(), lbs, ubs, types);
   }
 
 protected:
@@ -72,12 +72,14 @@ protected:
     for (int i=0;
          GetFileAppender().IsOpen() && i<(int)lbs.size(); ++i) {
       fmt::MemoryWriter wrt;
-      wrt.write("{} ", '{');
-      wrt.write("\"var_index\": {}, ", i+i_start);
-      wrt.write("\"bounds\": [{}, {}], ", lbs[i], ubs[i]);
-      wrt.write("\"type\": {}, ", (int)types[i]);
-      wrt.write("\"is_from_nl\": {}, ", (int)is_var_original(i));
-      wrt.write(" {}\n", '}');                      // with EOL
+      {
+        MiniJSONWriter jw(wrt);
+        jw["var_index"] = i+i_start;
+        jw["bounds"] << lbs[i] << ubs[i];
+        jw["type"] = (int)types[i];
+        jw["is_from_nl"] = (int)is_var_original(i);
+      }
+      wrt.write("\n");                      // with EOL
       GetFileAppender().Append(wrt);
     }
   }
@@ -234,14 +236,17 @@ protected:
   void ExportObjective(int i_obj, const QuadraticObjective& obj) {
     if (GetFileAppender().IsOpen()) {
       fmt::MemoryWriter wrt;
-      wrt.write("{} ", '{');
-      wrt.write("\"obj_index\": {}, ", i_obj);
-      wrt.write("\"sense\": {}, ", obj.obj_sense());
-      wrt.write("\"qp_terms\": ");
-      WriteJSON(wrt, obj.GetQPTerms());
-      wrt.write("\"lin_terms\": ");
-      WriteJSON(wrt, obj.GetLinTerms());
-      wrt.write(" {}\n", '}');                      // with EOL
+      {
+        MiniJSONWriter jw(wrt);
+        jw["obj_index"] = i_obj;
+        jw["sense"] = (int)obj.obj_sense();
+        wrt.write("\"qp_terms\": ");
+        WriteJSON(wrt, obj.GetQPTerms());
+        wrt.write("\"lin_terms\": ");
+        WriteJSON(wrt, obj.GetLinTerms());
+        wrt.write(" {}\n", '}');                      // with EOL
+      }
+      wrt.write("\n");                     // EOL
       GetFileAppender().Append(wrt);
     }
   }

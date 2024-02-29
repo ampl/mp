@@ -25,6 +25,8 @@
 
 #include <cassert>
 
+#include "mp/format.h"
+
 #include "mp/util-json-write.h"
 
 namespace mp {
@@ -34,15 +36,19 @@ typename MiniJSONWriter<StringWriter>::Node
 MiniJSONWriter<StringWriter>::operator++() {
   EnsureArray();
   InsertElementSeparator();
+  ++n_written_;
   return Node{*this};
 }
 
 template <class StringWriter>
 typename MiniJSONWriter<StringWriter>::Node
-MiniJSONWriter<StringWriter>::operator[](const char* key) {
+MiniJSONWriter<StringWriter>::operator[](std::string_view key) {
   EnsureDictionary();
   InsertElementSeparator();
-  wrt_.write("{}: ",  key);
+  wrt_.write("\"{}\": ",   // Need StringRef until newer {fmt}
+             fmt::StringRef(key.data(), key.size())
+             );
+  ++n_written_;
   return Node{*this};
 }
 
@@ -52,9 +58,10 @@ void MiniJSONWriter<StringWriter>::EnsureUnset() {
 }
 
 template <class StringWriter>
-void MiniJSONWriter<StringWriter>::EnsureScalar() {
-  EnsureUnset();
-  kind_ = Kind::Scalar;
+void MiniJSONWriter<StringWriter>::MakeScalarIfUnset() {
+  if (Kind::Unset == kind_) {
+    kind_ = Kind::Scalar;
+  }
 }
 
 template <class StringWriter>
@@ -81,7 +88,6 @@ template <class StringWriter>
 void MiniJSONWriter<StringWriter>::EnsureCanWrite() {
   switch (kind_) {
   case Kind::Unset:
-    assert(false && "unset MiniJSONWriter node kind for writing");
     break;
   case Kind::Scalar:
     assert(0==n_written_);

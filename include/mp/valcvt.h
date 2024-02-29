@@ -10,6 +10,7 @@
 #include <functional>
 
 #include "mp/utils-string.h"
+#include "mp/util-json-write.hpp"
 
 #include "valcvt-node.h"
 #include "valcvt-link.h"
@@ -187,36 +188,31 @@ protected:
     if (GetExport()) {
       ln.ExportEntryItems(entry_items_, i_entry);
       fmt::MemoryWriter wrt;
-      wrt.write("{} ", '{');
-      wrt.write("\"link_index\": [{}, {}], ", i_exported_, i_entry);
-      wrt.write("\"link_type\": \"{}\", ", ln.GetTypeName());
-      wrt.write("\"source_nodes\": [");
-        WriteNodes(wrt, entry_items_.src_items_);
-      wrt.write(" ], ");                      // end source nodes
-      wrt.write("\"dest_nodes\": [ ");
-        WriteNodes(wrt, entry_items_.dest_items_);
-      wrt.write(" ]");                        // end dest nodes
-      wrt.write(" {}\n", '}');                      // with EOL
+      {
+        MiniJSONWriter jw(wrt);
+        jw["link_index"] = std::make_tuple(i_exported_, i_entry);
+        jw["link_type"] = ln.GetTypeName();
+        WriteNodes(jw["source_nodes"], entry_items_.src_items_);
+        WriteNodes(jw["dest_nodes"], entry_items_.dest_items_);
+      }
       /// Export record
+      wrt.write("\n");                     // EOL
       bts_.Append(wrt);
     }
   }
 
   /// Write a vector of nodes
-  void WriteNodes(fmt::MemoryWriter& wrt, const std::vector<NodeRange>& nodes) {
+  template <class JSON>
+  void WriteNodes(JSON jw, const std::vector<NodeRange>& nodes) {
     for (size_t i=0; i<nodes.size(); ++i) {
       const auto& nd = nodes[i];
+      auto jelement = ++jw;       // We write an array
       if (nd.IsSingleIndex())
-        wrt.write("{} \"{}\": {} {}",
-                  '{', nd.GetValueNode()->GetName(), (int)nd, '}');
+        jelement[nd.GetValueNode()->GetName()] = (int)nd;
       else
-        wrt.write("{} \"{}\": [{}, {}] {}",
-                  '{', nd.GetValueNode()->GetName(),
-                  nd.GetIndexRange().beg_,
-                  nd.GetIndexRange().end_-1,     // print the exact last value
-                  '}');
-      if (i != nodes.size()-1)
-        wrt.write(",");
+        jelement[nd.GetValueNode()->GetName()]
+            << nd.GetIndexRange().beg_
+            << (nd.GetIndexRange().end_-1);  // print the exact last value
     }
   }
 
