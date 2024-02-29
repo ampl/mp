@@ -540,6 +540,7 @@ const char*
 BasicConstraintKeeper::GetShortTypeName() const {
   if (type_name_short_.empty()) {
     std::string acc_opt = GetAcceptanceOptionNames();
+    assert(acc_opt.size());
     auto word_end = std::min(acc_opt.find(' '),
                              acc_opt.size());
     auto colon_pos = acc_opt.find(':');
@@ -547,6 +548,7 @@ BasicConstraintKeeper::GetShortTypeName() const {
       colon_pos = 0;
     type_name_short_ = acc_opt.substr(
           colon_pos, word_end-colon_pos);
+    assert(type_name_short_.size());
   }
   return type_name_short_.c_str();
 }
@@ -878,7 +880,7 @@ protected:
       fmt::MemoryWriter wrt;
       {
         MiniJSONWriter jw(wrt);
-        jw["con_type"] = cnt.con_.GetTypeName();
+        jw["con_type"] = GetShortTypeName();
         jw["index"] = i_con;
         jw["depth"] = cnt.GetDepth();
         //      wrt.write("\"data\": ");
