@@ -145,10 +145,18 @@ template <int kind_>
 class AlgConRhs {
   static constexpr const char* kind_str_[] =
   { "LT", "LE", "EQ", "GE", "GT" };
+  static constexpr const char* kind_cmp_[] =
+  { "<", "<=", "==", ">=", ">" };
 public:
   /// name
   static std::string GetTypeName()
   { return std::string("Rhs") + kind_str_[kind_+2]; }
+  /// Comparison name as string
+  static const char* GetCmpName()
+  { return kind_str_[kind_+2]; }
+  /// Comparison operator as string
+  static const char* GetCmpStr()
+  { return kind_cmp_[kind_+2]; }
   /// Constructor
   AlgConRhs(double r) : rhs_(r) { }
   /// Kind
@@ -226,6 +234,28 @@ using QuadConEQ = QuadConRhs< 0>;
 using QuadConGE = QuadConRhs< 1>;
 /// Quadratic constraint c'x+x`Qx >  d
 using QuadConGT = QuadConRhs< 2>;
+
+
+/// Write an algebraic constraint
+template <class Body, class RhsOrRange>
+inline void WriteJSON(JSONW jw,
+                      const AlgebraicConstraint<Body, RhsOrRange>& algc) {
+  WriteJSON(jw["body"], algc.GetBody());
+  WriteJSON(jw["rhs_or_range"], algc.GetRhsOrRange());
+}
+
+/// Write alg con range
+inline void WriteJSON(JSONW jw,
+                      const AlgConRange& acr) {
+  jw << acr.lb() << acr.ub();
+}
+
+/// Write alg con rhs
+template <int kind>
+inline void WriteJSON(JSONW jw,
+                      const AlgConRhs<kind>& acrhs) {
+  jw << acrhs.GetCmpName() << acrhs.rhs();
+}
 
 } // namespace mp
 

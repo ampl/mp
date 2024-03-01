@@ -79,6 +79,16 @@ using IndicatorConstraintQuadEQ = IndicatorConstraint<QuadConEQ>;
 using IndicatorConstraintQuadGE = IndicatorConstraint<QuadConGE>;
 
 
+/// Write an indicator constraint
+template <class Con>
+inline void WriteJSON(JSONW jw,
+                      const IndicatorConstraint<Con>& ic) {
+  jw["bin_var"] = ic.get_binary_var();
+  jw["bin_val"] = ic.get_binary_value();
+  WriteJSON(jw["con"], ic.get_constraint());
+}
+
+
 /// Unary encoding.
 /// Currently a dummy constraint just to build
 /// the reformulation graph.
@@ -222,18 +232,13 @@ using SOS2Constraint = SOS_1or2_Constraint<2>;
 
 
 /// Write a SOS1, SOS2 constraint
-template <class Writer, int type>
-inline void WriteJSON(Writer& wrt, const SOS_1or2_Constraint<type>& sos) {
-  wrt.write("{} ", '{');
-  wrt.write("\"sos_type\": {}, ", sos.get_sos_type());
-  wrt.write("\"vars\": ");
-  WriteJSONVec(wrt, sos.get_vars());
-  wrt.write(", \"weights\": ");
-  WriteJSONVec(wrt, sos.get_weights());
+template <int type>
+inline void WriteJSON(JSONW jw, const SOS_1or2_Constraint<type>& sos) {
+  jw["SOS_type"] = sos.get_sos_type();
+  jw["vars"] = sos.get_vars();
+  jw["weights"] = sos.get_weights();
   auto bnds = sos.get_sum_of_vars_range();
-  wrt.write(", \"sum_of_vars_range\": [{}, {}]",
-            bnds.lb_, bnds.ub_);
-  wrt.write(" {}", '}');
+  jw["sum_of_vars_range"] << bnds.lb_ << bnds.ub_;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -290,6 +295,16 @@ using ComplementarityLinear = ComplementarityConstraint<AffineExpr>;
 
 /// Typedef ComplementarityQuadRange
 using ComplementarityQuadratic = ComplementarityConstraint<QuadraticExpr>;
+
+
+/// Write a ComplementarityCon
+template <class Expr>
+inline void WriteJSON(JSONW jw,
+                      const ComplementarityConstraint<Expr>& cc) {
+  WriteJSON(jw["expr"], cc.GetExpression());
+  jw["compl_var"] = cc.GetVariable();
+}
+
 
 /// Quadratic cone
 DEF_STATIC_CONSTR_WITH_PRM( QuadraticConeConstraint, VarArray, DblParamArray,

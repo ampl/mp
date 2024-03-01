@@ -74,7 +74,7 @@ protected:
       fmt::MemoryWriter wrt;
       {
         MiniJSONWriter jw(wrt);
-        jw["VAR_INDEX"] = i+i_start;
+        jw["VAR_index"] = i+i_start;
         jw["bounds"] << lbs[i] << ubs[i];
         jw["type"] = (int)types[i];
         jw["is_from_nl"] = (int)is_var_original(i);
@@ -238,13 +238,10 @@ protected:
       fmt::MemoryWriter wrt;
       {
         MiniJSONWriter jw(wrt);
-        jw["OBJ_INDEX"] = i_obj;
+        jw["OBJECTIVE_index"] = i_obj;
         jw["sense"] = (int)obj.obj_sense();
-        wrt.write("\"qp_terms\": ");
-        WriteJSON(wrt, obj.GetQPTerms());
-        wrt.write("\"lin_terms\": ");
-        WriteJSON(wrt, obj.GetLinTerms());
-        wrt.write(" {}\n", '}');                      // with EOL
+        WriteJSON(jw["qp_terms"], obj.GetQPTerms());
+        WriteJSON(jw["lin_terms"], obj.GetLinTerms());
       }
       wrt.write("\n");                     // EOL
       GetFileAppender().Append(wrt);

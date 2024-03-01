@@ -206,7 +206,7 @@ protected:
   void WriteNodes(JSON jw, const std::vector<NodeRange>& nodes) {
     for (size_t i=0; i<nodes.size(); ++i) {
       const auto& nd = nodes[i];
-      auto jelement = ++jw;       // We write an array
+      auto jelement = ++jw;       // jw is an array of dict's
       if (nd.IsSingleIndex())
         jelement[nd.GetValueNode()->GetName()] = (int)nd;
       else

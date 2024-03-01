@@ -884,8 +884,7 @@ protected:
         jw["CON_TYPE"] = GetShortTypeName();
         jw["index"] = i_con;
         jw["depth"] = cnt.GetDepth();
-        //      wrt.write("\"data\": ");
-        //      WriteJSON(wrt, cnt.con_);
+        WriteJSON(jw["data"], cnt.con_);
       }
       wrt.write("\n");                     // EOL
       GetLogger()->Append(wrt);

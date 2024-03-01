@@ -131,6 +131,9 @@ private:
   std::vector<int> vars2_;
 };
 
+/// Specialize
+template <>
+void WriteJSON(JSONW jw, const QuadTerms& qt);
 
 ////////////////////////////////////////////////////////////////////////
 /// Quadratic and linear terms.
@@ -228,6 +231,10 @@ public:
   /// Test equality
   bool operator==(const QuadAndLinTerms& qlc) const { return equals(qlc); }
 };
+
+/// Specialize
+template <>
+void WriteJSON(JSONW jw, const QuadAndLinTerms& qt);
 
 
 /// Typedef QuadraticExpr

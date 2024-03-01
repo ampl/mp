@@ -46,37 +46,23 @@ void QuadTerms::sort_terms()  {
   }
 }
 
-template <class Writer, class Vec>
-void WriteJSONVec(Writer& wrt, const Vec& vec) {
-  wrt.write("{} ", '[');
-  for (size_t i=0; i<vec.size(); ++i) {
-    if (i)
-      wrt.write(", ");
-    wrt.write("{}", vec[i]);
-  }
-  wrt.write(" {}", ']');
+template <>
+void WriteJSON(JSONW jw, const QuadTerms& qt) {
+  jw["coefs"] = qt.coefs();
+  jw["vars1"] = qt.vars1();
+  jw["vars2"] = qt.vars2();
 }
 
 template <>
-void WriteJSON(fmt::MemoryWriter& wrt, const QuadTerms& qt) {
-  wrt.write("{} ", '{');
-  wrt.write("\"coefs\": ");
-  WriteJSONVec(wrt, qt.coefs());
-  wrt.write(", \"vars1\": ");
-  WriteJSONVec(wrt, qt.vars1());
-  wrt.write(", \"vars2\": ");
-  WriteJSONVec(wrt, qt.vars2());
-  wrt.write(" {}", '}');
+void WriteJSON(JSONW jw, const LinTerms& qt) {
+  jw["coefs"] = qt.coefs();
+  jw["vars"] = qt.vars();
 }
 
 template <>
-void WriteJSON(fmt::MemoryWriter& wrt, const LinTerms& qt) {
-  wrt.write("{} ", '{');
-  wrt.write("\"coefs\": ");
-  WriteJSONVec(wrt, qt.coefs());
-  wrt.write(", \"vars\": ");
-  WriteJSONVec(wrt, qt.vars());
-  wrt.write(" {}", '}');
+void WriteJSON(JSONW jw, const QuadAndLinTerms& qlt) {
+  WriteJSON(jw["qp_terms"], qlt.GetQPTerms());
+  WriteJSON(jw["lin_terms"], qlt.GetLinTerms());
 }
 
 } // namespace mp

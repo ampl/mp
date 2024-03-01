@@ -65,24 +65,34 @@ public:
   /// operator<<: make/ensure *this an array
   /// and write \a val a new element.
   ///
+  /// Equivalent: `++(*this) = val; return *this;`
+  ///
   /// @param val: scalar, tuple or container.
-  ///   For non-supported types, define global method
-  ///   Serialize(MiniJSONWriter& , const YourType& ).
+  ///   For non-supported types,
+  ///   write elements manually into
+  ///     `auto jw_child = ++jw;`,
+  ///   or define, e.g.,
+  ///     `Serialize(MiniJSONWriter , const YourType& )`,
+  ///   to be used as follows:
+  ///     `Serialize(++jw, obj[5]);`
+  ///     (instead of `jw << obj[5]`.)
   ///
   /// @return *this.
   template <class Value>
-  Node& operator<<(const Value& val) {
-    EnsureArray();
-    InsertElementSeparator();
-    Write(val);
-    return *this;
-  }
+  Node& operator<<(const Value& val)
+  { ++(*this) = val; return *this; }
 
   /// operator=: write \a val as a whole.
   ///
   /// @param val: scalar, tuple or container.
-  ///   For non-supported types, define global method
-  ///   Serialize(MiniJSONWriter& , const YourType& ).
+  ///   For non-supported types,
+  ///   write elements manually into
+  ///     `auto jw_child = jw["data"];`,
+  ///   or define, e.g.,
+  ///     `Serialize(MiniJSONWriter , const YourType& )`,
+  ///   to be used as follows:
+  ///     `Serialize(jw["data"], obj_data);`
+  ///     (instead of `jw["data"] = obj_data`.)
   ///
   /// @note Can be called only once on a single node.
   template <class Value>
@@ -155,6 +165,7 @@ protected:
                              int> = 0> // C++17
   void DoWrite(Arithmetic v) { DoWriteScalar(v); }
 
+  /// Write a container
   template <typename C,
       typename T = std::decay_t<
           decltype(*begin(std::declval<C>()))> >

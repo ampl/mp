@@ -182,6 +182,16 @@ public:
 };
 
 
+/// Write a CustomFunctionalConstraint<>
+template <class JW, class A, class P, class N, class I>
+inline void WriteJSON(JW jw,
+                      const CustomFunctionalConstraint<A,P,N,I>& cfc) {
+  jw["res_var"] = cfc.GetResultVar();
+  WriteJSON(jw["args"], cfc.GetArguments());
+  WriteJSON(jw["params"], cfc.GetParameters());
+}
+
+
 /// Dummy template: compute result of functional constraint.
 /// Should be implemented for proper functional specializations,
 /// but has no sense for conic constraints, for example.
@@ -335,6 +345,15 @@ public:
     }
   }
 };
+
+/// Write a CondCon
+template <class JW, class Con>
+inline void WriteJSON(JW jw,
+                      const ConditionalConstraint<Con>& condc) {
+  jw["res_var"] = condc.GetResultVar();
+  WriteJSON(jw["con"], condc.GetConstraint());
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 /// Args is the argument type, e.g., array of variables, or an expression

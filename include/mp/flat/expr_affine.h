@@ -155,6 +155,10 @@ private:
   std::vector<int> vars_;
 };
 
+/// Specialize
+template <>
+void WriteJSON(JSONW jw, const LinTerms& qt);
+
 
 /// Typedef AffineExpr
 using AffineExpr = AlgebraicExpression<LinTerms>;

@@ -9,6 +9,7 @@
 #include <string>
 #include <cmath>
 
+#include "mp/util-json-write.hpp"
 #include "mp/arrayref.h"
 
 namespace mp {
@@ -112,13 +113,23 @@ private:
 };
 
 /// Very general template to write
-/// a JSON representation of anything
+/// a JSON-like representation of anything
 template <class Writer, class Obj>
-void WriteJSON(Writer& , const Obj& );
+void WriteJSON(Writer w, const Obj& o) {
+  w = o;       // default: assume assignable
+}              // unless WriteJSON is specialized for Obj
 
-/// Write JSON string of a vector
-template <class Writer, class Vec>
-void WriteJSONVec(Writer& wrt, const Vec& vec);
+/// Specialize our JSON writer
+using JSONW = MiniJSONWriter<fmt::MemoryWriter>;
+
+/// Write an AlgebraicExpression
+template <class Terms>
+inline void WriteJSON(JSONW jw,
+                      const AlgebraicExpression<Terms>& ale) {
+  WriteJSON(jw["body"], ale.GetBody());
+  jw["const_term"] = ale.constant_term();
+}
+
 
 } // namespace mp
 

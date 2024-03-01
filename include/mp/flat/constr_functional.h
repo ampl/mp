@@ -215,6 +215,15 @@ public:
   }
 };
 
+
+/// Write a LinFuncCon
+inline void WriteJSON(JSONW jw,
+                      const LinearFunctionalConstraint& lfc) {
+  jw["res_var"] = lfc.GetResultVar();
+  WriteJSON(jw["expr"], lfc.GetAffineExpr());
+}
+
+
 ////////////////////////////////////////////////////////////////////////
 /// Quadratic Functional Constraint: r = quad_expr
 class QuadraticFunctionalConstraint :
@@ -265,6 +274,14 @@ public:
       MP_RAISE("QuadraticFuncCon: no context");
   }
 };
+
+
+/// Write a QuadrFuncCon
+inline void WriteJSON(JSONW jw,
+                      const QuadraticFunctionalConstraint& qfc) {
+  jw["res_var"] = qfc.GetResultVar();
+  WriteJSON(jw["expr"], qfc.GetQuadExpr());
+}
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -374,6 +391,16 @@ private:
 /// Define PLConstraint
 DEF_NUMERIC_FUNC_CONSTR_WITH_PRM( PLConstraint,
                   VarArray1, PLConParams, "r = piecewise_linear(x)");
+
+
+/// Write PLConParams
+inline void WriteJSON(JSONW jw,
+                      const PLConParams& plp) {
+  const auto& p = plp.GetPLPoints();
+  jw["pl_x"] = p.x_;
+  jw["pl_y"] = p.y_;
+}
+
 
 } // namespace mp
 
