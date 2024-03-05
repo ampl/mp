@@ -28,6 +28,19 @@ LinTerms ToLinTerms(const LinearExpr& e) {
   return le;
 }
 
+/// Write algebraic expression (linear + non-linear.)
+template <typename ExprTypes, typename LinearExpr, typename NumericExpr>
+void WriteExpr(fmt::Writer &w, const LinearExpr &linear,
+               NumericExpr nonlinear);
+
+/// Write logical expression
+template <typename ExprTypes, typename LogicalExpr>
+void WriteExpr(fmt::Writer &w, LogicalExpr expr);
+
+/// Write algebraic constraint.
+template <class ExprTypes, class AlgCon>
+void WriteAlgCon(fmt::Writer &w, const AlgCon &con);
+
 
 /// ProblemFlattener: it walks and "flattens" most expressions
 /// by replacing them by a result variable and constraints.
@@ -134,29 +147,110 @@ protected:
 
     ////////////////////////// Common exprs
     int num_common_exprs = GetModel().num_common_exprs();
-    for (int i = 0; i < num_common_exprs; ++i)
+    for (int i = 0; i < num_common_exprs; ++i) {
+      MPD( ExportCommonExpr(i) );
       MP_DISPATCH( Convert( GetModel().common_expr(i) ) );
+    }
 
     ////////////////////////// Objectives
     ifFltCon_ = 0;
     if (int num_objs = GetModel().num_objs())
-      for (int i = 0; i < num_objs; ++i)
+      for (int i = 0; i < num_objs; ++i) {
+        MPD( ExportObj(i) );
         MP_DISPATCH( Convert( GetModel().obj(i) ) );
+      }
 
     ////////////////////////// Algebraic constraints
     ifFltCon_ = 1;
     if (int n_cons = GetModel().num_algebraic_cons())
-      for (int i = 0; i < n_cons; ++i)
+      for (int i = 0; i < n_cons; ++i) {
+        MPD( ExportAlgCon(i) );
         MP_DISPATCH( ConvertAlgCon( i ) );
+      }
 
     ////////////////////////// Logical constraints
     ifFltCon_ = 1;
     if (int n_lcons = GetModel().num_logical_cons())
-      for (int i = 0; i < n_lcons; ++i)
+      for (int i = 0; i < n_lcons; ++i) {
+        MPD( ExportLogCon(i) );
         MP_DISPATCH( ConvertLogicalCon( i ) );
+      }
 
     /// Signal we are not flattening anything
     ifFltCon_ = -1;
+  }
+
+  /// Export common expression \a i.
+  void ExportCommonExpr(int i) {
+    if (GetFlatCvt().GetFileAppender().IsOpen()) {
+      fmt::MemoryWriter wrt;
+      {
+        MiniJSONWriter jw(wrt);
+        jw["NL_COMMON_EXPR_index"] = i;
+        auto ce = GetModel().common_expr(i);
+        fmt::MemoryWriter w2;
+        WriteExpr<typename ProblemType::ExprTypes>(
+              w2, ce.linear_expr(), ce.nonlinear_expr());
+        jw["printed"] = w2.c_str();
+      }
+      wrt.write("\n");                     // EOL
+      GetFlatCvt().GetFileAppender().Append(wrt);
+    }
+  }
+
+  /// Export objective \a i.
+  void ExportObj(int i) {
+    if (GetFlatCvt().GetFileAppender().IsOpen()) {
+      fmt::MemoryWriter wrt;
+      {
+        MiniJSONWriter jw(wrt);
+        jw["NL_OBJECTIVE_index"] = i;
+        auto obj = GetModel().obj(i);
+        jw["sense"] = (int)obj.type();
+        fmt::MemoryWriter w2;
+        WriteExpr<typename ProblemType::ExprTypes>(
+              w2, obj.linear_expr(), obj.nonlinear_expr());
+        jw["printed"] = w2.c_str();
+      }
+      wrt.write("\n");                     // EOL
+      GetFlatCvt().GetFileAppender().Append(wrt);
+    }
+  }
+
+  /// Export algebraic constraint \a i.
+  void ExportAlgCon(int i) {
+    if (GetFlatCvt().GetFileAppender().IsOpen()) {
+      fmt::MemoryWriter wrt;
+      {
+        MiniJSONWriter jw(wrt);
+        auto con = GetModel().algebraic_con(i);
+        jw["NL_CON_TYPE"] = (con.nonlinear_expr() ? "nonlin" : "lin");
+        jw["index"] = i;
+        fmt::MemoryWriter w2;
+        WriteAlgCon<typename ProblemType::ExprTypes>(w2, con);
+        jw["printed"] = w2.c_str();
+      }
+      wrt.write("\n");                     // EOL
+      GetFlatCvt().GetFileAppender().Append(wrt);
+    }
+  }
+
+  /// Export logical constraint \a i.
+  void ExportLogCon(int i) {
+    if (GetFlatCvt().GetFileAppender().IsOpen()) {
+      fmt::MemoryWriter wrt;
+      {
+        MiniJSONWriter jw(wrt);
+        auto con = GetModel().logical_con(i);
+        jw["NL_CON_TYPE"] = "logical";
+        jw["index"] = GetModel().num_algebraic_cons() + i;
+        fmt::MemoryWriter w2;
+        WriteExpr<typename ProblemType::ExprTypes>(w2, con.expr());
+        jw["printed"] = w2.c_str();
+      }
+      wrt.write("\n");                     // EOL
+      GetFlatCvt().GetFileAppender().Append(wrt);
+    }
   }
 
   /// Convert variables

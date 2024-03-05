@@ -24,6 +24,7 @@
 
 #include "mp/problem.h"
 #include "mp/problem-builder.h"
+#include "expr-writer.h"
 
 namespace mp {
 
@@ -118,4 +119,18 @@ template void ReadNLFile(fmt::CStringRef filename, Problem &p, int flags);
 
 template
 void ReadNLString(NLStringRef str, Problem &p, fmt::CStringRef name, int flags);
+
+template
+void WriteExpr<typename Problem::ExprTypes>
+(fmt::Writer &w, const LinearExpr &linear, NumericExpr nonlinear);
+
+template
+void WriteExpr<typename Problem::ExprTypes>
+(fmt::Writer &w, LogicalExpr expr);
+
+/// Write algebraic constraint.
+template
+void WriteAlgCon<typename Problem::ExprTypes>
+(fmt::Writer &w, const typename Problem::MutAlgebraicCon &con);
+
 }  // namespace mp

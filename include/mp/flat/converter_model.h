@@ -74,10 +74,11 @@ protected:
       fmt::MemoryWriter wrt;
       {
         MiniJSONWriter jw(wrt);
-        jw["VAR_index"] = i+i_start;
+        int i_actual = i+i_start;
+        jw["VAR_index"] = i_actual;
         jw["bounds"] << lbs[i] << ubs[i];
         jw["type"] = (int)types[i];
-        jw["is_from_nl"] = (int)is_var_original(i);
+        jw["is_from_nl"] = (int)is_var_original(i_actual);
       }
       wrt.write("\n");                      // with EOL
       GetFileAppender().Append(wrt);

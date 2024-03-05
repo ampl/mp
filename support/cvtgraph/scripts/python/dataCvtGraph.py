@@ -64,7 +64,7 @@ class CvtGraph:
         return range
 
     # Add graph arcs.
-    # Currenlty this also saves nodes (node types),
+    # Currently this also saves nodes (node types),
     # as we don't expect node records from the file.
     # @param src_nodes: source node ranges
     # @param dest_nodes: destination node ranges

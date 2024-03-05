@@ -51,8 +51,8 @@ enum Precedence {
 }
 
 namespace expr {
-// Returns operator precedence for the specified expression kind assuming the
-// notation used by ExprWriter.
+/// Returns operator precedence for the specified expression kind assuming the
+/// notation used by ExprWriter.
 prec::Precedence precedence(expr::Kind kind);
 
 class PrecInfo {
@@ -72,10 +72,10 @@ inline bool IsZero(NumericExpr expr) {
   return n && n.value() == 0;
 }
 
-// An expression visitor that writes AMPL expressions in a textual form
-// to fmt::Writer. It takes into account precedence and associativity
-// of operators avoiding unnecessary parentheses except for potentially
-// confusing cases such as "!x = y" which is written as "!(x = y) instead.
+/// An expression visitor that writes AMPL expressions in a textual form
+/// to fmt::Writer. It takes into account precedence and associativity
+/// of operators avoiding unnecessary parentheses except for potentially
+/// confusing cases such as "!x = y" which is written as "!(x = y) instead.
 template <typename ExprTypes>
 class ExprWriter :
     public BasicExprVisitor<ExprWriter<ExprTypes>, void, ExprTypes> {
@@ -89,7 +89,7 @@ class ExprWriter :
 
   static int precedence(Expr e) { return expr::precedence(e.kind()); }
 
-  // Writes an argument list surrounded by parentheses.
+  /// Writes an argument list surrounded by parentheses.
   template <typename Iter>
   void WriteArgs(Iter begin, Iter end, const char *sep = ", ",
       int precedence = prec::UNKNOWN);
@@ -100,7 +100,7 @@ class ExprWriter :
     WriteArgs(e.begin(), e.end(), sep, precedence);
   }
 
-  // Writes a function or an expression that has a function syntax.
+  /// Writes a function or an expression that has a function syntax.
   template <typename Expr>
   void WriteFunc(Expr e) {
     writer_ << str(e.kind());
@@ -124,18 +124,24 @@ class ExprWriter :
   };
 
  public:
+  /// Construct
   explicit ExprWriter(fmt::Writer &w)
   : writer_(w), precedence_(prec::UNKNOWN) {}
 
+  /// Visit numeric expr
   void Visit(NumericExpr e, int precedence = -1) {
     Parenthesizer p(*this, e, precedence);
     Base::Visit(e);
   }
 
+  /// Visit logical expr
   void Visit(LogicalExpr e, int precedence = -1) {
     Parenthesizer p(*this, e, precedence);
     Base::Visit(e);
   }
+
+  void VisitCommonExpr(CommonExpr e)
+  { writer_ << "ce" << (e.index() + 1); }
 
   void VisitNumericConstant(NumericConstant c) { writer_ << c.value(); }
 
@@ -164,7 +170,8 @@ class ExprWriter :
   void VisitNumberOf(NumberOfExpr e);
   void VisitPLTerm(PLTerm e);
   void VisitCall(CallExpr e);
-  void VisitVariable(Variable v) { writer_ << 'x' << (v.index() + 1); }
+  void VisitVariable(Variable v)
+  { writer_ << 'x' << (v.index() + 1); }
 
   void VisitNot(NotExpr e) {
      writer_ << '!';
@@ -280,7 +287,7 @@ void ExprWriter<ExprTypes>::VisitIf(IfExpr e) {
 
 template <typename ExprTypes>
 void ExprWriter<ExprTypes>::VisitSum(SumExpr e) {
-  writer_ << "/* sum */ (";
+  writer_ << "(";
   typename SumExpr::iterator i = e.begin(), end = e.end();
   if (i != end) {
     Visit(*i);
@@ -367,12 +374,12 @@ void ExprWriter<ExprTypes>::VisitImplication(ImplicationExpr e) {
   }
 }
 
+/// Write algebraic expression (linear + non-linear.)
 template <typename ExprTypes, typename LinearExpr, typename NumericExpr>
 void WriteExpr(fmt::Writer &w, const LinearExpr &linear,
                NumericExpr nonlinear) {
   bool have_terms = false;
-  typedef typename LinearExpr::iterator Iterator;
-  for (Iterator i = linear.begin(), e = linear.end(); i != e; ++i) {
+  for (auto i = linear.begin(), e = linear.end(); i != e; ++i) {
     double coef = i->coef();
     if (coef != 0) {
       if (have_terms)
@@ -394,7 +401,31 @@ void WriteExpr(fmt::Writer &w, const LinearExpr &linear,
   ExprWriter<ExprTypes>(w).Visit(nonlinear);
 }
 
-// Writes a problem in AMPL format.
+/// Write logical expression
+template <typename ExprTypes, typename LogicalExpr>
+void WriteExpr(fmt::Writer &w, LogicalExpr expr) {
+  ExprWriter<ExprTypes>(w).Visit(expr);
+}
+
+/// Write algebraic constraint.
+template <class ExprTypes, class AlgCon>
+void WriteAlgCon(fmt::Writer &w,
+                 const AlgCon &con) {
+  double inf = INFINITY;
+  double lb = con.lb(), ub = con.ub();
+  if (lb != ub && lb != -inf && ub != inf)
+    w << lb << " <= ";
+  WriteExpr<ExprTypes>(
+        w, con.linear_expr(), con.nonlinear_expr());
+  if (lb == ub)
+    w << " = " << lb;
+  else if (ub != inf)
+    w << " <= " << ub;
+  else if (lb != -inf)
+    w << " >= " << lb;
+}
+
+/// Writes a problem in AMPL format.
 template <typename Problem>
 void Write(fmt::Writer &w, const Problem &p) {
   // Write variables.
@@ -427,18 +458,7 @@ void Write(fmt::Writer &w, const Problem &p) {
   // Write algebraic constraints.
   for (int i = 0, n = p.num_algebraic_cons(); i < n; ++i) {
     w << "s.t. c" << (i + 1) << ": ";
-    typename Problem::AlgebraicCon con = p.algebraic_con(i);
-    double lb = con.lb(), ub = con.ub();
-    if (lb != ub && lb != -inf && ub != inf)
-      w << lb << " <= ";
-    WriteExpr<typename Problem::ExprTypes>(
-          w, con.linear_expr(), con.nonlinear_expr());
-    if (lb == ub)
-      w << " = " << lb;
-    else if (ub != inf)
-      w << " <= " << ub;
-    else if (lb != -inf)
-      w << " >= " << lb;
+    WriteAlgCon<typename Problem::ExprTypes>(w, p.algebraic_con(i));
     w << ";\n";
   }
 }
