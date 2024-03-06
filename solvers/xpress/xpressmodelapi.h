@@ -50,6 +50,13 @@ public:
   /// - Logical, counting, piecewise-linear constraints.
   /// See \a constraints_std.h and other drivers.
 
+  /// Ask if the solver accepts non-convex quadratic constraints
+  static constexpr bool AcceptsNonconvexQC() { return true; }
+
+  /// Ask if the solver can recognize SOCP corner cases
+  /// (non-std representations such as xy>=1, see tests)
+  /// from quadratic representations
+  static constexpr bool CanSOCPCornerCasesFromQC() { return true; }
 
 
   /// LinCon(LE/EQ/GE) should have 'Recommended' for all backends

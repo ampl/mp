@@ -1010,7 +1010,9 @@ private:
   const mp::OptionValueInfo socp_values_[3] = {
     { "0", "Do not recognize SOCP forms", 0},
     { "1", "Recognize from non-quadratic expressions only (sqrt, abs)", 1},
-    { "2", "Recognize from quadratic and non-quadratic SOCP forms", 2}
+    { "2",
+      "Recognize from quadratic and non-quadratic SOCP forms. "
+      "Helpful if the solver does not recognize non-standard forms", 2}
   };
   const mp::OptionValueInfo socp2qc_values_[3] = {
     { "0", "Do not convert", 0},
