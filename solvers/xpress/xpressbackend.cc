@@ -115,10 +115,9 @@ ArrayRef<double> XpressmpBackend::PrimalSolution() {
   int num_vars = NumVars();
   int error;
   std::vector<double> x(num_vars);
-  if (IsMIP())
-    error = XPRSgetmipsol(lp(), x.data(), NULL);
-  else
-    error = XPRSgetlpsol(lp(), x.data(), NULL, NULL, NULL);
+  int solst;
+  // After XPRSoptimize():
+  error = XPRSgetsolution(lp(), &solst, x.data(), 0, num_vars-1);
   if (error)
     x.clear();
   return x;
@@ -130,20 +129,20 @@ pre::ValueMapDbl XpressmpBackend::DualSolution() {
 
 ArrayRef<double> XpressmpBackend::DualSolution_LP() {
   std::vector<double> pi(NumLinCons());
-  if (!IsMIP() || need_fixed_MIP())
-  {
-    int error = XPRSgetlpsol(model_fixed_, NULL, NULL, pi.data(), NULL);
-    if (error)
-      pi.clear();
-  }
+  int solst;
+  int opttype;
+  XPRSgetintattrib(model_fixed_, XPRS_OPTIMIZETYPEUSED, &opttype);
+  // LP only? Use XPRSgetduals() after XPRSoptimize()
+  int error
+      = XPRSgetduals(model_fixed_,
+                     &solst, pi.data(), 0, NumLinCons()-1);
+  if (error)
+    pi.clear();
   return pi;
 }
 
 double XpressmpBackend::ObjectiveValue() const {
-  if (IsMIP())
-    return getDblAttr(XPRS_MIPOBJVAL);
-  else
-    return getDblAttr(XPRS_LPOBJVAL);
+  return getDblAttr(XPRS_OBJVAL);
 }
 
 double XpressmpBackend::NodeCount() const {
@@ -198,6 +197,7 @@ void XpressmpBackend::Solve() {
     DoXPRESSTune();
 
   auto flags = XPRESSSolveFlags();
+  int solvest=0, solst=0;
   if (IsMIP()) {
     if (need_multiple_solutions() || storedOptions_.nbest_ > 1) {
       if (storedOptions_.nbest_ == 0) {
@@ -208,10 +208,10 @@ void XpressmpBackend::Solve() {
         &storedOptions_.nbest_));
     }
     else
-      XPRESSMP_CCALL(XPRSmipoptimize(lp(), flags.c_str()));
+      XPRESSMP_CCALL(XPRSoptimize(lp(), flags.c_str(), &solvest, &solst));
   }
   else
-    XPRESSMP_CCALL(XPRSlpoptimize(lp(), flags.c_str()));
+    XPRESSMP_CCALL(XPRSoptimize(lp(), flags.c_str(), &solvest, &solst));
   WindupXPRESSMPSolve();
 }
 
@@ -358,9 +358,29 @@ std::string XpressmpBackend::DoXpressFixedModel()
 
   std::pair<int, std::string> XpressmpBackend::ConvertXPRESSMPStatus() {
     namespace sol = mp::sol;
+    auto solvestatus = getIntAttr(XPRS_SOLVESTATUS);
     auto solstatus = getIntAttr(XPRS_SOLSTATUS);
     bool fFeasible = (XPRS_SOLSTATUS_FEASIBLE==solstatus);
-    if (IsMIP())    // TODO also XPRS_NLPSTATUS
+    if (true) {  // Assume we used XPRSoptimize() but should generally work
+      switch (solstatus) {
+      case XPRS_SOLSTATUS_OPTIMAL:
+        return { sol::SOLVED, "optimal solution" };
+      case XPRS_SOLSTATUS_FEASIBLE:
+        return { sol::LIMIT_FEAS, "limit, feasible solution" };
+      case XPRS_SOLSTATUS_INFEASIBLE:
+        return { sol::INFEASIBLE, "infeasible problem" };
+      case XPRS_SOLSTATUS_UNBOUNDED:
+        if (fFeasible)
+          return { sol::UNBOUNDED_FEAS,
+                "unbounded problem, feasible solution returned" };
+        return { sol::UNBOUNDED_NO_FEAS,
+              "unbounded problem, no solution returned" };
+      case XPRS_SOLSTATUS_NOTFOUND:
+        if (XPRS_SOLVESTATUS_FAILED==solvestatus)
+          return { sol::FAILURE, "failure, no solution" };
+        return { sol::LIMIT_NO_FEAS, "interrupted, no solution" };
+      }
+    } else if (IsMIP())    // After XPRSmipoptimize().
     {
       auto status = getIntAttr(XPRS_MIPSTATUS);
       switch (status) {
@@ -382,7 +402,7 @@ std::string XpressmpBackend::DoXpressFixedModel()
         return { sol::LIMIT_NO_FEAS, "interrupted, no solution" };
       }
     }
-    else {
+    else {                 // After XPRSlpoptimize().  also XPRS_NLPSTATUS?
       auto status = getIntAttr(XPRS_LPSTATUS);
       switch (status) {
       case XPRS_LP_OPTIMAL:
@@ -2605,7 +2625,6 @@ SolutionBasis XpressmpBackend::GetBasis() {
     varstt = mv.GetVarValues()();
     constt = mv.GetConValues()();
     assert(varstt.size());
-    assert(constt.size());
   }
   return { varstt,constt};
 

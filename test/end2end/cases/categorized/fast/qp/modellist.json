@@ -57,7 +57,7 @@
     "objective" : 0.8,
     "tags" : ["quadraticnonconvex", "mipstart"],
     "options": {
-      "gurobi_options": "nonconvex=2 debug=1"
+      "ANYSOLVER_options": "debug=1"
     },
     "values": {
       "_var[1].test_ini_mip": 0.5,
@@ -69,7 +69,7 @@
     "objective" : 3.6,
     "tags" : ["quadraticnonconvex", "mipstart"],
     "options": {
-      "gurobi_options": "nonconvex=2 debug=1"
+      "ANYSOLVER_options": "debug=1"
     },
     "values": {
       "_var[1].test_ini_mip": 0.5,

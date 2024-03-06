@@ -47,13 +47,22 @@ void XpressmpModelAPI::AddVariables(const VarArrayDef& v) {
   }
   // All variables are continuous by default, set the integer ones
   std::vector<int> intIndices;
+  intIndices.reserve(v.size());
+  std::vector<char> types;
+  types.reserve(v.size());
   for (auto i = 0; i < v.size(); i++)
-    if (v.ptype()[i] == var::Type::INTEGER)
+    if (v.ptype()[i] == var::Type::INTEGER) {
       intIndices.push_back(i);
+      if (!v.plb()[i] && 1.0==v.pub()[i]) {
+        types.push_back('B');   // Asks explicitly for indicators in 9.2.0
+      }
+      else {
+        types.push_back('I');
+      }
+    }
   get_other()->numIntVars(intIndices.size());
   if (get_other()->numIntVars() > 0)
   {
-    std::vector<char> types(intIndices.size(), 'I');
     XPRESSMP_CCALL(XPRSchgcoltype(lp(), intIndices.size(),
       intIndices.data(), types.data()));
   }
@@ -123,8 +132,6 @@ void XpressmpModelAPI::AddConstraint(const LinConGE& lc) {
 int rowindex[] = { NumLinCons() - 1 };\
 int colindex[] = { ic.get_binary_var() };\
 int complement[] = { ic.get_binary_value() ? 1 : -1 };\
-char type[] ={'I'};\
-XPRESSMP_CCALL(XPRSchgcoltype(lp(), 1, colindex, type));\
 XPRESSMP_CCALL(XPRSsetindicators(lp(), 1, rowindex, colindex, complement));
 
 void XpressmpModelAPI::AddConstraint(const IndicatorConstraintLinLE &ic)  {

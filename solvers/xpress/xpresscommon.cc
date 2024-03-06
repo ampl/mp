@@ -38,6 +38,14 @@ int XpressmpCommon::NumIndicatorCons() const {
   return getIntAttr(XPRS_ORIGINALINDICATORS);
 }
 
+int XpressmpCommon::NumPWLs() const {
+  return getIntAttr(XPRS_ORIGINALPWLS);
+}
+
+int XpressmpCommon::NumGenCons() const {
+  return getIntAttr(XPRS_ORIGINALGENCONS);
+}
+
 void XpressmpCommon::GetSolverOption(int key, int &value) const {
   XPRESSMP_CCALL(XPRSgetintcontrol(lp(), key, &value) );
 }

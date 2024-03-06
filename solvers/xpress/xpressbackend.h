@@ -143,7 +143,9 @@ public:  // public for static polymorphism
 
   void InitCustomOptions() override;
   bool IsMIP() const override {
-    return BaseBackend::IsMIP() || NumSOSCons()|| NumIndicatorCons();
+    return BaseBackend::IsMIP()
+        || NumSOSCons()|| NumIndicatorCons()
+        || NumPWLs() || NumGenCons();
   }
 
   

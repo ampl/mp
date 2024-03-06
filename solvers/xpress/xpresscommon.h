@@ -53,6 +53,8 @@ protected:
   int NumQPCons() const;
   int NumSOSCons() const;
   int NumIndicatorCons() const;
+  int NumPWLs() const;
+  int NumGenCons() const;
 
   std::string getErr()  const{
     char errmsg[512];
