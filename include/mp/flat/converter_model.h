@@ -68,16 +68,18 @@ protected:
   template <class BndVec=std::array<double, 1>,
             class TypeVec=std::array<var::Type, 1> >
   void ExportVars(int i_start, const BndVec& lbs, const BndVec& ubs,
-                  const TypeVec types) {
+                  const TypeVec types,
+                  const char* comment
+                  = "Initial model information. "
+                    "Can be updated later with new bounds, names, etc.")
+  const {
     for (int i=0;
          GetFileAppender().IsOpen() && i<(int)lbs.size(); ++i) {
       fmt::MemoryWriter wrt;
       if (0==i && i_start==0) {
         {
           MiniJSONWriter jw(wrt);
-          jw["COMMENT"]
-              = "Initial model information. "
-              "Can be updated later with new bounds and names, etc.";
+          jw["COMMENT"] = comment;
         }
         wrt.write("\n");                      // with EOL
       }
@@ -85,6 +87,8 @@ protected:
         MiniJSONWriter jw(wrt);
         int i_actual = i+i_start;
         jw["VAR_index"] = i_actual;
+        if (var_names_storage_.size() > i)
+          jw["name"] = var_names_[i];
         jw["bounds"] << lbs[i] << ubs[i];
         jw["type"] = (int)types[i];
         jw["is_from_nl"] = (int)is_var_original(i_actual);
@@ -243,12 +247,15 @@ public:
   }
 
 protected:
-  void ExportObjective(int i_obj, const QuadraticObjective& obj) {
+  void ExportObjective(
+      int i_obj, const QuadraticObjective& obj) const {
     if (GetFileAppender().IsOpen()) {
       fmt::MemoryWriter wrt;
       {
         MiniJSONWriter jw(wrt);
         jw["OBJECTIVE_index"] = i_obj;
+        if (*obj.name())
+          jw["name"] = obj.name();
         jw["sense"] = (int)obj.obj_sense();
         WriteJSON(jw["qp_terms"], obj.GetQPTerms());
         WriteJSON(jw["lin_terms"], obj.GetLinTerms());
@@ -322,29 +329,8 @@ protected:
     } else {
       backend.AddVariables({ var_lb_, var_ub_, var_type_ });
     }
-    for (int i=0;
-         GetFileAppender().IsOpen() && i<(int)var_lb_.size(); ++i) {
-      fmt::MemoryWriter wrt;
-      if (0==i) {
-        {
-          MiniJSONWriter jw(wrt);
-          jw["COMMENT"]
-              = "Updated variable information.";
-        }
-        wrt.write("\n");                      // with EOL
-      }
-      {
-        MiniJSONWriter jw(wrt);
-        jw["VAR_index"] = i;
-        if (var_names_storage_.size() > i)
-          jw["name"] = var_names_[i];
-        jw["bounds"] << var_lb_[i] << var_ub_[i];
-        jw["type"] = (int)var_type_[i];
-        jw["is_from_nl"] = (int)is_var_original(i);
-      }
-      wrt.write("\n");                      // with EOL
-      GetFileAppender().Append(wrt);
-    }
+    ExportVars(0, var_lb_, var_ub_, var_type_,
+               "Updated model information.");
   }
 
   template <class Backend>
@@ -356,6 +342,7 @@ protected:
           backend.SetQuadraticObjective(i, obj);
         else
           backend.SetLinearObjective(i, obj);
+        ExportObjective(i, obj);      // can change e.g., for SOCP
       }
     }
   }
@@ -363,6 +350,7 @@ protected:
   template <class Backend>
   void PushCustomConstraintsTo(Backend& backend) const {
     this->AddUnbridgedConstraintsToBackend(backend);
+    this->LogConstraintGroups(backend);
   }
 
   FlatModelInfo* GetModelInfoWrt() const { return pfmi_.get(); }

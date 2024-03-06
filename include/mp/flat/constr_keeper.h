@@ -411,6 +411,9 @@ public:
   /// This adds all unbridged items to the backend (without conversion)
   virtual void AddUnbridgedToBackend(BasicFlatModelAPI& be) = 0;
 
+  /// This logs the constraint group
+  virtual void LogConstraintGroup(BasicFlatModelAPI& be) = 0;
+
   /// Value presolve node, const
   const pre::ValueNode& GetValueNode() const { return value_node_; }
 
@@ -779,6 +782,23 @@ public:
     }
   }
 
+  /// Log constraint group
+  void LogConstraintGroup(
+      BasicFlatModelAPI& be) override {
+    auto cg = GetConstraintGroup(be);
+    if (cg>=0 && GetLogger()) {
+      fmt::MemoryWriter wrt;
+      {
+        MiniJSONWriter jw(wrt);
+        jw["CON_TYPE"] = GetShortTypeName();
+        jw["CON_GROUP"] = ConGroupName(cg);
+        jw["CON_GROUP_index"] = cg;
+      }
+      wrt.write("\n");                     // EOL
+      GetLogger()->Append(wrt);
+    }
+  }
+
 
 protected:
   /// Retrieve the Converter, const
@@ -875,7 +895,7 @@ protected:
   }
 
 protected:
-  /// Export last added constraint
+  /// Export (last added) constraint
   void ExportConstraint(int i_con, const Container& cnt) {
     if (GetLogger()) {
       fmt::MemoryWriter wrt;
@@ -883,8 +903,28 @@ protected:
         MiniJSONWriter jw(wrt);
         jw["CON_TYPE"] = GetShortTypeName();
         jw["index"] = i_con;
+        if (*cnt.con_.name())
+          jw["name"] = cnt.con_.name();
         jw["depth"] = cnt.GetDepth();
         WriteJSON(jw["data"], cnt.con_);
+      }
+      wrt.write("\n");                     // EOL
+      GetLogger()->Append(wrt);
+    }
+  }
+  /// Export constraint status
+  void ExportConStatus(int i_con, const Container& cnt) {
+    if (GetLogger()) {
+      fmt::MemoryWriter wrt;
+      {
+        MiniJSONWriter jw(wrt);
+        jw["CON_TYPE"] = GetShortTypeName();
+        jw["index"] = i_con;
+        if (*cnt.con_.name())
+          jw["name"] = cnt.con_.name();
+        jw["depth"] = cnt.GetDepth();
+        jw["unused"] = (int)cnt.IsUnused();
+        jw["bridged"] = (int)cnt.IsBridged();
       }
       wrt.write("\n");                     // EOL
       GetLogger()->Append(wrt);
@@ -993,6 +1033,7 @@ protected:
                          GetConValues()(con_group).Add()
                      });
       }
+      ExportConStatus(con_index, cont);
       ++con_index;                      // increment index
     }
   }
@@ -1199,6 +1240,13 @@ public:
       BasicFlatModelAPI& be) const {
     for (const auto& ck: con_keepers_)
       ck.second.AddUnbridgedToBackend(be);
+  }
+
+  /// Log constraint groups
+  void LogConstraintGroups(
+      BasicFlatModelAPI& be) const {
+    for (const auto& ck: con_keepers_)
+      ck.second.LogConstraintGroup(be);
   }
 
   /// Compute violations

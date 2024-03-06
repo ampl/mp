@@ -78,16 +78,21 @@ enum ConstraintAcceptanceLevel {
   Recommended=2
 };
 
+/// Constraint group names.
+/// @todo Keep consistent with the \a ConstraintGroups enum.
+const char* ConGroupName(int cg);
 
 /// Constraint groups
 ///
 /// This is used to access constraint attributes (basis status, duals, ...)
-/// Convenient when the solver accesses constraint attributes in groups
+/// Convenient, when the solver accesses constraint attributes in groups.
 /// For example, Gurobi 9.5 has linear, quadratic, SOS, and general
+///
+/// @todo Keep consistent with \a congroup_names
 enum ConstraintGroup {
 	CG_Default,
 	CG_All,
-	CG_Algebraic,          // e.g., MOSEK 10 seems to have algebraic vs others
+  CG_Algebraic,          // MOSEK 10 seems to have algebraic vs others
   CG_Linear,
   CG_Quadratic,
 	CG_Conic,
@@ -96,7 +101,8 @@ enum ConstraintGroup {
   CG_SOS,
   CG_SOS1,
   CG_SOS2,
-  CG_Logical
+  CG_Logical,
+  CG_END_
 };
 
 

@@ -1,4 +1,5 @@
 #include <map>
+#include <cassert>
 
 #include "mp/format.h"
 #include "mp/util-json-write.hpp"
@@ -7,6 +8,29 @@
 #include "mp/flat/model_info.hpp"
 
 namespace mp {
+
+/// @todo Keep consistent with the \a ConstraintGroups enum.
+static const char* const congroup_names[]
+= {
+ "Default",
+ "All",
+ "Algebraic",
+ "Linear",
+ "Quadratic",
+ "Conic",
+ "General",
+ "Piecewiselinear",
+ "SOS",
+ "SOS1",
+ "SOS2",
+ "Logical"
+};
+
+const char* ConGroupName(int cg) {
+  assert(0<=cg
+         && cg<int(sizeof (congroup_names)/sizeof(congroup_names[0])));
+  return congroup_names[cg];
+}
 
 void LinTerms::sort_terms(bool force_sort) {
   std::map<int, double> var_coef_map;
