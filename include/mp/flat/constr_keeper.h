@@ -1208,7 +1208,8 @@ public:
   }
 
   /// Retrieve file logger
-  BasicFileAppender& GetFileAppender() { return *graph_exporter_app_; }
+  BasicFileAppender& GetFileAppender() const
+  { return *graph_exporter_app_; }
 
 private:
   std::multimap<double, BasicConstraintKeeper&> con_keepers_;

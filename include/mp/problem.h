@@ -477,11 +477,11 @@ public:
 
 
   /** Returns the variable names (if present). */
-  std::vector<std::string>& var_names() { return var_names_; }
+  const std::vector<std::string>& var_names() { return var_names_; }
   /** Returns the constraint names (if present). */
-  std::vector<std::string>& con_names() { return con_names_; }
+  const std::vector<std::string>& con_names() { return con_names_; }
   /** Returns the objective names (if present). */
-  std::vector<std::string>& obj_names() { return obj_names_; }
+  const std::vector<std::string>& obj_names() { return obj_names_; }
 
   /** Returns the number of objectives. */
   int num_objs() const { return static_cast<int>(linear_objs_.size()); }

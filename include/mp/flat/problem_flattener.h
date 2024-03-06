@@ -187,6 +187,8 @@ protected:
       {
         MiniJSONWriter jw(wrt);
         jw["NL_COMMON_EXPR_index"] = i;
+        // We don't receive defvar names from AMPL
+        jw["name"] = "ce" + std::to_string(i+1);
         auto ce = GetModel().common_expr(i);
         fmt::MemoryWriter w2;
         WriteExpr<typename ProblemType::ExprTypes>(
@@ -205,6 +207,8 @@ protected:
       {
         MiniJSONWriter jw(wrt);
         jw["NL_OBJECTIVE_index"] = i;
+        if (GetModel().obj_names().size()>i)
+          jw["name"] = GetModel().obj_names()[i];
         auto obj = GetModel().obj(i);
         jw["sense"] = (int)obj.type();
         fmt::MemoryWriter w2;
@@ -226,6 +230,8 @@ protected:
         auto con = GetModel().algebraic_con(i);
         jw["NL_CON_TYPE"] = (con.nonlinear_expr() ? "nonlin" : "lin");
         jw["index"] = i;
+        if (GetModel().con_names().size()>i)
+          jw["name"] = GetModel().con_names()[i];
         fmt::MemoryWriter w2;
         WriteAlgCon<typename ProblemType::ExprTypes>(w2, con);
         jw["printed"] = w2.c_str();
@@ -243,7 +249,10 @@ protected:
         MiniJSONWriter jw(wrt);
         auto con = GetModel().logical_con(i);
         jw["NL_CON_TYPE"] = "logical";
-        jw["index"] = GetModel().num_algebraic_cons() + i;
+        int i_actual = GetModel().num_algebraic_cons() + i;
+        jw["index"] = i_actual;
+        if (GetModel().con_names().size()>i_actual)
+          jw["name"] = GetModel().con_names()[i_actual];
         fmt::MemoryWriter w2;
         WriteExpr<typename ProblemType::ExprTypes>(w2, con.expr());
         jw["printed"] = w2.c_str();

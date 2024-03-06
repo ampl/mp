@@ -72,6 +72,15 @@ protected:
     for (int i=0;
          GetFileAppender().IsOpen() && i<(int)lbs.size(); ++i) {
       fmt::MemoryWriter wrt;
+      if (0==i && i_start==0) {
+        {
+          MiniJSONWriter jw(wrt);
+          jw["COMMENT"]
+              = "Initial model information. "
+              "Can be updated later with new bounds and names, etc.";
+        }
+        wrt.write("\n");                      // with EOL
+      }
       {
         MiniJSONWriter jw(wrt);
         int i_actual = i+i_start;
@@ -310,8 +319,32 @@ protected:
       for (const std::string& s : var_names_storage_)
         var_names_.push_back(s.c_str());
       backend.AddVariables({ var_lb_, var_ub_, var_type_, var_names_ });
-    } else
+    } else {
       backend.AddVariables({ var_lb_, var_ub_, var_type_ });
+    }
+    for (int i=0;
+         GetFileAppender().IsOpen() && i<(int)var_lb_.size(); ++i) {
+      fmt::MemoryWriter wrt;
+      if (0==i) {
+        {
+          MiniJSONWriter jw(wrt);
+          jw["COMMENT"]
+              = "Updated variable information.";
+        }
+        wrt.write("\n");                      // with EOL
+      }
+      {
+        MiniJSONWriter jw(wrt);
+        jw["VAR_index"] = i;
+        if (var_names_storage_.size() > i)
+          jw["name"] = var_names_[i];
+        jw["bounds"] << var_lb_[i] << var_ub_[i];
+        jw["type"] = (int)var_type_[i];
+        jw["is_from_nl"] = (int)is_var_original(i);
+      }
+      wrt.write("\n");                      // with EOL
+      GetFileAppender().Append(wrt);
+    }
   }
 
   template <class Backend>
