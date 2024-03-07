@@ -411,6 +411,7 @@ static const mp::OptionValueInfo lp_values_method[] = {
   { "choose", "Automatic (default)", -1},
   { "simplex", "Simplex", 1},
   { "ipm", "Interior Point Method", 2},
+  { "pdlp", "cuPDLP-c solver", 3}
 };
 
 static const mp::OptionValueInfo off_on_choose_values[] = {
@@ -470,7 +471,7 @@ void HighsBackend::InitCustomOptions() {
     "Log file name.", "log_file");
 
   const char* c = "choose";
-  AddSolverOption("alg:method method lpmethod",
+  AddSolverOption("alg:method method lpmethod solver",
     "Which algorithm to use :\n"
     "\n.. value-table::\n", "solver", lp_values_method, c);
 
@@ -503,6 +504,14 @@ void HighsBackend::InitCustomOptions() {
     "\n.. value-table::\n",
     "presolve", off_on_choose_values, c);
 
+  AddSolverOption("pre:userboundscale user_bound_scale userboundscale",
+    "Exponent of power-of-two bound scaling for model (default 0).",
+    "user_bound_scale", 0, std::numeric_limits<HighsInt>::max());
+
+  AddSolverOption("pre:usercostscale user_cost_scale usercostscale",
+    "Exponent of power-of-two cost scaling for model (default 0).",
+    "user_cost_scale", 0, std::numeric_limits<HighsInt>::max());
+
   AddSolverOption("alg:parallel parallel",
     "Parallel option :\n"
     "\n.. value-table::\n", "parallel", off_on_choose_values, c);
@@ -518,6 +527,27 @@ void HighsBackend::InitCustomOptions() {
   AddSolverOption("lim:ipmiterationlimit ipmiterationlimit ipm_iteration_limit",
     "Limit on IPM iterations (default: no limit).",
     "ipm_iteration_limit", 0, INT_MAX);
+
+  AddSolverOption("lim:objectivebound objective_bound objectivebound",
+    "Objective bound for termination of the dual simplex solver (default: no limit).",
+    "objective_bound", 0.0, DBL_MAX);
+
+
+  AddSolverOption("lim:objectivetarget objective_target objectivetarget",
+    "Objective target for termination of the MIP solver (default: no limit).",
+    "objective_target", 0.0, DBL_MAX);
+
+  AddSolverOption("lim:pdlpnativetermination pdlp_native_termination pdlpnativetermination",
+    "Use native termination for PDLP solver:\n"
+    "\n.. value-table::\n", "pdlp_native_termination", values_01_noyes_0default_, 0);
+
+  AddSolverOption("pre:pdlpscaling pdlp_scaling pdlpscaling",
+    "Scaling option for PDLP solver:\n"
+    "\n.. value-table::\n", "pdlp_scaling", values_01_noyes_1default_, 1);
+
+  AddSolverOption("lim:pdlpiterationlimit pdlpiterationlimit pdlp_iteration_limit",
+    "Iteration limit for PDLP solver (default: no limit).",
+    "pdlp_iteration_limit", 0, INT_MAX);
 
   AddSolverOption("alg:infinitecost infinitecost infinite_cost",
     "Limit on cost coefficient : values larger than this will be treated as infinite (default: 1e20).",
@@ -546,6 +576,10 @@ void HighsBackend::InitCustomOptions() {
   AddSolverOption("alg:ipmopttol ipmopttol ipm_optimality_tolerance",
     "IPM optimality tolerance (default 1e-8).",
     "ipm_optimality_tolerance", 1e-12, Infinity());
+
+  AddSolverOption("alg:pdlpdgaptol pdlpdgaptol pdlp_d_gap_tol",
+    "Duality gap tolerance for PDLP solver (default 1e-4).",
+    "pdlp_d_gap_tol", 1e-12, Infinity());
 
   AddSolverOption("bar:crossover run_crossover",
     "Run crossover after IPM to get a basic solution",
@@ -617,6 +651,20 @@ void HighsBackend::InitCustomOptions() {
     "Tolerance on absolute gap of MIP, |ub-lb|, to determine whether optimality has been reached for a MIP instance "
     "(default 1e-06).",
     "mip_abs_gap", 0.0, Infinity());
+
+  AddSolverOption("pre:centring run_centring centring",
+    "Perform centring steps or not:\n"
+    "\n.. value-table::\n", "run_centring", values_01_noyes_0default_, 0);
+
+  AddSolverOption("pre:maxcentringsteps max_centring_steps maxcentringsteps",
+    "Maximum number of steps to use when computing the analytic centre "
+    "(default 5).",
+    "max_centring_steps", 0, INT_MAX);
+
+  AddSolverOption("pre:centringratiotolerance centring_ratio_tolerance centringratiotolerance",
+    "Centring stops when the ratio max(x_j*s_j) / min(x_j*s_j) is below "
+    "this tolerance (default 100).",
+    "centring_ratio_tolerance", 0, INT_MAX);
 }
 
 double HighsBackend::MIPGap() {
