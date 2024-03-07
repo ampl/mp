@@ -266,7 +266,7 @@ methods for piecewise-linear functions (Gurobi, COPT), and linearizes them for o
 
 When a piecewise-linear function is linearized (rather than being handled natively by the solver),
 numerical accuracy becomes a concern. To promote numerical stability, it is recommended that
-the argument and result variables be explicitly bounded within [-1e+4,+1e-4]. See more in the section
+the argument and result variables be explicitly bounded within at most [-1e+4,+1e-4]. See more in the section
 on :ref:`numerical_accuracy`.
 
 
@@ -580,7 +580,7 @@ e.g., to see which constraints are received as conic vs quadratic,
 see :ref:`explore-final-model`.
 
 
-
+.. _nonlinear-functions:
 
 General nonlinear functions
 **********************************
@@ -603,15 +603,17 @@ Supported functions
     is decomposed into quadratic constraints if the solver supports them,
     otherwise passed to the solver natively or approximated by a piecewise-linear function.
 
-General solvers
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Piecewise-linear approximation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 For linear-quadratic MP-based solvers,
 most of these nonlinear functions are handled by piecewise-linear approximation,
 except products with binary variables.
-The appoximation is constructed by the MP interface, using options
-``cvt:plapprox:reltol`` and ``cvt:plapprox:domain``,
-and is then processed as described in
+The appoximation is constructed by the MP interface, using :ref:`options <solver-options>`
+``cvt:plapprox:reltol`` and ``cvt:plapprox:domain``.
+
+To reduce the approximation size and improve numerical properties,
+set tight bounds on the variables, as described in
 :ref:`piecewise_linear_modeling`.
 
 Handling in Gurobi

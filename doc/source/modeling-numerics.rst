@@ -73,8 +73,9 @@ Piecewise-linear expressions can be modeled in AMPL directly, or arise from
 approximations of other functions. Solvers which support PL expressions,
 usually handle them algorithmically in a numerically stable way. Otherwise,
 if PL expressions are linearized, it is recommended to have the argument
-and result variables bounded in :math:`\pm10^4` (for approximated nonlinear functions,
-hard bounds of up to :math:`\pm10^6` are imposed). The stability can be improved
+and result variables bounded in :math:`\pm10^4` (the tighter the better;
+for :ref:`approximated nonlinear functions <nonlinear-functions>`,
+hard bounds of up to :math:`\pm10^6` are imposed by default). The stability can be improved
 in some cases by decreasing integer tolerance, Gurobi's *intfocus* and
 *numfocus* options, switching off presolve in the solver, and other tuning measures.
 
