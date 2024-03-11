@@ -1003,17 +1003,33 @@ void GurobiBackend::ReportGurobiResults() {
     ReportGurobiPool();
   if (need_fixed_MIP())
     ConsiderGurobiFixedModel();
+  if (need_report_work())
+    ReportGurobiWork();
+}
+void GurobiBackend::ReportGurobiWork() {
+  double value[]{ GrbGetDblAttr(GRB_DBL_ATTR_WORK) };
+  ReportSuffix(sufWork, value);
+  std::string suffix = value[0] == 1 ? "" : "s";
+  AddToSolverMessage(
+    fmt::format("{} work unit{}\n", value[0], suffix));
 }
 
 void GurobiBackend::AddGurobiMessage() {
+  std::string suffix;
+  double si = SimplexIterations();
+  suffix = si == 1 ? "" : "s";
   AddToSolverMessage(
-          fmt::format("{} simplex iteration(s)\n", SimplexIterations()));
-  if (auto nbi = BarrierIterations())
+          fmt::format("{} simplex iteration{}\n", si, suffix));
+  si = BarrierIterations();
+  suffix = si == 1 ? "" : "s";
+  if (si)
     AddToSolverMessage(
-          fmt::format("{} barrier iteration(s)\n", nbi));
-  if (auto nnd = NodeCount())
+      fmt::format("{} barrier iteration{}\n", si, suffix));
+  si = NodeCount();
+  suffix = si == 1 ? "" : "s";
+  if (si)
     AddToSolverMessage(
-          fmt::format("{} branching node(s)\n", nnd));
+      fmt::format("{} branching node{}\n", si, suffix));
 }
 
 void GurobiBackend::DoGurobiTune() {
@@ -1032,7 +1048,7 @@ void GurobiBackend::DoGurobiTune() {
   for (int k=n_results; k--;) {
     GRB_CALL_MSG( GRBgettuneresult(model(), k),
       fmt::format(
-        "Surprize return from GRBgettuneresult({})", k+1));
+        "Surprise return from GRBgettuneresult({})", k+1));
     tfn = fmt::format(tbc.c_str(), k+1);
     GRB_CALL_MSG( GRBwriteparams(GRBgetenv(model()), tfn.c_str()),
       fmt::format(
@@ -2382,6 +2398,11 @@ void GurobiBackend::InitCustomOptions() {
       "Log file name; note that the solver log will be written to the log "
       "regardless of the value of tech:outlev.",
       storedOptions_.logFile_);
+
+  AddStoredOption("tech:reportwork reportwork work",
+    "0*/1: Whether to report the work spent in the optimization in the problem suffix `work`. "
+    "Gurobi's work units are deterministic, and roughly equivalent to one second on "
+    "a single thread.", storedOptions_.reportWork_);
 
   AddSolverOption("tech:nodefiledir nodefiledir",
       "Directory where MIP tree nodes are written after memory "

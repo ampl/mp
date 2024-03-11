@@ -266,6 +266,7 @@ protected:
   double SimplexIterations() const;
   int BarrierIterations() const;
 
+  void ReportGurobiWork();
 
 protected:  //  ///////////////// Utilities ///////////////////
   /// Swap 0 with -1.
@@ -282,7 +283,7 @@ private:
   struct Options {
     std::string paramRead_, paramWrite_, exportPresolvedFile_, logFile_;
     std::list<std::string> inlineParams_;
-
+    int reportWork_ = 0;
     int nMIPStart_=1;
     int nPoolMode_=2;
 
@@ -332,10 +333,12 @@ protected:  //////////// Option accessors ////////////////
 
   const std::string& exportPresolvedFile() const { return storedOptions_.exportPresolvedFile_; }
 
+  int need_report_work() const { return storedOptions_.reportWork_; }
 
 private: /////////// Suffixes ///////////
   const SuffixDef<int> sufHintPri = { "hintpri", suf::VAR | suf::INPUT };
 
+  const SuffixDef<double> sufWork = { "work", suf::PROBLEM | suf::OUTONLY };
 
   /// For "obj:*:method" etc
 public:
