@@ -35,7 +35,7 @@ public:
   /// 0 - no, 1 - convex, 2 - nonconvex
   static int AcceptsQuadObj() { return 1; }
   void SetQuadraticObjective(int iobj, const QuadraticObjective& qo);
-
+  
   //////////////////////////// GENERAL CONSTRAINTS ////////////////////////////
   USE_BASE_CONSTRAINT_HANDLERS(BaseModelAPI)
 
@@ -111,6 +111,61 @@ public:
     void AddConstraint(const OrConstraint& ac);
   ACCEPT_CONSTRAINT(AndConstraint, Recommended, CG_General)
     void AddConstraint(const AndConstraint& ac);
+  
+  #define GLOBAL_LEVEL AcceptedButNotRecommended
+  ACCEPT_CONSTRAINT(DivConstraint, GLOBAL_LEVEL, CG_General)
+  void AddConstraint(const DivConstraint& cc);
+  ACCEPT_CONSTRAINT(SinConstraint, GLOBAL_LEVEL, CG_General)
+  void AddConstraint(const SinConstraint& cc);
+  ACCEPT_CONSTRAINT(CosConstraint, GLOBAL_LEVEL, CG_General)
+    void AddConstraint(const CosConstraint& cc); 
+  ACCEPT_CONSTRAINT(TanConstraint, GLOBAL_LEVEL, CG_General)
+    void AddConstraint(const TanConstraint& cc);
+  ACCEPT_CONSTRAINT(AsinConstraint, GLOBAL_LEVEL, CG_General)
+    void AddConstraint(const AsinConstraint& cc);
+  ACCEPT_CONSTRAINT(AcosConstraint, GLOBAL_LEVEL, CG_General)
+    void AddConstraint(const AcosConstraint& cc);
+  ACCEPT_CONSTRAINT(AtanConstraint, GLOBAL_LEVEL, CG_General)
+    void AddConstraint(const AtanConstraint& cc);
+
+  ACCEPT_CONSTRAINT(LogConstraint, GLOBAL_LEVEL, CG_General)
+    void AddConstraint(const LogConstraint& cc);
+  void AddConstraint(const LogAConstraint& cc);
+
+  ACCEPT_CONSTRAINT(PowConstraint, GLOBAL_LEVEL, CG_General)
+    void AddConstraint(const PowConstraint& cc);
+  ACCEPT_CONSTRAINT(ExpConstraint, GLOBAL_LEVEL, CG_General)
+  void AddConstraint(const ExpConstraint& cc);
+  ACCEPT_CONSTRAINT(ExpAConstraint, GLOBAL_LEVEL, CG_General)
+    void AddConstraint(const ExpAConstraint& cc);
+
+  ACCEPT_CONSTRAINT(SinhConstraint, GLOBAL_LEVEL, CG_General)
+  void AddConstraint(const SinhConstraint& cc);
+  ACCEPT_CONSTRAINT(CoshConstraint, GLOBAL_LEVEL, CG_General)
+  void AddConstraint(const CoshConstraint& cc);
+  ACCEPT_CONSTRAINT(TanhConstraint, GLOBAL_LEVEL, CG_General)
+    void AddConstraint(const TanhConstraint& cc);
+
+  class NLParams {
+    std::vector<int> types_;
+    std::vector<double> values_;
+    int resultVar_;
+  public:
+    int* resultVar()  { return &resultVar_; } 
+    void resultVar(int rv) { resultVar_ = rv; }
+    void addMember(int tokentype, double value) {
+      types_.push_back(tokentype);
+      values_.push_back(value);
+    }
+
+    const int* types() const { return types_.data(); }
+    const double* values() const { return values_.data(); }
+    int size() const { return static_cast<int>(types_.size()); }
+
+  };
+
+  void AddGlobalConstraint(NLParams& params);
+  void AddGlobalConstraint(int resultVar, int argumentVar, int functionId);
 };
 
 } // namespace mp

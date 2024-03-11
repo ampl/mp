@@ -16,7 +16,6 @@ namespace {
 
 
 bool InterruptXpressmp(void* prob) {
-  //return XPRESSMP_Interrupt((xpressmp_prob*)prob);
   return true;
 }
 
@@ -115,8 +114,8 @@ ArrayRef<double> XpressmpBackend::PrimalSolution() {
   int num_vars = NumVars();
   int error;
   std::vector<double> x(num_vars);
-  int solst;
-  // After XPRSoptimize():
+    int solst;
+    // After XPRSoptimize():
   error = XPRSgetsolution(lp(), &solst, x.data(), 0, num_vars-1);
   if (error)
     x.clear();
@@ -195,7 +194,7 @@ void XpressmpBackend::Solve() {
   int nsols = 10;
   if (tunebase().size())
     DoXPRESSTune();
-
+  
   auto flags = XPRESSSolveFlags();
   int solvest=0, solst=0;
   if (IsMIP()) {
@@ -211,7 +210,8 @@ void XpressmpBackend::Solve() {
       XPRESSMP_CCALL(XPRSoptimize(lp(), flags.c_str(), &solvest, &solst));
   }
   else
-    XPRESSMP_CCALL(XPRSoptimize(lp(), flags.c_str(), &solvest, &solst));
+      XPRESSMP_CCALL(XPRSoptimize(lp(), flags.c_str(), &solvest, &solst));
+
   WindupXPRESSMPSolve();
 }
 
@@ -357,6 +357,7 @@ std::string XpressmpBackend::DoXpressFixedModel()
   }
 
   std::pair<int, std::string> XpressmpBackend::ConvertXPRESSMPStatus() {
+
     namespace sol = mp::sol;
     auto solvestatus = getIntAttr(XPRS_SOLVESTATUS);
     auto solstatus = getIntAttr(XPRS_SOLSTATUS);
@@ -2633,14 +2634,17 @@ SolutionBasis XpressmpBackend::GetBasis() {
 void XpressmpBackend::SetBasis(SolutionBasis basis) {
   auto mv = GetValuePresolver().PresolveBasis(
     { basis.varstt, basis.constt });
-  auto varstt = mv.GetVarValues()();
+  auto &varstt = mv.GetVarValues()();
   auto constt = mv.GetConValues()(CG_Linear);
   assert(varstt.size());
   assert(constt.size());
-  auto convertedVarBasis = VarStatii(varstt);
-  auto convertedConBasis =ConStatii(constt);
-  XPRESSMP_CCALL(XPRSloadbasis(lp(), convertedConBasis.data(), convertedVarBasis.data()));
+  // Append general constraints. TODO: Check if i need to append all types
+  auto cconstt = mv.GetConValues()(CG_General);
+  constt.insert(constt.end(), cconstt.begin(), cconstt.end());
 
+  auto convertedVarBasis = VarStatii(varstt);
+  auto convertedConBasis = ConStatii(constt);
+  XPRESSMP_CCALL(XPRSloadbasis(lp(), convertedConBasis.data(), convertedVarBasis.data()));
 }
 
 
