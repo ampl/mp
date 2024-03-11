@@ -50,7 +50,6 @@
 #include "mp/os.h"
 #include "mp/utils-file.h"
 #include "mp/utils-string.h"
-#include "mp/clock.h"
 #include "mp/rstparser.h"
 
 #include "mp/ampls-cpp-api.h"

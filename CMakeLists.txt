@@ -342,7 +342,7 @@ add_prefix(MP_HEADERS include/mp/
   ampls-c-api.h ampls-cpp-api.h arrayref.h basic-expr-visitor.h
   backend-app.h backend-base.h backend-mip.h backend-std.h
   backend-to-model-api.h backend-with-mm.h backend-with-valcvt.h
-  clock.h common.h converter-base.h
+  common.h converter-base.h
   easy-modeler.h
   env.h error.h expr.h expr-visitor.h
   model-mgr-base.h model-mgr-with-pb.h
@@ -353,7 +353,7 @@ add_prefix(MP_HEADERS include/mp/
   rstparser.h safeint.h sol.h
   solver.h solver-opt.h solver-base.h solver-io.h solver-app-base.h solver-app.h
   suffix.h
-  utils-file.h
+  utils-clock.h utils-file.h
   util-json-write.h util-json-write.hpp
   utils-hash.h utils-hash-stream.h
   utils-string.h utils-math.h)
@@ -404,10 +404,10 @@ set(MP_ALL_HEADERS ${MP_HEADERS} ${MP_FLAT_HEADERS}
 
 set(MP_SOURCES )
 add_prefix(MP_SOURCES src/
-  clock.cc expr.cc expr-writer.h nl-reader.cc option.cc os.cc
+  expr.cc expr-writer.h nl-reader.cc option.cc os.cc
   problem.cc rstparser.cc sol.cc solver.cc solver-c.h sp.h sp.cc
   std_constr.cc
-  utils_file.cc utils_string.cc)
+  utils_file.cc utils_string.cc utils_clock.cc)
 
 set(MP_FLAT_SOURCES )
 add_prefix(MP_FLAT_SOURCES src/mp/flat/
@@ -415,7 +415,8 @@ add_prefix(MP_FLAT_SOURCES src/mp/flat/
 
 
 if (NOT SKIP_BUILD_MP)
-	add_mp_library(mp ${MP_ALL_HEADERS}
+	add_mp_library(mp 
+  ${MP_ALL_HEADERS}
 		${MP_SOURCES} ${MP_FLAT_SOURCES} ${MP_EXPR_INFO_FILE}
 		COMPILE_DEFINITIONS MP_DATE=${MP_DATE} MP_SYSINFO="${MP_SYSINFO}"
 		INCLUDE_DIRECTORIES src include OBJECT_LIBRARIES format)

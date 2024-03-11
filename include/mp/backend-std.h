@@ -21,10 +21,11 @@
 #ifndef STD_BACKEND_H_
 #define STD_BACKEND_H_
 
+#include <chrono>
 #include <cmath>
 #include <functional>
 
-#include "mp/clock.h"
+#include "mp/utils-clock.h"
 #include "mp/backend-with-mm.h"
 
 /// Issue this if you redefine std feature switches
@@ -601,7 +602,7 @@ protected:
   }
 
   struct Stats {
-    steady_clock::time_point time = steady_clock::now();
+    std::chrono::steady_clock::time_point time = std::chrono::steady_clock::now();
     double setup_time = 0.0;
     double solution_time = 0.0;
     int n_altern_sol_checks_failed_ = 0;

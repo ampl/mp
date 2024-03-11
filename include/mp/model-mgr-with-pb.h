@@ -24,9 +24,10 @@
 #define MODEL_MANAGER_STD_H_
 
 #include <cmath>
+#include <chrono>
 
 #include "mp/env.h"
-#include "mp/clock.h"
+#include "mp/utils-clock.h"
 #include "mp/model-mgr-base.h"
 #include "mp/solver-io.h"
 
@@ -81,7 +82,7 @@ protected:
                    Checker_AMPLS_ModeltTraits cb_checkmodel,
                    std::function<void()> after_header)
   override {
-    steady_clock::time_point start = steady_clock::now();
+    std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
 
     ReadNLFile(nl_filename,
                [this, &filename_no_ext, after_header](){
