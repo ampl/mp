@@ -1,7 +1,6 @@
 
 import streamlit as st
 
-from scripts.python.explorer import ModelExplorer
 from scripts.python.modelreader import ReadExplorerModel
 from scripts.python.matcher import MatchSubmodel
 
@@ -17,8 +16,6 @@ srch = left_column.text_input('Search pattern:')
 
 fwd = right_column.checkbox('Add descendants', disabled=True)
 bwd = right_column.checkbox('Add ancestors', disabled=True)
-
-explorer = ModelExplorer()
 
 # Cache the reading function
 @st.cache_data

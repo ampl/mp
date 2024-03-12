@@ -111,5 +111,5 @@ class Model:
       if (""==keyw or keyw in pr) \
       and (keyNeed1==None \
         or (keyNeed1 in i and 1==i[keyNeed1])):
-        result = result + "\n\n" + pr        ## Markdown
+        result = result + "  \n" + pr        ## Markdown: 2x spaces + EOL
     return result

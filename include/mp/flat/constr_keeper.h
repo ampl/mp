@@ -551,6 +551,9 @@ BasicConstraintKeeper::GetShortTypeName() const {
       colon_pos = 0;
     type_name_short_ = acc_opt.substr(
           colon_pos, word_end-colon_pos);
+    for (auto& c: type_name_short_)
+      if (':'==c)
+        c = '_';                // Markdown
     assert(type_name_short_.size());
   }
   return type_name_short_.c_str();
