@@ -1,6 +1,12 @@
 Summary of recent updates to Xpress for AMPL
 ============================================
 
+## 20240312
+- Updated Xpress to 42.01.5
+- *Xpress Global Solver*
+  - Native implementation of most supported non-linear
+    functions. Not enabled by default.
+
 
 ## 20240306
 - *Xpress Global Solver*
