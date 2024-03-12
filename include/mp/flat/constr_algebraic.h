@@ -7,6 +7,7 @@
 
 #include <string>
 #include <cmath>
+#include <cfloat>
 
 #include "mp/flat/constr_base.h"
 #include "mp/flat/expr_quadratic.h"
@@ -247,7 +248,9 @@ inline void WriteJSON(JSONW jw,
 /// Write alg con range
 inline void WriteJSON(JSONW jw,
                       const AlgConRange& acr) {
-  jw << acr.lb() << acr.ub();
+  jw
+      << (acr.lb() < -DBL_MAX ? -DBL_MAX : acr.lb())
+      << (acr.ub() > DBL_MAX ? DBL_MAX : acr.ub());
 }
 
 /// Write alg con rhs

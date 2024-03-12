@@ -5,6 +5,7 @@
 #include <vector>
 #include <algorithm>
 #include <cmath>
+#include <cfloat>
 
 #include "mp/flat/obj_std.h"
 #include "mp/flat/constr_std.h"
@@ -89,7 +90,9 @@ protected:
         jw["VAR_index"] = i_actual;
         if (var_names_storage_.size() > i)
           jw["name"] = var_names_[i];
-        jw["bounds"] << lbs[i] << ubs[i];
+        jw["bounds"]
+            << (lbs[i] < -DBL_MAX ? -DBL_MAX : lbs[i])
+            << (ubs[i] > DBL_MAX ? DBL_MAX : ubs[i]);
         jw["type"] = (int)types[i];
         jw["is_from_nl"] = (int)is_var_original(i_actual);
       }
