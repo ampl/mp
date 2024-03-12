@@ -104,13 +104,13 @@ public:
   ACCEPT_CONSTRAINT(AbsConstraint, Recommended, CG_General)
   void AddConstraint(const AbsConstraint& ac);
   ACCEPT_CONSTRAINT(MaxConstraint, Recommended, CG_General)
-    void AddConstraint(const MaxConstraint& ac);
+  void AddConstraint(const MaxConstraint& ac);
   ACCEPT_CONSTRAINT(MinConstraint, Recommended, CG_General)
-    void AddConstraint(const MinConstraint& ac);
+  void AddConstraint(const MinConstraint& ac);
   ACCEPT_CONSTRAINT(OrConstraint, Recommended, CG_General)
-    void AddConstraint(const OrConstraint& ac);
+  void AddConstraint(const OrConstraint& ac);
   ACCEPT_CONSTRAINT(AndConstraint, Recommended, CG_General)
-    void AddConstraint(const AndConstraint& ac);
+  void AddConstraint(const AndConstraint& ac);
   
   #define GLOBAL_LEVEL AcceptedButNotRecommended
   ACCEPT_CONSTRAINT(DivConstraint, GLOBAL_LEVEL, CG_General)
@@ -118,18 +118,18 @@ public:
   ACCEPT_CONSTRAINT(SinConstraint, GLOBAL_LEVEL, CG_General)
   void AddConstraint(const SinConstraint& cc);
   ACCEPT_CONSTRAINT(CosConstraint, GLOBAL_LEVEL, CG_General)
-    void AddConstraint(const CosConstraint& cc); 
+  void AddConstraint(const CosConstraint& cc); 
   ACCEPT_CONSTRAINT(TanConstraint, GLOBAL_LEVEL, CG_General)
-    void AddConstraint(const TanConstraint& cc);
+  void AddConstraint(const TanConstraint& cc);
   ACCEPT_CONSTRAINT(AsinConstraint, GLOBAL_LEVEL, CG_General)
-    void AddConstraint(const AsinConstraint& cc);
+  void AddConstraint(const AsinConstraint& cc);
   ACCEPT_CONSTRAINT(AcosConstraint, GLOBAL_LEVEL, CG_General)
-    void AddConstraint(const AcosConstraint& cc);
+  void AddConstraint(const AcosConstraint& cc);
   ACCEPT_CONSTRAINT(AtanConstraint, GLOBAL_LEVEL, CG_General)
-    void AddConstraint(const AtanConstraint& cc);
+  void AddConstraint(const AtanConstraint& cc);
 
   ACCEPT_CONSTRAINT(LogConstraint, GLOBAL_LEVEL, CG_General)
-    void AddConstraint(const LogConstraint& cc);
+  void AddConstraint(const LogConstraint& cc);
   void AddConstraint(const LogAConstraint& cc);
 
   ACCEPT_CONSTRAINT(PowConstraint, GLOBAL_LEVEL, CG_General)
@@ -137,22 +137,30 @@ public:
   ACCEPT_CONSTRAINT(ExpConstraint, GLOBAL_LEVEL, CG_General)
   void AddConstraint(const ExpConstraint& cc);
   ACCEPT_CONSTRAINT(ExpAConstraint, GLOBAL_LEVEL, CG_General)
-    void AddConstraint(const ExpAConstraint& cc);
+  void AddConstraint(const ExpAConstraint& cc);
 
   ACCEPT_CONSTRAINT(SinhConstraint, GLOBAL_LEVEL, CG_General)
   void AddConstraint(const SinhConstraint& cc);
   ACCEPT_CONSTRAINT(CoshConstraint, GLOBAL_LEVEL, CG_General)
   void AddConstraint(const CoshConstraint& cc);
   ACCEPT_CONSTRAINT(TanhConstraint, GLOBAL_LEVEL, CG_General)
-    void AddConstraint(const TanhConstraint& cc);
+  void AddConstraint(const TanhConstraint& cc);
+
+  ACCEPT_CONSTRAINT(AsinhConstraint, GLOBAL_LEVEL, CG_General)
+  void AddConstraint(const AsinhConstraint& cc);
+  ACCEPT_CONSTRAINT(AcoshConstraint, GLOBAL_LEVEL, CG_General)
+  void AddConstraint(const AcoshConstraint& cc);
+  ACCEPT_CONSTRAINT(AtanhConstraint, GLOBAL_LEVEL, CG_General)
+  void AddConstraint(const AtanhConstraint& cc);
+
 
   class NLParams {
     std::vector<int> types_;
     std::vector<double> values_;
     int resultVar_;
   public:
+    NLParams(int resultVar) : resultVar_(resultVar) {}
     int* resultVar()  { return &resultVar_; } 
-    void resultVar(int rv) { resultVar_ = rv; }
     void addMember(int tokentype, double value) {
       types_.push_back(tokentype);
       values_.push_back(value);

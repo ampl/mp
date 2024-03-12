@@ -229,12 +229,11 @@ void XpressmpModelAPI::AddConstraint(const OrConstraint& c) {
 void XpressmpModelAPI::AddConstraint(const DivConstraint& cc) {
   int v1 = cc.GetArguments()[0];
   int v2 = cc.GetArguments()[1];
-  NLParams params;
+  NLParams params(cc.GetResultVar());
   params.addMember(XPRS_TOK_COL, v1);
   params.addMember(XPRS_TOK_COL, v2);
   params.addMember(XPRS_TOK_OP, XPRS_OP_DIVIDE);
   params.addMember(XPRS_TOK_EOF, 0);
-  params.resultVar(cc.GetResultVar());
   AddGlobalConstraint(params);
 }
 
@@ -244,12 +243,11 @@ void XpressmpModelAPI::AddConstraint(const PowConstraint& cc) {
     AddGlobalConstraint(cc.GetResultVar(), cc.GetArguments()[0], XPRS_IFUN_SQRT);
   else
   {
-    NLParams params;
+    NLParams params(cc.GetResultVar());
     params.addMember(XPRS_TOK_COL, cc.GetArguments()[0]);
     params.addMember(XPRS_TOK_CON, cc.GetParameters()[0]);
     params.addMember(XPRS_TOK_OP, XPRS_OP_EXPONENT);
     params.addMember(XPRS_TOK_EOF, 0);
-    params.resultVar(cc.GetResultVar());
     AddGlobalConstraint(params);
   }
 }
@@ -281,7 +279,7 @@ void XpressmpModelAPI::AddConstraint(const LogConstraint& cc) {
 }
 void XpressmpModelAPI::AddConstraint(const LogAConstraint& cc) {
   // log(x) / log(a) RPN:   ) x ln ) a ln /
-  NLParams params;
+  NLParams params(cc.GetResultVar());
   params.addMember(XPRS_TOK_RB, 0);
   params.addMember(XPRS_TOK_COL, cc.GetArguments()[0]);
   params.addMember(XPRS_TOK_IFUN, XPRS_IFUN_LN);
@@ -290,12 +288,11 @@ void XpressmpModelAPI::AddConstraint(const LogAConstraint& cc) {
   params.addMember(XPRS_TOK_IFUN, XPRS_IFUN_LN);
   params.addMember(XPRS_TOK_OP, XPRS_OP_DIVIDE);
   params.addMember(XPRS_TOK_EOF, 0);
-  params.resultVar(cc.GetResultVar());
   AddGlobalConstraint(params);
 }
 void XpressmpModelAPI::AddConstraint(const ExpAConstraint& cc) {
   // base^x = e^(x*ln(b)) ) b  ln  x  *  exp
-  NLParams params;
+  NLParams params(cc.GetResultVar());
   params.addMember(XPRS_TOK_RB, 0);
   params.addMember(XPRS_TOK_COL, cc.GetArguments()[0]);
   params.addMember(XPRS_TOK_RB, 0);
@@ -304,17 +301,15 @@ void XpressmpModelAPI::AddConstraint(const ExpAConstraint& cc) {
   params.addMember(XPRS_TOK_OP, XPRS_OP_MULTIPLY);
   params.addMember(XPRS_TOK_IFUN, XPRS_IFUN_EXP);
   params.addMember(XPRS_TOK_EOF, 0);
-  params.resultVar(cc.GetResultVar());
   AddGlobalConstraint(params);
 }
 
 void XpressmpModelAPI::AddGlobalConstraint(int resultVar, int argumentVar, int functionId) {
-  NLParams params;
+  NLParams params(resultVar);
   params.addMember(XPRS_TOK_RB, 0);
   params.addMember(XPRS_TOK_COL, argumentVar);
   params.addMember(XPRS_TOK_IFUN, functionId);
   params.addMember(XPRS_TOK_EOF, 0);
-  params.resultVar(resultVar);
   AddGlobalConstraint(params);
 }
 
@@ -337,7 +332,7 @@ void XpressmpModelAPI::AddGlobalConstraint(NLParams& params) {
 
 void XpressmpModelAPI::AddConstraint(const SinhConstraint& cc) {
   // sinh(x) = 0.5*(e^x-e^-x)
-  NLParams params;
+  NLParams params(cc.GetResultVar());
   params.addMember(XPRS_TOK_RB, 0);
   params.addMember(XPRS_TOK_COL, cc.GetArguments()[0]);
   params.addMember(XPRS_TOK_IFUN, XPRS_IFUN_EXP);
@@ -349,7 +344,6 @@ void XpressmpModelAPI::AddConstraint(const SinhConstraint& cc) {
   params.addMember(XPRS_TOK_CON, 2);
   params.addMember(XPRS_TOK_OP, XPRS_OP_DIVIDE);
   params.addMember(XPRS_TOK_EOF, 0);
-  params.resultVar(cc.GetResultVar());
   AddGlobalConstraint(params);
 }
 
@@ -357,7 +351,7 @@ void XpressmpModelAPI::AddConstraint(const SinhConstraint& cc) {
 
 void XpressmpModelAPI::AddConstraint(const CoshConstraint& cc) {
   // sinh(x) = 0.5*(e^x+e^-x)
-  NLParams params;
+  NLParams params(cc.GetResultVar());
   params.addMember(XPRS_TOK_RB, 0);
   params.addMember(XPRS_TOK_COL, cc.GetArguments()[0]);
   params.addMember(XPRS_TOK_IFUN, XPRS_IFUN_EXP);
@@ -369,39 +363,123 @@ void XpressmpModelAPI::AddConstraint(const CoshConstraint& cc) {
   params.addMember(XPRS_TOK_CON, 2);
   params.addMember(XPRS_TOK_OP, XPRS_OP_DIVIDE);
   params.addMember(XPRS_TOK_EOF, 0);
-  params.resultVar(cc.GetResultVar());
   AddGlobalConstraint(params);
 }
 
 void XpressmpModelAPI::AddConstraint(const TanhConstraint& cc) {
+  int x = cc.GetArguments()[0];
   // sinh(x) = (e^x-e^-x)/(e^x+e^-x)
-  NLParams params;
-  params.addMember(XPRS_TOK_RB, 0);
-  params.addMember(XPRS_TOK_COL, cc.GetArguments()[0]);
+  NLParams params(cc.GetResultVar());
+
+  params.addMember(XPRS_TOK_RB, 0); // e^x
+  params.addMember(XPRS_TOK_COL, x);
   params.addMember(XPRS_TOK_IFUN, XPRS_IFUN_EXP);
-  params.addMember(XPRS_TOK_RB, 0);
-  params.addMember(XPRS_TOK_COL, cc.GetArguments()[0]);
+
+  params.addMember(XPRS_TOK_RB, 0); // e^-x
+  params.addMember(XPRS_TOK_COL, x);
   params.addMember(XPRS_TOK_OP, XPRS_OP_UMINUS);
   params.addMember(XPRS_TOK_IFUN, XPRS_IFUN_EXP);
-  params.addMember(XPRS_TOK_OP, XPRS_OP_MINUS);
+  
+  params.addMember(XPRS_TOK_OP, XPRS_OP_MINUS); // e^x-e^-x
 
-
-  params.addMember(XPRS_TOK_RB, 0);
-  params.addMember(XPRS_TOK_COL, cc.GetArguments()[0]);
+  params.addMember(XPRS_TOK_RB, 0);   // e^x
+  params.addMember(XPRS_TOK_COL, x);
   params.addMember(XPRS_TOK_IFUN, XPRS_IFUN_EXP);
-  params.addMember(XPRS_TOK_RB, 0);
-  params.addMember(XPRS_TOK_COL, cc.GetArguments()[0]);
+  
+  params.addMember(XPRS_TOK_RB, 0);   // e^-x
+  params.addMember(XPRS_TOK_COL, x);
   params.addMember(XPRS_TOK_OP, XPRS_OP_UMINUS);
   params.addMember(XPRS_TOK_IFUN, XPRS_IFUN_EXP);
-  params.addMember(XPRS_TOK_OP, XPRS_OP_PLUS);
+  params.addMember(XPRS_TOK_OP, XPRS_OP_PLUS);  // e^x +e^x
 
   params.addMember(XPRS_TOK_OP, XPRS_OP_DIVIDE);
   params.addMember(XPRS_TOK_EOF, 0);
-  params.resultVar(cc.GetResultVar());
+
   AddGlobalConstraint(params);
 }
 
+void XpressmpModelAPI::AddConstraint(const AsinhConstraint& cc) {
+   // ln(x+sqrt(x^2+1))
+  auto x = cc.GetArguments()[0];
+  NLParams params(cc.GetResultVar());
 
+  params.addMember(XPRS_TOK_RB, 0); // sqrt(x^2+1)
+
+  params.addMember(XPRS_TOK_RB, 0); // x^2
+  params.addMember(XPRS_TOK_COL, x);
+  params.addMember(XPRS_TOK_CON, 2);
+  params.addMember(XPRS_TOK_OP, XPRS_OP_EXPONENT);
+
+  params.addMember(XPRS_TOK_CON, 1);  
+  params.addMember(XPRS_TOK_OP, XPRS_OP_PLUS);
+  params.addMember(XPRS_TOK_IFUN, XPRS_IFUN_SQRT);
+  
+  params.addMember(XPRS_TOK_COL,x);
+  params.addMember(XPRS_TOK_OP, XPRS_OP_PLUS);
+
+  params.addMember(XPRS_TOK_IFUN, XPRS_IFUN_LN);
+  params.addMember(XPRS_TOK_EOF, 0);
+  AddGlobalConstraint(params);
+}
+
+void XpressmpModelAPI::AddConstraint(const AcoshConstraint& cc) {
+  // ln(x+sqrt(x-1)*sqrt(x+1) )
+
+  auto x = cc.GetArguments()[0];
+  NLParams params(cc.GetResultVar());
+
+  params.addMember(XPRS_TOK_RB, 0); // ln
+
+  params.addMember(XPRS_TOK_RB, 0); // sqrt(x-1)
+  params.addMember(XPRS_TOK_COL, x);
+  params.addMember(XPRS_TOK_CON, 1);
+  params.addMember(XPRS_TOK_OP, XPRS_OP_MINUS);
+  params.addMember(XPRS_TOK_IFUN, XPRS_IFUN_SQRT);
+
+  params.addMember(XPRS_TOK_RB, 0); // sqrt(x+1)
+  params.addMember(XPRS_TOK_COL, x);
+  params.addMember(XPRS_TOK_CON, 1);
+  params.addMember(XPRS_TOK_OP, XPRS_OP_PLUS);
+  params.addMember(XPRS_TOK_IFUN, XPRS_IFUN_SQRT);
+
+  params.addMember(XPRS_TOK_OP, XPRS_OP_MULTIPLY);
+  
+  params.addMember(XPRS_TOK_COL, x);
+  params.addMember(XPRS_TOK_OP, XPRS_OP_PLUS);
+
+  params.addMember(XPRS_TOK_IFUN, XPRS_IFUN_LN);
+  params.addMember(XPRS_TOK_EOF, 0);
+  AddGlobalConstraint(params);
+
+
+}
+
+void XpressmpModelAPI::AddConstraint(const AtanhConstraint& cc) {
+  //y = 0.5*(ln(x+1)-ln(1-x))
+  auto x = cc.GetArguments()[0];
+  NLParams params(cc.GetResultVar());
+  
+  params.addMember(XPRS_TOK_RB, 0); // ln(x+1)
+  params.addMember(XPRS_TOK_CON, 1);
+  params.addMember(XPRS_TOK_COL, x);
+  params.addMember(XPRS_TOK_OP, XPRS_OP_PLUS);
+  params.addMember(XPRS_TOK_IFUN, XPRS_IFUN_LN);
+
+  params.addMember(XPRS_TOK_RB, 0); // ln(1-x)
+  params.addMember(XPRS_TOK_CON, 1);
+  params.addMember(XPRS_TOK_COL, x);
+  params.addMember(XPRS_TOK_OP, XPRS_OP_MINUS);
+  params.addMember(XPRS_TOK_IFUN, XPRS_IFUN_LN);
+
+
+  params.addMember(XPRS_TOK_OP, XPRS_OP_MINUS); 
+
+  params.addMember(XPRS_TOK_CON, 0.5);
+  params.addMember(XPRS_TOK_OP, XPRS_OP_MULTIPLY);
+
+  params.addMember(XPRS_TOK_EOF, 0);
+  AddGlobalConstraint(params);
+}
 
 void XpressmpModelAPI::FinishProblemModificationPhase() {
 }
