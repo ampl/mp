@@ -361,5 +361,13 @@
       "if abs(y-atanh(x))<=1e-2 then 1 else 0": 1,
       "if abs(_obj[1]-1.30327359)<=0.01 then 1 else 0": 1
     }
+  },
+  {
+    "name" : "tanh_02",
+    "tags" : ["continuous", "nonlinear"],
+    "values": {
+      "if abs(_obj[1]-1)<=0.01 then 1 else 0": 1
+    }
   }
+
 ]
