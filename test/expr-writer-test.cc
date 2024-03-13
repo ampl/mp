@@ -321,11 +321,11 @@ TEST_F(ExprWriterTest, WriteVarArgExpr) {
 
 TEST_F(ExprWriterTest, WriteSumExpr) {
   NumericExpr args[] = {MakeVariable(0), MakeVariable(1), MakeConst(42)};
-  CHECK_WRITE("/* sum */ (x1 + x2 + 42)", MakeIterated(ex::SUM, args));
+  CHECK_WRITE("(x1 + x2 + 42)", MakeIterated(ex::SUM, args));
   NumericExpr args2[] = {
     MakeBinary(ex::ADD, MakeVariable(0), MakeVariable(1)), MakeConst(42)
   };
-  CHECK_WRITE("/* sum */ ((x1 + x2) + 42)", MakeIterated(ex::SUM, args2));
+  CHECK_WRITE("((x1 + x2) + 42)", MakeIterated(ex::SUM, args2));
 }
 
 TEST_F(ExprWriterTest, WriteCountExpr) {
@@ -579,12 +579,12 @@ TEST_F(ExprWriterTest, SumExprPrecedence) {
   auto x1 = MakeVariable(0), x2 = MakeVariable(1), x3 = MakeVariable(2);
   NumericExpr args1[] = {x2, x3};
   NumericExpr args2[] = {x1, MakeIterated(ex::SUM, args1)};
-  CHECK_WRITE("/* sum */ (x1 + /* sum */ (x2 + x3))",
+  CHECK_WRITE("(x1 + (x2 + x3))",
               MakeIterated(ex::SUM, args2));
   NumericExpr args3[] = {x1, MakeBinary(ex::MUL, x2, x3)};
-  CHECK_WRITE("/* sum */ (x1 + x2 * x3)", MakeIterated(ex::SUM, args3));
+  CHECK_WRITE("(x1 + x2 * x3)", MakeIterated(ex::SUM, args3));
   NumericExpr args4[] = {MakeBinary(ex::ADD, x1, x2), x3};
-  CHECK_WRITE("/* sum */ ((x1 + x2) + x3)", MakeIterated(ex::SUM, args4));
+  CHECK_WRITE("((x1 + x2) + x3)", MakeIterated(ex::SUM, args4));
 }
 
 TEST_F(ExprWriterTest, CountExprPrecedence) {

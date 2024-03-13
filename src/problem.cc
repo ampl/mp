@@ -121,16 +121,19 @@ template
 void ReadNLString(NLStringRef str, Problem &p, fmt::CStringRef name, int flags);
 
 template
-void WriteExpr<typename Problem::ExprTypes>
-(fmt::Writer &w, const LinearExpr &linear, NumericExpr nonlinear);
+void WriteExpr<typename Problem::ExprTypes>(
+fmt::Writer &w,
+const LinearExpr &linear, NumericExpr nonlinear,
+Problem::VarNamer);
 
 template
 void WriteExpr<typename Problem::ExprTypes>
-(fmt::Writer &w, LogicalExpr expr);
+(fmt::Writer &w, LogicalExpr expr, Problem::VarNamer);
 
 /// Write algebraic constraint.
 template
-void WriteAlgCon<typename Problem::ExprTypes>
-(fmt::Writer &w, const typename Problem::MutAlgebraicCon &con);
+void WriteAlgCon<typename Problem::ExprTypes>(
+fmt::Writer &w, const typename Problem::MutAlgebraicCon &con,
+Problem::VarNamer);
 
 }  // namespace mp
