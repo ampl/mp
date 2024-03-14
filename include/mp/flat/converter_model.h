@@ -88,8 +88,13 @@ protected:
         MiniJSONWriter jw(wrt);
         int i_actual = i+i_start;
         jw["VAR_index"] = i_actual;
-        if (var_names_storage_.size() > i)
+        if (var_names_storage_.size() > i_actual) {
+          int i = i_actual;
           jw["name"] = var_names_[i];
+          fmt::MemoryWriter pr;
+          WriteVar(pr, var_names_[i], lbs[i], ubs[i], types[i]);
+          jw["printed"] = pr.c_str();
+        }
         jw["bounds"]
             << (lbs[i] < -DBL_MAX ? -DBL_MAX : lbs[i])
             << (ubs[i] > DBL_MAX ? DBL_MAX : ubs[i]);

@@ -112,7 +112,43 @@ void BasicProblem<Alloc>::SetInfo(const NLProblemInfo &info) {
   nonlinear_exprs_.reserve(num_common_exprs);
 }
 
-/// Instantiate
+template <typename Params>
+const std::string& BasicProblem<Params>::item_name(
+    int i, std::vector<std::string>& names,
+    int n, const char* stub,  int n2, const char* stub2) {
+  assert(0<=i && i<n);
+  if ((int)names.size()<n) {
+    int sz0 = (int)names.size();
+    names.resize(n);
+    int k=sz0;
+    auto gen_names = [&names](
+        int k, int n, const char* stub, int k_sub=0) {
+      for ( ; k<n; k++) {
+        assert(stub);
+        int l = std::strlen(stub);
+        assert(l);
+        bool fbr = '['==stub[l-1];
+        names[k] = stub;
+        names[k] += std::to_string(k-k_sub+1);
+        if (fbr)
+          names[k] += ']';
+      }
+    };
+    if (n2>=0 && n2<n) {
+      if (k<n2) {
+        gen_names(k, n2, stub);
+        gen_names(n2, n, stub2, n2);
+      } else
+        gen_names(k, n, stub2, n2);
+    } else
+      gen_names(k, n, stub);
+  }
+  assert(names[i].size());
+  return names[i];
+}
+
+// Instantiations
+
 template class BasicProblem< >;
 
 template void ReadNLFile(fmt::CStringRef filename, Problem &p, int flags);

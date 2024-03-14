@@ -1,8 +1,10 @@
 #include <map>
+#include <cfloat>
 #include <cassert>
 
 #include "mp/format.h"
 #include "mp/util-json-write.hpp"
+#include "mp/common.h"
 
 #include "mp/flat/expr_quadratic.h"
 #include "mp/flat/model_info.hpp"
@@ -69,6 +71,31 @@ void QuadTerms::sort_terms()  {
     }
   }
 }
+
+template <class Writer>
+void WriteVar(Writer& pr, const char* name,
+              double lb, double ub, var::Type ty) {
+  assert(*name);
+  pr << "var " << name;
+  if (!lb && 1.0==ub && var::INTEGER==ty)
+    pr << " binary";
+  else if (lb==ub)
+    pr << " = " << lb;
+  else {
+    if (lb >= -DBL_MAX)
+    pr << " >=" << lb;
+    if (ub <= DBL_MAX)
+    pr << " <=" << ub;
+    if (var::INTEGER == ty)
+    pr << " integer";
+  }
+  pr << ';';
+}
+
+// Generate
+template
+void WriteVar(fmt::MemoryWriter& pr, const char* name,
+              double lb, double ub, var::Type ty);
 
 template <>
 void WriteJSON(JSONW jw, const QuadTerms& qt) {

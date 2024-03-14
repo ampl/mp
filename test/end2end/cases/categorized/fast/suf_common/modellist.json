@@ -32,6 +32,14 @@
     }
   },
   {
+    "name": "mipbound_01 objno=0 writegraph",
+    "tags": [ "linear", "return_mipgap"],
+    "options": { "ANYSOLVER_options": "objno=0 writegraph=mipb_01.jsonl" },
+    "values": {
+      "solve_result_num": 0
+    }
+  },
+  {
     "name" : "dietu_stt sensitivity=1",
     "objective" : 74.273820,
     "options": { "ANYSOLVER_options": "solnsens=1" },

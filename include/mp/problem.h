@@ -478,43 +478,43 @@ public:
   /// Normal variable name
   const std::string& var_name(int i) {
     assert(0<=i && i<num_vars());
-    if ((int)var_names().size()<=i)
-      var_names_.resize(num_vars());
-    if (var_names_[i].empty())
-      var_names_[i] = "_x[" + std::to_string(i+1) + "]";
-    return var_names_[i];
+    return item_name(i, var_names_, num_vars(), "_x[");
   }
   /// Defined variable name
   const std::string& dvar_name(int i) {
     assert(0<=i && i<num_common_exprs());
     i += num_vars();
-    if ((int)var_names().size()<=i)
-      var_names_.resize(num_vars()+num_common_exprs());
-    if (var_names_[i].empty())
-      var_names_[i] = "_sdvar[" + std::to_string(i+1) + "]";
-    return var_names_[i];
+    return item_name(i, var_names_,
+                     num_vars()+num_common_exprs(), "_x[",
+                     num_vars(), "_sdvar[");
   }
   /// Constraint name
   const std::string& con_name(int i) {
     assert(0<=i && i<num_cons());
-    if ((int)con_names().size()<=i)
-      con_names_.resize(num_cons());
-    if (con_names_[i].empty())
-      con_names_[i]
-          = (i<num_algebraic_cons() ? "_CON" : "_LCON")
-          + std::to_string(i+1);
-    return con_names_[i];
+    return item_name(i, con_names_,
+                     num_cons(),  "_CON",
+                     num_algebraic_cons(), "_LCON");
   }
   /// Objective name
   const std::string& obj_name(int i) {
     assert(0<=i && i<num_objs());
-    if ((int)obj_names().size()<=i)
-      obj_names_.resize(num_objs());
-    if (obj_names_[i].empty())
-      obj_names_[i] = "_OBJ" + std::to_string(i+1);
-    return obj_names_[i];
+    return item_name(i, obj_names_, num_objs(), "_OBJ");
   }
 
+protected:
+  /// Return names[i].
+  /// Generate names[old_size...n-1] if needed,
+  /// so that the whole vector is valid,
+  /// even if only some variables/cons/objs were queried.
+  /// From [n2], name 'stub2'[i-n2] is given.
+  /// If stub/stub2 ends with a '[', ']' is added after the index.
+  static const std::string& item_name(
+      int i, std::vector<std::string>& names,
+      int n, const char* stub,
+      int n2=std::numeric_limits<int>::max(),
+      const char* stub2=nullptr);
+
+public:
   /** Returns the variable names (if present).
    *  After normal variables follow defined variables.
    */
