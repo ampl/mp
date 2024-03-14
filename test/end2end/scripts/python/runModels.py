@@ -20,7 +20,8 @@ def writeNLFiles(directory, recursive=False, modelList=False):
 def runModels(directory, solvers : list,
               solverOptions=None,
               exporter=None, exportFile=None, modellist=True, justNL=False,
-              recursive=False, preferAMPLModels=False, keepLogs = False, verbose=False):
+              recursive=False, preferAMPLModels=False, keepLogs = False, verbose=False,
+              defaultReportSuffix:str = None):
     """Convenient wrapper function for testing.
 
           With no optional argument specified, runs as:
@@ -41,12 +42,16 @@ def runModels(directory, solvers : list,
           preferAMPLModels:bool - If True, executes the AMPL version of a model if both NL and AMPL versions are present.
           keepLogs: bool - If True, store the logs of all executions; useful for debugging or for benchmarking
           verbose: bool - If True, print solver output
+          defaultReportSuffix: str - A suffix to be added to the report file name, used by Tester to differentiate between
+                                     executions with different params (e.g. simplex vs IPM or native vs reformulation NL support)
     """
     solvernames = [Path(slv.getExecutable()).stem for slv in solvers]
     if not exportFile:
         exportFile = "run"
     ename = "-".join(solvernames)
-    exportFile += "-{}-{}-{}.csv".format(Path(directory).stem, platform, ename)
+    suffix = f"-{defaultReportSuffix}" if defaultReportSuffix else ""
+        
+    exportFile += "-{}-{}-{}{}.csv".format(Path(directory).stem, platform, ename, suffix)
     if not exporter:
         exporter = CSVTestExporter(exportFile)
 

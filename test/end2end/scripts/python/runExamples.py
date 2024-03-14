@@ -25,7 +25,8 @@ class Tester:
 
         self._parser.add_argument("--lpmethod", type=str, metavar="", default="",
                             help="algorithm for lp: SIMPLEX or BARRIER")
-
+        self._parser.add_argument("--nlpmethod", type=str, metavar="", default="",
+                            help="nl support: REFORMULATION, NATIVE or NATIVEPL")
         self._parser.add_argument("--options", type=str, metavar="", default="",
                             help="extra solver options")
         self._parser.add_argument("--binPath", type=str, metavar="", default="",
@@ -42,6 +43,8 @@ class Tester:
                         help="path to the test case folder")
         self._parser.add_argument("--benchmark", action="store_true",
                         help="benchmark file output")
+        self._parser.add_argument("--junit", action="store_true",
+                help="Junit test file output")
         self._parser.add_argument("--nonrecursive", action="store_true",
                         help="non-recursive case collection")
         self._parser.add_argument("--allfiles", action="store_true",
@@ -72,6 +75,8 @@ class Tester:
             slv.setNThreads(self._args.nthreads)
             if self._args.lpmethod:
                 slv.setLPMethod(self._args.lpmethod)
+            if self._args.nlpmethod:
+                slv.setNLPMethod(self._args.nlpmethod)
             if self._args.exportLP:
                 slv.setExportLP(True)
             else:
@@ -80,11 +85,25 @@ class Tester:
     def printSolvers(self):
         print("Available solvers:\n  * ", end='')
         print(*(self._solvers.getSolverNames()), sep="\n  * ")
-
+        
+    def create_report_file_suffix(self):
+        suffixes = []
+        if self._args.lpmethod:
+            suffixes.append(self._args.lpmethod)
+        if self._args.nlpmethod:
+            suffixes.append(self._args.nlpmethod) 
+        if len(suffixes)==0:
+            return ""
+        else: return "-".join(suffixes)
+        
     def collectAndRunCases(self):
+        
         if self._args.benchmark:
             from BenchmarkExporter import BenchmarkExporter
             exporter = BenchmarkExporter()
+        elif self._args.junit:
+            from JunitExporter import JunitExporter
+            exporter = JunitExporter()
         else:
             exporter = Exporter.CSVTestExporter()
 
@@ -98,7 +117,8 @@ class Tester:
                   preferAMPLModels=not self._args.preferNL,
                   justNL=self._args.justNL,
                   keepLogs=self._args.keepLogs,
-                  verbose=self._args.verbose)
+                  verbose=self._args.verbose, 
+                  defaultReportSuffix=self.create_report_file_suffix())
 
 
 def runTester():
