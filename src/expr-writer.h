@@ -50,6 +50,16 @@ enum Precedence {
 };
 }
 
+/// Default var namer
+struct GenericVarNamer {
+  /// Normal variable name
+  static std::string vname(int i)
+  { return "x" + std::to_string(i+1); }
+  /// Defined variable name
+  static std::string dvname(int i)
+  { return "_sdvar[" + std::to_string(i+1) + "]"; }
+};
+
 namespace expr {
 /// Returns operator precedence for the specified expression kind assuming the
 /// notation used by ExprWriter.
@@ -76,16 +86,19 @@ inline bool IsZero(NumericExpr expr) {
 /// to fmt::Writer. It takes into account precedence and associativity
 /// of operators avoiding unnecessary parentheses except for potentially
 /// confusing cases such as "!x = y" which is written as "!(x = y) instead.
-template <typename ExprTypes>
+template <typename ExprTypes, typename VarNamer=GenericVarNamer>
 class ExprWriter :
-    public BasicExprVisitor<ExprWriter<ExprTypes>, void, ExprTypes> {
+    public BasicExprVisitor<
+    ExprWriter<ExprTypes, VarNamer>, void, ExprTypes> {
  private:
   fmt::Writer &writer_;
   int precedence_;
+  VarNamer vnam_;
 
   MP_DEFINE_EXPR_TYPES(ExprTypes);
 
-  typedef BasicExprVisitor<ExprWriter<ExprTypes>, void, ExprTypes> Base;
+  typedef BasicExprVisitor<
+    ExprWriter<ExprTypes, VarNamer>, void, ExprTypes> Base;
 
   static int precedence(Expr e) { return expr::precedence(e.kind()); }
 
@@ -125,8 +138,8 @@ class ExprWriter :
 
  public:
   /// Construct
-  explicit ExprWriter(fmt::Writer &w)
-  : writer_(w), precedence_(prec::UNKNOWN) {}
+  explicit ExprWriter(fmt::Writer &w, VarNamer vn={})
+  : writer_(w), precedence_(prec::UNKNOWN), vnam_(vn) {}
 
   /// Visit numeric expr
   void Visit(NumericExpr e, int precedence = -1) {
@@ -141,7 +154,7 @@ class ExprWriter :
   }
 
   void VisitCommonExpr(CommonExpr e)
-  { writer_ << "ce" << (e.index() + 1); }
+  { writer_ << vnam_.dvname(e.index()); }
 
   void VisitNumericConstant(NumericConstant c) { writer_ << c.value(); }
 
@@ -171,7 +184,7 @@ class ExprWriter :
   void VisitPLTerm(PLTerm e);
   void VisitCall(CallExpr e);
   void VisitVariable(Variable v)
-  { writer_ << 'x' << (v.index() + 1); }
+  { writer_ << vnam_.vname(v.index()); }
 
   void VisitNot(NotExpr e) {
      writer_ << '!';
@@ -191,9 +204,9 @@ class ExprWriter :
   void VisitLogicalConstant(LogicalConstant c) { writer_ << c.value(); }
 };
 
-template <typename ExprTypes>
-ExprWriter<ExprTypes>::Parenthesizer::Parenthesizer(
-    ExprWriter<ExprTypes> &w, Expr e, int prec)
+template <typename ExprTypes, typename VarNamer>
+ExprWriter<ExprTypes, VarNamer>::Parenthesizer::Parenthesizer(
+    ExprWriter<ExprTypes, VarNamer> &w, Expr e, int prec)
 : writer_(w), write_paren_(false) {
   saved_precedence_ = w.precedence_;
   if (prec == -1)
@@ -204,16 +217,16 @@ ExprWriter<ExprTypes>::Parenthesizer::Parenthesizer(
   w.precedence_ = precedence(e);
 }
 
-template <typename ExprTypes>
-ExprWriter<ExprTypes>::Parenthesizer::~Parenthesizer() {
+template <typename ExprTypes, typename VarNamer>
+ExprWriter<ExprTypes, VarNamer>::Parenthesizer::~Parenthesizer() {
   writer_.precedence_ = saved_precedence_;
   if (write_paren_)
     writer_.writer_ << ')';
 }
 
-template <typename ExprTypes>
+template <typename ExprTypes, typename VN>
 template <typename Iter>
-void ExprWriter<ExprTypes>::WriteArgs(
+void ExprWriter<ExprTypes, VN>::WriteArgs(
     Iter begin, Iter end, const char *sep, int precedence) {
   writer_ << '(';
   if (begin != end) {
@@ -226,9 +239,9 @@ void ExprWriter<ExprTypes>::WriteArgs(
   writer_ << ')';
 }
 
-template <typename ExprTypes>
+template <typename ExprTypes, typename VN>
 template <typename ExprType>
-void ExprWriter<ExprTypes>::WriteBinary(ExprType e) {
+void ExprWriter<ExprTypes, VN>::WriteBinary(ExprType e) {
   int prec = precedence(e);
   bool right_associative = prec == prec::EXPONENTIATION;
   Visit(e.lhs(), prec + (right_associative ? 1 : 0));
@@ -236,8 +249,8 @@ void ExprWriter<ExprTypes>::WriteBinary(ExprType e) {
   Visit(e.rhs(), prec + (right_associative ? 0 : 1));
 }
 
-template <typename ExprTypes>
-void ExprWriter<ExprTypes>::WriteCallArg(Expr arg) {
+template <typename ExprTypes, typename VN>
+void ExprWriter<ExprTypes, VN>::WriteCallArg(Expr arg) {
   if (NumericExpr e = ExprTypes::template Cast<NumericExpr>(arg)) {
     Visit(e, prec::UNKNOWN);
     return;
@@ -262,8 +275,8 @@ void ExprWriter<ExprTypes>::WriteCallArg(Expr arg) {
   writer_ << "'";
 }
 
-template <typename ExprTypes>
-void ExprWriter<ExprTypes>::VisitBinaryFunc(BinaryExpr e) {
+template <typename ExprTypes, typename VN>
+void ExprWriter<ExprTypes, VN>::VisitBinaryFunc(BinaryExpr e) {
   writer_ << str(e.kind()) << '(';
   Visit(e.lhs(), prec::UNKNOWN);
   writer_ << ", ";
@@ -271,8 +284,8 @@ void ExprWriter<ExprTypes>::VisitBinaryFunc(BinaryExpr e) {
   writer_ << ')';
 }
 
-template <typename ExprTypes>
-void ExprWriter<ExprTypes>::VisitIf(IfExpr e) {
+template <typename ExprTypes, typename VN>
+void ExprWriter<ExprTypes, VN>::VisitIf(IfExpr e) {
   writer_ << "if ";
   Visit(e.condition(), prec::UNKNOWN);
   writer_ << " then ";
@@ -285,8 +298,8 @@ void ExprWriter<ExprTypes>::VisitIf(IfExpr e) {
   }
 }
 
-template <typename ExprTypes>
-void ExprWriter<ExprTypes>::VisitSum(SumExpr e) {
+template <typename ExprTypes, typename VN>
+void ExprWriter<ExprTypes, VN>::VisitSum(SumExpr e) {
   writer_ << "(";
   typename SumExpr::iterator i = e.begin(), end = e.end();
   if (i != end) {
@@ -299,8 +312,8 @@ void ExprWriter<ExprTypes>::VisitSum(SumExpr e) {
   writer_ << ')';
 }
 
-template <typename ExprTypes>
-void ExprWriter<ExprTypes>::VisitNumberOf(NumberOfExpr e) {
+template <typename ExprTypes, typename VN>
+void ExprWriter<ExprTypes, VN>::VisitNumberOf(NumberOfExpr e) {
   writer_ << "numberof ";
   typename NumberOfExpr::iterator i = e.begin();
   Visit(*i++, prec::UNKNOWN);
@@ -308,8 +321,8 @@ void ExprWriter<ExprTypes>::VisitNumberOf(NumberOfExpr e) {
   WriteArgs(i, e.end());
 }
 
-template <typename ExprTypes>
-void ExprWriter<ExprTypes>::VisitPLTerm(PLTerm e) {
+template <typename ExprTypes, typename VN>
+void ExprWriter<ExprTypes, VN>::VisitPLTerm(PLTerm e) {
   writer_ << "<<" << e.breakpoint(0);
   for (int i = 1, n = e.num_breakpoints(); i < n; ++i)
     writer_ << ", " << e.breakpoint(i);
@@ -324,8 +337,8 @@ void ExprWriter<ExprTypes>::VisitPLTerm(PLTerm e) {
     writer_ << "e" << ((ExprTypes::template Cast<CommonExpr>(arg)).index() + 1);
 }
 
-template <typename ExprTypes>
-void ExprWriter<ExprTypes>::VisitCall(CallExpr e) {
+template <typename ExprTypes, typename VN>
+void ExprWriter<ExprTypes, VN>::VisitCall(CallExpr e) {
   writer_ << e.function().name() << '(';
   typename CallExpr::iterator i = e.begin(), end = e.end();
   if (i != end) {
@@ -338,16 +351,16 @@ void ExprWriter<ExprTypes>::VisitCall(CallExpr e) {
   writer_ << ')';
 }
 
-template <typename ExprTypes>
-void ExprWriter<ExprTypes>::VisitLogicalCount(LogicalCountExpr e) {
+template <typename ExprTypes, typename VN>
+void ExprWriter<ExprTypes, VN>::VisitLogicalCount(LogicalCountExpr e) {
   writer_ << str(e.kind()) << ' ';
   Visit(e.lhs());
   writer_ << ' ';
   WriteArgs(e.rhs());
 }
 
-template <typename ExprTypes>
-void ExprWriter<ExprTypes>::VisitIteratedLogical(IteratedLogicalExpr e) {
+template <typename ExprTypes, typename VN>
+void ExprWriter<ExprTypes, VN>::VisitIteratedLogical(IteratedLogicalExpr e) {
   // There is no way to produce an AMPL forall/exists expression because
   // its indexing is not available any more. So we write a count expression
   // instead with a comment about the original expression.
@@ -361,8 +374,8 @@ void ExprWriter<ExprTypes>::VisitIteratedLogical(IteratedLogicalExpr e) {
   WriteArgs(e, op, prec);
 }
 
-template <typename ExprTypes>
-void ExprWriter<ExprTypes>::VisitImplication(ImplicationExpr e) {
+template <typename ExprTypes, typename VN>
+void ExprWriter<ExprTypes, VN>::VisitImplication(ImplicationExpr e) {
   Visit(e.condition());
   writer_ << " ==> ";
   Visit(e.then_expr(), prec::IMPLICATION + 1);
@@ -375,9 +388,11 @@ void ExprWriter<ExprTypes>::VisitImplication(ImplicationExpr e) {
 }
 
 /// Write algebraic expression (linear + non-linear.)
-template <typename ExprTypes, typename LinearExpr, typename NumericExpr>
+template <typename ExprTypes,
+          typename LinearExpr, typename NumericExpr,
+          typename Namer=GenericVarNamer>
 void WriteExpr(fmt::Writer &w, const LinearExpr &linear,
-               NumericExpr nonlinear) {
+               NumericExpr nonlinear, Namer vnam={}) {
   bool have_terms = false;
   for (auto i = linear.begin(), e = linear.end(); i != e; ++i) {
     double coef = i->coef();
@@ -388,7 +403,7 @@ void WriteExpr(fmt::Writer &w, const LinearExpr &linear,
         have_terms = true;
       if (coef != 1)
         w << coef << " * ";
-      w << "x" << (i->var_index() + 1);
+      w << vnam.vname(i->var_index());
     }
   }
   if (!nonlinear || IsZero<ExprTypes>(nonlinear)) {
@@ -398,25 +413,25 @@ void WriteExpr(fmt::Writer &w, const LinearExpr &linear,
   }
   if (have_terms)
     w << " + ";
-  ExprWriter<ExprTypes>(w).Visit(nonlinear);
+  ExprWriter<ExprTypes, Namer>(w, vnam).Visit(nonlinear);
 }
 
 /// Write logical expression
-template <typename ExprTypes, typename LogicalExpr>
-void WriteExpr(fmt::Writer &w, LogicalExpr expr) {
-  ExprWriter<ExprTypes>(w).Visit(expr);
+template <typename ExprTypes, typename LogicalExpr, typename VN>
+void WriteExpr(fmt::Writer &w, LogicalExpr expr, VN vnam={}) {
+  ExprWriter<ExprTypes, VN>(w, vnam).Visit(expr);
 }
 
 /// Write algebraic constraint.
-template <class ExprTypes, class AlgCon>
+template <class ExprTypes, class AlgCon, class VN>
 void WriteAlgCon(fmt::Writer &w,
-                 const AlgCon &con) {
+                 const AlgCon &con, VN vnam) {
   double inf = INFINITY;
   double lb = con.lb(), ub = con.ub();
   if (lb != ub && lb != -inf && ub != inf)
     w << lb << " <= ";
   WriteExpr<ExprTypes>(
-        w, con.linear_expr(), con.nonlinear_expr());
+        w, con.linear_expr(), con.nonlinear_expr(), vnam);
   if (lb == ub)
     w << " = " << lb;
   else if (ub != inf)

@@ -108,6 +108,9 @@ class Model:
       pr = str(i)         ## TODO printed form
       if "printed" in i:
         pr = i["printed"]
+      assert len(pr)
+      if ';'!=pr[-1]:
+        pr = pr + ';'
       if (""==keyw or keyw in pr) \
       and (keyNeed1==None \
         or (keyNeed1 in i and 1==i[keyNeed1])):

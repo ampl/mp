@@ -10,6 +10,7 @@
 
 #include "mp/format.h"
 #include "mp/error.h"
+#include "mp/common.h"
 
 #include "mp/flat/context.h"
 #include "mp/arrayref.h"
@@ -345,6 +346,11 @@ public:
     }
   }
 };
+
+/// Write a readable variable definition
+template <class Writer>
+void WriteVar(Writer& pr, const char* name,
+              double lb, double ub, var::Type ty);
 
 /// Write a CondCon
 template <class JW, class Con>

@@ -123,11 +123,12 @@ protected:
   /// The .row file has cons + objs.
   void ReadNames(const std::string& namebase) {
     if (WantNames()) {
-      NameProvider npv("_svar");
-      NameProvider npc("_scon");
+      NameProvider npv("_svar", "_sdvar");
+      NameProvider npc("_scon", "_slogcon");
       if (WantNames()<=2) {
         npv.ReadNames(namebase + ".col",
-                      GetModel().num_vars());
+                      GetModel().num_vars()
+                      + GetModel().num_common_exprs());
         npc.ReadNames(namebase + ".row",
                       GetModel().num_cons()
                       + GetModel().num_objs());
@@ -135,9 +136,12 @@ protected:
       if (WantNames()>=2
           || npv.number_read()+npc.number_read()) {
         GetModel().SetVarNames(
-              npv.get_names(GetModel().num_vars()));
+              npv.get_names(
+                GetModel().num_vars() + GetModel().num_common_exprs(),
+                GetModel().num_vars()));
         GetModel().SetConNames(
-              npc.get_names(GetModel().num_cons()) );
+              npc.get_names(GetModel().num_cons(),
+                            GetModel().num_algebraic_cons()) );
         SetObjNames(npc);
       }
     }

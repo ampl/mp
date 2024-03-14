@@ -29,17 +29,19 @@ LinTerms ToLinTerms(const LinearExpr& e) {
 }
 
 /// Write algebraic expression (linear + non-linear.)
-template <typename ExprTypes, typename LinearExpr, typename NumericExpr>
+template <typename ExprTypes,
+          typename LinearExpr, typename NumericExpr,
+          typename Namer>
 void WriteExpr(fmt::Writer &w, const LinearExpr &linear,
-               NumericExpr nonlinear);
+               NumericExpr nonlinear, Namer);
 
 /// Write logical expression
-template <typename ExprTypes, typename LogicalExpr>
-void WriteExpr(fmt::Writer &w, LogicalExpr expr);
+template <typename ExprTypes, typename LogicalExpr, class VN>
+void WriteExpr(fmt::Writer &w, LogicalExpr expr, VN);
 
 /// Write algebraic constraint.
-template <class ExprTypes, class AlgCon>
-void WriteAlgCon(fmt::Writer &w, const AlgCon &con);
+template <class ExprTypes, class AlgCon, class VN>
+void WriteAlgCon(fmt::Writer &w, const AlgCon &con, VN);
 
 
 /// ProblemFlattener: it walks and "flattens" most expressions
@@ -135,8 +137,6 @@ public:
 protected:
   /// Convert problem items
   void ConvertStandardItems() {
-    CopyItemNames();
-
     ////////////////////////// Variables
     ConvertVars();
 
@@ -176,6 +176,10 @@ protected:
         MP_DISPATCH( ConvertLogicalCon( i ) );
       }
 
+    /// We could have produced variable names
+    /// when exporting NL model info
+    CopyItemNames();
+
     /// Signal we are not flattening anything
     ifFltCon_ = -1;
   }
@@ -188,11 +192,13 @@ protected:
         MiniJSONWriter jw(wrt);
         jw["NL_COMMON_EXPR_index"] = i;
         // We don't receive defvar names from AMPL
-        jw["name"] = "ce" + std::to_string(i+1);
+        auto vn = GetModel().GetVarNamer();
+        jw["name"] = vn.dvname(i);
         auto ce = GetModel().common_expr(i);
         fmt::MemoryWriter w2;
+        w2 << "var " << vn.dvname(i) << " = ";
         WriteExpr<typename ProblemType::ExprTypes>(
-              w2, ce.linear_expr(), ce.nonlinear_expr());
+              w2, ce.linear_expr(), ce.nonlinear_expr(), vn);
         jw["printed"] = w2.c_str();
       }
       wrt.write("\n");                     // EOL
@@ -207,13 +213,15 @@ protected:
       {
         MiniJSONWriter jw(wrt);
         jw["NL_OBJECTIVE_index"] = i;
-        if (GetModel().obj_names().size()>i)
-          jw["name"] = GetModel().obj_names()[i];
+        jw["name"] = GetModel().obj_name(i);
         auto obj = GetModel().obj(i);
         jw["sense"] = (int)obj.type();
         fmt::MemoryWriter w2;
+        w2 << (obj::MAX==obj.type() ? "maximize " : "minimize ");
+        w2 << GetModel().obj_name(i) << ": ";
         WriteExpr<typename ProblemType::ExprTypes>(
-              w2, obj.linear_expr(), obj.nonlinear_expr());
+              w2, obj.linear_expr(), obj.nonlinear_expr(),
+              GetModel().GetVarNamer());
         jw["printed"] = w2.c_str();
       }
       wrt.write("\n");                     // EOL
@@ -230,10 +238,11 @@ protected:
         auto con = GetModel().algebraic_con(i);
         jw["NL_CON_TYPE"] = (con.nonlinear_expr() ? "nonlin" : "lin");
         jw["index"] = i;
-        if (GetModel().con_names().size()>i)
-          jw["name"] = GetModel().con_names()[i];
+        jw["name"] = GetModel().con_name(i);
         fmt::MemoryWriter w2;
-        WriteAlgCon<typename ProblemType::ExprTypes>(w2, con);
+        w2 << GetModel().con_name(i) << ": ";
+        WriteAlgCon<typename ProblemType::ExprTypes>(
+              w2, con, GetModel().GetVarNamer());
         jw["printed"] = w2.c_str();
       }
       wrt.write("\n");                     // EOL
@@ -251,10 +260,11 @@ protected:
         jw["NL_CON_TYPE"] = "logical";
         int i_actual = GetModel().num_algebraic_cons() + i;
         jw["index"] = i_actual;
-        if (GetModel().con_names().size()>i_actual)
-          jw["name"] = GetModel().con_names()[i_actual];
+        jw["name"] = GetModel().con_name(i_actual);
         fmt::MemoryWriter w2;
-        WriteExpr<typename ProblemType::ExprTypes>(w2, con.expr());
+        w2 << GetModel().con_name(i_actual) << ": ";
+        WriteExpr<typename ProblemType::ExprTypes>(
+              w2, con.expr(), GetModel().GetVarNamer());
         jw["printed"] = w2.c_str();
       }
       wrt.write("\n");                     // EOL

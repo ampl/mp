@@ -475,13 +475,72 @@ public:
   /** Returns the number of variables. */
   int num_vars() const { return static_cast<int>(vars_.size()); }
 
+  /// Normal variable name
+  const std::string& var_name(int i) {
+    assert(0<=i && i<num_vars());
+    return item_name(i, var_names_, num_vars(), "_x[");
+  }
+  /// Defined variable name
+  const std::string& dvar_name(int i) {
+    assert(0<=i && i<num_common_exprs());
+    i += num_vars();
+    return item_name(i, var_names_,
+                     num_vars()+num_common_exprs(), "_x[",
+                     num_vars(), "_sdvar[");
+  }
+  /// Constraint name
+  const std::string& con_name(int i) {
+    assert(0<=i && i<num_cons());
+    return item_name(i, con_names_,
+                     num_cons(),  "_CON",
+                     num_algebraic_cons(), "_LCON");
+  }
+  /// Objective name
+  const std::string& obj_name(int i) {
+    assert(0<=i && i<num_objs());
+    return item_name(i, obj_names_, num_objs(), "_OBJ");
+  }
 
-  /** Returns the variable names (if present). */
+protected:
+  /// Return names[i].
+  /// Generate names[old_size...n-1] if needed,
+  /// so that the whole vector is valid,
+  /// even if only some variables/cons/objs were queried.
+  /// From [n2], name 'stub2'[i-n2] is given.
+  /// If stub/stub2 ends with a '[', ']' is added after the index.
+  static const std::string& item_name(
+      int i, std::vector<std::string>& names,
+      int n, const char* stub,
+      int n2=std::numeric_limits<int>::max(),
+      const char* stub2=nullptr);
+
+public:
+  /** Returns the variable names (if present).
+   *  After normal variables follow defined variables.
+   */
   const std::vector<std::string>& var_names() { return var_names_; }
   /** Returns the constraint names (if present). */
   const std::vector<std::string>& con_names() { return con_names_; }
   /** Returns the objective names (if present). */
   const std::vector<std::string>& obj_names() { return obj_names_; }
+
+  /// Variable namer
+  class VarNamer {
+  public:
+    /// Construct
+    VarNamer(BasicProblem& p) : p_(p) { }
+    /// Normal var name
+    const std::string& vname(int i) const
+    { return p_.var_name(i); }
+    /// Defined var name
+    const std::string& dvname(int i) const
+    { return p_.dvar_name(i); }
+  private:
+    BasicProblem& p_;
+  };
+
+  /// Obtain variable  namer
+  VarNamer GetVarNamer() { return VarNamer(*this); }
 
   /** Returns the number of objectives. */
   int num_objs() const { return static_cast<int>(linear_objs_.size()); }
@@ -669,7 +728,7 @@ public:
 
   /// Set name vectors
   void SetVarNames(std::vector<std::string> names) {
-    assert((size_t)num_vars() == names.size());
+    assert((size_t)(num_vars() + num_common_exprs()) == names.size());
     var_names_ = std::move( names );
   }
   void SetConNames(std::vector<std::string> names) {
