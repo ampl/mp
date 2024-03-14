@@ -691,7 +691,7 @@ class GurobiDirectSolver(MPDirectSolver):
         return ["acc:abs", "acc:and", "acc:cos", "acc:exp", "acc:expa", 
                 "acc:indeq", "acc:indge", "acc:indle", "acc:log", 
                 "acc:loga", "acc:max", "acc:min", "acc:or", "acc:pl", 
-                "acc:pow", "acc:quadeq", "acc:quadge", "acc:quadle", 
+                "acc:pow", 
                 "acc:sin", "acc:sos2", "acc:tan"]
     
     def _setNLPMethod(self, method: str): # reformulation, native, nativepl 
