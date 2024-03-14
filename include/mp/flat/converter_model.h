@@ -262,8 +262,12 @@ protected:
       {
         MiniJSONWriter jw(wrt);
         jw["OBJECTIVE_index"] = i_obj;
-        if (*obj.name())
+        if (obj.name() && *obj.name()) {
           jw["name"] = obj.name();
+          fmt::MemoryWriter pr;
+          WriteModelItem(pr, obj, var_names_storage_);
+          jw["printed"] = pr.c_str();
+        }
         jw["sense"] = (int)obj.obj_sense();
         WriteJSON(jw["qp_terms"], obj.GetQPTerms());
         WriteJSON(jw["lin_terms"], obj.GetLinTerms());

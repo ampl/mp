@@ -7,6 +7,7 @@
 #include "mp/common.h"
 
 #include "mp/flat/expr_quadratic.h"
+#include "mp/flat/obj_std.h"
 #include "mp/flat/model_info.hpp"
 
 namespace mp {
@@ -89,7 +90,52 @@ void WriteVar(Writer& pr, const char* name,
     if (var::INTEGER == ty)
     pr << " integer";
   }
-  pr << ';';
+}
+
+  template <>
+  void WriteModelItem(fmt::MemoryWriter& wrt, const LinTerms& lt,
+                      const std::vector<std::string>& vnam) {
+  for (int i=0; i<(int)lt.size(); ++i) {
+    if (i) {
+      wrt << (lt.coef(i)>=0.0 ? " + " : " - ");
+    }
+    wrt << std::fabs(lt.coef(i)) << '*' << vnam.at(lt.var(i));
+  }
+}
+
+template <>
+void WriteModelItem(fmt::MemoryWriter& wrt, const QuadTerms& qt,
+                    const std::vector<std::string>& vnam) {
+  for (int i=0; i<(int)qt.size(); ++i) {
+    if (i) {
+      wrt << (qt.coef(i)>=0.0 ? " + " : " - ");
+    }
+    wrt << std::fabs(qt.coef(i))
+        << '*' << vnam.at(qt.var1(i))
+        << '*' << vnam.at(qt.var2(i));
+  }
+}
+
+template <>
+void WriteModelItem(fmt::MemoryWriter& wrt, const QuadAndLinTerms& qlt,
+                    const std::vector<std::string>& vnam) {
+
+}
+
+template <>
+void WriteModelItem(fmt::MemoryWriter& wrt, const QuadraticObjective& obj,
+                    const std::vector<std::string>& vnam) {
+  wrt << (obj.obj_sense() ? "maximize " : "minimize ");
+  assert(obj.name() && *obj.name());
+  wrt << obj.name() << ": ";
+  WriteModelItem(wrt, obj.GetLinTerms(), vnam);
+  if (obj.GetQPTerms().size()) {
+    if (obj.GetLinTerms().size())
+      wrt << " + ";
+    wrt << '(';
+    WriteModelItem(wrt, obj.GetQPTerms(), vnam);
+    wrt << ')';
+  }
 }
 
 // Generate

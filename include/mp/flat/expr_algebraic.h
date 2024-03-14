@@ -112,6 +112,11 @@ private:
   double constant_term_ = 0.0;
 };
 
+/// Very general template to write any flat con/obj
+template <class Writer, class Item>
+void WriteModelItem(Writer& wrt, const Item& i,
+                    const std::vector<std::string>& vnam);
+
 /// Very general template to write
 /// a JSON-like representation of anything
 template <class Writer, class Obj>

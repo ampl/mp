@@ -196,6 +196,7 @@ protected:
         jw["name"] = vn.dvname(i);
         auto ce = GetModel().common_expr(i);
         fmt::MemoryWriter w2;
+        w2 << "var " << vn.dvname(i) << " = ";
         WriteExpr<typename ProblemType::ExprTypes>(
               w2, ce.linear_expr(), ce.nonlinear_expr(), vn);
         jw["printed"] = w2.c_str();
@@ -216,6 +217,8 @@ protected:
         auto obj = GetModel().obj(i);
         jw["sense"] = (int)obj.type();
         fmt::MemoryWriter w2;
+        w2 << (obj::MAX==obj.type() ? "maximize " : "minimize ");
+        w2 << GetModel().obj_name(i) << ": ";
         WriteExpr<typename ProblemType::ExprTypes>(
               w2, obj.linear_expr(), obj.nonlinear_expr(),
               GetModel().GetVarNamer());
@@ -237,6 +240,7 @@ protected:
         jw["index"] = i;
         jw["name"] = GetModel().con_name(i);
         fmt::MemoryWriter w2;
+        w2 << GetModel().con_name(i) << ": ";
         WriteAlgCon<typename ProblemType::ExprTypes>(
               w2, con, GetModel().GetVarNamer());
         jw["printed"] = w2.c_str();
@@ -258,6 +262,7 @@ protected:
         jw["index"] = i_actual;
         jw["name"] = GetModel().con_name(i_actual);
         fmt::MemoryWriter w2;
+        w2 << GetModel().con_name(i_actual) << ": ";
         WriteExpr<typename ProblemType::ExprTypes>(
               w2, con.expr(), GetModel().GetVarNamer());
         jw["printed"] = w2.c_str();
