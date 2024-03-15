@@ -103,6 +103,7 @@ inline OptionError OptionTypeError(fmt::StringRef name, fmt::StringRef type) {
 
 
 /// A solver option.
+/// @note description "HIDDEN" means the option is not printed
 class SolverOption {
 public:
   /// Constructs a SolverOption object.
@@ -146,6 +147,9 @@ public:
   /// Add additional "inline" synonyms
   void add_synonyms_front(const char* names_list);
   void add_synonyms_back(const char* names_list);
+
+  /// Is hidden?
+  bool is_hidden() const { return "HIDDEN"==description_; }
 
   /// Wildcards
   bool is_wildcard() const { return wc_headtails_.size(); }
@@ -507,6 +511,7 @@ public:
   };
 
   /// Simple stored option referencing a variable
+  /// @note description "HIDDEN" means the option is not printed
   template <class Value>
   void AddStoredOption(const char *name, const char *description,
                        Value& value, ValueArrayRef values = ValueArrayRef()) {
@@ -517,8 +522,9 @@ public:
 
   /// Simple stored option referencing a variable; min, max values
   /// (they are unused but to deduce type;
-  /// we aree too lazy to maintain correct min/max
+  /// we are too lazy to maintain correct min/max
   /// between solver versions.)
+  /// @note description "HIDDEN" means the option is not printed
   template <class Value>
   void AddStoredOption(const char *name, const char *description,
                        Value& value, Value , Value ) {
@@ -528,6 +534,7 @@ public:
   }
 
   /// Same: stored option referencing a variable; min, max values
+  /// @note description "HIDDEN" means the option is not printed
   template <class Value>
   void AddOption(const char *name, const char *description,
                  Value& value, Value lb, Value ub) {
@@ -557,6 +564,7 @@ public:
   };
 
   /// Add list option referencing a container
+  /// @note description "HIDDEN" means the option is not printed
   template <class Value>
   void AddListOption(const char *name, const char *description,
                        Value& value, ValueArrayRef values = ValueArrayRef()) {
@@ -569,6 +577,7 @@ public:
   /// (they are unused but to deduce type;
   /// we aree too lazy to maintain correct min/max
   /// between solver versions.)
+  /// @note description "HIDDEN" means the option is not printed
   template <class Value>
   void AddListOption(const char *name, const char *description,
                        Value& value,
@@ -615,6 +624,7 @@ public:
   /// string literals).
   /// The arguments get and set should be pointers to member functions in the
   /// solver class. They are used to get and set an option value respectively.
+  /// @note description "HIDDEN" means the option is not printed
   template <typename Handler, typename Int>
   void AddIntOption(const char *name,
                     const char *description, Int (Handler::*get)(const SolverOption &) const,
@@ -629,6 +639,7 @@ public:
   /// string literals).
   /// The arguments get and set should be pointers to member functions in the
   /// solver class. They are used to get and set an option value respectively.
+  /// @note description "HIDDEN" means the option is not printed
   template <typename Handler, typename Info>
   void AddIntOption(const char *name, const char *description,
                     int (Handler::*get)(const SolverOption &, const Info &) const,
@@ -640,6 +651,7 @@ public:
   }
 
   /// The same as above but with Info argument passed by value.
+  /// @note description "HIDDEN" means the option is not printed
   template <typename Handler, typename Info>
   void AddIntOption(const char *name_list, const char *description,
                     int (Handler::*get)(const SolverOption &, Info) const,
@@ -655,6 +667,7 @@ public:
   /// string literals).
   /// The arguments get and set should be pointers to member functions in the
   /// solver class. They are used to get and set an option value respectively.
+  /// @note description "HIDDEN" means the option is not printed
   template <typename Handler>
   void AddDblOption(const char *name, const char *description,
                     double (Handler::*get)(const SolverOption &) const,
@@ -669,6 +682,7 @@ public:
   /// string literals).
   /// The arguments get and set should be pointers to member functions in the
   /// solver class. They are used to get and set an option value respectively.
+  /// @note description "HIDDEN" means the option is not printed
   template <typename Handler, typename Info>
   void AddDblOption(const char *name, const char *description,
                     double (Handler::*get)(const SolverOption &, const Info &) const,
@@ -680,6 +694,7 @@ public:
   }
 
   /// The same as above but with Info argument passed by value.
+  /// @note description "HIDDEN" means the option is not printed
   template <typename Handler, typename Info>
   void AddDblOption(const char *name, const char *description,
                     double (Handler::*get)(const SolverOption &, Info) const,
@@ -694,6 +709,7 @@ public:
   /// string literals).
   /// The arguments get and set should be pointers to member functions in the
   /// solver class. They are used to get and set an option value respectively.
+  /// @note description "HIDDEN" means the option is not printed
   template <typename Handler>
   void AddStrOption(const char *name, const char *description,
                     std::string (Handler::*get)(const SolverOption &) const,
@@ -709,6 +725,7 @@ public:
   /// string literals).
   /// The arguments get and set should be pointers to member functions in the
   /// solver class. They are used to get and set an option value respectively.
+  /// @note description "HIDDEN" means the option is not printed
   template <typename Handler, typename Info>
   void AddStrOption(const char *name, const char *description,
                     std::string (Handler::*get)(const SolverOption &, const Info &) const,
@@ -720,6 +737,7 @@ public:
   }
 
   /// The same as above but with Info argument passed by value.
+  /// @note description "HIDDEN" means the option is not printed
   template <typename Handler, typename Info>
   void AddStrOption(const char *name, const char *description,
                     std::string (Handler::*get)(const SolverOption &, Info) const,

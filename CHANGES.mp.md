@@ -2,6 +2,19 @@ Summary of recent updates to the AMPL MP Library
 ================================================
 
 
+## unreleased
+- *Native handling of POW(x, INT)*.
+  - Power expressions with positive integer exponent
+    are passed natively to the solvers accepting them,
+    vs previously quadratic or linear reformulation.
+  - For best performance, global solving capability
+    might be needed (e.g., Gurobi: `global=1`.)
+- *Unused acc: options*.
+  - The constraint acceptance options *acc:...*
+    for non-handled constraints are ignored
+    (previously triggered error.)
+
+
 ## 20240115
 - *Solve result codes*.
   - List codes by running (solver) -!

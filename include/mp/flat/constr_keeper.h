@@ -451,7 +451,8 @@ public:
       Env& env) {
     auto cancvt = IfConverterConverts(cvt);
     SetChosenAcceptanceLevel( GetModelAPIAcceptance(ma) );
-    if (cancvt) {         // See if ModelAPI accepts too
+    bool optadded = true;
+    if (cancvt) {   // If can convert. But see if ModelAPI accepts too
       if (ConstraintAcceptanceLevel::Recommended ==
             GetChosenAcceptanceLevel()) {
         env.AddStoredOption(GetAcceptanceOptionNames(),
@@ -469,8 +470,15 @@ public:
                                 "default 1:\n\n.. value-table::",
                                 GetConstraintName()).c_str(),
                               GetAccLevRef(), values_item_acceptance);
-        }
-    }
+        } else
+          optadded = false;
+    } else
+      optadded = false;
+    if (!optadded)         // Still add as hidden option
+      env.AddStoredOption(GetAcceptanceOptionNames(),
+                          "HIDDEN",
+                          GetAccLevRef(), 0, 2);
+    // Description table
     env.SetConstraintListHeader(
           "List of flat constraints.\n"
           "For each constraint the following are given:\n"
