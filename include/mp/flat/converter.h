@@ -350,9 +350,9 @@ public: // for ConstraintKeeper
 
   /// Check whether ModelAPI accepts and recommends the constraint
   template <class Constraint>
-  static bool ModelAPIAcceptsAndRecommends(const Constraint* pcon) {
+  bool ModelAPIAcceptsAndRecommends(const Constraint* pcon) const {
     return ConstraintAcceptanceLevel::Recommended ==
-        ModelAPI::AcceptanceLevel(pcon);
+        GetConstraintAcceptance(pcon);
   }
 
   /// Generic adapter for old non-bridged Convert() methods
@@ -877,9 +877,13 @@ public:
   }
 
   /// Whether the ModelAPI accepts quadratic constraints
-  static bool ModelAPIAcceptsQC() {
+  bool ModelAPIAcceptsQC() const {
     return ModelAPIAcceptsAndRecommends(
-          (const QuadConLE*)nullptr);   // if accepts QuadConLE
+          (const QuadConLE*)nullptr)     // if accepts QuadConLE
+        && ModelAPIAcceptsAndRecommends(
+          (const QuadConEQ*)nullptr)
+        && ModelAPIAcceptsAndRecommends(
+          (const QuadConGE*)nullptr);
   }
 
   /// Whether the ModelAPI accepts nonconvex QC
@@ -935,7 +939,7 @@ private:
     int preproNestedAndOrs_ = 1;
 
     int passQuadObj_ = ModelAPIAcceptsQuadObj();
-		int passQuadCon_ = ModelAPIAcceptsQC();
+    int passQuadCon_ = 1;
     int passSOCPCones_ = 0;
     int passSOCP2QC_ = 0;
     int passExpCones_ = 0;
@@ -1051,12 +1055,11 @@ private:
                          "vs. linear approximation.",
         options_.passQuadObj_, 0, 1);
     GetEnv().AddOption("cvt:quadcon passquadcon",
-                       ModelAPIAcceptsQC() ?
-        "0/1*: Multiply out and pass quadratic constraint terms to the solver, "
-        "vs. linear approximation."
-                       :
-        "0*/1: Multiply out and pass quadratic constraint terms to the solver, "
-                         "vs. linear approximation.",
+                       "Convenience option. "
+                       "Set to 0 to disable quadratic constraints. "
+                       "Synonym for acc:quad..=0. "
+                       "Currently this disables out-multiplication "
+                       "of quadratic terms, then they are linearized.",
         options_.passQuadCon_, 0, 1);
     GetEnv().AddOption("cvt:expcones expcones",
                        ModelAPIAcceptsExponentialCones()>1 ?
@@ -1175,14 +1178,15 @@ public:
   bool IfPassQuadObj() const { return options_.passQuadObj_; }
 
   /// Whether we pass quad con terms to the solver without linearization
-  bool IfPassQuadCon() const { return options_.passQuadCon_; }
+  bool IfPassQuadCon() const
+  { return options_.passQuadCon_ && ModelAPIAcceptsQC(); }
 
   /// Whether to quadratize pow(..., const_pos_int).
-  /// The fact that we use the passQuadCon_ flag
+  /// The fact that we use IfPassQuadCon()
   /// is much Gurobi-biased: v9.5 does not PL-linearize Pow
   /// for negative arguments
   bool IfQuadratizePowConstPosIntExp() const
-  { return options_.passQuadCon_; }
+  { return IfPassQuadCon(); }
 
   /// Recognition mode for SOCP cones
   int IfPassSOCPCones() const { return options_.passSOCPCones_; }

@@ -1088,7 +1088,7 @@ private: \
        #Constraint, optionNames}; \
 public: \
   const ConstraintKeeper<Impl, ModelAPI, Constraint>& \
-  GetConstraintKeeper(Constraint* ) const { \
+  GetConstraintKeeper(const Constraint* ) const { \
     return CONSTRAINT_KEEPER_VAR(Constraint); \
   } \
   ConstraintKeeper<Impl, ModelAPI, Constraint>& \
