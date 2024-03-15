@@ -71,6 +71,9 @@ class ModelTags(enum.Enum):
     check_pl_approx_cos = 50004
     check_pl_approx_tan = 50005
 
+    check_pl_approx_pow = 50006
+    check_qp_approx_pow = 50007
+
     check_pl2sos2 = 50500                # Solvers accepting PL constraints but wishing
                                          # to test MP's PL -> SOS2 conversion, by acc:pl=1
 

@@ -27,16 +27,14 @@ public:
 
   /// Check whether the constraint
   /// needs to be converted despite being accepted by ModelAPI.
-  /// This covers cases not accepted by GenConstrPow in Gurobi 10:
+  /// This used to cover cases not accepted by GenConstrPow in Gurobi <=10:
   /// negative lower bound for x while positive integer exponent.
-  /// But we do even more.
-  /// Note that ^2 has been quadratized in ProblemFlattener;
-  /// ^3, ^4, ^6, etc, will be quadratized only with lb(x) < 0.
-  bool IfNeedsConversion(const ItemType& con, int ) {
-    auto pwr = con.GetParameters()[0];
-    return
-        GetMC().lb(con.GetArguments()[0]) < 0.0
-        && pwr>0.0 && std::floor(pwr) == pwr;
+  /// But we did this even for all integer powers >=2
+  /// to avoid PL approximation in Gurobi.
+  /// Cancelled in Gurobi 11.
+  /// Note that ^2 has been quadratized in ProblemFlattener.
+  bool IfNeedsConversion(const ItemType& , int ) {
+    return false;
   }
 
   /// Convert in any context

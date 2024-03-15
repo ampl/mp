@@ -229,25 +229,48 @@
     }
   },
   {
-    "name" : "pow_01_pow4",
+    "name" : "pow_01_pow4_lbx_neg",
     "tags" : ["continuous", "nonlinear"],
     "values": {
       "if abs(_obj[1]+1.8301448602249)<=0.1 then 1 else 0": 1
     }
   },
   {
-    "name" : "pow_02_pow4",
+    "name" : "pow_01a_pow4_x_neg PLApprox",
+    "tags" : ["continuous", "nonlinear", "check_pl_approx_pow"],
+    "options": { "ANYSOLVER_options": "acc:pow=0 cvt:quadcon=0" },
+    "values": {
+      "if abs(_obj[1]+1.8359969243864)<=0.1 then 1 else 0": 1
+    }
+  },
+  {
+    "name" : "pow_01a_pow4_x_neg QPApprox",
+    "tags" : ["continuous", "nonlinear", "check_qp_approx_pow"],
+    "options": { "ANYSOLVER_options": "acc:pow=0" },
+    "values": {
+      "if abs(_obj[1]+1.8359969243864)<=0.1 then 1 else 0": 1
+    }
+  },
+  {
+    "name" : "pow_01a_pow4_x_neg",
+    "tags" : ["continuous", "nonlinear"],
+    "values": {
+      "if abs(_obj[1]+1.8359969243864)<=0.1 then 1 else 0": 1
+    }
+  },
+  {
+    "name" : "pow_02_pow4_lbx_neg",
     "tags" : ["continuous", "nonlinear"],
     "values": {
       "if abs(_obj[1]+1.84178519861971)<=0.01 then 1 else 0": 1
     }
   },
   {
-    "name" : "pow_03_pow5",
+    "name" : "pow_03_pow5_lbx_neg",
     "tags" : ["continuous", "nonlinear", "quadraticnonconvex"],
     "options": {
       "gurobi_options": "nonconvex=2",
-      "comment_gurobi": "For quadratic solvers, pow(x, int>=0) is converted into quadratics",
+      "comment_gurobi": "For quadratic solvers, pow(x, int>=0) may be converted into quadratics",
       "copt_options": "cvt:quadobj=0 cvt:quadcon=0",
       "comment_copt": "non convex constraints, linearise"
     },

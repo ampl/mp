@@ -9,11 +9,11 @@
   },
   {
     "name" : "camel1",
-    "objective" : -1.03163,
+    "objective" : -1.03162910164159,
     "tags" : ["quadraticnonconvex"],
-    "comment_tags": "mp should reduce this example to quadratics",
+    "comment_tags": "mp can reduce this example to quadratics",
     "options": {
-      "gurobi_options": "nonconvex=2"
+      "gurobi_options": "nonconvex=2 global=1"
     }
   }
 ]

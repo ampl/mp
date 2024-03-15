@@ -750,6 +750,9 @@ class GurobiDirectSolver(MPDirectSolver):
                  ModelTags.check_pl_approx_cos,
                  ModelTags.check_pl_approx_tan,
 
+                 ModelTags.check_pl_approx_pow,
+                 ModelTags.check_qp_approx_pow,
+
                  ModelTags.check_pl2sos2,
 
                  ModelTags.check_sos2_from_pl,

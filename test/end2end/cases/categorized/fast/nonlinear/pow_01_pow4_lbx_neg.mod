@@ -1,5 +1,6 @@
 #########################################
-## pow_01_pow4.mod
+## pow_01_pow4_lbx_neg.mod.
+## Tests handling of pow(x) with lb(x)<0.
 #########################################
 
 var x >= -10, <= 11;     ## Reduce range for COPT quadratics
