@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<testsuites>
+	<testsuite name="gurobi" tests="15" errors="0" failures="0" skipped="0" time="0.751">
+		<testcase name="log_02_check_2con_noncvx check_pl_approx_log" time="0.062"/>
+		<testcase name="log_02_check_2con_noncvx check: approx, pl, sos2" time="0.047"/>
+		<testcase name="sin_01" time="0.045999999999999985"/>
+		<testcase name="sin_01 check_pl_approx_sin" time="0.04699999999999993"/>
+		<testcase name="sin_02" time="0.04700000000000015"/>
+		<testcase name="sin_02 check_pl_approx_sin" time="0.04699999999999993"/>
+		<testcase name="cos_01" time="0.04699999999999993"/>
+		<testcase name="cos_01 check_pl_approx_cos" time="0.04699999999999993"/>
+		<testcase name="tan_01" time="0.06299999999999994"/>
+		<testcase name="sin_01 Gurobi: global" time="0.06299999999999994"/>
+		<testcase name="tan_01 Gurobi: funcnonlinear" time="0.04600000000000004"/>
+		<testcase name="tan_01 check_pl_approx_tan" time="0.06299999999999994"/>
+		<testcase name="pow_01_pow4_lbx_neg" time="0.04699999999999993"/>
+		<testcase name="pow_01a_pow4_x_neg PLApprox" time="0.04700000000000015"/>
+		<testcase name="pow_01a_pow4_x_neg QPApprox" time="0.03200000000000003"/>
+	</testsuite>
+	<testsuite name="xpress" tests="15" errors="0" failures="0" skipped="8" time="-7.421">
+		<testcase name="log_02_check_2con_noncvx check_pl_approx_log" time="-1.0">
+			<skipped message="Skipped, unsupported tags"/>
+		</testcase>
+		<testcase name="log_02_check_2con_noncvx check: approx, pl, sos2" time="-1.0">
+			<skipped message="Skipped, unsupported tags"/>
+		</testcase>
+		<testcase name="sin_01" time="0.094"/>
+		<testcase name="sin_01 check_pl_approx_sin" time="-1.0">
+			<skipped message="Skipped, unsupported tags"/>
+		</testcase>
+		<testcase name="sin_02" time="0.07799999999999999"/>
+		<testcase name="sin_02 check_pl_approx_sin" time="-1.0">
+			<skipped message="Skipped, unsupported tags"/>
+		</testcase>
+		<testcase name="cos_01" time="0.07900000000000001"/>
+		<testcase name="cos_01 check_pl_approx_cos" time="-1.0">
+			<skipped message="Skipped, unsupported tags"/>
+		</testcase>
+		<testcase name="tan_01" time="0.07799999999999996"/>
+		<testcase name="sin_01 Gurobi: global" time="0.07799999999999996"/>
+		<testcase name="tan_01 Gurobi: funcnonlinear" time="0.09399999999999986"/>
+		<testcase name="tan_01 check_pl_approx_tan" time="-1.0">
+			<skipped message="Skipped, unsupported tags"/>
+		</testcase>
+		<testcase name="pow_01_pow4_lbx_neg" time="0.07800000000000007"/>
+		<testcase name="pow_01a_pow4_x_neg PLApprox" time="-1.0">
+			<skipped message="Skipped, unsupported tags"/>
+		</testcase>
+		<testcase name="pow_01a_pow4_x_neg QPApprox" time="-1.0">
+			<skipped message="Skipped, unsupported tags"/>
+		</testcase>
+	</testsuite>
+</testsuites>

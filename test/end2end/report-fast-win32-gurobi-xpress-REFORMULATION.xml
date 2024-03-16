@@ -1,0 +1,527 @@
+<?xml version="1.0" encoding="utf-8"?>
+<testsuites>
+	<testsuite name="gurobi" tests="10" errors="0" failures="0" skipped="0" time="0.734">
+		<testcase name="econ2 compl_range" time="0.078"/>
+		<testcase name="compl_quad_01 compl with obj" time="0.07799999999999985"/>
+		<testcase name="compl_quad_02" time="0.062000000000000055"/>
+		<testcase name="compl_quad_02 presolve 0" time="0.04699999999999993"/>
+		<testcase name="socp_01" time="0.04699999999999993"/>
+		<testcase name="socp_02_rqc" time="0.04699999999999993"/>
+		<testcase name="socp_03_sqrt" time="0.04699999999999971"/>
+		<testcase name="socp_04_2cones" time="0.04700000000000015"/>
+		<testcase name="socp_05_rqcSqrt_abs" time="0.04700000000000015"/>
+		<testcase name="TotalVariation2D" time="0.23399999999999999"/>
+	</testsuite>
+	<testsuite name="xpress" tests="10" errors="0" failures="9" skipped="0" time="16.11">
+		<testcase name="econ2 compl_range" time="0.15600000000000003"/>
+		<testcase name="compl_quad_01 compl with obj" time="0.31199999999999994">
+			<failure message="XPRESS 9.3.0 (42.01.05):   lim:time = 10
+  bar:threads = 8
+  acc:abs = 1
+  acc:acos = 1
+  acc:acosh = 1
+  acc:and = 1
+  acc:asin = 1
+  acc:asinh = 1
+  acc:atan = 1
+  acc:atanh = 1
+  acc:cos = 1
+  acc:cosh = 1
+  acc:div = 1
+  acc:exp = 1
+  acc:expa = 1
+  acc:indeq = 1
+  acc:indge = 1
+  acc:indle = 1
+  acc:log = 1
+  acc:max = 1
+  acc:min = 1
+  acc:or = 1
+  acc:pow = 1
+  acc:quadeq = 1
+  acc:quadge = 1
+  acc:quadle = 1
+  acc:sin = 1
+  acc:sinh = 1
+  acc:sos2 = 1
+  acc:tan = 1
+  acc:tanh = 1
+
+------------ WARNINGS ------------
+WARNING:  &quot;IndicatorInfBound&quot;
+  Set bounds on variables
+participating in logical expressions,
+or use option cvt:bigM (with caution).
+See more: mp.ampl.com/modeling-numerics.html
+WARNING.  2 case(s) of &quot;PLApprox&quot;. One of them:
+  An expression of type 'PowConstraint' has been
+piecewise-linearly approximated. Set cvt:plapprox:reltol
+to control precision (currently 0.010000).
+XPRESS 9.3.0 (42.01.05): optimal solution; objective 0.4174463943
+844 simplex iterations
+2 branching nodes
+absmipgap=2.42057e-05, relmipgap=5.79851e-05
+------------ WARNINGS ------------
+WARNING:  &quot;IndicatorInfBound&quot;
+  Set bounds on variables
+participating in logical expressions,
+or use option cvt:bigM (with caution).
+See more: mp.ampl.com/modeling-numerics.html
+WARNING.  2 case(s) of &quot;PLApprox&quot;. One of them:
+  An expression of type 'PowConstraint' has been
+piecewise-linearly approximated. Set cvt:plapprox:reltol
+to control precision (currently 0.010000).
+WARNING:  &quot;Tolerance violations&quot;
+  Type                         MaxAbs [Name]   MaxRel [Name]
+* expr '_pow'                  3E-03           1E-03         
+*: Using the solver's aux variable values.
+Documentation: mp.ampl.com/modeling-tools.html#automatic-solution-check.
+"/>
+		</testcase>
+		<testcase name="compl_quad_02" time="0.09399999999999997">
+			<failure message="XPRESS 9.3.0 (42.01.05):   lim:time = 10
+  bar:threads = 8
+  acc:abs = 1
+  acc:acos = 1
+  acc:acosh = 1
+  acc:and = 1
+  acc:asin = 1
+  acc:asinh = 1
+  acc:atan = 1
+  acc:atanh = 1
+  acc:cos = 1
+  acc:cosh = 1
+  acc:div = 1
+  acc:exp = 1
+  acc:expa = 1
+  acc:indeq = 1
+  acc:indge = 1
+  acc:indle = 1
+  acc:log = 1
+  acc:max = 1
+  acc:min = 1
+  acc:or = 1
+  acc:pow = 1
+  acc:quadeq = 1
+  acc:quadge = 1
+  acc:quadle = 1
+  acc:sin = 1
+  acc:sinh = 1
+  acc:sos2 = 1
+  acc:tan = 1
+  acc:tanh = 1
+
+------------ WARNINGS ------------
+WARNING:  &quot;IndicatorInfBound&quot;
+  Set bounds on variables
+participating in logical expressions,
+or use option cvt:bigM (with caution).
+See more: mp.ampl.com/modeling-numerics.html
+WARNING.  2 case(s) of &quot;PLApprox&quot;. One of them:
+  An expression of type 'PowConstraint' has been
+piecewise-linearly approximated. Set cvt:plapprox:reltol
+to control precision (currently 0.010000).
+XPRESS 9.3.0 (42.01.05): infeasible problem
+51 simplex iterations
+ 
+------------ WARNINGS ------------
+WARNING:  &quot;IndicatorInfBound&quot;
+  Set bounds on variables
+participating in logical expressions,
+or use option cvt:bigM (with caution).
+See more: mp.ampl.com/modeling-numerics.html
+WARNING.  2 case(s) of &quot;PLApprox&quot;. One of them:
+  An expression of type 'PowConstraint' has been
+piecewise-linearly approximated. Set cvt:plapprox:reltol
+to control precision (currently 0.010000).
+Objective = find a feasible point.
+"/>
+		</testcase>
+		<testcase name="compl_quad_02 presolve 0" time="0.09299999999999997">
+			<failure message="XPRESS 9.3.0 (42.01.05):   lim:time = 10
+  bar:threads = 8
+  acc:abs = 1
+  acc:acos = 1
+  acc:acosh = 1
+  acc:and = 1
+  acc:asin = 1
+  acc:asinh = 1
+  acc:atan = 1
+  acc:atanh = 1
+  acc:cos = 1
+  acc:cosh = 1
+  acc:div = 1
+  acc:exp = 1
+  acc:expa = 1
+  acc:indeq = 1
+  acc:indge = 1
+  acc:indle = 1
+  acc:log = 1
+  acc:max = 1
+  acc:min = 1
+  acc:or = 1
+  acc:pow = 1
+  acc:quadeq = 1
+  acc:quadge = 1
+  acc:quadle = 1
+  acc:sin = 1
+  acc:sinh = 1
+  acc:sos2 = 1
+  acc:tan = 1
+  acc:tanh = 1
+
+------------ WARNINGS ------------
+WARNING:  &quot;IndicatorInfBound&quot;
+  Set bounds on variables
+participating in logical expressions,
+or use option cvt:bigM (with caution).
+See more: mp.ampl.com/modeling-numerics.html
+WARNING.  2 case(s) of &quot;PLApprox&quot;. One of them:
+  An expression of type 'PowConstraint' has been
+piecewise-linearly approximated. Set cvt:plapprox:reltol
+to control precision (currently 0.010000).
+XPRESS 9.3.0 (42.01.05): infeasible problem
+51 simplex iterations
+ 
+------------ WARNINGS ------------
+WARNING:  &quot;IndicatorInfBound&quot;
+  Set bounds on variables
+participating in logical expressions,
+or use option cvt:bigM (with caution).
+See more: mp.ampl.com/modeling-numerics.html
+WARNING.  2 case(s) of &quot;PLApprox&quot;. One of them:
+  An expression of type 'PowConstraint' has been
+piecewise-linearly approximated. Set cvt:plapprox:reltol
+to control precision (currently 0.010000).
+Objective = find a feasible point.
+"/>
+		</testcase>
+		<testcase name="socp_01" time="0.14100000000000013">
+			<failure message="XPRESS 9.3.0 (42.01.05):   lim:time = 10
+  bar:threads = 8
+  acc:abs = 1
+  acc:acos = 1
+  acc:acosh = 1
+  acc:and = 1
+  acc:asin = 1
+  acc:asinh = 1
+  acc:atan = 1
+  acc:atanh = 1
+  acc:cos = 1
+  acc:cosh = 1
+  acc:div = 1
+  acc:exp = 1
+  acc:expa = 1
+  acc:indeq = 1
+  acc:indge = 1
+  acc:indle = 1
+  acc:log = 1
+  acc:max = 1
+  acc:min = 1
+  acc:or = 1
+  acc:pow = 1
+  acc:quadeq = 1
+  acc:quadge = 1
+  acc:quadle = 1
+  acc:sin = 1
+  acc:sinh = 1
+  acc:sos2 = 1
+  acc:tan = 1
+  acc:tanh = 1
+
+------------ WARNINGS ------------
+WARNING.  3 case(s) of &quot;PLApprox&quot;. One of them:
+  An expression of type 'PowConstraint' has been
+piecewise-linearly approximated. Set cvt:plapprox:reltol
+to control precision (currently 0.010000).
+XPRESS 9.3.0 (42.01.05): optimal solution; objective 3.47636338
+436 simplex iterations
+absmipgap=4.66521e-05, relmipgap=1.34198e-05
+------------ WARNINGS ------------
+WARNING.  3 case(s) of &quot;PLApprox&quot;. One of them:
+  An expression of type 'PowConstraint' has been
+piecewise-linearly approximated. Set cvt:plapprox:reltol
+to control precision (currently 0.010000).
+WARNING:  &quot;Tolerance violations&quot;
+  Type                         MaxAbs [Name]   MaxRel [Name]
+* expr '_pow'                  2E-02           6E-03         
+*: Using the solver's aux variable values.
+Documentation: mp.ampl.com/modeling-tools.html#automatic-solution-check.
+"/>
+		</testcase>
+		<testcase name="socp_02_rqc" time="0.5630000000000002">
+			<failure message="XPRESS 9.3.0 (42.01.05):   lim:time = 10
+  bar:threads = 8
+  acc:abs = 1
+  acc:acos = 1
+  acc:acosh = 1
+  acc:and = 1
+  acc:asin = 1
+  acc:asinh = 1
+  acc:atan = 1
+  acc:atanh = 1
+  acc:cos = 1
+  acc:cosh = 1
+  acc:div = 1
+  acc:exp = 1
+  acc:expa = 1
+  acc:indeq = 1
+  acc:indge = 1
+  acc:indle = 1
+  acc:log = 1
+  acc:max = 1
+  acc:min = 1
+  acc:or = 1
+  acc:pow = 1
+  acc:quadeq = 1
+  acc:quadge = 1
+  acc:quadle = 1
+  acc:sin = 1
+  acc:sinh = 1
+  acc:sos2 = 1
+  acc:tan = 1
+  acc:tanh = 1
+
+------------ WARNINGS ------------
+WARNING.  4 case(s) of &quot;PLApprox&quot;. One of them:
+  An expression of type 'PowConstraint' has been
+piecewise-linearly approximated. Set cvt:plapprox:reltol
+to control precision (currently 0.010000).
+XPRESS 9.3.0 (42.01.05): optimal solution; objective 3.877122884
+3205 simplex iterations
+1 branching nodes
+absmipgap=1e-05, relmipgap=2.57923e-06
+------------ WARNINGS ------------
+WARNING.  4 case(s) of &quot;PLApprox&quot;. One of them:
+  An expression of type 'PowConstraint' has been
+piecewise-linearly approximated. Set cvt:plapprox:reltol
+to control precision (currently 0.010000).
+"/>
+		</testcase>
+		<testcase name="socp_03_sqrt" time="0.43799999999999994">
+			<failure message="XPRESS 9.3.0 (42.01.05):   lim:time = 10
+  bar:threads = 8
+  acc:abs = 1
+  acc:acos = 1
+  acc:acosh = 1
+  acc:and = 1
+  acc:asin = 1
+  acc:asinh = 1
+  acc:atan = 1
+  acc:atanh = 1
+  acc:cos = 1
+  acc:cosh = 1
+  acc:div = 1
+  acc:exp = 1
+  acc:expa = 1
+  acc:indeq = 1
+  acc:indge = 1
+  acc:indle = 1
+  acc:log = 1
+  acc:max = 1
+  acc:min = 1
+  acc:or = 1
+  acc:pow = 1
+  acc:quadeq = 1
+  acc:quadge = 1
+  acc:quadle = 1
+  acc:sin = 1
+  acc:sinh = 1
+  acc:sos2 = 1
+  acc:tan = 1
+  acc:tanh = 1
+
+------------ WARNINGS ------------
+WARNING.  3 case(s) of &quot;PLApprox&quot;. One of them:
+  An expression of type 'PowConstraint' has been
+piecewise-linearly approximated. Set cvt:plapprox:reltol
+to control precision (currently 0.010000).
+XPRESS 9.3.0 (42.01.05): optimal solution; objective 3.465928825
+608 simplex iterations
+1 branching nodes
+absmipgap=1e-05, relmipgap=2.88523e-06
+------------ WARNINGS ------------
+WARNING.  3 case(s) of &quot;PLApprox&quot;. One of them:
+  An expression of type 'PowConstraint' has been
+piecewise-linearly approximated. Set cvt:plapprox:reltol
+to control precision (currently 0.010000).
+WARNING:  &quot;Tolerance violations&quot;
+  Type                         MaxAbs [Name]   MaxRel [Name]
+* expr '_pow'                  2E-02           6E-03         
+*: Using the solver's aux variable values.
+Documentation: mp.ampl.com/modeling-tools.html#automatic-solution-check.
+"/>
+		</testcase>
+		<testcase name="socp_04_2cones" time="0.4059999999999997">
+			<failure message="XPRESS 9.3.0 (42.01.05):   lim:time = 10
+  bar:threads = 8
+  acc:abs = 1
+  acc:acos = 1
+  acc:acosh = 1
+  acc:and = 1
+  acc:asin = 1
+  acc:asinh = 1
+  acc:atan = 1
+  acc:atanh = 1
+  acc:cos = 1
+  acc:cosh = 1
+  acc:div = 1
+  acc:exp = 1
+  acc:expa = 1
+  acc:indeq = 1
+  acc:indge = 1
+  acc:indle = 1
+  acc:log = 1
+  acc:max = 1
+  acc:min = 1
+  acc:or = 1
+  acc:pow = 1
+  acc:quadeq = 1
+  acc:quadge = 1
+  acc:quadle = 1
+  acc:sin = 1
+  acc:sinh = 1
+  acc:sos2 = 1
+  acc:tan = 1
+  acc:tanh = 1
+
+------------ WARNINGS ------------
+WARNING.  5 case(s) of &quot;PLApprox&quot;. One of them:
+  An expression of type 'PowConstraint' has been
+piecewise-linearly approximated. Set cvt:plapprox:reltol
+to control precision (currently 0.010000).
+XPRESS 9.3.0 (42.01.05): optimal solution; objective 7.768296794
+3062 simplex iterations
+19 branching nodes
+absmipgap=1e-05, relmipgap=1.28728e-06
+------------ WARNINGS ------------
+WARNING.  5 case(s) of &quot;PLApprox&quot;. One of them:
+  An expression of type 'PowConstraint' has been
+piecewise-linearly approximated. Set cvt:plapprox:reltol
+to control precision (currently 0.010000).
+WARNING:  &quot;Tolerance violations&quot;
+  Type                         MaxAbs [Name]   MaxRel [Name]
+* expr '_pow'                  3E-02           8E-03         
+*: Using the solver's aux variable values.
+Documentation: mp.ampl.com/modeling-tools.html#automatic-solution-check.
+"/>
+		</testcase>
+		<testcase name="socp_05_rqcSqrt_abs" time="0.7039999999999997">
+			<failure message="XPRESS 9.3.0 (42.01.05):   lim:time = 10
+  bar:threads = 8
+  acc:abs = 1
+  acc:acos = 1
+  acc:acosh = 1
+  acc:and = 1
+  acc:asin = 1
+  acc:asinh = 1
+  acc:atan = 1
+  acc:atanh = 1
+  acc:cos = 1
+  acc:cosh = 1
+  acc:div = 1
+  acc:exp = 1
+  acc:expa = 1
+  acc:indeq = 1
+  acc:indge = 1
+  acc:indle = 1
+  acc:log = 1
+  acc:max = 1
+  acc:min = 1
+  acc:or = 1
+  acc:pow = 1
+  acc:quadeq = 1
+  acc:quadge = 1
+  acc:quadle = 1
+  acc:sin = 1
+  acc:sinh = 1
+  acc:sos2 = 1
+  acc:tan = 1
+  acc:tanh = 1
+
+------------ WARNINGS ------------
+WARNING.  6 case(s) of &quot;PLApprox&quot;. One of them:
+  An expression of type 'PowConstraint' has been
+piecewise-linearly approximated. Set cvt:plapprox:reltol
+to control precision (currently 0.010000).
+XPRESS 9.3.0 (42.01.05): optimal solution; objective 3.659175889
+8803 simplex iterations
+72 branching nodes
+absmipgap=1e-05, relmipgap=2.73286e-06
+------------ WARNINGS ------------
+WARNING.  6 case(s) of &quot;PLApprox&quot;. One of them:
+  An expression of type 'PowConstraint' has been
+piecewise-linearly approximated. Set cvt:plapprox:reltol
+to control precision (currently 0.010000).
+WARNING:  &quot;Tolerance violations&quot;
+  Type                         MaxAbs [Name]   MaxRel [Name]
+* expr '_pow'                  2E-02           5E-03         
+*: Using the solver's aux variable values.
+Documentation: mp.ampl.com/modeling-tools.html#automatic-solution-check.
+"/>
+		</testcase>
+		<testcase name="TotalVariation2D" time="13.203000000000001">
+			<failure message="XPRESS 9.3.0 (42.01.05):   lim:time = 10
+  bar:threads = 8
+  acc:abs = 1
+  acc:acos = 1
+  acc:acosh = 1
+  acc:and = 1
+  acc:asin = 1
+  acc:asinh = 1
+  acc:atan = 1
+  acc:atanh = 1
+  acc:cos = 1
+  acc:cosh = 1
+  acc:div = 1
+  acc:exp = 1
+  acc:expa = 1
+  acc:indeq = 1
+  acc:indge = 1
+  acc:indle = 1
+  acc:log = 1
+  acc:max = 1
+  acc:min = 1
+  acc:or = 1
+  acc:pow = 1
+  acc:quadeq = 1
+  acc:quadge = 1
+  acc:quadle = 1
+  acc:sin = 1
+  acc:sinh = 1
+  acc:sos2 = 1
+  acc:tan = 1
+  acc:tanh = 1
+
+------------ WARNINGS ------------
+WARNING.  714 case(s) of &quot;PLApprox&quot;. One of them:
+  An expression of type 'PowConstraint' has been
+piecewise-linearly approximated. Set cvt:plapprox:reltol
+to control precision (currently 0.010000).
+WARNING.  714 case(s) of &quot;PLApproxDomain&quot;. One of them:
+  Argument domain of a 'PowConstraint'
+has been reduced to [-316.227766, 316.227766] for numerical reasons
+(partially controlled by cvt:plapprox:domain.)
+XPRESS 9.3.0 (42.01.05): interrupted, no solution
+21457 simplex iterations
+28 barrier iterations
+ 
+------------ WARNINGS ------------
+WARNING.  714 case(s) of &quot;PLApprox&quot;. One of them:
+  An expression of type 'PowConstraint' has been
+piecewise-linearly approximated. Set cvt:plapprox:reltol
+to control precision (currently 0.010000).
+WARNING.  714 case(s) of &quot;PLApproxDomain&quot;. One of them:
+  Argument domain of a 'PowConstraint'
+has been reduced to [-316.227766, 316.227766] for numerical reasons
+(partially controlled by cvt:plapprox:domain.)
+WARNING:  &quot;Tolerance violations&quot;
+  Type                         MaxAbs [Name]   MaxRel [Name]
+  objective(s)                 1E+40           -             
+* expr '_linrange'             1E+00           1E+00         
+*: Using the solver's aux variable values.
+Documentation: mp.ampl.com/modeling-tools.html#automatic-solution-check.
+"/>
+		</testcase>
+	</testsuite>
+</testsuites>

@@ -1,0 +1,25 @@
+Gurobi 11.0.1:   lim:time = 10
+  tech:threads = 8
+  acc:abs = 2
+  acc:and = 2
+  acc:cos = 2
+  acc:exp = 2
+  acc:expa = 2
+  acc:indeq = 2
+  acc:indge = 2
+  acc:indle = 2
+  acc:log = 2
+  acc:loga = 2
+  acc:max = 2
+  acc:min = 2
+  acc:or = 2
+  acc:pl = 2
+  acc:pow = 2
+  acc:sin = 2
+  acc:sos2 = 2
+  acc:tan = 2
+  pre:funcnonlinear = 1
+  cvt:bigM = 100000
+Gurobi 11.0.1: optimal solution
+0 simplex iterations
+Objective = find a feasible point.

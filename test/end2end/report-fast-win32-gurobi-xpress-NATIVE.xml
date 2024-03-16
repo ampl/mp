@@ -1,0 +1,461 @@
+<?xml version="1.0" encoding="utf-8"?>
+<testsuites>
+	<testsuite name="gurobi" tests="83" errors="0" failures="0" skipped="6" time="4.764">
+		<testcase name="econ2 compl_range" time="0.062"/>
+		<testcase name="compl_quad_01 compl with obj" time="0.062000000000000055"/>
+		<testcase name="compl_quad_02" time="0.04700000000000015"/>
+		<testcase name="compl_quad_02 presolve 0" time="0.04699999999999993"/>
+		<testcase name="socp_01" time="0.04699999999999993"/>
+		<testcase name="socp_02_rqc" time="0.03100000000000014"/>
+		<testcase name="socp_03_sqrt" time="0.030999999999999917"/>
+		<testcase name="socp_04_2cones" time="0.03100000000000014"/>
+		<testcase name="socp_05_rqcSqrt_abs" time="0.03200000000000003"/>
+		<testcase name="TotalVariation2D" time="0.23399999999999999"/>
+		<testcase name="TotalVariation2D_Quadr" time="0.23499999999999988"/>
+		<testcase name="socp_06_rsoc_constants" time="0.04599999999999982"/>
+		<testcase name="socp_07_soc_constants" time="0.04699999999999971"/>
+		<testcase name="socp_08_sqrt_constants" time="0.04700000000000015"/>
+		<testcase name="socp_09_rsoc_hyperb_eoq" time="0.04700000000000015"/>
+		<testcase name="socp_10_qpobj" time="0.03100000000000014"/>
+		<testcase name="socp_11_qpobj__RSOC" time="0.04599999999999982"/>
+		<testcase name="socp_12__issue229_2" time="0.04699999999999971"/>
+		<testcase name="expcones_01__plain" time="0.0">
+			<skipped message="Skipped, unsupported tags"/>
+		</testcase>
+		<testcase name="expcones_02" time="0.0">
+			<skipped message="Skipped, unsupported tags"/>
+		</testcase>
+		<testcase name="expcones_03" time="0.0">
+			<skipped message="Skipped, unsupported tags"/>
+		</testcase>
+		<testcase name="expcones_04__negvar" time="0.0">
+			<skipped message="Skipped, unsupported tags"/>
+		</testcase>
+		<testcase name="expcones_05__const" time="0.0">
+			<skipped message="Skipped, unsupported tags"/>
+		</testcase>
+		<testcase name="expcones_06__kelly__affexp_lhs" time="0.0">
+			<skipped message="Skipped, unsupported tags"/>
+		</testcase>
+		<testcase name="assign1 [if, alldiff]" time="0.04699999999999971"/>
+		<testcase name="flowshp1 [or]" time="0.06300000000000061"/>
+		<testcase name="flowshp2 [or, ==&gt;]" time="0.04699999999999971"/>
+		<testcase name="balassign0 [linear]" time="0.06300000000000061"/>
+		<testcase name="balassign1 [numberof]" time="0.0779999999999994"/>
+		<testcase name="sched0 [linear]" time="0.04699999999999971"/>
+		<testcase name="sched1 [count, if]" time="0.04699999999999971"/>
+		<testcase name="sched2 [numberof, if]" time="0.04699999999999971"/>
+		<testcase name="x-multmip3 [count, if]" time="0.07800000000000029"/>
+		<testcase name="x-multmip3 [count, if] cmpEps=0.01" time="0.07800000000000029"/>
+		<testcase name="x-multmip3__gt0 [count, if]" time="0.0779999999999994"/>
+		<testcase name="x-multmip1 [if, &gt;]" time="0.09299999999999997"/>
+		<testcase name="sudoku easy [alldiff, repeated vars in LinCon]" time="0.0940000000000003"/>
+		<testcase name="div01 nonconvex=2" time="0.06200000000000028"/>
+		<testcase name="max1" time="0.04699999999999971"/>
+		<testcase name="max2" time="0.031000000000000583"/>
+		<testcase name="maxMinAbsAffine" time="0.0470000000000006"/>
+		<testcase name="and_or_max_01" time="0.06299999999999972"/>
+		<testcase name="poly_01" time="0.045999999999999375"/>
+		<testcase name="and_or_max_poly_01" time="0.06200000000000028"/>
+		<testcase name="infeas_int_01 iisfind=1" time="0.04699999999999882"/>
+		<testcase name="infeas_int_02_vars iisfind=1 presolve 0" time="0.0470000000000006"/>
+		<testcase name="infeas_03__iisforce iisfind iisforce presolve 0" time="0.0470000000000006"/>
+		<testcase name="infeas_int_02_vars feasrelax=4 ubpen=300" time="0.06299999999999883"/>
+		<testcase name="infeas_int_01 feasrelax=5" time="0.062000000000001165"/>
+		<testcase name="infeas_int_01 feasrelax=6" time="0.04699999999999882"/>
+		<testcase name="infeas_int_01_negsuffix feasrelax=1" time="0.0470000000000006"/>
+		<testcase name="infeas_int_01 feasrelax=1" time="0.0470000000000006"/>
+		<testcase name="infeas_lcon_04" time="0.06300000000000061"/>
+		<testcase name="infeas_lcon_05 .funcpieces IN" time="0.04699999999999882"/>
+		<testcase name="infeas_lcon_05 .iis OUT" time="0.5779999999999994"/>
+		<testcase name="infeas_lcon_06 .funcpieces IN" time="0.04699999999999882"/>
+		<testcase name="infeas_lcon_07 .funcpieces IN" time="0.0470000000000006"/>
+		<testcase name="mapcoloring" time="0.04699999999999882"/>
+		<testcase name="eqVarConst01" time="0.0470000000000006"/>
+		<testcase name="ifthen_var cmp:eps=1e-4" time="0.0470000000000006"/>
+		<testcase name="ifthen_var cmp:eps=0" time="0.045999999999999375"/>
+		<testcase name="ifthen_var cmp:eps=0 chk:fail" time="0.0470000000000006"/>
+		<testcase name="test_int_non_int" time="0.0470000000000006"/>
+		<testcase name="impl1" time="0.0470000000000006"/>
+		<testcase name="impl2" time="0.03100000000000236"/>
+		<testcase name="impl3_var_EQ_var" time="0.0470000000000006"/>
+		<testcase name="impl3_var_LE_var" time="0.0470000000000006"/>
+		<testcase name="impl3_var_LE_var__extra" time="0.030999999999998806"/>
+		<testcase name="impl3_vev_lhs" time="0.0470000000000006"/>
+		<testcase name="impl3_vnev_lhs" time="0.0470000000000006"/>
+		<testcase name="impl4__reuseLEInSameCtx" time="0.045999999999999375"/>
+		<testcase name="impl5_commonExpr" time="0.0470000000000006"/>
+		<testcase name="impl6_if" time="0.046999999999997044"/>
+		<testcase name="impl_else_01" time="0.0470000000000006"/>
+		<testcase name="impl_else_02" time="0.045999999999999375"/>
+		<testcase name="int_ne_01" time="0.0470000000000006"/>
+		<testcase name="int_ne_02__vnec" time="0.046999999999997044"/>
+		<testcase name="int_ne_03__vnec__amplebnd" time="0.0470000000000006"/>
+		<testcase name="float_ne_01__vnec cvt:mip:eps" time="0.030999999999998806"/>
+		<testcase name="booleq_01" time="0.0470000000000006"/>
+		<testcase name="booleq_02" time="0.046999999999997044"/>
+		<testcase name="x-multmip3_small" time="0.06299999999999883"/>
+		<testcase name="mip_round_01 mip:round=1" time="0.0470000000000006"/>
+	</testsuite>
+	<testsuite name="xpress" tests="83" errors="0" failures="6" skipped="15" time="12.65">
+		<testcase name="econ2 compl_range" time="0.14100000000000001"/>
+		<testcase name="compl_quad_01 compl with obj" time="0.10900000000000001"/>
+		<testcase name="compl_quad_02" time="0.09399999999999997"/>
+		<testcase name="compl_quad_02 presolve 0" time="0.07799999999999996"/>
+		<testcase name="socp_01" time="0.07799999999999996"/>
+		<testcase name="socp_02_rqc" time="0.07899999999999996"/>
+		<testcase name="socp_03_sqrt" time="0.07799999999999996"/>
+		<testcase name="socp_04_2cones" time="0.07799999999999985"/>
+		<testcase name="socp_05_rqcSqrt_abs" time="0.07800000000000007"/>
+		<testcase name="TotalVariation2D" time="0.15599999999999992"/>
+		<testcase name="TotalVariation2D_Quadr" time="0.15599999999999992"/>
+		<testcase name="socp_06_rsoc_constants" time="0.0940000000000003"/>
+		<testcase name="socp_07_soc_constants" time="0.09299999999999997"/>
+		<testcase name="socp_08_sqrt_constants" time="0.07799999999999985"/>
+		<testcase name="socp_09_rsoc_hyperb_eoq" time="0.09299999999999997">
+			<failure message="XPRESS 9.3.0 (42.01.05):   lim:time = 10
+  bar:threads = 8
+  acc:abs = 2
+  acc:acos = 2
+  acc:acosh = 2
+  acc:and = 2
+  acc:asin = 2
+  acc:asinh = 2
+  acc:atan = 2
+  acc:atanh = 2
+  acc:cos = 2
+  acc:cosh = 2
+  acc:div = 2
+  acc:exp = 2
+  acc:expa = 2
+  acc:indeq = 2
+  acc:indge = 2
+  acc:indle = 2
+  acc:log = 2
+  acc:max = 2
+  acc:min = 2
+  acc:or = 2
+  acc:pow = 2
+  acc:quadeq = 2
+  acc:quadge = 2
+  acc:quadle = 2
+  acc:sin = 2
+  acc:sinh = 2
+  acc:sos2 = 2
+  acc:tan = 2
+  acc:tanh = 2
+XPRESS 9.3.0 (42.01.05): optimal solution; objective 2738.613139
+9 barrier iterations
+"/>
+		</testcase>
+		<testcase name="socp_10_qpobj" time="0.09399999999999986"/>
+		<testcase name="socp_11_qpobj__RSOC" time="0.07800000000000029"/>
+		<testcase name="socp_12__issue229_2" time="0.09299999999999997"/>
+		<testcase name="expcones_01__plain" time="0.0">
+			<skipped message="Skipped, unsupported tags"/>
+		</testcase>
+		<testcase name="expcones_02" time="0.0">
+			<skipped message="Skipped, unsupported tags"/>
+		</testcase>
+		<testcase name="expcones_03" time="0.0">
+			<skipped message="Skipped, unsupported tags"/>
+		</testcase>
+		<testcase name="expcones_04__negvar" time="0.0">
+			<skipped message="Skipped, unsupported tags"/>
+		</testcase>
+		<testcase name="expcones_05__const" time="0.0">
+			<skipped message="Skipped, unsupported tags"/>
+		</testcase>
+		<testcase name="expcones_06__kelly__affexp_lhs" time="0.0">
+			<skipped message="Skipped, unsupported tags"/>
+		</testcase>
+		<testcase name="assign1 [if, alldiff]" time="0.07799999999999985"/>
+		<testcase name="flowshp1 [or]" time="0.10899999999999999"/>
+		<testcase name="flowshp2 [or, ==&gt;]" time="0.10899999999999999"/>
+		<testcase name="balassign0 [linear]" time="0.10899999999999999"/>
+		<testcase name="balassign1 [numberof]" time="0.125"/>
+		<testcase name="sched0 [linear]" time="0.0779999999999994"/>
+		<testcase name="sched1 [count, if]" time="0.09299999999999997"/>
+		<testcase name="sched2 [numberof, if]" time="0.0940000000000003"/>
+		<testcase name="x-multmip3 [count, if]" time="0.18799999999999972"/>
+		<testcase name="x-multmip3 [count, if] cmpEps=0.01" time="0.1869999999999994"/>
+		<testcase name="x-multmip3__gt0 [count, if]" time="0.18700000000000028"/>
+		<testcase name="x-multmip1 [if, &gt;]" time="0.20399999999999974"/>
+		<testcase name="sudoku easy [alldiff, repeated vars in LinCon]" time="0.14100000000000001"/>
+		<testcase name="div01 nonconvex=2" time="0.09399999999999942">
+			<failure message="XPRESS 9.3.0 (42.01.05):   lim:time = 10
+  bar:threads = 8
+  acc:abs = 2
+  acc:acos = 2
+  acc:acosh = 2
+  acc:and = 2
+  acc:asin = 2
+  acc:asinh = 2
+  acc:atan = 2
+  acc:atanh = 2
+  acc:cos = 2
+  acc:cosh = 2
+  acc:div = 2
+  acc:exp = 2
+  acc:expa = 2
+  acc:indeq = 2
+  acc:indge = 2
+  acc:indle = 2
+  acc:log = 2
+  acc:max = 2
+  acc:min = 2
+  acc:or = 2
+  acc:pow = 2
+  acc:quadeq = 2
+  acc:quadge = 2
+  acc:quadle = 2
+  acc:sin = 2
+  acc:sinh = 2
+  acc:sos2 = 2
+  acc:tan = 2
+  acc:tanh = 2
+?1128 Error: No Xpress Global Solver license found. Please contact your vendor to obtain a license
+  Call failed: 'XPRSoptimize(lp(), flags.c_str(), &amp;amp;solvest, &amp;amp;solst)' with code 1, message:
+?1128 Error: No Xpress Global Solver license found. Please contact your vendor to obtain a license
+"/>
+		</testcase>
+		<testcase name="max1" time="0.09299999999999997"/>
+		<testcase name="max2" time="0.07800000000000029"/>
+		<testcase name="maxMinAbsAffine" time="0.09299999999999997"/>
+		<testcase name="and_or_max_01" time="0.07800000000000029"/>
+		<testcase name="poly_01" time="0.10999999999999943"/>
+		<testcase name="and_or_max_poly_01" time="0.125"/>
+		<testcase name="infeas_int_01 iisfind=1" time="0.10899999999999999">
+			<failure message="XPRESS 9.3.0 (42.01.05):   lim:time = 10
+  bar:threads = 8
+  acc:abs = 2
+  acc:acos = 2
+  acc:acosh = 2
+  acc:and = 2
+  acc:asin = 2
+  acc:asinh = 2
+  acc:atan = 2
+  acc:atanh = 2
+  acc:cos = 2
+  acc:cosh = 2
+  acc:div = 2
+  acc:exp = 2
+  acc:expa = 2
+  acc:indeq = 2
+  acc:indge = 2
+  acc:indle = 2
+  acc:log = 2
+  acc:max = 2
+  acc:min = 2
+  acc:or = 2
+  acc:pow = 2
+  acc:quadeq = 2
+  acc:quadge = 2
+  acc:quadle = 2
+  acc:sin = 2
+  acc:sinh = 2
+  acc:sos2 = 2
+  acc:tan = 2
+  acc:tanh = 2
+  alg:iisfind = 1
+XPRESS 9.3.0 (42.01.05): infeasible problem
+11 simplex iterations
+1 branching nodes
+
+suffix iis symbolic OUT;
+
+option iis_table '\
+0	non	not in the iis\
+1	low	at lower bound\
+2	fix	fixed\
+3	upp	at upper bound\
+4	mem	member\
+5	pmem	possible member\
+6	plow	possibly at lower bound\
+7	pupp	possibly at upper bound\
+8	bug\
+';
+"/>
+		</testcase>
+		<testcase name="infeas_int_02_vars iisfind=1 presolve 0" time="0.0779999999999994">
+			<failure message="XPRESS 9.3.0 (42.01.05):   lim:time = 10
+  bar:threads = 8
+  acc:abs = 2
+  acc:acos = 2
+  acc:acosh = 2
+  acc:and = 2
+  acc:asin = 2
+  acc:asinh = 2
+  acc:atan = 2
+  acc:atanh = 2
+  acc:cos = 2
+  acc:cosh = 2
+  acc:div = 2
+  acc:exp = 2
+  acc:expa = 2
+  acc:indeq = 2
+  acc:indge = 2
+  acc:indle = 2
+  acc:log = 2
+  acc:max = 2
+  acc:min = 2
+  acc:or = 2
+  acc:pow = 2
+  acc:quadeq = 2
+  acc:quadge = 2
+  acc:quadle = 2
+  acc:sin = 2
+  acc:sinh = 2
+  acc:sos2 = 2
+  acc:tan = 2
+  acc:tanh = 2
+  alg:iisfind = 1
+XPRESS 9.3.0 (42.01.05): infeasible problem
+1 simplex iterations
+
+suffix iis symbolic OUT;
+
+option iis_table '\
+0	non	not in the iis\
+1	low	at lower bound\
+2	fix	fixed\
+3	upp	at upper bound\
+4	mem	member\
+5	pmem	possible member\
+6	plow	possibly at lower bound\
+7	pupp	possibly at upper bound\
+8	bug\
+';
+"/>
+		</testcase>
+		<testcase name="infeas_03__iisforce iisfind iisforce presolve 0" time="0.0">
+			<skipped message="Skipped, unsupported tags"/>
+		</testcase>
+		<testcase name="infeas_int_02_vars feasrelax=4 ubpen=300" time="0.0">
+			<skipped message="Skipped, unsupported tags"/>
+		</testcase>
+		<testcase name="infeas_int_01 feasrelax=5" time="0.0">
+			<skipped message="Skipped, unsupported tags"/>
+		</testcase>
+		<testcase name="infeas_int_01 feasrelax=6" time="0.0">
+			<skipped message="Skipped, unsupported tags"/>
+		</testcase>
+		<testcase name="infeas_int_01_negsuffix feasrelax=1" time="0.0">
+			<skipped message="Skipped, unsupported tags"/>
+		</testcase>
+		<testcase name="infeas_int_01 feasrelax=1" time="0.0">
+			<skipped message="Skipped, unsupported tags"/>
+		</testcase>
+		<testcase name="infeas_lcon_04" time="5.937">
+			<failure message="XPRESS 9.3.0 (42.01.05):   lim:time = 10
+  bar:threads = 8
+  acc:abs = 2
+  acc:acos = 2
+  acc:acosh = 2
+  acc:and = 2
+  acc:asin = 2
+  acc:asinh = 2
+  acc:atan = 2
+  acc:atanh = 2
+  acc:cos = 2
+  acc:cosh = 2
+  acc:div = 2
+  acc:exp = 2
+  acc:expa = 2
+  acc:indeq = 2
+  acc:indge = 2
+  acc:indle = 2
+  acc:log = 2
+  acc:max = 2
+  acc:min = 2
+  acc:or = 2
+  acc:pow = 2
+  acc:quadeq = 2
+  acc:quadge = 2
+  acc:quadle = 2
+  acc:sin = 2
+  acc:sinh = 2
+  acc:sos2 = 2
+  acc:tan = 2
+  acc:tanh = 2
+  alg:iisfind = 1
+exit value 3
+&amp;lt;BREAK&amp;gt;
+"/>
+		</testcase>
+		<testcase name="infeas_lcon_05 .funcpieces IN" time="0.0">
+			<skipped message="Skipped, unsupported tags"/>
+		</testcase>
+		<testcase name="infeas_lcon_05 .iis OUT" time="0.09399999999999942">
+			<failure message="XPRESS 9.3.0 (42.01.05):   lim:time = 10
+  bar:threads = 8
+  acc:abs = 2
+  acc:acos = 2
+  acc:acosh = 2
+  acc:and = 2
+  acc:asin = 2
+  acc:asinh = 2
+  acc:atan = 2
+  acc:atanh = 2
+  acc:cos = 2
+  acc:cosh = 2
+  acc:div = 2
+  acc:exp = 2
+  acc:expa = 2
+  acc:indeq = 2
+  acc:indge = 2
+  acc:indle = 2
+  acc:log = 2
+  acc:max = 2
+  acc:min = 2
+  acc:or = 2
+  acc:pow = 2
+  acc:quadeq = 2
+  acc:quadge = 2
+  acc:quadle = 2
+  acc:sin = 2
+  acc:sinh = 2
+  acc:sos2 = 2
+  acc:tan = 2
+  acc:tanh = 2
+  alg:iisfind = 1
+?1128 Error: No Xpress Global Solver license found. Please contact your vendor to obtain a license
+  Call failed: 'XPRSoptimize(lp(), flags.c_str(), &amp;amp;solvest, &amp;amp;solst)' with code 1, message:
+?1128 Error: No Xpress Global Solver license found. Please contact your vendor to obtain a license
+Objective = find a feasible point.
+"/>
+		</testcase>
+		<testcase name="infeas_lcon_06 .funcpieces IN" time="0.0">
+			<skipped message="Skipped, unsupported tags"/>
+		</testcase>
+		<testcase name="infeas_lcon_07 .funcpieces IN" time="0.0">
+			<skipped message="Skipped, unsupported tags"/>
+		</testcase>
+		<testcase name="mapcoloring" time="0.09300000000000175"/>
+		<testcase name="eqVarConst01" time="0.07800000000000118"/>
+		<testcase name="ifthen_var cmp:eps=1e-4" time="0.10899999999999999"/>
+		<testcase name="ifthen_var cmp:eps=0" time="0.09399999999999942"/>
+		<testcase name="ifthen_var cmp:eps=0 chk:fail" time="0.09399999999999942"/>
+		<testcase name="test_int_non_int" time="0.07800000000000118"/>
+		<testcase name="impl1" time="0.09299999999999997"/>
+		<testcase name="impl2" time="0.09399999999999942"/>
+		<testcase name="impl3_var_EQ_var" time="0.0779999999999994"/>
+		<testcase name="impl3_var_LE_var" time="0.09299999999999997"/>
+		<testcase name="impl3_var_LE_var__extra" time="0.0779999999999994"/>
+		<testcase name="impl3_vev_lhs" time="0.09299999999999997"/>
+		<testcase name="impl3_vnev_lhs" time="0.07800000000000296"/>
+		<testcase name="impl4__reuseLEInSameCtx" time="0.0940000000000012"/>
+		<testcase name="impl5_commonExpr" time="0.0779999999999994"/>
+		<testcase name="impl6_if" time="0.09399999999999764"/>
+		<testcase name="impl_else_01" time="0.0940000000000012"/>
+		<testcase name="impl_else_02" time="0.10999999999999943"/>
+		<testcase name="int_ne_01" time="0.0779999999999994"/>
+		<testcase name="int_ne_02__vnec" time="0.09399999999999764"/>
+		<testcase name="int_ne_03__vnec__amplebnd" time="0.0940000000000012"/>
+		<testcase name="float_ne_01__vnec cvt:mip:eps" time="0.0940000000000012"/>
+		<testcase name="booleq_01" time="0.0779999999999994"/>
+		<testcase name="booleq_02" time="0.0779999999999994"/>
+		<testcase name="x-multmip3_small" time="0.0940000000000012"/>
+		<testcase name="mip_round_01 mip:round=1" time="0.0779999999999994"/>
+	</testsuite>
+</testsuites>

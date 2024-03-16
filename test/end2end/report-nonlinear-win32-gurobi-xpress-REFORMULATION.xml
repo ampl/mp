@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="utf-8"?>
+<testsuites>
+	<testsuite name="gurobi" tests="33" errors="0" failures="1" skipped="0" time="1.796">
+		<testcase name="log_02_check_2con_noncvx" time="0.063"/>
+		<testcase name="log_02_check_2con_noncvx check_pl_approx_log" time="0.06300000000000017"/>
+		<testcase name="log_02_check_2con_noncvx check: approx, pl, sos2" time="0.062000000000000055"/>
+		<testcase name="sin_01" time="0.04700000000000015"/>
+		<testcase name="sin_01 check_pl_approx_sin" time="0.07800000000000007"/>
+		<testcase name="sin_02" time="0.06299999999999994"/>
+		<testcase name="sin_02 check_pl_approx_sin" time="0.03100000000000014"/>
+		<testcase name="cos_01" time="0.04700000000000015"/>
+		<testcase name="cos_01 check_pl_approx_cos" time="0.04700000000000015"/>
+		<testcase name="tan_01" time="0.06199999999999983"/>
+		<testcase name="sin_01 Gurobi: global" time="0.06200000000000028"/>
+		<testcase name="tan_01 Gurobi: funcnonlinear" time="0.06199999999999983"/>
+		<testcase name="tan_01 check_pl_approx_tan" time="0.06300000000000017"/>
+		<testcase name="pow_01_pow4_lbx_neg" time="0.04699999999999971"/>
+		<testcase name="pow_01a_pow4_x_neg PLApprox" time="0.06300000000000017"/>
+		<testcase name="pow_01a_pow4_x_neg QPApprox" time="0.04700000000000015"/>
+		<testcase name="pow_01a_pow4_x_neg" time="0.04699999999999971"/>
+		<testcase name="pow_02_pow4_lbx_neg" time="0.04700000000000015"/>
+		<testcase name="pow_03_pow5_lbx_neg" time="0.04699999999999971"/>
+		<testcase name="pow_04_pow1.35" time="0.04700000000000015"/>
+		<testcase name="pow_05_pow_minus0.35" time="0.0470000000000006"/>
+		<testcase name="pow_06_pow_minus0.3" time="0.04699999999999971"/>
+		<testcase name="asin_01" time="0.04699999999999971"/>
+		<testcase name="acos_01" time="0.06300000000000061"/>
+		<testcase name="atan_01" time="0.04699999999999971">
+			<failure message="Gurobi 11.0.1:   lim:time = 10
+  tech:threads = 8
+  acc:abs = 1
+  acc:and = 1
+  acc:cos = 1
+  acc:exp = 1
+  acc:expa = 1
+  acc:indeq = 1
+  acc:indge = 1
+  acc:indle = 1
+  acc:log = 1
+  acc:loga = 1
+  acc:max = 1
+  acc:min = 1
+  acc:or = 1
+  acc:pl = 1
+  acc:pow = 1
+  acc:sin = 1
+  acc:sos2 = 1
+  acc:tan = 1
+
+------------ WARNINGS ------------
+WARNING:  &quot;PLApprox&quot;
+  An expression of type 'AtanConstraint' has been
+piecewise-linearly approximated. Set cvt:plapprox:reltol
+to control precision (currently 0.010000).
+WARNING:  &quot;PLApproxDomain&quot;
+  Argument domain of a 'AtanConstraint'
+has been reduced to [-100000.000000, 100000.000000] for numerical reasons
+(partially controlled by cvt:plapprox:domain.)
+Gurobi 11.0.1: optimal solution; objective 9.203642012
+25 simplex iterations
+1 branching node
+ 
+------------ WARNINGS ------------
+WARNING:  &quot;PLApprox&quot;
+  An expression of type 'AtanConstraint' has been
+piecewise-linearly approximated. Set cvt:plapprox:reltol
+to control precision (currently 0.010000).
+WARNING:  &quot;PLApproxDomain&quot;
+  Argument domain of a 'AtanConstraint'
+has been reduced to [-100000.000000, 100000.000000] for numerical reasons
+(partially controlled by cvt:plapprox:domain.)
+WARNING:  &quot;Tolerance violations&quot;
+  Type                         MaxAbs [Name]   MaxRel [Name]
+* expr '_atan'                 3E-01           9E-01         
+*: Using the solver's aux variable values.
+Documentation: mp.ampl.com/modeling-tools.html#automatic-solution-check.
+"/>
+		</testcase>
+		<testcase name="sinh_01" time="0.06200000000000028"/>
+		<testcase name="sinh_01_integer" time="0.06200000000000028"/>
+		<testcase name="cosh_01" time="0.06200000000000028"/>
+		<testcase name="tanh_01" time="0.04699999999999971"/>
+		<testcase name="asinh_01" time="0.06200000000000028"/>
+		<testcase name="acosh_01" time="0.06200000000000028"/>
+		<testcase name="atanh_01" time="0.04600000000000026"/>
+		<testcase name="tanh_02" time="0.04699999999999971"/>
+	</testsuite>
+	<testsuite name="xpress" tests="33" errors="0" failures="1" skipped="8" time="3.441">
+		<testcase name="log_02_check_2con_noncvx" time="0.172"/>
+		<testcase name="log_02_check_2con_noncvx check_pl_approx_log" time="0.0">
+			<skipped message="Skipped, unsupported tags"/>
+		</testcase>
+		<testcase name="log_02_check_2con_noncvx check: approx, pl, sos2" time="0.0">
+			<skipped message="Skipped, unsupported tags"/>
+		</testcase>
+		<testcase name="sin_01" time="0.14100000000000001"/>
+		<testcase name="sin_01 check_pl_approx_sin" time="0.0">
+			<skipped message="Skipped, unsupported tags"/>
+		</testcase>
+		<testcase name="sin_02" time="0.07799999999999996"/>
+		<testcase name="sin_02 check_pl_approx_sin" time="0.0">
+			<skipped message="Skipped, unsupported tags"/>
+		</testcase>
+		<testcase name="cos_01" time="0.09399999999999997"/>
+		<testcase name="cos_01 check_pl_approx_cos" time="0.0">
+			<skipped message="Skipped, unsupported tags"/>
+		</testcase>
+		<testcase name="tan_01" time="0.266"/>
+		<testcase name="sin_01 Gurobi: global" time="0.10999999999999988"/>
+		<testcase name="tan_01 Gurobi: funcnonlinear" time="0.28100000000000014"/>
+		<testcase name="tan_01 check_pl_approx_tan" time="0.0">
+			<skipped message="Skipped, unsupported tags"/>
+		</testcase>
+		<testcase name="pow_01_pow4_lbx_neg" time="0.10899999999999999"/>
+		<testcase name="pow_01a_pow4_x_neg PLApprox" time="0.0">
+			<skipped message="Skipped, unsupported tags"/>
+		</testcase>
+		<testcase name="pow_01a_pow4_x_neg QPApprox" time="0.0">
+			<skipped message="Skipped, unsupported tags"/>
+		</testcase>
+		<testcase name="pow_01a_pow4_x_neg" time="0.10899999999999999"/>
+		<testcase name="pow_02_pow4_lbx_neg" time="0.125"/>
+		<testcase name="pow_03_pow5_lbx_neg" time="0.10999999999999988"/>
+		<testcase name="pow_04_pow1.35" time="0.0940000000000003"/>
+		<testcase name="pow_05_pow_minus0.35" time="0.125"/>
+		<testcase name="pow_06_pow_minus0.3" time="0.07799999999999985"/>
+		<testcase name="asin_01" time="0.125"/>
+		<testcase name="acos_01" time="0.125"/>
+		<testcase name="atan_01" time="0.2030000000000003"/>
+		<testcase name="sinh_01" time="0.2030000000000003">
+			<failure message="XPRESS 9.3.0 (42.01.05):   lim:time = 10
+  bar:threads = 8
+  acc:abs = 1
+  acc:acos = 1
+  acc:acosh = 1
+  acc:and = 1
+  acc:asin = 1
+  acc:asinh = 1
+  acc:atan = 1
+  acc:atanh = 1
+  acc:cos = 1
+  acc:cosh = 1
+  acc:div = 1
+  acc:exp = 1
+  acc:expa = 1
+  acc:indeq = 1
+  acc:indge = 1
+  acc:indle = 1
+  acc:log = 1
+  acc:max = 1
+  acc:min = 1
+  acc:or = 1
+  acc:pow = 1
+  acc:quadeq = 1
+  acc:quadge = 1
+  acc:quadle = 1
+  acc:sin = 1
+  acc:sinh = 1
+  acc:sos2 = 1
+  acc:tan = 1
+  acc:tanh = 1
+
+------------ WARNINGS ------------
+WARNING:  &quot;PLApprox&quot;
+  An expression of type 'SinhConstraint' has been
+piecewise-linearly approximated. Set cvt:plapprox:reltol
+to control precision (currently 0.010000).
+WARNING:  &quot;PLApproxDomain&quot;
+  Argument domain of a 'SinhConstraint'
+has been reduced to [-14.000000, 14.000000] for numerical reasons
+(partially controlled by cvt:plapprox:domain.)
+XPRESS 9.3.0 (42.01.05): optimal solution; objective 6.969993616
+302 simplex iterations
+1 branching nodes
+ 
+------------ WARNINGS ------------
+WARNING:  &quot;PLApprox&quot;
+  An expression of type 'SinhConstraint' has been
+piecewise-linearly approximated. Set cvt:plapprox:reltol
+to control precision (currently 0.010000).
+WARNING:  &quot;PLApproxDomain&quot;
+  Argument domain of a 'SinhConstraint'
+has been reduced to [-14.000000, 14.000000] for numerical reasons
+(partially controlled by cvt:plapprox:domain.)
+WARNING:  &quot;Tolerance violations&quot;
+  Type                         MaxAbs [Name]   MaxRel [Name]
+* expr '_sinh'                 2E-02           3E-02         
+*: Using the solver's aux variable values.
+Documentation: mp.ampl.com/modeling-tools.html#automatic-solution-check.
+"/>
+		</testcase>
+		<testcase name="sinh_01_integer" time="0.1720000000000006"/>
+		<testcase name="cosh_01" time="0.11000000000000032"/>
+		<testcase name="tanh_01" time="0.125"/>
+		<testcase name="asinh_01" time="0.14100000000000001"/>
+		<testcase name="acosh_01" time="0.11000000000000032"/>
+		<testcase name="atanh_01" time="0.0940000000000003"/>
+		<testcase name="tanh_02" time="0.14100000000000001"/>
+	</testsuite>
+</testsuites>

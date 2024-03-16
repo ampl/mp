@@ -1,0 +1,36 @@
+XPRESS 9.3.0 (42.01.05):   lim:time = 10
+  bar:threads = 8
+  acc:abs = 2
+  acc:acos = 2
+  acc:acosh = 2
+  acc:and = 2
+  acc:asin = 2
+  acc:asinh = 2
+  acc:atan = 2
+  acc:atanh = 2
+  acc:cos = 2
+  acc:cosh = 2
+  acc:div = 2
+  acc:exp = 2
+  acc:expa = 2
+  acc:indeq = 2
+  acc:indge = 2
+  acc:indle = 2
+  acc:log = 2
+  acc:max = 2
+  acc:min = 2
+  acc:or = 2
+  acc:pow = 2
+  acc:quadeq = 2
+  acc:quadge = 2
+  acc:quadle = 2
+  acc:sin = 2
+  acc:sinh = 2
+  acc:sos2 = 2
+  acc:tan = 2
+  acc:tanh = 2
+  cvt:bigM = 100000
+XPRESS 9.3.0 (42.01.05): optimal solution
+572 simplex iterations
+13 branching nodes
+Objective = find a feasible point.

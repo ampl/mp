@@ -1,0 +1,42 @@
+Gurobi 11.0.1:   lim:time = 10
+  tech:threads = 8
+  acc:abs = 1
+  acc:and = 1
+  acc:cos = 1
+  acc:exp = 1
+  acc:expa = 1
+  acc:indeq = 1
+  acc:indge = 1
+  acc:indle = 1
+  acc:log = 1
+  acc:loga = 1
+  acc:max = 1
+  acc:min = 1
+  acc:or = 1
+  acc:pl = 1
+  acc:pow = 1
+  acc:sin = 1
+  acc:sos2 = 1
+  acc:tan = 1
+  pre:funcpieces = -2
+  pre:funcpieceerror = 1e-05
+
+------------ WARNINGS ------------
+WARNING:  "PLApprox"
+  An expression of type 'LogConstraint' has been
+piecewise-linearly approximated. Set cvt:plapprox:reltol
+to control precision (currently 0.010000).
+Gurobi 11.0.1: optimal solution; objective 0.09501927392
+12 simplex iterations
+1 branching node
+ 
+------------ WARNINGS ------------
+WARNING:  "PLApprox"
+  An expression of type 'LogConstraint' has been
+piecewise-linearly approximated. Set cvt:plapprox:reltol
+to control precision (currently 0.010000).
+WARNING:  "Tolerance violations"
+  Type                         MaxAbs [Name]   MaxRel [Name]
+* expr '_log'                  5E-03           5E-02         
+*: Using the solver's aux variable values.
+Documentation: mp.ampl.com/modeling-tools.html#automatic-solution-check.
