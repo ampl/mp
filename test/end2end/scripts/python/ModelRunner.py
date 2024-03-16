@@ -15,6 +15,9 @@ class ModelRunner(object):
     def getRuns(self):
         return self._runs
 
+    def getModels(self) -> list:
+        return self._models
+
     def getLogFileName(m : Model, s : Solver):
         return f"{m.getName()}.{s.getName()}.log"
 
@@ -24,6 +27,18 @@ class ModelRunner(object):
         n = 0
         nFailed = 0
         nSkipped = 0
+        
+        # Set to true for junit to add the solver output to the test result
+        keep_output=False
+        try:
+        # Attempt to access the class
+            __import__("JunitExporter")
+            import JunitExporter
+            if isinstance(exporter, JunitExporter.JunitExporter):
+                keep_output=True
+        except:
+            pass
+        
         for m in modelList:
             n += 1
             if m.isNL():
@@ -32,7 +47,8 @@ class ModelRunner(object):
             else:
                 if not self._amplRunners:
                     self._amplRunners = [
-                        AMPLRunner(r, self._optionsExtra, keepAMPLOutput=verbose)
+                        AMPLRunner(r, self._optionsExtra, 
+                                   printOutput=verbose, storeOutput=keep_output)
                         for r in self._runners ]
                 cr = self._amplRunners
                 msg = "{}. Solving with AMPL: '{}'".format(n, m.getName())
@@ -69,6 +85,8 @@ class ModelRunner(object):
                     if EFM in stats:
                         if EM in stats:
                             stats[EFM]= stats[EM]
+                    if keep_output:
+                         stats["output"]=r.get_output()
                     self._runs[i][-1] = stats
                     if exporter:
                         if not exporter.printStatus(m, stats):

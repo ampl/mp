@@ -61,9 +61,8 @@ class BenchmarkExporter(Exporter):
 
     def writeLastResultLine(self, mr: ModelRunner):
         i = len( mr.getRuns()[0] )
-        m = mr._models[i-1]
+        m = mr.getModels()[i-1]
         res = [m.getName(), m.getExpectedObjective()]
-       
         stats = self.getModelsStats(mr.getRuns()[0])
         if stats != None:
             res.extend(stats)

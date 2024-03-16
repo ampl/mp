@@ -15,22 +15,49 @@ class InnerOutputHandler(OutputHandler):
             if error in msg:
                 return True
         return False
-    def __init__(self, appendError, storeOutput = False,):
-      self._storeOutput = storeOutput
+    def __init__(self, appendError, printOutput = False, storeOutput=False):
+      self._printOutput = printOutput
       self._appendError = appendError
+      self.file = None
+      self._storeOutput = storeOutput
       if storeOutput:
         self._msgs = list()
         self._kinds = list()
+    def clear_output(self):
+        self._msgs = []
+        self._kinds = []
+    def get_output(self) -> str:
+       return "".join(self._msgs)
+    def append_error_to_list(self, msg: str):
+       self._msgs.append(msg)
+       self._kinds.append("ERROR")
+    def __del__(self):
+       self.close_log()
+    def is_recording_output(self) -> bool:
+        return self._storeOutput
+    
+    def set_log_file(self, filename: str):
+       try:
+        self.file = open(filename , 'w')
+       except IOError:
+            print("Error: Could not open file.")
+    def close_log(self):
+       if self.file:
+           self.file.close()
+           self.file = None
     def output(self, kind, msg):
         # Check if the message contains errors coming from the solver, 
         # that are passed as normal messages from AMPL but could help
         # with better error detection
       if InnerOutputHandler.isInvalidOption(msg):
-          self._appendError(msg)
+         self._appendError(msg)
+      if self.file:
+         self.file.write(msg)
       if self._storeOutput:
         self._kinds.append(kind)
         self._msgs.append(msg)
-        print(msg, flush=True)
+      if self._printOutput:
+         print(msg, flush=True)
       pass
     def getMessages(self):
       return self._msgs
@@ -49,7 +76,8 @@ class InnerErrorHandler(ErrorHandler):
 class AMPLRunner(object):
 
     def __init__(self, solver=None, optionsExtra=None, writeSolverName = False,
-                 keepAMPLOutput = False):
+                 printOutput=False,
+                 storeOutput = False):
         self.isBenchmark = False
         if solver:
             self.setSolver(solver)
@@ -57,7 +85,8 @@ class AMPLRunner(object):
             self._solver = None
         self._writeSolverName = writeSolverName
         self._amplInitialized = False
-        self._keepAMPLOutput = keepAMPLOutput
+        self._storeOutput = storeOutput
+        self._printOutput = printOutput
         self._optionsExtra = optionsExtra
         self._logFile = None
 
@@ -66,15 +95,19 @@ class AMPLRunner(object):
           self._ampl.reset()
           self._ampl.eval("reset options;")
           self._setSolverInAMPL(model)
+          self._outputHandler.clear_output()
           return
         if self.isBenchmark: # Issues with non-server licenses
             time.sleep(.5)   # so wait until the license is released
         self._ampl = AMPL()
-        doLogs = self._logFile is not None
-        self._outputHandler = InnerOutputHandler(self.appendError, self._keepAMPLOutput)
+        self._outputHandler = InnerOutputHandler(self.appendError, printOutput=self._printOutput, 
+                                                 storeOutput=self._storeOutput)
+        if self._logFile is not None:
+            self._outputHandler.set_log_file(self._logFile)
         self._ampl.setOutputHandler(self._outputHandler)
         self._ampl.setErrorHandler(InnerErrorHandler(self.appendError))
-        self._ampl.setOption("solver_msg", 1 if doLogs else 0)
+        solver_msg = self._logFile is not None or self._printOutput or self._storeOutput
+        self._ampl.setOption("solver_msg", solver_msg)
         if self._solver:
           self._setSolverInAMPL(model)
         self._amplInitialized = True
@@ -85,6 +118,8 @@ class AMPLRunner(object):
 
     def appendError(self, exception):
       self._lastError = exception
+      if self._outputHandler.is_recording_output():
+         self._outputHandler.append_error_to_list(str(exception))
 
     def readModel(self, model: Model):
         mp = Path(model.getFilePath())
@@ -196,7 +231,10 @@ class AMPLRunner(object):
         if model.isScript() or model.doCd():
             self._ampl.cd(mp)
         return self.readModel(model)
-
+    
+    def get_output(self) -> str:
+     return self._outputHandler.get_output()
+    
     def runAndEvaluate(self, model: Model, logFile : str):
         self._run(model, logFile)
         self._evaluateRun(model)
@@ -264,6 +302,8 @@ class AMPLRunner(object):
           if solve_result != "solved":
               print("WARNING: not solved (solve_result: {})".format(solve_result))
           amplStats["AMPLsolveTime"]= t.toc()
+      # Close log before any further amplapi operations
+      self._outputHandler.close_log()
       self.stats["AMPLstats"] = amplStats
       interval = self._ampl.getValue("_solve_elapsed_time")
       self.stats["solutionTime"] = interval
