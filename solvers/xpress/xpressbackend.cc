@@ -2708,8 +2708,11 @@ pre::ValueMapInt XpressmpBackend::ConsIIS() {
     0, contype.data(), 0, 0, 0, isolrows.data(), 0));
   std::vector<int> iis_lincon(NumLinCons(), 0);
   for (int i = 0; i < nconsiis; i++)
-    iis_lincon[i] = (int)IIS_VarToAMPL(contype[i]);
-  return { {{ CG_Linear, iis_lincon }} }; // TODO other constraint types
+  {
+    if ((contype[i] != 'X') && (contype[i] != 'I') && (contype[i] != 'W'))
+      iis_lincon[cons[i]] = (int)IIS_ConsToAMPL(contype[i]);
+  }
+  return { {{ CG_All, iis_lincon }} }; // TODO other constraint types
 }
 
 void XpressmpBackend::AddPrimalDualStart(Solution sol0_unpres) {

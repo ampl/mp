@@ -30,7 +30,6 @@ class JunitExporter(Exporter):
             if isinstance(solver, Solver.Solver):
                 solver=solver.getName() 
             self._test_suites[solver]= TestSuite(solver)
-     
         
     def append_last_results(self, mr: ModelRunner):
       
@@ -43,13 +42,13 @@ class JunitExporter(Exporter):
             if isinstance(solver, Solver.Solver):
                 solver=solver.getName()
             tc=TestCase(res[0], time= r[-1].get("solutionTime", 0))
-            
             if "Skipped" in last_run["outmsg"]:
                 tc.result=[Skipped(last_run["outmsg"])]
             if "eval_fail_msg" in last_run:
                 safe_string = xml.sax.saxutils.escape(last_run["output"])
                 safe_string =safe_string .replace('\b', '')
-                tc.result=[Failure(safe_string)]
+                tc.system_out=safe_string
+                tc.result=[Failure(last_run["eval_fail_msg"])]
             
             
             self._test_suites[solver].add_testcase(tc)
