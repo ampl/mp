@@ -26,8 +26,7 @@ class JunitExporter(Exporter):
             elif "64" in machine:
                 return "linux64"
         elif system == "Darwin":  # MacOS
-            if "64" in machine:
-                return "osx64"
+            return "osx64"
         return "unknown"
 
     def get_file_name(self, solver: str):
@@ -49,7 +48,7 @@ class JunitExporter(Exporter):
             if isinstance(solver, Solver.Solver):
                 solver=solver.getName() 
             name = f"{solver}-{JunitExporter.get_platform_string()}"
-            self._test_suites[solver]= TestSuite(solver)
+            self._test_suites[solver]= TestSuite(name)
         
     def append_last_results(self, mr: ModelRunner):
       i = len( mr.getRuns()[0] )
