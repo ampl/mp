@@ -4,7 +4,7 @@ from pathlib import Path
 from shutil import which
 
 from Solver import Solver
-from amplpy import AMPL, Kind, OutputHandler, ErrorHandler
+from amplpy import AMPL, Kind, OutputHandler, ErrorHandler, Environment
 from Model import Model
 import time
 from TimeMe import TimeMe
@@ -99,7 +99,9 @@ class AMPLRunner(object):
           return
         if self.isBenchmark: # Issues with non-server licenses
             time.sleep(.5)   # so wait until the license is released
-        self._ampl = AMPL()
+        # To do: revert back to x-ampl when issue 162 in escrow is fixed
+        e = Environment(binary_name="ampl")
+        self._ampl = AMPL(e)
         self._outputHandler = InnerOutputHandler(self.appendError, printOutput=self._printOutput, 
                                                  storeOutput=self._storeOutput)
         if self._logFile is not None:

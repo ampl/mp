@@ -11,9 +11,9 @@ class JunitExporter(Exporter):
         self._test_suites={}
         
 
-    def get_file_name(self):
+    def get_file_name(self, solver: str):
         base_name, _= splitext(self._fileName)
-        return base_name + '.xml'
+        return f"{solver}-{base_name}.xml"
     
     def exportInstanceResults(self, mr: ModelRunner):
         i = len( mr.getRuns()[0] )
@@ -54,10 +54,11 @@ class JunitExporter(Exporter):
             self._test_suites[solver].add_testcase(tc)
                    
     def save(self):
-      xml = JUnitXml()
-      for ts in self._test_suites.values():
+      
+      for solver,ts in self._test_suites.items():
+        xml = JUnitXml()
         xml.add_testsuite(ts)
-      xml.write(self.get_file_name(), pretty=True)
+        xml.write(self.get_file_name(solver), pretty=True)
 
       # for res in results:
       #   n = res[0]
