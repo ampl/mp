@@ -4,12 +4,31 @@ import Solver
 import ModelRunner
 from os.path import splitext
 import xml.sax.saxutils
+import platform
 
 class JunitExporter(Exporter):
     def __init__(self, fileName=""):
         self._fileName=fileName
         self._test_suites={}
         
+    def get_platform_string():
+        system = platform.system()
+        machine = platform.machine()
+
+        if system == "Windows":
+            if "64" in machine:
+                return "win64"
+            else:
+                return "win32"
+        elif system == "Linux":
+            if "aarch64" in machine:
+                return "linuxaarch64"
+            elif "64" in machine:
+                return "linux64"
+        elif system == "Darwin":  # MacOS
+            if "64" in machine:
+                return "osx64"
+        return "unknown"
 
     def get_file_name(self, solver: str):
         base_name, _= splitext(self._fileName)
@@ -29,10 +48,10 @@ class JunitExporter(Exporter):
             solver=last_run["solver"]
             if isinstance(solver, Solver.Solver):
                 solver=solver.getName() 
+            name = f"{solver}-{JunitExporter.get_platform_string()}"
             self._test_suites[solver]= TestSuite(solver)
         
     def append_last_results(self, mr: ModelRunner):
-      
       i = len( mr.getRuns()[0] )
       m = mr.getModels()[i-1]
       res = [m.getName(), m.getExpectedObjective()]
@@ -46,7 +65,7 @@ class JunitExporter(Exporter):
                 tc.result=[Skipped(last_run["outmsg"])]
             if "eval_fail_msg" in last_run:
                 safe_string = xml.sax.saxutils.escape(last_run["output"])
-                safe_string =safe_string .replace('\b', '')
+                safe_string =safe_string.replace('\b', '')
                 tc.system_out=safe_string
                 tc.result=[Failure(last_run["eval_fail_msg"])]
             
@@ -59,21 +78,3 @@ class JunitExporter(Exporter):
         xml = JUnitXml()
         xml.add_testsuite(ts)
         xml.write(self.get_file_name(solver), pretty=True)
-
-      # for res in results:
-      #   n = res[0]
-      #   r = res[1]
-      #   tc=TestCase(n, time= r[1])
-      #   if r[0] != 0:
-      #     outputlog = r[2].replace("\n", "")
-      #     failuremessage = f"Exit code: {r[0]}"
-      #     if len(outputlog) > 0:
-      #       failuremessage += f"\n{outputlog}"
-      #     else:
-      #       failuremessage += f"\nstdout and stderr empty."
-      #     tc.result=[Failure(failuremessage, "Runtime failure")]
-      #   ts.add_testcase(tc)
-      # xml = JUnitXml()
-      # xml.add_testsuite(ts)
-      # xml.write(self.get_file_name(), pretty=True)
-  
