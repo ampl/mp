@@ -322,9 +322,9 @@ protected:
     SuffixDef<double> sufTimeSolver = { "time_solver", suf::PROBLEM | suf::OUTONLY };
     SuffixDef<double> sufTimeSetup = { "time_setup", suf::PROBLEM | suf::OUTONLY };
     SuffixDef<double> sufTime = { "time", suf::PROBLEM | suf::OUTONLY };
-    double solution_time[]{ stats_.solution_time }
-    double setup_time[]{ stats_.setup_time }
-    double time[]{ stats_.solution_time + stats_.setup_time }
+    double solution_time[]{ stats_.solution_time };
+    double setup_time[]{ stats_.setup_time };
+    double time[]{ stats_.solution_time + stats_.setup_time };
     ReportSuffix(sufTimeSolver, solution_time);
     ReportSuffix(sufTimeSetup, setup_time);
     ReportSuffix(sufTime, time);
@@ -954,13 +954,13 @@ protected:
         "``.sol[.tar.gz]``, ``.json``, ``.bas``, ``.ilp``, etc.",
         storedOptions_.export_sol_files_);
 
-      AddStoredOption("tech:reporttimes reporttimes",
-        "0*/1: Set to 1 to return the solution times in the problem suffixes "
-        "'time_solver', 'time_setup' and 'time' and in the solver message. "
-        "'time'= 'time_solver'+'time_setup' is a measure of the total time "
-        "spent in the solver driver; all times are wall times.",
-        storedOptions_.report_times_);
- }
+    AddStoredOption("tech:reporttimes reporttimes",
+                    "0*/1: Set to 1 to return the solution times in the problem suffixes "
+                    "'time_solver', 'time_setup' and 'time' and in the solver message. "
+                    "'time'= 'time_solver'+'time_setup' is a measure of the total time "
+                    "spent in the solver driver; all times are wall times.",
+                    storedOptions_.report_times_);
+  }
 
   virtual void InitCustomOptions() { }
 
