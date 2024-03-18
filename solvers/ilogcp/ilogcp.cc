@@ -824,7 +824,7 @@ void IlogCPSolver::Solve(Problem &p, SolutionHandler &sh) {
 }
 
 void IlogCPSolver::InitProblemModificationPhase(const Problem &p) {
-  stats.time = steady_clock::now();
+  stats.time = std::chrono::steady_clock::now();
 
   optimizer = optimizer_;
   if (optimizer == AUTO) {

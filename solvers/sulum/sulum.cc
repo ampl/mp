@@ -21,7 +21,7 @@
  */
 
 #include "sulum/sulum.h"
-#include "mp/clock.h"
+#include "mp/utils-clock.h"
 
 #include <limits>
 
@@ -151,7 +151,7 @@ SulumSolver::~SulumSolver() {
 }
 
 void SulumSolver::Solve(ColProblem &p, SolutionHandler &sh) {
-  steady_clock::time_point time = steady_clock::now();
+  std::chrono::steady_clock::time_point time = std::chrono::steady_clock::now();
 
   if (p.has_nonlinear_cons() || p.num_logical_cons() != 0)
     throw Error("Sulum doesn't support nonlinear problems");

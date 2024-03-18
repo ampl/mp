@@ -52,7 +52,7 @@
 #include <limits.h> /* Needed for g++ -m32 on MacOSX. */
 #include <string>
 
-#include "mp/clock.h"
+#include "mp/utils-clock.h"
 #include "mp/solver.h"
 
 namespace mp {
@@ -144,7 +144,7 @@ class IlogCPSolver : public SolverImpl<Problem> {
   void SetCPLEXIntOption(const SolverOption &opt, int value, int param);
 
   struct Stats {
-    steady_clock::time_point time;
+    std::chrono::steady_clock::time_point time;
     double setup_time;
     double solution_time;
   };

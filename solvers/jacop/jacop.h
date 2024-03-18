@@ -25,7 +25,7 @@
 
 #include <vector>
 
-#include "mp/clock.h"
+#include "mp/utils-clock.h"
 #include "mp/expr-visitor.h"
 #include "mp/problem.h"
 #include "mp/solver.h"
@@ -398,7 +398,7 @@ class JaCoPSolver : public SolverImpl<Problem> {
   std::vector<std::string> jvm_options_;
   jlong outlev_;
   double output_frequency_;
-  steady_clock::time_point next_output_time_;
+  std::chrono::steady_clock::time_point next_output_time_;
   unsigned output_count_;
   std::string header_;
   const char *var_select_;
@@ -456,10 +456,10 @@ class JaCoPSolver : public SolverImpl<Problem> {
   void Output(fmt::CStringRef format, const fmt::ArgList &args);
   FMT_VARIADIC(void, Output, fmt::CStringRef)
 
-  steady_clock::duration GetOutputInterval() const {
-    return steady_clock::duration(
-          static_cast<steady_clock::rep>(output_frequency_ *
-              steady_clock::period::den / steady_clock::period::num));
+  std::chrono::steady_clock::duration GetOutputInterval() const {
+    return std::chrono::steady_clock::duration(
+          static_cast<std::chrono::steady_clock::rep>(output_frequency_ *
+              std::chrono::steady_clock::period::den / std::chrono::steady_clock::period::num));
   }
 
   // Prints the solution log entry if the time is right.

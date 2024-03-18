@@ -37,7 +37,7 @@
 # pragma warning(pop)
 #endif
 
-#include "mp/clock.h"
+#include "mp/utils-clock.h"
 #include "mp/expr-visitor.h"
 #include "mp/problem.h"
 #include "mp/solver.h"
@@ -358,14 +358,14 @@ class GecodeSolver : public SolverImpl<Problem> {
   class Stop : public Gecode::Search::Stop {
    private:
     GecodeSolver &solver_;
-    steady_clock::time_point end_time_;
-    steady_clock::time_point next_output_time_;
+    std::chrono::steady_clock::time_point end_time_;
+    std::chrono::steady_clock::time_point next_output_time_;
     bool output_or_limit_;
 
-    steady_clock::duration GetOutputInterval() const {
-      return steady_clock::duration(
-            static_cast<steady_clock::rep>(solver_.output_frequency_ *
-                steady_clock::period::den / steady_clock::period::num));
+    std::chrono::steady_clock::duration GetOutputInterval() const {
+      return std::chrono::steady_clock::duration(
+            static_cast<std::chrono::steady_clock::rep>(solver_.output_frequency_ *
+                std::chrono::steady_clock::period::den / std::chrono::steady_clock::period::num));
     }
 
    public:

@@ -518,14 +518,14 @@ GecodeSolver::Stop::Stop(GecodeSolver &solver)
 : solver_(solver) {
   output_or_limit_ = solver.output_ || solver.time_limit_ < DBL_MAX ||
       solver.node_limit_ != ULONG_MAX || solver.fail_limit_ != ULONG_MAX;
-  steady_clock::time_point start = steady_clock::now();
+  std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
   double end_time_in_ticks = start.time_since_epoch().count() +
-      solver.time_limit_ * steady_clock::period::den /
-      steady_clock::period::num;
-  end_time_ = steady_clock::time_point(steady_clock::duration(
-      end_time_in_ticks >= std::numeric_limits<steady_clock::rep>::max() ?
-          std::numeric_limits<steady_clock::rep>::max() :
-          static_cast<steady_clock::rep>(end_time_in_ticks)));
+      solver.time_limit_ * std::chrono::steady_clock::period::den /
+      std::chrono::steady_clock::period::num;
+  end_time_ = std::chrono::steady_clock::time_point(std::chrono::steady_clock::duration(
+      end_time_in_ticks >= std::numeric_limits<std::chrono::steady_clock::rep>::max() ?
+          std::numeric_limits<std::chrono::steady_clock::rep>::max() :
+          static_cast<std::chrono::steady_clock::rep>(end_time_in_ticks)));
   next_output_time_ = start + GetOutputInterval();
 }
 
@@ -536,7 +536,7 @@ bool GecodeSolver::Stop::stop(
     return true;
   }
   if (!output_or_limit_) return false;
-  steady_clock::time_point time = steady_clock::now();
+  std::chrono::steady_clock::time_point time = std::chrono::steady_clock::now();
   if (solver_.output_ && time >= next_output_time_) {
     solver_.Output("{:10} {:10} {:10}\n", s.depth, s.node, s.fail);
     next_output_time_ += GetOutputInterval();
@@ -783,7 +783,7 @@ GecodeSolver::ProblemPtr GecodeSolver::Search(
 }
 
 void GecodeSolver::Solve(Problem &p, SolutionHandler &sh) {
-  steady_clock::time_point time = steady_clock::now();
+  std::chrono::steady_clock::time_point time = std::chrono::steady_clock::now();
 
   SetStatus(-1, "");
 
