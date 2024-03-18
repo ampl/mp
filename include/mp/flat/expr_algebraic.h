@@ -112,10 +112,17 @@ private:
   double constant_term_ = 0.0;
 };
 
-/// Very general template to write any flat con/obj
-template <class Writer, class Item>
-void WriteModelItem(Writer& wrt, const Item& i,
-                    const std::vector<std::string>& vnam);
+
+/// Write algebraic expr.
+template <class Writer, class Terms>
+inline void WriteModelItem(Writer& wrt,
+                    const AlgebraicExpression<Terms>& ale,
+                    const std::vector<std::string>& vnam) {
+  WriteModelItem(wrt, ale.GetBody(), vnam);
+  wrt << (ale.constant_term()>=0 ? " + " : " - ")
+      << std::fabs(ale.constant_term());
+}
+
 
 /// Very general template to write
 /// a JSON-like representation of anything

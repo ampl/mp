@@ -31,7 +31,7 @@ def MatchSelection(m, srch, fwd, bwd):
 def WriteDict(d):
   for k, v in d.items():
     with st.expander("""### """ + k):
-      st.write(v)
+      st.code(v, language='ampl')
 
 # Or even better, call Streamlit functions inside a "with" block:
 if uploader is not None:

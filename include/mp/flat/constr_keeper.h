@@ -409,7 +409,8 @@ public:
   virtual int GetNumberOfAddable() const = 0;
 
   /// This adds all unbridged items to the backend (without conversion)
-  virtual void AddUnbridgedToBackend(BasicFlatModelAPI& be) = 0;
+  virtual void AddUnbridgedToBackend(
+      BasicFlatModelAPI& be, const std::vector<std::string>* vnames) = 0;
 
   /// This logs the constraint group
   virtual void LogConstraintGroup(BasicFlatModelAPI& be) = 0;
@@ -782,9 +783,11 @@ public:
   }
 
   /// Add remaining constraints to Backend
-  void AddUnbridgedToBackend(BasicFlatModelAPI& be) override {
+  void AddUnbridgedToBackend(
+      BasicFlatModelAPI& be,
+      const std::vector<std::string>* pvnam) override {
     try {
-      AddAllUnbridged(be);
+      AddAllUnbridged(be, pvnam);
     } catch (const std::exception& exc) {
       MP_RAISE(std::string("Adding constraint of type '") +
                              Constraint::GetTypeName() + "' to " +
@@ -923,16 +926,25 @@ protected:
       GetLogger()->Append(wrt);
     }
   }
-  /// Export constraint status
-  void ExportConStatus(int i_con, const Container& cnt) {
+  /// Export constraint status.
+  /// This is called in the end,
+  /// so printing the readbale form.
+  void ExportConStatus(int i_con, const Container& cnt,
+                       const std::vector<std::string>* pvnam) {
     if (GetLogger()) {
       fmt::MemoryWriter wrt;
       {
         MiniJSONWriter jw(wrt);
         jw["CON_TYPE"] = GetShortTypeName();
         jw["index"] = i_con;
-        if (*cnt.con_.name())
+        if (*cnt.con_.name()) {
           jw["name"] = cnt.con_.name();
+          if (pvnam && pvnam->size()) {
+            fmt::MemoryWriter pr;
+            WriteFlatCon(pr, cnt.con_, *pvnam);
+            jw["printed"] = pr.c_str();
+          }
+        }
         jw["depth"] = cnt.GetDepth();
         jw["unused"] = (int)cnt.IsUnused();
         jw["bridged"] = (int)cnt.IsBridged();
@@ -1030,8 +1042,10 @@ public:
 
 
 protected:
-	/// Add all non-converted items to ModelAPI
-  void AddAllUnbridged(BasicFlatModelAPI& be) {
+  /// Add all non-converted items to ModelAPI.
+  /// Export all constraints if desired.
+  void AddAllUnbridged(BasicFlatModelAPI& be,
+                       const std::vector<std::string>* pvnam) {
     int con_index=0;
     auto con_group = GetConstraintGroup(be);
     for (const auto& cont: cons_) {
@@ -1044,7 +1058,7 @@ protected:
                          GetConValues()(con_group).Add()
                      });
       }
-      ExportConStatus(con_index, cont);
+      ExportConStatus(con_index, cont, pvnam);
       ++con_index;                      // increment index
     }
   }
@@ -1248,9 +1262,10 @@ public:
 
   /// Add all unbridged constraints to Backend
   void AddUnbridgedConstraintsToBackend(
-      BasicFlatModelAPI& be) const {
+      BasicFlatModelAPI& be,
+      const std::vector<std::string>* pvnam=nullptr) const {
     for (const auto& ck: con_keepers_)
-      ck.second.AddUnbridgedToBackend(be);
+      ck.second.AddUnbridgedToBackend(be, pvnam);
   }
 
   /// Log constraint groups

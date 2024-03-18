@@ -215,6 +215,14 @@ public:
   }
 };
 
+/// Write LFC without name.
+template <class Writer>
+inline void WriteModelItem(Writer& wrt,
+                    const LinearFunctionalConstraint& lfc,
+                    const std::vector<std::string>& vnam) {
+  wrt << vnam.at(lfc.GetResultVar()) << " == ";
+  WriteModelItem(wrt, lfc.GetArguments(), vnam);
+}
 
 /// Write a LinFuncCon
 inline void WriteJSON(JSONW jw,
@@ -275,6 +283,14 @@ public:
   }
 };
 
+/// Write LFC without name.
+template <class Writer>
+inline void WriteModelItem(Writer& wrt,
+                    const QuadraticFunctionalConstraint& qfc,
+                    const std::vector<std::string>& vnam) {
+  wrt << vnam.at(qfc.GetResultVar()) << " == ";
+  WriteModelItem(wrt, qfc.GetArguments(), vnam);
+}
 
 /// Write a QuadrFuncCon
 inline void WriteJSON(JSONW jw,
@@ -392,6 +408,20 @@ private:
 DEF_NUMERIC_FUNC_CONSTR_WITH_PRM( PLConstraint,
                   VarArray1, PLConParams, "r = piecewise_linear(x)");
 
+/// Write flat expr/obj/con parameters:
+/// PLConParams
+template <class Writer>
+void WriteModelItemParameters(
+    Writer& wrt, const PLConParams& plp) {
+  wrt << "plpoints[";
+  const auto& p = plp.GetPLPoints();
+  for (size_t i=0; i<p.x_.size(); ++i) {
+    if (i)
+      wrt << ", ";
+    wrt << '(' << p.x_[i] << ", " << p.y_[i] << ')';
+  }
+  wrt << ']';
+}
 
 /// Write PLConParams
 inline void WriteJSON(JSONW jw,
@@ -400,7 +430,6 @@ inline void WriteJSON(JSONW jw,
   jw["pl_x"] = p.x_;
   jw["pl_y"] = p.y_;
 }
-
 
 } // namespace mp
 

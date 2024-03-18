@@ -92,9 +92,8 @@ void WriteVar(Writer& pr, const char* name,
   }
 }
 
-  template <>
-  void WriteModelItem(fmt::MemoryWriter& wrt, const LinTerms& lt,
-                      const std::vector<std::string>& vnam) {
+void WriteModelItem(fmt::MemoryWriter& wrt, const LinTerms& lt,
+                    const std::vector<std::string>& vnam) {
   for (int i=0; i<(int)lt.size(); ++i) {
     if (i) {
       wrt << (lt.coef(i)>=0.0 ? " + " : " - ");
@@ -103,7 +102,6 @@ void WriteVar(Writer& pr, const char* name,
   }
 }
 
-template <>
 void WriteModelItem(fmt::MemoryWriter& wrt, const QuadTerms& qt,
                     const std::vector<std::string>& vnam) {
   for (int i=0; i<(int)qt.size(); ++i) {
@@ -116,13 +114,18 @@ void WriteModelItem(fmt::MemoryWriter& wrt, const QuadTerms& qt,
   }
 }
 
-template <>
 void WriteModelItem(fmt::MemoryWriter& wrt, const QuadAndLinTerms& qlt,
                     const std::vector<std::string>& vnam) {
-
+  WriteModelItem(wrt, qlt.GetLinTerms(), vnam);
+  if (qlt.GetQPTerms().size()) {
+    if (qlt.GetLinTerms().size())
+      wrt << " + ";
+    wrt << '(';
+    WriteModelItem(wrt, qlt.GetQPTerms(), vnam);
+    wrt << ')';
+  }
 }
 
-template <>
 void WriteModelItem(fmt::MemoryWriter& wrt, const QuadraticObjective& obj,
                     const std::vector<std::string>& vnam) {
   wrt << (obj.obj_sense() ? "maximize " : "minimize ");

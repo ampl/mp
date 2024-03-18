@@ -73,6 +73,10 @@ public:
   }
 };
 
+/// Write objective
+void WriteModelItem(fmt::MemoryWriter& wrt, const QuadraticObjective& obj,
+                    const std::vector<std::string>& vnam);
+
 /// Compute value of an objective.
 template <class VarVec>
 double ComputeValue(

@@ -78,8 +78,18 @@ using IndicatorConstraintQuadEQ = IndicatorConstraint<QuadConEQ>;
 /// Typedef indicator<QuadConGE>
 using IndicatorConstraintQuadGE = IndicatorConstraint<QuadConGE>;
 
+/// Write indicator without name.
+template <class Writer, class Con>
+inline void WriteModelItem(Writer& wrt, const IndicatorConstraint<Con>& ic,
+                    const std::vector<std::string>& vnam) {
+  wrt << vnam.at(ic.get_binary_var())
+      << "==" << ic.get_binary_value()
+      << " ==> (";
+  WriteModelItem(wrt, ic.get_constraint(), vnam);
+  wrt << ')';
+}
 
-/// Write an indicator constraint
+/// Export indicator constraint
 template <class Con>
 inline void WriteJSON(JSONW jw,
                       const IndicatorConstraint<Con>& ic) {
@@ -231,7 +241,22 @@ using SOS1Constraint = SOS_1or2_Constraint<1>;
 using SOS2Constraint = SOS_1or2_Constraint<2>;
 
 
-/// Write a SOS1, SOS2 constraint
+/// Write SOS without name.
+template <class Writer, int type>
+inline void WriteModelItem(Writer& wrt, const SOS_1or2_Constraint<type>& sos,
+                    const std::vector<std::string>& vnam) {
+  // Type 1/2 should be in the name.
+  wrt << sos.GetTypeName();
+  wrt << '(';
+  WriteModelItem(wrt, sos.get_vars(), vnam);
+  wrt << ", ";
+  WriteModelItemParameters(wrt, sos.get_weights());
+  auto bnds = sos.get_sum_of_vars_range();
+  wrt << "; [" << bnds.lb_ << ", " << bnds.ub_ << "]";
+  wrt << ')';
+}
+
+/// Export a SOS1, SOS2 constraint
 template <int type>
 inline void WriteJSON(JSONW jw, const SOS_1or2_Constraint<type>& sos) {
   jw["SOS_type"] = sos.get_sos_type();
@@ -296,6 +321,15 @@ using ComplementarityLinear = ComplementarityConstraint<AffineExpr>;
 /// Typedef ComplementarityQuadRange
 using ComplementarityQuadratic = ComplementarityConstraint<QuadraticExpr>;
 
+/// Write ComplCon without name.
+template <class Writer, class Expr>
+inline void WriteModelItem(Writer& wrt,
+                    const ComplementarityConstraint<Expr>& cc,
+                    const std::vector<std::string>& vnam) {
+  wrt << vnam.at(cc.GetVariable());
+  wrt << " complements ";
+  WriteModelItem(wrt, cc.GetExpression(), vnam);
+}
 
 /// Write a ComplementarityCon
 template <class Expr>

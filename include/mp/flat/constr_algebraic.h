@@ -237,6 +237,40 @@ using QuadConGE = QuadConRhs< 1>;
 using QuadConGT = QuadConRhs< 2>;
 
 
+void WriteModelItem(fmt::MemoryWriter& wrt, const LinTerms& lt,
+                    const std::vector<std::string>& vnam);
+
+void WriteModelItem(fmt::MemoryWriter& wrt, const QuadTerms& qt,
+                    const std::vector<std::string>& vnam);
+
+void WriteModelItem(fmt::MemoryWriter& wrt, const QuadAndLinTerms& qlt,
+                    const std::vector<std::string>& vnam);
+
+/// Write RangeCon without name.
+template <class Writer, class Body>
+inline void WriteModelItem(Writer& wrt,
+                    const AlgebraicConstraint<Body, AlgConRange>& algc,
+                    const std::vector<std::string>& vnam) {
+  const auto& rng = algc.GetRhsOrRange();
+  if (rng.lb() >= -DBL_MAX && rng.lb() < rng.ub())
+    wrt << rng.lb() << " <= ";
+  WriteModelItem(wrt, algc.GetBody(), vnam);
+  if (rng.lb() == rng.ub())
+    wrt << " == " << rng.lb();
+  else if (rng.ub() <= DBL_MAX)
+    wrt << " <= " << rng.ub();
+}
+
+/// Write RhsCon without name.
+template <class Writer, class Body, int kind>
+inline void WriteModelItem(Writer& wrt,
+                    const AlgebraicConstraint<Body, AlgConRhs<kind> >& algc,
+                    const std::vector<std::string>& vnam) {
+  const auto& rng = algc.GetRhsOrRange();
+  WriteModelItem(wrt, algc.GetBody(), vnam);
+  wrt << ' ' << rng.GetCmpStr() << ' ' << rng.rhs();
+}
+
 /// Write an algebraic constraint
 template <class Body, class RhsOrRange>
 inline void WriteJSON(JSONW jw,

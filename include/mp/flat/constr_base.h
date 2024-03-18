@@ -182,6 +182,66 @@ public:
   Violation ComputeViolation(const VarVec& x) const;
 };
 
+/// Write flat expr/obj/con variables:
+/// vector/array
+template <class Writer, class Vec,
+          typename T = std::decay_t<
+              decltype(*begin(std::declval<Vec>()))> >
+inline void WriteModelItem(
+    Writer& wrt, const Vec& v,
+    const std::vector<std::string>& vnam) {
+  static_assert (
+  std::is_integral_v<typename Vec::value_type>, "Variable vector: need int's");
+  wrt << '[';
+  int n=-1;
+  for (const auto& el: v) {
+    if (++n)
+      wrt << ", ";
+    wrt << vnam.at(el);
+  }
+  wrt << ']';
+}
+
+/// Write flat expr/obj/con parameters:
+/// vector/array
+template <class Writer, class Vec,
+          typename T = std::decay_t<
+              decltype(*begin(std::declval<Vec>()))> >
+void WriteModelItemParameters(
+    Writer& wrt, const Vec& v) {
+  wrt << '[';
+  int n=-1;
+  for (const auto& el: v) {
+    if (++n)
+      wrt << ", ";
+    wrt << el;
+  }
+  wrt << ']';
+}
+
+/// Specialize WriteModelItem() for CustomFuncCon<>
+template <class Writer, class A, class P, class N, class I>
+inline void WriteModelItem(
+    Writer& wrt,
+    const CustomFunctionalConstraint<A,P,N,I>& cfc,
+    const std::vector<std::string>& vnam) {
+  wrt << vnam.at(cfc.GetResultVar()) << " == ";
+  wrt << cfc.GetTypeName();
+  wrt << '(';
+  WriteModelItem(wrt, cfc.GetArguments(), vnam);
+  wrt << ", ";
+  WriteModelItemParameters(wrt, cfc.GetParameters());
+  wrt << ')';
+}
+
+/// Very general template to write any flat constraint
+/// with name.
+template <class Writer, class Con>
+inline void WriteFlatCon(Writer& wrt, const Con& c,
+                  const std::vector<std::string>& vnam) {
+  wrt << c.name() << ": ";
+  WriteModelItem(wrt, c, vnam);
+}
 
 /// Write a CustomFunctionalConstraint<>
 template <class JW, class A, class P, class N, class I>
@@ -346,6 +406,17 @@ public:
     }
   }
 };
+
+/// Write ConditionalCon without name.
+template <class Writer, class Con>
+inline void WriteModelItem(Writer& wrt,
+                    const ConditionalConstraint<Con>& condc,
+                    const std::vector<std::string>& vnam) {
+  wrt << vnam.at(condc.GetResultVar()) << "==1 <==> ";
+  wrt << '(';
+  WriteModelItem(wrt, condc.GetArguments(), vnam);
+  wrt << ')';
+}
 
 /// Write a readable variable definition
 template <class Writer>

@@ -361,7 +361,8 @@ protected:
 
   template <class Backend>
   void PushCustomConstraintsTo(Backend& backend) const {
-    this->AddUnbridgedConstraintsToBackend(backend);
+    this->AddUnbridgedConstraintsToBackend(
+          backend, &var_names_storage_);
     this->LogConstraintGroups(backend);
   }
 
