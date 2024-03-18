@@ -139,7 +139,6 @@ protected:
   /// Presolve the values if needed
   virtual void ObjRelTol(ArrayRef<double>) { }
 
-
   /**
    * MULTISOL support
    * No API to overload,
@@ -318,6 +317,23 @@ protected:
     stats_.solution_time = GetTimeAndReset(stats_.time);
   }
 
+  virtual void ReportSolveTime() {
+    double value[]{ stats_.solution_time };
+    SuffixDef<double> sufTimeSolver = { "time_solver", suf::PROBLEM | suf::OUTONLY };
+    SuffixDef<double> sufTimeSetup = { "time_setup", suf::PROBLEM | suf::OUTONLY };
+    SuffixDef<double> sufTime = { "time", suf::PROBLEM | suf::OUTONLY };
+    double solution_time[]{ stats_.solution_time }
+    double setup_time[]{ stats_.setup_time }
+    double time[]{ stats_.solution_time + stats_.setup_time }
+    ReportSuffix(sufTimeSolver, solution_time);
+    ReportSuffix(sufTimeSetup, setup_time);
+    ReportSuffix(sufTime, time);
+    AddToSolverMessage(
+      fmt::format("Setup time:    {}s\n", stats_.setup_time));
+    AddToSolverMessage(
+      fmt::format("Solution time: {}s\n", value[0]));
+  }
+
   /// Input feasrelax data
   /// Impl should presolve it if needed
   virtual void InputFeasrelaxData() {
@@ -354,6 +370,9 @@ protected:
   virtual void ReportStandardSuffixes() {
     if (IsProblemSolved() && exportKappa()) {
       ReportKappa();
+    }
+    if (exportTimes()) {
+      ReportSolveTime();
     }
   }
 
@@ -780,6 +799,7 @@ private:
     int round_=0;
     double round_reptol_=1e-9;
 
+    int report_times_ = 0;
     /// For write prob
     std::vector<std::string> export_files_;
     std::vector<std::string> just_export_files_;
@@ -819,6 +839,8 @@ private:
 
 protected:  //////////// Option accessors ////////////////
   int exportKappa() const { return storedOptions_.exportKappa_; }
+
+  bool exportTimes() const { return (bool)storedOptions_.report_times_; }
 
   /// Feasrelax I/O data
   FeasrelaxIO& feasrelax() { return feasRelaxIO_; }
@@ -864,49 +886,49 @@ protected:
 
     if (IMPL_HAS_STD_FEATURE(FEAS_RELAX)) {
       AddStoredOption("alg:feasrelax feasrelax",
-                      "Whether to modify the problem into a feasibility "
-                          "relaxation problem:\n"
-                          "\n"
-                          "| 0 = No (default)\n"
-                          "| 1 = Yes, minimizing the weighted sum of violations\n"
-                          "| 2 = Yes, minimizing the weighted sum of squared violations\n"
-                          "| 3 = Yes, minimizing the weighted count of violations\n"
-                          "| 4-6 = Same objective as 1-3, but also optimize the "
-                             "original objective, subject to the violation "
-                             "objective being minimized.\n"
-                      "\n"
-                      "Weights are given by suffixes .lbpen and .ubpen on variables "
-                      "and .rhspen on constraints (when nonnegative, default values = 0), "
-                      "else by keywords alg:lbpen, alg:ubpen, and alg:rhspen, respectively "
-                      "(default values = 1). Weights < 0 are treated as Infinity, allowing "
-                      "no violation.",
-          feasrelax().mode_);
+        "Whether to modify the problem into a feasibility "
+        "relaxation problem:\n"
+        "\n"
+        "| 0 = No (default)\n"
+        "| 1 = Yes, minimizing the weighted sum of violations\n"
+        "| 2 = Yes, minimizing the weighted sum of squared violations\n"
+        "| 3 = Yes, minimizing the weighted count of violations\n"
+        "| 4-6 = Same objective as 1-3, but also optimize the "
+        "original objective, subject to the violation "
+        "objective being minimized.\n"
+        "\n"
+        "Weights are given by suffixes .lbpen and .ubpen on variables "
+        "and .rhspen on constraints (when nonnegative, default values = 0), "
+        "else by keywords alg:lbpen, alg:ubpen, and alg:rhspen, respectively "
+        "(default values = 1). Weights < 0 are treated as Infinity, allowing "
+        "no violation.",
+        feasrelax().mode_);
       AddStoredOption("alg:lbpen lbpen", "See alg:feasrelax.",
-          storedOptions_.lbpen_);
+        storedOptions_.lbpen_);
       AddStoredOption("alg:ubpen ubpen", "See alg:feasrelax.",
-          storedOptions_.ubpen_);
+        storedOptions_.ubpen_);
       AddStoredOption("alg:rhspen rhspen", "See alg:feasrelax.",
-          storedOptions_.rhspen_);
+        storedOptions_.rhspen_);
     }
 
-    if (IMPL_HAS_STD_FEATURE( WANT_ROUNDING )) {
+    if (IMPL_HAS_STD_FEATURE(WANT_ROUNDING)) {
       AddStoredOption("mip:round round",
-                      "Whether to round integer variables to integral values before "
-                      "returning the solution, and whether to report that the solver "
-                      "returned noninteger values for integer values:  sum of\n"
-                      "\n"
-                      "|  1 ==> Round nonintegral integer variables\n"
-                      "|  2 ==> Modify solve_result\n"
-                      "|  4 ==> Modify solve_message\n"
-                      "\n"
-                      "Default = 0.  Modifications that were or would be made are "
-                      "reported in solve_result and solve_message only if the maximum "
-                      "deviation from integrality exceeded mip:round_reptol.",
-                    storedOptions_.round_);
+        "Whether to round integer variables to integral values before "
+        "returning the solution, and whether to report that the solver "
+        "returned noninteger values for integer values:  sum of\n"
+        "\n"
+        "|  1 ==> Round nonintegral integer variables\n"
+        "|  2 ==> Modify solve_result\n"
+        "|  4 ==> Modify solve_message\n"
+        "\n"
+        "Default = 0.  Modifications that were or would be made are "
+        "reported in solve_result and solve_message only if the maximum "
+        "deviation from integrality exceeded mip:round_reptol.",
+        storedOptions_.round_);
       AddStoredOption("mip:round_reptol round_reptol",
-                      "Tolerance for reporting rounding of integer variables to "
-                      "integer values; see \"mip:round\".  Default = 1e-9.",
-                    storedOptions_.round_reptol_);
+        "Tolerance for reporting rounding of integer variables to "
+        "integer values; see \"mip:round\".  Default = 1e-9.",
+        storedOptions_.round_reptol_);
     }
 
     if (IMPL_HAS_STD_FEATURE(WRITE_PROBLEM)) {
@@ -918,7 +940,7 @@ protected:
 
       AddListOption("tech:writemodelonly justwriteprob justwritemodel",
         "Specifies files where to export the model, no solving "
-                    "(option can be repeated.) "
+        "(option can be repeated.) "
         "File extensions can be ``.dlp``, ``.mps``, etc.",
         storedOptions_.just_export_files_);
     }
@@ -931,7 +953,14 @@ protected:
         "File name extensions can be "
         "``.sol[.tar.gz]``, ``.json``, ``.bas``, ``.ilp``, etc.",
         storedOptions_.export_sol_files_);
-  }
+
+      AddStoredOption("tech:reporttimes reporttimes",
+        "0*/1: Set to 1 to return the solution times in the problem suffixes "
+        "'time_solver', 'time_setup' and 'time' and in the solver message. "
+        "'time'= 'time_solver'+'time_setup' is a measure of the total time "
+        "spent in the solver driver; all times are wall times.",
+        storedOptions_.report_times_);
+ }
 
   virtual void InitCustomOptions() { }
 
