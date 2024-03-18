@@ -1,5 +1,5 @@
 #include "ilogcp/concert.h"
-#include "mp/clock.h"
+#include "mp/utils-clock.h"
 #include "mp/problem.h"
 
 struct CreateVar {
@@ -17,10 +17,10 @@ int main() {
     b.AddArg(p.MakeVariable(i));
     exprs[i] = p.EndNumberOf(b);
   }
-  mp::steady_clock::time_point start = mp::steady_clock::now();
+  std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
   for (int i = 0; i < num_exprs; ++i)
     map.Add(0, exprs[i]);
-  mp::steady_clock::time_point end = mp::steady_clock::now();
+  std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
   fmt::print("Executed NumberOfMap.Add {} times in {} s.\n",
     num_exprs, mp::duration_cast< mp::duration<double> >(end - start).count());
 }

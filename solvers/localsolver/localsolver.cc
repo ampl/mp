@@ -25,7 +25,7 @@
 
 #include <cmath>
 #include <limits>
-#include "mp/clock.h"
+#include "mp/utils-clock.h"
 #include "mp/safeint.h"
 
 #ifndef MP_DRIVER_DATE
@@ -559,7 +559,7 @@ LocalSolver::LocalSolver()
 }
 
 void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
-  steady_clock::time_point time = steady_clock::now();
+  std::chrono::steady_clock::time_point time = std::chrono::steady_clock::now();
 
   ls::LocalSolver &solver = builder.solver();
   ls::LSModel model = solver.getModel();

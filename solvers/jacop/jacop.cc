@@ -486,7 +486,7 @@ void JaCoPSolver::Output(fmt::CStringRef format, const fmt::ArgList &args) {
 }
 
 void JaCoPSolver::PrintLogEntry() {
-  if (outlev_ == 0 || steady_clock::now() < next_output_time_)
+  if (outlev_ == 0 || std::chrono::steady_clock::now() < next_output_time_)
     return;
   Output("{:10} {:10} {:10}\n",
       env_.CallIntMethodKeepException(search_.get(), get_depth_),
@@ -544,7 +544,7 @@ JNIEXPORT jboolean JNICALL JaCoPSolver::Stop(JNIEnv *, jobject, jlong data) {
 }
 
 void JaCoPSolver::Solve(Problem &p, SolutionHandler &sh) {
-  steady_clock::time_point time = steady_clock::now();
+  std::chrono::steady_clock::time_point time = std::chrono::steady_clock::now();
 
   std::vector<const char*> jvm_options(jvm_options_.size() + 2);
   for (size_t i = 0, n = jvm_options_.size(); i != n; ++i)
@@ -660,7 +660,7 @@ void JaCoPSolver::Solve(Problem &p, SolutionHandler &sh) {
     "Max Depth", "Nodes", "Fails", (has_obj ? "Best Obj" : ""));
   jboolean found = false;
   output_count_ = 0;
-  next_output_time_ = steady_clock::now() + GetOutputInterval();
+  next_output_time_ = std::chrono::steady_clock::now() + GetOutputInterval();
   try {
     if (has_obj) {
       jmethodID labeling = env_.GetMethod(dfs_class.get(), "labeling",
