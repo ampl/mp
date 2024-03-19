@@ -980,7 +980,15 @@ public:
       cons_[i].con_.SetName(vn[i].MakeCurrentName());
   }
 
-	/// ForEachActive().
+  /// Copy names to ValueNodes
+  void CopyNames2ValueNodes() {
+    auto& vn = GetValueNode().GetStrVec();
+    assert(vn.size()==cons_.size());
+    for (auto i=vn.size(); i--; )
+      vn[i] = std::string(cons_[i].con_.name());
+  }
+
+  /// ForEachActive().
   /// Deletes every constraint where fn() returns true.
 	template <class Fn>
 	void ForEachActive(Fn fn) {

@@ -539,6 +539,9 @@ public:
     if (var_names_.size()) {
       /// Check that constr / obj names are present too?
       GetValuePresolver().CleanUpNameNodes();
+      // They are at top level of the reformulation tree
+      TransferNames2Node((SOS1Constraint*)nullptr);
+      TransferNames2Node((SOS2Constraint*)nullptr);
       auto vm = GetValuePresolver().
           PresolveNames({
                           {var_names_},
@@ -555,6 +558,12 @@ public:
         obj[i].set_name(ocs[i]);
       ConstraintManager::CopyNamesFromValueNodes();  // cons
     }
+  }
+
+  template <class Con>
+  void TransferNames2Node(Con* pcon) {
+    auto& ck = GetConstraintKeeper(pcon);
+    ck.CopyNames2ValueNodes();
   }
 
   /// Fill model traits for license check.

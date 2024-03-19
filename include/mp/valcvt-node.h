@@ -208,8 +208,11 @@ public:
   /// Retrieve whole vector<VCString&>&
   operator const std::vector<VCString>& () const { return vStr_; }
 
-  /// Retrieve whole vector<VCString&>&
+  /// Retrieve whole const vector<VCString&>&
   const std::vector<VCString>& GetStrVec() const { return vStr_; }
+
+  /// Retrieve whole vector<VCString&>&
+  std::vector<VCString>& GetStrVec() { return vStr_; }
 
 
   /////////////////////// Access individual values ///////////////////////
