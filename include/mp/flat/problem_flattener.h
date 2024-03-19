@@ -925,21 +925,34 @@ protected:         // More utilities
   void ConvertSOSCollection(ArrayRef<int> sosno, ArrayRef<double> ref,
                             bool fAllSOS2) {
     assert(sosno.size() == ref.size());
-    std::map< int, std::map< double, int > > sos_map;
+    std::map< int,       // pair.first: N repeated zeros
+        std::pair< int, std::map< double, int > > > sos_map;
     for (auto i=ref.size(); i--; )
       if (sosno[i]) {
         auto& sos_group = sos_map[sosno[i]];
-        if (!sos_group.insert( {ref[i], i} ).second
-            && ref[i])   // weights 0 for all: redundant linearization
-          MP_RAISE("An SOS/SOS2 constraint has repeated weights");
+        if (!sos_group.second.insert( {ref[i], i} ).second) {
+          if (!fAllSOS2 || ref[i]) // weights 0 for all: redundant PL linearization
+            MP_RAISE(
+                  fmt::format(
+                    "SOS/SOS2 constraint {} has repeated weight {}",
+                    sosno[i], ref[i]));
+          else
+            ++sos_group.first;
+        }
       }
     for (const auto& group: sos_map) {
-      if (group.second.size()>1) {
+      if (group.second.second.size()
+          && group.second.first
+          && group.second.second.begin()->first)  // key non-0
+        MP_RAISE(
+              fmt::format(
+                "SOS/SOS2 constraint {} has repeated 0 weights", group.first));
+      if (group.second.second.size()>1) {
         std::vector<int> vars;
-        vars.reserve(group.second.size());
+        vars.reserve(group.second.second.size());
         std::vector<double> weights;
-        weights.reserve(group.second.size());
-        for (const auto& wv: group.second) {
+        weights.reserve(group.second.second.size());
+        for (const auto& wv: group.second.second) {
           weights.push_back(wv.first);
           vars.push_back(wv.second);
         }
