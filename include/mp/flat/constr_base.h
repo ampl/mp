@@ -56,6 +56,8 @@ public:
   void SetContext(Context ) const { }
   /// Add (merge) context, if meaningful
   void AddContext(Context ) const { }
+    /// Has result var (is functional)?
+    bool HasResultVar() const { return false; }
   /// For functional constraints, result variable index
   int GetResultVar() const { return -1; }
   /// Compute violation
@@ -83,6 +85,9 @@ public:
   bool operator==(const FunctionalConstraint& dc) const {
     return result_var_==dc.result_var_;
   }
+  /// Has result var (is functional)?
+  /// We don't store this info in the type (yet.)
+  bool HasResultVar() const { return result_var_>=0; }
   /// Get result variable
   int GetResultVar() const { return result_var_; }
   /// Set result variable
@@ -225,7 +230,8 @@ inline void WriteModelItem(
     Writer& wrt,
     const CustomFunctionalConstraint<A,P,N,I>& cfc,
     const std::vector<std::string>& vnam) {
-  wrt << vnam.at(cfc.GetResultVar()) << " == ";
+  if (cfc.HasResultVar())   // really functional
+    wrt << vnam.at(cfc.GetResultVar()) << " == ";
   wrt << cfc.GetTypeName();
   wrt << '(';
   WriteModelItem(wrt, cfc.GetArguments(), vnam);
