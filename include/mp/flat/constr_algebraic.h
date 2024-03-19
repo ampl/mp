@@ -252,12 +252,12 @@ inline void WriteModelItem(Writer& wrt,
                     const AlgebraicConstraint<Body, AlgConRange>& algc,
                     const std::vector<std::string>& vnam) {
   const auto& rng = algc.GetRhsOrRange();
-  if (rng.lb() >= -DBL_MAX && rng.lb() < rng.ub())
+  if (rng.lb() > -DBL_MAX && rng.lb() < rng.ub())
     wrt << rng.lb() << " <= ";
   WriteModelItem(wrt, algc.GetBody(), vnam);
   if (rng.lb() == rng.ub())
     wrt << " == " << rng.lb();
-  else if (rng.ub() <= DBL_MAX)
+  else if (rng.ub() < DBL_MAX)
     wrt << " <= " << rng.ub();
 }
 

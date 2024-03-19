@@ -17,8 +17,7 @@ bool is_integer(Num n) { return std::floor(n)==std::ceil(n); }
 /// result_var if known
 template <class FuncConstraint>
 struct PreprocessInfo {
-  double lb_=-std::numeric_limits<double>::max(),
-    ub_=std::numeric_limits<double>::max();
+  double lb_=-INFINITY, ub_=INFINITY;
   var::Type type_=var::CONTINUOUS;
   int result_var_ = -1;
 

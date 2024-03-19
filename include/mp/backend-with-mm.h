@@ -25,7 +25,7 @@ public:
   }
 
   void ReportError(int solve_result, fmt::CStringRef msg) override {
-    HandleSolution(solve_result,
+    HandleSolution(solve_result,   // prints if no -AMPL flag
                    GetWarnings() + msg.c_str(),
                    0, 0, 0.0);
   }
