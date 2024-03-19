@@ -83,9 +83,9 @@ void WriteVar(Writer& pr, const char* name,
   else if (lb==ub)
     pr << " = " << lb;
   else {
-    if (lb >= -DBL_MAX)
+    if (lb > -DBL_MAX)
     pr << " >=" << lb;
-    if (ub <= DBL_MAX)
+    if (ub < DBL_MAX)
     pr << " <=" << ub;
     if (var::INTEGER == ty)
     pr << " integer";

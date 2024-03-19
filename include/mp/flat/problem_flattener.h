@@ -925,42 +925,40 @@ protected:         // More utilities
   void ConvertSOSCollection(ArrayRef<int> sosno, ArrayRef<double> ref,
                             bool fAllSOS2) {
     assert(sosno.size() == ref.size());
-    std::map< int, std::multimap< double, int > > sos_map;
+    std::map< int, std::map< double, int > > sos_map;
     for (auto i=ref.size(); i--; )
-      if (sosno[i] &&
-          ref[i]) {        // AMPL 2022 can produce SOS groups with all weights 0
+      if (sosno[i]) {
         auto& sos_group = sos_map[sosno[i]];
-        if (sos_group.end() != sos_group.find(ref[i])) {
-          GetFlatCvt().AddWarning( "SOS_repeated_weight",
-                                   "An SOS/SOS2 constraint has repeated weights, "
-                                   "solver might reject it" );
-        }
-        sos_group.insert( {ref[i], i} );
+        if (!sos_group.insert( {ref[i], i} ).second
+            && ref[i])   // weights 0 for all: redundant linearization
+          MP_RAISE("An SOS/SOS2 constraint has repeated weights");
       }
     for (const auto& group: sos_map) {
-      std::vector<int> vars;
-      vars.reserve(group.second.size());
-      std::vector<double> weights;
-      weights.reserve(group.second.size());
-      for (const auto& wv: group.second) {
-        weights.push_back(wv.first);
-        vars.push_back(wv.second);
+      if (group.second.size()>1) {
+        std::vector<int> vars;
+        vars.reserve(group.second.size());
+        std::vector<double> weights;
+        weights.reserve(group.second.size());
+        for (const auto& wv: group.second) {
+          weights.push_back(wv.first);
+          vars.push_back(wv.second);
+        }
+        if (group.first<0 || fAllSOS2)
+          AddConstraint(
+                SOS2Constraint(vars, weights,
+                               fAllSOS2 ?    // for linearized PL
+                                             SOSExtraInfo{{1.0, 1.0}} :
+                                             SOSExtraInfo{},
+                               (fAllSOS2 ? "SOS2_PL_" : "SOS2_")
+                               + std::to_string(group.first)
+                               + '_'));
+        else
+          AddConstraint(
+                SOS1Constraint(vars, weights,
+                               "SOS1_"
+                               + std::to_string(group.first)
+                               + '_'));
       }
-      if (group.first<0 || fAllSOS2)
-        AddConstraint(
-              SOS2Constraint(vars, weights,
-                             fAllSOS2 ?    // for linearized PL
-                               SOSExtraInfo{{1.0, 1.0}} :
-                               SOSExtraInfo{},
-                             (fAllSOS2 ? "SOS2_PL_" : "SOS2_")
-                             + std::to_string(group.first)
-                             + '_'));
-      else
-        AddConstraint(
-              SOS1Constraint(vars, weights,
-                             "SOS1_"
-                             + std::to_string(group.first)
-                             + '_'));
     }
   }
 
