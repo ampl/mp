@@ -17,6 +17,7 @@ class Model:
     self._graph = DiGraph()    ## Underlyng graph
 
     self._vars = []            ## Pointers to various parts of the graph
+    self._dvars = []
     self._cons_NL_all = []
     self._cons_NL = {        ## NL + SOS
       "All" : [],
@@ -30,6 +31,9 @@ class Model:
 
   def UpdateVar(self, idx, data):
     self._updateNodeData(self._vars, idx, data)
+
+  def UpdateDefVar(self, idx, data):
+    self._updateNodeData(self._dvars, idx, data)
 
   def UpdateNLObj(self, idx, data):
     self._updateNodeData(self._objs_NL, idx, data)
@@ -75,6 +79,7 @@ class Model:
   def MatchOrigModel(self, keyw):
     result = {}
     result["NL Variables"] = self._matchRecords(self._vars, keyw, "is_from_nl")
+    result["NL Defined Variables"] = self._matchRecords(self._dvars, keyw)
     result["NL Objectives"] = self._matchRecords(self._objs_NL, keyw)
     result["NL Constraints"] \
       = self._matchRecords(self._cons_NL.get("All"), keyw)

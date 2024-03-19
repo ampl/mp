@@ -330,11 +330,7 @@ void ExprWriter<ExprTypes, VN>::VisitPLTerm(PLTerm e) {
   for (int i = 1, n = e.num_slopes(); i < n; ++i)
     writer_ << ", " << e.slope(i);
   writer_ << ">> ";
-  NumericExpr arg = e.arg();
-  if (Variable var = ExprTypes::template Cast<Variable>(arg))
-    writer_ << "x" << (var.index() + 1);
-  else
-    writer_ << "e" << ((ExprTypes::template Cast<CommonExpr>(arg)).index() + 1);
+  Visit( e.arg() );
 }
 
 template <typename ExprTypes, typename VN>

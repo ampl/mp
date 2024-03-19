@@ -31,6 +31,8 @@ class ModelReader:
   def _addDataChunk(self, chunk):
     if "VAR_index" in chunk:
       self._model.UpdateVar(chunk["VAR_index"], chunk)
+    elif "NL_COMMON_EXPR_index" in chunk:
+      self._model.UpdateDefVar(chunk["NL_COMMON_EXPR_index"], chunk)
     elif "NL_OBJECTIVE_index" in chunk:
       self._model.UpdateNLObj(chunk["NL_OBJECTIVE_index"], chunk)
     elif "NL_CON_TYPE" in chunk:

@@ -2,17 +2,32 @@ Summary of recent updates to the AMPL MP Library
 ================================================
 
 
-## unreleased
+## 20240319
+- *SOS constraints*.
+  - Fixed handling of SOS2 constraints created by AMPL
+    as reformulations of PL expressions (`option
+    pl_linearize 1`, default; set to 0 to use the solver's
+    native PL functions if supported, or MP linearization.)
+  - Disallow repeated weights for SOS constraints
+    (suffixes `.sosno`/`.ref`.)
+- *Reformulation explorer*.
+  - Upgraded option `writegraph` exports the reformulation
+    graph which can be explored with the script in
+    support/modelexplore (WIP.)
 - *Native handling of POW(x, INT)*.
   - Power expressions with positive integer exponent
     are passed natively to the solvers accepting them,
     vs previously quadratic or linear reformulation.
   - For best performance, global solving capability
     might be needed (e.g., Gurobi: `global=1`.)
-- *Unused acc: options*.
-  - The constraint acceptance options *acc:...*
+- *Option `report_times`*.
+- *Unused `acc:` options*.
+  - The constraint acceptance options `acc:...`
     for non-handled constraints are ignored
     (previously triggered error.)
+- *NLWPY*.
+  - Python NL Writer API for MIQP models.
+  - Available on PyPI.
 
 
 ## 20240115
