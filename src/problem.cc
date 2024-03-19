@@ -130,8 +130,7 @@ const std::string& BasicProblem<Params>::item_name(
         bool fbr = '['==stub[l-1];
         names[k] = stub;
         names[k] += std::to_string(k-k_sub+1);
-        if (fbr)
-          names[k] += ']';
+        names[k] += (fbr ? ']' : '_');
       }
     };
     if (n2>=0 && n2<n) {

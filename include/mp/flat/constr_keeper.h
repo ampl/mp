@@ -928,7 +928,7 @@ protected:
   }
   /// Export constraint status.
   /// This is called in the end,
-  /// so printing the readbale form.
+  /// so printing the readable form.
   void ExportConStatus(int i_con, const Container& cnt,
                        const std::vector<std::string>* pvnam) {
     if (GetLogger()) {

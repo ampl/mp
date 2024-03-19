@@ -7,15 +7,16 @@ from scripts.python.matcher import MatchSubmodel
 # To work with local files in st 1.30.1, see
 # https://discuss.streamlit.io/t/axioserror-request-failed-with-status-code-403/38112/13.
 # The corresponding settings should not be used on a server.
-uploader = st.file_uploader("Model file (JSONL)")
+uploader = st.sidebar.file_uploader("Model file (JSONL)")
+
+# You can use a column just like st.sidebar:
+srch = st.sidebar.text_input('Search pattern:')
+
+fwd = st.sidebar.checkbox('Add descendants', disabled=True)
+bwd = st.sidebar.checkbox('Add ancestors', disabled=True)
 
 left_column, right_column = st.columns(2)
 
-# You can use a column just like st.sidebar:
-srch = left_column.text_input('Search pattern:')
-
-fwd = right_column.checkbox('Add descendants', disabled=True)
-bwd = right_column.checkbox('Add ancestors', disabled=True)
 
 # Cache the reading function
 @st.cache_data
@@ -30,8 +31,11 @@ def MatchSelection(m, srch, fwd, bwd):
 # Write dictionary of entries
 def WriteDict(d):
   for k, v in d.items():
-    with st.expander("""### """ + k):
-      st.code(v, language='ampl')
+    if len(v):
+      with st.expander("""### """ + k + ' (' + \
+          str(v.count('\n')) + ')'):
+            with st.container(height=200):
+              st.code(v, language='ampl')
 
 # Or even better, call Streamlit functions inside a "with" block:
 if uploader is not None:
