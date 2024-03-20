@@ -954,7 +954,7 @@ protected:
         "``.sol[.tar.gz]``, ``.json``, ``.bas``, ``.ilp``, etc.",
         storedOptions_.export_sol_files_);
 
-    AddStoredOption("tech:reporttimes reporttimes",
+    AddStoredOption("tech:reporttimes reporttimes report_times",
                     "0*/1: Set to 1 to return the solution times in the problem suffixes "
                     "'time_solver', 'time_setup' and 'time' and in the solver message. "
                     "'time'= 'time_solver'+'time_setup' is a measure of the total time "

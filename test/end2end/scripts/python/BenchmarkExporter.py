@@ -33,11 +33,18 @@ class BenchmarkExporter(Exporter):
 
     def writeHeader(self, mr: ModelRunner):
         hdr = "Name,Expected_Obj,Variables,Int_Variables,Constraints,Nnz"
-        for (_,r) in enumerate(mr.getRuns()):
-            sname = r[-1]["solver"]
+        
+        runs=mr.getRuns()
+        
+        for runner, run in zip(mr.getRunners(), runs):
+            sname = run[-1]["solver"]
             hdr += f",{sname}-Obj,{sname}-Time,{sname}-Status"
-        for (_,r) in enumerate(mr.getRuns()):
-            hdr += ",{}-SolverMsg".format(r[-1]["solver"])
+            if runner.support_times():
+                hdr += f",{sname}-SetupTime"
+            
+        for run in runs:
+            hdr += ",{}-SolverMsg".format(run[-1]["solver"])
+
         header_list = hdr.split(',')
         for col_num, header_text in enumerate(header_list, 1):
             cell=self.sheet_main.cell(row=1, column=col_num, value=header_text)
@@ -71,14 +78,19 @@ class BenchmarkExporter(Exporter):
             
         styles = [None for _ in res]
 
-        for r in mr.getRuns():
+        for runner, r in zip(mr.getRunners(), mr.getRuns()):
+            style=self.getStyle(r)
             res.extend([
               self._getDictMemberOrMissingStr(r[-1], "objective"),
               self._getDictMemberOrMissingStr(r[-1], "solutionTime"),
               self._getDictMemberOrMissingStr(r[-1], "timelimit")])
-            style=self.getStyle(r)
             styles.extend([style for _ in range(3)])
-
+            if runner.support_times():
+                if "times" in r[-1]:
+                    res.append(r[-1]["times"].get("setup",0))
+                else:
+                    res.append(0)
+                styles.append(style)
         for r in mr.getRuns():
              res.append(
                 self._getDictMemberOrMissingStr(r[-1], "outmsg"))
@@ -120,7 +132,6 @@ class BenchmarkExporter(Exporter):
                     self.addToDict(sname, "timelimit", 1)
                 else:
                     self.addToDict(sname, "failed", 1)
-
 
     def initSolverStats(self, runs):
          for r in runs:

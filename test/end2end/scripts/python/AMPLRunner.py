@@ -89,7 +89,8 @@ class AMPLRunner(object):
         self._printOutput = printOutput
         self._optionsExtra = optionsExtra
         self._logFile = None
-
+        self._version = None
+        
     def _initAMPL(self, model):
         if self._amplInitialized:
           self._ampl.reset()
@@ -128,22 +129,7 @@ class AMPLRunner(object):
         if not mp.exists():
             raise Exception("Model {} not found".format(model.getFilePath()))
         if model.isScript():
-          
-          # class MyInterpretIsOver(Runnable):
-          #   executed = False
-          #   def run(self):
-          #     self.executed = True
-          #     mutex.release()
-          # callback = MyInterpretIsOver()
-          # mutex = Lock()
-          # mutex.acquire()
-          # timeOut = self._solver.getTimeout()
           self._ampl.eval("include '{}';".format(str(mp.absolute().resolve())))
-          # mutex.acquire(timeout=timeOut)
-          # if not callback.executed:
-          #   self._ampl.interrupt()
-          #   self._ampl.interrupt()
-          #   return None
         else:
           self._ampl.read(str(mp.absolute().resolve()))
           files = model.getAdditionalFiles()
@@ -184,7 +170,10 @@ class AMPLRunner(object):
 
     def _setSolverInAMPL(self, model):
         sp = self._solver.getExecutable()
+        
         self._ampl.setOption("solver", sp)
+        if not self._solver.get_version():
+           self._solver.set_version(self._getSolverVersion(sp))
         (name, value) = self._solver.getAMPLOptions(model)
         if self._logFile is not None:
             logOption = self._solver.setLogFile(self._logFile)
@@ -192,6 +181,19 @@ class AMPLRunner(object):
                 value += f" {logOption}"
         self._ampl.setOption(name, value)
         
+    def _getSolverVersion(self, solver) -> tuple:
+        """Returns driver version (e.g. 20240316), version string"""
+        v=self._ampl.get_output(f"shell \"{solver} -v\";")
+        v=v.splitlines()[0]
+        import re
+        driver_match = re.search(r'driver\((\d+)\)', v)
+        if driver_match:
+            driver_version = driver_match.group(1)
+        else:
+            driver_version = None
+    
+        return (driver_version, v)
+
 
     def tryGetObjective(self):
       try: 
@@ -260,22 +262,7 @@ class AMPLRunner(object):
       t.tick()
       mp = self.doReadModel(model)
       amplStats["AMPLreadTime"]= t.toc()
-      if model.isScript() and mp == None: # if a script ran out of time (had to kill AMPL)
-         self._terminateAMPL()
-         self.stats["solutionTime"] = self._solver.getTimeout()
-         self.stats["objective"] = None
-         if self._lastError:
-           self.stats["outmsg"] = self._lastError
-           self.stats["errormsg"] = self._lastError
-         else:
-           self.stats["outmsg"] = "Script ran out of time"
-           self.stats["errormsg"] = "Script ran out of time"
-         self.stats["timelimit"] = True
-         if logFile is not None:
-             logs = self._outputHandler.getMessages(self)
-             with open(logFile, 'w') as f:
-                f.write(logs)
-         return
+      
       t.tick()
       try:
           if self.isBenchmark:
@@ -289,12 +276,13 @@ class AMPLRunner(object):
           nintvars = 0
           nconstr =  0
           nnz  = 0
-      
       amplStats["AMPLgenerationTime"] = t.toc()
+      
       self.stats["modelStats"] = {"nvars" : int(ncontvars),
                                    "nintvars" : int(nintvars),
                                    "nconstr" : int(nconstr),
                                    "nnz" : int(nnz)}
+      solve_result = None
       if not model.isScript():
           if self.isBenchmark:
             print("Solving... ", end="")
@@ -306,19 +294,31 @@ class AMPLRunner(object):
           amplStats["AMPLsolveTime"]= t.toc()
       # Close log before any further amplapi operations
       self._outputHandler.close_log()
+      
+      # Gather results
       self.stats["AMPLstats"] = amplStats
-      interval = self._ampl.getValue("_solve_elapsed_time")
-      self.stats["solutionTime"] = interval
-      v = self.tryGetObjective()
-      self.stats["objective"] = v
+      if not solve_result:
+         solve_result = self._ampl.getValue("solve_result")
+      self.stats["solutionTime"] = self._ampl.getValue("_solve_elapsed_time")
+      if self._solver: # Get times suffix if supported
+        if self._solver.support_times():
+           try:
+              solver_time =self._ampl.get_value("Initial.time_solver")
+              setup_time=self._ampl.get_value("Initial.time_setup")
+              self.stats["times"]= {
+                 "setup" : setup_time,
+                 "solver": solver_time
+                  }
+           except:
+              pass
+      self.stats["objective"] = self.tryGetObjective()
       if self._lastError:
         self.stats["outmsg"] = str(self._lastError)
-        self.stats["timelimit"] = self._ampl.getValue("solve_result")
+        self.stats["timelimit"] = solve_result
         self.stats["errormsg"] = self._lastError
       else:
         self.stats["outmsg"] = self._ampl.getValue("solve_message")
-        self.stats["timelimit"] = self._ampl.getValue("solve_result")
-      # self._terminateAMPL()          ## This breaks end2end tests
+        self.stats["timelimit"] = solve_result
       return
 
     def setupOptions(self, model: Model):

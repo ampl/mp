@@ -13,7 +13,8 @@ class Tester:
                     timeout: int = 2400, nthreads: int = 8, dir: str="", 
                     benchmark: bool = False, junit: bool=False, nonrecursive: bool=False,
                     allfiles: bool=False, prefer_nl: bool = False, export_lp: bool = False,
-                    just_nl: bool = False, keep_logs: bool = False, verbose: bool = False):
+                    just_nl: bool = False, keep_logs: bool = False, verbose: bool = False,
+                    exporter = None):
         self.initSolvers(timeout, nthreads, bin_path, lpmethod, nlpmethod, export_lp)
         if printsolvers:
             self.printSolvers()
@@ -22,7 +23,7 @@ class Tester:
                                 timeout, nthreads, dir,
                                 benchmark, junit, nonrecursive,
                                 allfiles, prefer_nl, export_lp, 
-                                just_nl, keep_logs, verbose)
+                                just_nl, keep_logs, verbose, exporter)
     def run_from_command_line(self):
         args = self.parseOptions()
         args= vars(args)
@@ -126,16 +127,18 @@ class Tester:
                     timeout: int = 2400, nthreads: int = 8, dir: str="", 
                     benchmark: bool = False, junit: bool=False, nonrecursive: bool=False,
                     allfiles: bool=False, prefer_nl: bool = False, exportLP: bool = False,
-                    just_nl: bool = False, keep_logs: bool = False, verbose: bool = False):
+                    just_nl: bool = False, keep_logs: bool = False, verbose: bool = False,
+                    exporter: Exporter.Exporter=None):
         
-        if benchmark:
-            from BenchmarkExporter import BenchmarkExporter
-            exporter = BenchmarkExporter()
-        elif junit:
-            from JunitExporter import JunitExporter
-            exporter = JunitExporter()
-        else:
-            exporter = Exporter.CSVTestExporter()
+        if not exporter:
+            if benchmark:
+                from BenchmarkExporter import BenchmarkExporter
+                exporter = BenchmarkExporter()
+            elif junit:
+                from JunitExporter import JunitExporter
+                exporter = JunitExporter()
+            else:
+                exporter = Exporter.CSVTestExporter()
 
         runModels(dir,
                   self._solvers.getSolversByNames(solvers),

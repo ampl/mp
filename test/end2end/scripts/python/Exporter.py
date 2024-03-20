@@ -5,8 +5,12 @@ import math
 class Exporter(object):
     """Base class to export ModelRunner results"""
 
-    def export(self, mr: ModelRunner):
-        raise Exception("Not defined for base class")
+    def export(self):
+        """To be called when finished running models to finalize"""
+        pass
+    
+    def exportInstanceResults(self, mr: ModelRunner):
+        raise NotImplementedError("Not implemented in base class")
 
     # Return False if failed
     def printStatus(self, model, run):

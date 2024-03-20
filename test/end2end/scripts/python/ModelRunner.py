@@ -17,7 +17,8 @@ class ModelRunner(object):
 
     def getModels(self) -> list:
         return self._models
-
+    def getRunners(self)->list:
+        return self._runners
     def getLogFileName(m : Model, s : Solver):
         return f"{m.getName()}.{s.getName()}.log"
 
@@ -96,6 +97,7 @@ class ModelRunner(object):
             if exporter:
                 self.export(exporter)
             print("  (%.4fs, %d failed, %d skipped)" % (t.interval, nFailed, nSkipped))
+        exporter.export()
 
     def export(self, exporter):
         exporter.exportInstanceResults(self)

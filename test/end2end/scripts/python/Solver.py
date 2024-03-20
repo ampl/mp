@@ -10,8 +10,6 @@ import time
 from threading import Timer  
 
 class Solver(object):
-
-    """description of class"""
     @staticmethod
     def getExecutableName(name):
         path = PurePath(name)
@@ -22,6 +20,10 @@ class Solver(object):
                 return str(path.with_suffix(".exe"))
         else:
             return name
+    
+    def support_times(self) -> bool:
+        """Return true to tell that the solver driver supports the option report_times"""
+        return False
     
     def getExportLPFileName(self, modelfilename):
         fn = PurePath(modelfilename)
@@ -46,8 +48,13 @@ class Solver(object):
         self._supportedTags = supportedTags
         self._unsupportedTags = unsupportedTags
         self._nlpmethod = nlpmethod
+        self._version = None
 
-
+    def get_version(self):
+        return self._version
+    def set_version(self,value):
+        self._version = value
+    
     def _doRun(self,  model: Model):
         """Method to be overriden for solvers implementations"""
         raise Exception("Not implemented")
@@ -184,7 +191,7 @@ class AMPLSolver(Solver):
     def _doParseSolution(self, st, stdout=None):
         raise Exception("Not implemented in base class")
 
-
+    
     def _doRun(self,  model: Model, logFile : str):
         toption = ""
         if self._timeout:
@@ -309,7 +316,6 @@ class LindoSolver(AMPLSolver):
                     return
                 prev = line
         self._stats["outmsg"] = stdout
-
 
 class GurobiSolver(AMPLSolver):
 
@@ -615,8 +621,21 @@ class XpressSolver(AMPLSolver):
 
 # MP Direct / FlatConverter drivers
 class MPDirectSolver(AMPLSolver):
+    
+    def support_times(self) -> bool:
+        return True
+    
     def _supported_nl(self) ->list:
-        return []
+        """Return all constraint types supported by MP"""
+        # This function should now return all constraint types supported by MP
+        # because solvers are not rejecting the option starting from the solvers
+        # released on 20240320
+        return ["acc:abs", "acc:acos", "acc:acosh", "acc:and", "acc:asin", 
+            "acc:asinh", "acc:atan", "acc:atanh", "acc:cos", "acc:cosh", 
+            "acc:div", "acc:exp", "acc:expa", "acc:indeq", "acc:indge", 
+            "acc:indle", "acc:log", "acc:max", "acc:min", "acc:or", 
+            "acc:pow", "acc:quadeq", "acc:quadge", "acc:quadle", 
+            "acc:sin", "acc:sinh", "acc:sos2", "acc:tan", "acc:tanh"]
      
     def _setNLPMethod(self, method: str): # reformulation, native, nativepl 
         if method == "REFORMULATION":
@@ -667,7 +686,11 @@ class MPDirectSolver(AMPLSolver):
             # Direct/FlatConverter drivers with non-convex quadratics:
             if ModelTags.quadraticnonconvex in stags:
                 stags = stags | {ModelTags.polynomial}
-        super().__init__(exeName, timeout, nthreads, otherOptions, stags)
+        
+        opts = "report_times=1"
+        if otherOptions:
+            opts  = f"{opts} {otherOptions}"
+        super().__init__(exeName, timeout, nthreads, opts, stags)
 
     def _doParseSolution(self, st, stdout=None):
         if not st:
@@ -686,13 +709,6 @@ class MPDirectSolver(AMPLSolver):
                 self._stats["objective"] = None
 
 class GurobiDirectSolver(MPDirectSolver):
-
-    def _supported_nl(self) ->list:
-        return ["acc:abs", "acc:and", "acc:cos", "acc:exp", "acc:expa", 
-                "acc:indeq", "acc:indge", "acc:indle", "acc:log", 
-                "acc:loga", "acc:max", "acc:min", "acc:or", "acc:pl", 
-                "acc:pow", 
-                "acc:sin", "acc:sos2", "acc:tan"]
     
     def _setNLPMethod(self, method: str): # reformulation, native, nativepl 
         if method == "REFORMULATION":
@@ -798,15 +814,7 @@ class CPLEXDirectSolver(MPDirectSolver):
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
 class XPRESSDirectSolver(MPDirectSolver):
-    def _supported_nl(self) ->list:
-        return ["acc:abs", "acc:acos", "acc:acosh", "acc:and", "acc:asin", 
-            "acc:asinh", "acc:atan", "acc:atanh", "acc:cos", "acc:cosh", 
-            "acc:div", "acc:exp", "acc:expa", "acc:indeq", "acc:indge", 
-            "acc:indle", "acc:log", "acc:max", "acc:min", "acc:or", 
-            "acc:pow", "acc:quadeq", "acc:quadge", "acc:quadle", 
-            "acc:sin", "acc:sinh", "acc:sos2", "acc:tan", "acc:tanh"]
-
-        
+       
     def _getAMPLOptionsName(self):
         return "xpress"
 
