@@ -29,26 +29,43 @@ def MatchSelection(m, srch, fwd, bwd):
   return MatchSubmodel(m, srch, fwd, bwd)
 
 # Write dictionary of entries
+@st.cache_data
 def WriteDict(d):
+  whole = ""
   for k, v in d.items():
     if len(v):
+      whole = whole + '\n\n##  ' + k + ' (' + str(v.count('\n')) + ')\n'
+      whole = whole + v
       with st.expander("""### """ + k + ' (' + \
           str(v.count('\n')) + ')'):
             with st.container(height=200):
               st.code(v, language='ampl')
+  return whole
+
+
+filename_upl = ""
+modelNL = ""
+modelFlat = ""
 
 # Or even better, call Streamlit functions inside a "with" block:
 if uploader is not None:
   model = ReadModel(uploader)
+  filename_upl = uploader.name
   subm1, subm2 = MatchSelection(model, srch, fwd, bwd)
   bytes1_data = subm1.GetData()
   bytes2_data = subm2.GetData()
   with left_column:
     st.write("""## NL model""")
-    WriteDict(bytes1_data)
+    modelNL = WriteDict(bytes1_data)
   with right_column:
     st.write("""## Flat model""")
-    WriteDict(bytes2_data)
+    modelFlat = WriteDict(bytes2_data)
 else:
   with left_column:
     st.write("No file selected.")
+
+
+st.sidebar.download_button("Download NL Model", modelNL, filename_upl + '_NL.mod',
+                   disabled = ("" == modelNL))
+st.sidebar.download_button("Download Solver Model", modelFlat, filename_upl + '_solver.mod',
+                   disabled = ("" == modelFlat))
