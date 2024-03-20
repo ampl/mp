@@ -2,6 +2,7 @@ from threading import Lock
 import math
 from pathlib import Path
 from shutil import which
+from token import LBRACE
 
 from Solver import Solver
 from amplpy import AMPL, Kind, OutputHandler, ErrorHandler, Environment
@@ -186,15 +187,14 @@ class AMPLRunner(object):
         command = f"shell \"{solver} -v\";"
         print(f"Executing {command}")
         v=self._ampl.get_output(command)
-        print(f"Output:\n{v}")
-        v=v.splitlines()[0]
+        driver_version = None
         import re
-        driver_match = re.search(r'driver\((\d+)\)', v)
-        if driver_match:
-            driver_version = driver_match.group(1)
-        else:
-            driver_version = None
-    
+        for l in v.splitlines():
+            driver_match = re.search(r'driver\((\d+)\)', l)
+            if driver_match:
+                driver_version = driver_match.group(1)
+                v=l
+                break
         return (driver_version, v)
 
 
