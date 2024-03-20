@@ -24,7 +24,8 @@ class Model:
       "Nonlinear" : [],
       "Linear" : [],
       "Logical": [],
-      "SOS": []}
+      "SOS1": [],
+      "SOS2": []}
     self._cons_Flat = {}
     self._cons_Flat_Group = {}
     self._objs_NL = []
@@ -50,9 +51,17 @@ class Model:
     elif "lin"==type:
       self._updateNodeData(self._cons_NL["Linear"],
       len(self._cons_NL["Linear"]), data)
-    else:  # "logical"==type:
+    elif "logical"==type:
       self._updateNodeData(self._cons_NL["Logical"],
       len(self._cons_NL["Logical"]), data)
+    elif "_sos1"==type:
+      self._updateNodeData(self._cons_NL["SOS1"],
+      len(self._cons_NL["SOS1"]), data)
+    elif "_sos2"==type:
+      self._updateNodeData(self._cons_NL["SOS2"],
+      len(self._cons_NL["SOS2"]), data)
+    else:
+      raise Exception("Unknown NL constraint type: "+type)
 
   def UpdateFlatConGroup(self, type, data):
     self._cons_Flat_Group[type] = data
@@ -61,6 +70,10 @@ class Model:
     if type not in self._cons_Flat:
       self._cons_Flat[type] = []
     self._updateNodeData(self._cons_Flat[type], idx, data)
+    if 0==data["depth"] \
+        and type.startswith('_sos') \
+        and "printed" in data:   ## we need the final status
+      self.UpdateNLCon(type, 0, data)
 
   def _updateNodeData(self, specnodecnt, idx, data):
     data1, upd = self._updateItemData(specnodecnt, idx, data)
@@ -94,8 +107,10 @@ class Model:
       = self._matchRecords(self._cons_NL.get("Linear"), keyw)
     result["NL Logical Constraints"] \
       = self._matchRecords(self._cons_NL.get("Logical"), keyw)
-    result["NL SOS Constraints"] \
-      = self._matchRecords(self._cons_NL.get("SOS"), keyw)
+    result["NL SOS1 Constraints"] \
+      = self._matchRecords(self._cons_NL.get("SOS1"), keyw)
+    result["NL SOS2 Constraints"] \
+      = self._matchRecords(self._cons_NL.get("SOS2"), keyw)
     return result
 
   # Match keyword to the final model
