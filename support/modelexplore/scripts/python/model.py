@@ -118,7 +118,7 @@ class Model:
     result = {}
     result["Variables"] = self._matchRecords(self._vars, keyw)
     result["Objectives"] = self._matchRecords(self._objs, keyw)
-    for ct, cv in self._cons_Flat.items():
+    for ct, cv in sorted(self._cons_Flat.items()):
       result["Constraints '" + ct + "'"] \
         = self._matchRecords(self._cons_Flat[ct], keyw)
     return result
