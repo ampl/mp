@@ -2,7 +2,7 @@ Summary of recent updates to the AMPL MP Library
 ================================================
 
 
-## 20240319
+## 20240320
 - *SOS constraints*.
   - Fixed handling of SOS2 constraints created by AMPL
     as reformulations of PL expressions (`option

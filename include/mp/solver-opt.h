@@ -329,7 +329,8 @@ public:
   void Parse(const char *&s, bool splitString=false) override {
     const char *start = s;
     T value = internal::OptionHelper<T>::Parse(s, splitString);
-    if (*s && !std::isspace(*s)) {
+    if (false  // undocumented: we accept next option after a numeric option
+        && *s && !std::isspace(*s)) {
       do ++s;
       while (*s && !std::isspace(*s));
       throw InvalidOptionValue(name(), std::string(start, s - start));
