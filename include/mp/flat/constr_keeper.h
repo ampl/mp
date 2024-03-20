@@ -930,7 +930,8 @@ protected:
   /// This is called in the end,
   /// so printing the readable form.
   void ExportConStatus(int i_con, const Container& cnt,
-                       const std::vector<std::string>* pvnam) {
+                       const std::vector<std::string>* pvnam,
+                       bool add2final) {
     if (GetLogger()) {
       fmt::MemoryWriter wrt;
       {
@@ -948,6 +949,7 @@ protected:
         jw["depth"] = cnt.GetDepth();
         jw["unused"] = (int)cnt.IsUnused();
         jw["bridged"] = (int)cnt.IsBridged();
+        jw["final"] = (int)add2final;
       }
       wrt.write("\n");                     // EOL
       GetLogger()->Append(wrt);
@@ -1057,7 +1059,8 @@ protected:
     int con_index=0;
     auto con_group = GetConstraintGroup(be);
     for (const auto& cont: cons_) {
-      if (!cont.IsBridged()) {
+      bool adding = !cont.IsBridged();
+      if (adding) {
         static_cast<Backend&>(be).AddConstraint(cont.con_);
         GetConverter().GetCopyLink().
             AddEntry({
@@ -1066,7 +1069,7 @@ protected:
                          GetConValues()(con_group).Add()
                      });
       }
-      ExportConStatus(con_index, cont, pvnam);
+      ExportConStatus(con_index, cont, pvnam, adding);
       ++con_index;                      // increment index
     }
   }

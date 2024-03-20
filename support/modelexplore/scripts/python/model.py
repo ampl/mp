@@ -130,14 +130,15 @@ class Model:
     if cnt is None:
       return result
     for i in cnt:
-      pr = str(i)         ## TODO printed form
-      if "printed" in i:
-        pr = i["printed"]
-      assert len(pr)
-      if ';'!=pr[-1]:
-        pr = pr + ';'
-      if (""==keyw or keyw in pr) \
-      and (keyNeed1==None \
-        or (keyNeed1 in i and 1==i[keyNeed1])):
-        result = result + "  \n" + pr        ## Markdown: 2x spaces + EOL
+      if "final" not in i or 1==i["final"]:
+        pr = str(i)         ## TODO printed form
+        if "printed" in i:
+          pr = i["printed"]
+        assert len(pr)
+        if ';'!=pr[-1]:
+          pr = pr + ';'
+        if (""==keyw or keyw in pr) \
+            and (keyNeed1==None \
+            or (keyNeed1 in i and 1==i[keyNeed1])):
+          result = result + "  \n" + pr        ## Markdown: 2x spaces + EOL
     return result
