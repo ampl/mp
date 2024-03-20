@@ -21,8 +21,9 @@ class Model:
     self._cons_NL_all = []
     self._cons_NL = {        ## NL + SOS
       "All" : [],
-      #"Linear" : [],
-      #"Logical": [],
+      "Nonlinear" : [],
+      "Linear" : [],
+      "Logical": [],
       "SOS": []}
     self._cons_Flat = {}
     self._cons_Flat_Group = {}
@@ -43,11 +44,15 @@ class Model:
 
   def UpdateNLCon(self, type, idx, data):
     if "nonlin"==type:
-      self._updateNodeData(self._cons_NL["All"], idx, data)
+      self._updateNodeData(self._cons_NL["Nonlinear"],
+      len(self._cons_NL["Nonlinear"]),   ## these just 1x
+      data)
     elif "lin"==type:
-      self._updateNodeData(self._cons_NL["All"], idx, data)
+      self._updateNodeData(self._cons_NL["Linear"],
+      len(self._cons_NL["Linear"]), data)
     else:  # "logical"==type:
-      self._updateNodeData(self._cons_NL["All"], idx, data)
+      self._updateNodeData(self._cons_NL["Logical"],
+      len(self._cons_NL["Logical"]), data)
 
   def UpdateFlatConGroup(self, type, data):
     self._cons_Flat_Group[type] = data
@@ -81,16 +86,16 @@ class Model:
     result["NL Variables"] = self._matchRecords(self._vars, keyw, "is_from_nl")
     result["NL Defined Variables"] = self._matchRecords(self._dvars, keyw)
     result["NL Objectives"] = self._matchRecords(self._objs_NL, keyw)
-    result["NL Constraints"] \
-      = self._matchRecords(self._cons_NL.get("All"), keyw)
-    #result["NL Nonlinear Constraints"] \
-    #  = self._matchRecords(self._cons_NL.get("Nonlinear"), keyw)
-    #result["NL Linear Constraints"] \
-    #  = self._matchRecords(self._cons_NL.get("Linear"), keyw)
-    #result["NL Logical Constraints"] \
-    #  = self._matchRecords(self._cons_NL.get("Logical"), keyw)
-    #result["NL SOS Constraints"] \
-    #  = self._matchRecords(self._cons_NL.get("SOS"), keyw)
+#    result["NL Constraints"] \
+#      = self._matchRecords(self._cons_NL.get("All"), keyw)
+    result["NL Nonlinear Constraints"] \
+      = self._matchRecords(self._cons_NL.get("Nonlinear"), keyw)
+    result["NL Linear Constraints"] \
+      = self._matchRecords(self._cons_NL.get("Linear"), keyw)
+    result["NL Logical Constraints"] \
+      = self._matchRecords(self._cons_NL.get("Logical"), keyw)
+    result["NL SOS Constraints"] \
+      = self._matchRecords(self._cons_NL.get("SOS"), keyw)
     return result
 
   # Match keyword to the final model
