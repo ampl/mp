@@ -185,8 +185,9 @@ class AMPLRunner(object):
     def _getSolverVersion(self, solver) -> tuple:
         """Returns driver version (e.g. 20240316), version string"""
         command = f"shell \"{solver} -v\";"
-        print(f"Executing {command}")
+        print(f"\nExecuting {command}")
         v=self._ampl.get_output(command)
+        print(f"\nGotten output: {v}")
         driver_version = None
         import re
         for l in v.splitlines():
