@@ -10,7 +10,8 @@
     }
   },
   {
-    "name": "mipbound_01 bestbound=1 return_mipgap=3",
+    "name": "mipbound_01 bestbound=1return_mipgap=3",
+    "comment": "Undocumented ASL/MP feature: no space after numeric option",
     "tags": [ "linear", "return_mipgap"],
     "options": { "ANYSOLVER_options": "bestbound=1 return_mipgap=3" },
     "objective": 1,
