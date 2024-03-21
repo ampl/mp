@@ -193,9 +193,10 @@ class AMPLRunner(object):
         for l in v.splitlines():
             driver_match = re.search(r'driver\((\d+)\)', l)
             if driver_match:
-                print(f"Matched: {driver_version} in \n{l}")
                 driver_version = driver_match.group(1)
+                print(f"Matched: {driver_version} in \n{l}")
                 all_string=l
+                print(f"Returning \ndriver_version={driver_version}\nall_string={all_string}")
                 break
         if not driver_version:
            driver_version=v
