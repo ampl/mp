@@ -65,7 +65,15 @@ else:
     st.write("No file selected.")
 
 
-st.sidebar.download_button("Download NL Model", modelNL, filename_upl + '_NL.mod',
+st.sidebar.download_button("Download NL Model",
+                   "# NL Model for '" + filename_upl + \
+                   "' (search pattern: '" + srch + "')\n" + \
+                   modelNL,
+                   filename_upl + '_NL.mod',
                    disabled = ("" == modelNL))
-st.sidebar.download_button("Download Solver Model", modelFlat, filename_upl + '_solver.mod',
+st.sidebar.download_button("Download Solver Model",
+                   "# Solver Model for '" + filename_upl + \
+                   "' (search pattern: '" + srch + "')\n" + \
+                   modelFlat,
+                   filename_upl + '_solver.mod',
                    disabled = ("" == modelFlat))
