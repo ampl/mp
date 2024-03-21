@@ -193,10 +193,14 @@ class AMPLRunner(object):
         for l in v.splitlines():
             driver_match = re.search(r'driver\((\d+)\)', l)
             if driver_match:
+                print(f"Matched: {driver_version} in \n{l}")
                 driver_version = driver_match.group(1)
-                v=l
+                all_string=l
                 break
-        return (driver_version, v)
+        if not driver_version:
+           driver_version=v
+           all_string=v
+        return (driver_version, all_string)
 
 
     def tryGetObjective(self):

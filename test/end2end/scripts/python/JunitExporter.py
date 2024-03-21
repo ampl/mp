@@ -104,7 +104,8 @@ class JunitExporter(Exporter):
         xml.add_testsuite(ts)
         xml.write(self.get_file_name(solver), pretty=True)
     def export(self):
-        if self.collector_: self.collector_.export()
+        if self.collector_: self.collector_.export(
+            self.get_platform_string())
             
     def add_statistic_collector(self, collector):
         self.collector_=collector
