@@ -58,7 +58,7 @@ if uploader is not None:
     st.write("""## NL model""")
     modelNL = WriteDict(bytes1_data)
   with right_column:
-    st.write("""## Flat model""")
+    st.write("""## Solver model""")
     modelFlat = WriteDict(bytes2_data)
 else:
   with left_column:

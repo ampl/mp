@@ -453,7 +453,7 @@ public:
     auto cancvt = IfConverterConverts(cvt);
     SetChosenAcceptanceLevel( GetModelAPIAcceptance(ma) );
     bool optadded = true;
-    if (cancvt) {   // If can convert. But see if ModelAPI accepts too
+    if (true || cancvt) {   // Changing to show all native cons
       if (ConstraintAcceptanceLevel::Recommended ==
             GetChosenAcceptanceLevel()) {
         env.AddStoredOption(GetAcceptanceOptionNames(),
