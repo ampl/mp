@@ -3,8 +3,6 @@
 # if __name__ == "__main__":
 #     pass
 
-import streamlit as st
-
 import json
 from scripts.python.model import Model
 

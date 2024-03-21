@@ -7,13 +7,22 @@ from scripts.python.matcher import MatchSubmodel
 # To work with local files in st 1.30.1, see
 # https://discuss.streamlit.io/t/axioserror-request-failed-with-status-code-403/38112/13.
 # The corresponding settings should not be used on a server.
-uploader = st.sidebar.file_uploader("Model file (JSONL)")
+uploader = st.sidebar.file_uploader(
+    "Model file (JSONL)",
+    help = "Reformulation file obtained by option `writegraph`\n" + \
+           "(https://mp.ampl.com/modeling-tools.html#reformulation-graph)")
 
 # You can use a column just like st.sidebar:
-srch = st.sidebar.text_input('Search pattern:')
+srch = st.sidebar.text_input(
+    'Search pattern:',
+    help = "Pattern to filter the models' lines.\nLeave blank to see complete models.")
 
-fwd = st.sidebar.checkbox('Add descendants', disabled=True)
-bwd = st.sidebar.checkbox('Add ancestors', disabled=True)
+fwd = st.sidebar.checkbox(
+    'Add descendants', disabled=True,
+    help = 'Include all solver model items derived from matching items in the NL model')
+bwd = st.sidebar.checkbox(
+    'Add ancestors', disabled=True,
+    help = 'Include all NL model items reduced to matching items in the solver model')
 
 left_column, right_column = st.columns(2)
 
@@ -55,17 +64,31 @@ if uploader is not None:
   bytes1_data = subm1.GetData()
   bytes2_data = subm2.GetData()
   with left_column:
-    st.write("""## NL model""")
+    st.header("NL model",
+        help = 'NL model lines matching the search pattern')
     modelNL = WriteDict(bytes1_data)
   with right_column:
-    st.write("""## Flat model""")
+    st.header("Solver model",
+        help = 'Solver model lines matching the search pattern')
     modelFlat = WriteDict(bytes2_data)
 else:
-  with left_column:
-    st.write("No file selected.")
+  st.header("AMPL MP Reformulation Explorer")
+  st.write("Documentation: https://mp.ampl.com/modeling-tools.html#reformulation-graph")
+  st.divider()
+  st.write("No file selected.")
 
 
-st.sidebar.download_button("Download NL Model", modelNL, filename_upl + '_NL.mod',
+st.sidebar.download_button("Download NL Model",
+                   "# NL Model for '" + filename_upl + \
+                   "' (search pattern: '" + srch + "')\n" + \
+                   modelNL,
+                   filename_upl + '_NL.mod',
+                   help = 'Download current NL model',
                    disabled = ("" == modelNL))
-st.sidebar.download_button("Download Solver Model", modelFlat, filename_upl + '_solver.mod',
+st.sidebar.download_button("Download Solver Model",
+                   "# Solver Model for '" + filename_upl + \
+                   "' (search pattern: '" + srch + "')\n" + \
+                   modelFlat,
+                   filename_upl + '_solver.mod',
+                   help = 'Download current solver model',
                    disabled = ("" == modelFlat))

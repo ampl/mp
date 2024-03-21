@@ -1039,7 +1039,7 @@ private:
     /// Should be called after adding all constraint keepers
     FlatModel::ConsiderAcceptanceOptions(*this, GetModelAPI(), GetEnv());
 
-    GetEnv().AddStoredOption("tech:writegraph writegraph exportgraph",
+    GetEnv().AddStoredOption("tech:writegraph cvt:writegraph writegraph exportgraph",
         "File to export conversion graph. Format: JSON Lines.",
         options_.file_graph_export_);
     GetEnv().AddOption("cvt:pre:all",

@@ -15,7 +15,9 @@ needs_sphinx = "3.2.0"
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ["breathe", "sphinx.ext.mathjax", "sphinx.ext.graphviz"]
+extensions = ["breathe",
+              "sphinx.ext.mathjax", "sphinx.ext.graphviz",
+              "sphinx_tabs.tabs"]
 
 # Configure Breathe.
 # When building with CMake, the path to doxyxml is passed via the command line.
