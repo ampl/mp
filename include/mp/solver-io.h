@@ -305,7 +305,8 @@ void AppSolutionHandlerImpl<Solver, PB, Writer>::HandleSolution(
   if (solver.ampl_flag() || (wantsol & Solver::WRITE_SOL_FILE) != 0) {
     // "Erase" the banner so that it is not duplicated when printing
     // the solver message.
-    if (solver.ampl_flag() && banner_size_ != 0) {
+    if (solver.ampl_flag() && banner_size_ != 0
+        && !solver.output_handler()->has_output) {   // #233
       fmt::MemoryWriter w;
       w << fmt::pad("", banner_size_, '\b');
       solver.Print("{}", w.c_str());

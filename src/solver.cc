@@ -972,7 +972,7 @@ void BasicSolver::ParseOptionString(
       if (!next || std::isspace(next)) {
         ++s;
         if ((flags & NO_OPTION_ECHO) == 0) {
-          Print("  {}", opt->echo_with_value() + '\n');
+          Print("  {}\n", opt->echo_with_value());
         }
         continue;
       }
