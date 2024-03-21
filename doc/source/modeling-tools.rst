@@ -59,7 +59,7 @@ the following ways.
 
 .. _explore-final-model:
 
-Explore the final model
+Export the solver model
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 To explore the model received by the solver,
@@ -81,16 +81,151 @@ Some solvers can export their presolved model:
 
 .. _reformulation-graph:
 
-Reformulation graph
+Reformulation explorer
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The flattening and reformulation graph can be exported
-by the ``cvt:writegraph`` option (WIP).
+MP provides a tool to explore and compare the model
+provided to an MP solver driver in the NL file, and the final model
+sent to the underlying solver.
 
-At the moment only arcs are exported. Terminal nodes (variables, constraints,
-objectives) can be seen in the NL model (ampl: ``expand``) and the
-final flat model (gurobi: option ``tech:writeprob``).
+.. image:: images/ref_explore.png
+  :width: 400
+  :align: center
+  :alt: Reformulation explorer interface
 
+Tool invocation
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To use the reformulation explorer online, go to http://ampl.com/streamlit.
+
+To run locally, download the `MP repository <https://github.com/ampl/mp>`_.
+In subfolder `support/modelexplore`, run the command::
+
+  streamlit run modelexplore.py
+
+
+Using the explorer
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To produce the input data for the tool, containing the reformulations,
+run an MP solver with the `writegraph` option, as follows.
+
+.. tabs::
+
+   .. tab:: AMPL
+
+        .. code-block:: ampl
+
+            ampl: option solver gurobi;           # select solver
+            ampl: option gurobi_auxfiles rc;      # write var/con names
+            ampl: option gurobi_options 'writegraph=model.jsonl lim:time=0';
+            ampl: solve;                          # solve the problem
+
+   .. tab:: Python
+
+        How to install using `amplpy <https://amplpy.ampl.com>`_:
+
+        .. code-block:: bash
+
+            # Install Python API for AMPL:
+            $ python -m pip install amplpy --upgrade
+
+            # Install AMPL & solver modules:
+            $ python -m amplpy.modules install gurobi # install Gurobi
+
+            # Activate your license (e.g., free ampl.com/ce or ampl.com/courses licenses):
+            $ python -m amplpy.modules activate <your-license-uuid>
+
+        How to use:
+
+        .. code-block:: python
+
+            from amplpy import AMPL
+            ampl = AMPL()
+            ...
+            ampl.set_option("gurobi_auxfiles", "rc")
+            ampl.solve(solver="gurobi", gurobi_options="writegraph=graph.jsonl")
+
+        Learn more about what we have to offer to implement and deploy `Optimization in Python <https://ampl.com/python/>`_.
+
+   .. tab:: Other APIs
+
+       `AMPL APIs <https://ampl.com/apis/>`_ are interfaces
+       that allow developers to access the features of the AMPL interpreter
+       from within a programming language. We have APIs available for:
+
+       - `Python <https://ampl.com/api/latest/python>`_
+       - `R <https://ampl.com/api/latest/R>`_
+       - `C++ <https://ampl.com/api/latest/cpp>`_
+       - `C#/.NET <https://ampl.com/api/latest/dotnet>`_
+       - `Java <https://ampl.com/api/latest/java>`_
+       - `MATLAB <https://ampl.com/api/latest/matlab>`_
+
+   .. tab:: Command line
+
+       .. code-block:: bash
+
+           auxfiles=rc ampl -obmodel model.mod data.dat
+           gurobi model.nl writegraph=reformulations.jsonl lim:time=0
+
+
+In the Explorer, upload the JSONL file. The NL (source) and solver's
+(destination) models are displayed.
+
+.. note::
+   The NL model displayed in most cases coincides
+   with the output of AMPL's `solexpand` command.
+
+   The solver model is equivalent to the solver's exported model
+   via the `tech:writeprob` option.
+
+The following operations are possible:
+
+- *Search for a text pattern*. To display the subsets of the models
+  containing a certain name, enter that in the 'Search pattern' field.
+
+- *Download (subsets of) the models*. To download currently
+  displayed (sub)models, use the download buttons.
+
+
+Example
+~~~~~~~~~~~~~~~~~~~~~
+
+Consider the following AMPL model.
+
+.. code-block:: ampl
+
+   var x binary;
+   var y binary;
+   var z binary;
+   minimize TotalSum: z + 1;
+   subj to C1: x+y >= 1;
+   subj to C2: x^2+y^2+(z-0.7)^2 <= 1.83;
+   subj to C3: z==1 ==> x-y <= 2;
+
+To see the reformulations applied to constraint `C3`,
+download the corresponding JSONL file in the Explorer
+and enter `C3` in the 'Search pattern' field. For Gurobi,
+the resulting subset of the Solver model can be as follows:
+
+.. code-block:: ampl
+
+   ##  Variables (3)
+   var C3 binary;
+   var C3_3_ binary;
+   var C3_5_ = 1;
+
+   ##  Constraints '_indle' (1)
+   C3_4_: C3_3_==1 ==> (1*x - 1*y <= 2);
+
+   ##  Constraints '_lineq' (1)
+   C3_2_: 1*z - 1*C3 == -1;
+
+   ##  Constraints '_or' (1)
+   C3_6_: C3_5_ == OrConstraint([C3, C3_3_], []);
+
+The constraint types (`_indle`, `_or`, etc.) are as explained
+in :ref:`supported-constraints`.
 
 
 .. _solution-check:
