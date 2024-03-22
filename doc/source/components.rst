@@ -199,6 +199,8 @@ and tests.
   see
   `NLWPY example <https://github.com/ampl/mp/blob/develop/nl-writer2/nlwpy/test/test_solve.py>`_.
 
+  - Available on PyPI as the `nlwpy <https://pypi.org/project/nlwpy/>`_ package.
+
 
 .. _recommended-driver-logic:
 
