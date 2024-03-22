@@ -30,12 +30,15 @@ class Solver(object):
         ext = fn.with_stem(f"{fn.stem}_{self.getName()}").with_suffix('.lp')
         return ext.as_posix()
 
-    def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None,
+    def __init__(self, exeName, 
+                 timeout=None, nthreads=None, otherOptions=None,
                  writeSolverName=False,
                  supportedTags=None,
                  unsupportedTags=None,
                  lpmethod = None,
-                 nlpmethod=None):
+                 nlpmethod=None,
+                 name = None,):
+        
         self._exePath = Solver.getExecutableName(exeName)
         self._timeout = timeout
         self._nthreads = nthreads
@@ -49,6 +52,7 @@ class Solver(object):
         self._unsupportedTags = unsupportedTags
         self._nlpmethod = nlpmethod
         self._version = None
+        self._name = name
 
     def get_version(self):
         return self._version
@@ -106,6 +110,7 @@ class Solver(object):
         self._evaluateRun(model)
 
     def getName(self):
+        if self._name: return self._name
         path = PurePath(self._exePath)
         return path.stem
 
@@ -439,6 +444,51 @@ class BaronSolver(AMPLSolver):
             except:
               print("No solution, string: {}".format(n))
               self._stats["objective"] = None
+
+class KnitroSolver(AMPLSolver):
+
+    def _setLPMethod(self, method : str):
+        return "act_lpalg={}".format(1 if method == "SIMPLEX" else 3)
+
+    def _setTimeLimit(self, seconds):
+        return f"maxtime_real={seconds} ma_maxtime_real={seconds}"
+
+    def _setNThreads(self, threads):
+        return f"threads={threads}"
+
+    def _getAMPLOptionsName(self):
+        return "knitro"
+
+    def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
+        stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
+                 ModelTags.linear,
+                 ModelTags.plinear,
+                 ModelTags.quadratic,
+                 ModelTags.quadratic_obj,
+                 ModelTags.quadraticnonconvex,
+
+                 ModelTags.socp,      
+                 ModelTags.socp_hard_to_recognize,
+                 ModelTags.nonlinear, ModelTags.log, ModelTags.trigonometric}
+
+        super().__init__(exeName, timeout, nthreads, otherOptions, stags)
+
+    def _doParseSolution(self, st, stdout=None):
+        if not st:
+            self._stats["outmsg"] = "Solution file empty"
+            self._stats["timelimit"] = False
+            return None
+        self._stats["outmsg"] = st[0]
+        self._stats["timelimit"] = "Unknown" in st[0] or "Time limit" in st[0]
+        tag = "objective "
+        if tag in st[1]:
+            n = st[1][st[1].index(tag) + len(tag):]
+            try:
+              self._stats["objective"] = float(n)
+            except:
+              print("No solution, string: {}".format(n))
+              self._stats["objective"] = None
+              
 
 class ConoptSolver(AMPLSolver):
 
