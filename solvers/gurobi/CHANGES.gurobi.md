@@ -2,6 +2,26 @@ Summary of recent updates to gurobi for AMPL
 ============================================
 
 
+## 20240320
+- *SOS constraints*.
+  - Fixed handling of SOS2 constraints created by AMPL
+    as reformulations of PL expressions (`option
+    pl_linearize 1`, default; set to 0 to use the solver's
+    native PL functions or MP linearization.)
+  - Disallow repeated weights for SOS constraints
+    (suffixes `.sosno`/`.ref`.)
+- *Native handling of POW(x, INT)*.
+  - Power expressions with positive integer exponent
+    are passed natively vs previously quadratic or linear 
+  - reformulation. For best performance, global solving capability
+    might be needed (`global=1`).
+- *Option `report_times`* 
+- *Unused `acc:` options*.
+  - The constraint acceptance options `acc:...`
+    for non-handled constraints are ignored
+    (previously triggered error.)
+
+
 ## 20240311
 - Added option `tech:reportwork` to display or return in the 
   problem suffix `work` the work units spent while solving 
