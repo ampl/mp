@@ -43,6 +43,7 @@ def addStdSolvers(solvers: SolverCollection, binPath=""):
     solvers.addSolver(Solver.XPRESSDirectSolver(path.join(binPath,"xpress")))
     solvers.addSolver(Solver.MosekSolver(path.join(binPath,"mosek")))
     solvers.addSolver(Solver.CbcMPSolver(path.join(binPath, "cbc")))
+    solvers.addSolver(Solver.CbcMPSolver(path.join(binPath, "cbcmp")))
     solvers.addSolver(Solver.GCGSolver(path.join(binPath, "gcg")))
     solvers.addSolver(Solver.GCGSolver(path.join(binPath, "gcgmp")))
     solvers.addSolver(Solver.SCIPSolver(path.join(binPath, "scip")))
