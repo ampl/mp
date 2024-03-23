@@ -6,24 +6,29 @@ from os import path
 class SolverCollection:
     def __init__(self):
         self._solvers = {}
+        self._aliases = {} # alias -> solvername map
 
-    def addSolver(self, solver: Solver):
+    def addSolver(self, solver: Solver, aliases: list = None):
         name = solver.getName()
         if name in self._solvers:
             raise "Solver '{}' already defined".format(name)
         self._solvers[name] = solver
+        self._aliases[name]=name
+        if aliases:
+            for a in aliases:
+                self._aliases[a]=name
 
     def getSolvers(self):
         return self._solvers.items()
 
     def getSolversByNames(self, names):
-        return [self._solvers[x] for x in names]
+        return [self.getSolver(x) for x in names]
 
     def getSolverNames(self):
-        return self._solvers.keys()
+        return self._aliases.keys()
 
-    def getSolver(self, name):
-        return self._solvers.get(name)
+    def getSolver(self, nameoralias: str):
+        return self._solvers.get(self._aliases[nameoralias])
 
 def addStdSolvers(solvers: SolverCollection, binPath=""):
     solvers.addSolver(Solver.LindoSolver(path.join(binPath, "lindoglobal")))
@@ -37,18 +42,14 @@ def addStdSolvers(solvers: SolverCollection, binPath=""):
     solvers.addSolver(Solver.ConoptSolver(path.join(binPath,"conopt")))
     solvers.addSolver(Solver.COPTSolver(path.join(binPath,"copt")))
     solvers.addSolver(Solver.MindoptSolver(path.join(binPath,"mindoptampl")))
-    solvers.addSolver(Solver.HighsSolver(path.join(binPath,"highs")))
-    solvers.addSolver(Solver.HighsSolver(path.join(binPath,"highsmp")))
+    solvers.addSolver(Solver.HighsSolver(path.join(binPath,"highs")), aliases=["highsmp"])
     solvers.addSolver(Solver.KnitroSolver(path.join(binPath,"knitro")))
     solvers.addSolver(Solver.XpressSolver(path.join(binPath,"xpressasl")))
     solvers.addSolver(Solver.XPRESSDirectSolver(path.join(binPath,"xpress")))
     solvers.addSolver(Solver.MosekSolver(path.join(binPath,"mosek")))
-    solvers.addSolver(Solver.CbcMPSolver(path.join(binPath, "cbc")))
-    solvers.addSolver(Solver.CbcMPSolver(path.join(binPath, "cbcmp")))
-    solvers.addSolver(Solver.GCGSolver(path.join(binPath, "gcg")))
-    solvers.addSolver(Solver.GCGSolver(path.join(binPath, "gcgmp")))
-    solvers.addSolver(Solver.SCIPSolver(path.join(binPath, "scip")))
-    solvers.addSolver(Solver.SCIPSolver(path.join(binPath, "scipmp")))
+    solvers.addSolver(Solver.CbcMPSolver(path.join(binPath, "cbc")), aliases=["cbcmp"])
+    solvers.addSolver(Solver.GCGSolver(path.join(binPath, "gcgmp")), aliases=["gcgmp"])
+    solvers.addSolver(Solver.SCIPSolver(path.join(binPath, "scip")), aliases=["scipmp"])
     solvers.addSolver(Solver.CPLEXODHSolver(path.join(binPath, "cplexodh")))
     solvers.addSolver(Solver.GUROBIODHSolver(path.join(binPath, "gurobiodh")))
 

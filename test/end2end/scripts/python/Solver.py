@@ -52,7 +52,6 @@ class Solver(object):
         self._unsupportedTags = unsupportedTags
         self._nlpmethod = nlpmethod
         self._version = None
-        self._name = name
 
     def get_version(self):
         return self._version
@@ -110,7 +109,6 @@ class Solver(object):
         self._evaluateRun(model)
 
     def getName(self):
-        if self._name: return self._name
         path = PurePath(self._exePath)
         return path.stem
 
