@@ -119,7 +119,8 @@ class Model:
     result["Objectives"] = self._matchRecords(self._objs, keyw)
     ctypes = FlatConTypes()
     for ct, cv in sorted(self._cons_Flat.items()):
-      result["Constraints '" + ctypes[ct] + "'"] \
+      result["Constraints '" + \
+        (ctypes[ct] if ct in ctypes else ct) + "'"] \
         = self._matchRecords(self._cons_Flat[ct], keyw)
     return result
 
