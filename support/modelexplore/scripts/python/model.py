@@ -3,9 +3,8 @@
 # if __name__ == "__main__":
 #     pass
 
-import streamlit as st
-
 from scripts.python.graph import DiGraph
+from scripts.python.con_types import FlatConTypes
 
 class Model:
   """
@@ -118,8 +117,9 @@ class Model:
     result = {}
     result["Variables"] = self._matchRecords(self._vars, keyw)
     result["Objectives"] = self._matchRecords(self._objs, keyw)
+    ctypes = FlatConTypes()
     for ct, cv in sorted(self._cons_Flat.items()):
-      result["Constraints '" + ct + "'"] \
+      result["Constraints '" + ctypes[ct] + "'"] \
         = self._matchRecords(self._cons_Flat[ct], keyw)
     return result
 
