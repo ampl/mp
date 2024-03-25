@@ -48,10 +48,11 @@ def addStdSolvers(solvers: SolverCollection, binPath=""):
     solvers.addSolver(Solver.XPRESSDirectSolver(path.join(binPath,"xpress")))
     solvers.addSolver(Solver.MosekSolver(path.join(binPath,"mosek")))
     solvers.addSolver(Solver.CbcMPSolver(path.join(binPath, "cbc")), aliases=["cbcmp"])
-    solvers.addSolver(Solver.GCGSolver(path.join(binPath, "gcgmp")), aliases=["gcgmp"])
+    solvers.addSolver(Solver.GCGSolver(path.join(binPath, "gcg")), aliases=["gcgmp"])
     solvers.addSolver(Solver.SCIPSolver(path.join(binPath, "scip")), aliases=["scipmp"])
     solvers.addSolver(Solver.CPLEXODHSolver(path.join(binPath, "cplexodh")))
     solvers.addSolver(Solver.GUROBIODHSolver(path.join(binPath, "gurobiodh")))
+    solvers.addSolver(Solver.LgoSolver(path.join(binPath, "lgo")))
 
 
 # if __name__ == "__main__":

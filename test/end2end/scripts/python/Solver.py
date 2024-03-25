@@ -320,6 +320,44 @@ class LindoSolver(AMPLSolver):
                     return
                 prev = line
         self._stats["outmsg"] = stdout
+        
+
+class LgoSolver(AMPLSolver):
+    def _setTimeLimit(self, seconds):
+        return "timelim={}".format(seconds)
+
+    def _setNThreads(self, threads):
+        return ""
+
+    def _getAMPLOptionsName(self):
+        return "lgo"
+
+    def _setLPMethod(self, method : str):
+        return ""
+
+    def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
+        super().__init__(exeName, timeout, nthreads, otherOptions)
+
+    def _doParseSolution(self, st, stdout=None):
+        if not st:
+            self._stats["outmsg"] = "Solution file empty"
+            self._stats["timelimit"] = False
+            return None
+        self._stats["outmsg"] = st[0]
+        self._stats["timelimit"] = "time limit" in st[1]
+        
+        pattern = r"Objective ([\\d.]*)\\n"
+        for i,s in enumerate(st):
+            match = re.search(pattern, st)
+            if match:
+                # Extract the matched number
+                self._stats["objective"]  = float(match.group(1))
+                break
+            if i==4: # parse max the first 4 lines
+                print("No solution, string: {}".format( st[1]))
+                self._stats["objective"] = None
+                break
+
 
 class GurobiSolver(AMPLSolver):
 
