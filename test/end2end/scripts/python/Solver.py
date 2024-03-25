@@ -2,6 +2,7 @@ import sys
 import math
 from pathlib import PurePath
 import subprocess
+import re 
 
 from Model import Model, ModelTags
 from TimeMe import TimeMe
@@ -479,13 +480,14 @@ class KnitroSolver(AMPLSolver):
         self._stats["outmsg"] = st[0]
         self._stats["timelimit"] = "Unknown" in st[0] or "Time limit" in st[0]
         tag = "objective "
-        if tag in st[1]:
-            n = st[1][st[1].index(tag) + len(tag):]
-            try:
-              self._stats["objective"] = float(n)
-            except:
-              print("No solution, string: {}".format(n))
-              self._stats["objective"] = None
+        pattern = r'\bobjective\s+(\d+\.?\d*(?:e[+-]?\d+)?)\b'
+        match = re.search(pattern, st[1])
+        if match:
+            # Extract the matched number
+            self._stats["objective"]  = float(match.group(1))
+        else:
+            print("No solution, string: {}".format( st[1]))
+            self._stats["objective"] = None
               
 
 class ConoptSolver(AMPLSolver):

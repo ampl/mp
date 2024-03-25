@@ -107,6 +107,7 @@ class Model(object):
         self._filename = filename
         self._expsolution = expsolution
         self._tags = tags
+        
         if otherFiles:
             self._otherFiles = otherFiles if type(
                 otherFiles) is list else [otherFiles]
@@ -168,6 +169,8 @@ class Model(object):
     def isSubsetOfTags(self, tags: set):
         if tags is None:
             return False
+        if self._tags == ModelTags.NA:
+            return True # for NL models with no modellist.json
         for tag in self._tags:
             if tag not in tags:
                 return False
