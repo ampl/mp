@@ -201,6 +201,7 @@ protected:
 
   void OpenGurobiComputeServer();
   void OpenGurobiCloud();
+  void OpenGurobiWLS();
 
   void InputGurobiExtras();
   /// .funcpieces etc.
@@ -300,11 +301,19 @@ private:
     int server_priority_=0, server_insecure_=0;
     double server_timeout_=10.0;
 
+    // Web License Service
+    int wls_licenseid_=-1, wls_tokenduration_=0;
+    std::string wls_accessid_, wls_secret_, wls_token_;
+    double wls_tokenrefresh_=0;
+    
     std::string tunebase_;
   } storedOptions_;
 
 
 protected:  //////////// Option accessors ////////////////
+    
+
+
   int Gurobi_mipstart() const { return storedOptions_.nMIPStart_; }
 
   const std::string& paramfile_read() const { return storedOptions_.paramRead_; }
@@ -326,6 +335,14 @@ protected:  //////////// Option accessors ////////////////
   int server_priority() const { return storedOptions_.server_priority_; }
   int server_insecure() const { return storedOptions_.server_insecure_; }
   int server_timeout() const { return storedOptions_.server_timeout_; }
+
+  // Web License Service
+  int wls_licenseid() const { return storedOptions_.wls_licenseid_; }
+  int wls_tokenduration() const { return storedOptions_.wls_tokenduration_; }
+  double wls_tokenrefresh() const { return storedOptions_.wls_tokenrefresh_; }
+  const std::string& wls_accessid() const { return storedOptions_.wls_accessid_; }
+  const std::string& wls_secret() const { return storedOptions_.wls_secret_; }
+  const std::string& wls_token() const { return storedOptions_.wls_token_; }
 
   const std::string& tunebase() const { return storedOptions_.tunebase_; }
 

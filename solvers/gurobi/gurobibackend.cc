@@ -117,7 +117,10 @@ void GurobiBackend::FinishOptionParsing() {
   }
   bool cs = servers().size();
   bool cloud = cloudid().size() && cloudkey().size();
-  if (cs || cloud)
+  bool wls = (wls_accessid().size() && wls_licenseid() != -1 &&
+    wls_secret().size()) || (wls_token().size());
+
+  if (cs || cloud || wls)
   {
     const auto create_fn = GetCallbacks().init;
     if (create_fn) {
@@ -126,10 +129,12 @@ void GurobiBackend::FinishOptionParsing() {
       GRB_CALL(GRBemptyenv(&env_ref()));
       this->ReplaySolverOptions();
     }
-    if (cs) 
+    if (cs)
       OpenGurobiComputeServer();
-    else 
+    else if (cloud)
       OpenGurobiCloud();
+    else
+      OpenGurobiWLS();
   }
   
   else {
@@ -224,6 +229,36 @@ void GurobiBackend::OpenGurobiCloud() {
     default:
       Abort(sol::SPECIFIC + 4, fmt::format(
               "Surprise return {} while starting the cloud environment", i));
+    }
+  }
+}
+void GurobiBackend::OpenGurobiWLS() {
+  assert((wls_accessid().size() && wls_secret().size() && (wls_licenseid() != -1)) || wls_token().size());
+
+  if (wls_token().size()) { // Use token
+    SetSolverOption(GRB_STR_PAR_WLSTOKEN, wls_token().c_str());
+  }
+  else {
+    SetSolverOption(GRB_STR_PAR_WLSACCESSID, wls_accessid().c_str());
+    SetSolverOption(GRB_STR_PAR_WLSSECRET, wls_secret().c_str());
+    SetSolverOption(GRB_INT_PAR_LICENSEID, wls_licenseid());
+    if (wls_tokenduration())
+      SetSolverOption(GRB_INT_PAR_WLSTOKENDURATION, wls_tokenduration());
+    if (wls_tokenrefresh())
+      SetSolverOption(GRB_DBL_PAR_WLSTOKENREFRESH, wls_tokenrefresh());
+  }
+
+  if (int i = GRBstartenv(env())) {
+    switch (i) {
+    case GRB_ERROR_NETWORK:
+      Abort(sol::SPECIFIC + 1, "Could not talk to Gurobi Web License Server.");
+      break;
+    case GRB_ERROR_NO_LICENSE:
+      Abort(sol::SPECIFIC + 3, "Invalid license/token for Gurobi Web License Server.");
+      break;
+    default:
+      Abort(sol::SPECIFIC + 4, fmt::format(
+        "Surprise return {} while starting the environment using the Web License Server", i));
     }
   }
 }
@@ -2493,6 +2528,30 @@ void GurobiBackend::InitCustomOptions() {
       "job is not started within server_timeout seconds. "
       "Default = 10.",
           storedOptions_.server_timeout_, 1.0, DBL_MAX);
+
+
+  AddStoredOption("tech:wls_licenseid wls_licenseid licenseid",
+    "Web License Manager license ID.",
+    storedOptions_.wls_licenseid_);
+  AddStoredOption("tech:wls_accessid wls_accessid",
+    "Web License Manager access ID",
+    storedOptions_.wls_accessid_);
+  AddStoredOption("tech:wls_secret wls_secret",
+    "Web License Manager secret key",
+    storedOptions_.wls_secret_);
+  AddStoredOption("tech:wls_token wls_token",
+    "Web License Manager token retrieved with the REST API. "
+    "If specified, all other WSL-related parameters are ignored.",
+    storedOptions_.wls_token_);
+  AddStoredOption("tech:wls_tokenduration wls_tokenduration",
+    "Token duration (in minutes). "
+    "Default = 0 (automatic)",
+    storedOptions_.wls_tokenduration_, 0, INT_MAX);
+  AddStoredOption("tech:wls_tokenrefresh wls_tokenrefresh",
+    "Fraction of the token duration after which a token refresh "
+    "is triggered. The minimum refresh interval is 4 minutes. "
+    "Default = 0.9",
+    storedOptions_.wls_tokenrefresh_, 0.0, 1.0);
 
 
   AddSolverOption("tech:threads threads",
