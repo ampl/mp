@@ -1,3 +1,4 @@
+#include <climits>
 #include <cfloat>
 
 #include "mp/env.h"
