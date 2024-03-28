@@ -24,11 +24,11 @@
     }
   },
   {
-    "name" : "dietu_stt  wls_accessid=1 wls_secret=sc wls_licenseid=li",
+    "name" : "dietu_stt wls_accessid=a1 wls_secret=sc wls_licenseid=12",
     "tags" : ["linear", "continuous", "gurobi_wls"],
-    "options": { "ANYSOLVER_options": "wls_accessid=1 wls_secret=sc wls_licenseid=li" },
+    "options": { "ANYSOLVER_options": "wls_accessid=a1 wls_secret=sc wls_licenseid=12" },
     "values": {
-      "solve_result_num": 605
+      "solve_result_num": 602
     }
   }
 ]
