@@ -254,8 +254,14 @@ void GurobiBackend::OpenGurobiWLS() {
     case GRB_ERROR_NETWORK:
       Abort(sol::SPECIFIC + 1, "Could not talk to Gurobi Web License Server.");
       break;
+    case GRB_ERROR_SECURITY:
+      Abort(sol::SPECIFIC + 2, "Invalid license/token for Gurobi Web License Server.");
+      break;
     case GRB_ERROR_NO_LICENSE:
       Abort(sol::SPECIFIC + 3, "Invalid license/token for Gurobi Web License Server.");
+      break;
+    case GRB_ERROR_INVALID_ARGUMENT:
+      Abort(sol::SPECIFIC + 5, "Bad license/token for Gurobi Web License Server.");
       break;
     default:
       Abort(sol::SPECIFIC + 4, fmt::format(

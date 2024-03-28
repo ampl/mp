@@ -85,8 +85,8 @@ class ModelTags(enum.Enum):
 
     ## Solver-specific
     gurobi_cloud = 100000
-    gurobi_server=100001
-
+    gurobi_server= 100001
+    gurobi_wls   = 100002
 
     @staticmethod
     def fromString(l):

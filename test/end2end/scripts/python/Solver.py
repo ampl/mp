@@ -861,7 +861,7 @@ class GurobiDirectSolver(MPDirectSolver):
 
                  ModelTags.check_sos2_from_pl,
 
-                 ModelTags.gurobi_cloud, ModelTags.gurobi_server,
+                 ModelTags.gurobi_cloud, ModelTags.gurobi_server, ModelTags.gurobi_wls
                 }
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 

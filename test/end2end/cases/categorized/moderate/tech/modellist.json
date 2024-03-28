@@ -14,5 +14,21 @@
     "values": {
       "solve_result_num": 604
     }
+  },
+  {
+    "name" : "dietu_stt  wls_token=invalidtoken",
+    "tags" : ["linear", "continuous", "gurobi_wls"],
+    "options": { "ANYSOLVER_options": "wls_token=invalidtoken" },
+    "values": {
+      "solve_result_num": 605
+    }
+  },
+  {
+    "name" : "dietu_stt  wls_accessid=1 wls_secret=sc wls_licenseid=li",
+    "tags" : ["linear", "continuous", "gurobi_wls"],
+    "options": { "ANYSOLVER_options": "wls_accessid=1 wls_secret=sc wls_licenseid=li" },
+    "values": {
+      "solve_result_num": 605
+    }
   }
 ]
