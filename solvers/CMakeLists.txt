@@ -268,6 +268,8 @@ add_ampl_backend(highsmp DLL_RUNTIME SHARED_LIB MODULE HIGHS
 add_ampl_backend(ortoolsmp DLL_RUNTIME SHARED_LIB MODULE ortoolsmp 
   LIBRARIES ${ortoolsmp_LIBS} ${CMAKE_DL_LIBS})
 
+add_ampl_backend(cuopt)
+
 add_ampl_backend(cplex DLL_RUNTIME SHARED_LIB MODULE CPLEX
                       LIBRARIES cplex-library ${CMAKE_DL_LIBS})
 
