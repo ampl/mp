@@ -7,9 +7,9 @@ Summary of recent updates to the AMPL MP Library
   (option cvt:dvelim).
   This happens only if they can be substituted
   into linear, quadratic, or polynomial expressions.
-  Usually this largely simplifies quadratic models
+  This can simplify quadratic and polynomial models
   (linear substitutions are already performed by AMPL,
-  see AMPL option linelim.)
+  see AMPL options linelim and substout.)
 - cvt:prod=7 default for LP and convex solvers,
   logicalizing also products of just 2 binary variables.
 - More presolve for logical expressions
