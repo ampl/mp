@@ -118,7 +118,7 @@ public:
   ACCEPT_CONSTRAINT(AndConstraint, Recommended, CG_General)
   void AddConstraint(const AndConstraint& ac);
   
-  #define GLOBAL_LEVEL AcceptedButNotRecommended // Convergence issues in 9.4.2
+  #define GLOBAL_LEVEL Recommended // Since v9.5.0
   ACCEPT_CONSTRAINT(DivConstraint, GLOBAL_LEVEL, CG_General)
   void AddConstraint(const DivConstraint& cc);
   ACCEPT_CONSTRAINT(SinConstraint, GLOBAL_LEVEL, CG_General)

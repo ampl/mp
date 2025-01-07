@@ -2,12 +2,18 @@ Summary of recent updates to Xpress for AMPL
 ============================================
 
 
+## unreleased
+- Default to natively accept nonlinear expressions
+  since they seem to perform well in v9.5.
+  Full XPRESS license required.
+
+
 ## 20241227
 - Fix acceptance options for nonlinear formulas
   (still disabled by default.)
 - Option *pre:solve_nlp*
 - Updated to Xpress 9.5 (44.01.01):
-  - Perfromance improvements in the Global optimization engine
+  - Performance improvements in the Global optimization engine
     and in the MIP solver
   - New column-based presolve eliminations to reduce model size when free variables are present in the model instance.
   - In models with big-M coefficients, additional tightening of coefficients is performed.  
