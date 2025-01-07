@@ -2531,7 +2531,7 @@ public:
 
 private:
   std::vector<const char *> names_;
-  std::string gen_name_, gen_name_2_;
+  std::string gen_name_ {"_std_"}, gen_name_2_ {"_extra_"};
   internal::NameReader reader_;
   fmt::MemoryWriter writer_;
 };
