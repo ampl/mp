@@ -143,9 +143,20 @@ int CuoptBackend::BarrierIterations() const {
 
 
 void CuoptBackend::SetInterrupter(mp::Interrupter *inter) {
-  //inter->SetHandler(InterruptCuopt, lp());
-  // TODO Check interrupter
-  //CUOPT_CCALL( CPXsetterminate (env(), &terminate_flag) );
+   httplib::Client* client = get_client();
+   std::string uuid = get_uuid();
+   httplib::Headers headers = {
+    {"Content-Type", "application/json"},
+    {"CLIENT-VERSION", "custom"}
+   };
+  auto res_sol = (*client).Get("/cuopt/request/" + get_uuid(), headers);
+  json response_sol = json::parse(res_sol->body);
+  json* copy = new json(response_sol);
+  set_json_sol(copy);
+
+  auto res = (*client).Delete("/cuopt/request" + get_uuid(), headers);
+
+  std::cout << "Interrupted!" << std::endl;
 }
 
 void CuoptBackend::Solve() {
@@ -163,10 +174,20 @@ void CuoptBackend::Solve() {
   json response = json::parse(res->body);
   set_uuid(response["reqId"]);
 
-  std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::seconds(10));
+  std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::seconds(1));
 
   auto res_sol = (*client).Get("/cuopt/request/" + get_uuid(), headers);
   json response_sol = json::parse(res_sol->body);
+  if (response_sol["response"]["solver_response"]["status"] == 1) {
+    std::cout << "Optimal solution found" << std::endl;
+  } else {
+    do {
+      std::cout << "Current solution: " << response_sol["response"]["solver_response"]["solution"]["primal_solution"] << std::endl;
+      std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::seconds(storedOptions_.pool_time_));
+      res_sol = (*client).Get("/cuopt/request/" + get_uuid(), headers);
+      response_sol = json::parse(res_sol->body);
+    } while(response_sol["response"]["solver_response"]["status"] != 1);
+  }
   json* copy = new json(response_sol);
   set_json_sol(copy);
 

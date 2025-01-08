@@ -214,6 +214,8 @@ private:
     double time_limit_ = 0.0;
     int iteration_limit_ = 0;
 
+    int pool_time_ = 10;
+
     std::string ip_address_ = "0.0.0.0";
     int port_ = 5000;
 
