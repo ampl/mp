@@ -17,8 +17,21 @@ namespace {
 
 
 bool InterruptCuopt(void* prob) {
-  //return CUOPT_Interrupt((cuopt_prob*)prob);
-  return true;
+  /*httplib::Client* client = get_client();
+  std::string uuid = get_uuid();
+  httplib::Headers headers = {
+    {"Content-Type", "application/json"},
+    {"CLIENT-VERSION", "custom"}
+  };
+  auto res_sol = (*client).Get("/cuopt/request/" + get_uuid(), headers);
+  json response_sol = json::parse(res_sol->body);
+  json* copy = new json(response_sol);
+  set_json_sol(copy);
+
+  auto res = (*client).Delete("/cuopt/request" + get_uuid(), headers);
+
+  std::cout << "Interrupted!" << std::endl;
+  return true;*/
 }
 
 }  // namespace {}
@@ -96,10 +109,7 @@ std::string CuoptBackend::GetSolverVersion() {
 
 
 bool CuoptBackend::IsMIP() const {
-  // TODO. Use most precise information
-  // (nonconvexities etc.)
-  return getIntAttr(Solver::NVARS_INT) > 0;
-  //return getIntAttr(CUOPT_INTATTR_ISMIP);
+  return isMIP();
 }
 
 bool CuoptBackend::IsQCP() const {
@@ -143,20 +153,7 @@ int CuoptBackend::BarrierIterations() const {
 
 
 void CuoptBackend::SetInterrupter(mp::Interrupter *inter) {
-   httplib::Client* client = get_client();
-   std::string uuid = get_uuid();
-   httplib::Headers headers = {
-    {"Content-Type", "application/json"},
-    {"CLIENT-VERSION", "custom"}
-   };
-  auto res_sol = (*client).Get("/cuopt/request/" + get_uuid(), headers);
-  json response_sol = json::parse(res_sol->body);
-  json* copy = new json(response_sol);
-  set_json_sol(copy);
 
-  auto res = (*client).Delete("/cuopt/request" + get_uuid(), headers);
-
-  std::cout << "Interrupted!" << std::endl;
 }
 
 void CuoptBackend::Solve() {
@@ -167,27 +164,35 @@ void CuoptBackend::Solve() {
     {"CLIENT-VERSION", "custom"}
   };
 
+
+  if (isMIP()) {
+    (*prob)["solver_config"]["time_limit"] = storedOptions_.time_limit_;
+  }
+
   // Send the POST request
-  std::cout << "Sending request to cuopt server" << (*prob).dump(2) << std::endl;
+  std::cout << "Sending request to cuopt server" << (*prob).dump(2) << std::endl; //debug
   auto res = (*client).Post("/cuopt/request", headers, (*prob).dump(), "application/json");
 
   json response = json::parse(res->body);
   set_uuid(response["reqId"]);
 
-  std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::seconds(1));
+  json response_sol;
 
-  auto res_sol = (*client).Get("/cuopt/request/" + get_uuid(), headers);
-  json response_sol = json::parse(res_sol->body);
-  if (response_sol["response"]["solver_response"]["status"] == 1) {
-    std::cout << "Optimal solution found" << std::endl;
-  } else {
+  if (isMIP()) {
+    std::this_thread::sleep_until(std::chrono::system_clock::now() 
+      + std::chrono::seconds(int(storedOptions_.time_limit_)) + std::chrono::seconds(5));
+    auto res_sol = (*client).Get("/cuopt/request/" + get_uuid(), headers);
+    response_sol = json::parse(res_sol->body);
+  }
+  else {
     do {
+      std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::seconds(10));
+      auto res_sol = (*client).Get("/cuopt/request/" + get_uuid(), headers);
       std::cout << "Current solution: " << response_sol["response"]["solver_response"]["solution"]["primal_solution"] << std::endl;
-      std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::seconds(storedOptions_.pool_time_));
-      res_sol = (*client).Get("/cuopt/request/" + get_uuid(), headers);
       response_sol = json::parse(res_sol->body);
     } while(response_sol["response"]["solver_response"]["status"] != 1);
   }
+  
   json* copy = new json(response_sol);
   set_json_sol(copy);
 
@@ -270,26 +275,16 @@ std::pair<int, std::string> CuoptBackend::GetSolveResult() {
 
 
 void CuoptBackend::FinishOptionParsing() {
+  json* prob = get_json_prob();
   int v=-1;
- // GetSolverOption(CUOPT_INTPARAM_LOGGING, v);
   set_verbose_mode(v>0);
 
-  // Nartive params
-  if (storedOptions_.paramread_.size()) {
-    //GRB_CALL(
-    //  GRBreadparams(GRBgetenv(model()),
-    //    paramfile_read().c_str()));
-  }
-  /// Set advanced parameters
-  for (const auto& prm : storedOptions_.inlineparams_)
-    this->SetSolverOption("Dummy", prm);
-  // Write native params
-  if (storedOptions_.paramwrite_.size()) {
-    //GRB_CALL(
-    //  GRBwriteparams(GRBgetenv(model()),
-    //    paramfile_write().c_str()));
-  }
-  //lp()->SetVerbosity(storedOptions_.verbosity_);
+  if (storedOptions_.time_limit_)
+    (*prob)["solver_config"]["time_limit"] = storedOptions_.time_limit_;
+  if (storedOptions_.iteration_limit_)
+    (*prob)["solver_config"]["iteration_limit"] = storedOptions_.iteration_limit_;
+  (*prob)["solver_config"]["infeasibility_detection"] = storedOptions_.infeasibility_detection_;
+  (*prob)["solver_config"]["solver_mode"] = storedOptions_.solver_mode_;
 }
 
 
@@ -329,30 +324,6 @@ void CuoptBackend::InitCustomOptions() {
   AddListOption("tech:list_option opt_list multi_valued_option",
       "Multi-valued option when repeated.",
       storedOptions_.list_option_);
-
-  // Native solver options handling.
-  // Actual processing of these options can be done in FinishOptionParsing().
-  AddListOption("tech:optionnative optionnative optnative tech:param",
-      "General way to specify values of both documented and "
-      "undocumented Gurobi parameters; value should be a quoted "
-      "string (delimited by ' or \") containing a parameter name, a "
-      "space, and the value to be assigned to the parameter.  Can "
-      "appear more than once.  Cannot be used to query current "
-      "parameter values.",
-      storedOptions_.inlineparams_);
-  AddStoredOption("tech:optionnativeread tech:param:read param:read optnative:read",
-      "Name of Gurobi parameter file (surrounded by 'single' or "
-      "\"double\" quotes if the name contains blanks). "
-      "The suffix on a parameter file should be .prm, optionally followed "
-      "by .zip, .gz, .bz2, or .7z.\n"
-      "\n"
-      "Lines that start with # are ignored.  Otherwise, each nonempty "
-      "line should contain a name and a value, separated by a space.",
-      storedOptions_.paramread_);
-  AddStoredOption("tech:optionnativewrite tech:param:write param:write optnative:write",
-      "Name of Gurobi parameter file (surrounded by 'single' or \"double\" quotes if the "
-      "name contains blanks) to be written.",
-      storedOptions_.paramwrite_);
 
   AddStoredOption("tech:infeasibility_detection infeasibility_detection",
       "Detect and leave if the problem is detected as infeasible. Default = true.",

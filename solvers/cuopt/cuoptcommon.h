@@ -29,12 +29,12 @@ struct CuoptCommonInfo {
   json* get_json_prob() { return json_prob_; }
   void set_json_prob(json* json_prob) { json_prob_ = json_prob; }
 
-  bool IsMIP() const { return ismip_; }
-  void SetIsMIP(bool ismip) { ismip_ = ismip; }
+  bool isMIP() const { return *ismip_; }
+  void SetIsMIP(bool ismip) { *ismip_ = ismip; }
 
 private:
   json* json_prob_;
-  bool ismip_ = false;
+  bool* ismip_ = new bool(false);
 };
 
 
