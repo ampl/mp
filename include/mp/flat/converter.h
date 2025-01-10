@@ -377,20 +377,37 @@ public: // for ConstraintKeeper
   }
 
   /// Query if a constraint type
-  /// is natively accepted by the solver (and user).
+  /// is natively accepted by the solver (and user setting).
   /// The parameter is only needed for type.
   template <class Con>
-  ConstraintAcceptanceLevel GetConstraintAcceptance(Con* ) const {
+  ConstraintAcceptanceLevel GetConstraintAcceptance_USER(Con* ) const {
     return GET_CONST_CONSTRAINT_KEEPER(Con).GetChosenAcceptanceLevel();
   }
 
   /// Query if an expression type
-  /// is natively accepted by the solver (and user).
+  /// is natively accepted by the solver (and user setting).
   /// The parameter is only needed for type.
   template <class Con>
-  ExpressionAcceptanceLevel GetConstraintAcceptanceEXPR(
+  ExpressionAcceptanceLevel GetConstraintAcceptanceEXPR_USER(
       const ExprWrapper< Con >* ) const {
     return GET_CONST_CONSTRAINT_KEEPER(Con).GetChosenAcceptanceLevelEXPR();
+  }
+
+  /// Query if a constraint type
+  /// is natively accepted by the solver.
+  /// The parameter is only needed for type.
+  template <class Con>
+  ConstraintAcceptanceLevel GetConstraintAcceptance_DEFAULT(Con* ) const {
+    return GET_CONST_CONSTRAINT_KEEPER(Con).GetModelAPIAcceptance();
+  }
+
+  /// Query if an expression type
+  /// is natively accepted by the solver.
+  /// The parameter is only needed for type.
+  template <class Con>
+  ExpressionAcceptanceLevel GetConstraintAcceptanceEXPR_DEFAULT(
+      const ExprWrapper< Con >* ) const {
+    return GET_CONST_CONSTRAINT_KEEPER(Con).GetModelAPIAcceptanceEXPR();
   }
 
 
@@ -469,9 +486,16 @@ public: // for ConstraintKeeper
 
   /// Check whether ModelAPI and user accept and recommend the constraint
   template <class Constraint>
+  bool UserAcceptsAndRecommends(const Constraint* pcon) const {
+    return ConstraintAcceptanceLevel::Recommended ==
+           GetConstraintAcceptance_USER(pcon);
+  }
+
+  /// Check whether ModelAPI accept and recommend the constraint
+  template <class Constraint>
   bool ModelAPIAcceptsAndRecommends(const Constraint* pcon) const {
     return ConstraintAcceptanceLevel::Recommended ==
-        GetConstraintAcceptance(pcon);
+           GetConstraintAcceptance_DEFAULT(pcon);
   }
 
   /// Check whether ModelAPI and user accept and recommend the expression
@@ -482,9 +506,16 @@ public: // for ConstraintKeeper
 
   /// Check whether ModelAPI and user accept and recommend the expression
   template <class Expression>
+  bool UserAcceptsAndRecommendsEXPR(const Expression* pcon) const {
+    return ExpressionAcceptanceLevel::Recommended ==
+           GetConstraintAcceptanceEXPR_USER(pcon);
+  }
+
+  /// Check whether ModelAPI accept and recommend the expression
+  template <class Expression>
   bool ModelAPIAcceptsAndRecommendsEXPR(const Expression* pcon) const {
     return ExpressionAcceptanceLevel::Recommended ==
-           GetConstraintAcceptanceEXPR(pcon);
+           GetConstraintAcceptanceEXPR_DEFAULT(pcon);
   }
 
   /// Generic adapter for old non-bridged Convert() methods
@@ -1137,9 +1168,9 @@ public:
   /// Whether the ModelAPI accepts quadratic cones
   int ModelAPIAcceptsQuadraticCones() const {
 		return
-				std::max(
-					(int)GetConstraintAcceptance((QuadraticConeConstraint*)nullptr),
-					(int)GetConstraintAcceptance((RotatedQuadraticConeConstraint*)nullptr));
+        0 != std::max(
+          (int)GetConstraintAcceptance_DEFAULT((QuadraticConeConstraint*)nullptr),
+          (int)GetConstraintAcceptance_DEFAULT((RotatedQuadraticConeConstraint*)nullptr));
 	}
 
   /// Number of QC -> SOCP conversions
@@ -1155,7 +1186,7 @@ public:
 	/// Whether the ModelAPI accepts exp cones
 	int ModelAPIAcceptsExponentialCones() {
 		return
-				(int)GetConstraintAcceptance((ExponentialConeConstraint*)nullptr);
+        (int)ModelAPIAcceptsAndRecommends((ExponentialConeConstraint*)nullptr);
 	}
 
 
@@ -1316,11 +1347,11 @@ private:
                        "of quadratic terms, then they are linearized.",
         options_.passQuadCon_, 0, 1);
     GetEnv().AddOption("cvt:expcones expcones",
-                       ModelAPIAcceptsExponentialCones()>1 ?
+                       ModelAPIAcceptsExponentialCones() ?
                          "0/1*: Recognize exponential cones." :
                          "0*/1: Recognize exponential cones.",
                        options_.passExpCones_, 0, 1);
-    options_.passExpCones_ = ModelAPIAcceptsExponentialCones()>1;
+    options_.passExpCones_ = ModelAPIAcceptsExponentialCones();
     // Should be after construction
     socp_mode_text_ =
       "Second-Order Cone recognition mode:\n"

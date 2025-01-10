@@ -2,7 +2,9 @@ Summary of recent updates to the AMPL MP Library
 ================================================
 
 
-## 20241228
+## 20250113
+- Option acc:_all is overridden by individual acceptance
+  options, e.g., acc:or.
 - Eliminate AMPL defined variables which are used once
   (option cvt:dvelim).
   This happens only if they can be substituted

@@ -2,12 +2,12 @@
   {
     "name" : "defvar_01",
     "objective" : 2.864,
-    "tags" : ["quadratic"]
+    "tags" : ["quadratic", "quadraticnonconvex"]
   },
   {
     "name" : "defvar_02",
     "objective" : 2.864,
-    "tags" : ["quadratic"],
+    "tags" : ["quadratic", "quadraticnonconvex"],
     "options": {
       "ANYSOLVER_options": "cvt:dvelim=2"
     }
