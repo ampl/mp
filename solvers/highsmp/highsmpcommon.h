@@ -2,6 +2,9 @@
 #define HIGHSCOMMON_H
 
 #include <string>
+#include <memory> // For std::unique_ptr
+#include <vector>
+
 
 extern "C" {
   #include "interfaces/highs_c_api.h"
@@ -9,59 +12,96 @@ extern "C" {
 
 #include "mp/backend-to-model-api.h"
 #include "mp/format.h"
+#include "mp/arrayref.h"
 
 namespace mp {
 
+
+  /// Class to store the objectives as they are added from the Model API.
+  /// Need a shared reference because priorities and other properties are known
+  /// only in the backend, and all info must be set at the same time
+  /// (currently in HighsBackend::InputExtras)
+  class AccObjectives {
+    int numVars_;
+    std::vector<double> coeffs;
+    std::vector<HighsInt> senses;
+
+    std::vector<double> weight, offset, reltol, abstol;
+    std::vector<int> priority;
+  public:
+    void setNumVars(int numVars) {
+      numVars_ = numVars;
+    }
+    void add(const ::std::vector<int>& indices,
+      const ::std::vector<double>& c, bool max) {
+      coeffs.resize(coeffs.size() + numVars_);
+      for (auto i = 0; i < c.size(); i++)
+        coeffs[senses.size() * numVars_ + indices[i]] = c[i];
+      senses.push_back(max ? kHighsObjSenseMaximize : kHighsObjSenseMinimize);
+    }
+    void setInHighs(void* highs) const;
+    void setAllInHighs(void* highs) const;
+    void setWeights(ArrayRef<double> w);
+    void setOffsets(ArrayRef<double> o);
+    void setRelTols(ArrayRef<double> r);
+    void setAbsTols(ArrayRef<double> r);
+    void setPriorities(ArrayRef<int> p);
+    int numObjs() const { return senses.size(); }
+  };
+
+
 /// Information shared by both
 /// `HighsBackend` and `HighsModelAPI`
-struct HighsCommonInfo {
-  void* lp() const { return lp_; }
-  void set_lp(void* lp) { lp_ = lp; }
-private:
-  void*      lp_ = nullptr;
-};
+  struct HighsCommonInfo {
+    void* lp() const { return lp_; }
+    void set_lp(void* lp) { lp_ = lp; }
+    HighsCommonInfo() {
+      accobjs_ = std::make_shared<AccObjectives>();
+    }
+
+    AccObjectives& accObjectives() {
+      return *accobjs_;
+    }
+
+  private:
+    std::shared_ptr<AccObjectives> accobjs_;
+    void* lp_ = nullptr;
+  };
 
 
 /// Common API for Highs classes
-class HighsCommon :
+  class HighsCommon :
     public Backend2ModelAPIConnector<HighsCommonInfo> {
-public:
-  /// These methods access Highs options. Used by AddSolverOption()
-  void GetSolverOption(const char* key, int& value) const;
-  void SetSolverOption(const char* key, int value);
-  void GetSolverOption(const char* key, double& value) const;
-  void SetSolverOption(const char* key, double value);
-  void GetSolverOption(const char* key, std::string& value) const;
-  void SetSolverOption(const char* key, const std::string& value);
+  public:
+    /// These methods £ess Highs options. Used by AddSolverOption()
+    void GetSolverOption(const char* key, int& value) const;
+    void SetSolverOption(const char* key, int value);
+    void GetSolverOption(const char* key, double& value) const;
+    void SetSolverOption(const char* key, double value);
+    void GetSolverOption(const char* key, std::string& value) const;
+    void SetSolverOption(const char* key, const std::string& value);
 
-  double myinf = 0;
-  double Infinity() {
-     if (!myinf) myinf = Highs_getInfinity(lp());
-     return myinf;
-  }
-  double MinusInfinity() { return -Infinity(); }
+    double myinf = 0;
+    double Infinity() {
+      if (!myinf) myinf = Highs_getInfinity(lp());
+      return myinf;
+    }
+    double MinusInfinity() { return -Infinity(); }
 
-protected:
-  void OpenSolver();
-  void CloseSolver();
+  protected:
+    void OpenSolver();
+    void CloseSolver();
 
-  int64_t getInt64Attr(const char* name)  const;
-  int getIntAttr(const char* name) const;
-  double getDblAttr(const char* name) const;
+    int64_t getInt64Attr(const char* name)  const;
+    int getIntAttr(const char* name) const;
+    double getDblAttr(const char* name) const;
 
-  int NumLinCons() const;
-  int NumVars() const;
-  int NumObjs() const;
-  int NumQPCons() const;
-  int NumSOSCons() const;
-  int NumIndicatorCons() const;
-};
+    int NumLinCons() const;
+    int NumVars() const;
+    int NumObjs();
 
+  };
 
-/// Convenience macro
-// TODO This macro is useful to automatically throw an error if a function in the 
-// solver API does not return a valid errorcode. In this mock driver, we define it 
-// ourselves, normally this constant would be defined in the solver's API.
 #define HIGHS_CCALL( call ) do { \
   int e = (call); \
   if (e != kHighsStatusOk && e != kHighsStatusWarning) \

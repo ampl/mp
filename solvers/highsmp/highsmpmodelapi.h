@@ -38,14 +38,13 @@ public:
   //////////////////////////// GENERAL CONSTRAINTS ////////////////////////////
   USE_BASE_CONSTRAINT_HANDLERS(BaseModelAPI)
 
-
   struct AccConstraints {
       /* This is to accumulate the constraints in a format suitable for
       Highs_addRows(...). Adding them one by one was killing performance
       unacceptably. */
       std::vector<double> lb, ub, coeffs;
       std::vector<HighsInt> starts, indices;
-
+      
       void add(const LinConRange& lc)
       {
         lb.push_back(lc.lb());

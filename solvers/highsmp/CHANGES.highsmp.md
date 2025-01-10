@@ -2,8 +2,9 @@ Summary of recent updates to HiGHS for AMPL
 ===========================================
 
 
-## 20241229
+## TBD
 - Updated to HiGHS 1.9.0
+- Added native multiobjective suppport
 
 
 ## 20241119

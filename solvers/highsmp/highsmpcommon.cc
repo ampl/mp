@@ -3,6 +3,50 @@
 
 namespace mp {
 
+
+  void AccObjectives::setInHighs(void* highs) const {
+    // Only to be used when adding a quadratic objective
+    assert(senses.size()==1);
+    HIGHS_CCALL(Highs_changeColsCostByRange(highs, 0, coeffs.size()-1, coeffs.data()));
+    HIGHS_CCALL(Highs_changeObjectiveSense(highs, senses[0]));
+  }
+  void AccObjectives::setAllInHighs(void* highs) const {
+    if(senses.size()==1)
+      setInHighs(highs);
+    else {
+      int nobj = senses.size();
+
+      std::vector<double> zeroes(nobj, 0.0);
+      std::vector<double> ones(nobj, 1.0);
+      std::vector<double> s(nobj, 1e-5);
+      std::vector<int> p(nobj, 1);
+      const double* abs = abstol.empty()  ? s.data() : abstol.data();
+      const double* rel = reltol.empty()  ? s.data() : reltol.data();
+      const int* pri = priority.empty()   ? p.data() : priority.data();
+      const double* w = weight.empty()    ? ones.data() : weight.data();
+
+      Highs_passLinearObjectives(highs, senses.size(),
+        w, zeroes.data(), coeffs.data(), 
+        abs, rel, pri);
+    }
+  }
+
+  void AccObjectives::setWeights(ArrayRef<double> w) {
+    weight.insert(weight.begin(), w.begin(), w.end());
+  }
+  void AccObjectives::setOffsets(ArrayRef<double> o) {
+    offset.insert(offset.begin(), o.begin(), o.end());
+  }
+  void AccObjectives::setRelTols(ArrayRef<double> r) {
+    reltol.insert(reltol.begin(), r.begin(), r.end());
+  }
+  void AccObjectives::setAbsTols(ArrayRef<double> r) {
+    abstol.insert(abstol.begin(), r.begin(), r.end());
+  }
+  void AccObjectives::setPriorities(ArrayRef<int> p) {
+    priority.insert(priority.begin(), p.begin(), p.end());
+  }
+
 void HighsCommon::OpenSolver() {
   int status = 0;
   void* prob = Highs_create();
@@ -41,23 +85,10 @@ int HighsCommon::NumVars() const {
   return Highs_getNumCols(lp());
 }
 
-int HighsCommon::NumObjs() const {
-  // TODO Get number of objectives using solver API
-
-  return 1;
+int HighsCommon::NumObjs()  {
+  return accObjectives().numObjs();
 }
 
-int HighsCommon::NumQPCons() const {
-  return 0;
-}
-
-int HighsCommon::NumSOSCons() const {
-  return 0;
-}
-
-int HighsCommon::NumIndicatorCons() const {
-  return 0;
-}
 
 
 void checkOption(int retvalue, const char* key) {

@@ -62,6 +62,10 @@ std::string HighsBackend::GetSolverVersion() {
     HIGHS_VERSION_MINOR, HIGHS_VERSION_PATCH);
 }
 
+  void HighsBackend::InputExtras() {
+  BaseBackend::InputExtras();
+  accObjectives().setAllInHighs(lp());
+}
 
 bool HighsBackend::IsQCP() const {
   return false; 
@@ -92,6 +96,28 @@ ArrayRef<double> HighsBackend::DualSolution_LP() {
     pi.clear();
   return pi;
 }
+
+  ArrayRef<double> HighsBackend::GetObjectiveValues() {
+    if(NumObjs() > 1)
+    AddToSolverMessage("Warning: HiGHS does not support returning the objective values for multiple objectives;\n"
+      "the reported solution will show the objective value of the blended/ordered objectives. AMPL will compute the\n"
+    "actual values of the objectives");
+    return std::vector<double> { ObjectiveValue() };
+}
+
+  void HighsBackend::ObjPriorities(ArrayRef<int> pri) {
+    accObjectives().setPriorities(pri);
+
+}
+  void HighsBackend::ObjWeights(ArrayRef<double> w) {
+    accObjectives().setWeights(w);
+}
+  void HighsBackend::ObjAbsTol(ArrayRef<double> a) {
+    accObjectives().setAbsTols(a);
+  }
+  void HighsBackend::ObjRelTol(ArrayRef<double> r) {
+    accObjectives().setRelTols(r);
+  }
 
 double HighsBackend::ObjectiveValue() const {
   return Highs_getObjectiveValue(lp());
@@ -708,23 +734,25 @@ void HighsBackend::InitCustomOptions() {
     "Centring stops when the ratio max(x_j*s_j) / min(x_j*s_j) is below "
     "this tolerance (default 100).",
     "centring_ratio_tolerance", 0, INT_MAX);
+
+  AddSolverOption("obj:blend blend_multi_objectives",
+    "Whether to blend multiple objectives or apply lexicographical ordering",
+    "blend_multi_objectives", values_01_noyes_1default_, 1
+  );
 }
 
 double HighsBackend::MIPGap() {
-  // TODO Check if the following is always true
   if (BarrierIterations() == 0)
     return 0;
   return getDblAttr("mip_gap");
 }
 double HighsBackend::BestDualBound() {
-  // TODO Check if the following is always true
   if (BarrierIterations() == 0)
     return 0;
   return getDblAttr("mip_dual_bound");
 }
 
 double HighsBackend::MIPGapAbs() {
-  // TODO Check if the following is always true
   if (BarrierIterations() == 0)
     return 0;
   return std::fabs(

@@ -35,6 +35,8 @@ public:
   /// Chance to consider options immediately (open cloud, etc)
   void FinishOptionParsing() override;
 
+  /// This can actually modify the model -- e.g., suffixes
+  void InputExtras() override;
 
 
   ////////////////////////////////////////////////////////////
@@ -43,6 +45,16 @@ public:
   // Use this section to declare and implement some standard features
   // that may or may not need additional functions. 
   USING_STD_FEATURES;
+
+  /**
+ * MULTIOBJ
+**/
+  ALLOW_STD_FEATURE( MULTIOBJ, true )
+  ArrayRef<double> GetObjectiveValues() override;
+  void ObjPriorities(ArrayRef<int>) override;
+  void ObjWeights(ArrayRef<double>) override;
+  void ObjAbsTol(ArrayRef<double>) override;
+  void ObjRelTol(ArrayRef<double>) override;
 
   /**
   * EXPORT PROBLEM
@@ -101,10 +113,6 @@ public:
   /// otherwise in ReportResults()
   void Solve() override;
 
-  ArrayRef<double> GetObjectiveValues() override
-  { return std::vector<double>{ObjectiveValue()}; } 
-
-
   //////////////////// [[ Implementation details ]] //////////////////////
   ///////////////////////////////////////////////////////////////////////////////
 public:  // public for static polymorphism
@@ -123,11 +131,6 @@ protected:
 
   void ReportResults() override;
   void ReportHIGHSResults();
-
-  void ReportHIGHSPool();
-
-  std::vector<double> getPoolSolution(int i);
-  double getPoolObjective(int i);
 
   /// Solution attributes
   double NodeCount() const;

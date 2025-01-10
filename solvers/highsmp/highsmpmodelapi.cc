@@ -27,27 +27,17 @@ void HighsModelAPI::AddVariables(const VarArrayDef& v) {
   if (v.pnames())
     for (int i = 0; i < v.size(); i++)
       HIGHS_CCALL(Highs_passColName(lp(), i, v.pnames()[i]));
+  accObjectives().setNumVars(v.size());
 }
 
 void HighsModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
-  if (iobj < 1) {
-    // Highs_changeObjectiveOffset(highs, offset); TODO offset?
-    std::vector<double> objc_new(NumVars());         // dense vector to
-    for (auto i=lo.vars().size(); i--; )
-      objc_new[lo.vars()[i]] = lo.coefs()[i];
-    HIGHS_CCALL(Highs_changeColsCostByRange(lp(), 0, NumVars()-1, objc_new.data()));
-    HIGHS_CCALL(Highs_changeObjectiveSense(lp(), 
-                                           obj::Type::MAX==lo.obj_sense() ?
-                                               kHighsObjSenseMaximize : kHighsObjSenseMinimize) );
-  } else {
-      throw std::runtime_error("HighS does not support multiple objectives.");
-  }
+  accObjectives().add(lo.vars(), lo.coefs(), lo.obj_sense()==obj::Type::MAX);
 }
 
 
 void HighsModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective& qo) {
   if (1 > iobj) {
-    SetLinearObjective(iobj, qo);
+    accObjectives().setInHighs(lp());
     const auto& qt = qo.GetQPTerms();
     std::vector<int> startCols(NumVars());
     std::vector<double> coeffs(qt.size());
@@ -64,9 +54,6 @@ void HighsModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective& qo
         }
       } else {
         startCols[j] = q;
-        // Could do these but not needed:
-        //        index.push_back(j);
-        //        coeffs.push_back(0.0);  // empty diagonal element
       }
     }
     HIGHS_CCALL(Highs_passHessian(lp(), NumVars(), qt.size(),
@@ -100,7 +87,7 @@ void HighsModelAPI::FinishProblemModificationPhase() {
     acc_constraints_.starts.data(),
     acc_constraints_.indices.data(),
     acc_constraints_.coeffs.data()));
-  acc_constraints_ = AccConstraints();      // reinitialize accumulator for model modification
+  acc_constraints_ = AccConstraints();      // reinitialize accumulator for model modification 
 }
 
 } // namespace mp
