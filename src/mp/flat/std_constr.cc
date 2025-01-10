@@ -137,20 +137,21 @@ void BasicConstraintKeeper::DoAddAcceptanceOptions(
   const bool conacc = (ConstraintAcceptanceLevel::NotAccepted != cal);
   const bool expracc = (ExpressionAcceptanceLevel::NotAccepted != eal);
   const bool expr_intf_acc = (ExpressionAcceptanceLevel::NotAccepted != eial);
-  acc_level_item_ = 0;
+  acc_level_item_ = -1;           // user: unset
+  acc_level_default_ = 0;         // default: not accepted
   if (conacc)
-    acc_level_item_
+    acc_level_default_
         = std::underlying_type_t<ConstraintAcceptanceLevel>(cal);
   // we prefer expressions, if ModelAPI accepts expression interface
   if (expracc && expr_intf_acc)
-    acc_level_item_      // Won't be taken however, if acc:_expr==0
+    acc_level_default_      // Won't be taken however, if acc:_expr==0
         = std::underlying_type_t<ExpressionAcceptanceLevel>(eal) + 2;
   if (conacc && expracc) {
     env.AddStoredOption(GetAcceptanceOptionNames(),
                         fmt::format(
                             "Solver acceptance level for '{}' as either constraint or expression, "
                             "default {}:\n\n.. value-table::",
-                            GetConstraintName(), acc_level_item_).c_str(),
+                            GetConstraintName(), acc_level_default_).c_str(),
                         acc_level_item_, values_universal_acceptance);
   } else
     if (conacc) {
@@ -158,7 +159,7 @@ void BasicConstraintKeeper::DoAddAcceptanceOptions(
                           fmt::format(
                               "Solver acceptance level for '{}' as flat constraint, "
                               "default {}:\n\n.. value-table::",
-                              GetConstraintName(), acc_level_item_).c_str(),
+                              GetConstraintName(), acc_level_default_).c_str(),
                           acc_level_item_, values_con_acceptance);
     } else
       if (expracc) {
@@ -166,7 +167,7 @@ void BasicConstraintKeeper::DoAddAcceptanceOptions(
                             fmt::format(
                                 "Solver acceptance level for '{}' as expression, "
                                 "default {}:\n\n.. value-table::",
-                                GetConstraintName(), acc_level_item_).c_str(),
+                                GetConstraintName(), acc_level_default_).c_str(),
                             acc_level_item_, values_expr_acceptance);
       } else {
         env.AddStoredOption(GetAcceptanceOptionNames(),

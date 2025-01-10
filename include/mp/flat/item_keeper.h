@@ -73,13 +73,25 @@ public:
   /// acc:_expr==1 ?
   virtual bool IfWantNLOutput() const = 0;
 
+  /// Low-level combined final acceptance
+  int GetFinalItemAcceptance() const {
+    assert(acc_level_default_>=0 && acc_level_default_<=4);
+    int al_user = acc_level_item_; // user option
+    if (-2 == al_user)
+      al_user = 0;                // not accepted
+    int al = acc_level_default_;
+    if (al_user>=0)               // al_user provided - prioritized
+      al = al_user;
+    else if (AccLevelCommon()>=0) // acc:_all provided - otherwise
+      al = AccLevelCommon();
+    return al;
+  }
+
   /// Query (user-chosen) acceptance level.
   /// This is "combined" for constraint or expression
   ConstraintAcceptanceLevel GetChosenAcceptanceLevel() const {
     if (acceptance_level_<0) {      // not initialized
-      int al = AccLevelCommon();
-      if (al<0)                     // acc:_all not provided
-        al = acc_level_item_;
+      int al = GetFinalItemAcceptance();
       std::array<int, 5> alv = {0, 1, 2, 1, 2};
       acceptance_level_ = alv.at(al);
     }
@@ -89,9 +101,7 @@ public:
   /// Query (user-chosen) expression acceptance level.
   ExpressionAcceptanceLevel GetChosenAcceptanceLevelEXPR() const {
     if (acc_level_expr_<0) {      // not initialized
-      int al = AccLevelCommon();
-      if (al<0)                   // acc:_all not provided
-        al = acc_level_item_;
+      int al = GetFinalItemAcceptance();
       std::array<int, 5> alv = {0, 0, 0, 1, 2};
       acc_level_expr_ = alv.at(al);
     }
@@ -104,7 +114,9 @@ public:
 
   /// ModelAPI's acceptance level for the constraint type.
   /// This should not normally be used directly, instead:
-  /// GetChosenAcceptanceLevel()
+  /// GetChosenAcceptanceLevel().
+  /// Only when initializing options, their user values
+  /// are not available, then use this.
   virtual ConstraintAcceptanceLevel GetModelAPIAcceptance(
       const BasicFlatModelAPI& ) const = 0;
 
@@ -225,7 +237,8 @@ protected:
       BasicFlatConverter& cvt,
       const BasicFlatModelAPI& ma,
       Env& env);
-
+  /// Low-level user acceptance
+  int GetLowLevelAcc() const { return acc_level_item_; }
 
 private:
   pre::ValueNode value_node_;
@@ -233,7 +246,8 @@ private:
   const char* const solver_opt_nm_;
   mutable std::string type_name_short_;
   mutable int acceptance_level_ {-1};     // combined, for either con or expr
-  int acc_level_item_ {0};                // item, corresp. to the solver option 0..4
+  int acc_level_item_ {-1};               // solver option acc:... value
+  int acc_level_default_ {-1};            // default value, if neither item_ nor acc:_all set.
   mutable int acc_level_expr_ {-1};       // expression only
   BasicLogger* exporter_{};
 };

@@ -486,14 +486,14 @@ protected:
     if (exprResVar >= 0) {                            // Some expressions are there
       if (!MPCD(VarHasMarking(exprResVar)))             // mark as expr if new
         MPD( MarkAsExpression(exprResVar) );
-      if ( !MPCD( ModelAPIAcceptsAndRecommends((const NLConstraint*)nullptr) ) )
+      if ( !MPCD( UserAcceptsAndRecommends((const NLConstraint*)nullptr) ) )
         MPD( MarkAsResultVar(exprResVar) );
       /// Exists and marked a variable
       if (MPCD( IsProperVar(exprResVar) )) {            // Not an expression after all
         lt.add_term(1.0, exprResVar);        // @todo When exprTerm was originally a var,
         lt.sort_terms();                     // this would reproduce the original con.
         if (lt.size()>1) {                              // ... has other variables
-          if (MPCD( ModelAPIAcceptsAndRecommends(       // Accepts LinCon..
+          if (MPCD( UserAcceptsAndRecommends(       // Accepts LinCon..
                   (const AlgebraicConstraint<LinTerms, RhsOrRange>*)nullptr) )) {
             AlgebraicConstraint<LinTerms, RhsOrRange> lc {lt, con.GetRhsOrRange(), false};
             MPD( AddConstraint( std::move(lc) ) );
@@ -508,10 +508,10 @@ protected:
       }
     }
     if (0<=exprResVar                                   // either: have expression
-        || !MPCD( ModelAPIAcceptsAndRecommends(         // or, not accepts source \a con
+        || !MPCD( UserAcceptsAndRecommends(         // or, not accepts source \a con
             (const AlgebraicConstraint<Body, RhsOrRange>*)nullptr) )
         || need_nlc) {                                  // or, other reason
-      assert( MPCD( ModelAPIAcceptsAndRecommends((const NLConstraint*)nullptr) ) );
+      assert( MPCD( UserAcceptsAndRecommends((const NLConstraint*)nullptr) ) );
       NLConstraint nlc{lt, exprResVar, rng, false};     // no sorting
       MPD( AddConstraint( std::move(nlc) ) );
       return true;
