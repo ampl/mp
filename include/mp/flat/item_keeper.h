@@ -237,7 +237,8 @@ protected:
       BasicFlatConverter& cvt,
       const BasicFlatModelAPI& ma,
       Env& env);
-
+  /// Low-level user acceptance
+  int GetLowLevelAcc() const { return acc_level_item_; }
 
 private:
   pre::ValueNode value_node_;

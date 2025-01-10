@@ -5,6 +5,10 @@
 extern "C" {
 #endif
 
+/// Warning callback
+typedef void (*AMPLS_Warning_Callback_T)(
+    const char* expr_type, const char** warn_type, const char** warn_text);
+
 /// Model traits for license check
 typedef struct AMPLS_ModelTraits_T {
 	long long
@@ -14,6 +18,7 @@ typedef struct AMPLS_ModelTraits_T {
 	n_quad_con,
 	n_conic_con;
   char** additional_options;
+  AMPLS_Warning_Callback_T warn_cb;
 } AMPLS_ModelTraits;
 
 

@@ -7,6 +7,7 @@
 #include "solver-opt.h"
 #include "common.h"
 #include "mp/utils-clock.h"
+#include "mp/ampls-ccallbacks.h"
 
 namespace mp {
 
@@ -289,6 +290,11 @@ public:
   bool debug_mode() const { return debug_; }
 
 
+  /// Set warning callback
+  void set_warn_cb(AMPLS_Warning_Callback_T cb);
+
+  /// Add warning from a callback
+  void warn_from_cb(const char* user_info) const;
 
   /// Returns the index of the objective to optimize starting from 1,
   /// 0 to not use objective.
@@ -412,14 +418,14 @@ public:
   /// @param key: warning category
   /// @param msg: detailed message
   void AddWarning(
-      std::string key, std::string msg, bool replace=false);
+      std::string key, std::string msg, bool replace=false) const;
 
   /// Get a warning type
   const std::pair<int, std::string>&
-  GetWarning(const std::string& key);
+  GetWarning(const std::string& key) const;
 
   /// Clear a warning type
-  void ClearWarning(const std::string& key);
+  void ClearWarning(const std::string& key) const;
 
   /// Get warnings as string
   std::string GetWarnings() const;
@@ -495,8 +501,7 @@ public:
       std::pair<int, std::string> >;    // total number, description of the 1st
 
   /// Get warnings map
-  const WarningsMap& GetWarningsMap() const { return warnings_; }
-  WarningsMap& GetWarningsMap() { return warnings_; }
+  WarningsMap& GetWarningsMap() const { return warnings_; }
 
   /// Stringify a WarningsMap entry
   static std::string ToString(const WarningsMap::value_type& wrn);
@@ -618,6 +623,7 @@ private:
   int timing_ {0};
   Stats stats_;
 
+  std::function<std::pair<const char*, const char*>(const char*)> warn_cb_;
 
   int multiobj_ {0};
   bool multiobj_has_native_ {false};
@@ -629,7 +635,7 @@ private:
   Interrupter *interrupter_ {this};
 
   /// Warnings
-  WarningsMap warnings_;
+  mutable WarningsMap warnings_;
 
   /// Constraint descriptions, printable by -c
   std::string constr_descr_header_;

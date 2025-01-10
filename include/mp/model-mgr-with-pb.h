@@ -108,13 +108,17 @@ protected:
       mtraits.n_quad_con = 0;
       mtraits.n_vars = 0;
       mtraits.additional_options = 0;
+      mtraits.warn_cb = 0;
       cb_checkmodel(&mtraits);
       // As we don't use model sizes in this call,
       // we can run this before reading NL.
       // And we do do it because we want to set any additional options
       // before user-rpovided ones.
-      if (mtraits.additional_options && after_header)
+      if (mtraits.additional_options && after_header) {
         after_header(*mtraits.additional_options);
+        if (mtraits.warn_cb)
+          GetEnv().set_warn_cb(mtraits.warn_cb);
+      }
     }
 
     ConvertModelAndUpdateBackend();

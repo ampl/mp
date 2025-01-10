@@ -742,6 +742,23 @@ void BasicSolver::InitMetaInfoAndOptions(
   }
 }
 
+void BasicSolver::set_warn_cb(AMPLS_Warning_Callback_T cb) {
+  assert(cb);
+  warn_cb_ = [cb](const char* info) {
+    const char *wt=0, *wd=0;
+    cb(info, &wt, &wd);
+    return std::pair {wt, wd};
+  };
+}
+
+void BasicSolver::warn_from_cb(const char *user_info) const {
+  if (warn_cb_) {
+    auto result = warn_cb_(user_info);
+    if (result.first && result.second)
+      AddWarning(result.first, result.second);
+  }
+}
+
 /// Process lines with a custom line processor.
 /// Used to parse an options file.
 static void ProcessLines_AvoidComments(std::istream& stream,
@@ -825,7 +842,7 @@ BasicSolver::GetSolCheckWarningKey(bool f_recomp) const {
 }
 
 void BasicSolver::AddWarning(
-    std::string key, std::string msg, bool replace) {
+    std::string key, std::string msg, bool replace) const {
   auto& v = GetWarningsMap()[ std::move(key) ];
   if (!v.first++      // only remember the 1st detailed message
       || replace)     // unless asked to replace
@@ -834,7 +851,7 @@ void BasicSolver::AddWarning(
 
 /// Get a warning type
 const std::pair<int, std::string>&
-BasicSolver::GetWarning(const std::string& key) {
+BasicSolver::GetWarning(const std::string& key) const {
   static std::pair<int, std::string> dummy;
   const auto& wm = GetWarningsMap();
   if (wm.end() != wm.find(key))
@@ -842,7 +859,7 @@ BasicSolver::GetWarning(const std::string& key) {
   return dummy;
 }
 
-void BasicSolver::ClearWarning(const std::string& key) {
+void BasicSolver::ClearWarning(const std::string& key) const {
   GetWarningsMap().erase(key);
 }
 

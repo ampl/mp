@@ -360,8 +360,12 @@ protected:
       } else {
         for ( ; ++i!=(int)cons_.size(); )
           if (!cons_[i].IsBridged() &&
-              !GetConverter().IfDelayConversion(cons_[i].GetCon(), i))
+              !GetConverter().IfDelayConversion(cons_[i].GetCon(), i)) {
             ConvertConstraint(cons_[i], i);
+            if (-2 == GetLowLevelAcc()) {
+              GetConverter().GetEnv().warn_from_cb(GetShortTypeName());
+            }
+          }
       }
     }
     else if (ConstraintAcceptanceLevel::AcceptedButNotRecommended == acceptanceLevel) {
