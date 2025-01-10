@@ -3,6 +3,7 @@
 
 #include <map>
 #include <set>
+#include <functional>
 
 #include "solver-opt.h"
 #include "common.h"
