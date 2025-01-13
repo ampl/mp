@@ -211,8 +211,18 @@ private:
   struct Options {
     int solver_mode_ = 0;
     bool infeasibility_detection_ = true;
-    double time_limit_ = 0.0;
+    double time_limit_ = 10.0;
     int iteration_limit_ = 0;
+
+    double optimality_ = 0.0;
+    double absolute_primal_ = 0.0;
+    double absolute_dual_ = 0.0;
+    double absolute_gap_ = 0.0;
+    double relative_primal_ = 0.0;
+    double relative_dual_ = 0.0;
+    double relative_gap_ = 0.0;
+    double primal_infeasible_ = 0.0;
+    double dual_infeasible_ = 0.0;
 
     int pool_time_ = 10;
 

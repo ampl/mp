@@ -90,14 +90,11 @@ void CuoptBackend::OpenSolver() {
 }
 
 void CuoptBackend::CloseSolver() {
-  /* TODO Cleanup: close problem and environment
-  if ( lp() != NULL ) {
-    CUOPT_CCALL(CUOPT_DeleteProb(&lp_) );
-  }
-  if ( env() != NULL ) {
-    CUOPT_CCALL(CUOPT_DeleteEnv(&env_) );
-  }
-  */
+  json *prob = get_json_prob();
+  json *sol = get_json_sol();
+
+  delete prob;
+  delete sol;
 }
 
 const char* CuoptBackend::GetBackendName()
@@ -165,12 +162,12 @@ void CuoptBackend::Solve() {
   };
 
 
-  if (isMIP()) {
+  //if (isMIP()) {
     (*prob)["solver_config"]["time_limit"] = storedOptions_.time_limit_;
-  }
+  //}
 
   // Send the POST request
-  std::cout << "Sending request to cuopt server" << (*prob).dump(2) << std::endl; //debug
+  //std::cout << "Sending request to cuopt server" << (*prob).dump(2) << std::endl; //debug
   auto res = (*client).Post("/cuopt/request", headers, (*prob).dump(), "application/json");
 
   json response = json::parse(res->body);
@@ -271,6 +268,9 @@ std::pair<int, std::string> CuoptBackend::GetSolveResult() {
   if ((*solution)["response"]["solver_response"]["status"] == 1) {
     return { sol::SOLVED, "optimal solution" };
   }
+  else if ((*solution)["response"]["solver_response"]["status"] == 5) {
+    return { sol::LIMIT_FEAS_TIME, "time limit, feasible solution" };
+  }
 }
 
 
@@ -285,6 +285,25 @@ void CuoptBackend::FinishOptionParsing() {
     (*prob)["solver_config"]["iteration_limit"] = storedOptions_.iteration_limit_;
   (*prob)["solver_config"]["infeasibility_detection"] = storedOptions_.infeasibility_detection_;
   (*prob)["solver_config"]["solver_mode"] = storedOptions_.solver_mode_;
+
+  if (storedOptions_.optimality_)
+    (*prob)["solver_config"]["tolerances"]["optimality"] = storedOptions_.optimality_;
+  if (storedOptions_.absolute_primal_)
+    (*prob)["solver_config"]["tolerances"]["absolute_primal"] = storedOptions_.absolute_primal_;
+  if (storedOptions_.absolute_dual_)
+    (*prob)["solver_config"]["tolerances"]["absolute_dual"] = storedOptions_.absolute_dual_;
+  if (storedOptions_.absolute_gap_)
+    (*prob)["solver_config"]["tolerances"]["absolute_gap"] = storedOptions_.absolute_gap_;
+  if (storedOptions_.relative_primal_)
+    (*prob)["solver_config"]["tolerances"]["relative_primal"] = storedOptions_.relative_primal_;
+  if (storedOptions_.relative_dual_)
+    (*prob)["solver_config"]["tolerances"]["relative_dual"] = storedOptions_.relative_dual_;
+  if (storedOptions_.relative_gap_)
+    (*prob)["solver_config"]["tolerances"]["relative_gap"] = storedOptions_.relative_gap_;
+  if (storedOptions_.primal_infeasible_)
+    (*prob)["solver_config"]["tolerances"]["primal_infeasible"] = storedOptions_.primal_infeasible_;
+  if (storedOptions_.dual_infeasible_)
+    (*prob)["solver_config"]["tolerances"]["dual_infeasible"] = storedOptions_.dual_infeasible_;
 }
 
 
@@ -332,6 +351,43 @@ void CuoptBackend::InitCustomOptions() {
   AddStoredOption("tech:solver_mode solver_mode",
       "Solver mode to set. Only possible values are 0, 1, and 2. Default = 0.",
       storedOptions_.solver_mode_);
+
+
+  AddStoredOption("tol:optimality optimality",
+      "Absolute and relative tolerance on the primal feasibility, dual feasibility, and gap. Default = 1e-4.",
+      storedOptions_.optimality_);
+
+  AddStoredOption("tol:absolute_primal absolute_primal",
+      "Absolute primal tolerance. Default = 1e-4.",
+      storedOptions_.absolute_primal_);
+
+  AddStoredOption("tol:absolute_dual absolute_dual",
+      "Absolute dual tolerance. Default = 1e-4.",
+      storedOptions_.absolute_dual_);
+
+  AddStoredOption("tol:absolute_gap absolute_gap",
+      "Absolute gap tolerance. Default = 1e-4.",
+      storedOptions_.absolute_gap_);
+
+  AddStoredOption("tol:relative_primal relative_primal",
+      "Relative primal tolerance. Default = 1e-4.",
+      storedOptions_.relative_primal_);
+
+  AddStoredOption("tol:relative_dual relative_dual",
+      "Relative dual tolerance. Default = 1e-4.",
+      storedOptions_.relative_dual_);
+
+  AddStoredOption("tol:relative_gap relative_gap",
+      "Relative gap tolerance. Default = 1e-4.",
+      storedOptions_.relative_gap_);
+
+  AddStoredOption("tol:primal_infeasible primal_infeasible",
+      "Primal infeasible tolerance. Default = 1e-4.",
+      storedOptions_.primal_infeasible_);
+
+  AddStoredOption("tol:dual_infeasible dual_infeasible",
+      "Dual infeasible tolerance. Default = 1e-4.",
+      storedOptions_.dual_infeasible_);
 
 
   ////////////////// CUSTOM RESULT CODES ///////////////////
