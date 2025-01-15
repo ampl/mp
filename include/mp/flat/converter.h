@@ -211,7 +211,13 @@ public:
 	/// Use "+1" a variable
 	void IncrementVarUsage(int v) {
 		++VarUsageRef(v);
-    assert(!IsUnused(GetInitExpression(v)));
+    // If unused, no reformulation tried,
+    // currently no repetition of reformulation cycle.
+    MP_ASSERT_ALWAYS(!IsUnused(GetInitExpression(v))
+        || IsBridgingToBeConsidered(GetInitExpression(v)),
+                     "An expression's redefinition\n"
+                     "is about to be lost. Contact\n"
+                     "AMPL customer support.");
 	}
 
 	/// Unuse result variable.
@@ -632,6 +638,18 @@ public:
   /// Mark constraint as unused
   void MarkAsUnused(const ConInfo& ci) {
     ci.GetCK()->MarkAsUnused(ci.GetIndex());
+  }
+
+  /// Is bridging of constraint \a i
+  /// to be considered yet?
+  bool IsBridgingToBeConsidered(const ConInfo& ci) const {
+    return ci.GetCK()->IsBridgingToBeConsidered(ci.GetIndex());
+  }
+
+
+  /// Is constraint reformulated?
+  bool IsBridged(const ConInfo& ci) const {
+    return ci.GetCK()->IsBridged(ci.GetIndex());
   }
 
   /// Is constraint unused?

@@ -80,7 +80,7 @@ public:
 
   /// Is item \a i already bridged or abandoned?
   bool IsRedundant(int i) const {
-    return cons_[i].IsBridged() || cons_[i].IsUnused();
+    return cons_[i].IsRedundant();
   }
 
   /// Get constraint depth in the reformulation tree
@@ -265,7 +265,7 @@ public:
       BasicFlatModelAPI& be, int i, void* pexpr) override {
     if constexpr (ExpressionAcceptanceLevel::NotAccepted
         != Backend::ExpressionInterfaceAcceptanceLevel()) {
-      assert(!cons_[i].IsBridged());
+      assert(!cons_[i].IsRedundant());
       assert(!cons_[i].IsExprAdded());
       cons_[i].MarkExprAdded();
       *(typename Backend::Expr*)pexpr =
@@ -309,20 +309,19 @@ protected:
     /// Depth in redef tree
     int GetDepth() const { return depth_; }
 
-    /// Bridged (reformulated or just unused.)
-    /// If only reformulated, can still be checked
-    /// for solution correctness.
+    /// Is redundant: bridged or unused
+    bool IsRedundant() const
+    { return IsBridged() || IsUnused(); }
+
+    /// Bridged (reformulated.)
     bool IsBridged() const { return is_bridged_; }
     /// Mark as bridged
     void MarkAsBridged() { is_bridged_=true; }
 
-    /// Unused (should not be checked)
+    /// Unused, e.g., inlined in another expression.
     bool IsUnused() const { return is_unused_; }
     /// Mark as unused
-    void MarkAsUnused() {
-      MarkAsBridged();              // also inactive
-      is_unused_=true;
-    }
+    void MarkAsUnused() { is_unused_=true; }
 
     /// Has the expression been added to the backend?
     bool IsExprAdded() const { return is_expr_stored_; }
@@ -359,7 +358,7 @@ protected:
         i = (int)cons_.size();             // skip unconverted items
       } else {
         for ( ; ++i!=(int)cons_.size(); )
-          if (!cons_[i].IsBridged() &&
+          if (!cons_[i].IsRedundant() &&
               !GetConverter().IfDelayConversion(cons_[i].GetCon(), i)) {
             ConvertConstraint(cons_[i], i);
             if (-2 == GetLowLevelAcc()) {
@@ -373,7 +372,7 @@ protected:
         i = (int)cons_.size();
       } else {
         for (; ++i != (int)cons_.size(); ) {
-          if (!cons_[i].IsBridged() &&
+          if (!cons_[i].IsRedundant() &&
               !GetConverter().IfDelayConversion(cons_[i].GetCon(), i)) {
             try {       // Try to convert all but allow failure
               ConvertConstraint(cons_[i], i);
@@ -387,7 +386,7 @@ protected:
       }
     } else { // Recommended == acceptanceLevel &&
       for (; ++i != (int)cons_.size(); )
-        if (!cons_[i].IsBridged() &&
+        if (!cons_[i].IsRedundant() &&
             GetConverter().IfNeedsConversion(cons_[i].GetCon(), i))
           ConvertConstraint(cons_[i], i);
     }
@@ -403,8 +402,9 @@ protected:
     if (ExpressionAcceptanceLevel::NotAccepted!=eal) {    // accepted
       for (int i=0; i< (int)cons_.size(); ++i) {
         const auto& cnt = cons_[i];
-        if (!cnt.IsBridged()) {      // Delegate actual logic to Converter
+        if (!cnt.IsRedundant()) {
           const auto& con = cnt.GetCon();
+          // Delegate actual logic to Converter
           GetConverter().ConsiderMarkingResultVar(con, i, eal);
         }
       }
@@ -416,7 +416,7 @@ protected:
         = GetChosenAcceptanceLevelEXPR();
     for (int i=0; i< (int)cons_.size(); ++i) {
       const auto& cnt = cons_[i];
-      if (!cnt.IsBridged()) {      // Delegate actual logic to Converter
+      if (!cnt.IsRedundant()) {      // Delegate actual logic to Converter
         const auto& con = cnt.GetCon();
         GetConverter().ConsiderMarkingArguments(con, i, eal);
       }
@@ -449,7 +449,7 @@ protected:
   ///   actually redundant, as \a i is enough to find it. But for speed.
   /// @param i constraint index, needed for bridging
   void ConvertConstraint(Container& cnt, int i) {
-    assert(!cnt.IsBridged());
+    assert(!cnt.IsRedundant());
     GetConverter().RunConversion(cnt.GetCon(), i, cnt.GetDepth());
     MarkAsBridged(cnt, i);
   }
@@ -532,6 +532,18 @@ public:
     MarkAsUnused(cons_.at(i), i);
   }
 
+  /// Is constraint \a i reformulated?
+  bool IsBridged(int i) const override {
+    return cons_.at(i).IsBridged();
+  }
+
+  /// Is bridging of constraint \a i
+  /// to be considered yet?
+  /// @todo repeated redefinition cycle
+  bool IsBridgingToBeConsidered(int i) const override {
+    return i > i_cvt_last_;
+  }
+
   /// Is constraint \a i unused?
   bool IsUnused(int i) const override {
     return cons_.at(i).IsUnused();
@@ -558,7 +570,7 @@ public:
 	template <class Fn>
 	void ForEachActive(Fn fn) {
 		for (int i=0; i<(int)cons_.size(); ++i)
-			if (!cons_[i].IsBridged())
+      if (!cons_[i].IsRedundant())
         if (fn(cons_[i].GetCon(), i))
           MarkAsBridged(cons_[i], i);
 	}
@@ -622,7 +634,7 @@ protected:
     auto con_group = GetConstraintGroup(be);
 		for ( ; i_2add_next_ < (int)cons_.size(); ++i_2add_next_) {
       const auto& cont = cons_[i_2add_next_];
-      bool adding = !cont.IsBridged();            // includes 'unused'
+      bool adding = !cont.IsRedundant();            // includes 'unused'
       if (adding) {
         static_cast<Backend&>(be).AddConstraint(cont.GetCon());
         GetConverter().GetCopyLink().             // Linking to the "final" nodes

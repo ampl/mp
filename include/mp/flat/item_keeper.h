@@ -206,6 +206,14 @@ public:
   /// Mark as unused. Use index only.
   virtual void MarkAsUnused(int i) = 0;
 
+  /// Is constraint \a i reformulated?
+  virtual bool IsBridged(int i) const = 0;
+
+  /// Is bridging of constraint \a i
+  /// to be considered yet?
+  /// @todo repeated redefinition cycle
+  virtual bool IsBridgingToBeConsidered(int i) const = 0;
+
   /// Is constraint \a i unused?
   virtual bool IsUnused(int i) const = 0;
 
