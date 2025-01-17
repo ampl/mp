@@ -21,13 +21,14 @@ public:
   using ItemType = IfThenConstraint;
 
   /// Convert in any context
-  void Convert(const ItemType& itc, int ) {
+  Context Convert(const ItemType& itc, int ) {
     assert(!itc.GetContext().IsNone());
     const auto& args = itc.GetArguments();
     if (!GetMC().is_fixed(args[1]) || !GetMC().is_fixed(args[2]))
       ConvertIfThen_variableThenElse(itc);
     else
       ConvertIfThen_constantThenElse(itc);
+    return Context::CTX_MIX;
   }
 
 protected:

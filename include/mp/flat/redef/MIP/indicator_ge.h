@@ -20,12 +20,13 @@ public:
   using ItemType = IndicatorConstraintLinGE;
 
   /// Conversion
-  void Convert(const ItemType& indc, int ) {
+  Context Convert(const ItemType& indc, int ) {
     auto binvar=indc.get_binary_var();
     auto bnds = GetMC().ComputeBoundsAndType(
           indc.get_constraint().GetBody());
     ConvertImplicationGE(binvar, indc.get_binary_value(),
                          bnds.lb(), indc.get_constraint());
+    return Context::CTX_ROOT;
   }
 
 protected:

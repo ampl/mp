@@ -27,7 +27,7 @@ public:
   using ItemType = ComplCon;
 
   /// Convert in any context
-  void Convert(const ItemType& cc, int ) {
+  Context Convert(const ItemType& cc, int ) {
     const auto& expr = cc.GetExpression();
     auto compl_var = cc.GetVariable();
 
@@ -100,6 +100,7 @@ public:
       GetMC().FixAsTrue(res4);
       /// Not adding any static algebraic constraint
     }
+    return Context::CTX_ROOT;
   }
 
   /// Reuse the stored ModelConverter

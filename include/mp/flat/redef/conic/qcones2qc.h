@@ -29,7 +29,7 @@ public:
   /// Convert to
   /// (c[0]*x[0])^2 >= sum(i)((c[i]*x[i])^2)
   /// with x[0]>=0.
-  void Convert(const ItemType& ac, int ) {
+  Context Convert(const ItemType& ac, int ) {
     const auto& x = ac.GetArguments();
     auto c = ac.GetParameters();
     for (auto& coef: c)
@@ -48,6 +48,7 @@ public:
       auto qc {QuadConLE{ {{}, {c, x0, x0}}, {rhs} }};
       GetMC().AddConstraint(std::move(qc));
     }
+    return Context::CTX_ROOT;
   }
 
   /// Reuse the stored ModelConverter
@@ -76,7 +77,7 @@ public:
   }
 
   /// Convert to 2(c[0]*x[0]*c[1]*x[1]) >= sum(i>=2)((c[i]*x[i])^2).
-  void Convert(const ItemType& ac, int ) {
+  Context Convert(const ItemType& ac, int ) {
     const auto& x = ac.GetArguments();
     const auto& c = ac.GetParameters();
     std::vector<int> x1{x.begin()+1, x.end()};
@@ -110,6 +111,7 @@ public:
         auto qc = QuadConLE{ {{}, {c12, x1, x2}}, {0.0} };
         GetMC().AddConstraint(std::move(qc));
       }
+      return Context::CTX_ROOT;
   }
 
   /// Reuse the stored ModelConverter

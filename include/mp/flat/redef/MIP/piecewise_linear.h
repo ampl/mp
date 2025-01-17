@@ -28,7 +28,7 @@ public:
   using ItemType = PLConstraint;
 
   /// Convert in any context
-  void Convert(const ItemType& cc, int ) {
+  Context Convert(const ItemType& cc, int ) {
     points_ = cc.GetParameters().GetPLPoints();
     i0=0;                              // first breakpoint
     i1=points_.x_.size()-1;            // last breakpoint
@@ -39,10 +39,11 @@ public:
       ConsiderExtendingEndSegments();  // Bad when approximating
     ConsiderShorteningPL();
     if (ConsiderDegenerateCases())
-      return;
+      return Context::CTX_MIX;
     if (ConsiderConvexity())
-      return;
+      return Context::CTX_MIX;
     RedefineInSOS2();
+    return Context::CTX_MIX;
   }
 
 

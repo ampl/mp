@@ -28,13 +28,14 @@ public:
   }
 
   /// Convert in both contexts (full reification)
-  void Convert(const ItemType& dc, int ) {
+  Context Convert(const ItemType& dc, int ) {
     if (GetMC().is_fixed(dc.GetResultVar()))
       ConvertWithConstResult(dc);
     else if (GetMC().is_fixed(dc.GetArguments()[1]))
       ConvertWithConstDivisor(dc);
     else
       ConvertWithNonConstDivisor(dc);
+    return Context::CTX_MIX;
   }
 
 

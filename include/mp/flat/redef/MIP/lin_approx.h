@@ -42,7 +42,7 @@ public:
   using ItemType = FuncCon;
 
   /// Convert in any context
-  void Convert(const ItemType& con, int ) {
+  Context Convert(const ItemType& con, int ) {
     assert(!con.GetContext().IsNone());
     assert(1==con.GetArguments().size());          // 1 argument var
     auto x = con.GetArguments()[0];
@@ -103,6 +103,7 @@ public:
                                  {int(factor), int(rmd), x} },
                                {0.0} } );
     }
+    return Context::CTX_MIX;
   }
 
 

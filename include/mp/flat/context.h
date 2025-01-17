@@ -23,6 +23,12 @@ public:
   /// Is CTX_NONE?
   bool IsNone() const { return CTX_NONE==value_; }
 
+  /// Is a subset of or equal to \a other?
+  bool IsSubsetOf(Context other) const {
+    return
+        IsProperSubsetOf(other) || *this==other;
+  }
+
   /// Is a proper subset of \a other?
   bool IsProperSubsetOf(Context other) const {
     return
@@ -54,6 +60,9 @@ public:
 
   /// Get value
   CtxVal GetValue() const { return value_; }
+
+  /// Equal
+  bool operator==(Context ctx) const { return value_==ctx.value_; }
 
   /// Positivize
   Context operator+() {

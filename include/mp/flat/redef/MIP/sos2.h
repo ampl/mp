@@ -24,11 +24,12 @@ public:
   using ItemType = SOS2Constraint;
 
   /// Convert in any context
-  void Convert(const ItemType& cc, int ) {
+  Context Convert(const ItemType& cc, int ) {
     if (SOSExtraInfo::Bounds{1.0, 1.0} == cc.get_sum_of_vars_range())
       ConvertSOS2FromPL(cc);
     else
       ConvertGeneralSOS2(cc);
+    return Context::CTX_ROOT;
   }
 
 

@@ -225,12 +225,13 @@ public:
   /// Responsible for adding presolve links
   /// @param item: the item to be converted
   /// @param i: item index, used to create a presolve link
-  void Convert(const ItemType& item, int i) {
+  Context Convert(const ItemType& item, int i) {
     auto rr = Relate(item.lb(), item.ub());
     if (rr[0] && rr[1] && rr[2])
       ConvertRange(item, i);
     else
       ConvertWithRhs(item, rr);
+    return Context::CTX_ROOT;
   }
 
 protected:

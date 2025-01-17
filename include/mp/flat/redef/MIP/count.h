@@ -21,7 +21,7 @@ public:
   using ItemType = CountConstraint;
 
   /// Convert in any context
-  void Convert(const ItemType& cc, int ) {
+  Context Convert(const ItemType& cc, int ) {
     const auto& args = cc.GetArguments();
     std::vector<double> coefs(args.size()+1, 1.0);
     coefs.back() = -1.0;
@@ -37,6 +37,7 @@ public:
       }
     }
     GetMC().AddConstraint_AS_ROOT( LinConEQ( {coefs, flags}, 0.0 ) );
+    return Context::CTX_MIX;
   }
 
   /// Reuse the stored ModelConverter

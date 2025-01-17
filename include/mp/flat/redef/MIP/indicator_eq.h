@@ -19,7 +19,7 @@ public:
   using ItemType = IndicatorConstraintLinEQ;
 
   /// Conversion
-  void Convert(const ItemType& indc, int ) {
+  Context Convert(const ItemType& indc, int ) {
     auto binvar=indc.get_binary_var();
     auto bnds = GetMC().ComputeBoundsAndType(
           indc.get_constraint().GetBody());
@@ -34,6 +34,7 @@ public:
     bnds.NegateBounds();
     ConvertImplicationLE(binvar, indc.get_binary_value(),
                          bnds.ub(), std::move(con));
+    return Context::CTX_ROOT;
   }
 
 protected:

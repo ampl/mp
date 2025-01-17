@@ -22,7 +22,7 @@ public:
 
   /// Convert in any context.
   /// Very basic, could be improved
-  void Convert(const ItemType& novc, int ) {
+  Context Convert(const ItemType& novc, int ) {
     const auto& args = novc.GetArguments();
     std::vector<double> coefs(args.size(), 1.0);
     coefs.front() = -1.0;
@@ -33,6 +33,7 @@ public:
                  { { {1.0, -1.0}, {args[ivar], args[0]} }, 0.0 } ) );
     }
     GetMC().AddConstraint_AS_ROOT( LinConEQ( {coefs, flags}, {0.0} ) );
+    return Context::CTX_MIX;
   }
 
   /// Reuse the stored ModelConverter

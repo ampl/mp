@@ -39,7 +39,7 @@ public:
   }
 
   /// Convert in any context
-  void Convert(const ItemType& con, int i) {
+  Context Convert(const ItemType& con, int i) {
     assert(!con.GetContext().IsNone());
     auto pwr = con.GetParameters()[0];
     if (GetMC().IfQuadratizePowConstPosIntExp() &&
@@ -47,6 +47,7 @@ public:
       Convert2Quadratics(con, i);
     else
       Convert2PL(con, i);
+    return Context::CTX_MIX;
   }
 
 
@@ -107,9 +108,10 @@ public:
   using ItemType = PowConstraint;
 
   /// Convert in any context
-  void Convert(const ItemType& con, int i) {
+  Context Convert(const ItemType& con, int i) {
     assert(!con.GetContext().IsNone());
     Convert2ExpLog(con, i);
+    return Context::CTX_MIX;
   }
 
 

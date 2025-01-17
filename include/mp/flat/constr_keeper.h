@@ -114,6 +114,16 @@ public:
                        int i,
                        double lb, double ub, Context ctx) override {
     try {
+      // Too strong: instead, differentiate context
+      // in which the redefinition happened #248.
+      // MP_ASSERT_ALWAYS(!GetContext(i).IsProperSubsetOf(ctx)
+      //                  || IsBridgingToBeConsidered(i),
+      auto ctx_redef = cons_[i].GetRedefContext();
+      MP_ASSERT_ALWAYS(ctx_redef.IsNone()
+                           || ctx.IsSubsetOf(ctx_redef),
+                       "Part of expression redefinition\n"
+                       "could be lost. Please contact\n"
+                       "AMPL customer support.");
       static_cast<Converter&>(cvt).PropagateResult(
             GetConstraint(i), lb, ub, ctx);
     } catch (const std::exception& exc) {
@@ -121,7 +131,7 @@ public:
                std::string(": propagating result for constraint ") +
                std::to_string(i) + " of type '" +
                Constraint::GetTypeName() +
-               "':  " + exc.what());
+               "':\n" + exc.what());
     }
   }
 
@@ -328,6 +338,15 @@ protected:
     /// Mark as added
     void MarkExprAdded() { is_expr_stored_=true; }
 
+    /// Context used for redefinition.
+    /// We redefine just once currently #248.
+    Context GetRedefContext() const { return ctx_redef_; }
+    /// Set redef context
+    void SetRedefContext(Context ctx) {
+      assert(!ctx.IsNone());
+      ctx_redef_ = ctx;
+    }
+
     /// Get the flat constraint, const &
     const Constraint& GetCon() const { return con_.GetFlatConstraint(); }
     /// Get the flat constraint &
@@ -343,9 +362,10 @@ protected:
     // so we can send (wrapper &) to ModelAPI::AddExpression().
     FlatExprType con_;
     int depth_ = 0;
-    bool is_bridged_ = false;
-    bool is_unused_ = false;
-    bool is_expr_stored_ = false;
+    Context ctx_redef_;    // Context used for redefinition, if any
+    char is_bridged_ = false;
+    char is_unused_ = false;
+    char is_expr_stored_ = false;
   };
 
 	/// Convert all new constraints of this type
@@ -450,7 +470,12 @@ protected:
   /// @param i constraint index, needed for bridging
   void ConvertConstraint(Container& cnt, int i) {
     assert(!cnt.IsRedundant());
-    GetConverter().RunConversion(cnt.GetCon(), i, cnt.GetDepth());
+    assert(cnt.GetRedefContext().IsNone());
+    auto ctx_redef
+        = GetConverter().RunConversion(cnt.GetCon(), i, cnt.GetDepth());
+    cnt.SetRedefContext(ctx_redef);
+    assert(!cnt.GetCon().HasResultVar()
+           || cnt.GetCon().GetContext().IsSubsetOf(ctx_redef));
     MarkAsBridged(cnt, i);
   }
 

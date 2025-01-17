@@ -33,7 +33,7 @@ public:
 
   /// Conversion.
   /// Substitute constraint body by a new variable.
-  void Convert(const ItemType& indc, int ) {
+  Context Convert(const ItemType& indc, int ) {
     auto binvar=indc.get_binary_var();
     const auto& body = indc.get_constraint().GetBody();
     assert(body.is_quadratic());
@@ -42,6 +42,7 @@ public:
     GetMC().AddConstraint( IndicatorLin{binvar, indc.get_binary_value(),
                                         LinCon{ { {1.0}, {auxvar} },
                                           indc.get_constraint().rhs() }} );
+    return Context::CTX_ROOT;
   }
 
 protected:

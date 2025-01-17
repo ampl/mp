@@ -216,7 +216,7 @@ public:
     MP_ASSERT_ALWAYS(!IsUnused(GetInitExpression(v))
         || IsBridgingToBeConsidered(GetInitExpression(v)),
                      "An expression's redefinition\n"
-                     "is about to be lost. Contact\n"
+                     "could be lost. Please contact\n"
                      "AMPL customer support.");
 	}
 
@@ -365,10 +365,11 @@ protected:
 public: // for ConstraintKeeper
   /// RunConversion() of a constraint in the flat phase:
   /// Assume mixed context if not set.
+  /// @return Context used for redefinition
   /// @note Do not use directly. Call via
   ///   ConstraintKeeper.ConvertConstraint().
   template <class Constraint>
-  void RunConversion(const Constraint& con, int i, int depth) {
+  Context RunConversion(const Constraint& con, int i, int depth) {
     assert(
         !GET_CONSTRAINT_KEEPER(Constraint).IsRedundant(i));
     constr_depth_ = depth+1;
@@ -379,7 +380,7 @@ public: // for ConstraintKeeper
       *static_cast<Impl*>(this),
       GET_CONSTRAINT_KEEPER(Constraint).SelectValueNodeRange(i)
     };
-    MP_DISPATCH(Convert(con, i));
+    return MP_DISPATCH(Convert(con, i));
   }
 
   /// Query if a constraint type
@@ -528,27 +529,30 @@ public: // for ConstraintKeeper
   ///
   /// New way is to use the \a i parameter for bridging
   template <class Constraint>
-  void Convert(const Constraint& con, int ) {
-    MPD( Convert(con) );
+  Context Convert(const Constraint& con, int ) {
+    return MPD( Convert(con) );
   }
 
-  /// By default, we complain about someone trying to convert an unknown constraint
+  /// By default, we complain about someone trying to
+  /// convert an unknown constraint
   template <class Constraint>
-  void Convert(const Constraint& ) {
+  Context Convert(const Constraint& ) {
     MP_RAISE(
           std::string("Constraint type '") +
             Constraint::GetTypeName() +
             "' is neither accepted by '" +
             ModelAPI::GetTypeName() +
             "', nor is conversion implemented");
+    return Context::CTX_NONE;
   }
 
   //////////////////////////// SOME SPECIFIC CONSTRAINT CONVERTERS
   /// ///////////////////////////////////// ///////////////////////////
 
   /// If backend does not like LFC, we redefine it here
-  void Convert(const LinearFunctionalConstraint& ldc) {
+  Context Convert(const LinearFunctionalConstraint& ldc) {
     MPD( AddConstraint(ldc.to_linear_constraint()) );
+    return Context::CTX_MIX;
   }
   /// Say we can (for acc:_all=0)
   bool IfHasCvt_impl(const LinearFunctionalConstraint* ) {
@@ -556,8 +560,8 @@ public: // for ConstraintKeeper
   }
 
   /// If backend does not like QFC, we redefine it
-  void Convert(const QuadraticFunctionalConstraint& qdc) {
-    qdc.AddQuadraticConstraint(*(Impl*)this);
+  Context Convert(const QuadraticFunctionalConstraint& qdc) {
+    return qdc.AddQuadraticConstraint(*(Impl*)this);
   }
   /// Say we can
   bool IfHasCvt_impl(const QuadraticFunctionalConstraint* ) {
@@ -1738,7 +1742,8 @@ protected:
   STORE_CONSTRAINT_TYPE__NO_MAP(
       UnaryEncodingConstraint, "acc:uenc")
   /// Dummy conversion for UEncConstr
-  void Convert(const UnaryEncodingConstraint& ) { }
+  Context Convert(const UnaryEncodingConstraint& )
+  { return Context::CTX_ROOT; }
   /// Say we can (for acc:_all=0)
   bool IfHasCvt_impl(const UnaryEncodingConstraint* ) {
     return true;

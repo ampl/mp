@@ -38,8 +38,9 @@ public:
   }
 
   /// Conversion
-	void Convert(const ItemType& qc, int ) {
+  Context Convert(const ItemType& qc, int ) {
 		LinearizeQPTerms(qc);
+    return Context::CTX_MIX;
   }
 
 

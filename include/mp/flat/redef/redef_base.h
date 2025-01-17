@@ -65,9 +65,11 @@ public:
   /// @param item: the item to be converted
   /// @param i: item index, used to create a presolve link
   ///
+  /// @return Context used for redefinition
+  ///
   /// The Impl can reimplement this
   template <class ItemType>
-  void Convert(const ItemType& item, int i) {
+  Context Convert(const ItemType& item, int i) {
     auto ctx = item.GetContext();
     assert(!ctx.IsNone());
     auto rv = item.GetResultVar();
@@ -80,6 +82,7 @@ public:
          GetMC().ub(rv) > bnd00.first ) {   // Need the positive direction
       MPD( ConvertCtxPos(item, i) );
     }
+    return ctx;        // We assume the implementation just did that
   }
 
   /// Convert in negative context
@@ -125,9 +128,9 @@ public:
       return item_cvt__ ## item_cvt_type ## _ . \
       IfDelayConversion(con, i); \
   } \
-  void Convert(const typename \
+  Context Convert(const typename \
       item_cvt_type<Impl>::ItemType& con, int i) { \
-    item_cvt__ ## item_cvt_type ## _ . Convert(con, i); \
+    return item_cvt__ ## item_cvt_type ## _ . Convert(con, i); \
   }
 
 

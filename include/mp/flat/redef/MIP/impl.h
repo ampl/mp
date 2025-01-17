@@ -26,7 +26,7 @@ public:
   using ItemType = ImplicationConstraint;
 
   /// Convert in any context
-  void Convert(const ItemType& cc, int ) {
+  Context Convert(const ItemType& cc, int ) {
     const auto& args = cc.GetArguments();
     auto compl_arg0 = GetMC().MakeComplementVar(args[0]);
     /// args[0] ==> args[1]
@@ -45,6 +45,7 @@ public:
       GetMC().PropagateResultOfInitExpr(
             cc.GetResultVar(), cc.GetContext());
     }
+    return Context::CTX_MIX;
   }
 
 

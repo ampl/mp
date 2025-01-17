@@ -288,7 +288,7 @@ public:
   /// add respective static constraint to a converter.
   /// Use >=< depending on context.
   template <class Converter>
-  void AddQuadraticConstraint(Converter& cvt) const {
+  Context AddQuadraticConstraint(Converter& cvt) const {
     auto le = GetQuadExpr().GetLinTerms();
     le.add_term(-1.0, FunctionalConstraint::GetResultVar());
     auto qt = GetQuadExpr().GetQPTerms();
@@ -303,6 +303,7 @@ public:
       -GetQuadExpr().constant_term() } );
     else
       MP_RAISE("QuadraticFuncCon: no context");
+    return GetContext();
   }
 };
 
