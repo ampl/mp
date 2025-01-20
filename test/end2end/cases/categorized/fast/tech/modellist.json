@@ -9,11 +9,33 @@
     "objective": 88.2
   },
   {
-    "name" : "Check_Wrong_Options",
+    "name" : "Check_Wrong_Option_Value",
     "tags" : ["linear", "continuous"],
     "files" : ["diet.mod", "diet.dat"],
     "comment": "Check graceful exit on wrong options",
     "options": { "ANYSOLVER_options": "objno=12" },
+    "values": {
+      "solve_result_num": 500,
+      "solve_exitcode":   0
+    }
+  },
+  {
+    "name" : "Check_Missing_Option_Value",
+    "tags" : ["linear", "continuous"],
+    "files" : ["diet.mod", "diet.dat"],
+    "comment": "Check graceful exit on wrong options",
+    "options": { "ANYSOLVER_options": "objno " },
+    "values": {
+      "solve_result_num": 500,
+      "solve_exitcode":   0
+    }
+  },
+  {
+    "name" : "Check_Huge_Option_Value",
+    "tags" : ["linear", "continuous"],
+    "files" : ["diet.mod", "diet.dat"],
+    "comment": "Check graceful exit on wrong options",
+    "options": { "ANYSOLVER_options": "cvt:bigM=2e450outlev=1" },
     "values": {
       "solve_result_num": 500,
       "solve_exitcode":   0

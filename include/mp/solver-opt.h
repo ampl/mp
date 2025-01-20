@@ -8,6 +8,7 @@
 
 #include "mp/error.h"
 #include "mp/format.h"
+#include "mp/utils-string.h"
 
 
 namespace mp {
@@ -300,7 +301,7 @@ private:
   template <typename T>
   static std::string Format(fmt::StringRef name, T value, fmt::StringRef msg) {
     if (0!=msg.size())
-      return fmt::format("Invalid value \"{}\" for option \"{}\", {}",
+      return fmt::format("Invalid value \"{}\" for option \"{}\": {}",
                          value, name, msg);
     else
       return fmt::format("Invalid value \"{}\" for option \"{}\"", value, name);
@@ -335,12 +336,15 @@ public:
   ///                     monolithic, space separated and quotes have to be considered.
   void Parse(const char *&s, bool splitString=false) override {
     const char *start = s;
-    T value = internal::OptionHelper<T>::Parse(s, splitString);
-    if (false  // undocumented: we accept next option after a numeric option
-        && *s && !std::isspace(*s)) {
-      do ++s;
-      while (*s && !std::isspace(*s));
-      throw InvalidOptionValue(name(), std::string(start, s - start));
+    T value;
+    try {
+      value = internal::OptionHelper<T>::Parse(s, splitString);
+    } catch (const std::exception& exc) {
+      // undocumented: we accept next option after a numeric option
+      s = SkipNonSpaces(s);
+      throw InvalidOptionValue(name(),
+                               std::string(start, s - start),
+                               exc.what());
     }
     SetValue(value);
   }

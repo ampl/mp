@@ -28,6 +28,15 @@
 
 namespace mp {
 
+/// Skip spaces
+const char *SkipSpaces(const char *s);
+/// Skip non-spaces
+const char *SkipNonSpaces(const char *s);
+/// Skip to end
+const char* SkipToEnd(const char* s);
+/// Skip to mathcing quote
+const char* SkipToMatchingQuote(const char* s);
+
 /// Split string
 std::vector<std::string> split_string(const char* );
 

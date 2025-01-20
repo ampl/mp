@@ -23,6 +23,7 @@
 #include <map>
 #include <cctype>
 #include <climits>
+#include <cmath>
 #include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
@@ -31,6 +32,7 @@
 
 #include <algorithm>
 #include <stack>
+#include <charconv>
 
 #ifndef _WIN32
 # include <strings.h>
@@ -65,33 +67,6 @@ extern char** environ;
 
 
 namespace {
-
-const char *SkipSpaces(const char *s) {
-  while (*s && isspace(*s))
-    ++s;
-  return s;
-}
-
-const char *SkipNonSpaces(const char *s) {
-  while (*s && !isspace(*s))
-    ++s;
-  return s;
-}
-
-const char* SkipToEnd(const char* s) {
-  while (*s && (*s != '\n'))
-    ++s;
-  return s;
-}
-
-const char* SkipToMatchingQuote(const char* s) {
-  assert((*s == '\'') || (*s == '"'));
-  char quote = s[0];
-  ++s;
-  while (*s != quote)
-    ++s;
-  return ++s;
-}
 
 struct Deleter {
   void operator()(mp::SolverOption* p) const { delete p; }
@@ -245,8 +220,37 @@ void RSTFormatter::HandleDirective(const char *type) {
 
 }  // namespace
 
+
 namespace mp {
 
+const char *SkipSpaces(const char *s) {
+  while (*s && isspace(*s))
+    ++s;
+  return s;
+}
+
+const char *SkipNonSpaces(const char *s) {
+  while (*s && !isspace(*s))
+    ++s;
+  return s;
+}
+
+const char* SkipToEnd(const char* s) {
+  while (*s && (*s != '\n'))
+    ++s;
+  return s;
+}
+
+const char* SkipToMatchingQuote(const char* s) {
+  assert((*s == '\'') || (*s == '"'));
+  char quote = s[0];
+  ++s;
+  while (*s != quote)
+    ++s;
+  return ++s;
+}
+
+/// Namespace sol
 namespace sol {
 
 const char* GetStatusName(sol::Status stt) {
@@ -278,25 +282,41 @@ void FormatRST(fmt::Writer &w,
 }
 
 int OptionHelper<int>::Parse(const char *&s, bool) {
-  char *end = 0;
-  long value = std::strtol(s, &end, 10);
+  assert(!isspace(*s));
+  const char *end = SkipNonSpaces(s);
+  int value;
+  auto result = std::from_chars(s, end, value);
+  if (result.ec == std::errc()) {
+    s = result.ptr;
+    return value;
+  }
+  MP_ASSERT_ALWAYS(result.ec != std::errc::invalid_argument,
+                   "this is not a number");
+  MP_ASSERT_ALWAYS(result.ec != std::errc::result_out_of_range,
+                   "this number is larger than an int");
+  MP_RAISE("Unknown std::from_chars<int> result");
+}
+
+double OptionHelper<double>::Parse(const char *&s, bool) {
+  assert(!isspace(*s));
+  char *end = 0;        // Clang 16 still no from_chars<double>
+  double value = std::strtod(s, &end);
+  MP_ASSERT_ALWAYS(end != s,
+                   "this is not a number");
+  MP_ASSERT_ALWAYS(HUGE_VAL != value,
+                   "this number is larger than a double");
   s = end;
   return value;
 }
 
-double OptionHelper<double>::Parse(const char *&s, bool) {
-  char *end = 0;
-  double value = std::strtod(s, &end);
-  s = end;
-  return value;
-}
 bool quoted(const char* s) {
   return (*s == '\'' || *s == '"');
 }
+
 std::string OptionHelper<std::string>::Parse(const char *&s, bool splitString) {
   const char *start = s;
   if (splitString) // if the string has been already split (by the command line parser)
-  {
+  {                // @todo consider quotes here too?
     s = SkipToEnd(s);
     return std::string(start, s - start);
   }
@@ -305,12 +325,10 @@ std::string OptionHelper<std::string>::Parse(const char *&s, bool splitString) {
     s = SkipToMatchingQuote(s);
     return std::string(start + 1, s - start - 2);
   }
-  else
   {
     s = SkipNonSpaces(s);
     return std::string(start, s - start);
   }
-
 }
 
 SolverAppOptionParser::SolverAppOptionParser(BasicSolver &s)
