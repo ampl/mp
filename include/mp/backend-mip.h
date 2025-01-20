@@ -620,7 +620,11 @@ protected:
                       " suffixes for one-sided constraints only:\n"
                       "|    .sensrhslo = smallest right-hand side values\n"
                       // "|    .sensrhs   = current right-hand side values\n"
-                      "|    .sensrhshi = greatest right-hand side values."
+                      "|    .sensrhshi = greatest right-hand side values.\n"
+                      "\n"
+                      "The suffixes correspond to the AMPL solver model, "
+                      "command 'solexpand'. For easiest interpretation, "
+                      "disable AMPL presolve, 'option presolve 0;'"
                       ,
                     GetMIPOptions().solnSens_);
 
