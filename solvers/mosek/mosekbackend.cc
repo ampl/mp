@@ -720,6 +720,7 @@ SensRangesPresolved MosekBackend::GetSensRangesPresolved()
   sensr.varubhi = { {vrangeubhi} };
   sensr.varublo = { {vrangeublo} };
   sensr.varobjhi = { {orangehi} };
+  sensr.varobj = { {c} };
   sensr.varobjlo = { {orangelo} };
 	sensr.conlbhi = { {}, {{{CG_Algebraic, crangelbhi}}} };
 	sensr.conlblo = { {}, {{{CG_Algebraic, crangelblo}}} };

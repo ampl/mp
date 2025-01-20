@@ -742,30 +742,55 @@ SensRanges GurobiBackend::GetSensRanges() {
   auto mv_sense = GetValuePresolver().PostsolveGenericInt({ {},
                                                             {{{ CG_Linear, sense_raw_int }}} });
   const auto& sense = mv_sense.GetConValues()();
+
+  // Fill the current values
+  sensr.conrhs = rhs;
+  {
+    auto raw = GrbGetDblAttrArray_VarCon(model_fixed_, GRB_DBL_ATTR_OBJ, 0);
+    auto mv = GetValuePresolver().PostsolveGenericDbl({ { raw } });
+    sensr.varobj = mv.GetVarValues()();
+  }{
+    auto raw = GrbGetDblAttrArray_VarCon(model_fixed_, GRB_DBL_ATTR_LB, 0);
+    auto mv = GetValuePresolver().PostsolveGenericDbl({ { raw } });
+    sensr.varlb = mv.GetVarValues()();
+  }
+  auto raw_varub = GrbGetDblAttrArray_VarCon(model_fixed_, GRB_DBL_ATTR_UB, 0);
+  auto mv_varub = GetValuePresolver().PostsolveGenericDbl({ { raw_varub } });
+  sensr.varub = mv_varub.GetVarValues()();
+  const auto& conslackub = mv_varub.GetConValues()();
+
+  // Reconstruct values for ranges
   if (rhs.size()==sensr.conrhshi.size() &&            // check for Release
       !status &&
       rhs.size()==conlbhi.size() &&
       rhs.size()==conlblo.size() &&
       rhs.size()==conubhi.size() &&
       rhs.size()==conublo.size() ) {
-    sensr.conlbhi = sensr.conlblo = sensr.conubhi = sensr.conublo = rhs;
+    sensr.conlbhi = sensr.conlb = sensr.conlblo
+        = sensr.conubhi = sensr.conub = sensr.conublo = rhs;
     for (auto i=rhs.size(); i--; ) {
       if (conubhi[i] != conlblo[i]) {                 // anythin' propagated?
         sensr.conlblo[i] -= conubhi[i];               // then it's a range constraint
+        sensr.conlb[i] = rhs[i] - conslackub[i];      // !!!
         sensr.conlbhi[i] -= conublo[i];
         sensr.conublo[i] -= conlbhi[i];
+        sensr.conub[i] = rhs[i];
         sensr.conubhi[i] -= conlblo[i];
       } else {                                        // non-range constraints
         sensr.conlblo[i] = -1e100;
+        sensr.conlb[i] = -1e100;
         sensr.conlbhi[i] = 1e100;
         sensr.conublo[i] = -1e100;
+        sensr.conub[i] = 1e100;
         sensr.conubhi[i] = 1e100;
         if (sense[i] != (int)GRB_GREATER_EQUAL) {
           sensr.conublo[i] = sensr.conrhslo[i];
+          sensr.conub[i] = rhs[i];
           sensr.conubhi[i] = sensr.conrhshi[i];
         }
         if (sense[i] != (int)GRB_LESS_EQUAL) {
           sensr.conlblo[i] = sensr.conrhslo[i];
+          sensr.conlb[i] = rhs[i];
           sensr.conlbhi[i] = sensr.conrhshi[i];
         }
       }

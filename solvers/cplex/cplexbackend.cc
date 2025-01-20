@@ -598,6 +598,13 @@ SensRanges CplexBackend::GetSensRanges() {
   sensr.conrhshi = mvrhshi.GetConValues()();
   sensr.conrhslo = mvrhslo.GetConValues()();
 
+  {
+    std::vector<double> obj(NumVars());
+    CPLEX_CALL(CPXgetobj(env(), lp(), obj.data(), 0, NumVars() - 1));
+    auto mv = GetValuePresolver().PostsolveGenericDbl({ { obj } });
+    sensr.varobj = mv.GetVarValues()();
+  }
+
   /// We rely on the RangeCon2Slack Converter and its specific
   /// way: adding +slack to the body of the equality constraint.
   /// This reliance is a bit of a hack.

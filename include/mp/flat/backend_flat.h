@@ -12,7 +12,7 @@ namespace mp {
 struct SensRangesPresolved {
   pre::ModelValuesDbl
     varlblo, varlbhi, varublo, varubhi,
-    varobjlo, varobjhi,
+    varobjlo, varobj, varobjhi,
     conrhslo, conrhshi,                   // for rhs-constraints
     conlblo, conlbhi, conublo, conubhi;   // for range constraints
 };
@@ -79,6 +79,7 @@ public:
     auto mvubhi = GetValuePresolver().PostsolveGenericDbl(senspre.varubhi);
     auto mvublo = GetValuePresolver().PostsolveGenericDbl(senspre.varublo);
     auto mvobjhi = GetValuePresolver().PostsolveGenericDbl(senspre.varobjhi);
+    auto mvobj = GetValuePresolver().PostsolveGenericDbl(senspre.varobj);
     auto mvobjlo = GetValuePresolver().PostsolveGenericDbl(senspre.varobjlo);
     auto mvconlbhi = GetValuePresolver().PostsolveGenericDbl(senspre.conlbhi);
     auto mvconlblo = GetValuePresolver().PostsolveGenericDbl(senspre.conlblo);
@@ -93,6 +94,7 @@ public:
     sensr.varubhi = mvubhi.GetVarValues()();
     sensr.varublo = mvublo.GetVarValues()();
     sensr.varobjhi = mvobjhi.GetVarValues()();
+    sensr.varobj = mvobj.GetVarValues()();
     sensr.varobjlo = mvobjlo.GetVarValues()();
     sensr.conlbhi = mvconlbhi.GetConValues()();
     sensr.conlblo = mvconlblo.GetConValues()();

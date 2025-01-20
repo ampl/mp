@@ -47,10 +47,12 @@ struct IIS {
 /// Sensitivity ranges (postsolved)
 struct SensRanges {
   std::vector<double>
-    varlblo, varlbhi, varublo, varubhi,
-    varobjlo, varobjhi,
-    conrhslo, conrhshi,                   // for rhs-constraints
-    conlblo, conlbhi, conublo, conubhi;   // for range constraints
+      varlblo, varlb, varlbhi,         // varlb/ub, conlb/ub/rhs not needed
+      varublo, varub, varubhi,
+      varobjlo, varobj, varobjhi,      // varobj is compulsory
+      conrhslo, conrhs, conrhshi,      // for rhs-constraints
+      conlblo, conlb, conlbhi,
+      conublo, conub, conubhi;         // for range constraints
 };
 
 
@@ -369,16 +371,22 @@ public:
   virtual void ReportSensitivity() {
     SensRanges sensr = GetSensRanges();
     ReportSuffix( {"senslbhi", suf::Kind::VAR}, sensr.varlbhi );
+    // ReportSuffix( {"senslb", suf::Kind::VAR}, sensr.varlb );
     ReportSuffix( {"senslblo", suf::Kind::VAR}, sensr.varlblo );
     ReportSuffix( {"sensubhi", suf::Kind::VAR}, sensr.varubhi );
+    // ReportSuffix( {"sensub", suf::Kind::VAR}, sensr.varub );
     ReportSuffix( {"sensublo", suf::Kind::VAR}, sensr.varublo );
     ReportSuffix( {"sensobjhi", suf::Kind::VAR}, sensr.varobjhi );
+    ReportSuffix( {"sensobj", suf::Kind::VAR}, sensr.varobj );
     ReportSuffix( {"sensobjlo", suf::Kind::VAR}, sensr.varobjlo );
     ReportSuffix( {"sensrhshi", suf::Kind::CON}, sensr.conrhshi );
+    // ReportSuffix( {"sensrhs", suf::Kind::CON}, sensr.conrhs );
     ReportSuffix( {"sensrhslo", suf::Kind::CON}, sensr.conrhslo );
     ReportSuffix( {"senslbhi", suf::Kind::CON}, sensr.conlbhi );
+    // ReportSuffix( {"senslb", suf::Kind::CON}, sensr.conlb );
     ReportSuffix( {"senslblo", suf::Kind::CON}, sensr.conlblo );
     ReportSuffix( {"sensubhi", suf::Kind::CON}, sensr.conubhi );
+    // ReportSuffix( {"sensub", suf::Kind::CON}, sensr.conub );
     ReportSuffix( {"sensublo", suf::Kind::CON}, sensr.conublo );
   }
 
@@ -590,23 +598,29 @@ protected:
                       "Whether to return suffixes for solution sensitivities, i.e., "
                       "ranges of values for which the optimal basis remains optimal "
                       "(note that the variable and objective values can change):\n"
-                        "\n"
-                        "|  0 - No (default)\n"
-                        "|  1 - Yes:  suffixes returned on variables are\n"
-                        "|    .sensobjlo = smallest objective coefficient\n"
-                        "|    .sensobjhi = greatest objective coefficient\n"
-                        "|    .senslblo = smallest variable lower bound\n"
-                        "|    .senslbhi = greatest variable lower bound\n"
-                        "|    .sensublo = smallest variable upper bound\n"
-                        "|    .sensubhi = greatest variable upper bound;\n\n"
+                      "\n"
+                      "|  0 - No (default)\n"
+                      "|  1 - Yes:  suffixes returned on variables are\n"
+                      "|    .sensobjlo = smallest objective coefficients\n"
+                      "|    .sensobj   = current objective coefficients\n"
+                      "|    .sensobjhi = greatest objective coefficients\n"
+                      "|    .senslblo = smallest variable lower bounds\n"
+                      // "|    .senslb   = current variable lower bounds\n"
+                      "|    .senslbhi = greatest variable lower bounds\n"
+                      "|    .sensublo = smallest variable upper bounds\n"
+                      // "|    .sensub   = current variable upper bounds\n"
+                      "|    .sensubhi = greatest variable upper bounds;\n\n"
                       " suffixes for all constraints are\n"
-                      "|    .senslblo = smallest constraint lower bound\n"
-                      "|    .senslbhi = greatest constraint lower bound\n"
-                      "|    .sensublo = smallest constraint upper bound\n"
-                      "|    .sensubhi = greatest constraint upper bound;\n\n"
+                      "|    .senslblo = smallest constraint lower bounds\n"
+                      // "|    .senslb   = current constraint lower bounds\n"
+                      "|    .senslbhi = greatest constraint lower bounds\n"
+                      "|    .sensublo = smallest constraint upper bounds\n"
+                      // "|    .sensub   = current constraint upper bounds\n"
+                      "|    .sensubhi = greatest constraint upper bounds;\n\n"
                       " suffixes for one-sided constraints only:\n"
-                      "|    .sensrhslo = smallest right-hand side value\n"
-                      "|    .sensrhshi = greatest right-hand side value."
+                      "|    .sensrhslo = smallest right-hand side values\n"
+                      // "|    .sensrhs   = current right-hand side values\n"
+                      "|    .sensrhshi = greatest right-hand side values."
                       ,
                     GetMIPOptions().solnSens_);
 

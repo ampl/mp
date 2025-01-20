@@ -959,6 +959,7 @@ class CPLEXDirectSolver(MPDirectSolver):
                  
                  ModelTags.unbdd,
                  ModelTags.return_mipgap,
+                 ModelTags.sens,
                  
                  ModelTags.relax, ModelTags.warmstart, ModelTags.mipstart,
                  ModelTags.multiobj, ModelTags.obj_priority,
