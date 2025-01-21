@@ -446,7 +446,8 @@ ArrayRef<int> VisitorBackend::VarStatii() {
   
   std::vector<int> vars(NumVars());
   /*
-  VISITOR_GetBasis(lp(), vars.data(), NULL);
+  if (!VISITOR_GetBasis(lp(), vars.data(), NULL))
+    vars.clear();         // return empty if no basis
   for (auto& s : vars) {
     switch (s) {
     case VISITOR_BASIS_BASIC:
@@ -476,7 +477,8 @@ ArrayRef<int> VisitorBackend::ConStatii() {
 
   std::vector<int> cons(NumLinCons());
   /*
-  VISITOR_GetBasis(lp(), NULL, cons.data());
+  if (!VISITOR_GetBasis(lp(), NULL, cons.data()))
+    cons.clear();          // return empty if no basis
   for (auto& s : cons) {
     switch (s) {
     case VISITOR_BASIS_BASIC:

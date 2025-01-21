@@ -188,7 +188,8 @@ namespace mp {
   ArrayRef<int> CplexBackend::VarStatii() {
     std::vector<int> vars(NumVars());
     int status = CPXgetbase(env(), lp(), vars.data(), nullptr);
-    if (status) return vars;
+    if (status)
+      vars.clear();
     for (auto& s : vars) {
       switch (s) {
       case CPX_BASIC:
@@ -213,28 +214,31 @@ namespace mp {
   ArrayRef<int> CplexBackend::ConStatii() {
     std::vector<int> cons(NumLinCons());
     int status = CPXgetbase(env(), lp(), nullptr, cons.data());
-    if (status) return cons;
-    std::vector<char> sense(NumLinCons());
-    CPLEX_CALL(CPXgetsense(env(), lp(), sense.data(), 0, NumLinCons()-1));
-    
-    for (auto i = cons.size(); i--; ) {
-      switch (cons[i]) {
-      case CPX_BASIC:
-        cons[i] = (int)BasicStatus::bas;
-        break;
-      case CPX_AT_LOWER:
-        if (sense[i] == 'L')
+    if (status)
+      cons.clear();
+    else {
+      std::vector<char> sense(NumLinCons());
+      CPLEX_CALL(CPXgetsense(env(), lp(), sense.data(), 0, NumLinCons()-1));
+
+      for (auto i = cons.size(); i--; ) {
+        switch (cons[i]) {
+        case CPX_BASIC:
+          cons[i] = (int)BasicStatus::bas;
+          break;
+        case CPX_AT_LOWER:
+          if (sense[i] == 'L')
+            cons[i] = (int)BasicStatus::upp;
+          else if (sense[i] == 'E')
+            cons[i] = (int)BasicStatus::equ;
+          else
+            cons[i] = (int)BasicStatus::low;
+          break;
+        case CPX_AT_UPPER: // just for range constraints
           cons[i] = (int)BasicStatus::upp;
-        else if (sense[i] == 'E')
-          cons[i] = (int)BasicStatus::equ;
-        else
-          cons[i] = (int)BasicStatus::low;
-        break;
-      case CPX_AT_UPPER: // just for range constraints
-        cons[i] = (int)BasicStatus::upp;
-        break;
-      default:
-        MP_RAISE(fmt::format("Unknown CPLEX rstat value: {}", cons[i]));
+          break;
+        default:
+          MP_RAISE(fmt::format("Unknown CPLEX rstat value: {}", cons[i]));
+        }
       }
     }
     return cons;
