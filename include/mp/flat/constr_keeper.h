@@ -87,15 +87,15 @@ public:
   int GetConstraintDepth(int i) const
   { assert(check_index(i)); return cons_[i].GetDepth(); }
 
-  /// Get context of contraint \a i
+  /// Get context of constraint \a i
   Context GetContext(int i) const override
   { assert(check_index(i)); return cons_[i].GetCon().GetContext(); }
 
-  /// Add context of contraint \a i
+  /// Add context of constraint \a i
   void AddContext(int i, Context ctx) override
   { assert(check_index(i)); cons_[i].GetCon().AddContext(ctx); }
 
-  /// Set context of contraint \a i
+  /// Set context of constraint \a i
   void SetContext(int i, Context ctx) override
   { assert(check_index(i)); cons_[i].GetCon().SetContext(ctx); }
 
@@ -116,7 +116,7 @@ public:
     try {
       // Too strong: instead, differentiate context
       // in which the redefinition happened #248.
-      // MP_ASSERT_ALWAYS(!GetContext(i).IsProperSubsetOf(ctx)
+      // MP_ASSERT_ALWAYS(ctx.IsSubsetOf(GetContext())
       //                  || IsBridgingToBeConsidered(i),
       auto ctx_redef = cons_[i].GetRedefContext();
       MP_ASSERT_ALWAYS(ctx_redef.IsNone()
@@ -129,7 +129,7 @@ public:
     } catch (const std::exception& exc) {
       MP_RAISE(Converter::GetTypeName() +
                std::string(": propagating result for constraint ") +
-               std::to_string(i) + " of type '" +
+               std::to_string(i) + "\nof type '" +
                Constraint::GetTypeName() +
                "':\n" + exc.what());
     }

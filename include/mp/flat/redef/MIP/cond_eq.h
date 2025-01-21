@@ -76,10 +76,16 @@ public:
     } else if ( !GetMC().is_fixed(res) ||   // not fixed, or
                 !GetMC().fixed_value(res) ) // fixed to 0
     {
-#ifndef USE_FLAT_ALGEBRA
       auto bNt = GetMC().ComputeBoundsAndType(con.GetBody());
       double cmpEps = GetMC().ComparisonEps( bNt.get_result_type() );
-      /// res3 <==> (res || body <= rhs-eps || body >= rhs+eps)
+#define COND_LIN_EQ__USE_FLAT_ALGEBRA
+#ifndef COND_LIN_EQ__USE_FLAT_ALGEBRA
+      // Not doing this.
+      // Reason: the below OR propagates CTX+ into res,
+      // which is the expression we are redefining,
+      // but this is not necessary. See #248.
+      // Happens on eqVarConst01.mod.
+      /// res3 ==> (res || body <= rhs-eps || body >= rhs+eps)
       auto res3 = GetMC().AssignResultVar2Args(
           OrConstraint{ {
             res,
@@ -91,16 +97,19 @@ public:
                 { { con.GetBody(), con.rhs() + cmpEps } })
           } });
       GetMC().FixAsTrue(res3);
-#else  // USE_FLAT_ALGEBRA
-      // Old way: straight to algebra and indicators
-      auto con = eq0c.GetArguments();
+#else  // COND_LIN_EQ__USE_FLAT_ALGEBRA
+      // Old way: straight to algebra and indicators.
+      // This could duplicate the below indicators,
+      // but simpler as of now:
+      // the indicators redefine conditional inequalities
+      // which, in the above variant, could have been redefined
+      // in CTX- before, see int_ne_05_redef_ctx.mod,
+      // thus losing the CTX+ redefinition, see #248.
       auto newvars = GetMC().AddVars_returnIds(2, 0.0, 1.0, var::INTEGER);
       newvars.push_back( res );
       GetMC().AddConstraint( LinConGE(   // b1+b2+resvar >= 1
                                          {{1.0, 1.0, 1.0}, newvars},
                                          1.0 ) );
-      auto bNt = GetMC().ComputeBoundsAndType(con.GetBody());
-      double cmpEps = GetMC().ComparisonEps( bNt.get_result_type() );
       {
         GetMC().AddConstraint(IndicatorConstraint< AlgCon<-1> >(
                                 newvars[0], 1,

@@ -99,8 +99,10 @@ public:
     if (HasInitExpression(var)) {
       const auto& ckid = GetInitExpression(var);
       const auto ctx_old = ckid.GetCK()->GetContext(ckid.GetIndex());
-      if (tighterBounds || ctx_old.IsProperSubsetOf(ctx))
+      if (tighterBounds
+          || !ctx.IsSubsetOf(ctx_old)) {      // new context
         ckid.GetCK()->PropagateResult(*this, ckid.GetIndex(), lb, ub, ctx);
+      }
     }
   }
 

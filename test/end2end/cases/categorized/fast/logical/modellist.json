@@ -193,6 +193,14 @@
     "tags" : ["logical"]
   },
   {
+    "name" : "int_ne_05_ctx_redef",
+    "objective" : -19,
+    "tags" : ["logical"],
+    "values": {
+      "if x<5.5 then 1": 1
+    }
+  },
+  {
     "name" : "float_ne_01__vnec cvt:mip:eps",
     "options": {
       "ANYSOLVER_options": "cvt:mip:eps=0.01",

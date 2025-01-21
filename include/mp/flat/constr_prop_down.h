@@ -141,7 +141,7 @@ public:
   void PropagateResult(OrConstraint& con, double lb, double ub, Context ctx) {
     MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
-    if (ub<=0.5 && ctx.HasNegative()) {                 // Remove, arguments are fixed
+    if (ub<0.5 && ctx.HasNegative()) {                 // Remove, arguments are fixed
       MPD( PropagateResult2Vars(con.GetArguments(), 0.0, ub, +ctx) );
       MPD( DecrementVarUsage(con.GetResultVar()) );
     } else
