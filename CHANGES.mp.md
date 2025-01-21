@@ -2,7 +2,11 @@ Summary of recent updates to the AMPL MP Library
 ================================================
 
 
-## 20250113
+## unreleased
+- Fixed a bug in model reformulations which could
+  cause some constraints to be lost, see issue 248.
+- Option alg:sens=1 now returns suffix .sensobj with
+  current objective coefficients in the solver model.
 - Option acc:_all is overridden by individual acceptance
   options, e.g., acc:or.
 - Eliminate AMPL defined variables which are used once
