@@ -56,6 +56,7 @@ def addStdSolvers(solvers: SolverCollection, binPath=""):
     solvers.addSolver(Solver.GUROBIODHSolver(path.join(binPath, "gurobiodh")))
     solvers.addSolver(Solver.LgoSolver(path.join(binPath, "lgo")))
     solvers.addSolver(Solver.IPOptSolver(path.join(binPath, "ipopt")))
+    module load Python/3.10.4
 
 
 # if __name__ == "__main__":

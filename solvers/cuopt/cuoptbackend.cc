@@ -74,7 +74,7 @@ void CuoptBackend::OpenSolver() {
   int status = 0;
 
   const std::string server_ip = "0.0.0.0";
-  const int server_port = 5000;
+  const int server_port = 5011;
 
 
   httplib::Client* client = new httplib::Client(server_ip, server_port);
@@ -92,9 +92,11 @@ void CuoptBackend::OpenSolver() {
 void CuoptBackend::CloseSolver() {
   json *prob = get_json_prob();
   json *sol = get_json_sol();
+  httplib::Client* client = get_client();
 
   delete prob;
   delete sol;
+  delete client;
 }
 
 const char* CuoptBackend::GetBackendName()
@@ -250,14 +252,8 @@ void CuoptBackend::AddCUOPTMessages() {
 
 std::pair<int, std::string> CuoptBackend::GetSolveResult() {
   namespace sol = mp::sol;
-  /*
-   * TODO.
-   * Follow guidelines from mp::sol::Status.
-     * Keep new result codes added
-     * in AddOptions() via AddSolveResults().
-     */
-  if (IsMIP())
-  {
+
+  if (IsMIP()) {
   //
   }
   else {
@@ -343,6 +339,14 @@ void CuoptBackend::InitCustomOptions() {
   AddListOption("tech:list_option opt_list multi_valued_option",
       "Multi-valued option when repeated.",
       storedOptions_.list_option_);
+
+  AddStoredOption("tech:ip_address ip_address",
+      "Server IP. Default = 0.0.0.0.",
+      storedOptions_.ip_address_);
+
+  AddStoredOption("tech:port port",
+      "Server port. Default = 5000.",
+      storedOptions_.port_);
 
   AddStoredOption("tech:infeasibility_detection infeasibility_detection",
       "Detect and leave if the problem is detected as infeasible. Default = true.",
