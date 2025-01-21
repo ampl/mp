@@ -1,6 +1,7 @@
 #include <vector>
 #include <climits>
 #include <cfloat>
+#include <iostream> // for std::flush
 
 #include "mp/env.h"
 #include "mp/flat/model_api_base.h"
@@ -2812,7 +2813,9 @@ void XpressmpBackend::xpdisplay(XPRSprob prob, void* data, const char* ch, int n
   if (msglvl < 0)
     fflush(NULL);
   else if (msglvl >= outlev_ && (msglvl != 4 || strncmp(ch, "?899 ", 5)))
+  {
     fmt::print("{}\n", ch);
+    std::cout << std::flush;
 }
 
 int XpressmpBackend::xp_mse_display(XPRSobject o, void* context, void* thread,
@@ -2821,8 +2824,10 @@ int XpressmpBackend::xp_mse_display(XPRSobject o, void* context, void* thread,
   if (outlev_ == 0) return 0;
   if (msglvl < 0)
     fflush(NULL);
-  else if (msglvl >= outlev_ && (msglvl != 4))
+  else if (msglvl >= outlev_ && (msglvl != 4)) {
     fmt::print("{}\n", ch);
+    std::cout << std::flush;
+  }
   return 0;
 }
 } // namespace mp
