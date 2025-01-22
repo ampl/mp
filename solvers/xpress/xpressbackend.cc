@@ -2797,7 +2797,8 @@ void XpressmpBackend::AddMIPStart(
   XPRESSMP_CCALL(XPRSaddmipsol(lp(), idx.size(), val.data(), idx.data(), nullptr));
 }
 
-void XpressmpBackend::xpdisplay(XPRSprob prob, void* data, const char* ch, int n, int msglvl)
+void XpressmpBackend::xpdisplay(
+    XPRSprob prob, void* data, const char* ch, int n, int msglvl)
 {
   /*
    msglvl gives the message level as follows:
@@ -2816,11 +2817,12 @@ void XpressmpBackend::xpdisplay(XPRSprob prob, void* data, const char* ch, int n
   {
     fmt::print("{}\n", ch);
     std::cout << std::flush;
+  }
 }
 
-int XpressmpBackend::xp_mse_display(XPRSobject o, void* context, void* thread,
-  const char* ch, int msglvl, int msgnumber)
-{
+int XpressmpBackend::xp_mse_display(
+    XPRSobject o, void* context, void* thread,
+    const char* ch, int msglvl, int msgnumber) {
   if (outlev_ == 0) return 0;
   if (msglvl < 0)
     fflush(NULL);
@@ -2830,6 +2832,7 @@ int XpressmpBackend::xp_mse_display(XPRSobject o, void* context, void* thread,
   }
   return 0;
 }
+
 } // namespace mp
 
 // AMPLs
