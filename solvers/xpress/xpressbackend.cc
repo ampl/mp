@@ -1,7 +1,7 @@
 #include <vector>
 #include <climits>
 #include <cfloat>
-#include <iostream> // for std::flush
+#include <stdio.h> // for fflush
 
 #include "mp/env.h"
 #include "mp/flat/model_api_base.h"
@@ -2816,7 +2816,7 @@ void XpressmpBackend::xpdisplay(
   else if (msglvl >= outlev_ && (msglvl != 4 || strncmp(ch, "?899 ", 5)))
   {
     fmt::print("{}\n", ch);
-    std::cout << std::flush;
+    fflush(stdout);
   }
 }
 
@@ -2828,7 +2828,7 @@ int XpressmpBackend::xp_mse_display(
     fflush(NULL);
   else if (msglvl >= outlev_ && (msglvl != 4)) {
     fmt::print("{}\n", ch);
-    std::cout << std::flush;
+    fflush(stdout);
   }
   return 0;
 }
