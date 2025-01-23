@@ -76,7 +76,8 @@ protected:
               QuadAndLinTerms( { }, { {1.0}, {arg1}, {arg2} } ),
               0.0) ));
     /// propagate ctx into new constr,
-    /// particularly into the arguments which are new constraints
+    /// particularly into the arguments
+    /// which are new expressions when pwr>2
     GetMC().PropagateResultOfInitExpr(
           con.GetResultVar(), con.GetContext());
   }

@@ -1,6 +1,8 @@
 #ifndef ITEM_KEEPER_H
 #define ITEM_KEEPER_H
 
+#include <memory>
+#include <map>
 #include <cmath>
 
 #include "mp/flat/preprocess.h"
@@ -320,16 +322,16 @@ public:
 /// when they overload Convert() etc, due to C++ name hiding
 #define USE_BASE_CONSTRAINT_CONVERTERS(BaseConverter) \
   using BaseConverter::PreprocessConstraint; \
-      using BaseConverter::PropagateResult; \
-      using BaseConverter::IfHasCvt_impl; \
+  using BaseConverter::PropagateResult; \
+  using BaseConverter::IfHasCvt_impl; \
   using BaseConverter::IfNeedsCvt_impl; \
   using BaseConverter::IfDelayCvt_impl; \
-      using BaseConverter::Convert
+  using BaseConverter::Convert
 
 
-      /// For Common Subexpression Elimination, we can use maps
-      /// This stub returns empty Id
-      int MapFind(const BasicConstraint& ) { return -1; }
+  /// For Common Subexpression Elimination, we can use maps
+  /// This stub returns empty Id
+  int MapFind(const BasicConstraint& ) { return -1; }
 
   /// Returns false when we do have a map and entry duplicated
   /// (should not happen).
@@ -341,9 +343,9 @@ public:
 /// need to 'using' base class' map accessors in the Converter
 #define USE_BASE_MAP_FINDERS(BaseConverter) \
   using BaseConverter::MapFind; \
-      using BaseConverter::MapInsert; \
-      template <class Constraint> \
-      using ConstraintLocation = \
+  using BaseConverter::MapInsert; \
+  template <class Constraint> \
+  using ConstraintLocation = \
       ConstraintLocationHelper< \
           ConstraintKeeper< Impl, ModelAPI, Constraint > >;
 
@@ -368,7 +370,8 @@ class ConstraintManager {
 public:
   /// Add a new CKeeper with given conversion priority (smaller = sooner)
   void AddConstraintKeeper(BasicConstraintKeeper& ck, double priority) {
-    con_keepers_.insert( { priority, ck } );
+    auto insres = con_keepers_.insert( { priority, ck } );
+    MP_ASSERT_ALWAYS(insres.second, "Duplicated constraint priority");
     ck.SetLogger(&*graph_exporter_app_);
   }
 
@@ -453,7 +456,7 @@ public:
   { return *graph_exporter_app_; }
 
 private:
-  std::multimap<double, BasicConstraintKeeper&> con_keepers_;
+  std::map<double, BasicConstraintKeeper&> con_keepers_;
   /// Conversion graph exporter file appender
   std::unique_ptr<BasicFileAppender>
       graph_exporter_app_{MakeFileAppender()};

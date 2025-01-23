@@ -734,12 +734,13 @@ public: \
 /// without a subexpression map.
 /// Provide empty MapFind (returns -1) / MapInsert
 #define STORE_CONSTRAINT_TYPE__NO_MAP( \
-    Constraint, optionNames) \
+    Constraint, optionNames, prior) \
   STORE_CONSTRAINT_TYPE__INTERNAL( \
     Constraint, optionNames) \
   int MapFind__Impl(const Constraint& ) { return -1; } \
   bool MapInsert__Impl(const Constraint&, int ) \
-    { return true; }
+    { return true; } \
+  DEFINE_CONSTRAINT_PRIORITY(Constraint, prior)
 
 
 /// Define a constraint keeper
@@ -748,10 +749,11 @@ public: \
 /// should define MapFind / MapInsert accessing
 /// the GET_(CONST_)CONSTRAINT_MAP(Constraint)
 #define STORE_CONSTRAINT_TYPE__WITH_MAP( \
-    Constraint, optionNames) \
+    Constraint, optionNames, prior) \
   STORE_CONSTRAINT_TYPE__INTERNAL( \
     Constraint, optionNames) \
-  STORE_CONSTRAINT_MAP(Constraint)
+  STORE_CONSTRAINT_MAP(Constraint) \
+  DEFINE_CONSTRAINT_PRIORITY(Constraint, prior)
 
 /// Internal use. Name of the constraint container
 #define CONSTRAINT_KEEPER_VAR(Constraint) \
@@ -772,6 +774,11 @@ public: \
 /// Internal use. Name of the constraint map
 #define CONSTRAINT_MAP_VAR(Constraint) \
   map__ ## Constraint ## _
+
+/// Define constraint priority
+#define DEFINE_CONSTRAINT_PRIORITY(Constraint, prior) \
+  static constexpr double ConstraintCvtPriority( \
+    const Constraint*) { return prior; }
 
 
 /////////////////////////////////////////////////////////////////////////////
