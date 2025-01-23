@@ -72,13 +72,6 @@ CuoptBackend::~CuoptBackend() {
 
 void CuoptBackend::OpenSolver() {
   int status = 0;
-
-  const std::string server_ip = "0.0.0.0";
-  const int server_port = 5011;
-
-
-  httplib::Client* client = new httplib::Client(server_ip, server_port);
-  set_client(client);
   
   json* prob = new json;
   json* sol = new json;
@@ -172,6 +165,11 @@ void CuoptBackend::Solve() {
   //std::cout << "Sending request to cuopt server" << (*prob).dump(2) << std::endl; //debug
   auto res = (*client).Post("/cuopt/request", headers, (*prob).dump(), "application/json");
 
+  if (res->status != 200) {
+    std::cout << "Error: " << res->status << std::endl;
+    return;
+  }
+
   json response = json::parse(res->body);
   set_uuid(response["reqId"]);
 
@@ -181,12 +179,20 @@ void CuoptBackend::Solve() {
     std::this_thread::sleep_until(std::chrono::system_clock::now() 
       + std::chrono::seconds(int(storedOptions_.time_limit_)) + std::chrono::seconds(5));
     auto res_sol = (*client).Get("/cuopt/request/" + get_uuid(), headers);
+    if (res_sol->status != 200) {
+      std::cout << "Error solution: " << res_sol->status << std::endl;
+      return;
+    }
     response_sol = json::parse(res_sol->body);
   }
   else {
     do {
       std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::seconds(10));
       auto res_sol = (*client).Get("/cuopt/request/" + get_uuid(), headers);
+      if (res_sol->status != 200) {
+        std::cout << "Error solution: " << res_sol->status << std::endl;
+        return;
+      }
       std::cout << "Current solution: " << response_sol["response"]["solver_response"]["solution"]["primal_solution"] << std::endl;
       response_sol = json::parse(res_sol->body);
     } while(response_sol["response"]["solver_response"]["status"] != 1);
@@ -271,6 +277,9 @@ std::pair<int, std::string> CuoptBackend::GetSolveResult() {
 
 
 void CuoptBackend::FinishOptionParsing() {
+  httplib::Client* client = new httplib::Client(storedOptions_.ip_address_, storedOptions_.port_);
+  set_client(client);
+
   json* prob = get_json_prob();
   int v=-1;
   set_verbose_mode(v>0);
