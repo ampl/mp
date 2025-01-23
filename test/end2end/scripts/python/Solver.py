@@ -635,17 +635,6 @@ class ConoptSolver(AMPLSolver):
               print("No solution, string: {}".format(n))
               self._stats["objective"] = None
 
-class CuOptSolver(MPDirectSolver):
-    def _getAMPLOptionsName(self):
-        return "cuopt"
-
-    def _setNThreads(self, threads):
-        return ""
-
-    def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
-        stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary}
-        super().__init__(exeName, timeout, nthreads, otherOptions, stags)
-
 class OcteractSolver(AMPLSolver):
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
         stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
@@ -1035,6 +1024,17 @@ class CbcMPSolver(MPDirectSolver):
                  ModelTags.writelp, ModelTags.writesol,
 
                  }
+        super().__init__(exeName, timeout, nthreads, otherOptions, stags)
+
+class CuOptSolver(MPDirectSolver):
+    def _getAMPLOptionsName(self):
+        return "cuopt"
+
+    def _setNThreads(self, threads):
+        return ""
+
+    def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
+        stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary}
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
 class MP2NLSolver(MPDirectSolver):

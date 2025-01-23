@@ -336,6 +336,10 @@ void CuoptBackend::InitCustomOptions() {
   // Use AddSolverOption() for proper solver parameters.
   // Below are examples of options stored in variables for own use.
 
+  AddStoredOption("lim:time timelim timelimit",
+      "Limit on solve time (in seconds; default: no limit).",
+      storedOptions_.time_limit_);
+
   AddStoredOption("tech:option_example opt_example example_opt",
       "Example option. "
       "Default = \"\" (don't work too hard).",
