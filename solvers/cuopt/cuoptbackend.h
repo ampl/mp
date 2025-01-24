@@ -211,7 +211,7 @@ private:
   struct Options {
     int solver_mode_ = 0;
     bool infeasibility_detection_ = true;
-    double time_limit_ = 10.0;
+    double time_limit_ = -1.0;
     int iteration_limit_ = 0;
 
     double optimality_ = 0.0;
@@ -227,7 +227,7 @@ private:
     int pool_time_ = 10;
 
     std::string ip_address_ = "0.0.0.0";
-    int port_ = 5000;
+    int port_ = 5011;
 
 
     std::string option_example_;
