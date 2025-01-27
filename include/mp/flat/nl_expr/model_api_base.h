@@ -71,7 +71,6 @@ public:
 /// Derived backends have to tell C++ to use default handlers if they are needed
 /// when they overload AddExpression(), due to C++ name hiding
 #define USE_BASE_EXPRESSION_HANDLERS(BaseBackend) \
-  using BaseBackend::Expr; \
   using BaseBackend::AddExpression;
 
 
@@ -333,6 +332,8 @@ private:
     return GetInitExpression(i_expr);                     // standard case
   }
 
+
+protected:
   /// Visit arguments of an item.
   /// @param FlatItem: underlying flat item
   /// @param Lambda: to be called on each argument's Expr

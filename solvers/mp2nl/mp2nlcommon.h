@@ -1,6 +1,7 @@
 #ifndef MP2NLCOMMON_H
 #define MP2NLCOMMON_H
 
+#include <array>
 #include <vector>
 #include <set>
 #include <string>

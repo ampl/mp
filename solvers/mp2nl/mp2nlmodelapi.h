@@ -1249,9 +1249,9 @@ protected:
   template <> \
   ItemDispatcher<ItemType>& GetItemDispatcher<ItemType>() \
   { return item_dispatcher_ ## ItemType ## _; } \
-  template <> \
+  template <> static \
   bool IsItemTypeStatic<ItemType>() { return true; } \
-  template <> \
+  template <> static \
   StaticItemTypeID GetStaticItemTypeID<ItemType>() \
   { return StaticItemTypeID::ID_ ## ItemType; }
 
@@ -1289,10 +1289,10 @@ protected:
   ItemDispatcher<ItemType ## Expression>& \
   GetItemDispatcher<ItemType ## Expression>() \
   { return item_dispatcher_ ## ItemType ## _; } \
-  template <> \
+  template <> static \
   bool IsItemTypeStatic<ItemType ## Expression>() \
   { return false; } \
-  template <> \
+  template <> static \
   ExpressionTypeID GetExpressionTypeID<ItemType ## Expression>() \
   { return ExpressionTypeID::ID_ ## ItemType; }
 

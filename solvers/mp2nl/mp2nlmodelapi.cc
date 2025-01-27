@@ -132,9 +132,9 @@ void MP2NLModelAPI::AddConstraint(const SOS2Constraint& sos)
 { sos_info_.push_back(MakeItemInfo(sos, StaticItemTypeID::ID_SOS2Constraint, false)); }
 
 
-template <class Expr>
+template <class Expr2>
 MP2NL_Expr MP2NLModelAPI::AddExpression(
-    const Expr &expr, ExpressionTypeID eid) {
+    const Expr2 &expr, ExpressionTypeID eid) {
   SparsityTmp spstmp;
   // Only should visit such arguments
   // which are true expressions, i.e.,
@@ -149,9 +149,9 @@ MP2NL_Expr MP2NLModelAPI::AddExpression(
   return StoreMP2NLExprID(expr, eid, spstmp);
 }
 
-template <class Expr>
+template <class Expr2>
 MP2NL_Expr MP2NLModelAPI::StoreMP2NLExprID(
-    const Expr &expr, ExpressionTypeID eid, const SparsityTmp& spars) {
+    const Expr2 &expr, ExpressionTypeID eid, const SparsityTmp& spars) {
   // std::printf("   Storing MP2NL_Expr[%ld]: type %s, logical = %d, @%p\n",
   //             expr_info_.size(),
   //             expr.GetFlatConstraint().GetTypeName(),
