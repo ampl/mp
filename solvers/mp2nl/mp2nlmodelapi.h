@@ -1213,46 +1213,45 @@ protected:
     /// Item category getter:
     /// static item vs expression
     bool IsItemTypeStatic() override
-    { return MP2NLModelAPI::IsItemTypeStatic<Item>(); }
+    { return MP2NLModelAPI::IsItemTypeStatic((const Item*)nullptr); }
 
     /// Placeholder for the StaticItemTypeID getter
     StaticItemTypeID GetStaticItemTypeID() override
-    { return MP2NLModelAPI::GetStaticItemTypeID<Item>(); }
+    { return MP2NLModelAPI::GetStaticItemTypeID((const Item*)nullptr); }
 
     /// Placeholder for the ExpressionTypeID getter
     ExpressionTypeID GetExpressionTypeID() override
-    { return MP2NLModelAPI::GetExpressionTypeID<Item>(); }
+    { return MP2NLModelAPI::GetExpressionTypeID((const Item*)nullptr); }
   };
 
 
-  /// Placeholder for the dispatcher getter
+  /// Placeholder for the dispatcher getter.
+  /// We need a dummy parameter: otherwise,
+  /// explicit specializations have to be at namespace scope.
+  /// C++03, §14.7.3/2
   template <class Item>
-  ItemDispatcher<Item>& GetItemDispatcher() { throw 0; }
-
+  ItemDispatcher<Item>& GetItemDispatcher(const Item* ) { throw 0; }
   /// Placeholder for the item category getter:
   /// static item vs expression
   template <class Item>
-  static bool IsItemTypeStatic() { throw 0; }
-
+  static bool IsItemTypeStatic(const Item* ) { throw 0; }
   /// Placeholder for the StaticItemTypeID getter
   template <class Item>
-  static StaticItemTypeID GetStaticItemTypeID() { throw 0; }
-
+  static StaticItemTypeID GetStaticItemTypeID(const Item* ) { throw 0; }
   /// Placeholder for the ExpressionTypeID getter
   template <class Item>
-  static ExpressionTypeID GetExpressionTypeID() { throw 0; }
+  static ExpressionTypeID GetExpressionTypeID(const Item*) { throw 0; }
 
 
 /// Macro to define an item dispatcher
 #define CREATE_STATIC_ITEM_DISPATCHER(ItemType) \
   ItemDispatcher<ItemType> item_dispatcher_ ## ItemType ## _ { *this }; \
-  template <> \
-  ItemDispatcher<ItemType>& GetItemDispatcher<ItemType>() \
+  ItemDispatcher<ItemType>& GetItemDispatcher(const ItemType* ) \
   { return item_dispatcher_ ## ItemType ## _; } \
-  template <> static \
-  bool IsItemTypeStatic<ItemType>() { return true; } \
-  template <> static \
-  StaticItemTypeID GetStaticItemTypeID<ItemType>() \
+  static \
+  bool IsItemTypeStatic(const ItemType* ) { return true; } \
+  static \
+  StaticItemTypeID GetStaticItemTypeID(const ItemType* ) \
   { return StaticItemTypeID::ID_ ## ItemType; }
 
 
@@ -1285,15 +1284,14 @@ protected:
 #define CREATE_EXPRESSION_DISPATCHER(ItemType) \
   ItemDispatcher<ItemType ## Expression> \
     item_dispatcher_ ## ItemType ## _ { *this }; \
-  template <> \
   ItemDispatcher<ItemType ## Expression>& \
-  GetItemDispatcher<ItemType ## Expression>() \
+  GetItemDispatcher(const ItemType ## Expression* ) \
   { return item_dispatcher_ ## ItemType ## _; } \
-  template <> static \
-  bool IsItemTypeStatic<ItemType ## Expression>() \
+  static \
+  bool IsItemTypeStatic(const ItemType ## Expression* ) \
   { return false; } \
-  template <> static \
-  ExpressionTypeID GetExpressionTypeID<ItemType ## Expression>() \
+  static \
+  ExpressionTypeID GetExpressionTypeID(const ItemType ## Expression* ) \
   { return ExpressionTypeID::ID_ ## ItemType; }
 
 
@@ -1452,7 +1450,7 @@ protected:
   template <class Item>
   ItemInfo MakeItemInfo(
       const Item& i, StaticItemTypeID , bool fLogical) {
-    return { GetItemDispatcher<Item>(), (void*)&i, fLogical
+    return { GetItemDispatcher(&i), (void*)&i, fLogical
             // , sid, ExpressionTypeID::ID_None
     };
   }
@@ -1461,7 +1459,7 @@ protected:
   template <class Item>
   ItemInfo MakeItemInfo(
       const Item& i, ExpressionTypeID , bool fLogical) {
-    return { GetItemDispatcher<Item>(), (void*)&i, fLogical
+    return { GetItemDispatcher(&i), (void*)&i, fLogical
             //, StaticItemTypeID::ID_None, eid
     };
   }
