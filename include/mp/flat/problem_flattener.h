@@ -1217,7 +1217,7 @@ private:
   int prepro_products_ = 1+4      // also 2 binaries for convex solvers
                          + (GetFlatCvt().
                                 ModelAPIWantsLogicalProd2Bins() ? 2 : 0);
-  int dvelim_ = 1;
+  int dvelim_ = 2;
 
 
 public:
@@ -1250,10 +1250,12 @@ public:
 private:
   static constexpr mp::OptionValueInfo values_dvelim[] = {
       { "0", "Do not eliminate, always instantiate the variables.", 0},
-      { "1", "Eliminate only those used 1x (default.) "
+      { "1", "Eliminate only those used 1x. "
             "This can increase model density but greatly simplifies some models.", 1},
       { "2", "Always substitute where possible, even if the variable needs "
-            "to be instantiated. Can introduce redundancy, but still simplifies.", 2}
+            "to be instantiated for use in other places. "
+            "Can introduce redundancy, but seems best for some models "
+            "(default.)", 2}
   };
 
   void InitOwnOptions() {
