@@ -157,12 +157,12 @@ void CuoptBackend::Solve() {
   };
 
 
-  //if (isMIP()) {
-    (*prob)["solver_config"]["time_limit"] = storedOptions_.time_limit_;
-  //}
+  if (isMIP() && storedOptions_.time_limit_ == -1.0) {
+    (*prob)["solver_config"]["time_limit"] = 60.0; // default time limit for MIP to 60 seconds
+  }
 
   // Send the POST request
-  //std::cout << "Sending request to cuopt server" << (*prob).dump(2) << std::endl; //debug
+  std::cout << "Sending request to cuopt server" << (*prob).dump(2) << std::endl; //debug
   auto res = (*client).Post("/cuopt/request", headers, (*prob).dump(), "application/json");
 
   if (res->status != 200) {
@@ -176,8 +176,14 @@ void CuoptBackend::Solve() {
   json response_sol;
 
   if (isMIP()) {
-    std::this_thread::sleep_until(std::chrono::system_clock::now() 
-      + std::chrono::seconds(int(storedOptions_.time_limit_)) + std::chrono::seconds(5));
+    if (storedOptions_.time_limit_ != -1.0) {
+      std::this_thread::sleep_until(std::chrono::system_clock::now() 
+        + std::chrono::seconds(int(storedOptions_.time_limit_)) + std::chrono::seconds(5));
+    }
+    else {
+      std::this_thread::sleep_until(std::chrono::system_clock::now() 
+        + std::chrono::seconds(65));
+    }
     auto res_sol = (*client).Get("/cuopt/request/" + get_uuid(), headers);
     if (res_sol->status != 200) {
       std::cout << "Error solution: " << res_sol->status << std::endl;
@@ -284,7 +290,7 @@ void CuoptBackend::FinishOptionParsing() {
   int v=-1;
   set_verbose_mode(v>0);
 
-  if (storedOptions_.time_limit_)
+  if (storedOptions_.time_limit_ != -1.0)
     (*prob)["solver_config"]["time_limit"] = storedOptions_.time_limit_;
   if (storedOptions_.iteration_limit_)
     (*prob)["solver_config"]["iteration_limit"] = storedOptions_.iteration_limit_;
