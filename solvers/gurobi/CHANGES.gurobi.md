@@ -1,6 +1,9 @@
 Summary of recent updates to gurobi for AMPL
 ============================================
 
+## 20250204
+- Updated to Gurobi 12.0.1
+
 
 ## 20241119
 - MP changes: added support for x^y expressions, where x and y

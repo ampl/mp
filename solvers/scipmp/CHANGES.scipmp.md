@@ -2,7 +2,8 @@ Summary of recent updates to SCIP for AMPL
 ==========================================
 
 
-## unreleased
+## 20250204
+- Updated to SCIP 9.2
 - MINLP expression trees (option acc:_expr.)
 	- Using the expression tree API, available since SCIP v8,
 		to model nonlinear expressions. Earlier the expressions

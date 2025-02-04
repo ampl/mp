@@ -2,6 +2,9 @@ Summary of recent updates to GCG for AMPL
 =========================================
 
 
+## ## 20250204
+- Updated to GCG 3.7
+
 ## 20240724
 - Option *acc:_all*
 	- Useful to disable all reformulations (acc:_all=2),
