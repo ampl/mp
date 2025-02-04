@@ -6,13 +6,13 @@ Summary of recent updates to the AMPL MP Library
 - Fixed a bug in model reformulations which could
   cause some constraints to be lost, see issue 248.
 - Option alg:sens=1 now returns suffix .sensobj with
-  current objective coefficients in the solver model.
+  current objective coefficients in the solver model
+  (this is the model corresponding to AMPL command solexpand.)
 - Option acc:_all is overridden by individual acceptance
   options, e.g., acc:or.
-- Eliminate AMPL defined variables which are used once
+- Substitute AMPL defined variables
+  into linear, quadratic, and polynomial expressions
   (option cvt:dvelim).
-  This happens only if they can be substituted
-  into linear, quadratic, or polynomial expressions.
   This can simplify quadratic and polynomial models
   (linear substitutions are already performed by AMPL,
   see AMPL options linelim and substout.)
@@ -26,7 +26,8 @@ Summary of recent updates to the AMPL MP Library
   with both x, y variable; previous meaning of acc:pow
   is now with acc:powconstexp.
 - Option tech:writemodel:index to choose the iteration
-	when solver model is exported.
+  when solver model is exported
+  in the multi-objective emulator.
 - SCIP (and any solver with linear objective
 	and non-linear constraints): improve reformulation
 	of QP objectives.
