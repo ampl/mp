@@ -2,7 +2,7 @@ Summary of recent updates to the AMPL MP Library
 ================================================
 
 
-## unreleased
+## 20250205
 - Fixed a bug in model reformulations which could
   cause some constraints to be lost, see issue 248.
 - Option alg:sens=1 now returns suffix .sensobj with
