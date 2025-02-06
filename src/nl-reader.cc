@@ -359,7 +359,7 @@ fmt::StringRef mp::NameProvider::name(
     const char *name = names_[index];
     const auto* pos1past = names_[index + 1] - 1;
     assert( ('\n' == *pos1past) || ('\r' == *pos1past));
-    if ('\r' == *(pos1past-1))            // Windows
+    if (pos1past>name && '\r' == *(pos1past-1))            // Windows
       --pos1past;
     return fmt::StringRef(name, pos1past - name);
   }
