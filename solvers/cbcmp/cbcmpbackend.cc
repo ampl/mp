@@ -116,11 +116,7 @@ int CbcmpBackend::BarrierIterations() const {
   return Cbc_getIterationCount(lp());
 }
 
-inline bool ends_with(std::string const& value, std::string const& ending)
-{
-  if (ending.size() > value.size()) return false;
-  return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
-}
+
 void CbcmpBackend::DoWriteProblem(const std::string & name) {
   if (ends_with(name, ".lp"))
     Cbc_writeLp(lp(), name.c_str());
