@@ -40,6 +40,10 @@ const char* SkipToMatchingQuote(const char* s);
 /// Split string
 std::vector<std::string> split_string(const char* );
 
+/// https://stackoverflow.com/questions/874134/find-out-if-string-ends-with-another-string-in-c
+bool ends_with(std::string const& fullString, std::string const& ending);
+
+
 /// Split string
 template <class Str>
 inline

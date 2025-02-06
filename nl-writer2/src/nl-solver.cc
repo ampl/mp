@@ -600,10 +600,17 @@ bool NLSolver::Solve(const std::string& solver,
     return (err_msg_="NLSolver: provide filestub.", false);
   if (solver.empty())
     return (err_msg_="NLSolver: provide solver.", false);
-  auto call = solver
-      + ' ' + GetFileStub()
-      + " -AMPL "
-      + solver_opts;
+  auto call = solver;
+#ifdef _WIN32
+  const std::string ending{".exe"};
+  if (solver.length() < ending.length()
+      || (0 != solver.compare(solver.length() - ending.length(), ending.length(), ending)))
+    call += ending;
+#endif  // _WIN32
+  call += ' ';
+  call += GetFileStub();
+  call += " -AMPL ";
+  call += solver_opts;
   if (auto status = std::system(call.c_str()))
     return (err_msg_="NLSolver: call \""
         + call + "\" failed (code "
