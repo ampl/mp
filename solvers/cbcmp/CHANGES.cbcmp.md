@@ -1,6 +1,9 @@
 Summary of recent updates to CBCMP for AMPL
 ===========================================
 
+## 20250206
+- Updated to CBC version 2.10.12
+
 
 ## 20241128
 - Fixed a bug that made CBC segfault for some models
