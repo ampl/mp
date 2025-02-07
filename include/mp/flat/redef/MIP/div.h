@@ -84,8 +84,7 @@ protected:
     auto lb1 = GetMC().lb(args[1]);
     auto ub1 = GetMC().ub(args[1]);
     if (lb1 <= 0.0 && ub1 >= 0.0) {
-      /// Creating "args[1] != 0" via "not (args[1]==0)"... TODO simplify,
-      /// e.g., by NotConstraint< LogicalConstraint >
+      /// Creating "args[1] != 0" via "not (args[1]==0)"...
       auto arg1is0 = GetMC().AssignResultVar2Args(// arg1is0 = (arg1==0)
           CondLinConEQ( { {{1.0}, {args[1]}}, 0.0 } ) );
       auto r_not = GetMC().AssignResultVar2Args(  // r_not = (arg1!=0)

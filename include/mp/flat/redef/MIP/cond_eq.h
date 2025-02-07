@@ -105,21 +105,34 @@ public:
       // which, in the above variant, could have been redefined
       // in CTX- before, see int_ne_05_redef_ctx.mod,
       // thus losing the CTX+ redefinition, see #248.
+      if (GetMC().is_fixed(res)  // This prepro would be unnec with logicals
+          && !GetMC().fixed_value(res)) {  // preprocess: fixed to 0
+        if (bNt.lb() > con.rhs() - cmpEps) { // body > value-eps
+          GetMC().AddConstraint(
+              AlgCon<1>{ con.GetBody(), con.rhs() + cmpEps } );
+          return;
+        }
+        if (bNt.ub() < con.rhs() + cmpEps) { // body < value+eps
+          GetMC().AddConstraint(
+              AlgCon<-1>{ con.GetBody(), con.rhs() - cmpEps } );
+          return;
+        }
+      }
       auto newvars = GetMC().AddVars_returnIds(2, 0.0, 1.0, var::INTEGER);
       newvars.push_back( res );
       GetMC().AddConstraint( LinConGE(   // b1+b2+resvar >= 1
-                                         {{1.0, 1.0, 1.0}, newvars},
-                                         1.0 ) );
+          {{1.0, 1.0, 1.0}, newvars},
+          1.0 ) );
       {
         GetMC().AddConstraint(IndicatorConstraint< AlgCon<-1> >(
-                                newvars[0], 1,
-                              { con.GetBody(),
-                                con.rhs() - cmpEps }));
+            newvars[0], 1,
+            { con.GetBody(),
+             con.rhs() - cmpEps }));
       }
       GetMC().AddConstraint(IndicatorConstraint< AlgCon<1> >(
-                              newvars[1], 1,
-                            { con.GetBody(),
-                              con.rhs() + cmpEps }));
+          newvars[1], 1,
+          { con.GetBody(),
+           con.rhs() + cmpEps }));
 #endif  // USE_FLAT_ALGEBRA
     } // else, skip
   }

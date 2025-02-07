@@ -2,6 +2,11 @@ Summary of recent updates to the AMPL MP Library
 ================================================
 
 
+## unreleased
+- Improved presolve for disequality: in some cases,
+  no logical disjunction is needed.
+
+
 ## 20250205
 - Fixed a bug in model reformulations which could
   cause some constraints to be lost, see issue 248.
@@ -47,7 +52,7 @@ Summary of recent updates to the AMPL MP Library
 - *Multi-objective emulator*
 	- obj:multi=2 forces emulation, even if MO natively supported.
 	- Fixed a bug in the objective degradation suffixes
-		.objasbtol, .objreltol.
+    .objabstol, .objreltol.
 
 
 ## 20240604
