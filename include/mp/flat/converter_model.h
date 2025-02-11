@@ -366,17 +366,42 @@ public:
 protected:  
   void CreateFlatModelInfo(const BasicFlatModelAPI& mapi) const {
     FillVarStats(GetModelInfoWrt());
+    FillObjStats(GetModelInfoWrt());
     FillConstraintCounters(mapi, *GetModelInfoWrt());
   }
 
   void FillVarStats(FlatModelInfo* pfmi) const {
     int n=0;
+    FlatModelInfo::VarInfo vi{0,0,0,0,0,0};
     for (auto i=var_lb_.size(); i--; ) {
-      if (var_lb_[i] < var_ub_[i]
-          && var::Type::CONTINUOUS != var_type(i))
+      bool is_int = var::Type::CONTINUOUS != var_type(i);
+      if (var_lb_[i] < var_ub_[i] && is_int)
         ++n;
+      int index_add = 3*(!is_var_original(i));
+      ++vi[index_add];
+      if (is_int) {
+        bool is_bin = !var_lb_[i] && 1==var_ub_[i];
+        ++vi[index_add + 1 + is_bin];
+      }
     }
     pfmi->SetNumUnfixedIntVars(n);
+    pfmi->SetVarInfo(vi);
+  }
+
+  void FillObjStats(FlatModelInfo* pfmi) const {
+    FlatModelInfo::ObjInfo oi{0,0,0};
+    if (int n_objs = num_objs()) {
+      for (int i = 0; i < n_objs; ++i) {
+        const auto& obj = get_obj(i);
+        if (obj.HasExpr()) {
+          ++ oi[2];
+        } else if (obj.GetQPTerms().size())
+          ++ oi[1];
+        else
+          ++ oi[0];
+      }
+    }
+    pfmi->SetObjInfo(oi);
   }
 
   template <class Backend>
@@ -433,7 +458,7 @@ protected:
 
 public:
   /// Model info
-  const FlatModelInfo* GetModelInfo() const  { return pfmi_.get(); }
+  const FlatModelInfo* GetModelInfo() const { return pfmi_.get(); }
   /// Model info, writable
   FlatModelInfo* GetModelInfoWrt() const { return pfmi_.get(); }
 

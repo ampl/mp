@@ -282,6 +282,7 @@ protected:
   //////////////////////////// THE CONVERSION LOOP: BREADTH-FIRST ///////////////////////
   void ConvertItems() {
     try {
+      MPD( OutputModelInfo("AMPL MP initial flat model", 0, "flat0_"); );
 			MPD( Convert2Cones(); );                 // sweep before other conversions
       MP_DISPATCH( ConvertAllConstraints() );
       // MP_DISPATCH( PreprocessIntermediate() );     // preprocess after each level
@@ -297,6 +298,37 @@ protected:
       }
     } catch (const ConstraintConversionFailure& cff) {
       MP_RAISE(cff.message());
+    }
+  }
+
+  /// Print nad/or suffixes
+  void OutputModelInfo(const char* header, bool aux_vars,
+      const char* suf_prefix) {
+    if (GetEnv().verbose_mode() || GetEnv().debug_mode()) {
+      MPD( CreateFlatModelInfo(GetModelAPI()) );
+      if (GetEnv().debug_mode())
+        ReportModelInfoSuffixes(
+            *MPCD( GetModelInfo() ), suf_prefix, suf_get_set_);
+      if (GetEnv().verbose_mode()) {
+        const auto* fmi = MPCD( GetModelInfo() );
+        if (!aux_vars) {                      // 1st output
+          fmt::print("\n");
+            modelinfo_flat0_vars_ = fmi->GetVarInfo();
+          modelinfo_flat0_objs_ = fmi->GetObjInfo();
+          modelinfo_flat0_cons_ = fmi->GetConstraintTypes();
+          PrintModelInfo(
+              *fmi, header, aux_vars);
+        } else {                              // 2nd output
+          if (fmi->GetVarInfo() != modelinfo_flat0_vars_
+              || fmi->GetObjInfo() != modelinfo_flat0_objs_
+              || fmi->GetConstraintTypes() != modelinfo_flat0_cons_)
+            PrintModelInfo(
+                *fmi, header, aux_vars);
+          else
+            fmt::print("AMPL MP did not modify the model.\n\n");
+          fmt::print("\n");
+        }
+      }
     }
   }
 
@@ -709,6 +741,7 @@ public:
     EliminateUnusedDefinedVars();       // Until we have proper var deletion
     CheckLinearCons();
     PresolveNames();
+    MPD( OutputModelInfo("AMPL MP final model", 1, "flat1_"); );
     GetModel().PushModelTo(GetModelAPI());
     MPD( CloseGraphExporter() );
     if (value_presolver_.GetExport())
@@ -1558,21 +1591,19 @@ public:
           std::move(key), std::move(msg), replace);
   }
 
-  /// Provide suffix getters
-  void SetSuffixGetters(
-      std::function<ArrayRef<int>(const SuffixDef<int>& )> sgi,
-      std::function<ArrayRef<double>(const SuffixDef<double>& )> sgd)
-  { suf_get_int_=sgi; suf_get_dbl_=sgd; }
+  /// Provide suffix getters and setters
+  void SetSuffixManip(SuffixGetterSetter sgs)
+  { suf_get_set_ = sgs; }
 
 
 public:
   /// Read int suffix
   ArrayRef<int> ReadIntSuffix(const SuffixDef<int>& sd)
-  { assert(suf_get_int_); return suf_get_int_(sd); }
+  { assert(suf_get_set_.sgi_); return suf_get_set_.sgi_(sd); }
 
   /// Read double suffix
   ArrayRef<double> ReadDblSuffix(const SuffixDef<double>& sd)
-  { assert(suf_get_dbl_); return suf_get_dbl_(sd); }
+  { assert(suf_get_set_.sgd_); return suf_get_set_.sgd_(sd); }
 
 
 private:
@@ -1581,10 +1612,8 @@ private:
   ModelAPIType modelapi_;
   /// solve iteration
   int n_solve_iter_ {0};
-  /// Suffix getter int
-  std::function<ArrayRef<int>(const SuffixDef<int>& )> suf_get_int_;
-  /// Suffix getter double
-  std::function<ArrayRef<double>(const SuffixDef<double>& )> suf_get_dbl_;
+  /// Suffix getters and setters
+  SuffixGetterSetter suf_get_set_;
   /// ValuePresolver: should be init before constraint keepers
   /// and links
   pre::ValuePresolver value_presolver_
@@ -1626,6 +1655,10 @@ private:
   con_names_,   // no SOS here, they go directly into the SOS
   obj_names_;
 
+  /// Model stats
+  FlatModelInfo::VarInfo modelinfo_flat0_vars_;
+  FlatModelInfo::ObjInfo modelinfo_flat0_objs_;
+  FlatModelInfo::ConstrMapByName modelinfo_flat0_cons_;
 
 protected:
   /////////////////////// CONSTRAINT KEEPERS /////////////////////////

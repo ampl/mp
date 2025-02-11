@@ -689,9 +689,13 @@ void BasicSolver::InitMetaInfoAndOptions(
   };
 
 
+  AddOption(OptionPtr(
+      new BoolOption(verbose_, "tech:outlev_mp outlev_mp",
+                     "0*/1: whether to print MP model information.")));
+
   AddOption(OptionPtr(new BoolOption(debug_, "tech:debug debug",
     "0*/1: whether to assist testing & debugging, e.g., "
-    "by outputting auxiliary information.")));
+    "by outputting auxiliary information (mostly via suffixes).")));
 
   static const mp::OptionValueInfo values_multiobj_[] = {
       { "0", "Single objective, see option obj:no (default)", 0},

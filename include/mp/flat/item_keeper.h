@@ -419,7 +419,9 @@ public:
     for (const auto& ck: con_keepers_) {
       fmi.AddNumberOfConstraints(
           ck.second.GetTypeInfo(),
+          ck.second.GetShortTypeName(),
           ck.second.GetConstraintGroup(mapi),
+          ck.second.IsLogical(),
           ck.second.GetNumberOfAddable());
     }
   }

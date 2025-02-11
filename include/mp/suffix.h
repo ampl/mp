@@ -562,6 +562,15 @@ public:
 template <class T>
 using ModelSuffixDef = SuffixDef<T>;
 
+
+/// Suffix getter and setter
+struct SuffixGetterSetter {
+  std::function<ArrayRef<int>(const SuffixDef<int>& )> sgi_;
+  std::function<ArrayRef<double>(const SuffixDef<double>& )> sgd_;
+  std::function<void(const SuffixDef<int>& , ArrayRef<int>)> ssi_;
+  std::function<void(const SuffixDef<double>& , ArrayRef<double>)> ssd_;
+};
+
 }  // namespace mp
 
 #endif  // MP_SUFFIX_H_

@@ -38,6 +38,12 @@ std::vector<std::string> split_string(
   return result;
 }
 
+bool begins_with(std::string const& fullString, std::string const& start) {
+  if (fullString.length() >= start.length())
+    return (0 == fullString.compare(0, start.length(), start));
+  return false;
+}
+
 bool ends_with(std::string const& fullString, std::string const& ending) {
   if (fullString.length() >= ending.length())
     return (0 == fullString.compare(fullString.length() - ending.length(), ending.length(), ending));

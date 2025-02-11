@@ -283,8 +283,9 @@ public:
   /// Should be set by the implementation,
   /// otherwise it's true
   bool verbose_mode() const { return verbose_; }
-  /// Set verbosity, by the impl
-  void set_verbose_mode(bool f) { verbose_=f; }
+  /// Set verbosity, by the impl.
+  /// Do not disable, due to outlev_mp.
+  void set_verbose_mode(bool f) { if (f) verbose_=1; }
 
   /// True if need to debug.
   /// Outputs test infos etc
@@ -619,7 +620,7 @@ private:
 
   unsigned read_flags_ {0};  // flags passed to Problem::Read
 
-  bool verbose_ {true};
+  bool verbose_ {false};
   bool debug_ {false};
   int timing_ {0};
   Stats stats_;

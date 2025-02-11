@@ -481,14 +481,18 @@ protected:
 
   /// Mark item as reformulated
   void MarkAsBridged(Container& cnt, int ) {
-		cnt.MarkAsBridged();
-    ++n_bridged_or_unused_;
+    if (!cnt.IsBridged()) {  // can be called 2x,
+      cnt.MarkAsBridged();   // e.g. IfThen: 1st by RedefineVariable(),
+      ++n_bridged_or_unused_;  // then in ConvertConstraint()
+    }
 	}
 
   /// Mark item as unused
   void MarkAsUnused(Container& cnt, int ) {
-    cnt.MarkAsUnused();
-    ++n_bridged_or_unused_;
+    if (!cnt.IsUnused()) {
+      cnt.MarkAsUnused();
+      ++n_bridged_or_unused_;
+    }
   }
 
 protected:

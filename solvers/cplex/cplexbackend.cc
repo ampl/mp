@@ -1688,7 +1688,8 @@ void CplexBackend::InitCustomOptions() {
 
   AddStoredOption("alg:network network netopt",
     "Solve (substructure of) (MIP node) LPs "
-    "by network simplex method.",
+    "by network simplex method. For best recognition of "
+                  "network (sub)structures, switch off CPLEX presolve.",
     storedOptions_.fNetwork_);
 
 

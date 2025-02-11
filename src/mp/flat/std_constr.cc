@@ -4,6 +4,7 @@
 
 #include "mp/format.h"
 #include "mp/common.h"
+#include "mp/utils-string.h"
 
 #include "mp/flat/expr_quadratic.h"
 #include "mp/flat/obj_std.h"
@@ -333,9 +334,143 @@ void VisitArguments(const QuadAndLinTerms& qlt, std::function<void (int)> argv) 
   VisitArguments(qlt.GetQPTerms(), argv);
 }
 
-/// FlatModelInfo factory
 std::unique_ptr<FlatModelInfo> CreateFlatModelInfo() {
   return std::unique_ptr<FlatModelInfo>{new FlatModelInfoImpl()};
+}
+
+void PrintModelInfo(const FlatModelInfo& fmi,
+    const char* header, bool aux_vars) {
+  auto vi = fmi.GetVarInfo();
+  int nv = vi[0] + aux_vars*vi[3];
+  int nvi = vi[1] + aux_vars*vi[4];
+  int nvb = vi[2] + aux_vars*vi[5];
+  fmt::print(fmt::format(
+      "{} has {} variables ({} integer, {} binary);\n",
+      header, nv, nvi, nvb));
+  auto oi = fmi.GetObjInfo();
+  if (true || 1!=oi[0] || oi[1] || oi[2]) {
+    if (!oi[0] && !oi[1] && !oi[2])
+      fmt::print("No objectives;\n");
+    else {
+      fmt::print("Objectives: ");
+      if (oi[0])
+        fmt::print(fmt::format("{} linear; ", oi[0]));
+      if (oi[1])
+        fmt::print(fmt::format("{} quadratic; ", oi[1]));
+      if (oi[2])
+        fmt::print(fmt::format("{} nonlinear; ", oi[2]));
+      fmt::print("\n");
+    }
+  }
+  const auto& coninfo = fmi.GetConstraintTypes();
+  int n_lin = 0;
+  int n_quad = 0;
+  int n_nl = 0;
+  int n_cones = 0;
+  int n_condlin = 0, n_condquad = 0;
+  int n_indlin = 0, n_indquad = 0;
+  int n_sos1 = 0, n_sos2 = 0;
+  std::map<std::string, int> expr_alg, expr_logic, cones;
+  auto NewName = [](const char* old) { return old+1; };  // skip _
+  for (const auto& val: coninfo) {
+    if (val.second.n_) {
+      if (begins_with(val.first, "_lin"))
+        n_lin += val.second.n_;
+      else if (begins_with(val.first, "_quad"))
+        n_quad += val.second.n_;
+      else if (ends_with(val.first, "cone")) {
+        n_cones += val.second.n_;
+        cones[NewName(val.second.name_)] = val.second.n_;
+      }
+      else if (begins_with(val.first, "_condlin"))
+        n_condlin += val.second.n_;
+      else if (begins_with(val.first, "_condquad"))
+        n_condquad += val.second.n_;
+      else if (begins_with(val.first, "_nl")) {
+        if (val.first == "_nlcon")
+          n_nl += val.second.n_;
+      }  // else, NL assignment or logical - skip
+      else if (begins_with(val.first, "_sos1"))
+        n_sos1 += val.second.n_;
+      else if (begins_with(val.first, "_sos2"))
+        n_sos2 += val.second.n_;
+      else if (begins_with(val.first, "_indlin"))
+        n_indlin += val.second.n_;
+      else if (begins_with(val.first, "_indquad"))
+        n_indquad += val.second.n_;
+      else if (begins_with(val.first, "_uenc"))
+      { }
+      // Else, it's expressions
+      else if (val.second.is_logical_)
+        expr_logic[NewName(val.second.name_)] = val.second.n_;
+      else
+        expr_alg[NewName(val.second.name_)] = val.second.n_;
+    }
+  }
+  auto PrnType = [](const char* descr, int n) {
+    if (n)
+      fmt::print(fmt::format(" {} {};", n, descr));
+  };
+  if (n_lin + n_quad + n_nl + n_cones + n_sos1 + n_sos2) {
+    fmt::print("Constraints: ");
+    PrnType("linear", n_lin);
+    PrnType("quadratic", n_quad);
+    PrnType("nonlinear", n_nl);
+    if (n_cones) {
+      PrnType("conic", n_cones);
+      for (const auto& cone: cones)
+        PrnType(cone.first.c_str(), cone.second);
+      fmt::print(");");
+    }
+    PrnType("SOS1", n_sos1);
+    PrnType("SOS2", n_sos2);
+    fmt::print("\n");
+  }
+  if (expr_alg.size()) {
+    fmt::print("Algebraic expressions: ");
+    for (const auto& expr: expr_alg)
+      PrnType(expr.first.c_str(), expr.second);
+    fmt::print("\n");
+  }
+  if (expr_logic.size()
+      || n_condlin || n_condquad
+      || n_indlin || n_indquad) {
+    fmt::print("Logical expressions: ");
+    PrnType("indicator(s)", n_indlin);
+    PrnType("quadratic indicator(s)", n_indquad);
+    PrnType("conditional (in)equalitie(s)", n_condlin);
+    PrnType("conditional quadratic (in)equalitie(s)", n_condquad);
+    for (const auto& expr: expr_logic)
+      PrnType(expr.first.c_str(), expr.second);
+    fmt::print("\n");
+  }
+  fmt::print("\n");
+}
+
+void ReportModelInfoSuffixes(const FlatModelInfo& fmi,
+    std::string suf_prefix, SuffixGetterSetter sgs) {
+  auto PutIntSuf = [suf_prefix, sgs](const char* name_extra, int val) {
+    sgs.ssi_( {suf_prefix + name_extra, suf::PROBLEM}, {&val, 1} );
+  };
+  {
+    auto vi = fmi.GetVarInfo();
+    PutIntSuf("var_orig", vi[0]);
+    PutIntSuf("var_orig_int", vi[1]);
+    PutIntSuf("var_orig_bin", vi[2]);
+    PutIntSuf("var_aux", vi[3]);
+    PutIntSuf("var_aux_int", vi[4]);
+    PutIntSuf("var_aux_bin", vi[5]);
+  }
+  {
+    auto oi = fmi.GetObjInfo();
+    PutIntSuf("obj_lin", oi[0]);
+    PutIntSuf("obj_quad", oi[1]);
+    PutIntSuf("obj_nonlin", oi[2]);
+  }
+  const auto& coninfo = fmi.GetConstraintTypes();
+  for (const auto& val: coninfo) {
+    PutIntSuf(val.second.name_, val.second.n_);
+  }
 }
 
 } // namespace mp

@@ -6,6 +6,7 @@
  */
 
 #include <unordered_map>
+#include <map>
 #include <functional>
 
 #include "mp/flat/model_info.h"
@@ -20,6 +21,18 @@ public:
 
   /// Set N unfixed int vars
   void SetNumUnfixedIntVars(int n) override { nUnfxIntVars_ = n; }
+
+  /// Get var info
+  VarInfo GetVarInfo() const override { return var_info_; }
+
+  /// Set var info
+  void SetVarInfo(VarInfo vi) override { var_info_ = vi; }
+
+  /// Get obj info
+  ObjInfo GetObjInfo() const override { return obj_info_; }
+
+  /// Set obj info
+  void SetObjInfo(ObjInfo oi) override { obj_info_ = oi; }
 
   /// For hashing of type_info
   using TypeInfoRef = std::reference_wrapper<const std::type_info>;
@@ -48,6 +61,7 @@ public:
   /// Hash map of ints by constraint groups
   using ConstrGroupIntMap = std::unordered_map<int, int>;
 
+
   /// Get number of constraints of certain group
   int GetNumberOfConstraintsOfGroup(int cg) const override {
     if (cg_map_.end() != cg_map_.find(cg))
@@ -62,23 +76,35 @@ public:
     return 0;
   }
 
+  /// Obtain constraint types
+  const ConstrMapByName& GetConstraintTypes() const override
+  { return coninfo_map_; }
+
   /// Initialize constraint counting
   void InitConstraintCount() override
-  { cg_map_.clear(); ti_map_.clear(); }
+  { cg_map_.clear(); ti_map_.clear(); coninfo_map_.clear(); }
 
   /// Add number of constraints of single type
   void AddNumberOfConstraints(
-      const std::type_info& ti, int igroup, int nc) override {
+      const std::type_info& ti, const char* name,
+      int igroup, bool is_logical, int nc) override {
     cg_map_[igroup] += nc;
     ti_map_[ti] += nc;
+    auto& ci = coninfo_map_[name];
+    ci.name_ = name;
+    ci.is_logical_ = is_logical;
+    ci.n_ = nc;
   }
 
 
 private:
   TypeInfoRefIntMap ti_map_;
   ConstrGroupIntMap cg_map_;
+  ConstrMapByName coninfo_map_;
 
   int nUnfxIntVars_ = 0;
+  VarInfo var_info_ {};
+  ObjInfo obj_info_;
 };
 
 } // namespace mp

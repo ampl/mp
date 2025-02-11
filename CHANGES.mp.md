@@ -3,7 +3,7 @@ Summary of recent updates to the AMPL MP Library
 
 
 ## unreleased
-- Improved presolve for disequality: in some cases,
+- Improved presolve for disequality: more cases when
   no logical disjunction is needed.
 
 
