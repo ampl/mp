@@ -3,6 +3,8 @@ Summary of recent updates to the AMPL MP Library
 
 
 ## unreleased
+- Option tech:outlev_mp=1 (implied by tech:outlev=1)
+  prints initial and transformed model statistics.
 - Improved presolve for disequality: more cases when
   no logical disjunction is needed.
 
