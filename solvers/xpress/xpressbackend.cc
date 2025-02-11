@@ -159,11 +159,6 @@ int XpressmpBackend::BarrierIterations() const {
   return getIntAttr(XPRS_BARITER);
 }
 
-inline bool ends_with(std::string const& value, std::string const& ending)
-{
-  if (ending.size() > value.size()) return false;
-  return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
-}
 void XpressmpBackend::DoWriteProblem(const std::string& name) {
   char const* wpflags = NULL;
   if (ends_with(name, ".lp"))

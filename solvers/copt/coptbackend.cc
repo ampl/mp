@@ -189,11 +189,6 @@ int CoptBackend::BarrierIterations() const {
   return getIntAttr(COPT_INTATTR_BARRIERITER);
 }
 
-inline bool ends_with(std::string const& value, std::string const& ending)
-{
-  if (ending.size() > value.size()) return false;
-  return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
-}
 void CoptBackend::DoWriteProblem(const std::string& name) {
   if (ends_with(name, ".lp"))
     COPT_CCALL(COPT_WriteLp(lp(), name.c_str()));
