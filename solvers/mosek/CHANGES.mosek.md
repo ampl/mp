@@ -2,6 +2,11 @@ Summary of recent updates to MOSEK for AMPL
 ===========================================
 
 
+## unreleased
+- Option *bar:basis* to control crossover after interior-point
+  optimization.
+
+
 ## 20240901
 - Option *tech:logfile* to write Mosek's output to a log file
 

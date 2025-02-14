@@ -423,6 +423,13 @@ static const mp::OptionValueInfo alg_values_method[] = {
   { "6", "Primal simplex", 6}
 };
 
+static const mp::OptionValueInfo values_bar_intpnt_basis[] = {
+    { "0", "Never", 0},
+    { "1", "Always (default)", 1},
+    { "2", "If no error detected", 2},
+    { "3", "If primal and dual feasible", 3}
+};
+
 static const mp::OptionValueInfo alg_values_mip_presolve_use[] = {
   { "0", "Do not use presolve", 0},
   { "1", "Use presolve", 1},
@@ -454,8 +461,12 @@ void MosekBackend::InitCustomOptions() {
       "  ampl: option mosek_options 'threads=3';\n");
 
   AddSolverOption("alg:method method lpmethod simplex",
-    "Which algorithm to use for non-MIP problems or for the root node of MIP problems:\n"
-    "\n.. value-table::\n", MSK_IPAR_OPTIMIZER, alg_values_method, 2);
+                  "Which algorithm to use for non-MIP problems or for the root node of MIP problems:\n"
+                  "\n.. value-table::\n", MSK_IPAR_OPTIMIZER, alg_values_method, 2);
+
+  AddSolverOption("bar:basis bar:crossover crossover",
+                  "Whether the interior-point optimizer also computes an optimal basis:\n"
+                  "\n.. value-table::\n", MSK_IPAR_INTPNT_BASIS, values_bar_intpnt_basis, 1);
 
   AddSolverOption("lim:time timelim timelimit",
       "Limit on solve time (in seconds; default: no limit).",
