@@ -1404,7 +1404,7 @@ void XpressmpBackend::InitCustomOptions() {
 
     AddSolverOption("alg:lpfolding lpfolding",
                     "Simplex and barrier: whether to fold an LP problem before solving it:"
-                    "\n.. value-table::\n",
+                    "\n\n.. value-table::\n",
                     XPRS_LPFOLDING, values_autonoyes_, -1);
 
     AddSolverOption("alg:maxiis maxiis",
@@ -1427,8 +1427,8 @@ void XpressmpBackend::InitCustomOptions() {
                     XPRS_MIPABSCUTOFF, MinusInfinity(), Infinity());
 
     AddSolverOption("alg:addcutoff addcutoff mipaddcutoff",
-                    "Amount to add to the objective function of the best integer\n\
-                    solution found to give the new MIP cutoff; default -1e-5.",
+                    "Amount to add to the objective function of the best integer "
+                    "solution found to give the new MIP cutoff; default -1e-5.",
                         XPRS_MIPADDCUTOFF, -1e-10, DBL_MAX);
 
     AddSolverOption("alg:relcutoff relcutoff miprelcutoff",
@@ -1635,7 +1635,7 @@ void XpressmpBackend::InitCustomOptions() {
     AddSolverOption("pre:protectdual preprotectdual",
       "Specifies whether the presolver should protect a given dual solution "
       "by maintaining the same level of dual feasibility:"
-      "\n.. value-table::\n",
+      "\n\n.. value-table::\n",
       XPRS_PREPROTECTDUAL, values_01_noyes_0default_, 1);
 
     AddSolverOption("pre:maxgrow presolvemaxgrow",
@@ -1686,7 +1686,7 @@ void XpressmpBackend::InitCustomOptions() {
   // ****************************
   // BARRIER ALGORITHM CONTROLS
   // ****************************
-  AddSolverOption("bar:alg baralg", "Which barrier algorithm to use ",
+  AddSolverOption("bar:alg baralg", "Which barrier algorithm to use:\n\n.. value-table::\n",
     XPRS_BARALG, values_baralg, -1);
 
   AddSolverOption("bar:cachesize cachesize",
@@ -1710,21 +1710,21 @@ void XpressmpBackend::InitCustomOptions() {
     "automatic choice", XPRS_BARCORES, -1, INT_MAX);
 
   AddSolverOption("bar:choleskyalg choleskyalg",
-    "Type of Cholesky factorization used for barrier, sum of:\n:",
+    "Type of Cholesky factorization used for barrier, sum of:\n\n.. value-table::\n",
     XPRS_CHOLESKYALG, values_barcholeskyalg, -1);
 
   AddSolverOption("bar:choleskytol choleskytol",
-    "Zero tolerance for Cholesky pivots in the\n\
-		Newton Barrier algorithm; default = 1e-15",
+    "Zero tolerance for Cholesky pivots in the "
+    "Newton Barrier algorithm; default = 1e-15",
     XPRS_CHOLESKYTOL, 1e-15, DBL_MAX);
 
   AddSolverOption("bar:cpuplatform cpuplatform",
-    "Which instruction are allowed to the Newton barrier method:\n:",
+    "Which instruction are allowed to the Newton barrier method:\n\n.. value-table::\n",
     XPRS_CPUPLATFORM, values_cpuplatform, -2);
 
   AddSolverOption("bar:crash barcrash",
     "Choice of crash procedure for crossover, higher number "
-    "means more aggressive procedure:",
+    "means more aggressive procedure:\n\n.. value-table::\n",
     XPRS_BARCRASH, values_barcrash, 4);
 
   AddSolverOption("bar:crossover crossover",
@@ -1860,8 +1860,8 @@ void XpressmpBackend::InitCustomOptions() {
 		"step size <= barstepstop; default = 1e-10", XPRS_BARSTEPSTOP, 1e-10, DBL_MAX);
 
   AddSolverOption("bar:threads threads",
-    "number of threads used in the Newton Barrier algorithm;\n\
-		default = -1 (determined by \"threads\")", XPRS_BARTHREADS, -1, INT_MAX);
+    "Number of threads used in the Newton Barrier algorithm; "
+    "default = -1 (determined by \"threads\")", XPRS_BARTHREADS, -1, INT_MAX);
   //endbarrier
   // ****************************
   // SIMPLEX RELATED
@@ -1926,7 +1926,7 @@ void XpressmpBackend::InitCustomOptions() {
 
   AddSolverOption("lp:dualforceparallel forceparalleldual dualforceparallel",
     "Specifies whether the dual simplex solver should always use the "
-    "parallel simplex algorithm",
+    "parallel simplex algorithm:\n\n.. value-table::\n",
     XPRS_FORCEPARALLELDUAL, values_01_noyes_0default_, 0);
 
 
@@ -2005,7 +2005,9 @@ void XpressmpBackend::InitCustomOptions() {
 
     AddSolverOption("lp:siftpasses siftpasses",
       "Determines how quickly we allow to grow the worker problems "
-      "during the sifting algorithm; default 4.",
+      "during the sifting algorithm; large values might reduce the "
+                    "number of iterations but increase the solve time for each. "
+                    "Default 4.",
       XPRS_SIFTPASSES, 1, INT_MAX);
 
     AddSolverOption("lp:siftpresolveops siftpresolveops",
@@ -2042,7 +2044,7 @@ void XpressmpBackend::InitCustomOptions() {
     "default=11.", XPRS_BREADTHFIRST, 11, INT_MAX);
   
   AddSolverOption("mip:deterministic deterministic",
-    "Whether a MIP search should be deterministic:\n", 
+    "Whether a MIP search should be deterministic:\n.. value-table::\n",
     XPRS_DETERMINISTIC, values_deterministic, 1);
 
   AddSolverOption("mip:feasibilityjump feasibilityjump",
@@ -2088,7 +2090,7 @@ void XpressmpBackend::InitCustomOptions() {
 
     AddSolverOption("mip:heurdivespeedup hdive_speed heurdivespeedup",
       "Controls tradeoff between speed and solution quality in the diving heuristic:"
-      "\n.. value-table::\n",
+      "\n\n.. value-table::\n",
       XPRS_HEURDIVESPEEDUP, values_heurdivespeed, -1);
 
     AddSolverOption("mip:heurdivestrategy hdive_strategy heurdivestrategy",
@@ -2137,12 +2139,15 @@ void XpressmpBackend::InitCustomOptions() {
                     "\n.. value-table::\n",
                     XPRS_HEURSEARCHTREESELECT, values_heursearchrootcutselect,-1);
 
-    AddSolverOption("mip:heurthreads heurtreads",
-                    "Number of threads to dedicate to running heuristics on the root node:\n",
+    AddSolverOption("mip:heurthreads heurthreads",
+                    "Number of threads to dedicate to running heuristics "
+                    "on the root node:\n\n.. value-table::\n",
                     XPRS_HEURTHREADS, values_heurthreads, 0);
 
     AddSolverOption("mip:historycosts historycosts",
-                    "How to update the pseudo cost for a global entity when a strong branch or a regular branch is applied:\n",
+                    "How to update the pseudo cost for a global entity when "
+                    "a strong branch or a regular branch is applied:\n"
+                    "\n.. value-table::\n",
                     XPRS_HISTORYCOSTS, values_historycosts, -1);
 
     AddSolverOption("mip:localchoice localchoice",
@@ -2157,7 +2162,7 @@ AddSolverOption("mip:maxlocalbacktrack maxlocalbacktrack maxlocalbt",
 
 AddSolverOption("mip:maxtasks maxmiptasks",
                 "Maximum tasks to run in parallel during a MIP solve; default = -1 "
-                "(use mip:threads)."
+                "(use mip:threads). "
                 "For mip:maxtasks > 0, branch-and-bound nodes are solved in a "
 		        "deterministic way, but the barrier algorithm (if used) may "
                 "cause a nondeterministic MIP solve unless bar:threads = 1.",
@@ -2172,14 +2177,14 @@ AddSolverOption("mip:gapabs mipgapabs",
   XPRS_MIPABSSTOP, 0.0, DBL_MAX);
 
 AddSolverOption("mip:components mipcomponents",
-  "Determines whether disconnected components in a MIP should\n\
-		be solved as separate MIPs:\n"
+  "Determines whether disconnected components in a MIP should "
+  "be solved as separate MIPs:\n"
   "\n.. value-table::\n",
   XPRS_MIPCOMPONENTS, values_autonoyes_, -1);
 
 AddSolverOption("mip:concurrentnodes mipconcurrentnodes",
-  "Node limit to choose the winning solve when concurrent\n\
-		solves are enabled:\n"
+  "Node limit to choose the winning solve when concurrent "
+                "solves are enabled:\n"
   "\n.. value-table::\n",
   XPRS_MIPCONCURRENTNODES, values_mipconcurrentnodes, -1);
 
@@ -2223,8 +2228,8 @@ AddSolverOption("mip:presolve mippresolve",
   XPRS_MIPPRESOLVE, values_mippresolve, 1);
 
 AddSolverOption("mip:rampup miprampup",
-  "Whether to limit the number of parallel tasks\n\
-		during the ramp-up phase of the parallel MIP algorithm:\n"
+  "Whether to limit the number of parallel tasks "
+    "during the ramp-up phase of the parallel MIP algorithm:\n"
   "\n.. value-table::\n",
   XPRS_MIPRAMPUP, values_miprampup, -1);
 
@@ -2276,15 +2281,15 @@ AddSolverOption("mip:nodeselection nodeselection",
   XPRS_NODESELECTION, values_nodeselection, 0);
 
 AddSolverOption("mip:pseudocost pseudocost",
-  "Default pseudo-cost assumed for forcing an integer variable\n\
-		to an integer value; default = 0.01",
+  "Default pseudo-cost assumed for forcing an integer variable "
+    "to an integer value; default = 0.01",
   XPRS_PSEUDOCOST, 0.0, DBL_MAX);
 
 
 
 AddSolverOption("mip:qcrootalg qcrootalg",
-  "when using miqcpalg = 1 to solve a mixed - integer problem that "
-  "has quadratic constraints or second - order cone constraints, "
+  "When using miqcpalg = 1 to solve a mixed - integer problem that "
+  "has quadratic constraints or second-order cone constraints, "
   "the algorithm for solving the root node:\n"
   "\n.. value-table::\n",
   XPRS_QCROOTALG, values_qcrootalg, -1);
@@ -2343,12 +2348,12 @@ AddSolverOption("mip:varselection varselection",
   // Cuts
   // ****************************
   AddSolverOption("cut:cover covercuts",
-    "The number of rounds of lifted cover inequalities at the top node."
+    "The number of rounds of lifted cover inequalities at the top node. "
     "Default=-1, automatic.",
     XPRS_COVERCUTS, -1, INT_MAX);
 
   AddSolverOption("cut:gomory gomcuts",
-    "The number of rounds of Gomory or lift-and-project cuts at the top node."
+    "The number of rounds of Gomory or lift-and-project cuts at the top node. "
     "Default=-1, automatic.",
     XPRS_GOMCUTS, -1, INT_MAX);
 
@@ -2404,8 +2409,8 @@ AddSolverOption("mip:varselection varselection",
     XPRS_CUTFACTOR, -1, INT_MAX);
 
   AddSolverOption("cut:freq cutfreq",
-    "Cuts are only generated at tree depths that are integer\n\
-		multiples of cutfreq. Default=-1 (automatic choice).",
+    "Cuts are only generated at tree depths that are integer "
+    "multiples of cutfreq. Default=-1 (automatic choice).",
     XPRS_CUTFREQ, -1, INT_MAX);
 
   AddSolverOption("cut:select cutselect",

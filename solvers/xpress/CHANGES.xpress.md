@@ -3,6 +3,7 @@ Summary of recent updates to Xpress for AMPL
 
 
 ## unreleased
+- Fix several option descriptions.
 - Default to natively accept nonlinear expressions
   since they seem to perform well in v9.5.
   Full XPRESS license required.
