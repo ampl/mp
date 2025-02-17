@@ -1,10 +1,24 @@
 cmake_minimum_required(VERSION 3.10)
 
 
-# Minimum MacOS target to enable C++17 std::filesystem
-set(CMAKE_OSX_DEPLOYMENT_TARGET 10.15)
+option(NLW2_LIB_DMGAY_DTOA
+  "NLW2_LIB: use David M. Gay's dtoa() implementation" OFF)
+if (NLW2_LIB_DMGAY_DTOA)
+  message(STATUS
+    "   NLW2_LIB: using David M. Gay's dtoa() implementation."
+  )
+  # Minimum MacOS target to enable C++17 std::filesystem
+  set(CMAKE_OSX_DEPLOYMENT_TARGET 10.15)
+else()
+  message(STATUS
+    "   NLW2_LIB: using std::to_chars().\n"
+    "     On MacOS, requires OS 13.3 or higher."
+  )
+  set(CMAKE_OSX_DEPLOYMENT_TARGET 13.3)
+endif()
 
 
+## project() after OSX_DEPLOYMENT_TARGET
 project(NLWriter2)
 
 
@@ -25,9 +39,14 @@ set(NLW2_EXAMPLE_PATH ${NLW2_DIR}/examples)
 set(NLW2_LIB_FILES
 	${NLW2_SRC_PATH}/nl-writer2.cc
   ${NLW2_SRC_PATH}/nl-utils.cc
-#  ${NLW2_SRC_PATH}/dtoa.cc
 	${NLW2_SRC_PATH}/nl-solver.cc
 )
+if (NLW2_LIB_DMGAY_DTOA)
+  set(NLW2_LIB_FILES
+    ${NLW2_LIB_FILES}
+    ${NLW2_SRC_PATH}/dtoa.cc
+  )
+endif()
 set(NLW2_INC_FILES
 	${NLW2_INCLUDE_PATH}/mp/nl-solver-basics-c.h
 	${NLW2_INCLUDE_PATH}/mp/nl-model.h
@@ -55,6 +74,10 @@ if (NLW2_LIB_ORIG_HDR)
 		"   NLW2_LIB: Building with the original NL header comments")
 	target_compile_definitions(
 		${NLW2_LIB_NAME} PUBLIC NL_LIB2_ORIG_HDR)
+endif()
+if (NLW2_LIB_DMGAY_DTOA)
+  target_compile_definitions(
+    ${NLW2_LIB_NAME} PUBLIC NLW2_LIB_DMGAY_DTOA)
 endif()
 
 # C API sources
