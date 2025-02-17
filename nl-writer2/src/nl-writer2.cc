@@ -43,6 +43,8 @@
 #include <cmath>
 #include <cstring>
 #include <string>
+#include <charconv>
+#include <system_error>
 
 #include "mp/nl-writer2.h"
 #include "mp/nl-writer2.hpp"
@@ -152,9 +154,20 @@ have_i:
       while (*fmt++ != 'g');
     case 'g':
       x = va_arg(ap, double);
-#ifdef NL_LIB_USE_SPRINTF
-      snprintf(s = buf,
-               sizeof(buf), "%.*g", output_prec, x);
+#define NL_LIB_USE_TO_CHARS
+#ifdef NL_LIB_USE_TO_CHARS
+      std::to_chars_result res;
+      if (output_prec <= 0)             // shortest representation
+        res = std::to_chars(s = buf, buf+sizeof(buf)-1, x);
+      else                              // 24 characters enough IEEE 754
+        res = std::to_chars(s = buf, buf+sizeof(buf)-1, x,
+                            std::chars_format::general,
+                            output_prec);
+      if (res.ec == std::errc())        // OK
+        *res.ptr = '\0';
+      else
+        Utils().myexit("aprintf / to_chars bug: " +
+                       std::make_error_code(res.ec).message());
 #elif NL_LIB_USE_OWN_GFMT
       NL_LIB_GFMT::gfmt(s = buf, sizeof(buf), x, output_prec);
 #else
@@ -305,6 +318,8 @@ s_written:
 
 } // namespace mp
 
+
+#ifndef NL_LIB_USE_TO_CHARS
 
 extern "C" {
 char *
@@ -459,3 +474,5 @@ void gfmt(char *b, size_t sz, double x, int prec) {
 }
 
 }  // namespace NL_LIB_GFMT
+
+#endif  // NL_LIB_USE_TO_CHARS
