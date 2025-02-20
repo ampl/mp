@@ -793,6 +793,7 @@ This option controls whether to calculate these values and return them in the su
 
        * ``sensobjlo`` smallest objective coefficient
        * ``sensobjhi`` greatest objective coefficient
+       * ``sensobj``   objective coefficients in the solver model
 
        Suffixes for variables and constraints:
 
