@@ -188,6 +188,7 @@ public:
                          Context::CTX_MIX) );
   }
 
+  /// @todo Propagate CTX+/- into the conditional equalities
   void PropagateResult(NumberofConstConstraint& con, double lb, double ub, Context ctx) {
     MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
@@ -200,6 +201,13 @@ public:
     con.AddContext(ctx);
     MPD( PropagateResult2Vars(con.GetArguments(), MPD( MinusInfty() ), MPD( Infty() ),
                          Context::CTX_MIX) );
+  }
+
+  void PropagateResult(CountConstraint& con, double lb, double ub, Context ctx) {
+    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
+    con.AddContext(ctx);
+    MPD( PropagateResult2Vars(con.GetArguments(),       // forward same context
+                              MPD( MinusInfty() ), MPD( Infty() ), ctx) );
   }
 
 
