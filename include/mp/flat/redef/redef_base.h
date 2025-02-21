@@ -2,6 +2,7 @@
 #define REDEF_BASE_H
 
 #include "mp/format.h"
+#include "mp/flat/context.h"
 
 namespace mp {
 

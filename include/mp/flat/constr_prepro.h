@@ -185,7 +185,7 @@ public:
     if (!IsNormalized(c))
       c.GetConstraint().negate();   // for equality
     if (0!=MPD( IfPreproEqResBounds() ))
-      if (FixEqualityResult(c, prepro))
+      if (PreproEqualityDecidableCases(c, prepro))
         return;
     PreprocessEqVarConst__unifyCoef(c);
     if (0!=MPD( IfPreproEqBinVar() ))
@@ -212,15 +212,17 @@ public:
     prepro.narrow_result_bounds(0.0, 1.0);
     prepro.set_result_type( var::INTEGER );
     if (0!=MPD( IfPreproEqResBounds() ))
-      if (FixEqualityResult(c, prepro))
+      if (PreproEqualityDecidableCases(c, prepro))
         return;
   }
 
   /// Try and fix conditional equality result
+  /// or reduce to strict inequality.
   /// @return true if success
-  template <class PreprocessInfo, class CondAlgCon>
-  bool FixEqualityResult(
-      CondAlgCon& c, PreprocessInfo& prepro) {
+  template <class PreprocessInfo, class Body>
+  bool PreproEqualityDecidableCases(
+      ConditionalConstraint< AlgebraicConstraint<Body, AlgConRhs<0>> >& c,
+          PreprocessInfo& prepro) {
     const auto& con = c.GetConstraint();
     const auto& body = con.GetBody();
     const auto rhs = con.rhs();
@@ -229,13 +231,35 @@ public:
       prepro.narrow_result_bounds(0.0, 0.0);
       return true;
     }
-    if (bndsNType.lb()==rhs && bndsNType.ub()==rhs) {
+    double cmpEps = MPCD( ComparisonEps( bndsNType.get_result_type() ) );
+    if (bndsNType.lb()>rhs-cmpEps && bndsNType.ub()<rhs+cmpEps) {
       prepro.narrow_result_bounds(1.0, 1.0);
       return true;
     }
     if (var::INTEGER==bndsNType.type_ &&
         !is_integer(con.rhs())) {
       prepro.narrow_result_bounds(0.0, 0.0);
+      return true;
+    }
+    /// The reduction to inequality seems to
+    /// interfere with something, like UEnc probably,
+    /// at least for MP2NL.
+    if (bndsNType.lb() >= rhs) {    // Cannot be <rhs
+      auto res = MPD(
+            AssignResultVar2Args(   // Use conditional '<='
+                                    ConditionalConstraint<
+                                    AlgebraicConstraint<Body, AlgConRhs<-1> > >(
+                                      { body, rhs })) );
+      prepro.set_result_var(res);
+      return true;
+    }
+    if (bndsNType.ub() <= rhs) {    // Cannot be >rhs
+      auto res = MPD(
+            AssignResultVar2Args(   // Use conditional '>='
+                                    ConditionalConstraint<
+                                    AlgebraicConstraint<Body, AlgConRhs<1> > >(
+                                      { body, rhs })) );
+      prepro.set_result_var(res);
       return true;
     }
     return false;

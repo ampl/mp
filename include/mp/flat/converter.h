@@ -1371,8 +1371,9 @@ private:
         "0/1*: Set to 0 to disable most presolve in the flat converter.",
         options_.preprocessAnything_, 0, 1);
     GetEnv().AddOption("cvt:pre:eqresult",
-        "0/1*: Preprocess reified equality comparison's decidable cases.",
-        options_.preprocessEqualityResultBounds_, 0, 1);
+                       "0/1*: Preprocess reified equality and disequality: "
+                       "decidable cases, such as reduction to a strict inequality.",
+                       options_.preprocessEqualityResultBounds_, 0, 1);
     GetEnv().AddOption("cvt:pre:eqbinary",
         "0/1*: Preprocess reified equality comparison with a binary variable.",
         options_.preprocessEqualityBvar_, 0, 1);
