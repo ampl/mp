@@ -281,7 +281,7 @@ public:
 
   void PropagateResult(LogAConstraint& con, double , double , Context ctx) {
     con.AddContext(ctx);           // merge context
-    auto ctx_new = (con.GetParameters()[0]>=0.0) ? +ctx : -ctx;
+    auto ctx_new = (con.GetParameters()[0]>=1.0) ? +ctx : -ctx;
     PropagateResult2Args(con.GetArguments(),     // monotone
                          MPD( MinusInfty() ), MPD( Infty() ), ctx_new);
   }
@@ -294,7 +294,7 @@ public:
 
   void PropagateResult(ExpAConstraint& con, double , double , Context ctx) {
     con.AddContext(ctx);           // merge context
-    auto ctx_new = (con.GetParameters()[0]>=0.0) ? +ctx : -ctx;
+    auto ctx_new = (con.GetParameters()[0]>=1.0) ? +ctx : -ctx;
     PropagateResult2Args(con.GetArguments(),     // monotone
                          MPD( MinusInfty() ), MPD( Infty() ), ctx_new);
   }
