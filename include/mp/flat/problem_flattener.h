@@ -1152,6 +1152,8 @@ public:         // More utilities
     }
     const auto& ae1 = el.GetLinTerms();
     const auto& ae2 = er.GetLinTerms();
+    result.GetQPTerms().reserve(
+        result.GetQPTerms().size() + ae1.size()*ae2.size());
     for (auto i1 = ae1.size(); i1--; ) {
       for (auto i2 = ae2.size(); i2--; ) {
         result.add_term(ae1.coef(i1) * ae2.coef(i2),

@@ -153,7 +153,7 @@ public:
 
 
 private:
-  SmallVec<double, 3> coefs_;
+  SmallVec<double, 6> coefs_;
   SmallVec<int, 6> vars_;
 };
 

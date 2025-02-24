@@ -182,7 +182,7 @@ public:
   USE_BASE_EXPRESSION_HANDLERS(BaseModelAPI)
 
   /// Overall switch
-  ACCEPT_EXPRESSION_INTERFACE(Recommended);
+  ACCEPT_EXPRESSION_INTERFACE(Recommended)
 
   /// GetVarExpression(\a i): expression representing variable 0<=i<n_var.
   /// Only called for 'nonlinear' variables.
@@ -283,9 +283,9 @@ public:
     /// Append a formula
     void Append(const Formula& frm);
   private:
-    SmallVec<int, 6> opcode_;
-    SmallVec<double, 6> data_;
-    SmallVec<int, 6> parent_;
+    SmallVec<int, 16> opcode_;
+    SmallVec<double, 16> data_;
+    SmallVec<int, 16> parent_;
     // std::vector<int> opcode_;
     // std::vector<double> data_;
     // std::vector<int> parent_;

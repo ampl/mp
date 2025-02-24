@@ -48,6 +48,7 @@ void LinTerms::sort_terms(bool force_sort) {
         var_coef_map.size() < size()) {
       coefs_.clear();
       vars_.clear();
+      reserve(var_coef_map.size());
       for (const auto& vc: var_coef_map) {
         if (0.0!=std::fabs(vc.second)) {         // Need tolerance?
           coefs_.push_back(vc.second);
@@ -73,6 +74,7 @@ void QuadTerms::sort_terms()  {
       coefs_.clear();
       vars1_.clear();
       vars2_.clear();
+      reserve(var_coef_map.size());
       for (const auto& vc: var_coef_map) {
         if (0.0!=std::fabs(vc.second))         // Need tolerance?
           add_term(vc.second, vc.first.first, vc.first.second);
