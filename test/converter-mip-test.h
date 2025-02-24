@@ -124,7 +124,7 @@ public:
   /// Allow all constraint types to be compiled
   USE_BASE_CONSTRAINT_HANDLERS(mp::BasicFlatModelAPI)
 
-  ACCEPT_CONSTRAINT(mp::LinConEQ, mp::Recommended, mp::CG_Default)
+  ACCEPT_CONSTRAINT(mp::LinConEQ, Recommended, mp::CG_Default)
 
   /// Specialize for LinearConstraint
   void AddConstraint(const mp::LinConEQ& lc) {

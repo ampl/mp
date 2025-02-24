@@ -14,6 +14,7 @@
 #include "mp/flat/constr_std.h"
 #include "mp/flat/obj_std.h"
 #include "mp/valcvt.h"
+#include "mp/utils-vec.h"
 
 
 namespace mp {
@@ -73,7 +74,7 @@ protected:
   using BaseExprVisitor = ExprVisitor<Impl, EExpr>;
   using BaseConverter = BasicConverter<Problem>;
 
-  using EExprArray = std::vector<EExpr>;
+  using EExprArray = SmallVec<EExpr, 2>;
 
   using BaseConverter::GetEnv;
 

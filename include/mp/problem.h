@@ -30,6 +30,7 @@
 
 #include "mp/expr.h"
 #include "mp/suffix.h"
+#include "mp/utils-vec.h"
 
 /// Maximum index of a variable, objective or constraint.
 #ifndef MP_MAX_PROBLEM_ITEMS
@@ -58,7 +59,9 @@ class LinearExpr {
     void set_coef(double c) { coef_=c; }
     void operator*=(double n) { coef_*=n; }
   };
-  std::vector<Term> terms_;
+  /// Typedef term vector
+  using TermVec = SmallVec<Term, 6>;
+  TermVec terms_;
 
  public:
   LinearExpr() { }
@@ -79,12 +82,12 @@ class LinearExpr {
   double coef(int i) const { return terms_[i].coef(); }
   void set_coef(int i, double c) { terms_[i].set_coef(c); }
 
-  typedef std::vector<Term>::const_iterator const_iterator;
+  typedef TermVec::const_iterator const_iterator;
 
   const_iterator begin() const { return terms_.begin(); }
   const_iterator end() const { return terms_.end(); }
 
-  typedef std::vector<Term>::iterator iterator;
+  typedef TermVec::iterator iterator;
 
   iterator begin() { return terms_.begin(); }
   iterator end() { return terms_.end(); }

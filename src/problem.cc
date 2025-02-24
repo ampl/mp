@@ -29,7 +29,7 @@
 namespace mp {
 
 void LinearExpr::SortTerms() {
-  std::map<int, double> var_coef_map;
+  std::map<int, double> var_coef_map;      // slow @todo
   for (int i=0; i<num_terms(); ++i)
     if (0.0!=std::fabs(coef(i)))
       var_coef_map[var_index(i)] += coef(i);
