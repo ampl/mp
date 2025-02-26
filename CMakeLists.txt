@@ -45,6 +45,8 @@ if (POLICY CMP0054)
   cmake_policy(SET CMP0054 NEW)
 endif ()
 
+option(MP_GENERATE_EXPR_ONLY "Enable to just build MP and the expr-info file; useful before cross compiling" OFF)
+
 option(USE_PROFILER "Use Profiler" OFF)
 if(USE_PROFILER)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
@@ -321,6 +323,7 @@ if (CMAKE_HOST_UNIX AND WIN32)
 else ()
   set(WINE "")
 endif ()
+
 if (CMAKE_CROSSCOMPILING)
   # Produce a warning because expr-info.cc can be out of date but cannot be
   # re-generated because we are cross compiling.
@@ -491,6 +494,13 @@ if (NOT SKIP_BUILD_MP)
 	install(FILES LICENSE.rst DESTINATION share/mp)
 
 endif()   ## NOT SKIP_BUILD_MP
+
+# If we want to generate the op file only, we are done here.
+# Useful for a first native run before cross-compiling
+if(MP_GENERATE_EXPR_ONLY)
+  return()
+endif()
+
 
 # Option BUILD_EXAMPLES
 option(BUILD_EXAMPLES "Build examples: nl reader, nl writer" ON)
