@@ -46,7 +46,7 @@ if (POLICY CMP0054)
 endif ()
 
 option(MP_GENERATE_EXPR_ONLY "Enable to just build MP and the expr-info file; useful before cross compiling" OFF)
-
+option(MP_CROSSCOMPILING "Set to override cross-compilation detection, as it does not detect compiling ARM-only on Intel Macs" OFF)
 option(USE_PROFILER "Use Profiler" OFF)
 if(USE_PROFILER)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
@@ -324,7 +324,7 @@ else ()
   set(WINE "")
 endif ()
 
-if (CMAKE_CROSSCOMPILING)
+if (CMAKE_CROSSCOMPILING OR MP_CROSSCOMPILING)
   # Produce a warning because expr-info.cc can be out of date but cannot be
   # re-generated because we are cross compiling.
   add_custom_command(OUTPUT
