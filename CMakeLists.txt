@@ -327,10 +327,7 @@ endif ()
 if (CMAKE_CROSSCOMPILING OR MP_CROSSCOMPILING)
   # Produce a warning because expr-info.cc can be out of date but cannot be
   # re-generated because we are cross compiling.
-  add_custom_command(OUTPUT
-      ${MP_EXPR_INFO_FILE} ${MP_NL_OPCODES_FILE}
-    COMMAND ${CMAKE_COMMAND} -E echo
-    "warning: cannot re-generate '${MP_EXPR_INFO_FILE}' and '${MP_NL_OPCODES_FILE}'")
+  message(WARNING "Will not re-generate '${MP_EXPR_INFO_FILE}' and '${MP_NL_OPCODES_FILE}'")
 else ()
   add_custom_command(OUTPUT
       ${MP_EXPR_INFO_FILE} ${MP_NL_OPCODES_FILE}
