@@ -7,8 +7,9 @@ Summary of recent updates to MOSEK for AMPL
 - - Option *bar:basis* to control crossover after interior-point
   optimization.
 - Option *pre:scale* to control if to apply scaling during presolve
+- On MacOS, Intel processors support is dropped
 
-
+- 
 ## 20240901
 - Option *tech:logfile* to write Mosek's output to a log file
 
