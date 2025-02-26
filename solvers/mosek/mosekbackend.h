@@ -174,7 +174,7 @@ private:
   struct Options {
     // Whether to set MSK_IPAR_MIO_CONSTRUCT_SOL
     int MIPConstructSol_=0;
-
+    int PREScale_ = 0;
     std::string paramRead_, paramWrite_;
     std::list<std::string> inlineParams_;
     std::string logFile_;

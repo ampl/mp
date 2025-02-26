@@ -407,6 +407,11 @@ void MosekBackend::FinishOptionParsing() {
   if (paramfile_write().size())
     MOSEK_CCALL(
       MSK_writeparamfile(lp(), paramfile_write().c_str()));
+  // Scaling works for both
+  if (storedOptions_.PREScale_ != 0) {
+    SetSolverOption(MSK_IPAR_SIM_SCALING, storedOptions_.PREScale_);
+    SetSolverOption(MSK_IPAR_INTPNT_SCALING, storedOptions_.PREScale_);
+  }
 }
 
 
@@ -463,6 +468,12 @@ static const mp::OptionValueInfo values_mip_presolve_dual_ray[] = {
   { "2", "Higher amount of analysis", 2}
 };
 
+static const mp::OptionValueInfo values_bar_presolve_scaling[] = {
+  {"0", "Automatic (default)", MSK_SCALING_FREE},
+  {"1", "Automatic (default)", MSK_SCALING_NONE},
+};
+
+
 void MosekBackend::InitCustomOptions() {
 
   set_option_header(
@@ -505,6 +516,10 @@ void MosekBackend::InitCustomOptions() {
     "Whether to use folding in presolve (for MIP problems use pre:mipfolding):\n"
     "\n.. value-table::\n",
     MSK_IPAR_FOLDING_USE, values_prefoldinguse_, 1);
+
+  AddStoredOption("pre:scale scale",
+    "Whether to use scaling in presolve. Applies to both simplex and interior point method:\n"
+    "\n.. value-table::\n", storedOptions_.PREScale_, values_bar_presolve_scaling);
 
   AddSolverOption("pre:mipfolding mipfolding miosimmetrylevel",
     "Controls the amount of symmetry detection by the mixed-integer optimizer in presolve:\n"
