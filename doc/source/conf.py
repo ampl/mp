@@ -20,6 +20,7 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx.ext.graphviz",
     "sphinx_design",
+    "sphinx_sitemap",
     "sphinxcontrib.googleanalytics",
 ]
 
