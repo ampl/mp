@@ -8,12 +8,12 @@ from sys import platform
 from AMPLRunner import AMPLRunner
 from Model import ModelTags
 
-def writeModels(directory,modelList=True, justNL=False, recursive=False,preferAMPLModels=False, writeMPS=False):
+def writeModels(ampl, directory,modelList=True, justNL=False, recursive=False,preferAMPLModels=False, writeMPS=False):
     m = ModelsDiscovery()
     modelList = m.FindModelsGeneral(directory, recursive=recursive, modellist=modelList,
                                     preferAMPLModels=preferAMPLModels,
                                     justNL=justNL)
-    amplRunner = AMPLRunner()
+    amplRunner = AMPLRunner(ampl)
     if not writeMPS:
         toGenerate = filter(lambda m: not m.isNL(), modelList)
     else:
@@ -22,7 +22,7 @@ def writeModels(directory,modelList=True, justNL=False, recursive=False,preferAM
         amplRunner.writeModel(m, writeMPS=writeMPS)
 
 
-def runModels(directory, solvers : list,
+def runModels(directory, ampl: str, solvers: list,
               solverOptions=None,
               exporter=None, exportFile=None, modellist=True, justNL=False,
               recursive=False, preferAMPLModels=False, keepLogs = False, verbose=False,
@@ -62,7 +62,7 @@ def runModels(directory, solvers : list,
 
     exporter.assignFile(exportFile)
 
-    runner = ModelRunner(solvers, solverOptions)
+    runner = ModelRunner(ampl, solvers, solverOptions)
 
     m = ModelsDiscovery()
     

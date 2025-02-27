@@ -8,14 +8,14 @@ import SolverCollection
 
 
 class Tester:
-    def runTestsAPI(self, solvers: list, lpmethod: str = None, nlpmethod: str = None,
+    def runTestsAPI(self, ampl: str, solvers: list, lpmethod: str = None, nlpmethod: str = None,
                     options: str = None, bin_path: str= "", reportstub: str=None,printsolvers:bool = False,
                     timeout: int = 2400, nthreads: int = 8, dir: str="", 
                     benchmark: bool = False, junit: bool=False, nonrecursive: bool=False,
                     allfiles: bool=False, prefer_nl: bool = False, export_lp: bool = False,
                     just_nl: bool = False, keep_logs: bool = False, verbose: bool = False,
                     exporter = None, export_ampl = None):
-        self.initSolvers(timeout, nthreads, bin_path, lpmethod, nlpmethod, export_lp)
+        self.initSolvers(timeout, nthreads, ampl, bin_path, lpmethod, nlpmethod, export_lp)
         if printsolvers:
             self.printSolvers()
             return
@@ -24,9 +24,9 @@ class Tester:
                                 benchmark, junit, nonrecursive,
                                 allfiles, prefer_nl, export_lp, 
                                 just_nl, keep_logs, verbose, exporter)
-    def exportModelsAPI(self, directory, modelList=True, justNL=False, recursive=False,
+    def exportModelsAPI(self, ampl, directory, modelList=True, justNL=False, recursive=False,
                         preferAMPLModels=False, writeMPS=False):
-        writeModels(directory, modelList, justNL, recursive, preferAMPLModels, writeMPS)
+        writeModels(ampl, directory, modelList, justNL, recursive, preferAMPLModels, writeMPS)
 
     def run_from_command_line(self):
         args = self.parseOptions()
@@ -34,10 +34,12 @@ class Tester:
         if args["export_ampl"]:
             MPS = args["export_ampl"]=="mps"
             print("export_ampl option specified, will only export the models")
-            self.exportModelsAPI(args["dir"], not args["allfiles"], args["just_nl"], not args["nonrecursive"],
+            self.exportModelsAPI(args["ampl"], args["dir"], not args["allfiles"], args["just_nl"], not args["nonrecursive"],
                                  not args["prefer_nl"], MPS)
         else:
-            self.runTestsAPI(args["solvers"],
+            self.runTestsAPI(
+                         args["ampl"],
+                         args["solvers"],
                          args["lpmethod"],
                          args["nlpmethod"],
                          args["options"],
@@ -68,6 +70,8 @@ class Tester:
                             help="nl support: REFORMULATION, NATIVE or NATIVEPL")
         parser.add_argument("--options", type=str, metavar="", default="",
                             help="extra solver options")
+        parser.add_argument("--ampl", type=str, metavar="", default="ampl",
+                            help="path to AMPL executable")
         parser.add_argument("--bin_path", type=str, metavar="", default="",
                             help="default path to look for solver executables")
         parser.add_argument("--reportstub", type=str, metavar="", default="report",
@@ -105,9 +109,10 @@ class Tester:
 
         return parser.parse_args()
 
-    def initSolvers(self,  timeout: int, nthreads: int, bin_path:str = None, 
+    def initSolvers(self,  timeout: int, nthreads: int, ampl: str = None, bin_path:str = None,
                     lpmethod: str = None, nlpmethod: str = None,
                     export_lp: bool = False):
+        self._ampl = ampl
         self._solvers = SolverCollection.SolverCollection()
         SolverCollection.addStdSolvers(self._solvers, bin_path)
         for name, slv in self._solvers.getSolvers():
@@ -153,6 +158,7 @@ class Tester:
                 exporter = Exporter.CSVTestExporter()
 
         runModels(dir,
+                  self._ampl,
                   self._solvers.getSolversByNames(solvers),
                   solverOptions=options,
                   exportFile=reportstub,

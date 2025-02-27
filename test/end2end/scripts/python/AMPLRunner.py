@@ -3,6 +3,7 @@ import math
 from pathlib import Path
 from shutil import which
 from token import LBRACE
+import os
 
 from Solver import Solver
 from amplpy import AMPL, Kind, OutputHandler, ErrorHandler, Environment
@@ -76,9 +77,11 @@ class InnerErrorHandler(ErrorHandler):
 
 class AMPLRunner(object):
 
-    def __init__(self, solver=None, optionsExtra=None, writeSolverName = False,
+    def __init__(self, ampl=None, solver=None, optionsExtra=None, writeSolverName = False,
                  printOutput=False,
                  storeOutput = False):
+        self._ampl_dir_name = os.path.dirname(ampl)
+        self._ampl_file_name = os.path.basename(ampl)
         self.isBenchmark = False
         if solver:
             self.setSolver(solver)
@@ -101,9 +104,11 @@ class AMPLRunner(object):
           return
         if self.isBenchmark: # Issues with non-server licenses
             time.sleep(.5)   # so wait until the license is released
-       
-        self._ampl = AMPL()
-        self._outputHandler = InnerOutputHandler(self.appendError, printOutput=self._printOutput, 
+
+        self._ampl = AMPL(Environment(
+                          binary_directory=self._ampl_dir_name,
+                          binary_name=self._ampl_file_name))
+        self._outputHandler = InnerOutputHandler(self.appendError, printOutput=self._printOutput,
                                                  storeOutput=self._storeOutput)
         if self._logFile is not None:
             self._outputHandler.set_log_file(self._logFile)

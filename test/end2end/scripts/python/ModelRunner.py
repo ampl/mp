@@ -6,7 +6,8 @@ from Model import Model
 class ModelRunner(object):
     """Class to run a set of models and capture their outputs"""
 
-    def __init__(self, runners, optionsExtra=None):
+    def __init__(self, ampl, runners, optionsExtra=None):
+        self._ampl = ampl
         self._runners = runners
         self._amplRunners = None
         self._runs = [ list() for r in self._runners ]
@@ -49,8 +50,9 @@ class ModelRunner(object):
                 msg = "{}. Solving as NL: '{}'".format(n, m.getName())
             else:
                 if not self._amplRunners:
+                    print("AMPL executable: '{}'".format(self._ampl))
                     self._amplRunners = [
-                        AMPLRunner(r, self._optionsExtra, 
+                        AMPLRunner(self._ampl, r, self._optionsExtra,
                                    printOutput=verbose, storeOutput=keep_output)
                         for r in self._runners ]
                 cr = self._amplRunners
