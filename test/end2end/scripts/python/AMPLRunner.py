@@ -382,6 +382,13 @@ class AMPLRunner(object):
                         "value of entity '{}'".format(name))
                 except:
                     self.stats["eval_fail_msg"] = "error retrieving '{}'".format(name)
+        if model.hasExpectedOutput():
+            for oitem in model.getExpectedOutput():
+                self.stats["eval_done"] = True
+                if str(oitem) not in output:
+                    self.stats["eval_fail_msg"] = \
+                    "string  '" + str(oitem) + \
+                    "'  is not found in the output"
 
     def _assertAndRecord(self, expval, val, msg):
         b1 = isinstance(expval, (int, float))

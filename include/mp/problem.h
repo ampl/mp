@@ -134,6 +134,10 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   typedef mp::Reference Reference;
   typedef internal::ExprTypes ExprTypes;
 
+  /// Default value for 'common expression usage position',
+  /// means 'common expression not provided in the input'.
+  static constexpr int CommonExprPosDflt() { return INT_MIN; }
+
  private:
   /// Names
   std::vector<std::string> var_names_;
@@ -202,6 +206,7 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   std::vector<NumericExpr> nonlinear_exprs_;
   /// Usage position k: <0 for objective -k-1,
   /// >0 for constraint k-1, 0 if in several places.
+  /// @note The initial value means 'ce not provided'.
   /// @warning This seems to be different between AMPL
   /// versions: sometimes objectives follow above cons.
   /// @note What if only used in other common expressions?
@@ -279,6 +284,18 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   }
 
 public:
+  /// Redefine MakeCommonExpr() to fail during NL input
+  /// when an unprovided common expr is referenced.
+  /// Only in debug build - those CEs which are indeed needed
+  /// are checked during expression visits.
+  auto MakeCommonExpr(int index) {
+    MP_ASSERT__RAISE(common_expr(index).is_known(),
+                     fmt::format(
+                         "Defined variable {} not provided in the input.\n"
+                         "Please contact authors of the NL file",
+                         index));
+    return ExprFactory::MakeCommonExpr(index);
+  }
 
   ////////////////////////////////////////////////////////////////////
   /// BasicProblemItem
@@ -1055,6 +1072,9 @@ public:
     BasicCommonExpr(typename Item::Problem *p, int index) : Item(p, index) {}
 
    public:
+    /// Whether the common expression has been provided in the input
+    bool is_known() const { return CommonExprPosDflt() != position(); }
+
     /// Returns the linear part of the common expression.
     const LinearExpr &linear_expr() const {
       return this->problem_->linear_exprs_[this->index_];
@@ -1109,6 +1129,9 @@ public:
     /// Not useful yet:
     /// AMPL seems to report this considering top-level usage
     void set_position(int k) const {
+      MP_ASSERT_ALWAYS(!this->is_known(),
+                       fmt::format("Defined variable {} repeated",
+                                   this->index_));
       this->problem_->common_expr_positions_[this->index_] = k;
     }
   };
@@ -1129,7 +1152,7 @@ public:
     MP_ASSERT(num_exprs < MP_MAX_PROBLEM_ITEMS, "too many expressions");
     linear_exprs_.push_back(LinearExpr());
     nonlinear_exprs_.push_back(expr);
-    common_expr_positions_.push_back(0);
+    common_expr_positions_.push_back(CommonExprPosDflt());
     return MutCommonExpr(this, static_cast<int>(num_exprs));
   }
 
@@ -1138,7 +1161,7 @@ public:
     std::size_t new_size = val(SafeInt<int>(linear_exprs_.size()) + num_exprs);
     linear_exprs_.resize(new_size, LinearExpr());
     nonlinear_exprs_.resize(new_size, NumericExpr());
-    common_expr_positions_.resize(new_size);
+    common_expr_positions_.resize(new_size, CommonExprPosDflt());
   }
 
   /// Sets a complementarity condition.

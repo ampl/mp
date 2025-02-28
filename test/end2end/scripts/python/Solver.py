@@ -81,12 +81,20 @@ class Solver(object):
             st = sol.read_text().splitlines()
         return self._doParseSolution(st, stdout)
 
-    def _evaluateRun(self, model: Model):
+    def _evaluateRun(self, model: Model, output):
         expsol = model.getExpectedObjective()
         if expsol is not None:
             self._stats["eval_done"] = True
             self._assertAndRecord(expsol, self._stats["objective"],
                                   "objective")
+        if model.hasExpectedOutput():
+            for oitem in model.getExpectedOutput():
+                self._stats["eval_done"] = True
+                if str(oitem) not in output:
+                    print(output)
+                    self._stats["eval_fail_msg"] = \
+                    "string  '" + str(oitem) + \
+                    "'  is not found in the output"
 
     def _assertAndRecord(self, expval, val, msg):
         b1 = isinstance(expval, (int, float))
@@ -111,7 +119,7 @@ class Solver(object):
                     f.write(stdout)
         self._stats["solutionTime"] = t.interval
         self._getSolution(model, stdout)
-        self._evaluateRun(model)
+        self._evaluateRun(model, stdout)
 
     def getName(self):
         path = PurePath(self._exePath)
@@ -271,7 +279,7 @@ class AMPLSolver(Solver):
               vms = max([p.vms for p in resultTable])
               self._stats["rss"]= rss
               self._stats["vms"]= vms
-              return out
+              return out + '\n' + str(err)
 
     def _setNLPMethod(self, converter: str):
         return ""

@@ -11,5 +11,13 @@
     "options": {
       "ANYSOLVER_options": "cvt:dvelim=1"
     }
+  },
+  {
+    "name" : "viold_with_obj",
+    "tags" : [],
+    "comment": "TODO fix output retrieving and some thread finishing on M1",
+    "output": [
+      "Defined variable 1 not provided in the input"
+    ]
   }
 ]

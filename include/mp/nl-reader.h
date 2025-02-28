@@ -499,6 +499,9 @@ class NLHandler {
     \rst
     Receives notification of a `common expression <mp::expr::COMMON_EXPR>`
     (defined variable) reference.
+    It's up to the Handler to check
+    that the CommonExpr has been provided
+    (according to the NL spec, actually before first use.)
     \endrst
    */
   Reference OnCommonExprRef(int expr_index) {
@@ -2294,6 +2297,9 @@ class NLProblemBuilder {
     return builder_.MakeVariable(var_index);
   }
 
+  /// It's up to the Handler to check
+  /// that the CommonExpr has been provided
+  /// (according to the NL spec, actually before first use.)
   Reference OnCommonExprRef(int expr_index) {
     return builder_.MakeCommonExpr(expr_index);
   }

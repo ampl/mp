@@ -138,6 +138,13 @@ class Model(object):
     def getExpectedValues(self):
         return self._description["values"]
 
+    def hasExpectedOutput(self):
+        return (self._description is not None) and \
+              ("output" in self._description)
+
+    def getExpectedOutput(self):
+        return self._description["output"]
+
     def getExpectedObjective(self):
         return self._expsolution
 

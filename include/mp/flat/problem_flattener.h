@@ -658,6 +658,11 @@ public:          // need to be public due to CRTP
   EExpr VisitCommonExpr(Reference r) {
     const auto index = r.index();
     auto ce = MP_DISPATCH( GetModel() ).common_expr(index);
+    MP_ASSERT_ALWAYS(ce.is_known(),
+                     fmt::format(
+                         "Defined variable {} not provided in the input.\n"
+                         "Please contact authors of the NL file",
+                         index));
     bool dvelim
         = 2==defvarelim()         // always inline
           || (1==defvarelim()
