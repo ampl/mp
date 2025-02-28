@@ -64,7 +64,7 @@ void QuadTerms::sort_terms()  {
   if (1<size()
       || (1==size() && !coef(0))) {
     auto sort_pair = [](int a, int b) {
-      return a<b ? std::pair<int, int>(a, b) : std::pair<int, int>(b, a);
+      return a<=b ? std::pair<int, int>(a, b) : std::pair<int, int>(b, a);
     };
     std::map<std::pair<int, int>, double> var_coef_map;
     for (int i=0; i<size(); ++i)

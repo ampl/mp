@@ -38,48 +38,6 @@ struct hash<
 };
 
 
-/// Specialize std::hash<> for std::array<>
-///
-/// Might assume std::hash<> specialized for elements
-template <class Element, std::size_t N>
-struct hash< std::array<Element, N> >
-{
-  size_t operator()(
-      const std::array<Element, N>& x) const
-  {
-    return mp::HashStreamer::HashArray(0, x);
-  }
-};
-
-
-/// Specialize std::hash<> for std::vector<>
-///
-/// Might assume std::hash<> specialized for elements
-template <class Element, class Allocator>
-struct hash< std::vector<Element, Allocator> >
-{
-  size_t operator()(
-      const std::vector<Element, Allocator>& x) const
-  {
-    return mp::HashStreamer::HashArray(0, x);
-  }
-};
-
-
-/// Specialize std::hash<> for mp::ArrayRef<>
-///
-/// Might assume std::hash<> specialized for elements
-template <class Element>
-struct hash< mp::ArrayRef<Element> >
-{
-  size_t operator()(
-      const mp::ArrayRef<Element>& x) const
-  {
-    return mp::HashStreamer::HashArray(0, x);
-  }
-};
-
-
 /// Specialize std::hash<> for mp::PLPoints
 template <>
 struct hash< mp::PLPoints >

@@ -134,9 +134,10 @@ public:
   /// preprocess / canonicalize
   void preprocess() { sort_terms(); }
 
-  /// This a a NASTY one (when not used).
-  /// Use it before adding constraints / objectives.
-  /// Add same variables, eliminate 0's.
+  /// This a NASTY one (when not used).
+  /// Use it before adding
+  /// constraints / objectives / expressions.
+  /// Unify same variables, eliminate 0's.
   /// Can be used by LinCon's etc
   /// Gurobi complains when 0's / repeated entries.
   void sort_terms(bool force_sort=false);

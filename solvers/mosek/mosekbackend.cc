@@ -512,7 +512,7 @@ void MosekBackend::InitCustomOptions() {
     "\n.. value-table::\n",
     MSK_IPAR_MIO_DUAL_RAY_ANALYSIS_LEVEL, values_mip_presolve_dual_ray, -1);
 
-  AddSolverOption("pre:folding folding foldinguse", 
+  AddSolverOption("pre:folding folding foldinguse",
     "Whether to use folding in presolve (for MIP problems use pre:mipfolding):\n"
     "\n.. value-table::\n",
     MSK_IPAR_FOLDING_USE, values_prefoldinguse_, 1);

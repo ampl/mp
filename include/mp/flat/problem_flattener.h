@@ -480,7 +480,8 @@ public:
   }
 
   /// From an expression:
-  /// Adds a result variable r and constraint r == expr
+  /// Adds a result variable r and constraint r == expr.
+  /// @note sorts terms before checking for duplicates.
   int Convert2Var(Expr e) {
     return Convert2Var( Convert2EExpr(e) );
   }
@@ -1161,7 +1162,7 @@ public:         // More utilities
                            ae1.var(i1), ae2.var(i2) );
       }
     }
-    result.sort_terms();      // eliminate 0's and duplicates
+    // result.sort_terms();      // eliminate 0's and duplicates
     return result;
   }
 
