@@ -243,20 +243,24 @@ class AMPLSolver(Solver):
     def stopProcess(p):
         # forcefully terminate solvers that do not terminate automatically 
         # after timeout
-        p.terminate()
+        p.kill()
 
     def _runProcess(self, args : list, vestigial=False, timeout=None, logFile = None):
       # ritorna stdout
       # throws if not successfull
          if vestigial:
            if timeout:
-              return subprocess.check_output(args, timeout=self._timeout)
+              return subprocess.check_output(args, text=True,
+                     stderr=subprocess.PIPE, timeout=self._timeout)
            else:
-              return subprocess.check_output(args)
+              return subprocess.check_output(args, text=True,
+                     stderr=subprocess.PIPE)
          else:
               resultTable = []
               SLICE_IN_SECONDS = 1
-              p = subprocess.Popen(args, universal_newlines=True, stdout=subprocess.PIPE)
+              p = subprocess.Popen(args, universal_newlines=True,
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
               if self._timeout:
                   t = Timer(self._timeout+5, AMPLSolver.stopProcess, [p])
                   t.start()
@@ -270,8 +274,12 @@ class AMPLSolver(Solver):
                     resultTable.append(ps.memory_info())
                   except:
                     pass
-                  time.sleep(SLICE_IN_SECONDS)
-              (out,err) = p.communicate()
+                  # time.sleep(SLICE_IN_SECONDS)
+                  try:    # Don't wait the whole second:
+                      out, err = p.communicate(timeout=SLICE_IN_SECONDS)
+                  except TimeoutExpired:
+                      pass
+              out, err = p.communicate()
               if logFile is not None:
                 if self.setLogFile(logFile) is None: # if not handled via option
                     print(out, flush=True)
