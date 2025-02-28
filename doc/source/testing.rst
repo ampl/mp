@@ -57,7 +57,7 @@ Folder :file:`test/end2end/cases/categorized/fast` contains test cases
 which can be run in a few seconds for this purpose, which should be done
 frequently.
 
-To **add new test cases**, add the model/data/AMPL script files in
+To **add new test cases**, add the model/data/AMPL script/NL files in
 a subfolder of :file:`test/end2end/cases/categorized/` and describe
 them in the local ``modellist.json`` having the following format.
 The top JSON
@@ -83,7 +83,8 @@ following items, where non-compulsory items are italicized:
   a solver-specific key is present (like ``baron_options``.)
 
 * *"values": { "X[0].iis": "upp", ... }*. Expected values or expressions,
-  in the form AMPL ``display`` command would accept.
+  in the form AMPL ``display`` command would accept. Only available for AMPL
+  models / scripts.
 
   * For example, to check *logical expressions*, use if/then:
 
@@ -95,6 +96,9 @@ following items, where non-compulsory items are italicized:
           "if abs(x) < 1e-3 then 1": 1,
           "solve_result_num": 0
         }
+
+* *"output": ["Presolved model has 500 variables", "RHS range:  [1e-2, 1e4]"]*.
+  Output chunks expected in the solver / AMPL log.
 
 
 .. _unit_tests:
