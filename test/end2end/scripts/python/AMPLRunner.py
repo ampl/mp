@@ -385,7 +385,7 @@ class AMPLRunner(object):
         if model.hasExpectedOutput():
             for oitem in model.getExpectedOutput():
                 self.stats["eval_done"] = True
-                if str(oitem) not in output:
+                if str(oitem) not in output:       ## Add solver message or is it in?
                     self.stats["eval_fail_msg"] = \
                     "string  '" + str(oitem) + \
                     "'  is not found in the output"

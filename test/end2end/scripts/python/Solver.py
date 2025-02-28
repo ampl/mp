@@ -88,11 +88,12 @@ class Solver(object):
             self._assertAndRecord(expsol, self._stats["objective"],
                                   "objective")
         if model.hasExpectedOutput():
+            self._getSolution(model)
+            output += self._stats["outmsg"]
             for oitem in model.getExpectedOutput():
                 self._stats["eval_done"] = True
                 if str(oitem) not in output:
-                    print(output)
-                    self._stats["eval_fail_msg"] = \
+                   self._stats["eval_fail_msg"] = \
                     "string  '" + str(oitem) + \
                     "'  is not found in the output"
 
