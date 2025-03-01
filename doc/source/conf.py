@@ -96,6 +96,10 @@ googleanalytics_id = "G-2K2EEK1LBD"
 
 html_baseurl = "https://mp.ampl.com"
 
+html_extra_path = ["_html"]
+
+sitemap_filename = "sphinx-sitemap.xml"
+
 html_static_path = ["_static"]
 # html_css_files = [
 #     'css/custom.css',
