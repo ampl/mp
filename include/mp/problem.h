@@ -292,7 +292,7 @@ public:
     MP_ASSERT__RAISE(common_expr(index).is_known(),
                      fmt::format(
                          "Defined variable {} not provided in the input.\n"
-                         "Please contact authors of the NL file",
+                         "Please contact AMPL support.",
                          index));
     return ExprFactory::MakeCommonExpr(index);
   }

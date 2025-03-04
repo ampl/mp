@@ -661,7 +661,7 @@ public:          // need to be public due to CRTP
     MP_ASSERT_ALWAYS(ce.is_known(),
                      fmt::format(
                          "Defined variable {} not provided in the input.\n"
-                         "Please contact authors of the NL file",
+                         "Please contact AMPL support.",
                          index));
     bool dvelim
         = 2==defvarelim()         // always inline

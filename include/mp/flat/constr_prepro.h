@@ -349,10 +349,12 @@ public:
       const ConditionalConstraint<SubCon>& cc,
       PreprocessInfo& prepro) {
     if (cc.GetConstraint().empty()) {
+#ifndef NDEBUG
       MPD(AddWarning("empty_cmp",
                      "Empty comparison in a logical constraint\n  of type '"
                      + std::string(cc.GetTypeName())
-                     + "'.\n  Contact authors of the NL model."));
+                     + "'.\n  Please contact AMPL support."));
+#endif
       auto res = ComputeValue(cc, std::vector<double>{});
       prepro.narrow_result_bounds(res, res);
       return true;
