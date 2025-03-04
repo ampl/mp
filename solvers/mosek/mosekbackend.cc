@@ -469,8 +469,8 @@ static const mp::OptionValueInfo values_mip_presolve_dual_ray[] = {
 };
 
 static const mp::OptionValueInfo values_bar_presolve_scaling[] = {
-  {"0", "Automatic (default)", MSK_SCALING_FREE},
-  {"1", "Automatic (default)", MSK_SCALING_NONE},
+  {"0", "Mosek chooses scaling heuristic (default)", MSK_SCALING_FREE},
+  {"1", "No scaling.", MSK_SCALING_NONE},
 };
 
 
@@ -541,8 +541,12 @@ void MosekBackend::InitCustomOptions() {
       storedOptions_.MIPConstructSol_);
 
   AddSolverOption("mip:gap mipgap",
-    "Max. relative MIP optimality gap (default 1e-4).",
-    MSK_DPAR_MIO_TOL_REL_GAP, 1e-4, DBL_MAX);
+                  "Max. relative MIP optimality gap (default 1e-4).",
+                  MSK_DPAR_MIO_TOL_REL_GAP, 0.0, DBL_MAX);
+
+  AddSolverOption("mip:gapabs mipgapabs",
+                  "Max. absolute MIP optimality gap (default 0.0).",
+                  MSK_DPAR_MIO_TOL_ABS_GAP, 0.0, DBL_MAX);
 
   AddSolverOption("mip:inttol inttol",
     "MIP integrality tolerance.",

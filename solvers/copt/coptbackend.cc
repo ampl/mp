@@ -502,8 +502,12 @@ void CoptBackend::InitCustomOptions() {
       values_autonoyes_, -1);
 
   AddSolverOption("mip:gap mipgap",
-      "Relative optimality gap, default 1e-4.\n",
-        COPT_DBLPARAM_RELGAP, 0.0, DBL_MAX);
+                  "Relative MIP optimality gap, default 1e-4.\n",
+                  COPT_DBLPARAM_RELGAP, 0.0, DBL_MAX);
+
+    AddSolverOption("mip:gapabs mipgapabs",
+                    "Absolute MIP optimality gap, default 1e-6.\n",
+                    COPT_DBLPARAM_ABSGAP, 0.0, DBL_MAX);
 
   AddSolverOption("pre:dualize dualize",
     "Whether to dualize the problem before solving it:\n"
