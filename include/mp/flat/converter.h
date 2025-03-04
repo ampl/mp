@@ -1007,9 +1007,12 @@ public:
 
   /// MakeComplementVar()
   int MakeComplementVar(int bvar) {
-    if (! (lb(bvar)==0.0 && ub(bvar)==1.0) )
-      MP_RAISE("Asked to complement variable with bounds "
-                             + std::to_string(lb(bvar)) + ".." + std::to_string(ub(bvar)));
+    if ( !(lb(bvar)==0.0 && ub(bvar)==1.0) ) {
+      MP_ASSERT_ALWAYS( (!ub(bvar) || 1.0==lb(bvar)),       // Debug build only
+                "Asked to complement variable with bounds "
+                    + std::to_string(lb(bvar))
+                    + ".." + std::to_string(ub(bvar)));
+    }
     /// Algebraic way: AffineExpr ae({{-1.0}, {bvar}}, 1.0);
     /// return MP_DISPATCH( Convert2Var(std::move(ae)) );
     return
