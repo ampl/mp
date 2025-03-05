@@ -683,6 +683,10 @@ double GurobiBackend::Kappa() {
   return GrbGetDblAttr(GRB_DBL_ATTR_KAPPA);
 }
 
+double GurobiBackend::KappaExact() {
+  return GrbGetDblAttr(GRB_DBL_ATTR_KAPPA_EXACT);
+}
+
 
 SensRanges GurobiBackend::GetSensRanges() {
   SensRanges sensr;

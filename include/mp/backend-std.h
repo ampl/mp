@@ -146,6 +146,13 @@ protected:
   /// Placeholder: retrieve Kappa
   virtual double Kappa() { return 0.0; }
   /**
+  * Kappa exact
+  **/
+  DEFINE_STD_FEATURE( KAPPA_EXACT )
+  ALLOW_STD_FEATURE( KAPPA_EXACT, false )
+  /// Placeholder: retrieve KappaExact
+  virtual double KappaExact() { return 0.0; }
+  /**
   * FeasRelax
   * No API to overload,
   * Impl should check:
@@ -410,9 +417,10 @@ protected:
 
   /// Report standard suffixes
   virtual void ReportStandardSuffixes() {
-    if (IsProblemSolved() && exportKappa()) {
-      ReportKappa();
-    }
+    if (IsProblemSolved() && exportKappa())
+    { ReportKappa(); }
+    if (IsProblemSolved() && exportKappaExact())
+    { ReportKappaExact(); }
     if (timing()) {
       ReportTimes();
     }
@@ -420,11 +428,29 @@ protected:
 
   /// Report Kappa
   virtual void ReportKappa() {
-    if (exportKappa() && 2)
+    if (exportKappa() & 2)
     {
-      double value = Kappa();
-      ReportSingleSuffix(suf_objkappa, value);
-      ReportSingleSuffix(suf_probkappa, value);
+      try {
+        double value = Kappa();
+        ReportSingleSuffix(suf_objkappa, value);
+        ReportSingleSuffix(suf_probkappa, value);
+      } catch (const std::exception& exc) {
+        AddWarning("KAPPA", exc.what());
+      }
+    }
+  }
+
+  /// Report KappaExact
+  virtual void ReportKappaExact() {
+    if (exportKappaExact() & 2)
+    {
+      try {
+        double value = KappaExact();
+        ReportSingleSuffix(suf_objkappa, value);
+        ReportSingleSuffix(suf_probkappa, value);
+      } catch (const std::exception& exc) {
+        AddWarning("KAPPA_EXACT", exc.what());
+      }
     }
   }
 
@@ -507,8 +533,14 @@ protected:
       if (round() && MPD(IsMIP()))
         RoundSolution(sol.primal, writer);
     }
-    if (exportKappa() && 1)
-      writer.write("\nkappa value: {}", Kappa());
+    try {
+      if (exportKappa() & 1)
+        writer.write("\nkappa value: {}", Kappa());
+      if (exportKappaExact() & 1)
+        writer.write("\nkappa exact value: {}", KappaExact());
+    } catch (const std::exception& exc) {
+      AddWarning("KAPPA", exc.what());
+    }
     if (solver_msg_extra_.size()) {
       writer.write("\n");
       writer.write(solver_msg_extra_);
@@ -802,6 +834,7 @@ protected:
 private:
   struct Options {
     int exportKappa_ = 0;
+    int exportKappaExact_ = 0;
 
     /// feasrelax penalty options
     double lbpen_=1.0, ubpen_=1.0, rhspen_=1.0;
@@ -849,6 +882,8 @@ private:
 
 protected:  //////////// Option accessors ////////////////
   int exportKappa() const { return storedOptions_.exportKappa_; }
+  int exportKappaExact() const
+  { return storedOptions_.exportKappaExact_; }
 
   /// Feasrelax I/O data
   FeasrelaxIO& feasrelax() { return feasRelaxIO_; }
@@ -886,11 +921,20 @@ protected:
   virtual void InitStandardOptions() {
     if (IMPL_HAS_STD_FEATURE(KAPPA))
       AddStoredOption("alg:kappa kappa basis_cond",
-        "Whether to return the estimated condition number (kappa) of "
-        "the optimal basis (default 0): sum of 1 = report kappa in the result message; "
-        "2 = return kappa in the solver-defined suffix .kappa on the objective and "
-        "problem. The request is ignored when there is no optimal basis.",
-        storedOptions_.exportKappa_);
+                      "Whether to return the estimated condition number (kappa) of "
+                      "the optimal basis (default 0): sum of 1 = report kappa in the result message; "
+                      "2 = return kappa in the solver-defined suffix .kappa on the objective and "
+                      "problem. The request is ignored when there is no optimal basis.",
+                      storedOptions_.exportKappa_);
+
+    if (IMPL_HAS_STD_FEATURE(KAPPA_EXACT))
+      AddStoredOption("alg:kappa_exact kappa_exact basis_cond_exact",
+                      "Whether to return the exact condition number (kappa) of "
+                      "the optimal basis (default 0): sum of 1 = report kappa in the result message; "
+                      "2 = return kappa in the solver-defined suffix .kappa_exact on the objective and "
+                      "problem. The request is ignored when there is no optimal basis.\n\n"
+                      "The exact kappa may be hard to compute.",
+                      storedOptions_.exportKappaExact_);
 
     if (IMPL_HAS_STD_FEATURE(FEAS_RELAX)) {
       AddStoredOption("alg:feasrelax feasrelax",
@@ -986,6 +1030,11 @@ private:
 
   const SuffixDef<double> suf_objkappa = { "kappa", suf::OBJ | suf::OUTONLY };
   const SuffixDef<double> suf_probkappa = { "kappa", suf::PROBLEM | suf::OUTONLY };
+
+  const SuffixDef<double> suf_objkappa_exact
+      = { "kappa_exact", suf::OBJ | suf::OUTONLY };
+  const SuffixDef<double> suf_probkappa_exact
+      = { "kappa_exact", suf::PROBLEM | suf::OUTONLY };
 
 
   /////////////////////////////////////////////////////////////////////////////////

@@ -133,6 +133,8 @@ public:
   **/
   ALLOW_STD_FEATURE( KAPPA, true)
   double Kappa() override;
+  ALLOW_STD_FEATURE( KAPPA_EXACT, true)
+  double KappaExact() override;
   /**
   * FeasRelax
   **/

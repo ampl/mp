@@ -2,9 +2,13 @@ Summary of recent updates to MOSEK for AMPL
 ===========================================
 
 
+## unreleased
+- Option mip:gapabs
+
+
 ## 20250226
 - Updated to MOSEK 11.0.
-- - Option *bar:basis* to control crossover after interior-point
+- Option *bar:basis* to control crossover after interior-point
   optimization.
 - Option *pre:scale* to control if to apply scaling during presolve
 - On MacOS, Intel processors support is dropped

@@ -1,6 +1,11 @@
 Summary of recent updates to gurobi for AMPL
 ============================================
 
+
+## unreleased
+- Option alg:kappa_exact
+
+
 ## 20250204
 - Updated to Gurobi 12.0.1
 
