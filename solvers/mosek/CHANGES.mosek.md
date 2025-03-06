@@ -3,7 +3,7 @@ Summary of recent updates to MOSEK for AMPL
 
 
 ## unreleased
-- Option mip:gapabs
+- Options mip:gapabs, mip:feastol, mip:heurlevel, mip:feaspump
 
 
 ## 20250226

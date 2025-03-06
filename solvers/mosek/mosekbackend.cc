@@ -455,6 +455,13 @@ static const mp::OptionValueInfo values_premipfoldinguse_[] = {
   { "4", "Extremely high amount", 4},
 };
 
+static const mp::OptionValueInfo values_mip_feaspump_[] = {
+    { "-1", "Automatic (default)", -1},
+    { "0", "The Feasibility Pump is disabled", 0},
+    { "1", "The Feasibility Pump is enabled with an effort to improve solution quality", 1},
+    { "2", "The Feasibility Pump is enabled with an effort to reach feasibility early", 2}
+};
+
 static const mp::OptionValueInfo values_mip_var_selection_types[] = {
   { "0", "Automatic (default)", 0},
   { "1", "Pseudocost variable selection", 1},
@@ -548,11 +555,26 @@ void MosekBackend::InitCustomOptions() {
                   "Max. absolute MIP optimality gap (default 0.0).",
                   MSK_DPAR_MIO_TOL_ABS_GAP, 0.0, DBL_MAX);
 
-  AddSolverOption("mip:inttol inttol",
-    "MIP integrality tolerance.",
-    MSK_DPAR_MIO_TOL_ABS_RELAX_INT, 1e-15, Infinity());
+  AddSolverOption("mip:feastol feastol",
+                  "MIP integrality tolerance.",
+                  MSK_DPAR_MIO_TOL_FEAS, 1e-15, Infinity());
 
-  
+  AddSolverOption("mip:inttol inttol",
+                  "MIP integrality tolerance.",
+                  MSK_DPAR_MIO_TOL_ABS_RELAX_INT, 1e-15, Infinity());
+
+  AddSolverOption("mip:heurlevel heurlevel",
+                  "MIP heuristic level to find an initial good feasible solution.\n\n"
+                  "-1: automatic (default);\n0: not used;\n"
+                  "positive, larger - more effort (3-5 recommended).",
+                  MSK_IPAR_MIO_HEURISTIC_LEVEL, -1, INT_MAX);
+
+  AddSolverOption("mip:feaspump feaspump",
+                  "MIP feasibility pump.\n"
+                  "\n.. value-table::\n",
+                  MSK_IPAR_MIO_FEASPUMP_LEVEL, values_mip_feaspump_, -1);
+
+
   AddSolverOption("mip:relgapconst miorelgapconst",
     "This value is used to compute the relative gap for the solution "
     "to an integer optimization problem."

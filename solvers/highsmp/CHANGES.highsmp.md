@@ -3,12 +3,14 @@ Summary of recent updates to HiGHS for AMPL
 
 
 ## TBD
-- Updated to HiGHS 1.9.0
-- Added native multiobjective suppport
+- Updated to HiGHS 1.9.0.
+- Added native multiobjective suppport.
 
 
 ## 20241119
-- Updated to HiGHS 1.8.1
+- Updated to HiGHS 1.8.1.
+- Options mip:gap (renamed from relgaptol), mip:gapabs
+  aligned to other MP solvers.
 
 
 ## 20240724

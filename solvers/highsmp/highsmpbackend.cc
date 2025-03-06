@@ -530,7 +530,7 @@ void HighsBackend::InitCustomOptions() {
       "To set these options, assign a string specifying their values to the "
       "AMPL option ``highs_options``. For example::\n"
       "\n"
-      "  ampl: option highs_options 'relgaptol=1e-6';\n");
+      "  ampl: option highs_options 'mip:gap=1e-6';\n");
  
   AddSolverOption("tech:outlev outlev",
     "0*/1: Whether to write HighS log lines (chatter) to stdout and to file.",
