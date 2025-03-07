@@ -25,6 +25,7 @@
 
 #include <cstddef>  // for std::size_t
 #include <limits>
+#include <climits>
 #include <cmath>
 #include <vector>
 
