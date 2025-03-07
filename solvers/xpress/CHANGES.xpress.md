@@ -2,7 +2,7 @@ Summary of recent updates to Xpress for AMPL
 ============================================
 
 
-## unreleased
+## 20250308
 - Fix several option descriptions.
 - Default to natively accept nonlinear expressions
   since they seem to perform well in v9.5.

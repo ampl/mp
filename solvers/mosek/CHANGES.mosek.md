@@ -2,12 +2,12 @@ Summary of recent updates to MOSEK for AMPL
 ===========================================
 
 
-## unreleased
+## 20250308
 - Options mip:gapabs, mip:feastol, mip:heurlevel, mip:feaspump
 
 
 ## 20250226
-- Updated to MOSEK 11.0.
+- Updated to MOSEK 11.0.8.
 - Option *bar:basis* to control crossover after interior-point
   optimization.
 - Option *pre:scale* to control if to apply scaling during presolve

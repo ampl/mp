@@ -2,6 +2,10 @@ Summary of recent updates to SCIP for AMPL
 ==========================================
 
 
+## 20250308
+- Changes in MP.
+
+
 ## 20250204
 - Updated to SCIP 9.2
 - MINLP expression trees (option acc:_expr.)

@@ -2,7 +2,7 @@ Summary of recent updates to the AMPL MP Library
 ================================================
 
 
-## unreleased
+## 20250308
 - Fixed a bug in monotonicity presolve which could
   have led to wrong models using a^x with a<1.
 - Reduced memory fragmentation for linear

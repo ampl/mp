@@ -2,7 +2,7 @@ Summary of recent updates to COPT for AMPL
 ==========================================
 
 
-## unreleased
+## 20250308
 - Option mip:gapabs
 
 
