@@ -22,7 +22,7 @@ struct Violation {
       double epsabs, double epsrel) const {
     double violRel {0.0};
     if (viol_ > epsabs
-        && (0.0==std::fabs(valX_)
+        && (!valX_
             || (violRel=std::fabs(viol_/valX_))>epsrel))
       return {true, violRel};
     return {false, 0.0};
