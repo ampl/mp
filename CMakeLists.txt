@@ -329,6 +329,14 @@ if (CMAKE_CROSSCOMPILING OR MP_CROSSCOMPILING)
   # re-generated because we are cross compiling.
   message(WARNING "Will not re-generate '${MP_EXPR_INFO_FILE}' and '${MP_NL_OPCODES_FILE}'")
 else ()
+  if (UNIX AND NOT APPLE)
+    add_custom_command(
+      TARGET gen-expr-info
+      POST_BUILD
+      COMMAND chmod +x $<TARGET_FILE:gen-expr-info>
+      COMMENT "Making sure gen-expr-info is executable")
+  endif ()
+
   add_custom_command(OUTPUT
       ${MP_EXPR_INFO_FILE} ${MP_NL_OPCODES_FILE}
     COMMAND ${WINE} $<TARGET_FILE:gen-expr-info>
