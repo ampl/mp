@@ -2,6 +2,11 @@ Summary of recent updates to gurobi for AMPL
 ============================================
 
 
+## 20250311
+- Additional diagnostic messages are printed in case the solver
+  fails to initialize
+
+
 ## 20250308
 - Option alg:kappa_exact
 
