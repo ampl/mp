@@ -556,7 +556,7 @@ void MosekBackend::InitCustomOptions() {
                   MSK_DPAR_MIO_TOL_ABS_GAP, 0.0, DBL_MAX);
 
   AddSolverOption("mip:feastol feastol",
-                  "MIP integrality tolerance.",
+                  "MIP feasibility tolerance.",
                   MSK_DPAR_MIO_TOL_FEAS, 1e-15, Infinity());
 
   AddSolverOption("mip:inttol inttol",
@@ -580,6 +580,13 @@ void MosekBackend::InitCustomOptions() {
     "to an integer optimization problem."
     "Default = 1.0e-10",
     MSK_DPAR_MIO_REL_GAP_CONST, 0.0, DBL_MAX);
+
+  AddSolverOption("mip:conic:outapprox conicoutapprox",
+                  "0*/1: If this option is turned on outer approximation is used "
+                  "when solving relaxations of conic problems; "
+                  "otherwise interior point is used.",
+                  MSK_IPAR_MIO_CONIC_OUTER_APPROXIMATION, 0, 1);
+
 
   AddSolverOption("mip:varselection varselection",
     "Controls the variable selection strategy employed by the mixed-integer optimizer:\n"
