@@ -98,7 +98,7 @@ public:
       break;
     case CTX_ROOT:
       MP_ASSERT(0, "Should not extend root context");
-      break;
+      [[fallthrough]];           // in release
     case CTX_POS:
       if (ct.HasNegative())
         value_ = CTX_MIX;
