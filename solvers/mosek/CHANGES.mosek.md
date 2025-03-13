@@ -2,6 +2,12 @@ Summary of recent updates to MOSEK for AMPL
 ===========================================
 
 
+## unreleased
+- Option mip:conic:outerapprox, useful to find
+  feasible solutions in numerically tough conic
+  models.
+
+
 ## 20250308
 - Options mip:gapabs, mip:feastol, mip:heurlevel, mip:feaspump
 

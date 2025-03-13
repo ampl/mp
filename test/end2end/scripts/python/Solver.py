@@ -1091,9 +1091,6 @@ class BaronMPSolver(MPDirectSolver):
     def _getAMPLOptionsName(self):
         return "baron"
     
-    def _setNThreads(self, threads):
-        return "threads"
-
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
         stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary, 
                  ModelTags.quadratic,
