@@ -2,6 +2,10 @@ Summary of recent updates to SCIP for AMPL
 ==========================================
 
 
+## unreleased
+- Option sol:poollimit.
+
+
 ## 20250308
 - Changes in MP.
 

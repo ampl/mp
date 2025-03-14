@@ -51,9 +51,11 @@ class ScipCommon :
     public Backend2ModelAPIConnector<ScipCommonInfo> {
 public:
   /// These methods access Scip options. Used by AddSolverOption()
-  void GetSolverOption(const char* key, int& value) const;
-  void SetSolverOption(const char* key, int value);
-  void GetSolverOption(const char* key, double& value) const;
+	void GetSolverOption(const char* key, int& value) const;
+	void SetSolverOption(const char* key, int value);
+	void GetSolverOption(const char* key, SCIP_Longint& value) const;
+	void SetSolverOption(const char* key, SCIP_Longint value);
+	void GetSolverOption(const char* key, double& value) const;
   void SetSolverOption(const char* key, double value);
   void GetSolverOption(const char* key, std::string& value) const;
   void SetSolverOption(const char* key, const std::string& value);

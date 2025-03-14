@@ -2,6 +2,11 @@ Summary of recent updates to Xpress for AMPL
 ============================================
 
 
+## unreleased
+- Renamed option poolnbest to sol:poollimit.
+	Old name kept as synonym.
+
+
 ## 20250308
 - Fix several option descriptions.
 - Default to natively accept nonlinear expressions

@@ -150,13 +150,20 @@ void ScipBackend::Solve() {
     SCIP_CCALL( SCIPsetSeparating(getSCIP(), (SCIP_PARAMSETTING)storedOptions_.cuts_, TRUE) );
   if (storedOptions_.presolvings_ != 0)
     SCIP_CCALL( SCIPsetPresolving(getSCIP(), (SCIP_PARAMSETTING)storedOptions_.presolvings_, TRUE) );
-  
-
-  if (storedOptions_.concurrent_)
-    SCIP_CCALL( SCIPsolveConcurrent(getSCIP()) );
-  else
-    SCIP_CCALL( SCIPsolve(getSCIP()) );
-  
+	if (need_multiple_solutions()) {
+//		SCIP_CCALL( SCIPsetParamsCountsols(getSCIP()) );     - does not collect
+//		SCIP_CCALL( SCIPsetEmphasis(getSCIP(), SCIP_PARAMEMPHASIS_COUNTER, FALSE) );
+		SCIP_CCALL( SCIPsetBoolParam(getSCIP(), "constraints/countsols/collect", TRUE) );
+//		SCIP_CCALL( SCIPcount(getSCIP()) );
+	}
+//	else  // TODO uncomment the above and implement reporting of collected pool
+	// see https://www.scipopt.org/doc/html/COUNTER.php#COLLECTALLFEASEBLES
+	{
+		if (storedOptions_.concurrent_)
+			SCIP_CCALL( SCIPsolveConcurrent(getSCIP()) );
+		else
+			SCIP_CCALL( SCIPsolve(getSCIP()) );
+	}
   WindupSCIPSolve();
 }
 
@@ -750,6 +757,11 @@ void ScipBackend::InitCustomOptions() {
   AddSolverOption("ran:randomseedshift randomseedshift",
     "Global shift of all random seeds in the plugins and the LP random seed (default: 0) ",
     "randomization/randomseedshift", 0, INT_MAX);
+
+	///////////////////////// SOLUTION POOL ///////////////////////////////
+	AddSolverOption("sol:poollimit poollimit",
+		"Soft limit on the number of alternative solutions (option sol:stub).",
+		"constraints/countsols/sollimit", (SCIP_Longint)-1, (SCIP_Longint)9223372036854775807);
 
   ///////////////////////// TREE /////////////////////////
   AddSolverOption("est:method",

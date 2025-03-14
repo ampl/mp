@@ -1303,7 +1303,7 @@ void XpressmpBackend::InitCustomOptions() {
   // Solution pool params
   // ****************************
   AddStoredOption("sol:pooldualred pooldualred",
-    "Whether to suppress removal of dominated solutions(via "
+		"Whether to suppress removal of dominated solutions (via "
       "\"dual reductions\") when poolstub is specified:\n"
     "\n.. value-table::\n",
     storedOptions_.pooldualred_, pool_values_);
@@ -1332,7 +1332,7 @@ void XpressmpBackend::InitCustomOptions() {
     "in the solution pool (default 5e-6)",
     XPRS_MSP_SOL_MIPTOL, 0, 1);
 
-  AddStoredOption("sol:poolnbest poolnbest poollimit",
+	AddStoredOption("sol:poollimit poollimit poolnbest",
     "Whether the solution pool (see poolstub) should contain "
     "inferior solutions.  When poolnbest = n > 1, the "
     "solution pool is allowed to keep the n best solutions.",

@@ -136,12 +136,20 @@ void ScipCommon::SetSolverOption(const char* key, int value) {
     SCIP_CCALL( SCIPsetIntParam(getSCIP(), key, value) );
 }
 
+void ScipCommon::GetSolverOption(const char* key, SCIP_Longint &value) const {
+	SCIP_CCALL( SCIPgetLongintParam(getSCIP(), key, &value) );
+}
+
+void ScipCommon::SetSolverOption(const char* key, SCIP_Longint value) {
+	SCIP_CCALL( SCIPsetLongintParam(getSCIP(), key, value) );
+}
+
 void ScipCommon::GetSolverOption(const char* key, double &value) const {
-  SCIP_CCALL( SCIPgetRealParam(getSCIP(), key, &value) );
+	SCIP_CCALL( SCIPgetRealParam(getSCIP(), key, &value) );
 }
 
 void ScipCommon::SetSolverOption(const char* key, double value) {
-  SCIP_CCALL( SCIPsetRealParam(getSCIP(), key, value) );
+	SCIP_CCALL( SCIPsetRealParam(getSCIP(), key, value) );
 }
 
 void ScipCommon::GetSolverOption(const char* key, std::string &value) const {
