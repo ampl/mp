@@ -153,7 +153,8 @@ template <typename Solver, typename PB, typename Writer>
 void SolutionWriterImpl<Solver, PB, Writer>::HandleSolution(
     int status, fmt::CStringRef message, const double *values,
     const double *dual_values, double) {
-  if (solver_.need_multiple_solutions()) {
+	if (solver_.need_multiple_solutions()
+			&& values) {             // not when reporting an error
     auto kindP = mp::suf::Kind( suf::PROBLEM | suf::OUTPUT | suf::OUTONLY );
     auto kindO = mp::suf::Kind( suf::OBJ | suf::OUTPUT | suf::OUTONLY );
     builder_.AddIntSuffix("nsol", kindP, 0).
