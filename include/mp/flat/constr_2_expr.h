@@ -512,7 +512,7 @@ protected:
             (const AlgebraicConstraint<Body, RhsOrRange>*)nullptr) )
         || need_nlc) {                                  // or, other reason
       assert( MPCD( UserAcceptsAndRecommends((const NLConstraint*)nullptr) ) );
-      NLConstraint nlc{lt, exprResVar, rng, false};     // no sorting
+      NLConstraint nlc{lt, exprResVar, rng, false};     // false: no sort any more
       MPD( AddConstraint( std::move(nlc) ) );
       return true;
     }

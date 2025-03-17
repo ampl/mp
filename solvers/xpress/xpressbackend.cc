@@ -1333,9 +1333,9 @@ void XpressmpBackend::InitCustomOptions() {
     XPRS_MSP_SOL_MIPTOL, 0, 1);
 
 	AddStoredOption("sol:poollimit poollimit poolnbest",
-    "Whether the solution pool (see poolstub) should contain "
-    "inferior solutions.  When poolnbest = n > 1, the "
-    "solution pool is allowed to keep the n best solutions.",
+    "When poollimit = n > 1, the "
+    "solution pool (see sol:stub) is allowed to keep the n best solutions. "
+                  "Default 10.",
     storedOptions_.nbest_);
 
     AddSolverOption("lim:mipsol maxmipsol",
