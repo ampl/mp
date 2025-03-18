@@ -88,6 +88,12 @@ public:
   void set_coef(size_t i, double c)
   { assert(i<size()); coefs_[i]=c; }
 
+  /// Clear
+  void clear() {
+    coefs_.clear();
+    vars_.clear();
+  }
+
   /// Reserve size
   void reserve(size_t s) {
     coefs_.reserve(s);
@@ -131,8 +137,20 @@ public:
       c *= n;
   }
 
+  /// Fold the terms into a vector of (var, coef) pairs
+  template <class Vec>
+  void fold_into(Vec& vec);
+
+  /// Unfold the terms from a vector of (var, coef) pairs
+  template <class Vec>
+  void unfold_from(const Vec& vec);
+
   /// preprocess / canonicalize
   void preprocess() { sort_terms(); }
+
+  /// Is the expression sorted,
+  /// all elements non-0 and unique?
+  bool is_sorted() const;
 
   /// This a NASTY one (when not used).
   /// Use it before adding
@@ -140,7 +158,9 @@ public:
   /// Unify same variables, eliminate 0's.
   /// Can be used by LinCon's etc
   /// Gurobi complains when 0's / repeated entries.
-  void sort_terms(bool force_sort=false);
+  /// @param force_sort: sort also when
+  /// all elements unique and non-0.
+  void sort_terms(bool force_sort=true);
 
   /// Equality. Assumes being sorted
   bool equals(const LinTerms& lt) const {

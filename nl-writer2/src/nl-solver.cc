@@ -409,6 +409,7 @@ protected:
         }
       }
     }
+    // Could just shove apart in linear time @todo
     std::stable_sort(var_perm_.begin(), var_perm_.end());
     // Create reverse mapping
     for (auto i=var_perm_.size(); i--; )

@@ -1,9 +1,11 @@
 #include <map>
 #include <cfloat>
+#include <cmath>
 #include <cassert>
 
 #include "mp/format.h"
 #include "mp/common.h"
+#include "mp/utils-vec.h"
 #include "mp/utils-string.h"
 
 #include "mp/flat/expr_quadratic.h"
@@ -37,50 +39,141 @@ const char* ConGroupName(int cg) {
   return congroup_names[cg];
 }
 
-void LinTerms::sort_terms(bool force_sort) {
-  if (1<size()
-      || (1==size() && !coef(0))) {
-    std::map<int, double> var_coef_map;
-    for (size_t i=0; i<size(); ++i)
-      if (0.0!=std::fabs(coefs_[i]))
-        var_coef_map[vars_[i]] += coefs_[i];
-    if (force_sort ||                    // force sorting for tests
-        var_coef_map.size() < size()) {
-      coefs_.clear();
-      vars_.clear();
-      reserve(var_coef_map.size());
-      for (const auto& vc: var_coef_map) {
-        if (0.0!=std::fabs(vc.second)) {         // Need tolerance?
-          coefs_.push_back(vc.second);
-          vars_.push_back(vc.first);
-        }
-      }
+
+//////////////////////////// SORTING /////////////////////////////
+
+template <class Vec>
+void LinTerms::fold_into(Vec& vec) {
+  vec.resize(size());
+  for (size_t i=0; i<size(); ++i)
+    vec.push_back({ var(i), coef(i) });
+}
+
+template <class Vec>
+void LinTerms::unfold_from(const Vec& vec) {
+  clear();
+  reserve(vec.size());
+  for (const auto& v: vec)
+    add_term(v.second, v.first);
+}
+
+bool LinTerms::is_sorted() const {
+  if (size()) {           // empty expr ==> "sorted" ???
+    if (!coefs_.back())       // last coef == 0
+      return false;
+    for (auto i = size()-1; (i--)>0; ) {
+      if (vars_[i] >= vars_[i+1]
+          || !coefs_[i])      // coef == 0
+        return false;
     }
   }
+  return true;            // Check emptyness elsewhere? @todo
+}
+
+/// Sort, leave only unique keys with non-0 values
+/// @param vec: some_vector< std::pair<Key, Value> >
+template <class Vec>
+void SortUnifyNon0(Vec& vec) {
+  assert(vec.size() >= 1);
+  if (vec.size() < 1)
+    return;
+  // Sort by (Key, abs(Value)) for numerics
+  auto Cmp = [](const auto& a, const auto& b) {
+    return a.first<b.first ? true
+                             : a.first==b.first
+               ? std::fabs(a.second) < std::fabs(b.second)
+        : false;
+  };
+  std::sort(vec.begin(), vec.end(), Cmp);
+  // Merge same keys, leaving non-0 values
+  auto i2=vec.begin(), i1=i2;
+  while (++i2!=vec.end()) {
+    if (i1->first == i2->first)
+      i1->second += i2->second;
+    else {
+      if (i1->second)
+        ++i1;
+      *i1 = *i2;
+    }
+  }
+  vec.resize(i1-vec.begin()
+             +bool(i1->second));   // last target element non-0
+}
+
+void LinTerms::sort_terms(bool force_sort) {
+  if (1==size()) {
+    if (!coef(0))
+      clear();
+  } else {
+    if (1<size() && !is_sorted()) {
+      SmallVec< std::pair<int, double>, 256 > fold;
+      fold_into(fold);
+      SortUnifyNon0(fold);
+      assert(fold.size() <= size());
+      if (force_sort || fold.size() < size())
+        unfold_from(fold);
+    }
+  }
+  assert(!force_sort || is_sorted());
 }
 
 
-void QuadTerms::sort_terms()  {
-  if (1<size()
-      || (1==size() && !coef(0))) {
-    auto sort_pair = [](int a, int b) {
-      return a<=b ? std::pair<int, int>(a, b) : std::pair<int, int>(b, a);
-    };
-    std::map<std::pair<int, int>, double> var_coef_map;
-    for (int i=0; i<size(); ++i)
-      if (0.0!=std::fabs(coefs_[i]))
-        var_coef_map[sort_pair(vars1_[i], vars2_[i])] += coefs_[i];
-    if (true) {
-      coefs_.clear();
-      vars1_.clear();
-      vars2_.clear();
-      reserve(var_coef_map.size());
-      for (const auto& vc: var_coef_map) {
-        if (0.0!=std::fabs(vc.second))         // Need tolerance?
-          add_term(vc.second, vc.first.first, vc.first.second);
-      }
+template <class Vec>
+void QuadTerms::fold_into(Vec& vec) {
+  vec.resize(size());
+  for (size_t i=0; i<size(); ++i) {
+    auto key = std::pair {var1(i), var2(i)};
+    if (key.first > key.second)       // index pair ordered
+      std::swap(key.first, key.second);
+    vec.push_back({ key, coef(i) });
+  }
+}
+
+template <class Vec>
+void QuadTerms::unfold_from(const Vec& vec) {
+  clear();
+  reserve(vec.size());
+  for (const auto& v: vec)
+    add_term(v.second, v.first.first, v.first.second);
+}
+
+bool QuadTerms::is_sorted() const {
+  if (size()) {           // empty expr ==> "sorted" ???
+    if (!coefs_.back())       // last coef == 0
+      return false;
+    if (vars1_.back() > vars2_.back())   // v1>v2
+      return false;
+    for (auto i = size()-1; (i--)>0; ) {
+      if (vars1_[i] > vars2_[i]          // v1>v2
+          || vars1_[i] > vars1_[i+1]
+          || (vars1_[i]==vars1_[i+1] && vars2_[i]>vars2_[i+1])
+          || !coefs_[i])                 // coef == 0
+        return false;
     }
   }
+  return true;            // Check emptyness elsewhere? @todo
+}
+
+
+
+void QuadTerms::sort_terms()  {
+  if (1==size()) {
+    if (!coef(0))
+      clear();
+    else
+      if (var1(0) > var2(0))              // order index pair
+        std::swap(vars1_[0], vars2_[0]);
+  } else {
+    if (1<size() && !is_sorted()) {
+      SmallVec< std::pair<std::pair<int, int>, double>, 256 >
+          fold;
+      fold_into(fold);
+      SortUnifyNon0(fold);
+      assert(fold.size() <= size());
+      unfold_from(fold);
+    }
+  }
+  assert(is_sorted());
 }
 
 const char*

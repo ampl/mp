@@ -36,10 +36,10 @@ public:
   bool empty() const { return coefs_.empty(); }
 
   /// Size
-  int size() const { return (int)coefs_.size(); }
+  size_t size() const { return coefs_.size(); }
 
   /// Capacity
-  int capacity() const { return (int)coefs_.capacity(); }
+  size_t capacity() const { return coefs_.capacity(); }
 
   const double* pcoefs() const { return coefs_.data(); }
   const int* pvars1() const { return vars1_.data(); }
@@ -104,6 +104,18 @@ public:
     for (auto& c: coefs_)
       c *= n;
   }
+
+  /// Fold the terms into a vector of (var, coef) pairs
+  template <class Vec>
+  void fold_into(Vec& vec);
+
+  /// Unfold the terms from a vector of (var, coef) pairs
+  template <class Vec>
+  void unfold_from(const Vec& vec);
+
+  /// Is the expression sorted,
+  /// all elements non-0 and unique?
+  bool is_sorted() const;
 
   /// Sort and eliminate duplicates
   void sort_terms();
