@@ -154,8 +154,6 @@ bool QuadTerms::is_sorted() const {
   return true;            // Check emptyness elsewhere? @todo
 }
 
-
-
 void QuadTerms::sort_terms()  {
   if (1==size()) {
     if (!coef(0))
@@ -175,6 +173,7 @@ void QuadTerms::sort_terms()  {
   }
   assert(is_sorted());
 }
+
 
 const char*
 BasicConstraintKeeper::GetShortTypeName() const {

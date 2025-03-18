@@ -133,5 +133,16 @@
     "values": {
       "X[1, 1]": 6
     }
+  },
+  {
+    "name" : "unify_lin_expr_01 [alldiff, numberof, count]",
+    "tags" : ["logical"],
+    "options": {
+      "mp_options": "debug=1"
+    },
+    "values": {
+      "solve_result": "infeasible",
+      "Initial.flat0__linfunccon": 3
+    }
   }
 ]

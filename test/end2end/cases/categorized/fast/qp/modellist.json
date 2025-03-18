@@ -176,5 +176,16 @@
     "options": {
       "mp_options": "cvt:prod=0"
     }
+  },
+  {
+    "name" : "unify_quad_expr_01",
+    "objective" : 20.08553692214343,
+    "tags" : ["quadratic", "quadraticnonconvex"],
+    "options": {
+      "mp_options": "debug=1"
+    },
+    "values": {
+      "Initial.flat0__quadfunccon": 1
+    }
   }
 ]
