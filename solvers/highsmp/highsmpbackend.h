@@ -47,15 +47,16 @@ public:
   USING_STD_FEATURES;
 
   /**
- * MULTIOBJ
-**/
-  ALLOW_STD_FEATURE( MULTIOBJ, true )
+  * MULTIOBJ
+  **/
+  // Note: native MO is currently disabled as its implementation is 
+  // somewhat inconsitent with other solvers
+  ALLOW_STD_FEATURE( MULTIOBJ, false )
   ArrayRef<double> GetObjectiveValues() override;
   void ObjPriorities(ArrayRef<int>) override;
   void ObjWeights(ArrayRef<double>) override;
   void ObjAbsTol(ArrayRef<double>) override;
   void ObjRelTol(ArrayRef<double>) override;
-
   /**
   * EXPORT PROBLEM
   **/

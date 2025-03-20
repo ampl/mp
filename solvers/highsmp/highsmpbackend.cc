@@ -64,7 +64,11 @@ std::string HighsBackend::GetSolverVersion() {
 
   void HighsBackend::InputExtras() {
   BaseBackend::InputExtras();
+  // Set the accumulated objectives
+  // In case of native MO, accObjectives will contain all the problem's objectives - and their meta into
+  // and will have the flag hadMultiObjective set to true
   accObjectives().setAllInHighs(lp());
+  accObjectives().clear(); 
 }
 
 bool HighsBackend::IsQCP() const {
@@ -98,14 +102,18 @@ ArrayRef<double> HighsBackend::DualSolution_LP() {
 }
 
   ArrayRef<double> HighsBackend::GetObjectiveValues() {
-    if(NumObjs() > 1)
-    AddToSolverMessage("Warning: HiGHS does not support returning the objective values for multiple objectives;\n"
-      "the reported solution will show the objective value of the blended/ordered objectives. AMPL will compute the\n"
-    "actual values of the objectives");
+    if (accObjectives().hadNativeMultiObj()) {
+      AddToSolverMessage("Warning: HiGHS does not support returning the objective values for multiple\n"
+        "objectives; AMPL will compute the actual values.");
+      return std::vector<double>();
+    }
     return std::vector<double> { ObjectiveValue() };
 }
 
   void HighsBackend::ObjPriorities(ArrayRef<int> pri) {
+    if (pri.size() > 0)
+      SetSolverOption("blend_multi_objectives",
+        0);
     accObjectives().setPriorities(pri);
 
 }
@@ -151,12 +159,13 @@ void HighsBackend::SetInterrupter(mp::Interrupter *inter) {
 void HighsBackend::Solve() {
   HIGHS_CCALL( Highs_run(lp()) );
   WindupHIGHSSolve();
+  
 }
 
 void HighsBackend::WindupHIGHSSolve() { }
 
 void HighsBackend::ReportResults() {
-  ReportHIGHSResults();
+   ReportHIGHSResults();
   BaseBackend::ReportResults();
 }
 

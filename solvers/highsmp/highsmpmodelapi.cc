@@ -31,13 +31,21 @@ void HighsModelAPI::AddVariables(const VarArrayDef& v) {
 }
 
 void HighsModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
+  // Note:
+  // In case of native multiobjectives, HiGHS wants priorities and other meta info
+  // passed when adding the objectives, that is available in Backend::InputExtras.
+  // So we accumulate the objectives here and set them in HiGHS in Backend::InputExtras.
   accObjectives().add(lo.vars(), lo.coefs(), lo.obj_sense()==obj::Type::MAX);
 }
 
 
 void HighsModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective& qo) {
   if (1 > iobj) {
-    accObjectives().setInHighs(lp());
+    auto lo= qo.GetLinTerms();
+    // Note that the linear part is only stored (see SetLinearObjective)
+    accObjectives().add(lo.vars(), lo.coefs(), qo.obj_sense() == obj::Type::MAX);
+    
+
     const auto& qt = qo.GetQPTerms();
     std::vector<int> startCols(NumVars());
     std::vector<double> coeffs(qt.size());
@@ -61,7 +69,7 @@ void HighsModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective& qo
       startCols.data(), qt.pvars2(), coeffs.data()));
   }
   else {
-    throw std::runtime_error("Multiple quadratic objectives not supported");
+    throw std::runtime_error("Multiple quadratic objectives not supported natively, try using multi-objective\nemulator by setting option multiobj=2");
   }
 }
 
@@ -87,7 +95,14 @@ void HighsModelAPI::FinishProblemModificationPhase() {
     acc_constraints_.starts.data(),
     acc_constraints_.indices.data(),
     acc_constraints_.coeffs.data()));
-  acc_constraints_ = AccConstraints();      // reinitialize accumulator for model modification 
+    // reinitialize accumulator for model modification 
+    acc_constraints_ = AccConstraints();     
+
+  // If in multiobjective simulator, set the objective each time
+  if (accObjectives().hadEmulatedMultiObj()) {
+    accObjectives().setAllInHighs(lp());
+    accObjectives().clear();
+  }
 }
 
 } // namespace mp

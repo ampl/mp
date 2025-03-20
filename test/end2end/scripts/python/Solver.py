@@ -1171,7 +1171,7 @@ class HighsSolver(MPDirectSolver):
         stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
                  ModelTags.quadratic_obj,
 
-                 ModelTags.sstatus,
+                 ModelTags.sstatus, 
                  ModelTags.warmstart, ModelTags.return_mipgap,
 
                  ModelTags.writelp, ModelTags.writesol,

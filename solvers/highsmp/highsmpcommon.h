@@ -25,7 +25,8 @@ namespace mp {
     int numVars_;
     std::vector<double> coeffs;
     std::vector<HighsInt> senses;
-
+    bool hadNativeMultiObj_ = false;
+    bool clearedOnce_, hadEmulatedMultiObj_ = false;
     std::vector<double> weight, offset, reltol, abstol;
     std::vector<int> priority;
   public:
@@ -34,6 +35,8 @@ namespace mp {
     }
     void add(const ::std::vector<int>& indices,
       const ::std::vector<double>& c, bool max) {
+      if (clearedOnce_) hadEmulatedMultiObj_ = true;
+      if (senses.size() > 0) hadNativeMultiObj_ = true;
       coeffs.resize(coeffs.size() + numVars_);
       for (auto i = 0; i < c.size(); i++)
         coeffs[senses.size() * numVars_ + indices[i]] = c[i];
@@ -47,6 +50,19 @@ namespace mp {
     void setAbsTols(ArrayRef<double> r);
     void setPriorities(ArrayRef<int> p);
     int numObjs() const { return senses.size(); }
+    bool hadNativeMultiObj() { return hadNativeMultiObj_; }
+    bool hadEmulatedMultiObj() { return hadEmulatedMultiObj_; }
+    void clear() {
+      coeffs.clear();
+      senses.clear();
+      weight.clear();
+      offset.clear();
+      reltol.clear();
+      abstol.clear();
+      priority.clear();
+      clearedOnce_ = true;
+      
+    }
   };
 
 

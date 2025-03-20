@@ -2,6 +2,13 @@ Summary of recent updates to HiGHS for AMPL
 ===========================================
 
 
+## 20250320
+- Disabled native multiobjective suppport, as it exhibited
+  a behaviour not consistent with the MO emulator. 
+  Multi objective problems can still be solved specifying option
+  *multiobj=1*, that will use MP's MO emulator.
+
+
 ## 20250308
 - Updated to HiGHS 1.9.0.
 - Added native multiobjective suppport.

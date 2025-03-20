@@ -5,12 +5,15 @@ namespace mp {
 
 
   void AccObjectives::setInHighs(void* highs) const {
+    if (senses.size() == 0) return;
     // Only to be used when adding a quadratic objective
     assert(senses.size()==1);
     HIGHS_CCALL(Highs_changeColsCostByRange(highs, 0, coeffs.size()-1, coeffs.data()));
     HIGHS_CCALL(Highs_changeObjectiveSense(highs, senses[0]));
   }
   void AccObjectives::setAllInHighs(void* highs) const {
+    if(senses.size() == 0)
+      return; // no objectives yet, like when only quad objs
     if(senses.size()==1)
       setInHighs(highs);
     else {
