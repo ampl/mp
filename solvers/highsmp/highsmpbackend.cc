@@ -498,6 +498,14 @@ static const mp::OptionValueInfo off_on_choose_values[] = {
   { "on", "On", 2},
 };
 
+
+static const mp::OptionValueInfo pdlperestartmethod_values[] = {
+  { "0", "None", 0},
+  { "1", "GPU (default)", 1},
+  { "2", "CPU", 2},
+};
+
+
 static const mp::OptionValueInfo run_crossover_values[] = {
   { "choose", "Run if the results of IPM without crossover is imprecise", -1},
   { "off", "Off", 1},
@@ -651,9 +659,17 @@ void HighsBackend::InitCustomOptions() {
     "Dual feasibility tolerance (default 1e-7).",
     "dual_feasibility_tolerance", 1e-10, Infinity());
 
+  AddSolverOption("alg:dualrestol dualrestol dual_residual_tolerance",
+    "Dual residual tolerance (default 1e-7).",
+    "dual_residual_tolerance", 1e-10, Infinity());
+
   AddSolverOption("alg:ipmopttol ipmopttol ipm_optimality_tolerance",
     "IPM optimality tolerance (default 1e-8).",
     "ipm_optimality_tolerance", 1e-12, Infinity());
+
+  AddSolverOption("alg:pdlperestartmethod pdlperestartmethod pdlp_e_restart_method",
+    "Duality gap tolerance for PDLP solver (default 1e-4).",
+    "pdlp_e_restart_method", pdlperestartmethod_values, 1);
 
   AddSolverOption("alg:pdlpdgaptol pdlpdgaptol pdlp_d_gap_tol",
     "Duality gap tolerance for PDLP solver (default 1e-4).",
@@ -667,10 +683,13 @@ void HighsBackend::InitCustomOptions() {
     "How many threads to use when using the barrier algorithm "
     "or solving MIP problems; default 0 ==> automatic choice.",
 		"threads", 0, INT32_MAX);
-
   AddSolverOption("mip:detsimmetry detsimmetry mip_detect_symmetry",
     "Whether symmetry should be detected (default 1)",
-    "mip_detect_symmetry",0, 1);
+    "mip_detect_symmetry", 0, 1);
+
+  AddSolverOption("mip:lifting lifting mip_lifting_for_probing",
+    "Whether lifting for probing should be used (default -1)",
+    "mip_lifting_for_probing", -1, INT_MAX);
 
   AddSolverOption("lim:stallnodes stallnodelim stallnodelimit mip_max_stall_nodes",
     "Maximum MIP number of nodes where estimate is above cutoff bound (default: no limit).",
@@ -711,6 +730,11 @@ void HighsBackend::InitCustomOptions() {
   AddSolverOption("tech:miploglev miploglev mip_report_level",
     "0/1*/2: MIP solver report level",
     "mip_report_level", 0, 2);
+
+  AddSolverOption("tech:seed seed random_seed",
+    "Random number seed (default 0), affecting perturbations that "
+    "may influence the solution path.",
+    "random_seed", 0, INT_MAX);
 
   AddSolverOption("mip:intfeastol intfeastol inttol mip_feasibility_tolerance",
     "Feasibility tolerance for integer variables (default 1e-06).",
