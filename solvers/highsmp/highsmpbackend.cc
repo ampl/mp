@@ -668,7 +668,7 @@ void HighsBackend::InitCustomOptions() {
     "ipm_optimality_tolerance", 1e-12, Infinity());
 
   AddSolverOption("alg:pdlperestartmethod pdlperestartmethod pdlp_e_restart_method",
-    "Duality gap tolerance for PDLP solver (default 1e-4).",
+    "Restart mode for PDLP solver (default 1).",
     "pdlp_e_restart_method", pdlperestartmethod_values, 1);
 
   AddSolverOption("alg:pdlpdgaptol pdlpdgaptol pdlp_d_gap_tol",
