@@ -238,19 +238,19 @@ using QuadConGT = QuadConRhs< 2>;
 
 
 void WriteModelItem(fmt::MemoryWriter& wrt, const LinTerms& lt,
-                    const std::vector<std::string>& vnam);
+                    ItemNamer& vnam);
 
 void WriteModelItem(fmt::MemoryWriter& wrt, const QuadTerms& qt,
-                    const std::vector<std::string>& vnam);
+                    ItemNamer& vnam);
 
 void WriteModelItem(fmt::MemoryWriter& wrt, const QuadAndLinTerms& qlt,
-                    const std::vector<std::string>& vnam);
+                    ItemNamer& vnam);
 
 /// Write RangeCon without name.
 template <class Writer, class Body>
 inline void WriteModelItem(Writer& wrt,
                     const AlgebraicConstraint<Body, AlgConRange>& algc,
-                    const std::vector<std::string>& vnam) {
+                    ItemNamer& vnam) {
   const auto& rng = algc.GetRhsOrRange();
   if (rng.lb() > -DBL_MAX && rng.lb() < rng.ub())
     wrt << rng.lb() << " <= ";
@@ -265,7 +265,7 @@ inline void WriteModelItem(Writer& wrt,
 template <class Writer, class Body, int kind>
 inline void WriteModelItem(Writer& wrt,
                     const AlgebraicConstraint<Body, AlgConRhs<kind> >& algc,
-                    const std::vector<std::string>& vnam) {
+                    ItemNamer& vnam) {
   const auto& rng = algc.GetRhsOrRange();
   WriteModelItem(wrt, algc.GetBody(), vnam);
   wrt << ' ' << rng.GetCmpStr() << ' ' << rng.rhs();

@@ -100,6 +100,12 @@ public:
     vars_.reserve(s);
   }
 
+  /// shrink_to_fit
+  void shrink_to_fit() {
+    coefs_.shrink_to_fit();
+    vars_.shrink_to_fit();
+  }
+
   /// Add linear term
   void add_term(double c, int v)
   { coefs_.push_back(c); vars_.push_back(v); }
@@ -162,6 +168,14 @@ public:
   /// all elements unique and non-0.
   void sort_terms(bool force_sort=true);
 
+  /// (var, coef)
+  std::pair<int, double> IndexValue(size_t i) const
+  { return {var(i), coef(i)}; }
+
+  /// Add (var, coef)
+  void add_index_value(std::pair<int, double> iv)
+  { add_term(iv.second, iv.first); }
+
   /// Equality. Assumes being sorted
   bool equals(const LinTerms& lt) const {
     return coefs_==lt.coefs_ && vars_==lt.vars_;
@@ -177,6 +191,9 @@ private:
   SmallVec<double, 6> coefs_;
   SmallVec<int, 6> vars_;
 };
+
+/// Merge 2 sorted LinTerms
+LinTerms Merge(const LinTerms& , const LinTerms& );
 
 /// Specialize
 template <>

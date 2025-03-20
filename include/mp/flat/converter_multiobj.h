@@ -218,7 +218,8 @@ protected:
     MPD( GetModelAPI() ).InitProblemModificationPhase(   // For adding the new constraint. @todo a hack.
         MPD( GetModelInfo() ));                          // Ideally Model would notice changes and notify
     ReplaceCurrentObj();                  // After allowing model modification (needed by SCIP.)
-    MPD( AddUnbridgedConstraintsToBackend( MPD( GetModelAPI() ), nullptr) );
+    MPD( AddUnbridgedConstraintsToBackend(
+        MPD( GetModelAPI() ), MPD( GetVarNamer() )) );
     MPD( GetModelAPI() ).FinishProblemModificationPhase();            // ModelAPI automatically.
     return true;
   }

@@ -119,10 +119,10 @@ private:
 
 
 /// Write algebraic expr.
-template <class Writer, class Terms>
+template <class Writer, class Terms, class Namer>
 inline void WriteModelItem(Writer& wrt,
                     const AlgebraicExpression<Terms>& ale,
-                    const std::vector<std::string>& vnam) {
+                    Namer& vnam) {
   WriteModelItem(wrt, ale.GetBody(), vnam);
   wrt << (ale.constant_term()>=0 ? " + " : " - ")
       << std::fabs(ale.constant_term());

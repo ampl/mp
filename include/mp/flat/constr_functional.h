@@ -242,7 +242,7 @@ using NLAffineExpression = ExprWrapper<LinearFunctionalConstraint>;
 template <class Writer>
 inline void WriteModelItem(Writer& wrt,
                     const LinearFunctionalConstraint& lfc,
-                    const std::vector<std::string>& vnam) {
+                    ItemNamer& vnam) {
   wrt << vnam.at(lfc.GetResultVar()) << " == ";
   WriteModelItem(wrt, lfc.GetArguments(), vnam);
 }
@@ -328,7 +328,7 @@ MakeFunctionalConstraint(QuadraticExpr qe) {
 template <class Writer>
 inline void WriteModelItem(Writer& wrt,
                     const QuadraticFunctionalConstraint& qfc,
-                    const std::vector<std::string>& vnam) {
+                    ItemNamer& vnam) {
   wrt << vnam.at(qfc.GetResultVar()) << " == ";
   WriteModelItem(wrt, qfc.GetArguments(), vnam);
 }

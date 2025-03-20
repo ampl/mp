@@ -8,10 +8,12 @@
 #include "mp/utils-vec.h"
 #include "mp/utils-string.h"
 
-#include "mp/flat/expr_quadratic.h"
+#include "mp/flat/eexpr.h"
 #include "mp/flat/obj_std.h"
 #include "mp/flat/constr_keeper.h"
 #include "mp/flat/model_info.hpp"
+
+#include "mp/flat/bucketaccum.hpp"
 
 namespace mp {
 
@@ -146,7 +148,8 @@ bool QuadTerms::is_sorted() const {
     for (auto i = size()-1; (i--)>0; ) {
       if (vars1_[i] > vars2_[i]          // v1>v2
           || vars1_[i] > vars1_[i+1]
-          || (vars1_[i]==vars1_[i+1] && vars2_[i]>vars2_[i+1])
+          || (vars1_[i]==vars1_[i+1]
+              && vars2_[i]>=vars2_[i+1]) // also when ==
           || !coefs_[i])                 // coef == 0
         return false;
     }
@@ -173,6 +176,75 @@ void QuadTerms::sort_terms()  {
   }
   assert(is_sorted());
 }
+
+
+template <class Terms>
+Terms MergeSorted(const Terms& t1, const Terms& t2) {
+  assert(t1.is_sorted());
+  assert(t2.is_sorted());
+  Terms result;
+  result.reserve(t1.size() + t2.size());
+
+  size_t i1=0, i2=0;
+  while (true) {
+    if (i1<t1.size() && i2<t2.size()) {
+      auto t1i = t1.IndexValue(i1);
+      auto t2i = t2.IndexValue(i2);
+      if (t1i.first < t2i.first) {
+        result.add_index_value(t1i);
+        ++i1;
+      } else if (t1i.first > t2i.first) {
+        result.add_index_value(t2i);
+        ++i2;
+      } else {
+        t1i.second += t2i.second;
+        if (t1i.second)
+          result.add_index_value(t1i);
+        ++i1;
+        ++i2;
+      }
+    } else if (i1<t1.size()) {
+      for ( ; i1<t1.size(); ++i1) {
+        auto t1i = t1.IndexValue(i1);
+        result.add_index_value(t1i);
+      }
+      break;
+    } else if (i2<t2.size()) {
+      for ( ; i2<t2.size(); ++i2) {
+        auto t2i = t2.IndexValue(i2);
+        result.add_index_value(t2i);
+      }
+      break;
+    } else
+      break;
+  }
+
+  result.shrink_to_fit();
+  return result;
+}
+
+/// Merge 2 sorted LinTerms
+LinTerms Merge(const LinTerms& t1, const LinTerms& t2) {
+  return MergeSorted(t1, t2);
+}
+
+/// Merge 2 sorted QuadTerms
+QuadTerms Merge(const QuadTerms& t1, const QuadTerms& t2) {
+  return MergeSorted(t1, t2);
+}
+
+
+// Instantiate BucketAccumulator
+template
+class BucketAccumulator<EExpr>;
+
+// For some reason we need explicit:
+template
+    class BucketAccum1Type<LinTerms>;
+template
+    class BucketAccum1Type<QuadTerms>;
+
+///////////////////////// END SORTING /////////////////////////////
 
 
 const char*
@@ -322,7 +394,7 @@ void WriteVar(Writer& pr, const char* name,
 }
 
 void WriteModelItem(fmt::MemoryWriter& wrt, const LinTerms& lt,
-                    const std::vector<std::string>& vnam) {
+                    ItemNamer& vnam) {
   for (int i=0; i<(int)lt.size(); ++i) {
     auto coef = lt.coef(i);
     bool ifpos = coef>=0.0;
@@ -340,7 +412,7 @@ void WriteModelItem(fmt::MemoryWriter& wrt, const LinTerms& lt,
 }
 
 void WriteModelItem(fmt::MemoryWriter& wrt, const QuadTerms& qt,
-                    const std::vector<std::string>& vnam) {
+                    ItemNamer& vnam) {
   for (int i=0; i<(int)qt.size(); ++i) {
     auto coef = qt.coef(i);
     bool ifpos = coef>=0.0;
@@ -361,7 +433,7 @@ void WriteModelItem(fmt::MemoryWriter& wrt, const QuadTerms& qt,
 }
 
 void WriteModelItem(fmt::MemoryWriter& wrt, const QuadAndLinTerms& qlt,
-                    const std::vector<std::string>& vnam) {
+                    ItemNamer& vnam) {
   WriteModelItem(wrt, qlt.GetLinTerms(), vnam);
   if (qlt.GetQPTerms().size()) {
     if (qlt.GetLinTerms().size())
@@ -373,7 +445,7 @@ void WriteModelItem(fmt::MemoryWriter& wrt, const QuadAndLinTerms& qlt,
 }
 
 void WriteModelItem(fmt::MemoryWriter& wrt, const QuadraticObjective& obj,
-                    const std::vector<std::string>& vnam) {
+                    ItemNamer& vnam) {
   wrt << (obj.obj_sense() ? "maximize " : "minimize ");
   assert(obj.name() && *obj.name());
   wrt << obj.name() << ": ";

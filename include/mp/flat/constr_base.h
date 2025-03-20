@@ -54,6 +54,30 @@ private:
 };
 
 
+/// Var/con/obj namer for flat models
+class ItemNamer {
+public:
+  /// Default constr
+  ItemNamer(std::string nmd) : nm_dfl_(nmd) { }
+  /// construct from given names array
+  ItemNamer(const std::vector<std::string>& nm, std::string nmd)
+      : p_names_given_(&nm), nm_dfl_(nmd) { }
+  /// Obtain name[i]
+  const char* at(size_t i) {
+    if (i<p_names_given_->size())
+      return (*p_names_given_)[i].c_str();
+    if (i>=names_gen_.size())
+      names_gen_.resize((size_t)(1.3*i+100));
+    if (names_gen_[i].empty())
+      names_gen_[i] = nm_dfl_ + std::to_string(i+1) + "_";
+    return names_gen_[i].c_str();
+  }
+private:
+  const std::vector<std::string>* p_names_given_ {};
+  std::vector<std::string> names_gen_;
+  std::string nm_dfl_;
+};
+
 /// Wrap (functional) constraint to represent it as an expression.
 ///
 /// (Solver)ModelAPI should only inspect it via the
@@ -274,7 +298,7 @@ template <class Writer, class Vec,
               decltype(*begin(std::declval<Vec>()))> >
 inline void WriteModelItem(
     Writer& wrt, const Vec& v,
-    const std::vector<std::string>& vnam) {
+    ItemNamer& vnam) {
   static_assert (
   std::is_integral_v<typename Vec::value_type>, "Variable vector: need int's");
   wrt << '[';
@@ -309,7 +333,7 @@ template <class Writer, class A, class P, class N, class I>
 inline void WriteModelItem(
     Writer& wrt,
     const CustomFunctionalConstraint<A,P,N,I>& cfc,
-    const std::vector<std::string>& vnam) {
+    ItemNamer& vnam) {
   if (cfc.HasResultVar())   // really functional
     wrt << vnam.at(cfc.GetResultVar()) << " == ";
   WriteModelItem(
@@ -321,7 +345,7 @@ template <class Writer, class A, class P, class I>
 inline void WriteModelItem(
     Writer& wrt,
     const CustomConstraintData<A,P,I>& cfc,
-    const std::vector<std::string>& vnam) {
+    ItemNamer& vnam) {
   wrt << cfc.GetTypeName();
   wrt << '(';
   WriteModelItem(wrt, cfc.GetArguments(), vnam);
@@ -335,7 +359,7 @@ inline void WriteModelItem(
 /// with name.
 template <class Writer, class Con>
 inline void WriteFlatCon(Writer& wrt, const Con& c,
-                  const std::vector<std::string>& vnam) {
+                  ItemNamer& vnam) {
   wrt << c.name() << ": ";
   WriteModelItem(wrt, c, vnam);
 }
@@ -538,7 +562,7 @@ public:
 template <class Writer, class Con>
 inline void WriteModelItem(Writer& wrt,
                     const ConditionalConstraint<Con>& condc,
-                    const std::vector<std::string>& vnam) {
+                    ItemNamer& vnam) {
   wrt << vnam.at(condc.GetResultVar()) << "==1 <==> ";
   wrt << '(';
   WriteModelItem(wrt, condc.GetArguments(), vnam);

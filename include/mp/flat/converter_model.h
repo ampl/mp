@@ -90,11 +90,12 @@ protected:
         MiniJSONWriter jw(wrt);
         int i_actual = i+i_start;
         jw["VAR_index"] = i_actual;
-        if (var_names_storage_.size() > i_actual) {
+        {
           int i = i_actual;
-          jw["name"] = var_names_[i];
+          auto name = GetVarNamer().at(i);
+          jw["name"] = name;
           fmt::MemoryWriter pr;
-          WriteVar(pr, var_names_[i], lbs[i], ubs[i], types[i]);
+          WriteVar(pr, name, lbs[i], ubs[i], types[i]);
           jw["printed"] = pr.c_str();
         }
         jw["bounds"]
@@ -312,7 +313,7 @@ protected:
         if (obj.name() && *obj.name()) {
           jw["name"] = obj.name();
           fmt::MemoryWriter pr;
-          WriteModelItem(pr, obj, var_names_storage_);
+          WriteModelItem(pr, obj, GetVarNamer());
           jw["printed"] = pr.c_str();
         }
         jw["sense"] = (int)obj.obj_sense();
@@ -451,7 +452,7 @@ protected:
   template <class Backend>
   void PushCustomConstraintsTo(Backend& backend) const {
     this->AddUnbridgedConstraintsToBackend(
-          backend, &var_names_storage_);
+        backend, GetVarNamer());
     this->LogConstraintGroups(backend);
   }
 
@@ -475,6 +476,8 @@ public:
       backend.SetLinearObjective(i, obj);
   }
 
+  /// Var namer
+  ItemNamer& GetVarNamer() const { return var_namer_; }
 
 private:
   /// Variables' bounds
@@ -494,6 +497,7 @@ private:
   ///  Variables' names
   mutable VarNameVec var_names_;
   std::vector<std::string> var_names_storage_;
+  mutable ItemNamer var_namer_ {var_names_storage_, "_svar"};
   /// Number of original NL variables
   int num_vars_orig_ {0};
   /// Objectives

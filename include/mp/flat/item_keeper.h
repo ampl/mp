@@ -146,7 +146,7 @@ public:
 
   /// This adds all unbridged items to the backend (without conversion)
   virtual void AddUnbridgedToBackend(
-      BasicFlatModelAPI& be, const std::vector<std::string>* vnames) = 0;
+      BasicFlatModelAPI& be, ItemNamer& vnames) = 0;
 
   /// Store the solver's native expression for constraint \a i.
   /// Have to abandon type safety - an alternative would be to
@@ -434,10 +434,9 @@ public:
 
   /// Add all unbridged constraints to Backend
   void AddUnbridgedConstraintsToBackend(
-      BasicFlatModelAPI& be,
-      const std::vector<std::string>* pvnam=nullptr) const {
+      BasicFlatModelAPI& be, ItemNamer& vnam) const {
     for (const auto& ck: con_keepers_)
-      ck.second.AddUnbridgedToBackend(be, pvnam);
+      ck.second.AddUnbridgedToBackend(be, vnam);
   }
 
   /// Log constraint groups

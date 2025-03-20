@@ -75,6 +75,13 @@ public:
     vars2_.reserve(num_terms);
   }
 
+  /// shrink_to_fit
+  void shrink_to_fit() {
+    coefs_.shrink_to_fit();
+    vars1_.shrink_to_fit();
+    vars2_.shrink_to_fit();
+  }
+
   /// Is normalized? Assume sorted.
   bool is_normalized() const {
     assert(size());
@@ -120,6 +127,14 @@ public:
   /// Sort and eliminate duplicates
   void sort_terms();
 
+  /// ({var1, var2}, coef)
+  std::pair<std::pair<int, int>, double> IndexValue(size_t i) const
+  { return {{var1(i), var2(i)}, coef(i)}; }
+
+  /// Add ({var1, var2}, coef)
+  void add_index_value(std::pair<std::pair<int, int>, double> iv)
+  { add_term(iv.second, iv.first.first, iv.first.second); }
+
   /// Clear
   void clear() {
     coefs_.clear();
@@ -143,6 +158,9 @@ private:
   SmallVec<int, 6> vars1_;
   SmallVec<int, 6> vars2_;
 };
+
+/// Merge 2 sorted QuadTerms
+QuadTerms Merge(const QuadTerms& , const QuadTerms& );
 
 /// Specialize
 template <>

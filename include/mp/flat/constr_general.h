@@ -85,7 +85,7 @@ using IndicatorConstraintQuadGE = IndicatorConstraint<QuadConGE>;
 /// Write indicator without name.
 template <class Writer, class Con>
 inline void WriteModelItem(Writer& wrt, const IndicatorConstraint<Con>& ic,
-                    const std::vector<std::string>& vnam) {
+                    ItemNamer& vnam) {
   wrt << vnam.at(ic.get_binary_var())
       << "==" << ic.get_binary_value()
       << " ==> (";
@@ -259,7 +259,7 @@ using SOS2Constraint = SOS_1or2_Constraint<2>;
 /// Write SOS without name.
 template <class Writer, int type>
 inline void WriteModelItem(Writer& wrt, const SOS_1or2_Constraint<type>& sos,
-                    const std::vector<std::string>& vnam) {
+                    ItemNamer& vnam) {
   // Type 1/2 should be in the name.
   wrt << sos.GetTypeName();
   wrt << '(';
@@ -340,7 +340,7 @@ using ComplementarityQuadratic = ComplementarityConstraint<QuadraticExpr>;
 template <class Writer, class Expr>
 inline void WriteModelItem(Writer& wrt,
                     const ComplementarityConstraint<Expr>& cc,
-                    const std::vector<std::string>& vnam) {
+                    ItemNamer& vnam) {
   wrt << vnam.at(cc.GetVariable());
   wrt << " complements ";
   WriteModelItem(wrt, cc.GetExpression(), vnam);

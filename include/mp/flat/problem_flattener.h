@@ -10,6 +10,7 @@
 #include "mp/converter-base.h"
 #include "mp/expr-visitor.h"
 #include "mp/flat/eexpr.h"
+#include "mp/flat/bucketaccum.h"
 #include "mp/flat/prepro_prod.h"
 #include "mp/flat/constr_std.h"
 #include "mp/flat/obj_std.h"
@@ -698,17 +699,19 @@ public:          // need to be public due to CRTP
   }
 
   EExpr VisitAdd(BinaryExpr e) {
-    auto ee = Convert2EExpr(e.lhs());
-    ee.add( Convert2EExpr(e.rhs()) );
-    return ee;
+    BucketAccumulator<EExpr> ba;
+    ba.Add( Convert2EExpr(e.lhs()) );
+    ba.Add( Convert2EExpr(e.rhs()) );
+    return ba.ExtractSum();
   }
 
   EExpr VisitSub(BinaryExpr e) {
-    auto el = Convert2EExpr(e.lhs());
+    BucketAccumulator<EExpr> ba;
+    ba.Add( Convert2EExpr(e.lhs()) );
     auto er = Convert2EExpr(e.rhs());
     er.negate();
-    el.add(er);
-    return el;
+    ba.Add( std::move(er) );
+    return ba.ExtractSum();
   }
 
   EExpr VisitMul(BinaryExpr e) {
@@ -727,11 +730,11 @@ public:          // need to be public due to CRTP
   }
 
   EExpr VisitSum(typename BaseExprVisitor::SumExpr expr) {
-    EExpr sum;              // Add up the elements' AffExpressions
+    BucketAccumulator<EExpr> bucketaccum(expr.num_args());
     for (auto i =
          expr.begin(), end = expr.end(); i != end; ++i)
-      sum.add( MP_DISPATCH( Convert2EExpr(*i) ) );
-    return sum;
+      bucketaccum.Add( MP_DISPATCH( Convert2EExpr(*i) ) );
+    return bucketaccum.ExtractSum();
   }
 
   EExpr VisitMax(typename BaseExprVisitor::VarArgExpr e) {

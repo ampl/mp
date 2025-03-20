@@ -86,7 +86,7 @@ inline void WriteJSON(JSONW jw,
 template <class Writer, class Names>
 inline void WriteModelItem(Writer& wrt,
                            const NLConstraint& nlc,
-                           const Names& vnam) {
+                           Names& vnam) {
   wrt << "NLExprIndex: " << vnam.at(nlc.ExprIndex()) << " IN: ";
   WriteModelItem(wrt, nlc.GetMainCon(), vnam);
 }
@@ -153,7 +153,7 @@ inline void WriteJSON(JSONW jw,
 template <class Writer, int sense, class Names>
 inline void WriteModelItem(Writer& wrt,
                            const NLBaseAssign<sense>& nlr,
-                           const Names& vnam) {
+                           Names& vnam) {
   wrt << "EXPLICIT ASSIGN var: " << vnam.at(nlr.GetVar());
 }
 
@@ -213,7 +213,7 @@ inline void WriteJSON(JSONW jw,
 template <class Writer, class Names>
 inline void WriteModelItem(Writer& wrt,
                            const NLLogical& nllc,
-                           const Names& vnam) {
+                           Names& vnam) {
   wrt << "NLLogicalExprIndex: "
       << vnam.at(nllc.GetCapturedResultVar());
   wrt << "NLLogicalExprValue: "
@@ -275,7 +275,7 @@ inline void WriteJSON(JSONW jw,
 template <class Writer, int sense, class Names>
 inline void WriteModelItem(Writer& wrt,
                            const NLBaseReif<sense>& nlr,
-                           const Names& vnam) {
+                           Names& vnam) {
   wrt << "EXPLICIT REIF var: " << vnam.at(nlr.GetBVar());
 }
 

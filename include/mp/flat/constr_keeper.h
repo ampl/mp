@@ -252,12 +252,12 @@ public:
   /// Add remaining constraints to Backend
   void AddUnbridgedToBackend(
       BasicFlatModelAPI& be,
-      const std::vector<std::string>* pvnam) override {
+      ItemNamer& vnam) override {
     if (ExpressionAcceptanceLevel::NotAccepted
         == GetChosenAcceptanceLevelEXPR()
         || !GetConverter().IfWantNLOutput()) {
       try {
-        AddAllUnbridged(be, pvnam);
+        AddAllUnbridged(be, vnam);
       } catch (const std::exception& exc) {
         MP_RAISE(std::string("Adding constraint of type '") +
                  Constraint::GetTypeName() + "' to " +
@@ -522,8 +522,7 @@ protected:
   /// This is called in the end,
   /// so printing the readable form.
   void ExportConStatus(int i_con, const Container& cnt,
-                       const std::vector<std::string>* pvnam,
-                       bool add2final) {
+                       ItemNamer& vnam, bool add2final) {
     if (GetLogger()) {
       fmt::MemoryWriter wrt;
       {
@@ -532,9 +531,9 @@ protected:
         jw["index"] = i_con;
         if (*cnt.GetCon().name()) {
           jw["name"] = cnt.GetCon().name();
-          if (pvnam && pvnam->size()) {
+          {
             fmt::MemoryWriter pr;
-            WriteFlatCon(pr, cnt.GetCon(), *pvnam);
+            WriteFlatCon(pr, cnt.GetCon(), vnam);
             jw["printed"] = pr.c_str();
           }
         }
@@ -659,7 +658,7 @@ protected:
   /// Add all non-converted items to ModelAPI.
   /// Export all constraints if desired.
   void AddAllUnbridged(BasicFlatModelAPI& be,
-                       const std::vector<std::string>* pvnam) {
+                       ItemNamer& vnam) {
     auto con_group = GetConstraintGroup(be);
 		for ( ; i_2add_next_ < (int)cons_.size(); ++i_2add_next_) {
       const auto& cont = cons_[i_2add_next_];
@@ -673,7 +672,7 @@ protected:
                          GetConValues()(con_group).Add()
                      });
       }
-      ExportConStatus(i_2add_next_, cont, pvnam, adding);
+      ExportConStatus(i_2add_next_, cont, vnam, adding);
     }
   }
 

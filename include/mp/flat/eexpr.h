@@ -12,6 +12,9 @@ class EExpr : public QuadraticExpr {
 public:
   /// Default constructor
   EExpr() = default;
+  /// Construct from LinTerms, QuadTerms, const_term
+  EExpr(LinTerms lt, QuadTerms qt, double ct)
+      : QuadraticExpr( {std::move(lt), std::move(qt) }, ct ) { }
   /// Construct from LinTerms
   EExpr(LinTerms lt): QuadraticExpr( {std::move(lt), {} }, 0.0 ) { }
   /// Constructor from the Constant helper
