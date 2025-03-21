@@ -25,6 +25,11 @@ public:
   EExpr(double c, int i) { add_term(c, i); }
 };
 
+/// Multiply out two EEXprs.
+/// Sort both factors (@todo only in Debug),
+/// then produce sorted result
+EExpr MultiplyOut(const EExpr& el, const EExpr& er);
+
 } // namespace mp
 
 #endif // EEXPR_H

@@ -234,6 +234,107 @@ QuadTerms Merge(const QuadTerms& t1, const QuadTerms& t2) {
 }
 
 
+QuadTerms MultiplyOut(const LinTerms& ae1, const LinTerms& ae2) {
+  QuadTerms result;
+  result.reserve(ae1.size()*ae2.size());
+
+#ifndef OLD_MULTOUT
+  // Dave style
+  size_t i=0, j=0;
+  while (i<ae1.size() && j<ae2.size()) {
+    auto vi = ae1.var(i), vj = ae2.var(j);
+    if (vi < vj) {
+      for (auto j1=j; j1<ae2.size(); ++j1)   // follow from j
+        result.add_term(
+            ae1.coef(i)*ae2.coef(j1), vi, ae2.var(j1));
+      ++i;
+    } else if (vj < vi) {
+      for (auto i1=i; i1<ae1.size(); ++i1)   // follow from i
+        result.add_term(
+            ae1.coef(i1)*ae2.coef(j), vj, ae1.var(i1));
+      ++j;
+    } else {                                 // vi==vj
+      result.add_term(
+          ae1.coef(i)*ae2.coef(j), vi, vi);
+      size_t i1=i, j1=j;
+      ++i1;
+      ++j1;
+      while (i1<ae1.size() && j1<ae2.size()) {
+        auto vi1 = ae1.var(i1), vj1 = ae2.var(j1);
+        if (vi1 < vj1) {
+          result.add_term(
+              ae1.coef(i1)*ae2.coef(j), vi, vi1);
+          ++i1;
+        } else if (vj1 < vi1) {
+          result.add_term(
+              ae1.coef(i)*ae2.coef(j1), vi, vj1);
+          ++j1;
+        } else {                             // vi1==vj1
+          result.add_term(
+              ae1.coef(i)*ae2.coef(j1) + ae1.coef(i1)*ae2.coef(j),
+              vi, vi1);
+          ++i1;
+          ++j1;
+        }
+      }
+      ++i;
+      ++j;
+    }
+  }
+#else
+  for (auto i1 = ae1.size(); i1--; ) {
+    for (auto i2 = ae2.size(); i2--; ) {
+      result.add_term(ae1.coef(i1) * ae2.coef(i2),
+                      ae1.var(i1), ae2.var(i2) );
+    }
+  }
+  result.sort_terms();      // eliminate 0's and duplicates
+#endif
+
+  result.shrink_to_fit();
+  assert(result.is_sorted());
+  return result;
+}
+
+
+EExpr MultiplyOut(const EExpr& el, const EExpr& er) {
+  assert((el.is_affine() && er.is_affine()) ||
+         (el.is_constant() || er.is_constant()));
+  EExpr result;
+  if (er.constant_term()) {
+    result.GetLinTerms().add(el.GetLinTerms());
+    result.GetLinTerms() *= er.constant_term();
+    result.GetQPTerms().add(el.GetQPTerms());
+    result.GetQPTerms() *= er.constant_term();
+    result.constant_term(
+        er.constant_term() * el.constant_term());
+  }
+  if (el.constant_term()) {
+    if (er.GetLinTerms().size()) {
+      if (result.GetLinTerms().size()) {
+        auto ae2 = er.GetLinTerms();    // @todo in-place if el!=er
+        ae2 *= el.constant_term();
+        result.GetLinTerms().sort_terms();  // @todo only in Release
+        ae2.sort_terms();
+        result.GetLinTerms()
+            = Merge(result.GetLinTerms(), ae2);
+      } else {
+        result.GetLinTerms().add(er.GetLinTerms());
+        result.GetLinTerms() *= el.constant_term();
+      }
+    }      // at most 1 factor has QP:
+    result.GetQPTerms().add(er.GetQPTerms());
+    result.GetQPTerms() *= el.constant_term();
+  }
+  if (el.is_affine() && er.is_affine()) {
+    assert(result.GetQPTerms().empty());
+    result.GetQPTerms()
+        = MultiplyOut(el.GetLinTerms(), er.GetLinTerms());
+  }
+  return result;
+}
+
+
 // Instantiate BucketAccumulator
 template
 class BucketAccumulator<EExpr>;

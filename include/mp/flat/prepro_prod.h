@@ -161,6 +161,6 @@ private:
   int n_terms_binary_ = 0;
 };
 
-}  // namespace mp
+ }  // namespace mp
 
 #endif // PREPRO_PROD_H

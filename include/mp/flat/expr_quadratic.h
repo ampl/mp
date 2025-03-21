@@ -162,6 +162,11 @@ private:
 /// Merge 2 sorted QuadTerms
 QuadTerms Merge(const QuadTerms& , const QuadTerms& );
 
+/// Multiply out two LinTerms.
+/// Sort both factors - only in Debug,
+/// then produce sorted result.
+QuadTerms MultiplyOut(const LinTerms& e1, const LinTerms& e2);
+
 /// Specialize
 template <>
 void WriteJSON(JSONW jw, const QuadTerms& qt);

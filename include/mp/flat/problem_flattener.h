@@ -1112,6 +1112,7 @@ public:         // More utilities
 
   /// Create product without multiplying out.
   /// Create a separate QC.
+  /// @todo inspect each factor separately if it's just a var.
   EExpr DontMultOut(EExpr&& el, EExpr&& er) {
     const auto& ellt = el.GetLinTerms();
     const auto& erlt = er.GetLinTerms();
@@ -1140,38 +1141,7 @@ public:         // More utilities
 
   /// Multiply out two EEXprs
   EExpr MultiplyOut(const EExpr& el, const EExpr& er) {
-    assert((el.is_affine() && er.is_affine()) ||
-           (el.is_constant() || er.is_constant()));
-    EExpr result;
-    if (0.0!=std::fabs(er.constant_term())) {
-      result.GetLinTerms().add(el.GetLinTerms());  // no const here
-      result.GetLinTerms() *= er.constant_term();
-      result.GetQPTerms().add(el.GetQPTerms());
-      result.GetQPTerms() *= er.constant_term();
-    }
-    if (0.0!=std::fabs(el.constant_term())) {
-      {
-        auto ae2 = er.GetLinTerms();
-        ae2 *= el.constant_term();
-        result.GetLinTerms().add(ae2);
-        result.constant_term(
-              er.constant_term() * el.constant_term());
-      }
-      result.GetQPTerms().add(er.GetQPTerms());
-      result.GetQPTerms() *= el.constant_term();
-    }
-    const auto& ae1 = el.GetLinTerms();
-    const auto& ae2 = er.GetLinTerms();
-    result.GetQPTerms().reserve(
-        result.GetQPTerms().size() + ae1.size()*ae2.size());
-    for (auto i1 = ae1.size(); i1--; ) {
-      for (auto i2 = ae2.size(); i2--; ) {
-        result.add_term(ae1.coef(i1) * ae2.coef(i2),
-                           ae1.var(i1), ae2.var(i2) );
-      }
-    }
-    // result.sort_terms();      // eliminate 0's and duplicates
-    return result;
+    return mp::MultiplyOut(el, er);
   }
 
 
