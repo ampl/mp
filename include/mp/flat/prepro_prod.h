@@ -9,6 +9,8 @@
 #include "mp/expr-visitor.h"
 #include "mp/flat/constr_std.h"
 
+#include "mp/utils-vec.h"
+
 
 namespace mp {
 
@@ -151,8 +153,9 @@ protected:
 private:
   Flattener& flt_;
   /// tuple: comparator, term, bounds
-  std::vector<
-      std::tuple< TermCmp, FlatExpr, std::pair<double, double> > >
+  SmallVec<
+      std::tuple< TermCmp, FlatExpr, std::pair<double, double> >,
+      32 >                 // 32 elements preallocated
       terms_flt_;
   int n_terms_const_ = 0;
   int n_terms_binary_ = 0;
