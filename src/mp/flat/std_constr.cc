@@ -270,9 +270,8 @@ QuadTerms MultiplyOut(const LinTerms& ae1, const LinTerms& ae2) {
               ae1.coef(i)*ae2.coef(j1), vi, vj1);
           ++j1;
         } else {                             // vi1==vj1
-          result.add_term(
-              ae1.coef(i)*ae2.coef(j1) + ae1.coef(i1)*ae2.coef(j),
-              vi, vi1);
+          if (auto v = ae1.coef(i)*ae2.coef(j1) + ae1.coef(i1)*ae2.coef(j))
+            result.add_term(v, vi, vi1);
           ++i1;
           ++j1;
         }
