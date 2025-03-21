@@ -5,6 +5,8 @@ Summary of recent updates to HiGHS for AMPL
 ## 20250320
 - Updated to HiGHS 1.10, which include GPU support for cuPDLP-C, 
   lifting for probing (see `mip:lifting`), and bug fixes
+- Added support for PDLP on NVIDIA GPU, accessible with `alg:method=pdlp-gpu`.
+  It requires Linux/Windows and NVIDIA CUDA toolkit.
 - Added options `tech:seed`, `alg:pdlperestartmethod`, `alg:dualrestol`
 - Disabled native multiobjective suppport, as it exhibited
   a behaviour not consistent with the MO emulator. 

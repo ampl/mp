@@ -30,10 +30,7 @@ public:
   static const char* GetBackendName();
   static const char* GetBackendLongName() { return nullptr; }
 
-  /// Chance for the Backend to init solver environment, etc
-  void InitOptionParsing() override { }
-  /// Chance to consider options immediately (open cloud, etc)
-  void FinishOptionParsing() override;
+
 
   /// This can actually modify the model -- e.g., suffixes
   void InputExtras() override;
@@ -116,8 +113,9 @@ public:
 
   //////////////////// [[ Implementation details ]] //////////////////////
   ///////////////////////////////////////////////////////////////////////////////
-public:  // public for static polymorphism
+public:  
   void InitCustomOptions() override;
+  void FinishOptionParsing() override;
 
 protected:
 
@@ -137,6 +135,7 @@ protected:
   double NodeCount() const;
   double SimplexIterations() const;
   int BarrierIterations() const;
+  int PdlpIterations() const;
 
   std::pair<int, std::string> GetSolveResult() override;
   void AddHIGHSMessages();
@@ -148,6 +147,7 @@ protected:
 private:
   /// These options are stored in the class
   struct Options {
+    std::string lpmethod_ = "choose";
   };
   Options storedOptions_;
 

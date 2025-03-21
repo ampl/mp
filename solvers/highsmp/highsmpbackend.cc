@@ -39,20 +39,18 @@ CreateHighsModelMgr(HighsCommon&, Env&, pre::BasicValuePresolver*&);
 
 
 HighsBackend::HighsBackend() {
-  OpenSolver();
-
+  LoadHighsLibrary(false);
+  OpenSolver(); 
   pre::BasicValuePresolver* pPre;
   auto data = CreateHighsModelMgr(*this, *this, pPre);
   SetMM( std::move( data ) );
   SetValuePresolver(pPre);
-
-  /// Copy env/lp to ModelAPI
-  copy_common_info_to_other();
 }
 
 HighsBackend::~HighsBackend() {
   CloseSolver();
 }
+
 
 const char* HighsBackend::GetBackendName()
   { return "HighsBackend"; }
@@ -70,6 +68,31 @@ std::string HighsBackend::GetSolverVersion() {
   accObjectives().setAllInHighs(lp());
   accObjectives().clear(); 
 }
+  void HighsBackend::FinishOptionParsing() {
+    // If CUDA is specified, scrap the current library, load the cuda one
+    // and replay all the options
+
+    if(storedOptions_.lpmethod_== "pdlp-gpu")
+    //if (storedOptions_.useGPU_)
+    {
+      #ifdef APPLE
+            throw std::runtime_error("GPU support is not available on MacOS");
+      #endif
+      loader().Highs_destroy(lp());
+      LoadHighsLibrary(true);
+      OpenSolver();
+      ReplaySolverOptions();
+    }
+    std::string method = storedOptions_.lpmethod_ == "pdlp-gpu" ? "pdlp" : storedOptions_.lpmethod_;
+    SetSolverOption("solver", method);
+    /// Copy env/lp to ModelAPI
+    copy_common_info_to_other();
+    int v = -1;
+    GetSolverOption("output_flag", v);
+    set_verbose_mode(v > 0);
+  }
+
+
 
 bool HighsBackend::IsQCP() const {
   return false; 
@@ -79,10 +102,10 @@ ArrayRef<double> HighsBackend::PrimalSolution() {
   int num_vars = NumVars();
   std::vector<double> x(num_vars);
   int primal_solution_status;
-  Highs_getIntInfoValue(lp(),
+  loader().Highs_getIntInfoValue(lp(),
                         "primal_solution_status", &primal_solution_status);
   if (kHighsSolutionStatusFeasible == primal_solution_status)
-    Highs_getSolution(lp(), x.data(), NULL, NULL, NULL);
+    loader().Highs_getSolution(lp(), x.data(), NULL, NULL, NULL);
   else
     x.clear();
   return x;
@@ -95,7 +118,7 @@ pre::ValueMapDbl HighsBackend::DualSolution() {
 ArrayRef<double> HighsBackend::DualSolution_LP() {
   int num_cons = NumLinCons();
   std::vector<double> pi(num_cons);
-  int error = Highs_getSolution(lp(), NULL, NULL, NULL, pi.data());
+  int error = loader().Highs_getSolution(lp(), NULL, NULL, NULL, pi.data());
   if (error)
     pi.clear();
   return pi;
@@ -128,7 +151,7 @@ ArrayRef<double> HighsBackend::DualSolution_LP() {
   }
 
 double HighsBackend::ObjectiveValue() const {
-  return Highs_getObjectiveValue(lp());
+  return loader().Highs_getObjectiveValue(lp());
 }
 
 double HighsBackend::NodeCount() const {
@@ -142,13 +165,16 @@ double HighsBackend::SimplexIterations() const {
 int HighsBackend::BarrierIterations() const {
   return getIntAttr("ipm_iteration_count");
 }
+int HighsBackend::PdlpIterations() const {
+  return getIntAttr("pdlp_iteration_count");
+}
 
 void HighsBackend::DoWriteProblem(const std::string &file) {
-  HIGHS_CCALL(Highs_writeModel(lp(), file.c_str()));
+  HIGHS_CCALL(loader().Highs_writeModel(lp(), file.c_str()));
 }
 
 void HighsBackend::DoWriteSolution(const std::string &file) {
-  HIGHS_CCALL(Highs_writeSolutionPretty(lp(), file.c_str()));
+  HIGHS_CCALL(loader().Highs_writeSolutionPretty(lp(), file.c_str()));
 }
 
 
@@ -157,9 +183,13 @@ void HighsBackend::SetInterrupter(mp::Interrupter *inter) {
 }
 
 void HighsBackend::Solve() {
-  HIGHS_CCALL( Highs_run(lp()) );
+  int status = loader().Highs_run(lp());
+  if (status != kHighsStatusOk && status != kHighsStatusWarning)
+    throw std::runtime_error(fmt::format("  Error {} while solving with HiGHS").c_str());
+    // Mask warnings for pdlp
+  if((status == kHighsStatusWarning) && (storedOptions_.lpmethod_!="pdlp-gpu"))
+      fmt::print("  Warning code {} while solving with HiGHS\n", status);
   WindupHIGHSSolve();
-  
 }
 
 void HighsBackend::WindupHIGHSSolve() { }
@@ -217,7 +247,7 @@ void HighsBackend::AddPrimalDualStart(Solution sol0_unpres) {
     bool fAllMissingAreRealVars = true;
     for (auto j=s0.size(); j--; ) {
       int integr;
-      auto res = Highs_getColIntegrality(lp(), j, &integr);
+      auto res = loader().Highs_getColIntegrality(lp(), j, &integr);
       if (kHighsStatusOk != res)
         break;       // no information, it's an LP
       if (kHighsVarTypeContinuous != integr) {
@@ -230,22 +260,22 @@ void HighsBackend::AddPrimalDualStart(Solution sol0_unpres) {
       std::vector<double> lb(NumVars());
       std::vector<double> ub(NumVars());
       int numnz, ncols;
-      Highs_getColsByRange(lp(), 0, NumVars()-1, &ncols,
+      loader().Highs_getColsByRange(lp(), 0, NumVars()-1, &ncols,
         costs.data(), lb.data(), ub.data(), &numnz, NULL, NULL, NULL);
-      Highs_changeColsBoundsByMask(lp(), s0.data(), x0.data(), x0.data());
-      Highs_run(lp());
+      loader().Highs_changeColsBoundsByMask(lp(), s0.data(), x0.data(), x0.data());
+      loader().Highs_run(lp());
       x0 = PrimalSolution();         // get new solution
-      Highs_changeColsBoundsByMask(lp(), s0.data(), lb.data(), ub.data());
+      loader().Highs_changeColsBoundsByMask(lp(), s0.data(), lb.data(), ub.data());
     }
   }
-  HIGHS_CCALL(Highs_setSolution(lp(), x0.data(), NULL, NULL, pi0.data()));
+  HIGHS_CCALL(loader().Highs_setSolution(lp(), x0.data(), NULL, NULL, pi0.data()));
 }
 
 
 ArrayRef<int> HighsBackend::VarStatii() {
   std::vector<int> vars(NumVars());
   conStatiii_.resize(NumLinCons());
-  HIGHS_CCALL(Highs_getBasis(lp(), vars.data(), conStatiii_.data()));
+  HIGHS_CCALL(loader().Highs_getBasis(lp(), vars.data(), conStatiii_.data()));
   for (auto& s : vars) {
     switch (s) {
     case kHighsBasisStatusBasic:
@@ -328,7 +358,7 @@ void HighsBackend::VarConStatii(ArrayRef<int> vst, ArrayRef<int> cst) {
                         indicesOfMissing.size());
     std::vector<double> dd(indicesOfMissing.size());
     int numnz;
-    Highs_getColsBySet(lp(), indicesOfMissing.size(), indicesOfMissing.data(),
+    loader().Highs_getColsBySet(lp(), indicesOfMissing.size(), indicesOfMissing.data(),
       di.data(), dd.data(), lb.data(), ub.data(), &numnz, NULL, NULL, NULL);
     for (size_t i = 0; i < indicesOfMissing.size(); i++) {
         if (lb[i] >= -1e-6)
@@ -357,13 +387,13 @@ void HighsBackend::VarConStatii(ArrayRef<int> vst, ArrayRef<int> cst) {
       MP_RAISE(fmt::format("Unknown AMPL con status value: {}", s));
     }
   }
-  HIGHS_CCALL(Highs_setBasis(lp(), stt.data(), cstt.data()));
+  HIGHS_CCALL(loader().Highs_setBasis(lp(), stt.data(), cstt.data()));
 }
 
 ArrayRef<double> HighsBackend::Ray() {
   HighsInt has_ray;
   std::vector<double> uray_pres(NumVars());
-  auto res = Highs_getPrimalRay(lp(), &has_ray, uray_pres.data());
+  auto res = loader().Highs_getPrimalRay(lp(), &has_ray, uray_pres.data());
   if (res)
     fmt::print("Error while getting primal ray");
   if (res || (!has_ray))
@@ -379,7 +409,7 @@ ArrayRef<double> HighsBackend::Ray() {
 ArrayRef<double> HighsBackend::DRay() {
   HighsInt has_ray;
   std::vector<double> dray_pres(NumLinCons());
-  auto res = Highs_getDualRay(lp(), &has_ray, dray_pres.data());
+  auto res = loader().Highs_getDualRay(lp(), &has_ray, dray_pres.data());
   if (res)
     fmt::print("Error while getting dual ray");
   if (res || (!has_ray))
@@ -397,6 +427,12 @@ ArrayRef<double> HighsBackend::DRay() {
 
 
 void HighsBackend::AddHIGHSMessages() {
+  auto pdlp = PdlpIterations();
+  if (pdlp > -1)
+  {
+    AddToSolverMessage(fmt::format("{} PDLP iterations\n", pdlp));
+    return;
+  }
   auto ni = SimplexIterations();
   if (true)
     AddToSolverMessage(
@@ -413,12 +449,12 @@ void HighsBackend::AddHIGHSMessages() {
 
 std::pair<int, std::string> HighsBackend::GetSolveResult() {
   namespace sol = mp::sol;
-  int optstatus = Highs_getModelStatus(lp());
-  auto obj = Highs_getObjectiveValue(lp());
-  auto inf = Highs_getInfinity(lp());
+  int optstatus = loader().Highs_getModelStatus(lp());
+  auto obj = loader().Highs_getObjectiveValue(lp());
+  auto inf = loader().Highs_getInfinity(lp());
   bool hasSol = (-inf < obj && obj < inf);
   int primal_solution_status;
-  Highs_getIntInfoValue(lp(),
+  loader().Highs_getIntInfoValue(lp(),
                         "primal_solution_status", &primal_solution_status);
   switch (optstatus) {
   case kHighsModelStatusOptimal:
@@ -476,12 +512,6 @@ std::pair<int, std::string> HighsBackend::GetSolveResult() {
 }
 
 
-void HighsBackend::FinishOptionParsing() {
-  int v=-1;
-  GetSolverOption("output_flag", v);
-  set_verbose_mode(v>0);
-}
-
 
 ////////////////////////////// OPTIONS /////////////////////////////////
 
@@ -489,7 +519,8 @@ static const mp::OptionValueInfo lp_values_method[] = {
   { "choose", "Automatic (default)", -1},
   { "simplex", "Simplex", 1},
   { "ipm", "Interior Point Method", 2},
-  { "pdlp", "cuPDLP-c solver", 3}
+  { "pdlp", "cuPDLP-c solver", 3},
+  { "pdlp-gpu", "cuPDLP-c solver on NVIDIA GPU. Requires CUDA v12, not available on MacOS", 3},
 };
 
 static const mp::OptionValueInfo off_on_choose_values[] = {
@@ -541,14 +572,14 @@ static const mp::OptionValueInfo simplex_edge_weight_strategy_values_[] = {
 void HighsBackend::InitCustomOptions() {
 
   set_option_header(
-      "HIGHS Optimizer Options for AMPL\n"
-      "--------------------------------------------\n"
-      "\n"
-      "To set these options, assign a string specifying their values to the "
-      "AMPL option ``highs_options``. For example::\n"
-      "\n"
-      "  ampl: option highs_options 'mip:gap=1e-6';\n");
- 
+    "HIGHS Optimizer Options for AMPL\n"
+    "--------------------------------------------\n"
+    "\n"
+    "To set these options, assign a string specifying their values to the "
+    "AMPL option ``highs_options``. For example::\n"
+    "\n"
+    "  ampl: option highs_options 'mip:gap=1e-6';\n");
+
   AddSolverOption("tech:outlev outlev",
     "0*/1: Whether to write HighS log lines (chatter) to stdout and to file.",
     "output_flag", 0, 1);
@@ -556,10 +587,10 @@ void HighsBackend::InitCustomOptions() {
   AddSolverOption("tech:logfile logfile",
     "Log file name.", "log_file");
 
-  const char* c = "choose";
-  AddSolverOption("alg:method method lpmethod solver",
+  std::string c;
+  AddStoredOption("alg:method method lpmethod solver",
     "Which algorithm to use :\n"
-    "\n.. value-table::\n", "solver", lp_values_method, c);
+    "\n.. value-table::\n", storedOptions_.lpmethod_, lp_values_method);
 
   AddSolverOption("alg:simplex simplex simplex_strategy",
     "Strategy for simplex solver :\n"
@@ -567,7 +598,7 @@ void HighsBackend::InitCustomOptions() {
 
   AddSolverOption("alg:simplexscale simplexscale simplex_scale_strategy",
     "Simplex scaling strategy :\n"
-    "\n.. value-table::\n", "simplex_scale_strategy", 
+    "\n.. value-table::\n", "simplex_scale_strategy",
     simplex_scale_strategy_values_, 1);
 
   AddSolverOption("alg:simplexcrash simplexcrash simplex_crash_strategy",
@@ -675,14 +706,14 @@ void HighsBackend::InitCustomOptions() {
     "Duality gap tolerance for PDLP solver (default 1e-4).",
     "pdlp_d_gap_tol", 1e-12, Infinity());
 
-  AddSolverOption("bar:crossover run_crossover",
+  AddSolverOption("bar:crossover crossover run_crossover",
     "Run crossover after IPM to get a basic solution",
     "run_crossover", run_crossover_values, c);
 
   AddSolverOption("tech:threads threads",
     "How many threads to use when using the barrier algorithm "
     "or solving MIP problems; default 0 ==> automatic choice.",
-		"threads", 0, INT32_MAX);
+    "threads", 0, INT32_MAX);
   AddSolverOption("mip:detsimmetry detsimmetry mip_detect_symmetry",
     "Whether symmetry should be detected (default 1)",
     "mip_detect_symmetry", 0, 1);

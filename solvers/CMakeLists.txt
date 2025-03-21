@@ -262,8 +262,9 @@ add_ampl_backend(gcgmp DLL_RUNTIME SHARED_LIB MODULE GCG
 add_ampl_backend(scipmp DLL_RUNTIME SHARED_LIB MODULE SCIP 
   LIBRARIES ${SCIP_LIBS} ${CMAKE_DL_LIBS})
 
-add_ampl_backend(highsmp DLL_RUNTIME SHARED_LIB MODULE HIGHS 
-  LIBRARIES ${HIGHS_LIBS} ${CMAKE_DL_LIBS})
+add_ampl_backend(highsmp highsmploader.h highsmploader.cc
+                  DLL_RUNTIME SHARED_LIB MODULE HIGHS 
+                  LIBRARIES ${HIGHS_LIBS} ${CMAKE_DL_LIBS})
 
 add_ampl_backend(ortoolsmp DLL_RUNTIME SHARED_LIB MODULE ortoolsmp 
   LIBRARIES ${ortoolsmp_LIBS} ${CMAKE_DL_LIBS})

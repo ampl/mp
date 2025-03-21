@@ -5,7 +5,6 @@
 #include <memory> // For std::unique_ptr
 #include <vector>
 
-
 extern "C" {
   #include "interfaces/highs_c_api.h"
 }
@@ -13,8 +12,9 @@ extern "C" {
 #include "mp/backend-to-model-api.h"
 #include "mp/format.h"
 #include "mp/arrayref.h"
+#include "highsmploader.h"
 
-namespace mp {
+namespace mp{ 
 
 
   /// Class to store the objectives as they are added from the Model API.
@@ -29,7 +29,15 @@ namespace mp {
     bool clearedOnce_, hadEmulatedMultiObj_ = false;
     std::vector<double> weight, offset, reltol, abstol;
     std::vector<int> priority;
+    HighsLoader* parent_;
   public:
+    void setLoader(HighsLoader * l) {
+      parent_ = l;
+    }
+    AccObjectives() : hadNativeMultiObj_(false), 
+                      clearedOnce_(false),
+                      hadEmulatedMultiObj_(false) {    
+    }
     void setNumVars(int numVars) {
       numVars_ = numVars;
     }
@@ -71,17 +79,24 @@ namespace mp {
   struct HighsCommonInfo {
     void* lp() const { return lp_; }
     void set_lp(void* lp) { lp_ = lp; }
-    HighsCommonInfo() {
-      accobjs_ = std::make_shared<AccObjectives>();
-    }
+    HighsCommonInfo() { }
 
     AccObjectives& accObjectives() {
       return *accobjs_;
     }
-
+    HighsLoader& loader() const { return *loader_; }
+    void setLoader(std::shared_ptr<HighsLoader> l) {
+      loader_ = std::move(l);
+      
+    }
+    void setObjectiveAccumulator(std::shared_ptr<AccObjectives> acc) {
+      accobjs_ = std::move(acc);
+      accobjs_->setLoader(loader_.get());
+    }
   private:
     std::shared_ptr<AccObjectives> accobjs_;
     void* lp_ = nullptr;
+    mutable std::shared_ptr <HighsLoader> loader_;
   };
 
 
@@ -99,12 +114,13 @@ namespace mp {
 
     double myinf = 0;
     double Infinity() {
-      if (!myinf) myinf = Highs_getInfinity(lp());
+      if (!myinf) myinf = loader().Highs_getInfinity(lp());
       return myinf;
     }
     double MinusInfinity() { return -Infinity(); }
 
   protected:
+    void LoadHighsLibrary(bool gpu);
     void OpenSolver();
     void CloseSolver();
 
