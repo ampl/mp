@@ -1102,7 +1102,8 @@ int nl_opcode(expr::Kind kind);
 namespace internal {
 
 // Suppresses warnings about unused variables.
-inline void Unused(...) {}
+template <typename... T>
+  inline void Unused(const T&...) {}
 
 // Returns true if ExprType is of kind k.
 template <typename ExprType>
