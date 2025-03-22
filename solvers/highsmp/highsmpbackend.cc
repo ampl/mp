@@ -428,7 +428,7 @@ ArrayRef<double> HighsBackend::DRay() {
 
 void HighsBackend::AddHIGHSMessages() {
   auto pdlp = PdlpIterations();
-  if (pdlp > -1)
+  if (pdlp > 0)
   {
     AddToSolverMessage(fmt::format("{} PDLP iterations\n", pdlp));
     return;

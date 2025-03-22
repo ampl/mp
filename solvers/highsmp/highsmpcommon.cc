@@ -52,7 +52,9 @@ namespace mp {
   void HighsCommon::LoadHighsLibrary(bool gpu) {
     // Create library loader
     setLoader(std::make_shared<HighsLoader>());
-    loader().load(mp::HighsLoader::getHighsLibraryName(gpu));
+    bool libLoaded = loader().load(mp::HighsLoader::getHighsLibraryName(gpu));
+    if (!libLoaded)
+      throw std::runtime_error(fmt::format("Problems loading HiGHS library:\n{}", mp::HighsLoader::getHighsLibraryName(gpu)));
 }
 void HighsCommon::OpenSolver() {
   int status = 0;

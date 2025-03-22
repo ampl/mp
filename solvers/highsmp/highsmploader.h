@@ -1,6 +1,7 @@
 #ifndef HIGHSLOADER_H
 #define HIGHSLOADER_H
 
+#include <stdexcept>
 #ifdef WIN32
 #include <stdint.h>   // for standard types like uint32_t
 typedef void* HMODULE;
@@ -113,7 +114,7 @@ namespace mp {
       #ifdef _WIN32
               return "highs.dll";
       #elif defined(__APPLE__)
-              return "libhighs.dylib";
+              return "libhighs.1.dylib";
       #else
               return "libhighs.so.1";
       #endif
