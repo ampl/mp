@@ -75,7 +75,7 @@ std::string HighsBackend::GetSolverVersion() {
     if(storedOptions_.lpmethod_== "pdlp-gpu")
     //if (storedOptions_.useGPU_)
     {
-      #ifdef APPLE
+      #ifdef __APPLE__
             throw std::runtime_error("GPU support is not available on MacOS");
       #endif
       loader().Highs_destroy(lp());
