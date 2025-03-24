@@ -72,8 +72,7 @@ std::string HighsBackend::GetSolverVersion() {
     // If CUDA is specified, scrap the current library, load the cuda one
     // and replay all the options
 
-    if(storedOptions_.lpmethod_== "pdlp-gpu")
-    //if (storedOptions_.useGPU_)
+    if(storedOptions_.onGPU())
     {
       #ifdef __APPLE__
             throw std::runtime_error("GPU support is not available on MacOS");
@@ -104,7 +103,7 @@ ArrayRef<double> HighsBackend::PrimalSolution() {
   int primal_solution_status;
   loader().Highs_getIntInfoValue(lp(),
                         "primal_solution_status", &primal_solution_status);
-  if (kHighsSolutionStatusFeasible == primal_solution_status)
+  if ((kHighsSolutionStatusFeasible == primal_solution_status) || (storedOptions_.onGPU()))
     loader().Highs_getSolution(lp(), x.data(), NULL, NULL, NULL);
   else
     x.clear();
