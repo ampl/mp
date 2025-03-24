@@ -88,7 +88,6 @@ Body BucketAccum1Type<Body>::ExtractSum() {
           : ExtractBucket(i_bucket);
     }
 
-  result.shrink_to_fit();
   return result;
 }
 

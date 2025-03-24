@@ -100,7 +100,8 @@ public:
     vars_.reserve(s);
   }
 
-  /// shrink_to_fit
+  /// shrink_to_fit.
+  /// Takes time, so use only when necessary.
   void shrink_to_fit() {
     coefs_.shrink_to_fit();
     vars_.shrink_to_fit();

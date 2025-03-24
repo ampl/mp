@@ -219,7 +219,6 @@ Terms MergeSorted(const Terms& t1, const Terms& t2) {
       break;
   }
 
-  result.shrink_to_fit();
   return result;
 }
 
@@ -290,7 +289,6 @@ QuadTerms MultiplyOut(const LinTerms& ae1, const LinTerms& ae2) {
   result.sort_terms();      // eliminate 0's and duplicates
 #endif
 
-  result.shrink_to_fit();
   assert(result.is_sorted());
   return result;
 }

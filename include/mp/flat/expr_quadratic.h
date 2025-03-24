@@ -75,7 +75,8 @@ public:
     vars2_.reserve(num_terms);
   }
 
-  /// shrink_to_fit
+  /// shrink_to_fit.
+  /// Takes time, so use only when necessary.
   void shrink_to_fit() {
     coefs_.shrink_to_fit();
     vars1_.shrink_to_fit();

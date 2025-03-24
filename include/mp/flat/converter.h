@@ -139,6 +139,7 @@ public:
     if (ee.is_constant())
       return int( MakeFixedVar(ee.constant_term()) );
     ee.sort_terms();
+    ee.shrink_to_fit();
     return AssignResultVar2Args(
             LinearFunctionalConstraint(std::move(ee)));
   }
@@ -151,6 +152,8 @@ public:
     if (ee.is_constant())
       return int(MakeFixedVar(ee.constant_term()));
     ee.sort_terms();
+    ee.GetLinTerms().shrink_to_fit();
+    ee.GetQPTerms().shrink_to_fit();
     if (ee.is_affine())
       return AssignResultVar2Args(
             LinearFunctionalConstraint(
