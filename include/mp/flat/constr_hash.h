@@ -154,9 +154,7 @@ struct hash< mp::QuadTerms >
       const mp::QuadTerms& qt) const
   {
     mp::HashStreamer hs;
-    hs.Add(qt.vars1());
-    hs.Add(qt.vars2());
-    hs.Add(qt.coefs());
+    hs.Add(qt.get_folded());
     return hs.FinalizeHashValue();
   }
 };

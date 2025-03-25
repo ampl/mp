@@ -63,7 +63,7 @@ bool LinTerms::is_sorted() const {
   if (size()) {           // empty expr ==> "sorted" ???
     if (!coefs_.back())       // last coef == 0
       return false;
-    for (auto i = size()-1; (i--)>0; ) {
+    for (auto i = size()-1; i--; ) {
       if (vars_[i] >= vars_[i+1]
           || !coefs_[i])      // coef == 0
         return false;
@@ -119,42 +119,83 @@ void LinTerms::sort_terms(bool force_sort) {
   assert(!force_sort || is_sorted());
 }
 
+QuadTerms::QuadTerms(const std::vector<double>& c,
+    const std::vector<int>& v1, const std::vector<int>& v2)
+{ fold_into(folded_, c, v1, v2); }
 
-template <class Vec>
-void QuadTerms::fold_into(Vec& vec) {
-  vec.resize(size());
-  for (size_t i=0; i<size(); ++i) {
-    auto key = std::pair {var1(i), var2(i)};
+
+void QuadTerms::unfold_if_need() const
+{ if (coefs_aux_.empty()) unfold(); }
+
+void QuadTerms::unfold() const {
+  unfold_from(folded_);
+}
+
+template <class Vec, class ArrayC, class ArrayV>
+void QuadTerms::fold_into(Vec& vec,
+    const ArrayC& coefs,
+    const ArrayV& vars1, const ArrayV& vars2) {
+  assert(coefs.size() == vars1.size());
+  assert(coefs.size() == vars2.size());
+  vec.resize(coefs.size());
+  for (size_t i=0; i<coefs.size(); ++i) {
+    auto key = std::pair {vars1[i], vars2[i]};
     if (key.first > key.second)       // index pair ordered
       std::swap(key.first, key.second);
-    vec.push_back({ key, coef(i) });
+    vec[i] = { key, coefs[i] };
   }
 }
 
+/// Unfold the terms from a vector of ((var1, var2), coef) tuples
+template <class Vec, class ArrayC, class ArrayV>
+void QuadTerms::unfold_from(const Vec& vec,
+    ArrayC& coefs,
+    ArrayV& vars1, ArrayV& vars2) {
+  coefs.resize(vec.size());
+  vars1.resize(vec.size());
+  vars2.resize(vec.size());
+  for (auto i = vec.size(); i--; ) {
+    coefs[i] = vec[i].second;
+    vars1[i] = vec[i].first.first;
+    vars2[i] = vec[i].first.second;
+  }
+}
+
+
 template <class Vec>
-void QuadTerms::unfold_from(const Vec& vec) {
-  clear();
-  reserve(vec.size());
-  for (const auto& v: vec)
-    add_term(v.second, v.first.first, v.first.second);
+void QuadTerms::fold_into(Vec& vec) {
+  fold_into(vec, coefs_aux_, vars1_aux_, vars2_aux_);
+}
+
+template <class Vec>
+void QuadTerms::unfold_from(const Vec& vec) const {
+  unfold_from(vec, coefs_aux_, vars1_aux_, vars2_aux_);
 }
 
 bool QuadTerms::is_sorted() const {
   if (size()) {           // empty expr ==> "sorted" ???
-    if (!coefs_.back())       // last coef == 0
+    if (!folded_.back().second)       // last coef == 0
       return false;
-    if (vars1_.back() > vars2_.back())   // v1>v2
+    if (folded_.back().first.first
+        > folded_.back().first.second)   // v1>v2
       return false;
-    for (auto i = size()-1; (i--)>0; ) {
-      if (vars1_[i] > vars2_[i]          // v1>v2
-          || vars1_[i] > vars1_[i+1]
-          || (vars1_[i]==vars1_[i+1]
-              && vars2_[i]>=vars2_[i+1]) // also when ==
-          || !coefs_[i])                 // coef == 0
+    for (auto i = size()-1; i--; ) {
+      if (folded_[i].first.first
+              > folded_[i].first.second  // v1>v2
+          || folded_[i].first
+                 >= folded_[i+1].first   // v[i] >= v[i+1]
+          || !folded_[i].second)                 // coef == 0
         return false;
     }
   }
   return true;            // Check emptyness elsewhere? @todo
+}
+
+template <class Vec>
+void QuadTerms::sort_index_pairs(Vec& vec) {
+  for (auto& iv: vec)
+    if (iv.first.first > iv.first.second)
+      std::swap(iv.first.first, iv.first.second);
 }
 
 void QuadTerms::sort_terms()  {
@@ -163,15 +204,14 @@ void QuadTerms::sort_terms()  {
       clear();
     else
       if (var1(0) > var2(0))              // order index pair
-        std::swap(vars1_[0], vars2_[0]);
+        std::swap(
+          folded_[0].first.first, folded_[0].first.second);
   } else {
     if (1<size() && !is_sorted()) {
-      SmallVec< std::pair<std::pair<int, int>, double>, 256 >
-          fold;
-      fold_into(fold);
-      SortUnifyNon0(fold);
-      assert(fold.size() <= size());
-      unfold_from(fold);
+      sort_index_pairs(folded_);
+      auto sz0 = size();
+      SortUnifyNon0(folded_);
+      assert(size() <= sz0);
     }
   }
   assert(is_sorted());
@@ -587,10 +627,10 @@ void VisitArguments(const LinTerms& lt, std::function<void (int)> argv) {
 }
 
 void VisitArguments(const QuadTerms& lt, std::function<void (int)> argv) {
-  for (auto v: lt.vars1())
-    argv(v);
-  for (auto v: lt.vars2())
-    argv(v);
+  for (auto v: lt.get_folded()) {
+    argv(v.first.first);
+    argv(v.first.second);
+  }
 }
 
 void VisitArguments(const QuadAndLinTerms& qlt, std::function<void (int)> argv) {

@@ -353,11 +353,9 @@ protected:
   }
 
   bool HasExpressionArgs(const QuadTerms& qt) const {
-    for (auto v: qt.vars1())
-      if (!MPCD( IsProperVar(v) ))
-        return true;
-    for (auto v: qt.vars2())
-      if (!MPCD( IsProperVar(v) ))
+    for (auto v: qt.get_folded())
+      if (!MPCD( IsProperVar(v.first.first) )
+          || !MPCD( IsProperVar(v.first.second) ))
         return true;
     return false;
   }
@@ -379,13 +377,11 @@ protected:
   }
 
   bool HasLogicalExpressionArgs(const QuadTerms& qt) const {
-    for (auto v: qt.vars1())
-      if (!MPCD( IsProperVar(v) )
-          && MPCD( IsInitExprLogical(v) ))
-        return true;
-    for (auto v: qt.vars2())
-      if (!MPCD( IsProperVar(v) )
-          && MPCD( IsInitExprLogical(v) ))
+    for (auto v: qt.get_folded())
+      if ((!MPCD( IsProperVar(v.first.first) )
+           && MPCD( IsInitExprLogical(v.first.first) ))
+          || (!MPCD( IsProperVar(v.first.second) )
+              && MPCD( IsInitExprLogical(v.first.second) )))
         return true;
     return false;
   }

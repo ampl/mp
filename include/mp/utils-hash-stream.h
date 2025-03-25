@@ -78,6 +78,23 @@ using HashStreamer = HashStreamerCombine;
 
 namespace std {
 
+/// Specialize std::hash<> for std::pair<>
+///
+/// Might assume std::hash<> specialized for elements
+template <class T1, class T2>
+struct hash< std::pair<T1, T2> >
+{
+  size_t operator()(
+      const std::pair<T1, T2>& x) const
+  {
+    mp::HashStreamer hs;
+    hs.Add(std::hash<T1>{}(x.first));
+    hs.Add(std::hash<T2>{}(x.second));
+    return hs.FinalizeHashValue();
+  }
+};
+
+
 /// Specialize std::hash<> for std::array<>
 ///
 /// Might assume std::hash<> specialized for elements

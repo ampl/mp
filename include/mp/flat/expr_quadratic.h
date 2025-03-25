@@ -7,80 +7,79 @@
 
 namespace mp {
 
-/// Quadratic terms x'Qx
+/// Quadratic terms x'Qx.
 class QuadTerms {
 public:
   /// Name
   static constexpr const char* GetTypeName() { return "QuadTerms"; }
+
+  /// Folded entry type
+  using TupleType = std::pair<std::pair<int, int>, double>;
 
   /// Default constructor
   QuadTerms() = default;
 
   /// Construct from 3 vectors
   QuadTerms(const std::vector<double>& c,
-           const std::vector<int>& v1, const std::vector<int>& v2) noexcept
-      : coefs_(c.begin(), c.end()),
-      vars1_(v1.begin(), v1.end()), vars2_(v2.begin(), v2.end())
-  { assert(check()); }
-
-  /// Validate
-  bool check() const {
-    return
-        coefs_.size()==vars1_.size() &&
-        coefs_.size()==vars2_.size() &&
-        (!size() || 0<=*std::min_element(vars1_.begin(), vars1_.end())) &&
-        (!size() || 0<=*std::min_element(vars2_.begin(), vars2_.end()));
-  }
+            const std::vector<int>& v1, const std::vector<int>& v2);
 
   /// Empty?
-  bool empty() const { return coefs_.empty(); }
+  bool empty() const { return folded_.empty(); }
 
   /// Size
-  size_t size() const { return coefs_.size(); }
+  size_t size() const { return folded_.size(); }
 
   /// Capacity
-  size_t capacity() const { return coefs_.capacity(); }
+  size_t capacity() const { return folded_.capacity(); }
 
-  const double* pcoefs() const { return coefs_.data(); }
-  const int* pvars1() const { return vars1_.data(); }
-  const int* pvars2() const { return vars2_.data(); }
+  /// Folded vector reference
+  ArrayRef<TupleType> get_folded() const
+  { return {folded_.data(), folded_.size()}; }
 
-  ArrayRef<double> coefs() const { return {coefs_.data(), coefs_.size()}; }
-  ArrayRef<int> vars1() const { return {vars1_.data(), vars1_.size()}; }
-  ArrayRef<int> vars2() const { return {vars2_.data(), vars2_.size()}; }
+  /// coef vector pointer
+  const double* pcoefs() const
+  { unfold_if_need(); return coefs_aux_.data(); }
+  const int* pvars1() const
+  { unfold_if_need(); return vars1_aux_.data(); }
+  const int* pvars2() const
+  { unfold_if_need(); return vars2_aux_.data(); }
 
-  double coef(int i) const { return coefs_[i]; }
-  void set_coef(int i, double c) { coefs_[i] = c; }
-  int var1(size_t i) const { return vars1_[i]; }
-  int var2(size_t i) const { return vars2_[i]; }
+  /// Coef vector as ArrayRef<>
+  ArrayRef<double> coefs() const
+  { unfold_if_need(); return {coefs_aux_.data(), coefs_aux_.size()}; }
+  ArrayRef<int> vars1() const
+  { unfold_if_need(); return {vars1_aux_.data(), vars1_aux_.size()}; }
+  ArrayRef<int> vars2() const
+  { unfold_if_need(); return {vars2_aux_.data(), vars2_aux_.size()}; }
+
+  /// coef(i)
+  double coef(int i) const { return folded_[i].second; }
+  void set_coef(int i, double c) { folded_[i].second = c; }
+  int var1(size_t i) const { return folded_[i].first.first; }
+  int var2(size_t i) const { return folded_[i].first.second; }
 
   /// Compute value given a dense vector of variable values
   template <class VarInfo>
   long double ComputeValue(const VarInfo& x) const {
     long double s=0.0;
-    for (size_t i=coefs().size(); i--; )
-      s += (long double)(coefs()[i]) * x[vars1()[i]] * x[vars2()[i]];
+    for (size_t i=size(); i--; )
+      s += ((long double)(coef(i))) * x[var1(i)] * x[var2(i)];
     return s;
   }
 
-  void add_term(double coef, int var1, int var2) {
-    coefs_.push_back(coef);
-    vars1_.push_back(var1);
-    vars2_.push_back(var2);
-  }
+  void add_term(double coef, int var1, int var2)
+  { add_index_value({{var1, var2}, coef}); }
 
-  void reserve(std::size_t num_terms) {
-    coefs_.reserve(num_terms);
-    vars1_.reserve(num_terms);
-    vars2_.reserve(num_terms);
-  }
+  void reserve(std::size_t num_terms)
+  { folded_.reserve(num_terms); }
 
   /// shrink_to_fit.
   /// Takes time, so use only when necessary.
   void shrink_to_fit() {
-    coefs_.shrink_to_fit();
-    vars1_.shrink_to_fit();
-    vars2_.shrink_to_fit();
+    folded_.shrink_to_fit();
+    coefs_aux_.shrink_to_fit();
+    vars1_aux_.shrink_to_fit();
+    vars2_aux_.shrink_to_fit();
   }
 
   /// Is normalized? Assume sorted.
@@ -91,16 +90,15 @@ public:
 
   /// Arithmetic
   void negate() {
-    for (auto& cf: coefs_)
-      cf = -cf;
+    for (auto& iv: folded_)
+      iv.second = -iv.second;
   }
 
   void add(const QuadTerms& li) {
     this->reserve(size() + li.size());
     /// eliminate duplicates when?
-    coefs_.insert(coefs_.end(), li.coefs_.begin(), li.coefs_.end());
-    vars1_.insert(vars1_.end(), li.vars1_.begin(), li.vars1_.end());
-    vars2_.insert(vars2_.end(), li.vars2_.begin(), li.vars2_.end());
+    auto fld = li.get_folded();
+    folded_.insert(folded_.end(), fld.begin(), fld.end());
   }
 
   void subtract(QuadTerms&& ae) {
@@ -109,17 +107,9 @@ public:
   }
 
   void operator*=(double n) {
-    for (auto& c: coefs_)
-      c *= n;
+    for (auto& c: folded_)
+      c.second *= n;
   }
-
-  /// Fold the terms into a vector of (var, coef) pairs
-  template <class Vec>
-  void fold_into(Vec& vec);
-
-  /// Unfold the terms from a vector of (var, coef) pairs
-  template <class Vec>
-  void unfold_from(const Vec& vec);
 
   /// Is the expression sorted,
   /// all elements non-0 and unique?
@@ -129,18 +119,17 @@ public:
   void sort_terms();
 
   /// ({var1, var2}, coef)
-  std::pair<std::pair<int, int>, double> IndexValue(size_t i) const
-  { return {{var1(i), var2(i)}, coef(i)}; }
+  TupleType IndexValue(size_t i) const
+  { assert(i<=size()); return folded_[i]; }
 
   /// Add ({var1, var2}, coef)
-  void add_index_value(std::pair<std::pair<int, int>, double> iv)
-  { add_term(iv.second, iv.first.first, iv.first.second); }
+  void add_index_value(TupleType iv)
+  { folded_.push_back(iv); }
 
   /// Clear
   void clear() {
-    coefs_.clear();
-    vars1_.clear();
-    vars2_.clear();
+    folded_.clear();
+    clear_unfolded();
   }
 
   /// Test equality
@@ -150,14 +139,55 @@ public:
 
   /// Testing API
   bool operator==(const QuadTerms& qt) const {
-    return coefs_==qt.coefs_ && vars1_==qt.vars1_ && vars2_==qt.vars2_;
+    return folded_ == qt.folded_;
   }
 
+protected:
+  /// Unfold if alternative empty
+  void unfold_if_need() const;
+
+  /// Unfold into the alternative
+  void unfold() const;
+
+  /// Clear alternative
+  void clear_unfolded() {
+    coefs_aux_.clear();
+    vars1_aux_.clear();
+    vars2_aux_.clear();
+  }
+
+  /// Sort index pairs
+  template <class Vec>
+  static void sort_index_pairs(Vec& );
+
+  /// Fold the alternative terms into a vector of ((var1, var2), coef) tuples
+  template <class Vec>
+  void fold_into(Vec& vec);
+
+  /// Unfold the terms from a vector of ((var1, var2), coef) tuples
+  template <class Vec>
+  void unfold_from(const Vec& vec) const;
+
+  /// Fold the terms into a vector of ((var1, var2), coef) tuples
+  template <class Vec, class ArrayC, class ArrayV>
+  static void fold_into(Vec& vec,
+                 const ArrayC& coefs,
+                 const ArrayV& vars1, const ArrayV& vars2);
+
+  /// Unfold the terms from a vector of ((var1, var2), coef) tuples
+  template <class Vec, class ArrayC, class ArrayV>
+  static void unfold_from(const Vec& vec,
+                          ArrayC& coefs,
+                          ArrayV& vars1, ArrayV& vars2);
 
 private:
-  SmallVec<double, 6> coefs_;
-  SmallVec<int, 6> vars1_;
-  SmallVec<int, 6> vars2_;
+  /// Currently always there.
+  /// @todo switch between alternatives but not too often.
+  SmallVec<TupleType, 8> folded_;
+  /// Alternative
+  mutable SmallVec<double, 6> coefs_aux_;
+  mutable SmallVec<int, 6> vars1_aux_;
+  mutable SmallVec<int, 6> vars2_aux_;
 };
 
 /// Merge 2 sorted QuadTerms
