@@ -2,7 +2,12 @@ Summary of recent updates to SCIP for AMPL
 ==========================================
 
 
-## unreleased
+## 20250329
+- Changes in MP:
+  - Option cvt:multoutcard to limit the size of
+    out-multiplied QP expressions. Can improve speed
+    on large models.
+  - Improved parsing of quadratic expressions.
 - Option sol:poollimit.
 
 

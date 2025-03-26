@@ -2,6 +2,14 @@ Summary of recent updates to CPLEX for AMPL
 ==============================================
 
 
+## 20250329
+- Changes in MP:
+  - Option cvt:multoutcard to limit the size of
+    out-multiplied QP expressions. Can improve speed
+    on large models.
+  - Improved parsing of quadratic expressions.
+
+
 ## 20250308
 - Changes in MP.
 

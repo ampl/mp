@@ -2,6 +2,14 @@ Summary of recent updates to HiGHS for AMPL
 ===========================================
 
 
+## 20250329
+- Changes in MP:
+  - Option cvt:multoutcard to limit the size of
+    out-multiplied QP expressions. Can improve speed
+    on large models.
+  - Improved parsing of quadratic expressions.
+
+
 ## 20250320
 - Updated to HiGHS 1.10, which include GPU support for cuPDLP-C, 
   lifting for probing (see `mip:lifting`), and bug fixes
