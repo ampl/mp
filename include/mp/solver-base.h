@@ -521,7 +521,7 @@ public:
 
 
   virtual void RecordOutputTime() {
-    stats_.output_time = GetTimeAndReset(stats_.time);
+    stats_.output_time += GetTimeAndReset(stats_.time);
   }
   /// Record setup time
   virtual void RecordSetupTime() {

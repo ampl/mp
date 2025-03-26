@@ -214,8 +214,10 @@ public:
     InputExtras();
     
     SetupTimerAndInterrupter();
-    if (exportFileMode() > 0)
+    if (exportFileMode() > 0) {
       ExportModel(export_file_names());
+      RecordOutputTime();
+    }
 
     // exportFileMode == 2 -> do not solve, just export
     if (exportFileMode() != 2) 
