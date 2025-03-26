@@ -1082,8 +1082,9 @@ public:         // More utilities
       }
     }  // Otherwise, we proceed to store proper multiplication,
     // unless the result is affine
-    if (!IfMultOutQPTerms() &&
-        !er.is_constant() && !el.is_constant() ) {
+    if (er.GetLinTerms().size() && el.GetLinTerms().size()  // both linear
+        && (!IfMultOutQPTerms()
+            || !IfMultOutQPTerms(el.GetLinTerms(), er.GetLinTerms()))) {
       // Create a separate QC with this product.
       // This is handy if we are walking the objective,
       // as MIPFlatCvt only linearizes QC.
@@ -1224,6 +1225,10 @@ public:
                // if we move the QP terms into contraints (SCIP)
                ( GetFlatCvt().IfPassQuadObj() || GetFlatCvt().IfPassQuadCon() );
   }
+
+  /// Estimate resulting QP matrix size
+  bool IfMultOutQPTerms(const LinTerms& lt1, const LinTerms& lt2) const
+  { return (double(lt1.size()))*lt2.size() <= GetFlatCvt().QPMultOutCard(); }
 
   /// Quadratize Pow2 exactly when we pass QP terms
   bool IfQuadratizePow2() const { return IfMultOutQPTerms(); }

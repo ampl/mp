@@ -2,6 +2,13 @@ Summary of recent updates to the AMPL MP Library
 ================================================
 
 
+## 20250329
+- Option cvt:multoutcard to limit the size of
+  out-multiplied QP expressions. Can improve speed
+  on large models.
+- Improved parsing of quadratic expressions.
+
+
 ## 20250308
 - Fixed a bug in monotonicity presolve which could
   have led to wrong models using a^x with a<1.

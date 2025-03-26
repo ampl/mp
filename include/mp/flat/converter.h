@@ -1270,6 +1270,7 @@ private:
 
     int passQuadObj_ = ModelAPIAcceptsQuadObj();
     int passQuadCon_ = 1;
+    double QPMultOutCard_ = 1e9;
     int passSOCPCones_ = 0;
     int passSOCP2QC_ = 0;
     int passExpCones_ = 0;
@@ -1299,6 +1300,9 @@ public:             // public for CRTP
   /// Graph export file
   const std::string& graph_export_file() const
   { return options_.file_graph_export_; }
+
+  /// Up to which QP matrix cardinality should we multiply out
+  double QPMultOutCard() const { return options_.QPMultOutCard_; }
 
   /// Whether we should relax integrality
   int relax() const { return options_.relax_; }
@@ -1397,15 +1401,14 @@ private:
     GetEnv().AddOption("cvt:quadobj passquadobj",
                        ModelAPIAcceptsQuadObj() ?
         "0/1*: Pass quadratic objective terms to the solver. "
-        "If the solver accepts quadratic constraints, "
+        "When 0, if the solver accepts quadratic constraints, "
                                                 "such a constraint will be created with those, "
                                                 "otherwise linearly approximated."
                        :
-        "0*/1: Pass quadratic objective terms to the solver, "
-                                                  "If the solver accepts quadratic constraints, "
+        "0*/1: Pass quadratic objective terms to the solver. "
+                                                  "When 0, if the solver accepts quadratic constraints, "
                                                   "such a constraint will be created with those, "
-                                                  "otherwise linearly approximated."
-,
+                                                  "otherwise linearly approximated.",
         options_.passQuadObj_, 0, 1);
     GetEnv().AddOption("cvt:quadcon passquadcon",
                        "Convenience option. "
@@ -1414,6 +1417,13 @@ private:
                        "Currently this disables out-multiplication "
                        "of quadratic terms, then they are linearized.",
         options_.passQuadCon_, 0, 1);
+    GetEnv().AddOption("cvt:multoutcard multoutcard",
+                       "Up to which (estimated) QP matrix cardinality "
+                       "should a product of 2 linear expressions "
+                       "be multiplied out. Default 1e9.",
+                       options_.QPMultOutCard_, 0.0, 1e20);
+
+
     GetEnv().AddOption("cvt:expcones expcones",
                        ModelAPIAcceptsExponentialCones() ?
                          "0/1*: Recognize exponential cones." :
