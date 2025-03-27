@@ -1420,7 +1420,10 @@ private:
     GetEnv().AddOption("cvt:multoutcard multoutcard",
                        "Up to which (estimated) QP matrix cardinality "
                        "should a product of 2 linear expressions "
-                       "be multiplied out. Default 1e9.",
+                       "be multiplied out. Default 1e9.\n"
+                       "\n"
+                       "Can speed up model input, but prone to "
+                       "numerical issues.",
                        options_.QPMultOutCard_, 0.0, 1e20);
 
 

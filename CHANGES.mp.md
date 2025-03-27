@@ -5,7 +5,7 @@ Summary of recent updates to the AMPL MP Library
 ## 20250329
 - Option cvt:multoutcard to limit the size of
   out-multiplied QP expressions. Can improve speed
-  on large models.
+  on large models, but prone to numerical issues.
 - Improved parsing of quadratic expressions.
 
 

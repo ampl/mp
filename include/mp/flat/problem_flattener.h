@@ -1113,29 +1113,20 @@ public:         // More utilities
 
   /// Create product without multiplying out.
   /// Create a separate QC.
-  /// @todo inspect each factor separately if it's just a var.
   EExpr DontMultOut(EExpr&& el, EExpr&& er) {
     const auto& ellt = el.GetLinTerms();
     const auto& erlt = er.GetLinTerms();
-    if (1 == ellt.size() && 1 == erlt.size() &&   // a variable in el and er
-        0.0 == er.constant_term() && 0.0 == el.constant_term() &&
-        el.GetQPTerms().empty() && er.GetQPTerms().empty()) {
-      auto coef = ellt.coef(0) * erlt.coef(0);
-      auto qc_res = GetFlatCvt().AssignResultVar2Args(
-            QuadraticFunctionalConstraint{ { {      // = x*y+0
-              LinTerms{},
-              QuadTerms{ {1.0}, {ellt.var(0)}, {erlt.var(0)} }
-            }, 0.0 } });
-      return { coef, qc_res };
-    }
+    assert(el.is_affine() && er.is_affine()
+           && ellt.size() && erlt.size());
     el.sort_terms();
     er.sort_terms();
+    auto resvar1 = Convert2Var( std::move(el) );
+    auto resvar2 = (&el==&er || el==er)
+                       ? resvar1 : Convert2Var( std::move(er) );
     auto qc_res = GetFlatCvt().AssignResultVar2Args(
           QuadraticFunctionalConstraint{ { {      // = el*er+0
             LinTerms{},
-            QuadTerms{ {1.0},
-                       {Convert2Var( std::move(el) )},
-                       {Convert2Var( std::move(er) )} }
+            QuadTerms{ {1.0}, {resvar1}, {resvar2} }
           }, 0.0 } });
     return { 1.0, qc_res };
   }
