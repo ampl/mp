@@ -178,6 +178,12 @@ class BasicExpr : private internal::ExprBase {
   using ExprBase::operator SafeBool;
 };
 
+// Returns true if e is of ExprType.
+template <typename ExprType>
+inline bool Is(Expr e) {
+  return internal::Is<ExprType>(e.kind());
+}
+
 template <typename ExprType>
 inline ExprType internal::UncheckedCast(Expr e) {
   MP_ASSERT(Is<ExprType>(e.kind()), "invalid cast");

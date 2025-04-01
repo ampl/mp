@@ -107,6 +107,11 @@ public:
     constant_term_ *= n;
   }
 
+  /// Clear
+  void clear() {
+    GetBody().clear();
+    constant_term_ = 0.0;
+  }
   /// operator==
   bool operator==(const AlgebraicExpression& ae) const {
     return GetBody()==ae.GetBody() &&

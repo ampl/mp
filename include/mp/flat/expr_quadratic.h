@@ -283,6 +283,12 @@ public:
     GetQPTerms() *= n;
   }
 
+  /// Clear
+  void clear() {
+    GetLinTerms().clear();
+    GetQPTerms().clear();
+  }
+
   /// Value at given variable vector
   template <class VarInfo>
   long double ComputeValue(const VarInfo& x) const {

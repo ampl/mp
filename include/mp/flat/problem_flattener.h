@@ -1,16 +1,19 @@
 #ifndef PROBLEM_FLATTENER_H
 #define PROBLEM_FLATTENER_H
 
-#include <utility>
 #include <unordered_map>
 #include <map>
 #include <cmath>
+#include <utility>
+#include <memory>
 
 #include "mp/problem.h"    // for ToLinTerms()
 #include "mp/converter-base.h"
+#include "mp/flat/problem_flattener_base.h"
 #include "mp/expr-visitor.h"
 #include "mp/flat/eexpr.h"
 #include "mp/flat/bucketaccum.h"
+#include "mp/flat/qp2passes_base.h"
 #include "mp/flat/prepro_prod.h"
 #include "mp/flat/constr_std.h"
 #include "mp/flat/obj_std.h"
@@ -59,7 +62,8 @@ void WriteAlgCon(fmt::Writer &w, const AlgCon &con, VN);
 template <class Impl, class Problem, class FlatConverter>
 class ProblemFlattener :
     public ExprConverter<Impl, EExpr>,
-    public BasicConverter<Problem>
+    public BasicConverter<Problem>,
+    public BasicProblemFlattener
 {
 public:
   using ProblemType = Problem;
@@ -67,12 +71,15 @@ public:
 
 public:
   using Var = typename FlatConverter::Var;
+  /// The low-level expression
+  using ExprType = Expr;
+  /// The intermediate expression
   using EExprType = EExpr;
   using VarArray = std::vector<Var>;
+  using BaseExprVisitor = ExprVisitor<Impl, EExpr>;
 
 protected:
   using ClassName = ProblemFlattener;
-  using BaseExprVisitor = ExprVisitor<Impl, EExpr>;
   using BaseConverter = BasicConverter<Problem>;
 
   using EExprArray = SmallVec<EExpr, 2>;
@@ -181,7 +188,7 @@ protected:
     if (int num_objs = GetModel().num_objs())
       for (int i = 0; i < num_objs; ++i) {
         MPD( ExportObj(i) );
-        MP_DISPATCH( Convert( GetModel().obj(i) ) );
+        MP_DISPATCH( ConvertObj( i ) );
       }
     GetFlatCvt().PropagateObjContexts();      // all now, because of GetMOWeights()
 
@@ -322,62 +329,79 @@ protected:
   }
 
   /// Convert an objective
-  void Convert(typename ProblemType::MutObjective obj) {
-    auto obj_src =              // source value node for this obj
-        GetValuePresolver().GetSourceNodes().GetObjValues()().Add();
-    GetCopyLink().AddEntry(
+  void ConvertObj(int i_obj) {
+    try {
+      typename ProblemType::MutObjective obj = GetModel().obj(i_obj);
+      auto obj_src =              // source value node for this obj
+          GetValuePresolver().GetSourceNodes().GetObjValues()().Add();
+      GetCopyLink().AddEntry(
           {
-            obj_src,
-            GetValuePresolver().GetTargetNodes().GetObjValues()().Add() });
-    /// After the CopyLink, add One2ManyLink for converted expressions.
-    /// When postsolving, CopyLink is executed last and copies obj values.
-    /// This should resolve the issue of the "max-out"
-    /// value conflict resolution.
-    /// Tested by suf_common/funcpieces_01_01_obj.mod.
-    pre::AutoLinkScope<FlatConverterType> auto_link_scope{
-      GetFlatCvt(), obj_src
-    };
-    auto le = ToLinTerms(obj.linear_expr());
-    NumericExpr e = obj.nonlinear_expr();
-    EExpr eexpr;
-    if (e) {
-      eexpr=MP_DISPATCH( Visit(e) );
-      le.add(eexpr.GetLinTerms());
-      if (std::fabs(eexpr.constant_term())!=0.0) {
-        /// Not using objective constant, should we?
-        le.add_term(1.0, MakeFixedVar(eexpr.constant_term()));
+           obj_src,
+           GetValuePresolver().GetTargetNodes().GetObjValues()().Add() });
+      /// After the CopyLink, add One2ManyLink for converted expressions.
+      /// When postsolving, CopyLink is executed last and copies obj values.
+      /// This should resolve the issue of the "max-out"
+      /// value conflict resolution.
+      /// Tested by suf_common/funcpieces_01_01_obj.mod.
+      pre::AutoLinkScope<FlatConverterType> auto_link_scope{
+          GetFlatCvt(), obj_src
+      };
+      auto le = ToLinTerms(obj.linear_expr());
+      NumericExpr e = obj.nonlinear_expr();
+      EExpr eexpr;
+      if (e) {
+        eexpr=MP_DISPATCH( Visit(e) );
+        le.add(eexpr.GetLinTerms());
+        if (std::fabs(eexpr.constant_term())!=0.0) {
+          /// Not using objective constant, should we?
+          le.add_term(1.0, MakeFixedVar(eexpr.constant_term()));
+        }
       }
-    }
-    /// Sort/merge terms, otherwise we lose repeated terms
-    /// in Gurobi where we just set 'obj attributes'
-    /// to variables.
-    /// Context is propagated after adding all objectives.
-    le.sort_terms();
-    eexpr.GetQPTerms().sort_terms();
-    if (!GetFlatCvt().IfPassQuadObj()            // SCIP 10
-        && eexpr.GetQPTerms().size()) {
-      EExpr qpnew;
-      qpnew.GetQPTerms() = std::move(eexpr.GetQPTerms());
-      int qpres = Convert2Var(std::move(qpnew));
-      eexpr.GetQPTerms().clear();                // explicitly remove obj qp terms
-      le.add_term(1.0, qpres);
-    }
-    /// Add linear / quadratic obj
-    LinearObjective lo { obj.type(),
-          std::move(le.coefs()), std::move(le.vars()) };
-    GetFlatCvt().AddObjective(
+      /// Sort/merge terms, otherwise we lose repeated terms
+      /// in Gurobi where we just set 'obj attributes'
+      /// to variables.
+      /// Context is propagated after adding all objectives.
+      le.sort_terms();
+      eexpr.GetQPTerms().sort_terms();
+      if (!GetFlatCvt().IfPassQuadObj()            // SCIP 10
+          && eexpr.GetQPTerms().size()) {
+        EExpr qpnew;
+        qpnew.GetQPTerms() = std::move(eexpr.GetQPTerms());
+        int qpres = Convert2Var(std::move(qpnew));
+        eexpr.GetQPTerms().clear();                // explicitly remove obj qp terms
+        le.add_term(1.0, qpres);
+      }
+      /// Add linear / quadratic obj
+      LinearObjective lo { obj.type(),
+                         std::move(le.coefs()), std::move(le.vars()) };
+      GetFlatCvt().AddObjective(
           QuadraticObjective{std::move(lo),
                              std::move(eexpr.GetQPTerms())});
+    } catch (const std::exception& exc) {
+      MP_RAISE(fmt::format(
+          "Error flattening objective _obj[{}]:\n  {}", i_obj, exc.what()));
+    }
   }
 
   /// Convert an algebraic constraint
   void ConvertAlgCon(int i) {
-    pre::AutoLinkScope<FlatConverterType> auto_link_scope{
-      GetFlatCvt(),
-      GetValuePresolver().GetSourceNodes().GetConValues()().
+    try {
+      pre::AutoLinkScope<FlatConverterType> auto_link_scope{
+          GetFlatCvt(),
+          GetValuePresolver().GetSourceNodes().GetConValues()().
           Add()           // Just add next node -
-    };                    // assume the constraint order in NL
-    AddAlgebraicConstraint( PrepareAlgConstraint(i) );
+      };                    // assume the constraint order in NL
+      AddAlgebraicConstraint( PrepareAlgConstraint(i) );
+    } catch (const Error& err) {
+      MP_RAISE_WITH_CODE(
+          err.exit_code(), fmt::format(
+              "Algebraic constraint _scon[{}]:\n  {}",
+              i+1, err.what()));
+    } catch (const std::exception& exc) {
+      MP_RAISE(fmt::format(
+          "Error flattening algebraic constraint _scon[{}]:\n  {}",
+          i+1, exc.what()));
+    }
   }
 
   /// Algebraic constraint flattening preparation info
@@ -446,22 +470,31 @@ protected:
 
   /// Convert a logical constraint
   void ConvertLogicalCon(int i) {
-    pre::AutoLinkScope<FlatConverterType> auto_link_scope{
-      GetFlatCvt(),
-      GetValuePresolver().GetSourceNodes().GetConValues()().
+    try {
+      pre::AutoLinkScope<FlatConverterType> auto_link_scope{
+          GetFlatCvt(),
+          GetValuePresolver().GetSourceNodes().GetConValues()().
           Add()           // Just add next node -
-    };                    // assume the constraint order in NL
-    auto e = GetModel().logical_con(i);
-    const auto resvar = MP_DISPATCH( Convert2Var(e.expr()) );
-    if (GetFlatCvt().is_fixed(resvar)) {
-      if (0==GetFlatCvt().fixed_value(resvar)) {
-        MP_INFEAS("Logical constraint _slogcon["
-                  + std::to_string(i+1)
-                  + "] is false");
+      };                    // assume the constraint order in NL
+      auto e = GetModel().logical_con(i);
+      const auto resvar = MP_DISPATCH( Convert2Var(e.expr()) );
+      if (GetFlatCvt().is_fixed(resvar)) {
+        if (0==GetFlatCvt().fixed_value(resvar)) {
+          MP_INFEAS("Constraint is false");
+        }
+      } else {
+        GetFlatCvt().FixAsTrue(resvar);
+        assert(GetFlatCvt().HasInitExpression(resvar));
       }
-    } else {
-      GetFlatCvt().FixAsTrue(resvar);
-      assert(GetFlatCvt().HasInitExpression(resvar));
+    } catch (const Error& err) {
+      MP_RAISE_WITH_CODE(
+          err.exit_code(), fmt::format(
+              "Logical constraint _slogcon[{}]:\n  {}",
+              i+1, err.what()));
+    } catch (const std::exception& exc) {
+      MP_RAISE(fmt::format(
+          "Error flattening logical constraint _slogcon[{}]:\n  {}",
+          i+1, exc.what()));
     }
   }
 
@@ -521,7 +554,7 @@ public:
     auto divisor = Convert2EExpr(*(++it));
     if (divisor.is_constant()) {
       if (!divisor.constant_term())
-        MP_RAISE("Division by 0 in the model.");
+        MP_RAISE("Division by 0");
       dividend *= (1.0 / divisor.constant_term());
       return dividend;
     }
@@ -730,6 +763,10 @@ public:          // need to be public due to CRTP
   }
 
   EExpr VisitSum(typename BaseExprVisitor::SumExpr expr) {
+    if (GetFlatCvt().IfParseQPIn2Passes()) {
+      GetQPParser().Process(expr);
+      return GetQPParser().GetResult();
+    }  // else
     BucketAccumulator<EExpr> bucketaccum(expr.num_args());
     for (auto i =
          expr.begin(), end = expr.end(); i != end; ++i)
@@ -1136,6 +1173,10 @@ public:         // More utilities
     return mp::MultiplyOut(el, er);
   }
 
+  /// Number of variables in the original model
+  int num_vars_orig() const override final
+  { return GetModel().num_vars(); }
+
 
 protected:
   //////////////////////// ADD CUSTOM CONSTRAINT ///////////////////////
@@ -1295,13 +1336,21 @@ public:
   /// The model as input from NL
   ProblemType& GetInputModel() { return GetModel(); }
 
+  /// The flat converter
   const FlatConverter& GetFlatCvt() const { return flat_cvt_; }
   FlatConverter& GetFlatCvt() { return flat_cvt_; }
 
+  /// The QP2Passes parser
+  const BasicQP2Passes&
+  GetQPParser() const { return *p_qp2passes_; }
+  BasicQP2Passes&
+  GetQPParser() { return *p_qp2passes_; }
 
 private:
   ProblemType model_;
   FlatConverter flat_cvt_;
+  std::unique_ptr<BasicQP2Passes>
+      p_qp2passes_ { MakeQP2Passes(*this) };
 };
 
 

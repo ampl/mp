@@ -14,6 +14,7 @@
 #include "mp/flat/model_info.hpp"
 
 #include "mp/flat/bucketaccum.hpp"
+#include "mp/flat/qp2passes.hpp"
 
 namespace mp {
 
