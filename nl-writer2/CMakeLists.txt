@@ -12,9 +12,9 @@ if (NLW2_LIB_DMGAY_DTOA)
 else()
   message(STATUS
     "   NLW2_LIB: using std::to_chars().\n"
-    "     On MacOS, requires OS 13.3 or higher."
+    "     On MacOS, requires OS 13.4 or higher."
   )
-  set(CMAKE_OSX_DEPLOYMENT_TARGET 13.3)
+  set(CMAKE_OSX_DEPLOYMENT_TARGET 13.4)
 endif()
 
 

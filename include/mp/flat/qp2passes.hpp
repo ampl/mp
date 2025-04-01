@@ -14,7 +14,7 @@ namespace mp {
 //////////////////////////////////////////////
 
 void QP2Passes::Process(Expr expr) {
-  assert(expr::Kind::SUM == expr.kind);             //for now
+  assert(expr::Kind::SUM == expr.kind());             //for now
   top_expr_ = Cast<internal::ExprTypes::SumExpr>(expr);
   RunPass1();
   if (Pass2SeemsWorth())
