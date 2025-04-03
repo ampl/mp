@@ -1177,6 +1177,17 @@ public:         // More utilities
   int num_vars_orig() const override final
   { return GetModel().num_vars(); }
 
+  /// Original variable's lower bound
+  double var_orig_lb(int i) const override final
+  { return GetModel().var(i).lb(); }
+  /// Original variable's upper bound
+  double var_orig_ub(int i) const override final
+  { return GetModel().var(i).ub(); }
+
+  /// Mutliply-out cardinality
+  double MultOutCard() const override final
+  { return GetFlatCvt().QPMultOutCard(); }
+
 
 protected:
   //////////////////////// ADD CUSTOM CONSTRAINT ///////////////////////
@@ -1263,7 +1274,8 @@ public:
   { return (double(lt1.size()))*lt2.size() <= GetFlatCvt().QPMultOutCard(); }
 
   /// Quadratize Pow2 exactly when we pass QP terms
-  bool IfQuadratizePow2() const { return IfMultOutQPTerms(); }
+  bool IfQuadratizePow2() const override final
+  { return IfMultOutQPTerms(); }
 
 
 public:

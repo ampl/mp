@@ -19,7 +19,7 @@ namespace mp {
 /// Scheme:
 /// 1. Collect an array of terms (flattened.)
 /// 2. Group binary terms into a FORALL. If desired.
-/// 3. Quadratize remeining terms.
+/// 3. Quadratize remaining terms.
 template <class Flattener>
 class PreproProd
     : public ExprConverter<PreproProd<Flattener>, void> {
