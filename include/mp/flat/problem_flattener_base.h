@@ -1,6 +1,8 @@
 #ifndef PROBLEM_FLATTENER_BASE_H
 #define PROBLEM_FLATTENER_BASE_H
 
+#include "mp/flat/eexpr.h"
+
 namespace mp {
 
 /// An abstract base for ProblemFlattener
@@ -22,6 +24,9 @@ public:
 
   /// Mutliply-out cardinality
   virtual double MultOutCard() const = 0;
+
+  /// Flatten an expression
+  virtual EExpr VisitVirtual(Expr e) = 0;
 };
 
 }  // namespace mp

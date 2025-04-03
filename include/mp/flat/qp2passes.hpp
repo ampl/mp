@@ -38,18 +38,23 @@ void QP2Passes::RunPass1() {
   int term_index=0;
   for (auto term_iter=e0.begin(), term_end=e0.end();
        term_end!=term_iter; ++term_iter, ++term_index) {
-
+    if (!(is_term_qp_[term_index]             // degree > 2
+          = (visitor_.Visit(*term_iter) <= 2))) {
+      GetBuckets().Add(                       // insert in buckets
+          GetFlattener().VisitVirtual(*term_iter) );
+    }
   }
 }
 
 bool QP2Passes::Pass2SeemsWorth() const {
-  // @todo
-  return false;
+  return              // @todo a parameter?
+      0.25*visitor_.NumSourceTermsQP()
+         > double(visitor_.NumQPVars())*visitor_.NumQPVars();
 }
 
 void QP2Passes::RunPass2Full() {
   InitPass2Full();
-  // ...
+  CollectMarkedTerms();
   ExtractPass2ResultIntoBuckets();
 }
 
@@ -57,10 +62,25 @@ void QP2Passes::InitPass2Full() {
   visitor_.InitPass2();
 }
 
+void QP2Passes::CollectMarkedTerms() {
+  auto e0 = GetTopExpr();
+  int term_index=0;
+  for (auto term_iter=e0.begin(), term_end=e0.end();
+       term_end!=term_iter; ++term_iter, ++term_index) {
+    if (is_term_qp_[term_index]) {            // degree <= 2
+      auto deg = visitor_.Visit(*term_iter);
+      assert (deg <= 2);
+    }
+  }
+}
+
 void QP2Passes::ExtractPass2ResultIntoBuckets() {
+  // @todo use const_term_
+  // ...
 }
 
 void QP2Passes::RunPass2Buckets() {
+  // ...
 }
 
 void QP2PassVisitor::InitPass1() {
@@ -70,13 +90,28 @@ void QP2PassVisitor::InitPass1() {
   ts_qp_.resize(GetQP2P().GetFlattener().num_vars_orig());
   vars_lin_.clear();
   vars_qp_.clear();
+  n_source_terms_qp_ = 0;
 }
 
 void QP2PassVisitor::InitPass2() {
   pass_ = 2;
   const_term_ = 0.0;
-  // .....
-  MP_RAISE("QP2Pass not fully implemented");
+  assert (1.0 == factor_);
+  coefs_lin_.resize(GetQP2P().GetFlattener().num_vars_orig());
+  // 0 out necessary elements in coefs_lin_
+  for (auto v: vars_lin_) {
+    assert(v < coefs_lin_.size());
+    coefs_lin_[v] = 0.0;
+  }
+  std::sort(vars_lin_.begin(), vars_lin_.end());
+  coefs_qp_.clear();
+  coefs_qp_.resize(NumQPVars());
+  vperm_qp_.resize(GetQP2P().GetFlattener().num_vars_orig());
+  std::sort(vars_qp_.begin(), vars_qp_.end());
+  for (auto i = vars_qp_.size(); i--; ) {
+    assert(vars_qp_[i] < vperm_qp_.size());
+    vperm_qp_[vars_qp_[i]] = i;
+  }
 }
 
 
@@ -386,10 +421,13 @@ void QP2PassVisitor::NoteQPVar(int v) {
   }
 }
 void QP2PassVisitor::AddLinTerm(double c, int v) {
-
+  assert(v < coefs_lin_.size());
+  coefs_lin_[v] += c;
 }
 void QP2PassVisitor::AddQPTerm(double c, int v1, int v2) {
-
+  assert(v1 < vperm_qp_.size());
+  assert(v2 < vperm_qp_.size());
+  coefs_qp_.add_to(vperm_qp_[v1], vperm_qp_[v2], c);
 }
 
 

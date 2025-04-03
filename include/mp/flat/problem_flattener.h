@@ -1188,6 +1188,10 @@ public:         // More utilities
   double MultOutCard() const override final
   { return GetFlatCvt().QPMultOutCard(); }
 
+  /// Flatten an expression
+  EExpr VisitVirtual(Expr e) override final
+  { return MPD( Visit(e) ); }
+
 
 protected:
   //////////////////////// ADD CUSTOM CONSTRAINT ///////////////////////

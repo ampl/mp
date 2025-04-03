@@ -3,6 +3,7 @@
 
 #include "mp/flat/qp2passes_base.h"
 #include "mp/flat/bucketaccum.h"
+#include "mp/utils-matrix.h"
 #include "mp/expr-visitor.h"
 
 namespace mp {
@@ -72,6 +73,12 @@ public:
   /// Defined variable
   QP2PassNodeResult VisitCommonExpr(Reference );
 
+  /// An estimate on the number of source QP terms
+  unsigned long long NumSourceTermsQP() const
+  { return n_source_terms_qp_; }
+
+  /// Number of QP vars
+  auto NumQPVars() const { return vars_qp_.size(); }
 
 protected:
   const QP2Passes& GetQP2P() const { return qp2p_; }
@@ -114,11 +121,17 @@ private:
 
   AffineExpr* p_ae_{};  // pointer to chosen ae being filled
 
-  long double const_term_ {};   // the top-level constant term
-
   unsigned int timestamp_ {0};
   std::vector<unsigned int> ts_lin_, ts_qp_;
   SmallVec<int, 64> vars_lin_, vars_qp_;
+  unsigned long long n_source_terms_qp_ {};
+
+  /// Pass 2
+  long double const_term_ {};   // the top-level constant term
+  std::vector<double> coefs_lin_;
+
+  TMatrix<double, 16> coefs_qp_;
+  std::vector<int> vperm_qp_;   // inverse of vars_qp_
 };
 
 
@@ -160,6 +173,7 @@ protected:
   bool Pass2SeemsWorth() const;
   void InitPass2Full();
   void RunPass2Full();
+  void CollectMarkedTerms();
   void ExtractPass2ResultIntoBuckets();
   void RunPass2Buckets();
 
