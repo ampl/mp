@@ -158,7 +158,8 @@ pre::ValueMapDbl MosekBackend::DualSolution() {
 ArrayRef<double> MosekBackend::DualSolution_LP() {
   int num_cons = NumLinCons();
   std::vector<double> pi(num_cons);
-  if (!IsMIP()) {
+  // if (!IsMIP())
+  {
     MSKrescodee error = MSK_gety(lp(), solToFetch_, pi.data());
     if (error != MSK_RES_OK)
       pi.clear();

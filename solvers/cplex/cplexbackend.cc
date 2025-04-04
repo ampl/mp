@@ -378,7 +378,7 @@ pre::ValueMapDbl CplexBackend::DualSolution() {
 }
 
 ArrayRef<double> CplexBackend::DualSolution_LP() {
-  if (HasSolution() && ((!IsMIP()) || need_fixed_MIP()) && (NumLinCons()>0))
+  // if (HasSolution() && ((!IsMIP()) || need_fixed_MIP()) && (NumLinCons()>0))
   {
     int num_cons = NumLinCons();
     std::vector<double> pi(num_cons);
@@ -387,8 +387,8 @@ ArrayRef<double> CplexBackend::DualSolution_LP() {
       pi.clear();
     return pi;
   }
-  else
-    return std::vector<double>();
+  // else
+  //   return std::vector<double>();
 }
 
 double CplexBackend::ObjectiveValue() const {

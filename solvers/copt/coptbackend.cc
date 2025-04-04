@@ -149,7 +149,6 @@ ArrayRef<double> CoptBackend::PrimalSolution() {
   else
     error = COPT_GetLpSolution(lp(), x.data(), NULL, NULL, NULL);
 
-
   if (error)
     x.clear();
   return x;
@@ -162,11 +161,9 @@ pre::ValueMapDbl CoptBackend::DualSolution() {
 ArrayRef<double> CoptBackend::DualSolution_LP() {
   int num_cons = NumLinCons();
   std::vector<double> pi(num_cons);
-  if (!IsMIP()) {
-    int error = COPT_GetLpSolution(lp(), NULL, NULL, pi.data(), NULL);
-    if (error)
-      pi.clear();
-  }
+  int error = COPT_GetLpSolution(lp(), NULL, NULL, pi.data(), NULL);
+  if (error)
+    pi.clear();
   return pi;
 }
 
