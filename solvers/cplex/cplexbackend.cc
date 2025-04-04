@@ -363,9 +363,8 @@ namespace mp {
   }
 
 ArrayRef<double> CplexBackend::PrimalSolution() {
-  
-  if (!HasSolution())
-    return std::vector<double>();
+  // if (!HasSolution())
+  //   return std::vector<double>();
   int num_vars = NumVars();
   std::vector<double> x(num_vars);
   int error = CPXgetx (env(), lp(), x.data(), 0, num_vars-1);

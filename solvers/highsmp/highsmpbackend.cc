@@ -100,12 +100,13 @@ bool HighsBackend::IsQCP() const {
 ArrayRef<double> HighsBackend::PrimalSolution() {
   int num_vars = NumVars();
   std::vector<double> x(num_vars);
-  int primal_solution_status;
-  loader().Highs_getIntInfoValue(lp(),
-                        "primal_solution_status", &primal_solution_status);
-  if ((kHighsSolutionStatusFeasible == primal_solution_status) || (storedOptions_.onGPU()))
-    loader().Highs_getSolution(lp(), x.data(), NULL, NULL, NULL);
-  else
+  // int primal_solution_status;
+  // loader().Highs_getIntInfoValue(lp(),
+  //                       "primal_solution_status", &primal_solution_status);
+  // if ((kHighsSolutionStatusFeasible == primal_solution_status) || (storedOptions_.onGPU()))
+  auto e = loader().Highs_getSolution(lp(), x.data(), NULL, NULL, NULL);
+  // else
+  if (e != kHighsStatusOk && e != kHighsStatusWarning)
     x.clear();
   return x;
 }

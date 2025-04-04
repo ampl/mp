@@ -120,7 +120,9 @@ ArrayRef<double> XpressmpBackend::PrimalSolution() {
   error = XPRSgetsolution(lp(), &solst, x.data(), 0, num_vars-1);
   if (error
       || XPRS_SOLSTATUS_NOTFOUND==solst
-          || XPRS_SOLSTATUS_INFEASIBLE==solst)    // @todo keep up2date
+          //   Infeasible - should return:
+          // || XPRS_SOLSTATUS_INFEASIBLE==solst
+      )    // @todo keep up2date
     x.clear();
   return x;
 }

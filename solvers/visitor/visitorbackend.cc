@@ -133,6 +133,9 @@ ArrayRef<double> VisitorBackend::PrimalSolution() {
   int num_vars = NumVars();
   int error = 1;
   std::vector<double> x(num_vars);
+  // We should always return a solution when available,
+  // even if infeasible/suboptimal etc.
+  // Use decides on it using solve_result.
   /*
   if (IsMIP()) 
     error = VISITOR_GetSolution(lp(), x.data());
