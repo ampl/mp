@@ -722,9 +722,15 @@ void PrintModelInfo(const FlatModelInfo& fmi,
     PrnType("quadratic", n_quad);
     PrnType("nonlinear", n_nl);
     if (n_cones) {
-      PrnType("conic", n_cones);
-      for (const auto& cone: cones)
-        PrnType(cone.first.c_str(), cone.second);
+      fmt::print(fmt::format(" {} conic (", n_cones));
+      int i=0;
+      for (const auto& cone: cones) {
+        if (i++)
+          fmt::print(" ");
+        fmt::print(fmt::format("{} {}", cone.second, cone.first));
+        if (int(cones.size())!=i)
+          fmt::print(",");
+      }
       fmt::print(");");
     }
     PrnType("SOS1", n_sos1);

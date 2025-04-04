@@ -365,7 +365,7 @@ add_prefix(MP_HEADERS include/mp/
   utils-clock.h utils-file.h
   util-json-write.h util-json-write.hpp
   utils-hash.h utils-hash-stream.h
-  utils-string.h utils-math.h utils-vec.h)
+  utils-string.h utils-math.h utils-matrix.h utils-vec.h)
 
 add_prefix(MP_FLAT_HEADERS include/mp/flat/
   backend_flat.h

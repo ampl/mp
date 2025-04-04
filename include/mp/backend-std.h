@@ -510,7 +510,9 @@ protected:
     auto sol = GetSolution();             // even if just dual or infeasible
     fmt::MemoryWriter writer;
     writer.write("{}: {}", MP_DISPATCH( long_name() ), SolveStatus());
-    if (IsProblemSolvedOrFeasible()) {
+    if (IsProblemSolvedOrFeasible()
+        || IsProblemMaybeSolved()
+        || (report_uncertain_sol() && IsProblemStatusUnknown())) {
       if (sol.objvals.size()) {
         if (sol.objvals.size() > 1)
         {
@@ -532,8 +534,12 @@ protected:
                          FormatObjValue(feasrelax().orig_obj_value_));
         }
       }
-      if (round() && MPD(IsMIP()))
+    }
+    try {
+      if (round() && MPD(IsMIP()) && sol.primal.size())
         RoundSolution(sol.primal, writer);
+    } catch (const std::exception& exc) {
+      AddWarning("SOL_ROUNDING", exc.what());
     }
     try {
       if (exportKappa() & 1)
@@ -639,6 +645,10 @@ protected:
   void SetStatus(std::pair<int, std::string> stt) { status_=stt; }
 
   //////////////////////// SOLUTION STATUS ADAPTERS ///////////////////////////////
+  /// Problem status unknown
+  virtual bool IsProblemStatusUnknown() const
+  { return sol::IsProblemStatusUnknown(SolveCode()); }
+
   /** Following the taxonomy of the enum sol::Status, returns true if
       we have an optimal solution or a feasible solution for a
       satisfaction problem */
@@ -648,6 +658,10 @@ protected:
   /// Solved or feasible
   virtual bool IsProblemSolvedOrFeasible() const
   { return sol::IsProblemSolvedOrFeasible(SolveCode()); }
+
+  /// Maybe solved
+  virtual bool IsProblemMaybeSolved() const
+  { return sol::IsProblemMaybeSolved(SolveCode()); }
 
   /// Undecidedly infeas or unbnd
   virtual bool IsProblemIndiffInfOrUnb() const

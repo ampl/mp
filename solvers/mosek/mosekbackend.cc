@@ -132,10 +132,13 @@ bool MosekBackend::IsQCP() const {
 
 ArrayRef<double> MosekBackend::PrimalSolution() {
 	std::vector<double> x;
-	MSKsolstae solst;
-	MSK_getsolsta(lp(), solToFetch_, &solst);
-	if (MSK_SOL_STA_PRIM_INFEAS_CER!=solst
-			&& MSK_SOL_STA_UNKNOWN!=solst) {
+  // MSKsolstae solst;
+  // MSK_getsolsta(lp(), solToFetch_, &solst);
+  if (true    // Mosek 11.0.8 seems to report UNKNOWN
+      // even with feasible solutions when stalling
+   //    || (MSK_SOL_STA_PRIM_INFEAS_CER!=solst
+      // && MSK_SOL_STA_UNKNOWN!=solst)
+      ) {
 		int num_vars = NumVars();
 		x.resize(num_vars);
 		// TODO get appropriate solution?

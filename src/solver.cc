@@ -693,9 +693,15 @@ void BasicSolver::InitMetaInfoAndOptions(
       new BoolOption(verbose_, "tech:outlev_mp outlev_mp",
                      "0*/1: whether to print MP model information.")));
 
-  AddOption(OptionPtr(new BoolOption(debug_, "tech:debug debug",
-    "0*/1: whether to assist testing & debugging, e.g., "
-    "by outputting auxiliary information (mostly via suffixes).")));
+  AddOption(OptionPtr(new BoolOption(
+      debug_, "tech:debug debug",
+      "0*/1: whether to assist testing & debugging, e.g., "
+      "by outputting auxiliary information (mostly via suffixes).")));
+
+  AddOption(OptionPtr(new BoolOption(
+      report_uncertain_sol_, "sol:report_uncertain report_uncertain_sol",
+      "0/1*: whether to report objective value(s) in solve_message "
+      "when solve_result is '?' (unknown).")));
 
   static const mp::OptionValueInfo values_multiobj_[] = {
       { "0", "Single objective, see option obj:no (default)", 0},
@@ -703,39 +709,41 @@ void BasicSolver::InitMetaInfoAndOptions(
       { "2", "Multi-objective, force emulation", 2}
   };
   if ((flags & MULTIPLE_OBJ) != 0) {
-    AddStoredOption("obj:multi multiobj",
-      "Whether to use multi-objective optimization:\n"
-                    "\n.. value-table::\n\n"
-                                       "When obj:multi>0 and several objectives are present, suffixes "
-                                       ".objpriority, .objweight, .objreltol, and .objabstol on the "
-                                       "objectives are relevant.  Objectives with greater .objpriority "
-                                       "values (integer values) have higher priority.  Objectives with "
-                                       "the same .objpriority are weighted by .objweight, "
-                                       "according to the option obj:multi:weight.\n"
-                                       "\n"
-                                       "Objectives "
-                                       "with positive .objabstol or .objreltol are allowed to be "
-                                       "degraded by lower priority objectives by amounts not exceeding "
-                                       "the .objabstol (absolute) and .objreltol (relative) limits.\n"
-                    "\n"
-                    "Note that with solver's native handling (when obj:multi=1 and supported), "
-                    "some solvers might have special rules for the tolerances, especially for LP, "
-                    "and not allow quadratic objectives. See the solver documentation.",
-                    multiobj_, values_multiobj_);
+    AddStoredOption(
+        "obj:multi multiobj",
+        "Whether to use multi-objective optimization:\n"
+        "\n.. value-table::\n\n"
+        "When obj:multi>0 and several objectives are present, suffixes "
+        ".objpriority, .objweight, .objreltol, and .objabstol on the "
+        "objectives are relevant.  Objectives with greater .objpriority "
+        "values (integer values) have higher priority.  Objectives with "
+        "the same .objpriority are weighted by .objweight, "
+        "according to the option obj:multi:weight.\n"
+        "\n"
+        "Objectives "
+        "with positive .objabstol or .objreltol are allowed to be "
+        "degraded by lower priority objectives by amounts not exceeding "
+        "the .objabstol (absolute) and .objreltol (relative) limits.\n"
+        "\n"
+        "Note that with solver's native handling (when obj:multi=1 and supported), "
+        "some solvers might have special rules for the tolerances, especially for LP, "
+        "and not allow quadratic objectives. See the solver documentation.",
+        multiobj_, values_multiobj_);
 
     static const mp::OptionValueInfo values_multiobjweight_[] = {
         { "1", "relative to the sense of the 1st objective", 1},
         { "2", "relative to its own sense (default)", 2}
     };
-    AddStoredOption("obj:multi:weight multiobjweight obj:multi:weights multiobjweights",
-                                       "How to interpret each objective's weight sign:\n"
-                    "\n.. value-table::\n\n"
-                    "With the 1st option (legacy behaviour), negative .objweight "
-                    "for objective i would make "
-                    "objective i's sense the opposite of the model's 1st objective. "
-                    "Otherwise, it would make objective i's sense the opposite to its sense "
-                    "defined in the model.",
-                    multiobj_weight_, values_multiobjweight_);
+    AddStoredOption(
+        "obj:multi:weight multiobjweight obj:multi:weights multiobjweights",
+        "How to interpret each objective's weight sign:\n"
+        "\n.. value-table::\n\n"
+        "With the 1st option (legacy behaviour), negative .objweight "
+        "for objective i would make "
+        "objective i's sense the opposite of the model's 1st objective. "
+        "Otherwise, it would make objective i's sense the opposite to its sense "
+        "defined in the model.",
+        multiobj_weight_, values_multiobjweight_);
   }
 
   AddIntOption("tech:timing timing tech:report_times report_times",

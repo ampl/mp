@@ -2,7 +2,10 @@ Summary of recent updates to MOSEK for AMPL
 ===========================================
 
 
-## 20250329
+## unreleased
+- Return solution whenever available (even 'unknown'
+  or 'infeasible'). This seems helpful on some
+  numerically tough models.
 - Changes in MP:
   - Option cvt:multoutcard to limit the size of
     out-multiplied QP expressions. Can improve speed

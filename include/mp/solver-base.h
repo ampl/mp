@@ -291,6 +291,10 @@ public:
   /// Outputs test infos etc
   bool debug_mode() const { return debug_; }
 
+  /// Report obj value in solve_message
+  /// when the status is '?' (UNKNOWN)
+  bool report_uncertain_sol() const
+  { return report_uncertain_sol_; }
 
   /// Set warning callback
   void set_warn_cb(AMPLS_Warning_Callback_T cb);
@@ -622,6 +626,8 @@ private:
 
   bool verbose_ {false};
   bool debug_ {false};
+  bool report_uncertain_sol_ {true};
+
   int timing_ {0};
   Stats stats_;
 
