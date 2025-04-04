@@ -558,11 +558,11 @@ void ScipBackend::InitCustomOptions() {
     "\n"
     "  | 0 - Presolving of LP solver should not be used\n"
     "  | 1 - Presolving of LP solver should be used (default).",
-    "lp/advanced/presolving", 0, 1);
+    "lp/presolving", 0, 1);
 
   AddSolverOption("lp:threads",
     "Number of threads used for solving the LP (default: 0: automatic)",
-    "lp/advanced/threads", 0, 64);
+    "lp/threads", 0, 64);
 
   AddSolverOption("lp:alwaysgetduals alwaysgetfarkasduals alwaysgetduals",
     "0/1: whether the Farkas duals should always be collected when an LP is found to be infeasible"

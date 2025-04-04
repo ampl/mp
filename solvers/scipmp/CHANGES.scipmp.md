@@ -2,6 +2,12 @@ Summary of recent updates to SCIP for AMPL
 ==========================================
 
 
+## 20250404
+- Fixed:
+  - Option lp:threads
+  - Option lp:presolving
+
+
 ## 20250329
 - Changes in MP:
   - Option cvt:multoutcard to limit the size of
