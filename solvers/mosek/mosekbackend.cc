@@ -310,7 +310,7 @@ std::pair<int, std::string> MosekBackend::GetSolveResult() {
   case MSK_SOL_STA_DUAL_FEAS:
     return { sol::UNCERTAIN, "feasible dual" + term_info };
   case MSK_SOL_STA_PRIM_AND_DUAL_FEAS:
-    return { sol::UNCERTAIN, "primal and dual feasible" + term_info };
+    return { sol::LIMIT_FEAS, "primal and dual feasible" + term_info };
   case MSK_SOL_STA_PRIM_INFEAS_CER:
     return { sol::INFEASIBLE,
           "the solution is a primal infeasibility certificate" + term_info };
@@ -346,9 +346,14 @@ std::pair<int, std::string> MosekBackend::GetSolveResult() {
       return { sol::INF_OR_UNB, "infeasible or unbounded" + term_info };
     case MSK_PRO_STA_UNKNOWN:
     default:
+      if (PrimalSolution().size() || DualSolution_LP().size())
+        return { sol::UNCERTAIN,
+                "solved? (solution status: " + std::to_string(solSta_)
+                    + ", problem status: " + std::to_string(proSta_)
+                    + ")" + term_info };
       return { sol::UNKNOWN,
-            "unknown status (solution: " + std::to_string(solSta_)
-            + ", problem: " + std::to_string(proSta_)
+            "unknown status (solution status: " + std::to_string(solSta_)
+            + ", problem status: " + std::to_string(proSta_)
             + ")" + term_info };
     }
   }
@@ -380,7 +385,7 @@ std::string MosekBackend::ConvertMOSEKTermStatus() {
     return { ", termination code "
           + std::to_string(termCode_) };
   }
-  return {};
+  return { ", termination reason unknown" };
 }
 
 void MosekBackend::FinishOptionParsing() {

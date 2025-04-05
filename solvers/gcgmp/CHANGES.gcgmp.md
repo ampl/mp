@@ -6,9 +6,6 @@ Summary of recent updates to GCG for AMPL
 - Fixed:
   - Option lp:threads
   - Option lp:presolving
-
-
-## 20250329
 - Changes in MP:
   - Option cvt:multoutcard to limit the size of
     out-multiplied QP expressions. Can improve speed
