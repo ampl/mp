@@ -572,7 +572,7 @@ void CoptBackend::InitCustomOptions() {
 
   AddSolverOption("lp:pdlpgpumode pdlpgpumode gpumode",
     "Wether to use GPU or CPU for PDLP method. Note that CUDA "
-    "GPU mode is only supported on Windows:\n"
+    "GPU mode is only supported on Windows and Linux:\n"
     "\n.. value-table::\n", COPT_INTPARAM_GPUMODE,
     lp_values_gpu, -1);
 
