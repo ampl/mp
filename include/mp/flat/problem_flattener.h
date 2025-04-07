@@ -13,7 +13,7 @@
 #include "mp/expr-visitor.h"
 #include "mp/flat/eexpr.h"
 #include "mp/flat/bucketaccum.h"
-#include "mp/flat/qp2passes_base.h"
+#include "mp/flat/qp2passes.h"
 #include "mp/flat/prepro_prod.h"
 #include "mp/flat/constr_std.h"
 #include "mp/flat/obj_std.h"
@@ -90,6 +90,7 @@ public:
   static const char* GetTypeName() { return "ProblemFlattener"; }
 
   ProblemFlattener(Env& e) : BaseConverter(e), flat_cvt_(e) { }
+  ~ProblemFlattener() { DeleteQP2PassVisitor(&GetQP2PVisitor()); }
 
 public:
   /// INCREMENTAL INTERFACE.
@@ -208,11 +209,14 @@ protected:
         MP_DISPATCH( ConvertLogicalCon( i ) );
       }
 
-    /// We could have produced variable names
-    /// when exporting NL model info
+    // We could have produced variable names
+    // when exporting NL model info
     CopyItemNames();
 
-    /// Signal we are not flattening anything
+    // Shrink temp storage
+    Shrink();
+
+    // Signal we are not flattening anything
     ifFltCon_ = -1;
   }
 
@@ -504,6 +508,10 @@ protected:
     GetFlatCvt().AddObjNames(GetModel().obj_names());
   }
 
+  void Shrink() {
+    mp::Shrink(GetQP2PVisitor());
+  }
+
 
 public:
   //////////////////////////////////// VISITOR ADAPTERS /////////////////////////////////////////
@@ -764,8 +772,39 @@ public:          // need to be public due to CRTP
 
   EExpr VisitSum(typename BaseExprVisitor::SumExpr expr) {
     if (GetFlatCvt().IfParseQPIn2Passes()) {
-      GetQPParser().Process(expr);
-      return GetQPParser().GetResult();
+#ifdef DEBUG_QP2PASSES
+      static int depth=0;
+      ++depth;
+      {
+        fmt::MemoryWriter wrt;
+        wrt << "FLATTEN: ";
+        WriteExpr<typename ProblemType::ExprTypes>(
+            wrt, LinearExpr{}, Cast<NumericExpr>(expr),
+            GetModel().GetVarNamer());
+        fmt::print("{:{}}{}\n", "", depth*2, wrt.str());
+      }
+#endif
+      QP2Passes qp2p {*this, GetQP2PVisitor()};
+      qp2p.Process(expr);
+      // return qp2p.GetResult();
+      auto ee1 = qp2p.GetResult();
+#ifdef DEBUG_QP2PASSES
+      {
+        fmt::MemoryWriter wrt;
+        wrt << "FLAT DONE: ";
+        WriteExpr<typename ProblemType::ExprTypes>(
+            wrt, LinearExpr{}, Cast<NumericExpr>(expr),
+            GetModel().GetVarNamer());
+        fmt::print("{:{}}{}\n{:{}}RESULT: ",
+                   "", depth*2,  wrt.str(), "", depth*2);
+        wrt.clear();
+        wrt << ee1.constant_term() << " + ";
+        WriteModelItem(wrt, ee1.GetBody(), GetFlatCvt().GetVarNamer());
+        fmt::print("{}\n", wrt.str());
+      }
+      --depth;
+#endif
+      return ee1;
     }  // else
     BucketAccumulator<EExpr> bucketaccum(expr.num_args());
     for (auto i =
@@ -1192,6 +1231,10 @@ public:         // More utilities
   EExpr VisitVirtual(Expr e) override final
   { return MPD( Visit(e) ); }
 
+  /// Get original BasicProblem<>
+  Problem& GetOrigProblem() override
+  { return GetModel(); }
+
 
 protected:
   //////////////////////// ADD CUSTOM CONSTRAINT ///////////////////////
@@ -1227,6 +1270,7 @@ private:
 
   int ifFltCon_ = -1;   // -1: undefined, 0: walking an expr tree in an objective,
                         // 1: in a constraint
+
 
 protected:
   /// Whether flattening a constraint vs an objective
@@ -1357,16 +1401,15 @@ public:
   FlatConverter& GetFlatCvt() { return flat_cvt_; }
 
   /// The QP2Passes parser
-  const BasicQP2Passes&
-  GetQPParser() const { return *p_qp2passes_; }
-  BasicQP2Passes&
-  GetQPParser() { return *p_qp2passes_; }
+  const QP2PassVisitor&
+  GetQP2PVisitor() const { return *p_qp2p_visitor_; }
+  QP2PassVisitor&
+  GetQP2PVisitor() { return *p_qp2p_visitor_; }
 
 private:
   ProblemType model_;
   FlatConverter flat_cvt_;
-  std::unique_ptr<BasicQP2Passes>
-      p_qp2passes_ { MakeQP2Passes(*this) };
+  QP2PassVisitor* p_qp2p_visitor_ = MakeQP2PassVisitor(*this);
 };
 
 

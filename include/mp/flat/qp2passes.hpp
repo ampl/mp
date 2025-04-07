@@ -1,17 +1,173 @@
 #ifndef QP2PASSES_HPP
 #define QP2PASSES_HPP
 
-#include "mp/error.h"
-#include "mp/flat/qp2passes.h"
-#include "mp/flat/bucketaccum.h"
-
 #include <vector>
 
+#include "mp/error.h"
+#include "mp/expr-linear.h"
+#include "mp/flat/qp2passes.h"
+#include "mp/utils-matrix.h"
+#include "mp/expr-visitor.h"
+
 namespace mp {
+
+/// Node visitor result.
+/// Polynomial degree of the node.
+using QP2PassNodeResult = int;
+
+/// Linear/QP expression visitor
+class QP2PassVisitor
+    : public
+      ExprVisitor<
+          QP2PassVisitor,
+          QP2PassNodeResult> {
+public:
+  /// Typedef base class
+  using Base = ExprVisitor<
+      QP2PassVisitor,
+      QP2PassNodeResult>;
+
+  /// Construct
+  QP2PassVisitor(BasicProblemFlattener& flt)
+      : flattener_(flt) { }
+
+  /// Init pass 1
+  void InitPass1();
+  /// Init pass 2
+  void InitPass2();
+  /// Call to say the 2nd pass is not going ahead
+  void CancelPass2();
+
+  /// Entry point for the top-level expression
+  /// @return whether \a expr has degree <= 2.
+  bool Process(Expr expr);
+
+  /// An estimate on the number of source QP terms
+  unsigned long long NumSourceTermsQP() const
+  { return n_source_terms_qp_; }
+
+  /// Number of QP vars
+  auto NumQPVars() const { return vars_qp_.size(); }
+
+  /// Extract result of Pass 2
+  EExpr GetPass2Result();
+
+  /// Call after the model is flattened.
+  void Shrink();
+
+  /// @section The below Visit... are public for CRTP
+
+  /// Visit at most linear
+  /// @param ae: the affine expression to store the subtree
+  /// @note resets factor_=1.0 for the subtree
+  QP2PassNodeResult VisitAtmostAffine(Expr e, AffineExpr& ae);
+
+  /// Any unsupported expr - we process this top-level term
+  /// via buckets
+  QP2PassNodeResult VisitUnsupported(Expr e);
+
+  /// Unary minus
+  QP2PassNodeResult VisitMinus(UnaryExpr e);
+  /// Add
+  QP2PassNodeResult VisitAdd(BinaryExpr e);
+  /// Sub
+  QP2PassNodeResult VisitSub(BinaryExpr e);
+  /// Div
+  QP2PassNodeResult VisitDiv(BinaryExpr e);
+  /// Visit SumExpr
+  QP2PassNodeResult VisitSum(internal::ExprTypes::SumExpr expr);
+  /// Mul
+  QP2PassNodeResult VisitMul(BinaryExpr e);
+  /// PowConstExp
+  QP2PassNodeResult VisitPowConstExp(BinaryExpr e);
+  /// Pow2
+  QP2PassNodeResult VisitPow2(UnaryExpr e);
+  /// Pow
+  QP2PassNodeResult VisitPow(BinaryExpr e);
+
+  /// Constant
+  QP2PassNodeResult VisitNumericConstant(NumericConstant );
+  /// Variable
+  QP2PassNodeResult VisitVariable(Reference );
+  /// Defined variable
+  QP2PassNodeResult VisitCommonExpr(Reference );
+
+protected:
+  const BasicProblemFlattener& GetFlattener() const
+  { return flattener_; }
+  BasicProblemFlattener& GetFlattener()
+  { return flattener_; }
+
+  /// Reuse dispatcher
+  using Base::Visit;
+  /// Overlaod the dispatching Visit()
+  QP2PassNodeResult Visit(Expr e);
+  /// Overload the dispatching Visit()
+  /// to multiply the constant factor for its subtree
+  QP2PassNodeResult Visit(Expr e, double f);
+
+  bool CheckDegree(int degree);
+  bool CheckAndMax(int degree_from_node, int& deg_max);
+
+  QP2PassNodeResult DoVisitPow2(Expr e);
+  /// Add to the top-level or current ae's constant term
+  void DoAddConst(long double c);
+
+  /// @todo consider binary terms (cvt:prod)
+  bool ProcessAffineFactors(AffineExpr& aeL, AffineExpr& aeR);
+  bool EstimateOutmultiplication(AffineExpr& aeL, AffineExpr& aeR);
+  void MultiplyOut(AffineExpr& aeL, AffineExpr& aeR);
+
+  std::pair<bool, double> IsConst(Expr );
+
+  const AffineExpr* GetPAffineExpr() const { return p_ae_; }
+  AffineExpr* GetPAffineExpr() { return p_ae_; }
+
+  /// Note top-level var
+  void NoteLinVar(int v);
+  void NoteQPVar(int v);
+  /// Add top-level lin/qp term
+  void AddLinTerm(double c, int v);
+  void AddQPTerm(double c, int v1, int v2);
+
+  unsigned int GetTimeStamp() const { return timestamp_; }
+
+private:
+  BasicProblemFlattener& flattener_;
+
+  int pass_ {};         // 1 or 2
+  int mode_ {};         // 2: root (accepts QP), 1: only linear
+  bool pass1_5_{};
+
+  long double factor_ {1.0};
+  AffineExpr* p_ae_{};  // pointer to chosen ae being filled
+
+  unsigned int timestamp_ {0};
+  std::vector<unsigned int> ts_lin_, ts_qp_;
+  SmallVec<int, 64> vars_lin_, vars_qp_;
+  unsigned long long n_source_terms_qp_ {};
+
+  /// Pass 2
+  long double const_term_ {};   // the top-level constant term
+  std::vector<double> coefs_lin_dense_;
+
+  TMatrix<double, 16> coefs_qp_;
+  std::vector<int> vperm_qp_;   // inverse of vars_qp_
+};
+
 
 ////////////////////////////////////////////////////////////////////
 /////////////////// IMPLEMENTATIONS /////////////////////
 //////////////////////////////////////////////
+
+#ifdef DEBUG_QP2PASSES
+/// Write algebraic expression (linear + non-linear.)
+template <typename ExprTypes,
+         typename LinearExpr, typename NumericExpr,
+         typename Namer>
+void WriteExpr(fmt::Writer &w, const LinearExpr &linear,
+               NumericExpr nonlinear, Namer);
+#endif
 
 void QP2Passes::Process(Expr expr) {
   assert(expr::Kind::SUM == expr.kind());             //for now
@@ -24,12 +180,13 @@ void QP2Passes::Process(Expr expr) {
 }
 
 EExpr QP2Passes::GetResult() {
-  return buckets_.ExtractSum();
+  return std::move(result_);
 }
 
 void QP2Passes::InitPass1() {
   visitor_.InitPass1();
   is_term_qp_.resize(GetTopExpr().num_args());
+  n_qp_terms_ = 0;
 }
 
 void QP2Passes::RunPass1() {
@@ -38,18 +195,19 @@ void QP2Passes::RunPass1() {
   int term_index=0;
   for (auto term_iter=e0.begin(), term_end=e0.end();
        term_end!=term_iter; ++term_iter, ++term_index) {
-    if (!(is_term_qp_[term_index]             // degree > 2
-          = (visitor_.Visit(*term_iter) <= 2))) {
-      GetBuckets().Add(                       // insert in buckets
-          GetFlattener().VisitVirtual(*term_iter) );
+    if ((is_term_qp_[term_index]             // degree > 2
+          = visitor_.Process(*term_iter))) {
+      ++n_qp_terms_;
     }
   }
 }
 
 bool QP2Passes::Pass2SeemsWorth() const {
   return              // @todo a parameter?
-      0.25*visitor_.NumSourceTermsQP()
-         > double(visitor_.NumQPVars())*visitor_.NumQPVars();
+      n_qp_terms_
+      && visitor_.NumSourceTermsQP()
+             > 0.25*visitor_.NumQPVars()
+                   *visitor_.NumQPVars();
 }
 
 void QP2Passes::RunPass2Full() {
@@ -68,26 +226,73 @@ void QP2Passes::CollectMarkedTerms() {
   for (auto term_iter=e0.begin(), term_end=e0.end();
        term_end!=term_iter; ++term_iter, ++term_index) {
     if (is_term_qp_[term_index]) {            // degree <= 2
-      auto deg = visitor_.Visit(*term_iter);
-      assert (deg <= 2);
+      auto deg2 = visitor_.Process(*term_iter);
+      assert (deg2);
+      MP_UNUSED(deg2);
     }
   }
 }
 
 void QP2Passes::ExtractPass2ResultIntoBuckets() {
-  // @todo use const_term_
-  // ...
+  if ((int)n_qp_terms_ < GetTopExpr().num_args()) { // need buckets
+    auto e0 = GetTopExpr();
+    BucketAccumulator<EExpr> buckets
+        {e0.num_args() - n_qp_terms_};
+    int term_index=0;
+    for (auto term_iter=e0.begin(), term_end=e0.end();
+         term_end!=term_iter; ++term_iter, ++term_index) {
+      if (!is_term_qp_[term_index]) {           // degree > 2
+        buckets.Add(
+            GetFlattener().VisitVirtual(*term_iter) );
+      }
+    }
+    buckets.Add(visitor_.GetPass2Result());
+    result_ = buckets.ExtractSum();
+  } else
+    result_ = visitor_.GetPass2Result();
 }
 
 void QP2Passes::RunPass2Buckets() {
-  // ...
+  visitor_.CancelPass2();
+  auto e0 = GetTopExpr();
+  BucketAccumulator<EExpr> buckets(e0.num_args());
+  for (auto term_iter=e0.begin(), term_end=e0.end();
+       term_end!=term_iter; ++term_iter) {
+    buckets.Add(
+        GetFlattener().VisitVirtual(*term_iter) );
+  }
+  result_ = buckets.ExtractSum();
+}
+
+
+////////////////////////////////////////////////////////////////
+/// QP2PassVisitor methods
+////////////////////////////////////////////////////////////////
+
+bool QP2PassVisitor::Process(Expr expr) {
+  assert(1==pass_ || 2==pass_);
+  if (1==pass_) {
+    pass1_5_ = false;
+    auto deg1_0 = Visit(expr);
+    if (deg1_0 > 2)
+      return false;
+    pass1_5_ = true;
+    auto deg1_5 = Visit(expr);
+    assert(deg1_0 == deg1_5);
+    MP_UNUSED(deg1_5);
+    return true;
+  }
+  return Visit(expr) <= 2;
 }
 
 void QP2PassVisitor::InitPass1() {
+  mode_ = 2;                 // quadratics
+  assert(0 == pass_);        // We are not inside another run
+  assert(!p_ae_);
   pass_ = 1;
   ++timestamp_;              // To distinguish active factor variables
-  ts_lin_.resize(GetQP2P().GetFlattener().num_vars_orig());
-  ts_qp_.resize(GetQP2P().GetFlattener().num_vars_orig());
+  ts_lin_.resize(GetFlattener().num_vars_orig());
+  ts_qp_.resize(GetFlattener().num_vars_orig());
   vars_lin_.clear();
   vars_qp_.clear();
   n_source_terms_qp_ = 0;
@@ -97,32 +302,71 @@ void QP2PassVisitor::InitPass2() {
   pass_ = 2;
   const_term_ = 0.0;
   assert (1.0 == factor_);
-  coefs_lin_.resize(GetQP2P().GetFlattener().num_vars_orig());
+  coefs_lin_dense_.resize(GetFlattener().num_vars_orig());
   // 0 out necessary elements in coefs_lin_
   for (auto v: vars_lin_) {
-    assert(v < coefs_lin_.size());
-    coefs_lin_[v] = 0.0;
+    assert(v < (int)coefs_lin_dense_.size());
+    coefs_lin_dense_[v] = 0.0;
   }
   std::sort(vars_lin_.begin(), vars_lin_.end());
   coefs_qp_.clear();
   coefs_qp_.resize(NumQPVars());
-  vperm_qp_.resize(GetQP2P().GetFlattener().num_vars_orig());
+  vperm_qp_.resize(GetFlattener().num_vars_orig());
   std::sort(vars_qp_.begin(), vars_qp_.end());
   for (auto i = vars_qp_.size(); i--; ) {
-    assert(vars_qp_[i] < vperm_qp_.size());
+    assert(vars_qp_[i] < (int)vperm_qp_.size());
     vperm_qp_[vars_qp_[i]] = i;
   }
+}
+
+void QP2PassVisitor::CancelPass2() {
+  assert(1 == pass_);
+  pass_ = 0;
 }
 
 
 ///////////////////////////////////////////////////////////////////
 
-QP2PassNodeResult QP2PassVisitor::Visit(Expr e, double f) {
-  auto f_save = factor_;
-  factor_ *= f;
+QP2PassNodeResult QP2PassVisitor::Visit(Expr e) {
+  assert(mode_);
+  assert(pass_);
+#ifdef DEBUG_QP2PASSES
+  static int depth=0;
+  ++depth;
+  {
+    fmt::MemoryWriter wrt;
+    wrt << "QP/Pass " << pass_ << ": ";
+    WriteExpr<typename internal::ExprTypes>(
+        wrt, LinearExpr{}, Cast<NumericExpr>(e),
+        GetFlattener().GetOrigProblem().GetVarNamer());
+    fmt::print("{:{}}{}\n", "", depth*2, wrt.str());
+  }
+#endif
   auto result = Base::Visit(e);
-  factor_ = f_save;
+#ifdef DEBUG_QP2PASSES
+  {
+    fmt::MemoryWriter wrt;
+    wrt << "DONE QP/Pass " << pass_ << " on: ";
+    WriteExpr<typename internal::ExprTypes>(
+        wrt, LinearExpr{}, Cast<NumericExpr>(e),
+        GetFlattener().GetOrigProblem().GetVarNamer());
+    fmt::print("{:{}}{};  result = {}\n",
+               "", depth*2, wrt.str(), result);
+  }
+  --depth;
+#endif
   return result;
+}
+
+QP2PassNodeResult QP2PassVisitor::Visit(Expr e, double f) {
+  if (f) {
+    auto f_save = factor_;
+    factor_ *= f;
+    auto result = Visit(e);
+    factor_ = f_save;
+    return result;
+  }
+  return 0;
 }
 
 QP2PassNodeResult QP2PassVisitor::VisitAtmostAffine(
@@ -135,7 +379,7 @@ QP2PassNodeResult QP2PassVisitor::VisitAtmostAffine(
   auto mode_save = mode_;
   if (mode_>1)                  // at most linear mode
     mode_ = 1;
-  auto result = Base::Visit(e);
+  auto result = Visit(e);
   mode_ = mode_save;
   p_ae_ = pae_save;
   factor_ = f_save;
@@ -194,22 +438,22 @@ QP2PassNodeResult QP2PassVisitor::VisitMul(
     BinaryExpr expr) {
   auto iscL = IsConst(expr.lhs());
   if (iscL.first)    // const factor - stay in current mode
-    return VisitFactor(expr.rhs(), iscL.second);
+    return Visit(expr.rhs(), iscL.second);
   auto iscR = IsConst(expr.rhs());
   if (iscR.first)
-    return VisitFactor(expr.lhs(), iscR.second);
+    return Visit(expr.lhs(), iscR.second);
   AffineExpr aeL;
   int degL = VisitAtmostAffine(expr.lhs(), aeL);
   if (degL > mode_)
     return 1000;               // abort top-level term
   if (!degL)                   // can happen
-    return VisitFactor(expr.rhs(), aeL.constant_term());
+    return Visit(expr.rhs(), aeL.constant_term());
   AffineExpr aeR;
   int degR = VisitAtmostAffine(expr.rhs(), aeR);
   if (degL + degR > mode_)
     return 1000;               // abort top-level term
   if (!degR)                   // can happen
-    return VisitFactor(expr.lhs(), aeR.constant_term());
+    return Visit(expr.lhs(), aeR.constant_term());
   if (!ProcessAffineFactors(aeL, aeR))
     return 1000;
   return degL + degR;
@@ -218,7 +462,7 @@ QP2PassNodeResult QP2PassVisitor::VisitMul(
 QP2PassNodeResult QP2PassVisitor::VisitPowConstExp(
     BinaryExpr expr) {
   auto c = Cast<NumericConstant>(expr.rhs()).value();
-  if (2.0==c && GetQP2P().GetFlattener().IfQuadratizePow2()) {
+  if (2.0==c && GetFlattener().IfQuadratizePow2()) {
     return DoVisitPow2(expr.lhs());
   }
   return 1000;
@@ -226,8 +470,8 @@ QP2PassNodeResult QP2PassVisitor::VisitPowConstExp(
 
 QP2PassNodeResult QP2PassVisitor::VisitPow2(
     UnaryExpr expr) {
-  if (GetQP2P().GetFlattener().IfQuadratizePow2()) {
-    return DoVisitPow2(expr);
+  if (GetFlattener().IfQuadratizePow2()) {
+    return DoVisitPow2(expr.arg());
   }
   return 1000;
 }
@@ -237,7 +481,7 @@ QP2PassNodeResult QP2PassVisitor::VisitPow(
   auto iscR = IsConst(expr.rhs());
   if (iscR.first) {
     if (2.0==iscR.second &&
-        GetQP2P().GetFlattener().IfQuadratizePow2()) {
+        GetFlattener().IfQuadratizePow2()) {
       return DoVisitPow2(expr.lhs());
     }
   }
@@ -282,7 +526,7 @@ QP2PassNodeResult QP2PassVisitor::VisitNumericConstant(
 
 QP2PassNodeResult QP2PassVisitor::VisitVariable(
     Reference var) {
-  const auto& flt = GetQP2P().GetFlattener();
+  const auto& flt = GetFlattener();
   if (flt.var_orig_lb(var.index())    // var is constant
       == flt.var_orig_ub(var.index())) {
     DoAddConst(factor_ * flt.var_orig_lb(var.index()));
@@ -292,7 +536,8 @@ QP2PassNodeResult QP2PassVisitor::VisitVariable(
     GetPAffineExpr()->add_term(factor_, var.index());
   else {
     if (1==pass_) {
-      NoteLinVar(var.index());
+      if (pass1_5_)
+        NoteLinVar(var.index());
     } else {
       assert(2==pass_);
       AddLinTerm(factor_, var.index());
@@ -306,6 +551,26 @@ QP2PassNodeResult QP2PassVisitor::VisitCommonExpr(
   // ProblemFlattener converts them to EExpr's.
   // To reuse, we need access to auxiliary vars.
   return 1000;        // abort this top-level term
+}
+
+
+EExpr QP2PassVisitor::GetPass2Result() {
+  assert(2==pass_);
+  pass_ = 0;          // to indicate the run is finished
+  EExpr result;
+  result.constant_term(const_term_);
+  result.GetLinTerms().reserve(vars_lin_.size());
+  for (auto vl: vars_lin_)
+    if (auto c = coefs_lin_dense_[vl])
+      result.GetLinTerms().add_term(c, vl);
+  assert(result.GetLinTerms().is_sorted());
+  for (std::size_t i=0; i<vars_qp_.size(); ++i)
+    for (std::size_t j=i; j<vars_qp_.size(); ++j)
+      if (auto c = coefs_qp_(i, j))
+        result.GetQPTerms().add_term(
+            c, vars_qp_[i], vars_qp_[j]);
+  assert(result.GetQPTerms().is_sorted());
+  return result;
 }
 
 
@@ -340,24 +605,29 @@ bool QP2PassVisitor::EstimateOutmultiplication(
   assert(1==pass_);
   if (aeL.size() && aeR.size()) {      // QP terms: estimate
     assert(2==mode_);
-    if (double(aeL.size()) * aeR.size()
-        > GetQP2P().GetFlattener().MultOutCard())  // cvt:multoutcard
-      return false;
-    for (auto v: aeL.GetBody().vars())
-      NoteQPVar(v);
-    for (auto v: aeR.GetBody().vars())
-      NoteQPVar(v);
+    if (!pass1_5_) {
+      if (double(aeL.size()) * aeR.size()
+          > GetFlattener().MultOutCard())  // cvt:multoutcard
+        return false;
+    } else {
+      for (auto v: aeL.GetBody().vars())
+        NoteQPVar(v);
+      for (auto v: aeR.GetBody().vars())
+        NoteQPVar(v);
+      n_source_terms_qp_
+          += ((unsigned long long)(aeL.size())) * aeR.size();
+    }
   }
-  if (aeL.constant_term()) {           // linear terms from aeR
-    for (auto v: aeR.GetBody().vars())
-      NoteLinVar(v);
+  if (pass1_5_) {
+    if (aeL.constant_term()) {           // linear terms from aeR
+      for (auto v: aeR.GetBody().vars())
+        NoteLinVar(v);
+    }
+    if (aeR.constant_term()) {           // lin terms from aeL
+      for (auto v: aeR.GetBody().vars())
+        NoteLinVar(v);
+    }
   }
-  if (aeR.constant_term()) {           // lin terms from aeL
-    for (auto v: aeR.GetBody().vars())
-      NoteLinVar(v);
-  }
-  DoAddConst(                          // constant term
-      factor_ * aeL.constant_term() * aeR.constant_term());
   return true;
 }
 
@@ -399,42 +669,54 @@ std::pair<bool, double> QP2PassVisitor::IsConst(Expr e) {
   return {false, {}};
 }
 
-QP2PassNodeResult QP2PassVisitor::VisitFactor(
-    Expr e, double f) {
-  if (f)                         // factor non-0
-    return Visit(e, f);
-  return 0;
-}
-
 void QP2PassVisitor::NoteLinVar(int v) {
-  assert(v < ts_lin_.size());
+  assert(1 == pass_);
+  assert(pass1_5_);
+  assert(v < (int)ts_lin_.size());
   if (GetTimeStamp() != ts_lin_[v]) {
     ts_lin_[v] = GetTimeStamp();
     vars_lin_.push_back(v);
   }
 }
 void QP2PassVisitor::NoteQPVar(int v) {
-  assert(v < ts_qp_.size());
+  assert(1 == pass_);
+  assert(pass1_5_);
+  assert(v < (int)ts_qp_.size());
   if (GetTimeStamp() != ts_qp_[v]) {
     ts_qp_[v] = GetTimeStamp();
     vars_qp_.push_back(v);
   }
 }
 void QP2PassVisitor::AddLinTerm(double c, int v) {
-  assert(v < coefs_lin_.size());
-  coefs_lin_[v] += c;
+  assert(2 == pass_);
+  assert(GetTimeStamp() == ts_lin_[v]);
+  assert(v < (int)coefs_lin_dense_.size());
+  coefs_lin_dense_[v] += c;
 }
 void QP2PassVisitor::AddQPTerm(double c, int v1, int v2) {
-  assert(v1 < vperm_qp_.size());
-  assert(v2 < vperm_qp_.size());
+  assert(2 == pass_);
+  assert(GetTimeStamp() == ts_qp_[v1]);
+  assert(GetTimeStamp() == ts_qp_[v2]);
+  assert(v1 < (int)vperm_qp_.size());
+  assert(v2 < (int)vperm_qp_.size());
   coefs_qp_.add_to(vperm_qp_[v1], vperm_qp_[v2], c);
 }
 
-
-std::unique_ptr<BasicQP2Passes>
-MakeQP2Passes(BasicProblemFlattener& flt) {
-  return std::make_unique<QP2Passes>(flt);
+void QP2PassVisitor::Shrink() {
+  coefs_qp_.clear();
+  coefs_qp_.shrink_to_fit();
 }
+
+
+QP2PassVisitor*
+MakeQP2PassVisitor(BasicProblemFlattener& flt) {
+  return new QP2PassVisitor(flt);
+}
+
+void DeleteQP2PassVisitor(QP2PassVisitor* pv)
+{ delete pv; }
+
+void Shrink(QP2PassVisitor& v) { v.Shrink(); }
 
 }  // namespace mp
 

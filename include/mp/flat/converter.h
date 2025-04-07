@@ -1421,7 +1421,7 @@ private:
                        "Currently this disables out-multiplication "
                        "of quadratic terms, then they are linearized.",
                        options_.passQuadCon_, 0, 1);
-    GetEnv().AddOption("cvt:qp2passes qp2passes",
+    GetEnv().AddOption("cvt:qp2passes cvt:qp2pass qp2passes qp2pass",
                        "Parse QP expressions in 2 passes. Can be faster. Default 0.",
                        options_.useQP2Pass_, 0, 1);
     GetEnv().AddOption("cvt:multoutcard multoutcard",

@@ -386,7 +386,7 @@ add_prefix(MP_FLAT_HEADERS include/mp/flat/
   model_info.h model_info.hpp
   obj_std.h preprocess.h prepro_prod.h
   problem_flattener_base.h problem_flattener.h
-  qp2passes_base.h qp2passes.h qp2passes.hpp
+  qp2passes.h qp2passes.hpp
   sol_check.h sol_check_data.h)
 
 add_prefix(MP_FLAT_REDEF_HEADERS include/mp/flat/redef/

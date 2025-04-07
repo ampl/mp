@@ -2,6 +2,7 @@
 #define PROBLEM_FLATTENER_BASE_H
 
 #include "mp/flat/eexpr.h"
+#include "mp/problem.h"
 
 namespace mp {
 
@@ -27,6 +28,9 @@ public:
 
   /// Flatten an expression
   virtual EExpr VisitVirtual(Expr e) = 0;
+
+  /// Get original BasicProblem<>
+  virtual Problem& GetOrigProblem() = 0;
 };
 
 }  // namespace mp

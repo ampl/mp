@@ -2,7 +2,10 @@ Summary of recent updates to the AMPL MP Library
 ================================================
 
 
-## 20250329
+## unreleased
+- Option cvt:qp2passes (default 0).
+  When 1 (experimental), improves speed for parsing
+  QP and polynomial expressions.
 - Option cvt:multoutcard to limit the size of
   out-multiplied QP expressions. Can improve speed
   on large models, but prone to numerical issues.

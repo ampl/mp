@@ -29,6 +29,9 @@ public:
   /// Resize
   void resize(unsigned int s);
 
+  /// Shrink to fit
+  void shrink_to_fit();
+
   /// Get
   T get(unsigned int x, unsigned int y);
   /// Set
@@ -73,6 +76,11 @@ template<class T, unsigned pre>
 void TMatrix<T, pre>::resize(unsigned int N) {
   this->N=N;
   matrix.resize(computeSize());
+}
+
+template<class T, unsigned pre>
+void TMatrix<T, pre>::shrink_to_fit() {
+  matrix.shrink_to_fit();
 }
 
 template<class T, unsigned pre>
