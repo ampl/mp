@@ -1270,7 +1270,7 @@ private:
 
     int passQuadObj_ = ModelAPIAcceptsQuadObj();
     int passQuadCon_ = 1;
-    int useQP2Pass_ = 0;
+    int useQP2Pass_ = 1;
     double QPMultOutCard_ = 1e9;
     int passSOCPCones_ = 0;
     int passSOCP2QC_ = 0;
@@ -1422,7 +1422,8 @@ private:
                        "of quadratic terms, then they are linearized.",
                        options_.passQuadCon_, 0, 1);
     GetEnv().AddOption("cvt:qp2passes cvt:qp2pass qp2passes qp2pass",
-                       "Parse QP expressions in 2 passes. Can be faster. Default 0.",
+                       "Parse sums of QP expressions in 2 passes. "
+                       "Usually faster. Default 1.",
                        options_.useQP2Pass_, 0, 1);
     GetEnv().AddOption("cvt:multoutcard multoutcard",
                        "Up to which (estimated) QP matrix cardinality "
