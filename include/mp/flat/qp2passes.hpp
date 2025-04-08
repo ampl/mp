@@ -624,7 +624,7 @@ bool QP2PassVisitor::EstimateOutmultiplication(
         NoteLinVar(v);
     }
     if (aeR.constant_term()) {           // lin terms from aeL
-      for (auto v: aeR.GetBody().vars())
+      for (auto v: aeL.GetBody().vars())
         NoteLinVar(v);
     }
   }

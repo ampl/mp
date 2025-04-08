@@ -186,6 +186,11 @@
     }
   },
   {
+    "name" : "prod_bin_06",
+    "objective" : -1,
+    "tags" : ["linear"]
+  },
+  {
     "name" : "unify_quad_expr_01",
     "objective" : 20.08553692214343,
     "tags" : ["quadratic", "quadraticnonconvex"],
