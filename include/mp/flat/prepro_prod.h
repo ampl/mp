@@ -77,18 +77,12 @@ protected:
       auto bnds =
           GetFlt().GetFlatCvt().ComputeBoundsAndType(
           std::get<1>(tpl));
-      bool is_int = var::INTEGER==bnds.type();
-      assert(bnds.lb() <= bnds.ub());
-      bool is_const = bnds.ub()<=bnds.lb();
-      n_terms_const_ += is_const;
-      bool is_bin_or_neg_bin =
-          is_int &&
-          ((!bnds.lb() && 1.0==bnds.ub()) ||
-           (-1.0==bnds.lb() && !bnds.ub()) );
-      n_terms_binary_ += is_bin_or_neg_bin;
-      int category = is_const ? 0 :
-          is_bin_or_neg_bin ? 1 :
-          is_int ? 2 : 3;
+      auto pic = GetFlt().GetFlatCvt().ClassifyPreproInfo(bnds);
+      n_terms_const_ += pic.is_const_;
+      n_terms_binary_ += pic.is_bin_or_neg_bin_;
+      int category = pic.is_const_ ? 0 :
+          pic.is_bin_or_neg_bin_ ? 1 :
+          pic.is_int_ ? 2 : 3;
       std::get<0>(tpl) = {category, bnds.ub()-bnds.lb() };
       std::get<2>(tpl) =
           {bnds.lb(), bnds.ub()};

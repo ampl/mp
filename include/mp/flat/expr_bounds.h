@@ -17,12 +17,41 @@ template <class Impl>
 class BoundComputations {
 public:
 
+  /// PreproInfoClassification
+  struct PreproInfoClassification {
+    /// is const?
+    const bool is_const_ {};
+    /// is integer?
+    const bool is_int_ {};
+    /// is binary or negated binary (non-const)?
+    const bool is_bin_or_neg_bin_ {};
+    /// Construct and fill
+    template <class PreproInfo>
+    PreproInfoClassification(PreproInfo bnds)
+        :
+        is_int_ {var::INTEGER==bnds.type()},
+        is_const_ {bnds.ub()<=bnds.lb()},
+        is_bin_or_neg_bin_
+        { is_int_ &&
+         ((!bnds.lb() && 1.0==bnds.ub())
+          || (-1.0==bnds.lb() && !bnds.ub()) )}
+    { assert(bnds.lb() <= bnds.ub()); }
+  };
+
+  /// Classify PreproInfo
+  template <class PreproInfo>
+  static
+  PreproInfoClassification
+  ClassifyPreproInfo(PreproInfo bnds)
+  { return PreproInfoClassification {bnds}; }
+
   /// ComputeBoundsAndType(LinTerms)
-  PreprocessInfoStd ComputeBoundsAndType(const LinTerms& lt) {
+  PreprocessInfoStd ComputeBoundsAndType(const LinTerms& lt)
+      const {
     PreprocessInfoStd result;
     result.lb_ = result.ub_ = 0.0;
     result.type_ = var::INTEGER;
-    auto& model = MP_DISPATCH( GetModel() );
+    auto& model = MPCD( GetModel() );
     for (auto i=lt.size(); i--; ) {
       auto v = lt.var(i);
       auto c = lt.coef(i);
@@ -33,7 +62,8 @@ public:
         result.lb_ += c * model.ub(v);
         result.ub_ += c * model.lb(v);
       }
-      if (var::INTEGER!=model.var_type(v) || !is_integer(c)) {
+      if (var::INTEGER!=model.var_type(v)
+          || !is_integer(c)) {
         result.type_=var::CONTINUOUS;
       }
     }
@@ -43,8 +73,9 @@ public:
   /// ComputeBoundsAndType(AlgebraicExpr<>)
   template <class Body>
   PreprocessInfoStd ComputeBoundsAndType(
-      const AlgebraicExpression<Body>& ae) {
-    PreprocessInfoStd result = ComputeBoundsAndType(ae.GetBody());
+      const AlgebraicExpression<Body>& ae) const {
+    PreprocessInfoStd result
+        = ComputeBoundsAndType(ae.GetBody());
     result.lb_ += ae.constant_term();
     result.ub_ += ae.constant_term();
     if (!is_integer(ae.constant_term()))
@@ -53,11 +84,12 @@ public:
   }
 
   /// ComputeBoundsAndType(QuadTerms)
-  PreprocessInfoStd ComputeBoundsAndType(const QuadTerms& qt) {
+  PreprocessInfoStd ComputeBoundsAndType(
+      const QuadTerms& qt) const {
     PreprocessInfoStd result;
     result.lb_ = result.ub_ = 0.0;
     result.type_ = var::INTEGER;
-    auto& model = MP_DISPATCH( GetModel() );
+    auto& model = MPCD( GetModel() );
     for (auto i=qt.size(); i--; ) {
       auto coef = qt.coef(i);
       auto v1 = qt.var1(i);
@@ -80,7 +112,8 @@ public:
   }
 
   /// ComputeBoundsAndType(QuadAndLinearTerms)
-  PreprocessInfoStd ComputeBoundsAndType(const QuadAndLinTerms& qlt) {
+  PreprocessInfoStd ComputeBoundsAndType(
+      const QuadAndLinTerms& qlt) const {
     auto bntLT = ComputeBoundsAndType(qlt.GetLinTerms());
     auto bntQT = ComputeBoundsAndType(qlt.GetQPTerms());
     return AddBoundsAndType(bntLT, bntQT);
@@ -94,7 +127,8 @@ public:
 
   /// Product bounds
   template <class Var>
-  std::pair<double, double> ProductBounds(Var x, Var y) const {
+  std::pair<double, double> ProductBounds(Var x, Var y)
+      const {
     const auto& m = MPCD(GetModel());
     auto lx=m.lb(x), ly=m.lb(y), ux=m.ub(x), uy=m.ub(y);
     if (x!=y) {                        // different vars
@@ -115,7 +149,8 @@ public:
   /// Add / merge bounds and type
   static
   PreprocessInfoStd AddBoundsAndType(const PreprocessInfoStd& bnt1,
-                                     const PreprocessInfoStd& bnt2) {
+                                     const PreprocessInfoStd& bnt2)
+  {
     return {
       bnt1.lb()+bnt2.lb(), bnt1.ub()+bnt2.ub(),
       var::INTEGER==bnt1.type() && var::INTEGER==bnt2.type() ?

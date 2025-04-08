@@ -1234,6 +1234,18 @@ public:         // More utilities
   Problem& GetOrigProblem() override
   { return GetModel(); }
 
+  /// Want to logicalize products of 2 binary variables?
+  bool LogicalizeProd2BinVars() const override
+  { return prepro_products()&2; }
+
+  /// Is LinTerms' result a (negated) binary?
+  bool IsBinaryOrNegatedBinary(const LinTerms& lt)
+      const override {
+    auto bnds = GetFlatCvt().ComputeBoundsAndType(lt);
+    auto pic = GetFlatCvt().ClassifyPreproInfo(bnds);
+    return pic.is_bin_or_neg_bin_;
+  }
+
 
 protected:
   //////////////////////// ADD CUSTOM CONSTRAINT ///////////////////////

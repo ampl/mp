@@ -609,6 +609,10 @@ bool QP2PassVisitor::EstimateOutmultiplication(
       if (double(aeL.size()) * aeR.size()
           > GetFlattener().MultOutCard())  // cvt:multoutcard
         return false;
+      if (GetFlattener().LogicalizeProd2BinVars()
+          && GetFlattener().IsBinaryOrNegatedBinary(aeL)
+          && GetFlattener().IsBinaryOrNegatedBinary(aeR))
+        return false;
     } else {
       for (auto v: aeL.GetBody().vars())
         NoteQPVar(v);

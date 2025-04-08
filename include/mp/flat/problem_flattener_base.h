@@ -31,6 +31,12 @@ public:
 
   /// Get original BasicProblem<>
   virtual Problem& GetOrigProblem() = 0;
+
+  /// Want to logicalize products of 2 binary variables?
+  virtual bool LogicalizeProd2BinVars() const = 0;
+
+  /// Is LinTerms (negated) binary?
+  virtual bool IsBinaryOrNegatedBinary(const LinTerms& ) const = 0;
 };
 
 }  // namespace mp
