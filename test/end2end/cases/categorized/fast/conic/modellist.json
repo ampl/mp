@@ -80,7 +80,7 @@
     "tags" : ["quadratic"],
     "objective" : 27777.7949,
     "values": {
-      "solve_result_num": 0
+      "if solve_result_num >= 0 and solve_result_num < 200 then 1": 1
     }
   },
   {
@@ -88,7 +88,7 @@
     "tags" : ["socp"],
     "objective" : -1607.1428,
     "values": {
-      "solve_result_num": 0
+      "if solve_result_num >= 0 and solve_result_num < 200 then 1": 1
     }
   },
   {

@@ -27,7 +27,7 @@
       "mp2nl_options": "solver_options='qcpdual=1'"
     },
     "values": {
-      "_con[1]": -1.5807796451888148
+      "_con[1]": -1.581437391665411
     }
   },
   {
@@ -64,7 +64,7 @@
       "mp2nl_options": "solver_options='qcpdual=1'"
     },
     "values": {
-      "_con[3]": 1.000067023601818
+      "_con[3]": 1.000125448001466
     }
   },
   {
