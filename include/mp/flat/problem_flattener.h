@@ -1199,12 +1199,11 @@ public:         // More utilities
     auto resvar1 = Convert2Var( std::move(el) );
     auto resvar2 = (&el==&er || el==er)
                        ? resvar1 : Convert2Var( std::move(er) );
-    auto qc_res = GetFlatCvt().AssignResultVar2Args(
-          QuadraticFunctionalConstraint{ { {      // = el*er+0
-            LinTerms{},
-            QuadTerms{ {1.0}, {resvar1}, {resvar2} }
-          }, 0.0 } });
-    return { 1.0, qc_res };
+    if (ifFltCon_)
+      return {                         // = el*er+0, inlined  #260
+              LinTerms{},
+              QuadTerms{ {1.0}, {resvar1}, {resvar2} },
+              0.0 };
   }
 
   /// Multiply out two EEXprs

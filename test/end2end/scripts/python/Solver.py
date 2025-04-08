@@ -856,6 +856,7 @@ class MPDirectSolver(AMPLSolver):
                     ModelTags.logical,
                     ModelTags.plinear,
                     ModelTags.nonlinear,
+                    ModelTags.prod_with_bin_var,
                     ModelTags.log,
                     ModelTags.multiobj
                 }

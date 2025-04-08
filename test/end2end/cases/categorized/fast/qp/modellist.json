@@ -119,7 +119,7 @@
   {
     "name" : "prod_bin_var_01",
     "objective" : 5,
-    "tags" : ["quadratic", "quadraticnonconvex"],
+    "tags" : ["prod_with_bin_var"],
     "options": {
       "cplex_options": "qp:target=3",
       "copt_options": "cvt:quadcon=0",
@@ -127,15 +127,23 @@
     }
   },
   {
-    "name" : "prod_bin_var_02_obj",
+    "name" : "prod_bin_var_02_obj cvt:prod=0",
     "objective" : 1,
     "tags" : ["quadraticnonconvex", "quadratic_obj"],
     "options": {
+      "mp_options": "cvt:prod=0",
       "cplex_options": "qp:target=3",
       "highs_options": "cvt:quadobj=0",
       "copt_options": "cvt:quadobj=0 cvt:quadcon=0",
       "comment_highs_copt": "non convex objective, linearise"
     }
+  },
+  {
+    "name" : "prod_bin_var_02_obj",
+    "objective" : 1,
+    "tags" : ["quadraticnonconvex", "quadratic_obj"],
+    "tags_do_to" : ["prod_with_bin_var"],
+    "comment": "For Highs we leave QP terms in the objective but it rejects MIQP"
   },
   {
     "name" : "prod_01_obj",
