@@ -237,7 +237,8 @@ void QP2Passes::ExtractPass2ResultIntoBuckets() {
   if ((int)n_qp_terms_ < GetTopExpr().num_args()) { // need buckets
     auto e0 = GetTopExpr();
     BucketAccumulator<EExpr> buckets
-        {e0.num_args() - n_qp_terms_};
+        {e0.num_args() - n_qp_terms_ + 1};
+    buckets.Add(visitor_.GetPass2Result());     // before VisitVirtual()
     int term_index=0;
     for (auto term_iter=e0.begin(), term_end=e0.end();
          term_end!=term_iter; ++term_iter, ++term_index) {
@@ -246,7 +247,6 @@ void QP2Passes::ExtractPass2ResultIntoBuckets() {
             GetFlattener().VisitVirtual(*term_iter) );
       }
     }
-    buckets.Add(visitor_.GetPass2Result());
     result_ = buckets.ExtractSum();
   } else
     result_ = visitor_.GetPass2Result();

@@ -791,6 +791,11 @@ public:          // need to be public due to CRTP
 #ifdef DEBUG_QP2PASSES
       {
         fmt::MemoryWriter wrt;
+        BucketAccumulator<EExpr> bucketaccum(expr.num_args());
+        for (auto i =
+             expr.begin(), end = expr.end(); i != end; ++i)
+          bucketaccum.Add( MP_DISPATCH( Convert2EExpr(*i) ) );
+        auto ee2 = bucketaccum.ExtractSum();
         wrt << "FLAT DONE: ";
         WriteExpr<typename ProblemType::ExprTypes>(
             wrt, LinearExpr{}, Cast<NumericExpr>(expr),
@@ -801,6 +806,12 @@ public:          // need to be public due to CRTP
         wrt << ee1.constant_term() << " + ";
         WriteModelItem(wrt, ee1.GetBody(), GetFlatCvt().GetVarNamer());
         fmt::print("{}\n", wrt.str());
+        wrt.clear();
+        wrt << ee2.constant_term() << " + ";
+        WriteModelItem(wrt, ee2.GetBody(), GetFlatCvt().GetVarNamer());
+        fmt::print("{:{}}RESULT_BUCKETS: {}\n",
+                   "", depth*2,  wrt.str());
+        MP_ASSERT_ALWAYS(ee1 == ee2, "AAAKKKAAAAK ... ");
       }
       --depth;
 #endif
