@@ -63,7 +63,7 @@
     "tags" : ["nonlinear"]
   }, {
     "name" : "hs23",
-    "objective" : 1,
+    "objective" : 2,
     "tags" : ["nonlinear"]
   }, {
     "name" : "hs35",

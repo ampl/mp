@@ -1,0 +1,1 @@
+display max{i in 1.._nccons} abs(_ccon[i]), min{i in 1.._ncons} _con[i].slack;
