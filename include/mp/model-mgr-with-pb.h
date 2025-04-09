@@ -133,7 +133,7 @@ protected:
     if (GetEnv().timing() > 1)
     {
       GetEnv().SetConversionTime(cvt_time);
-      GetEnv().Print("NL model conversion time = {:.6f}s\n", cvt_time);
+      GetEnv().Print("NL model conversion time = {:.6f}s\n\n", cvt_time);
     }
   }
 
