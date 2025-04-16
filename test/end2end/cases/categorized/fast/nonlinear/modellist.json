@@ -405,6 +405,36 @@
     "values": {
       "if abs(_obj[1]-1)<=0.01 then 1 else 0": 1
     }
-  }
+  },
+  {
+    "name" : "hs54_inspired",
+    "tags" : ["continuous", "nonlinear"],
+    "objective": -0.580173372427884,
+    "options": { "mp_options": "lim:time=2" }
+  },
+  {
+    "name" : "hs54_inspired_2",
+    "tags" : ["continuous", "nonlinear"],
+    "objective": -0.5469485038,
+    "options": { "mp_options": "lim:time=2" }
 
+  },
+  {
+    "name" : "hs54_inspired_2 cvt:qp2pass=0",
+    "tags" : ["continuous", "nonlinear"],
+    "objective": -0.5469485038,
+    "options": { "mp_options": "cvt:qp2pass=0 lim:time=2" }
+  },
+  {
+    "name" : "hs54_inspired_2 cvt:qp2pass=1 cvt:multoutcard=0",
+    "tags" : ["continuous", "nonlinear"],
+    "objective": -0.5469485038,
+    "options": { "mp_options": "cvt:qp2pass=0 cvt:multoutcard=0 lim:time=2" }
+  },
+  {
+    "name" : "hs54_inspired_2 cvt:qp2pass=0 cvt:multoutcard=0",
+    "tags" : ["continuous", "nonlinear"],
+    "objective": -0.5469485038,
+    "options": { "mp_options": "cvt:qp2pass=0 cvt:multoutcard=0 lim:time=2" }
+  }
 ]
