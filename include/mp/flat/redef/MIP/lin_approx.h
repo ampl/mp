@@ -17,7 +17,7 @@ namespace mp {
 std::pair<std::string, std::string>
 GetWarningKeyAndText(const char* conName, double tol) {
   std::string key =
-      std::string("PLApprox");
+      std::string("PLApprox_") + conName;
   std::string txt =
       std::string("An expression of type '") + conName +
       "' has been\n"
@@ -70,15 +70,15 @@ public:
       auto ubx1 = GetMC().ub(x);
       if (lbx1 > lbx || ubx1 < ubx) {
         GetMC().AddWarning(
-              "PLApproxDomain",
-              std::string("Argument domain of a '")
-              + con.GetTypeName()
-              + "'\n"
-                "has been reduced to ["
-              + std::to_string(lbx1) + ", "
-              + std::to_string(ubx1)
-              + "] for numerical reasons\n"
-              "(partially controlled by cvt:plapprox:domain.)");
+            std::string("PLApproxDomain_") + con.GetTypeName(),
+            std::string("Argument domain of a '")
+                + con.GetTypeName()
+                + "'\n"
+                  "has been reduced to ["
+                + std::to_string(lbx1) + ", "
+                + std::to_string(ubx1)
+                + "] for numerical reasons\n"
+                  "(partially controlled by cvt:plapprox:domain.)");
       }
       GetMC().RedefineVariable(y,
                                PLConstraint({x}, laPrm.plPoints));
