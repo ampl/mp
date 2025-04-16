@@ -1336,7 +1336,7 @@ void XpressmpBackend::InitCustomOptions() {
 
 	AddStoredOption("sol:poollimit poollimit poolnbest",
     "When poollimit = n > 1, the "
-    "solution pool (see sol:stub) is allowed to keep the n best solutions. "
+    "solution pool (see sol:stub) is allowed to keep n best solutions. "
                   "Default 10.",
     storedOptions_.nbest_);
 

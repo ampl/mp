@@ -2,7 +2,7 @@ Summary of recent updates to the AMPL MP Library
 ================================================
 
 
-## unreleased
+## 20250416
 - Improved parsing speed of large sums of quadratic
   and polynomial expressions.
   - Setting option cvt:qp2passes=0 switches to

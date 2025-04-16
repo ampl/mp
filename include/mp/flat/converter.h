@@ -306,7 +306,7 @@ protected:
     }
   }
 
-  /// Print nad/or suffixes
+  /// Print model info and/or output such suffixes
   void OutputModelInfo(const char* header, bool aux_vars,
       const char* suf_prefix) {
     if (GetEnv().verbose_mode() || GetEnv().debug_mode()) {
