@@ -23,40 +23,41 @@ Important features
 This section lists most important solver features,
 controlling solver behavior and information flow.
 
-* Option `lim:time (timelimit) <https://dev.ampl.com/solvers/index.html>`_ -
+* Option :ref:`lim:time (timelimit) <ampl-solver-options>` -
   sets solver time limit
 
-* Options `mipgap, mipgapabs <https://dev.ampl.com/solvers/index.html>`_ -
+* Options :ref:`mipgap, mipgapabs <ampl-solver-options>` -
   set required MIP optimality gap
 
 * Option :ref:`mip:return_gap <returnMIPgap>` requests reporting of the final MIP gap
 
-* Options `method/lpmethod <https://dev.ampl.com/solvers/index.html>`_ -
+* Options :ref:`method/lpmethod <ampl-solver-options>` -
   control the method chosen to solve the continuous relaxation in MIP nodes,
   which can have strong impact on solving time.
 
-* Option `crossover/bar:basis <https://dev.ampl.com/solvers/index.html>`_ -
+* Option :ref:`crossover/bar:basis <ampl-solver-options>` -
   controls whether crossover is performed after the barrier algorithm.
   Turning it off can save significant runtime
 
-* Options `alg:basis, mip:basis <https://dev.ampl.com/solvers/index.html>`_ -
+* Options :ref:`alg:basis, mip:basis <ampl-solver-options>` -
   control whether LP basis information is input/output
 
-* Options `solutiontarget, mipfocus, numericfocus, intfocus (Gurobi only)
-  <https://dev.ampl.com/solvers/index.html>`_ -
+* Options
+  :ref:`solutiontarget, mipfocus, numericfocus, intfocus (Gurobi only) <ampl-solver-options>` -
   control the overall solving strategy and emphasis
 
-* Options `feastol, inttol <https://dev.ampl.com/solvers/index.html>`_ -
+* Options :ref:`feastol, inttol <ampl-solver-options>` -
   control desired feasibility and integrality tolerances
 
-* Option `scale <https://dev.ampl.com/solvers/index.html>`_ -
+* Option :ref:`scale <ampl-solver-options>` -
   controls coefficient scaling for numerical stability
 
-* Options :ref:`sol:stub, sol:count, sol:poollimit <multiplesolutions>`_ -
+* Options :ref:`sol:stub, sol:count, sol:poollimit <multiplesolutions>` -
   control exploration of alternative solutions
 
 * Option :ref:`obj:multi (multiobj) <multipleObjectives>` -
-  controls multiple-objective solving
+  controls multiple-objective solving, including hierarchical
+  and blended objectives
 
 
 .. _solver-options:
@@ -258,8 +259,8 @@ More information is in Chapter 14 of the
 `AMPL Book <https://ampl.com/learn/ampl-book/>`_.
 See also the roll cutting example on `AMPL Colab <https://colab.ampl.com>`_.
 
-Solvers support
-===============
+Support by solvers
+==================
 
 .. |y| unicode:: U+2705 
    :trim:
