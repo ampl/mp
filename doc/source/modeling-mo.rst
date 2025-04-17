@@ -8,15 +8,19 @@ Multiple objectives
   :width: 200
   :align: right
 
+Many real-world problems have multiple objectives; often this scenario
+is tackled by blending all the objectives
+by linear combination when formulating the model, or by minimizing
+unwanted objective deviations from a pre-specified goal.
+
+Alternatively, if some constraints are 'soft', they can be modeled
+by penalties included in the primary or secondary objectives.
+
 To consider multiple objectives in an AMPL model,
 either natively supported by the solver, or emulated, use
-:ref:`solver option <solver-options>` ``obj:multi``.
+solver option :ref:`obj:multi (multiobj) <multipleObjectives>`.
 Otherwise, only the 1st objective is considered
 (or any objective specified by ``obj:no``.)
-
-See the
-`Multi-objective AMPL Colab notebooks <https://colab.ampl.com/tags/multiple-objectives.html>`_
-for examples.
 
 .. code-block:: ampl
 
@@ -52,3 +56,10 @@ as described in the ``obj:multi`` option description.
 Suffixes ``.objabstol`` and ``.objreltol`` allow for objective degradation.
 However their exact meaning can vary for a solver's native multi-objective
 mode (``obj:multi=1``), in particular for LPs. Consult the solver documentation.
+
+Examples
+**************************************
+
+See the :ref:`important-features` and
+`Multi-objective AMPL Colab notebooks <https://colab.ampl.com/tags/multiple-objectives.html>`_
+for examples.

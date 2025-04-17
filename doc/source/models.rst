@@ -6,7 +6,7 @@ Models
 
 .. _multiObjectiveDiet:
 
-Multi objective diet model
+Multi-objective diet model
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Model** :download:`(download here) <models/dietobj.mod>`.
@@ -21,8 +21,8 @@ Multi objective diet model
 
 .. _iisModel:
 
-Infeasible model
-^^^^^^^^^^^^^^^^
+An infeasible model
+^^^^^^^^^^^^^^^^^^^^^
 
 **Model** :download:`(download here) <models/iis.mod>`.
 
@@ -41,8 +41,8 @@ Another infeasible model
 
 .. _nQueensModel:
 
-nQueens model
-^^^^^^^^^^^^^
+n-Queens model
+^^^^^^^^^^^^^^
 
 **Model** : :download:`(download here) <models/nqueens.mod>`.
 

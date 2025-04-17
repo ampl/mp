@@ -732,10 +732,10 @@ Multiple solutions
 More often than not, optimization problems have more than one optimal solution. It might be
 important to explore various solutions, especially in the model design phase. During the
 solution process, MIP solvers usually find sub-optimal solutions, which are normally discarded.
-They can be however be kept, and some solvers offer systematic enumeration of solution space.
+They can however be kept, and some solvers offer systematic enumeration of solution space.
 
 The main (and generic) options that control the search are ``sol:stub`` amd ``sol:count``, which
-control respecitvely the base-name for the files where additional solutions will be stored and
+control respectively the base-name for the files where additional solutions will be stored and
 if to count additional solutions and return them in the ``nsol`` problem suffix.
 Specifying a stub name automatically enables the solutions count; found solutions are written to 
 files [``solutionstub1.sol'``,  ... ``solutionstub<nsol>.sol``]. Option ``sol:poollimit``
@@ -1001,13 +1001,22 @@ or suffix ``dunbdd`` if the constraints are infeasible.
 Multiple objectives
 -------------------
 
-Many real world problems have multiple objectives; often this scenario is tackled by blending all the objectives
-by linear combination when formulating the model, or by minimizing each unwanted objective deviations from a pre-specified
-goal.
-Many solvers can facilitate the formulation; the available functionalities are solver-specific. For other solvers,
-MP :ref:`emulates the multi-objective capability <multiple-objectives>`. Consult the ``obj:multi``
+Many real-world problems have multiple objectives; often this scenario
+is tackled by blending all the objectives
+by linear combination when formulating the model, or by minimizing
+unwanted objective deviations from a pre-specified goal.
+
+Alternatively, if some constraints are 'soft', they can be modeled
+by penalties included in the primary or secondary objectives.
+
+Many solvers can facilitate the formulation; the available
+functionalities are solver-specific. For other solvers,
+MP :ref:`emulates the blended and hierarchical mutliple-objective capability <multiple-objectives>`.
+Consult the ``obj:multi``
 :ref:`option <solver-options>` documentation
-for the functionalities available on your solver.
+for the functionalities available in your solver
+and `Multi-objective AMPL Colab notebooks <https://colab.ampl.com/tags/multiple-objectives.html>`_
+for examples.
 
 .. list-table::
    :header-rows: 0
