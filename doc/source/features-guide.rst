@@ -14,6 +14,51 @@ This page presents the semantics of the most common solver features; for a devel
 reference see :ref:`howto`.
 
 
+
+.. _important-features:
+
+Important features
+==================
+
+This section lists most important solver features,
+controlling solver behavior and information flow.
+
+* Option `lim:time (timelimit) <https://dev.ampl.com/solvers/index.html>`_ -
+  sets solver time limit
+
+* Options `mipgap, mipgapabs <https://dev.ampl.com/solvers/index.html>`_ -
+  set required MIP optimality gap
+
+* Option :ref:`mip:return_gap <returnMIPgap>` requests reporting of the final MIP gap
+
+* Options `method/lpmethod <https://dev.ampl.com/solvers/index.html>`_ -
+  control the method chosen to solve the continuous relaxation in MIP nodes,
+  which can have strong impact on solving time.
+
+* Option `crossover/bar:basis <https://dev.ampl.com/solvers/index.html>`_ -
+  controls whether crossover is performed after the barrier algorithm.
+  Turning it off can save significant runtime
+
+* Options `alg:basis, mip:basis <https://dev.ampl.com/solvers/index.html>`_ -
+  control whether LP basis information is input/output
+
+* Options `solutiontarget, mipfocus, numericfocus, intfocus (Gurobi only)
+  <https://dev.ampl.com/solvers/index.html>`_ -
+  control the overall solving strategy and emphasis
+
+* Options `feastol, inttol <https://dev.ampl.com/solvers/index.html>`_ -
+  control desired feasibility and integrality tolerances
+
+* Option `scale <https://dev.ampl.com/solvers/index.html>`_ -
+  controls coefficient scaling for numerical stability
+
+* Options :ref:`sol:stub, sol:count, sol:poollimit <multiplesolutions>`_ -
+  control exploration of alternative solutions
+
+* Option :ref:`obj:multi (multiobj) <multipleObjectives>` -
+  controls multiple-objective solving
+
+
 .. _solver-options:
 
 Solver options
@@ -683,16 +728,17 @@ Penaly weights < 0 are treated as Infinity, allowing no violation.
 Multiple solutions
 ------------------
 
-More often than not, optimization problems have more than one optimal solution; moreover, during the 
+More often than not, optimization problems have more than one optimal solution. It might be
+important to explore various solutions, especially in the model design phase. During the
 solution process, MIP solvers usually find sub-optimal solutions, which are normally discarded.
-They can be however be kept, and in most cases there are solver-specific options to control how
-the search for additional solutions is performed.
+They can be however be kept, and some solvers offer systematic enumeration of solution space.
 
-The main (and generic) options that controls the search are ``sol:stub`` amd ``sol:count``, which
-control respecitvely the base-name for the files where additional solution will be stored and
+The main (and generic) options that control the search are ``sol:stub`` amd ``sol:count``, which
+control respecitvely the base-name for the files where additional solutions will be stored and
 if to count additional solutions and return them in the ``nsol`` problem suffix.
 Specifying a stub name automatically enables the solutions count; found solutions are written to 
-files [``solutionstub1.sol'``,  ... ``solutionstub<nsol>.sol``].
+files [``solutionstub1.sol'``,  ... ``solutionstub<nsol>.sol``]. Option ``sol:poollimit``
+constrains the number of alternative solutions.
 
 
 .. list-table::
