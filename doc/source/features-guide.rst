@@ -1010,8 +1010,8 @@ Alternatively, if some constraints are 'soft', they can be modeled
 by penalties included in the primary or secondary objectives.
 
 Many solvers can facilitate the formulation; the available
-functionalities are solver-specific. For other solvers,
-MP :ref:`emulates the blended and hierarchical mutliple-objective capability <multiple-objectives>`.
+functionalities are solver-specific. For all solvers,
+MP can :ref:`emulate the blended and hierarchical mutliple-objective capability <multiple-objectives>`.
 Consult the ``obj:multi``
 :ref:`option <solver-options>` documentation
 for the functionalities available in your solver
