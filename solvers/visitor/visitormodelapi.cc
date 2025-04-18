@@ -645,31 +645,31 @@ void  VisitorModelAPI::AddConstraint(const NLLogical& nll) {
 
 
 void  VisitorModelAPI::AddConstraint(const NLReifEquiv& nle) {
-  std::string name = lp()->AddConstraintNLAssign(nle.GetResultVar(),
+  std::string name = lp()->AddConstraintNLAssign(GetVariable(nle),
     Solver::NLReifEquiv, GetExpression(nle), nle.name());
 
 }
 
 void  VisitorModelAPI::AddConstraint(const NLReifImpl& nle) {
-    std::string name = lp()->AddConstraintNLAssign(nle.GetResultVar(),
+    std::string name = lp()->AddConstraintNLAssign(GetVariable(nle),
     Solver::NLReifImpl, GetExpression(nle), nle.name());
 }
 
 void  VisitorModelAPI::AddConstraint(const NLReifRimpl& nle) {
-std::string name = lp()->AddConstraintNLAssign(nle.GetResultVar(),
+std::string name = lp()->AddConstraintNLAssign(GetVariable(nle),
     Solver::NLReifRimpl, GetExpression(nle), nle.name());
 }
 
 
 void VisitorModelAPI::AddConstraint(const NLAssignEQ& nle) {
-  std::string name = lp()->AddConstraintNLAssign(nle.GetResultVar(), 
+  std::string name = lp()->AddConstraintNLAssign(GetVariable(nle),
     Solver::AssignEQ, GetExpression(nle), nle.name());
 }
 
 /// NLAssignLE: algebraic expression expicifier in positive context.
 /// Meaning: var <= expr.
 void VisitorModelAPI::AddConstraint(const NLAssignLE& nle) {
-  std::string name = lp()->AddConstraintNLAssign(nle.GetResultVar(),
+  std::string name = lp()->AddConstraintNLAssign(GetVariable(nle),
     Solver::AssignLE, GetExpression(nle), nle.name());
 }
 
@@ -677,7 +677,7 @@ void VisitorModelAPI::AddConstraint(const NLAssignLE& nle) {
 /// Meaning: var >= expr.
 void VisitorModelAPI::AddConstraint(const NLAssignGE& nle) {
 
-  std::string name = lp()->AddConstraintNLAssign(nle.GetResultVar(), 
+  std::string name = lp()->AddConstraintNLAssign(GetVariable(nle),
     Solver::AssignGE, GetExpression(nle), nle.name());
 }
 

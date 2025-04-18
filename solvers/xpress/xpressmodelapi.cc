@@ -14,8 +14,6 @@ std::string& myreplace(std::string& s, const std::string& from, const std::strin
   return s;
 }
 
-
-
 std::string sanitizeName(std::string n, const std::string &lastName) {
   // Xpress does not like square brackets or spaces in variable names
   std::replace(n.begin(), n.end(), '[', '(');
@@ -248,7 +246,7 @@ void XpressmpModelAPI::AddConstraint(const DivConstraint& cc) {
   params.addMember(XPRS_TOK_COL, v2);
   params.addMember(XPRS_TOK_OP, XPRS_OP_DIVIDE);
   params.addMember(XPRS_TOK_EOF, 0);
-  AddGlobalConstraint(params);
+  AddGlobalConstraint(params, 'E');
 }
 
 void XpressmpModelAPI::AddConstraint(const PowConstExpConstraint& cc) {
@@ -262,7 +260,7 @@ void XpressmpModelAPI::AddConstraint(const PowConstExpConstraint& cc) {
     params.addMember(XPRS_TOK_CON, cc.GetParameters()[0]);
     params.addMember(XPRS_TOK_OP, XPRS_OP_EXPONENT);
     params.addMember(XPRS_TOK_EOF, 0);
-    AddGlobalConstraint(params);
+    AddGlobalConstraint(params, 'E');
   }
 }
   
@@ -302,7 +300,7 @@ void XpressmpModelAPI::AddConstraint(const LogAConstraint& cc) {
   params.addMember(XPRS_TOK_IFUN, XPRS_IFUN_LN);
   params.addMember(XPRS_TOK_OP, XPRS_OP_DIVIDE);
   params.addMember(XPRS_TOK_EOF, 0);
-  AddGlobalConstraint(params);
+  AddGlobalConstraint(params, 'E');
 }
 void XpressmpModelAPI::AddConstraint(const ExpAConstraint& cc) {
   // base^x = e^(x*ln(b)) ) b  ln  x  *  exp
@@ -315,22 +313,32 @@ void XpressmpModelAPI::AddConstraint(const ExpAConstraint& cc) {
   params.addMember(XPRS_TOK_OP, XPRS_OP_MULTIPLY);
   params.addMember(XPRS_TOK_IFUN, XPRS_IFUN_EXP);
   params.addMember(XPRS_TOK_EOF, 0);
-  AddGlobalConstraint(params);
+  AddGlobalConstraint(params, 'E');
+}
+
+void XpressmpModelAPI::AddConstraint(const PLConstraint& plc) {
+  const auto& points = plc.GetParameters().GetPLPoints();
+  int x = plc.GetArguments()[0];
+  int y = plc.GetResultVar();
+  int size = points.x_.size();
+  int starts[] = { 0, size };
+  XPRESSMP_CCALL(XPRSaddpwlcons(lp(), 1, size,
+    &x, &y, starts, points.x_.data(), points.y_.data()));
 }
 
 void XpressmpModelAPI::AddGlobalConstraint(int resultVar, int argumentVar, int functionId) {
   NLParams params(resultVar);
   params.addMember(XPRS_TOK_RB, 0);
-  params.addMember(XPRS_TOK_COL, argumentVar);
-  params.addMember(XPRS_TOK_IFUN, functionId);
+  params.addMember(NLParams::var(argumentVar));
+  params.addMember(NLParams::func(functionId));
   params.addMember(XPRS_TOK_EOF, 0);
-  AddGlobalConstraint(params);
+  AddGlobalConstraint(params, 'E');
 }
 
-void XpressmpModelAPI::AddGlobalConstraint(NLParams& params) {
+void XpressmpModelAPI::AddGlobalConstraint(const NLParams& params, char type) {
   char BUFFER[512];
   int status;
-  char type = 'E';
+
   double rhs = 0, coef = -1;
   int start = 0;
   XPRESSMP_CCALL(XPRSaddrows(lp(), 1, 1, &type, &rhs, NULL, &start, params.resultVar(), &coef));
@@ -358,7 +366,7 @@ void XpressmpModelAPI::AddConstraint(const SinhConstraint& cc) {
   params.addMember(XPRS_TOK_CON, 2);
   params.addMember(XPRS_TOK_OP, XPRS_OP_DIVIDE);
   params.addMember(XPRS_TOK_EOF, 0);
-  AddGlobalConstraint(params);
+  AddGlobalConstraint(params, 'E');
 }
 
 
@@ -377,7 +385,7 @@ void XpressmpModelAPI::AddConstraint(const CoshConstraint& cc) {
   params.addMember(XPRS_TOK_CON, 2);
   params.addMember(XPRS_TOK_OP, XPRS_OP_DIVIDE);
   params.addMember(XPRS_TOK_EOF, 0);
-  AddGlobalConstraint(params);
+  AddGlobalConstraint(params, 'E');
 }
 
 void XpressmpModelAPI::AddConstraint(const TanhConstraint& cc) {
@@ -409,7 +417,7 @@ void XpressmpModelAPI::AddConstraint(const TanhConstraint& cc) {
   params.addMember(XPRS_TOK_OP, XPRS_OP_DIVIDE);
   params.addMember(XPRS_TOK_EOF, 0);
 
-  AddGlobalConstraint(params);
+  AddGlobalConstraint(params, 'E');
 }
 
 void XpressmpModelAPI::AddConstraint(const AsinhConstraint& cc) {
@@ -433,7 +441,7 @@ void XpressmpModelAPI::AddConstraint(const AsinhConstraint& cc) {
 
   params.addMember(XPRS_TOK_IFUN, XPRS_IFUN_LN);
   params.addMember(XPRS_TOK_EOF, 0);
-  AddGlobalConstraint(params);
+  AddGlobalConstraint(params, 'E');
 }
 
 void XpressmpModelAPI::AddConstraint(const AcoshConstraint& cc) {
@@ -463,7 +471,7 @@ void XpressmpModelAPI::AddConstraint(const AcoshConstraint& cc) {
 
   params.addMember(XPRS_TOK_IFUN, XPRS_IFUN_LN);
   params.addMember(XPRS_TOK_EOF, 0);
-  AddGlobalConstraint(params);
+  AddGlobalConstraint(params, 'E');
 
 
 }
@@ -492,11 +500,219 @@ void XpressmpModelAPI::AddConstraint(const AtanhConstraint& cc) {
   params.addMember(XPRS_TOK_OP, XPRS_OP_MULTIPLY);
 
   params.addMember(XPRS_TOK_EOF, 0);
-  AddGlobalConstraint(params);
+  AddGlobalConstraint(params, 'E');
 }
 
+void XpressmpModelAPI::AddConstraint(const NLConstraint& nl) {
+  auto& exp = GetExpression(nl);
+  exp.reverse();
+  exp.addMember(XPRS_TOK_EOF, 0);
+  double lhs = GetLower(nl), rhs = GetUpper(nl);
+  char type;
+  double range;
+  double* prange = nullptr;
+  if (lhs == rhs)
+    type = 'E';
+  else
+  {
+    if ((lhs != (-std::numeric_limits<double>::infinity()) && rhs != std::numeric_limits<double>::infinity())) // range
+    {
+      type = 'R';
+      prange = &range;
+      range = rhs - lhs;
+    }
+    else
+    {
+      if (lhs != (-std::numeric_limits<double>::infinity())) // GE
+      {
+        type = 'G';
+        rhs = lhs;
+      }
+      else {
+        type = 'L';
+      }
+    }
+  }
+  int rowindex = addLinearRow(nl, type, rhs, prange);
+  char BUFFER[512];
+  int status;
+  int formulaStart[] = { 0, exp.size() };
+  status = XPRSnlpaddformulas(lp(), 1, &rowindex, formulaStart, true, exp.types(), exp.values());
+  if (status) {
+    XPRSgetlasterror(lp(), BUFFER);
+    printf(BUFFER);
+  }
+}
+void XpressmpModelAPI::AddConstraint(const NLAssignEQ& neq) {
+  NLParams params(GetVariable(neq));
+  params.addMembers(GetExpression(neq));
+  params.reverse();
+  params.addMember(XPRS_TOK_EOF, 0);
+  AddGlobalConstraint(params, 'E');
+
+}
+void XpressmpModelAPI::AddConstraint(const NLAssignGE& nge) {
+  NLParams params(GetVariable(nge));
+  params.addMembers(GetExpression(nge));
+  params.reverse();
+  params.addMember(XPRS_TOK_EOF, 0);
+
+  AddGlobalConstraint(params, 'L');
+
+}
+void XpressmpModelAPI::AddConstraint(const NLAssignLE& nle) {
+  NLParams params(GetVariable(nle));
+  params.addMembers(GetExpression(nle));
+  params.reverse();
+  params.addMember(XPRS_TOK_EOF, 0);
+  // Note, the sense is for a constraint of type:
+  // -var + expr sense 0, so they have to be inverted
+  AddGlobalConstraint(params, 'G'); 
+}
+
+template <class MPExpr> 
+void XpressmpModelAPI::AppendLinAndConstTerms(Expr& exp, const MPExpr& ae) {
+  double ct = GetConstTerm(ae);
+  int size = GetLinSize(ae);
+  // cases
+  // 4   -> const(4)
+  // 4+x -> PLUS | const(4) | var(y)
+  // 4+x+y -> PLUS | const(4) | PLUS | var(x) | var(y)
+  // x     -> var(x)
+  // x+y   -> PLUS | var(x) | var(y)
+  // x+y+z -> PLUS | var(x) | PLUS | var(y) | var(z)
+  if ((size > 1) || ct)
+    exp.addMember(NLParams::op(XPRS_OP_PLUS));
+  if (ct)
+  {
+    exp.addMember(NLParams::constant(ct));
+    // is we have to add more than one term, must put the operator now
+    if(size > 1) exp.addMember(NLParams::op(XPRS_OP_PLUS));
+  }
+
+  for (int i = 0; i < size; ++i) {
+    if (double coef = GetLinCoef(ae, i)) {
+      if (1.0 != coef) {
+        exp.addMember(NLParams::op(XPRS_OP_MULTIPLY));
+        exp.addMember(NLParams::constant(coef));
+        exp.addMembers(GetLinTerm(ae, i));
+      }
+      else {
+        exp.addMembers(GetLinTerm(ae, i));
+      }
+    }
+    if (i < size - 2)
+    {
+      exp.addMember(NLParams::op(XPRS_OP_PLUS));
+    }
+  }
+}
+
+NLParams XpressmpModelAPI::AddExpression(const NLAffineExpression& ae) {
+  NLParams affine;
+  AppendLinAndConstTerms(affine, ae);
+  return affine;
+}
+
+NLParams XpressmpModelAPI::AddExpression(const NLQuadExpression& qe) {
+  NLParams quad;
+  
+  if(GetLinSize(qe) > 0)
+    quad.addMember(NLParams::op(XPRS_OP_PLUS));
+
+  AppendLinAndConstTerms(quad, qe);
+  int size = GetQuadSize(qe);
+  if (size > 1)
+    quad.addMember(NLParams::op(XPRS_OP_PLUS));
+  for (int i = 0; i < GetQuadSize(qe); ++i) {
+    if (double coef = GetQuadCoef(qe, i)) {
+      if (1.0 != coef) {
+        quad.addMember(NLParams::op(XPRS_OP_MULTIPLY));
+        quad.addMember(NLParams::constant(coef));
+      }
+      quad.addMember(NLParams::op(XPRS_OP_MULTIPLY));
+      quad.addMembers(GetQuadTerm1(qe, i));
+      quad.addMembers(GetQuadTerm2(qe, i));
+      if (i < size - 2)
+        quad.addMember(NLParams::op(XPRS_OP_PLUS));
+    }
+  }
+  return quad;
+}
+NLParams XpressmpModelAPI::AddExpression(const SinExpression& e) {
+  return CreateExpressionOneArg(e, XPRS_IFUN_SIN);
+}
+NLParams XpressmpModelAPI::AddExpression(const CosExpression& e) {
+  return CreateExpressionOneArg(e, XPRS_IFUN_COS);
+}
+NLParams XpressmpModelAPI::AddExpression(const TanExpression& e) {
+  return CreateExpressionOneArg(e, XPRS_IFUN_TAN);
+}
+NLParams XpressmpModelAPI::AddExpression(const AsinExpression& e) {
+  return CreateExpressionOneArg(e, XPRS_IFUN_ARCSIN);
+}
+NLParams XpressmpModelAPI::AddExpression(const AcosExpression& e) {
+  return CreateExpressionOneArg(e, XPRS_IFUN_ARCCOS);
+}
+NLParams XpressmpModelAPI::AddExpression(const AtanExpression& e) {
+  return CreateExpressionOneArg(e, XPRS_IFUN_ARCTAN);
+}
+
+NLParams XpressmpModelAPI::AddExpression(const LogExpression& e ) {
+  return CreateExpressionOneArg(e, XPRS_IFUN_LN);
+}
+
+NLParams XpressmpModelAPI::AddExpression(const ExpExpression& e) {
+  return CreateExpressionOneArg(e, XPRS_IFUN_EXP);
+}
+
+NLParams XpressmpModelAPI::AddExpression(const PowConstExpExpression& e) {
+  double exponent = GetParameter(e, 0);
+  
+  if (exponent == 0.5)
+    return CreateExpressionOneArg(e, XPRS_IFUN_SQRT);
+  NLParams exp;
+  exp.addMember(NLParams::op(XPRS_OP_EXPONENT));
+  exp.addMember(NLParams::constant(exponent));
+  exp.addMembers(GetArgExpression(e, 0));
+  return exp;
+}
+NLParams XpressmpModelAPI::AddExpression(const DivExpression& e) {
+  NLParams exp;
+  exp.addMember(NLParams::op(XPRS_OP_DIVIDE));
+  exp.addMembers(GetArgExpression(e, 1));
+  exp.addMembers(GetArgExpression(e, 0));
+  return exp;
+}
+
+NLParams XpressmpModelAPI::AddExpression(const MinExpression& e) {
+  return CreateExpressionNArgs(e, XPRS_IFUN_MIN);
+}
+NLParams XpressmpModelAPI::AddExpression(const MaxExpression& e) {
+  return CreateExpressionNArgs(e, XPRS_IFUN_MAX);
+}
+NLParams XpressmpModelAPI::AddExpression(const AbsExpression& e) {
+  return CreateExpressionOneArg(e, XPRS_IFUN_ABS);
+}
+
+
+NLParams 
+XpressmpModelAPI::AddExpression(const LogAExpression& e) {
+  NLParams exp;
+  exp.addMember(NLParams::op(XPRS_OP_DIVIDE));
+  exp.addMember(NLParams::func(XPRS_IFUN_LN));
+  auto ex = GetArgExpression(e, 0);
+  exp.addMembers(ex);
+  exp.addMember(XPRS_TOK_RB, 0);
+  exp.addMember(NLParams::func(XPRS_IFUN_LN));
+  auto par = GetParameter(e, 0);
+  exp.addMember(NLParams::constant(par));
+  exp.addMember(XPRS_TOK_RB, 0);
+  return exp;
+}
 void XpressmpModelAPI::FinishProblemModificationPhase() {
 }
 
 
 } // namespace mp
+
