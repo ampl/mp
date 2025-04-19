@@ -68,8 +68,7 @@ void XpressmpModelAPI::AddVariables(const VarArrayDef& v) {
 
 void XpressmpModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
   if (iobj<1) {
-    if (lo.obj_sense() == obj::Type::MAX)
-      XPRESSMP_CCALL(XPRSchgobjsense(lp(), XPRS_OBJ_MAXIMIZE));
+    XPRESSMP_CCALL(XPRSchgobjsense(lp(), lo.obj_sense() == obj::Type::MAX ? XPRS_OBJ_MAXIMIZE : XPRS_OBJ_MINIMIZE));
     if (obj_ind_save_.size()) {
       std::vector<double> obj_coef_0(obj_ind_save_.size(), 0.0);
       XPRESSMP_CCALL(XPRSchgobj(lp(), obj_ind_save_.size(),
