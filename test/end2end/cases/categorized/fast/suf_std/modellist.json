@@ -4,7 +4,7 @@
     "objective" : 74.273820,
     "tags" : ["linear", "continuous", "sstatus"],
     "options": {
-      "cplex_options": "netopt=3 netdisplay=1 netfeastol=1e-5 netfind=2 netoptimality=1e-4 netpricing=2"
+      "cplex_options": "netopt=3 netdisplay=1 netfeastol=1e-5 netfind=2 netoptimality=1e-4 netpricing=2 netiterations=500"
     },
     "values": {
       "Buy['BEEF'].sstatus": "low",

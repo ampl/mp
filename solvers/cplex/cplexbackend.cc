@@ -245,8 +245,10 @@ namespace mp {
   }
 
   void CplexBackend::VarConStatii(ArrayRef<int> vstt, ArrayRef<int> cstt) {
-    std::vector<int> vst= std::vector<int>(vstt.data(), vstt.data() + vstt.size());
-    std::vector<int> cst = std::vector<int>(cstt.data(), cstt.data() + cstt.size());
+    std::vector<int> vst
+        = std::vector<int>(vstt.data(), vstt.data() + vstt.size());
+    std::vector<int> cst
+        = std::vector<int>(cstt.data(), cstt.data() + cstt.size());
     for (auto j = vst.size(); j--; ) {
       auto& s = vst[j];
       switch ((BasicStatus)s) {
@@ -260,7 +262,7 @@ namespace mp {
       case BasicStatus::none:
         double lb, ub;
         if (!CPXgetlb(env(), lp(), &lb, j, j) &&
-          !CPXgetub(env(), lp(), &ub, j, j))
+            !CPXgetub(env(), lp(), &ub, j, j))
         {
           if (lb > MinusInfinity())
             s = CPX_AT_LOWER;
@@ -281,27 +283,27 @@ namespace mp {
         MP_RAISE(fmt::format("Unknown AMPL var status value: {}", s));
       }
     }
-      for (auto j = cst.size(); j--; ) {
-        auto& s = cst[j];
-        switch ((BasicStatus)s) {
-        case BasicStatus::bas:
-          s = (int)CPX_BASIC;
-          break;
-        case BasicStatus::low:
-        case BasicStatus::equ:
-        case BasicStatus::none:
-        case BasicStatus::sup:
-        case BasicStatus::btw:
-          s = CPX_AT_LOWER;
-          break;
-        case BasicStatus::upp:
-          s = CPX_AT_UPPER;
-          break;
-        default:
-          MP_RAISE(fmt::format("Unknown AMPL var status value: {}", s));
-        }
+    for (auto j = cst.size(); j--; ) {
+      auto& s = cst[j];
+      switch ((BasicStatus)s) {
+      case BasicStatus::bas:
+        s = (int)CPX_BASIC;
+        break;
+      case BasicStatus::low:
+      case BasicStatus::equ:
+      case BasicStatus::none:
+      case BasicStatus::sup:
+      case BasicStatus::btw:
+        s = CPX_AT_LOWER;
+        break;
+      case BasicStatus::upp:
+        s = CPX_AT_UPPER;
+        break;
+      default:
+        MP_RAISE(fmt::format("Unknown AMPL var status value: {}", s));
+      }
     }
-      CPLEX_CALL(CPXcopybase(env(), lp(), vst.data(), cst.data()));
+    CPLEX_CALL(CPXcopybase(env(), lp(), vst.data(), cst.data()));
   }
 
 
@@ -312,8 +314,8 @@ namespace mp {
     std::vector<int> constt = ConStatii();
     if (varstt.size() && constt.size()) {
       auto mv = GetValuePresolver().PostsolveBasis(
-        { std::move(varstt),
-          {{{ CG_Linear, std::move(constt) }}} });
+          { std::move(varstt),
+           {{{ CG_Linear, std::move(constt) }}} });
       varstt = mv.GetVarValues()();
       constt = mv.GetConValues()();
       assert(varstt.size());
@@ -466,8 +468,8 @@ void CplexBackend::Solve() {
     exit(1);
   }
 
-    RedirectOutput();
-    setSilenceOutput(storedOptions_.outlev_==0);
+    // RedirectOutput();
+    // setSilenceOutput(storedOptions_.outlev_==0);
     setSolutionMethod();
     
     if (storedOptions_.dropTol_ > 0) {
@@ -1242,7 +1244,7 @@ static const mp::OptionValueInfo optimalitytarget_values_[] = {
 };
 static const mp::OptionValueInfo outlev_values_[] = {
   { "0", "no output (default)", 0},
-  { "1", "equivalent to \"bardisplay\"=1, \"display\"=1, \"mipdisplay\"=3", 1},
+  { "1", "equivalent to \"bardisplay\"=1, \"display\"=1, \"mipdisplay\"=2", 1},
   { "2", "equivalent to \"bardisplay\"=2, \"display\"=2, \"mipdisplay\"=5", 2}
 };
 static const mp::OptionValueInfo auxrootthreads_values_[] = {
@@ -1380,10 +1382,10 @@ static const mp::OptionValueInfo values_barmaxcor[] = {
   { "0", "None", 0},
   { "n>0", "Maximum number of centering corrections per iteration", 2}
 };
-static const mp::OptionValueInfo values_bardisplay[] = {
+static const mp::OptionValueInfo values_modisplay[] = {
   { "0", "No output", 0},
-  { "1", "Normal setup and iteration information (default)", 1},
-  { "2", "Diagnostic information", 2}
+  { "1", "(Default) summary display after each subproblem", 1},
+  { "2", "Summary display after each subproblem, as well as subproblem logs", 2}
 };
 static const mp::OptionValueInfo values_barstart[] = {
   { "1", "Assume dual is 0 (default)", 1},
@@ -1581,32 +1583,40 @@ void CplexBackend::FinishOptionParsing() {
     GetSolverOption(CPX_PARAM_SIMDISPLAY, lp);
     GetSolverOption(CPX_PARAM_MIPDISPLAY, mip);
     GetSolverOption(CPX_PARAM_BARDISPLAY, bar);
-    GetSolverOption(CPXPARAM_MultiObjective_Display, mo);
-    GetSolverOption(CPX_PARAM_NETDISPLAY, netw);
+    // GetSolverOption(CPXPARAM_MultiObjective_Display, mo);
+    // GetSolverOption(CPX_PARAM_NETDISPLAY, netw);
     if (storedOptions_.outlev_ > 2)
       storedOptions_.outlev_ = 2;
     int olp[] = { 0, 1, 2 };
-    int omip[] = { 0, 3, 5 };
+    int omip[] = { 0, 2, 5 };
     lp = lp ? lp : olp[storedOptions_.outlev_];
     mip = mip ? mip : omip[storedOptions_.outlev_];
     bar = bar ? bar : olp[storedOptions_.outlev_];
-    mo = mo ? mo : olp[storedOptions_.outlev_];
-    netw = netw ? netw : olp[storedOptions_.outlev_];
-    if (lp || mip || bar || mo || netw) {
+    // mo = mo ? mo : olp[storedOptions_.outlev_];  -- no they are >0
+    // netw = netw ? netw : olp[storedOptions_.outlev_];
+    // Set options before turning on output:
+    if (lp)
+      SetSolverOption(CPX_PARAM_SIMDISPLAY, lp);
+    if (mip)
+      SetSolverOption(CPX_PARAM_MIPDISPLAY, mip);
+    if (bar)
+      SetSolverOption(CPX_PARAM_BARDISPLAY, bar);
+    // SetSolverOption(CPXPARAM_MultiObjective_Display, mo);
+    // SetSolverOption(CPX_PARAM_NETDISPLAY, netw);
+    if (lp || mip || bar
+        // || mo || netw  -- no they are >0
+        ) {
       /* Log messages on screen */
       CPLEX_CALL(CPXsetintparam(env(), CPXPARAM_ScreenOutput, CPX_ON));
       /* Echo changed params before solve */
       CPLEX_CALL(CPXsetintparam(env(), CPXPARAM_ParamDisplay, 1));
+      set_verbose_mode(true);
     }
-    SetSolverOption(CPX_PARAM_SIMDISPLAY, lp);
-    SetSolverOption(CPX_PARAM_MIPDISPLAY, mip);
-    SetSolverOption(CPX_PARAM_BARDISPLAY, bar);
-    SetSolverOption(CPXPARAM_MultiObjective_Display, mo);
-    SetSolverOption(CPX_PARAM_NETDISPLAY, netw);
     if (!storedOptions_.logFile_.empty())
     {
       if (lp < 1) SetSolverOption(CPX_PARAM_SIMDISPLAY, 1);
       if (mip < 1) SetSolverOption(CPX_PARAM_MIPDISPLAY, 1);
+      if (bar < 1) SetSolverOption(CPX_PARAM_BARDISPLAY, 1);
       CPLEX_CALL(CPXsetlogfilename(env(), storedOptions_.logFile_.data(), "w"));
     }
     set_verbose_mode(storedOptions_.outlev_ > 0);
@@ -1733,7 +1743,7 @@ void CplexBackend::InitCustomOptions() {
                   "\n.. value-table::\n",
                   storedOptions_.netopt_, values_netopt);
 
-  AddSolverOption("alg:netdisplay netdisplay",
+  AddSolverOption("tech:netdisplay netdisplay",
                   "Decides what CPLEX reports to the screen during network optimization:\n"
                   "\n.. value-table::\n",
                   CPXPARAM_Network_Display,
@@ -2092,10 +2102,10 @@ void CplexBackend::InitCustomOptions() {
     CPXPARAM_Barrier_ColNonzeros, 0, INT_MAX);
 
 
-  AddSolverOption("bar:display bardisplay",
-    "Specifies how much the barrier algorithm chatters:"
+  AddSolverOption("tech:modisplay modisplay multiobjdisplay",
+    "Level of display during multiobjective optimization:"
     "\n\n.. value-table::\n",
-    CPXPARAM_Barrier_Display, values_bardisplay, 1);
+    CPXPARAM_MultiObjective_Display, values_modisplay, 1);
 
   AddSolverOption("bar:growth bargrowth growth",
     "Tolerance for detecting unbounded faces in the barrier algorithm: "
@@ -2198,7 +2208,7 @@ void CplexBackend::InitCustomOptions() {
     "constraints).",
     CPXPARAM_Conflict_Algorithm, conflictalg_values, 0);
 
-  AddSolverOption("alg:conflictdisplay conflictdisplay",
+  AddSolverOption("tech:conflictdisplay conflictdisplay",
     "What to report when the conflict finder is working:\n"
     "\n.. value-table::\n",
     CPXPARAM_Conflict_Display, conflictdisplay_values, 0);
@@ -2279,7 +2289,7 @@ void CplexBackend::InitCustomOptions() {
     "LP iteration limit (default:  large).",
     CPXPARAM_Simplex_Limits_Iterations, 0, CPXINT_MAX);
 
-  AddSolverOption("lim:netiterations netiterations",
+  AddSolverOption("lim:netiterations netiterations netiter",
     "Limit on network simplex iterations (default: large).",
     CPXPARAM_Network_Iterations, 0, CPXINT_MAX);
 
