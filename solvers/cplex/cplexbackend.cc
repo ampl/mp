@@ -1070,60 +1070,6 @@ void CplexBackend::InputExtras() {
 }
 
 void CplexBackend::InputCPLEXExtras() {
-  // Set output on screen
-  int lp, mip, bar, mo, netw;
-  GetSolverOption(CPX_PARAM_SIMDISPLAY, lp);
-  GetSolverOption(CPX_PARAM_MIPDISPLAY, mip);
-  GetSolverOption(CPX_PARAM_BARDISPLAY, bar);
-  GetSolverOption(CPXPARAM_MultiObjective_Display, mo);
-  GetSolverOption(CPX_PARAM_NETDISPLAY, netw);
-  if (storedOptions_.outlev_ > 2)
-    storedOptions_.outlev_ = 2;
-  int olp[] = { 0, 1, 2 };
-  int omip[] = { 0, 3, 5 };
-  lp = lp ? lp : olp[storedOptions_.outlev_];
-  mip = mip ? mip : omip[storedOptions_.outlev_];
-  bar = bar ? bar : olp[storedOptions_.outlev_];
-  mo = mo ? mo : olp[storedOptions_.outlev_];
-  netw = netw ? netw : olp[storedOptions_.outlev_];
-  if (lp || mip || bar || mo || netw) {
-    /* Log messages on screen */
-    CPLEX_CALL(CPXsetintparam(env(), CPXPARAM_ScreenOutput, CPX_ON));
-    /* Echo changed params before solve */
-    CPLEX_CALL(CPXsetintparam(env(), CPXPARAM_ParamDisplay, 1));
-  }
-  SetSolverOption(CPX_PARAM_SIMDISPLAY, lp);
-  SetSolverOption(CPX_PARAM_MIPDISPLAY, mip);
-  SetSolverOption(CPX_PARAM_BARDISPLAY, bar);
-  SetSolverOption(CPXPARAM_MultiObjective_Display, mo);
-  SetSolverOption(CPX_PARAM_NETDISPLAY, netw);
-  if (!storedOptions_.logFile_.empty())
-  {
-    if (lp < 1) SetSolverOption(CPX_PARAM_SIMDISPLAY, 1);
-    if (mip < 1) SetSolverOption(CPX_PARAM_MIPDISPLAY, 1);
-    CPLEX_CALL(CPXsetlogfilename(env(), storedOptions_.logFile_.data(), "w"));
-  }
-  set_verbose_mode(storedOptions_.outlev_ > 0);
-
-  // Set behaviour for solultion pool related options
-  if (!need_multiple_solutions()) {
-    storedOptions_.populate_ = -1;
-    storedOptions_.poolIntensity_ = -1;
-  }
-  else {
-    int poolIntensity = 0, populate = 0;
-    switch (storedOptions_.nPoolMode_) {
-    case 0: poolIntensity = 0; populate = 0; break;
-    case 1: poolIntensity = 2; populate = 1; break;
-    case 2: poolIntensity = 4; populate = 1; break;
-    }
-    // Override the below only if not set
-    if (storedOptions_.populate_ < 0) storedOptions_.populate_ = populate;
-    if (storedOptions_.poolIntensity_ < 0) storedOptions_.poolIntensity_ = poolIntensity;
-  }
-  CplexPlayObjNParams();
-  SetSolverOption(CPX_PARAM_SOLNPOOLINTENSITY, storedOptions_.poolIntensity_ < 0 ? 0 : 
-    storedOptions_.poolIntensity_);
 }
 
 void CplexBackend::ConsiderCplexFixedModel() {
@@ -1591,6 +1537,63 @@ void CplexBackend::setSolutionMethod() {
 ////////////////////////////// OPTIONS /////////////////////////////////
 
 void CplexBackend::FinishOptionParsing() {
+  {
+    // Set output on screen
+    int lp, mip, bar, mo, netw;
+    GetSolverOption(CPX_PARAM_SIMDISPLAY, lp);
+    GetSolverOption(CPX_PARAM_MIPDISPLAY, mip);
+    GetSolverOption(CPX_PARAM_BARDISPLAY, bar);
+    GetSolverOption(CPXPARAM_MultiObjective_Display, mo);
+    GetSolverOption(CPX_PARAM_NETDISPLAY, netw);
+    if (storedOptions_.outlev_ > 2)
+      storedOptions_.outlev_ = 2;
+    int olp[] = { 0, 1, 2 };
+    int omip[] = { 0, 3, 5 };
+    lp = lp ? lp : olp[storedOptions_.outlev_];
+    mip = mip ? mip : omip[storedOptions_.outlev_];
+    bar = bar ? bar : olp[storedOptions_.outlev_];
+    mo = mo ? mo : olp[storedOptions_.outlev_];
+    netw = netw ? netw : olp[storedOptions_.outlev_];
+    if (lp || mip || bar || mo || netw) {
+      /* Log messages on screen */
+      CPLEX_CALL(CPXsetintparam(env(), CPXPARAM_ScreenOutput, CPX_ON));
+      /* Echo changed params before solve */
+      CPLEX_CALL(CPXsetintparam(env(), CPXPARAM_ParamDisplay, 1));
+    }
+    SetSolverOption(CPX_PARAM_SIMDISPLAY, lp);
+    SetSolverOption(CPX_PARAM_MIPDISPLAY, mip);
+    SetSolverOption(CPX_PARAM_BARDISPLAY, bar);
+    SetSolverOption(CPXPARAM_MultiObjective_Display, mo);
+    SetSolverOption(CPX_PARAM_NETDISPLAY, netw);
+    if (!storedOptions_.logFile_.empty())
+    {
+      if (lp < 1) SetSolverOption(CPX_PARAM_SIMDISPLAY, 1);
+      if (mip < 1) SetSolverOption(CPX_PARAM_MIPDISPLAY, 1);
+      CPLEX_CALL(CPXsetlogfilename(env(), storedOptions_.logFile_.data(), "w"));
+    }
+    set_verbose_mode(storedOptions_.outlev_ > 0);
+
+    // Set behaviour for solultion pool related options
+    if (!need_multiple_solutions()) {
+      storedOptions_.populate_ = -1;
+      storedOptions_.poolIntensity_ = -1;
+    }
+    else {
+      int poolIntensity = 0, populate = 0;
+      switch (storedOptions_.nPoolMode_) {
+      case 0: poolIntensity = 0; populate = 0; break;
+      case 1: poolIntensity = 2; populate = 1; break;
+      case 2: poolIntensity = 4; populate = 1; break;
+      }
+      // Override the below only if not set
+      if (storedOptions_.populate_ < 0) storedOptions_.populate_ = populate;
+      if (storedOptions_.poolIntensity_ < 0) storedOptions_.poolIntensity_ = poolIntensity;
+    }
+    CplexPlayObjNParams();
+    SetSolverOption(CPX_PARAM_SOLNPOOLINTENSITY, storedOptions_.poolIntensity_ < 0 ? 0 :
+                                                     storedOptions_.poolIntensity_);
+  }
+
   // Apply to all cuts when not overriden
   if (storedOptions_.cuts_ != 2) {
     static int op[] = {
@@ -2223,11 +2226,11 @@ void CplexBackend::InitCustomOptions() {
 
 
   AddSolverOption("lim:iter iterlim iterlimit iterations",
-    "LP iteration limit (default:  9223372036800000000).",
+    "LP iteration limit (default:  large).",
     CPXPARAM_Simplex_Limits_Iterations, 0, CPXINT_MAX);
 
   AddSolverOption("lim:netiterations netiterations",
-    "Limit on network simplex iterations (default:  9223372036800000000).",
+    "Limit on network simplex iterations (default: large).",
     CPXPARAM_Network_Iterations, 0, CPXINT_MAX);
 
   AddSolverOption("lim:nodes node nodelim nodelimit",
