@@ -255,14 +255,14 @@ private:
     std::string mipStart_;
 
     std::string workDir_ = "";
-    int outlev_ = 0;;
+    int outlev_ = 0;
     int noSolve_ = 0;
     int nPoolMode_=2;
     int populate_ = -1;
     int poolIntensity_ = -1;
     int algMethod_ = -1;
     int nodeMethod_ = -1;
-    int cpxMethod_ = -1; // to store actual method
+    int cpxMethod_ = CPX_ALG_AUTOMATIC; // to store actual method
     int crossover_ = 0;
     int solutionType_ = 0;
     int bestnode_ = 0;
@@ -272,6 +272,7 @@ private:
     bool fPrimal_ = false;
     bool fDual_ = false;
     bool fNetwork_ = false;
+    int netopt_ = 2;
     bool fSifting_ = false;
     bool fBenders_ = false;
 

@@ -1309,13 +1309,24 @@ static const mp::OptionValueInfo values_poolreplace[] = {
 };
 
 static const mp::OptionValueInfo values_method[] = {
-  { "-1", "Automatic (default)", -1},
-  { "0", "Primal simplex", 0},
-  { "1", "Dual simplex", 1},
-  { "2", "Barrier", 2},
-  { "3", "Nondeterministic concurrent (several solves in parallel)", 3},
-  { "4", "Network simplex", 4},
-  { "5", "Sifting", 5}
+    { "-1", "Automatic (default)", -1},
+    { "0", "Primal simplex", 0},
+    { "1", "Dual simplex", 1},
+    { "2", "Barrier", 2},
+    { "3", "Nondeterministic concurrent (several solves in parallel)", 3},
+    { "4", "Network simplex", 4},
+    { "5", "Sifting", 5}
+};
+
+static const mp::OptionValueInfo values_netopt[] = {
+    { "0", "Never invoke the network optimizer", 0},
+    { "1", "Compatibility value; same as 3", 1},
+    { "2", "Compatibility value; same as 3", 2},
+    { "3", "(Default) invoke the network optimizer by setting "
+          "CPLEX' LP/QPMethod to CPX_ALG_NET telling CPLEX "
+          "to search for network (sub)structures in the model. "
+          "CPLEX presolve might influence automatic recognition of "
+          "network structures", 3}
 };
 
 static const mp::OptionValueInfo values_nodemethod[] = {
@@ -1537,7 +1548,7 @@ void CplexBackend::setSolutionMethod() {
     if (storedOptions_.fSifting_)
       storedOptions_.cpxMethod_ = CPX_ALG_SIFTING;
   }
-  else {
+  else if (storedOptions_.algMethod_ != -1) {
     int mapMethods[] = {
       CPX_ALG_AUTOMATIC,
       CPX_ALG_PRIMAL,
@@ -1548,6 +1559,9 @@ void CplexBackend::setSolutionMethod() {
       CPX_ALG_SIFTING
     };
     storedOptions_.cpxMethod_ = mapMethods[storedOptions_.algMethod_ + 1];
+  } else {
+    if (storedOptions_.netopt_>0 and storedOptions_.netopt_<=3)
+      storedOptions_.cpxMethod_ = CPX_ALG_NET;
   }
   if (IsMIP())
     SetSolverOption(CPX_PARAM_STARTALG, storedOptions_.cpxMethod_);
@@ -1661,13 +1675,13 @@ void CplexBackend::InitCustomOptions() {
 
   // Solution method
   AddStoredOption("alg:method method lpmethod simplex mipstartalg",
-    "Which algorithm to use for non-MIP problems or for the root node of MIP problems, unless "
-    "primal/dual/barrier/network/sifting flags are specified:\n"
-    "\n.. value-table::\n"
-    "For MIQP problems (quadratic objective, linear constraints), setting 5 "
-    "is treated as 0 and 6 as 4. For MIQCP problems(quadratic objective & "
-    "constraints), all settings are treated as 4.", 
-    storedOptions_.algMethod_, values_method);
+                  "Which algorithm to use for non-MIP problems or for the root node of MIP problems, unless "
+                  "primal/dual/barrier/network/sifting flags are specified:\n"
+                  "\n.. value-table::\n"
+                  "For MIQP problems (quadratic objective, linear constraints), setting 5 "
+                  "is treated as 0 and 6 as 4. For MIQCP problems (quadratic objective & "
+                  "constraints), all settings are treated as 4.",
+                  storedOptions_.algMethod_, values_method);
 
   AddStoredOption("alg:barrier barrier baropt",
     "Solve (MIP root) LPs by barrier method.",
@@ -1685,11 +1699,18 @@ void CplexBackend::InitCustomOptions() {
     "Solve (MIP root) LPs by sifting method.",
     storedOptions_.fSifting_);
 
-  AddStoredOption("alg:network network netopt",
-    "Solve (substructure of) (MIP node) LPs "
-    "by network simplex method. For best recognition of "
-                  "network (sub)structures, switch off CPLEX presolve.",
+  AddStoredOption("alg:network network",
+    "Solve (substructure of) (MIP node's) LP/QP "
+    "by network simplex method. Synonym for alg:netopt=3.",
     storedOptions_.fNetwork_);
+
+  AddStoredOption("alg:netopt netopt",
+                  "Whether to use network simplex method for non-MIP problems "
+                  "or for the root node of MIP problems, unless "
+                  "primal/dual/barrier/network/sifting flags "
+                  "or alg:method are specified:\n"
+                  "\n.. value-table::\n",
+                  storedOptions_.netopt_, values_netopt);
 
 
   AddStoredOption("alg:benders benders bendersopt",

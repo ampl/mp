@@ -1,8 +1,11 @@
 [
   {
-    "name" : "dietu_stt sstatus",
+    "name" : "dietu_stt sstatus CPLEX netopt",
     "objective" : 74.273820,
     "tags" : ["linear", "continuous", "sstatus"],
+    "options": {
+      "cplex_options": "netopt=3"
+    },
     "values": {
       "Buy['BEEF'].sstatus": "low",
       "Buy['MTL'].sstatus":  "bas",
