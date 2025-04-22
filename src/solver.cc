@@ -416,7 +416,7 @@ bool SolverAppOptionParser::ShowSolverOptions(const char* param) {
     writer << '\n';
   solver_.Print("{}", writer.c_str());
   if(param)
-    solver_.Print("{} ", param);
+    solver_.Print("'{}' ", param);
   solver_.Print("Options:\n");
   const int DESC_INDENT = 6;
   for (Solver::option_iterator

@@ -1294,6 +1294,25 @@ static const mp::OptionValueInfo values_netopt[] = {
           "network structures", 3}
 };
 
+static const mp::OptionValueInfo values_netdisplay[] = {
+    { "0", "No display", 0},
+    { "1", "Display true objective values (can be non-monotonic)", 1},
+    { "2", "(Default) display penalized objective values", 2}
+};
+
+static const mp::OptionValueInfo values_netfind[] = {
+    { "0", "Extract pure network only", 0},
+    { "1", "(Default) try reflection scaling", 1},
+    { "2", "Try general scaling", 2}
+};
+
+static const mp::OptionValueInfo values_netpricing[] = {
+    { "0", "(Default) automatic", 0},
+    { "1", "Partial pricing", 1},
+    { "2", "Multiple partial pricing", 2},
+    { "3", "Multiple partial pricing with sorting", 3}
+};
+
 static const mp::OptionValueInfo values_nodemethod[] = {
   { "0", "Automatic (default)",0},
   { "1", "Primal simplex", 1},
@@ -1713,6 +1732,38 @@ void CplexBackend::InitCustomOptions() {
                   "or alg:method are specified:\n"
                   "\n.. value-table::\n",
                   storedOptions_.netopt_, values_netopt);
+
+  AddSolverOption("alg:netdisplay netdisplay",
+                  "Decides what CPLEX reports to the screen during network optimization:\n"
+                  "\n.. value-table::\n",
+                  CPXPARAM_Network_Display,
+                  values_netdisplay, 2);
+
+  AddSolverOption("alg:netfeasibility netfeasibility netfeastol",
+                  "Feasibility tolerance for network primal optimization. "
+                  "Can be any number from 1e-11 to 1e-1; default: 1e-6.",
+                  CPXPARAM_Network_Tolerances_Feasibility,
+                  1e-11, 1e-1);
+
+  AddSolverOption("alg:netfind netfind netfinder",
+                  "Level of network extraction for network simplex optimization:\n"
+                  "\n.. value-table::\n",
+                  CPXPARAM_Network_NetFind,
+                  values_netfind, 1);
+
+  AddSolverOption("alg:netoptimality netoptimality",
+                  "Specifies the optimality tolerance for network optimization; "
+                  "that is, the amount a reduced cost may violate the criterion "
+                  "for an optimal solution. "
+                  "Can be any number from 1e-11 to 1e-1; default: 1e-6.",
+                  CPXPARAM_Network_Tolerances_Optimality,
+                  1e-11, 1e-1);
+
+  AddSolverOption("alg:netpricing netpricing",
+                  "Pricing algorithm for network simplex optimization:\n"
+                  "\n.. value-table::\n",
+                  CPXPARAM_Network_Pricing,
+                  values_netpricing, 0);
 
 
   AddStoredOption("alg:benders benders bendersopt",
