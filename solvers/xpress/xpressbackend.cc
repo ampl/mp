@@ -596,7 +596,7 @@ std::string XpressmpBackend::DoXpressFixedModel()
     { "1", "Automatic choice (default)", 1},
     { "2", "Dual simplex", 2},
     { "3", "Primal simplex", 3},
-    { "4", "Netwon Barrier", 4}
+    { "4", "Newton Barrier (or hybrid gradient, if bar:alg=4 is set)", 4}
   };
 
   static const mp::OptionValueInfo values_baralg[] = {
