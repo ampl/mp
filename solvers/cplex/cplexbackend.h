@@ -280,7 +280,7 @@ private:
     int cutstats_ = 0;
 
     int numcores_ = 0;
-
+    bool dummy_ = false;
   };
   Options storedOptions_;
   // to store IIS

@@ -1520,7 +1520,7 @@ void CplexBackend::setSolutionMethod() {
     + bool(storedOptions_.fSifting_);
   if (nFlags>= 2) 
     AddWarning("Ambiguous LP method",
-      "Only one of barrier/primal/dual/network/sifting/benders should be specified.");
+      "Only one of barrier/primalopt/dualopt/network/sifting/benders should be specified.");
   if (nFlags >= 1)
   {
     if (storedOptions_.fPrimal_)
@@ -1707,7 +1707,7 @@ void CplexBackend::InitCustomOptions() {
   // Solution method
   AddStoredOption("alg:method method lpmethod simplex mipstartalg",
                   "Which algorithm to use for non-MIP problems or for the root node of MIP problems, unless "
-                  "primal/dual/barrier/network/sifting flags are specified:\n"
+                  "primalopt/dualopt/barrier/network/sifting flags are specified:\n"
                   "\n.. value-table::\n"
                   "For MIQP problems (quadratic objective, linear constraints), setting 5 "
                   "is treated as 0 and 6 as 4. For MIQCP problems (quadratic objective & "
@@ -1722,7 +1722,7 @@ void CplexBackend::InitCustomOptions() {
     "Solve (MIP root) LPs by primal simplex method.",
     storedOptions_.fPrimal_);
 
-  AddStoredOption("alg:dual dual dualopt",
+  AddStoredOption("alg:dual dualopt",
     "Solve (MIP root) LPs by dual simplex method.",
     storedOptions_.fDual_);
 
@@ -1738,7 +1738,7 @@ void CplexBackend::InitCustomOptions() {
   AddStoredOption("alg:netopt netopt",
                   "Whether to use network simplex method for non-MIP problems "
                   "or for the root node of MIP problems, unless "
-                  "primal/dual/barrier/network/sifting flags "
+                  "primalopt/dualopt/barrier/network/sifting flags "
                   "or alg:method are specified:\n"
                   "\n.. value-table::\n",
                   storedOptions_.netopt_, values_netopt);
@@ -2342,11 +2342,17 @@ void CplexBackend::InitCustomOptions() {
   AddSolverOption("pre:dual predual",
     "Whether CPLEX's presolve phase should present the "
     "CPLEX solution algorithm with the primal(-1) or "
-    "dual(1) problem or (default = 0) should decide"
-    "which automatically.Specifying \"predual=1\" often "
-    "gives better performance than specifying just \"dual\", "
-    "but sometimes \"dual predual=1\" is still better.",
+    "dual(1) problem or (default = 0) should decide "
+    "automatically.",
     CPXPARAM_Preprocessing_Dual, -1, 1);
+
+  AddStoredOption("alg:dualproblem dual",
+                  "Compatibility option with the legacy cplexasl driver. No effect.",
+                  storedOptions_.dummy_);
+
+  AddStoredOption("alg:primalproblem primal",
+                  "Compatibility option with the legacy cplexasl driver. No effect.",
+                  storedOptions_.dummy_);
 
   AddSolverOption("pre:node presolvenode",
     "Whether to run presolve at each node of the MIP branch-and-bound:\n"
