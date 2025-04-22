@@ -1546,7 +1546,7 @@ void CplexBackend::setSolutionMethod() {
     };
     storedOptions_.cpxMethod_ = mapMethods[storedOptions_.algMethod_ + 1];
   } else {
-    if (storedOptions_.netopt_>0 and storedOptions_.netopt_<=3)
+    if (storedOptions_.netopt_>0 && storedOptions_.netopt_<=3)
       storedOptions_.cpxMethod_ = CPX_ALG_NET;
   }
   if (IsMIP())
