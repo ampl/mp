@@ -1070,6 +1070,25 @@ void CplexBackend::InputExtras() {
 }
 
 void CplexBackend::InputCPLEXExtras() {
+  // Set behaviour for solultion pool related options
+  if (!need_multiple_solutions()) {
+    storedOptions_.populate_ = -1;
+    storedOptions_.poolIntensity_ = -1;
+  }
+  else {
+    int poolIntensity = 0, populate = 0;
+    switch (storedOptions_.nPoolMode_) {
+    case 0: poolIntensity = 0; populate = 0; break;
+    case 1: poolIntensity = 2; populate = 1; break;
+    case 2: poolIntensity = 4; populate = 1; break;
+    }
+    // Override the below only if not set
+    if (storedOptions_.populate_ < 0) storedOptions_.populate_ = populate;
+    if (storedOptions_.poolIntensity_ < 0) storedOptions_.poolIntensity_ = poolIntensity;
+  }
+  CplexPlayObjNParams();
+  SetSolverOption(CPX_PARAM_SOLNPOOLINTENSITY, storedOptions_.poolIntensity_ < 0 ? 0 :
+                                                   storedOptions_.poolIntensity_);
 }
 
 void CplexBackend::ConsiderCplexFixedModel() {
@@ -1572,26 +1591,6 @@ void CplexBackend::FinishOptionParsing() {
       CPLEX_CALL(CPXsetlogfilename(env(), storedOptions_.logFile_.data(), "w"));
     }
     set_verbose_mode(storedOptions_.outlev_ > 0);
-
-    // Set behaviour for solultion pool related options
-    if (!need_multiple_solutions()) {
-      storedOptions_.populate_ = -1;
-      storedOptions_.poolIntensity_ = -1;
-    }
-    else {
-      int poolIntensity = 0, populate = 0;
-      switch (storedOptions_.nPoolMode_) {
-      case 0: poolIntensity = 0; populate = 0; break;
-      case 1: poolIntensity = 2; populate = 1; break;
-      case 2: poolIntensity = 4; populate = 1; break;
-      }
-      // Override the below only if not set
-      if (storedOptions_.populate_ < 0) storedOptions_.populate_ = populate;
-      if (storedOptions_.poolIntensity_ < 0) storedOptions_.poolIntensity_ = poolIntensity;
-    }
-    CplexPlayObjNParams();
-    SetSolverOption(CPX_PARAM_SOLNPOOLINTENSITY, storedOptions_.poolIntensity_ < 0 ? 0 :
-                                                     storedOptions_.poolIntensity_);
   }
 
   // Apply to all cuts when not overriden
