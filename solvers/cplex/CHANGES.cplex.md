@@ -2,6 +2,23 @@ Summary of recent updates to CPLEX for AMPL
 ==============================================
 
 
+## unreleased
+- Changes in MP
+  - Option cvt:qp2pass (default even faster parsing
+    of quadratics)
+- Compatibility updates
+  - Option netopt accepts numeric argument.
+    For keyword-only, use option alg:network.
+    Note the new default (compared to cplexasl):
+    netopt=0.
+  - Options netdisplay, netfeasibility, netfind,
+    netoptimality, and netpricing
+  - Options primal, dual (both dummy)
+- Fixed output logging incl. options mipdisplay,
+  mipinterval, lpdisplay, bardisplay, modisplay,
+  netdisplay
+
+
 ## 20250329
 - Changes in MP:
   - Option cvt:multoutcard to limit the size of

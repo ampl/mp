@@ -53,7 +53,6 @@ public:
     CPXgeterrorstring(env, e, BUFFER);
     return std::runtime_error(
       fmt::format("  Call failed: '{}' with code {}:\n  ", func, e, BUFFER));
-
   }
 protected:
   int NumLinCons() const;

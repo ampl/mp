@@ -1286,11 +1286,11 @@ static const mp::OptionValueInfo values_method[] = {
 };
 
 static const mp::OptionValueInfo values_netopt[] = {
-    { "0", "Never invoke the network optimizer", 0},
+    { "0", "(Default) never invoke the network optimizer", 0},
     { "1", "Compatibility value; same as 3", 1},
     { "2", "Compatibility value; same as 3", 2},
-    { "3", "(Default) invoke the network optimizer by setting "
-          "CPLEX' LP/QPMethod to CPX_ALG_NET telling CPLEX "
+    { "3", "Invoke the network optimizer by setting "
+          "CPLEX' LP/QP/MIPNodeMethod to CPX_ALG_NET telling CPLEX "
           "to search for network (sub)structures in the model. "
           "CPLEX presolve might influence automatic recognition of "
           "network structures", 3}
@@ -1546,7 +1546,7 @@ void CplexBackend::setSolutionMethod() {
     };
     storedOptions_.cpxMethod_ = mapMethods[storedOptions_.algMethod_ + 1];
   } else {
-    if (storedOptions_.netopt_>0 && storedOptions_.netopt_<=3)
+    if (storedOptions_.netopt_>0)
       storedOptions_.cpxMethod_ = CPX_ALG_NET;
   }
   if (IsMIP())
@@ -1737,9 +1737,10 @@ void CplexBackend::InitCustomOptions() {
 
   AddStoredOption("alg:netopt netopt",
                   "Whether to use network simplex method for non-MIP problems "
-                  "or for the root node of MIP problems, unless "
-                  "primalopt/dualopt/barrier/network/sifting flags "
-                  "or alg:method are specified:\n"
+                  "or for the continuous relaxations of MIP nodes, unless "
+                  "primalopt/dualopt/barrier/network/sifting flags are specified. "
+                  "Options alg:(node)method override (for MIP, in the root or "
+                  "subnodes):\n"
                   "\n.. value-table::\n",
                   storedOptions_.netopt_, values_netopt);
 
@@ -2063,7 +2064,8 @@ void CplexBackend::InitCustomOptions() {
     "(quadratic objective, linear constraints), settings other than 3 and 5 " 
     "are treated as 0. For MIQCP problems (quadratic objective and "
 		"constraints), only 0 is permitted.\n"
-    "\n.. value-table::\n", CPXPARAM_MIP_Strategy_SubAlgorithm, values_nodemethod, 0);
+    "\n.. value-table::\n",
+                  CPXPARAM_MIP_Strategy_SubAlgorithm, values_nodemethod, 0);
 
   AddSolverOption("mip:nodesel nodesel nodeselect",
     "Strategy for choosing next node while optimizing\n\

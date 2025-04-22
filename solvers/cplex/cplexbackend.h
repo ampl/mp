@@ -272,7 +272,7 @@ private:
     bool fPrimal_ = false;
     bool fDual_ = false;
     bool fNetwork_ = false;
-    int netopt_ = 2;
+    int netopt_ = 0;
     bool fSifting_ = false;
     bool fBenders_ = false;
 
