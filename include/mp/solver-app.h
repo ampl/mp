@@ -156,6 +156,8 @@ void SolverApp<Solver, Reader>::Solve() {
     mt.n_vars = builder_->problem().num_vars();
     mt.n_alg_con = builder_->problem().num_algebraic_cons();
     mt.n_log_con = builder_->problem().num_logical_cons();
+    mt.n_conic_con = 0;
+    mt.n_quad_con = 0;
     GetCallbacks().check(&mt);
   }
   solver_.Solve(builder_->problem(), sol_handler);
