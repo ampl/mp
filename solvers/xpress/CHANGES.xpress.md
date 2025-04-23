@@ -2,6 +2,9 @@ Summary of recent updates to Xpress for AMPL
 ============================================
 
 
+## unreleased
+- XPRESS 44.01.04
+
 ## 20250329
 - Changes in MP:
   - Option cvt:multoutcard to limit the size of

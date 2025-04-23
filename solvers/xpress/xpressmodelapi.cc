@@ -503,7 +503,7 @@ void XpressmpModelAPI::AddConstraint(const AtanhConstraint& cc) {
 }
 
 void XpressmpModelAPI::AddConstraint(const NLConstraint& nl) {
-  auto& exp = GetExpression(nl);
+  auto exp = GetExpression(nl);
   exp.reverse();
   exp.addMember(XPRS_TOK_EOF, 0);
   double lhs = GetLower(nl), rhs = GetUpper(nl);
@@ -539,7 +539,7 @@ void XpressmpModelAPI::AddConstraint(const NLConstraint& nl) {
   status = XPRSnlpaddformulas(lp(), 1, &rowindex, formulaStart, true, exp.types(), exp.values());
   if (status) {
     XPRSgetlasterror(lp(), BUFFER);
-    printf(BUFFER);
+    printf("%s", BUFFER);
   }
 }
 void XpressmpModelAPI::AddConstraint(const NLAssignEQ& neq) {
