@@ -1738,7 +1738,7 @@ void CplexBackend::InitCustomOptions() {
   AddStoredOption("alg:netopt netopt",
                   "Whether to use network simplex method for non-MIP problems "
                   "or for the continuous relaxations of MIP nodes, unless "
-                  "alg:(node)method or"
+                  "alg:(node)method or "
                   "primalopt/dualopt/barrier/network/sifting flags are specified. "
                   "Options alg:(node)method override (for MIP, in the root or "
                   "subnodes):\n"
