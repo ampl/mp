@@ -31,8 +31,9 @@ controlling solver behavior and information flow.
 
 * Option :ref:`mip:return_gap <returnMIPgap>` requests reporting of the final MIP gap
 
-* Options :ref:`alg:method/alg:nodemethod <ampl-solver-options>` -
-  control the method chosen to solve the continuous relaxation in MIP nodes,
+* Options :ref:`alg:method/mip:nodemethod <ampl-solver-options>` -
+  control the method chosen to solve continuous problems (LP/QP),
+  or continuous relaxations of MIP nodes,
   which can have strong impact on solving time.
 
 * Option :ref:`crossover/bar:basis <ampl-solver-options>` -
