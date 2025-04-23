@@ -309,7 +309,7 @@ namespace mp {
 
   SolutionBasis CplexBackend::GetBasis() {
     bool outputStatus = silenceOutput_;
-    setSilenceOutput(true);
+    setSilenceOutput(!debug_mode());
     std::vector<int> varstt = VarStatii();
     std::vector<int> constt = ConStatii();
     if (varstt.size() && constt.size()) {
@@ -461,6 +461,7 @@ void CplexBackend::RedirectOutput() {
   CPXaddfuncdest(env(), cpxlog, this, logCallback);
 
 }
+
 void CplexBackend::Solve() {
   if (storedOptions_.noSolve_)
   {
@@ -468,39 +469,39 @@ void CplexBackend::Solve() {
     exit(1);
   }
 
-    // RedirectOutput();
-    // setSilenceOutput(storedOptions_.outlev_==0);
-    setSolutionMethod();
-    
-    if (storedOptions_.dropTol_ > 0) {
-      CPLEX_CALL(CPXcleanup(env(), lp(), storedOptions_.dropTol_));
-    }
-    if (NumObjs() > 1)
-      CPLEX_CALL(CPXmultiobjopt(env(), lp(), NULL));
-    else {
-      auto type = CPXgetprobtype(env(), lp());
-      if ((type == CPXPROB_MIQCP) || (type == CPXPROB_MIQP) || (type == CPXPROB_MILP))
-      {
-        if (storedOptions_.cpxMethod_ == CPX_ALG_BENDERS)
-          CPLEX_CALL(CPXbendersopt(env(), lp()));
-        else
-          CPLEX_CALL(CPXmipopt(env(), lp()));
-      }
-      else if ((type == CPXPROB_QP) || (type == CPXPROB_QCP))
-        CPLEX_CALL(CPXqpopt(env(), lp()));
-      else
-        CPLEX_CALL(CPXlpopt(env(), lp()));
+  RedirectOutput();
+  setSilenceOutput(storedOptions_.outlev_==0);
+  setSolutionMethod();
+
+  if (storedOptions_.dropTol_ > 0) {
+    CPLEX_CALL(CPXcleanup(env(), lp(), storedOptions_.dropTol_));
   }
-    if (feasrelax())
+  if (NumObjs() > 1)
+    CPLEX_CALL(CPXmultiobjopt(env(), lp(), NULL));
+  else {
+    auto type = CPXgetprobtype(env(), lp());
+    if ((type == CPXPROB_MIQCP) || (type == CPXPROB_MIQP) || (type == CPXPROB_MILP))
     {
-      auto solstatus = CPXgetstat(env(), lp());
-      if((solstatus==CPX_STAT_INFEASIBLE)||(solstatus==CPXMIP_INFEASIBLE) ||
+      if (storedOptions_.cpxMethod_ == CPX_ALG_BENDERS)
+        CPLEX_CALL(CPXbendersopt(env(), lp()));
+      else
+        CPLEX_CALL(CPXmipopt(env(), lp()));
+    }
+    else if ((type == CPXPROB_QP) || (type == CPXPROB_QCP))
+      CPLEX_CALL(CPXqpopt(env(), lp()));
+    else
+      CPLEX_CALL(CPXlpopt(env(), lp()));
+  }
+  if (feasrelax())
+  {
+    auto solstatus = CPXgetstat(env(), lp());
+    if((solstatus==CPX_STAT_INFEASIBLE)||(solstatus==CPXMIP_INFEASIBLE) ||
         (solstatus==CPX_STAT_INForUNBD) || (solstatus== CPXMIP_INForUNBD) ||
         (solstatus== CPXMIP_FAIL_INFEAS))
-          DoCplexFeasRelax();
+      DoCplexFeasRelax();
 
-    }
-    setSilenceOutput(!verbose_mode());
+  }
+  setSilenceOutput(!debug_mode());
   WindupCPLEXSolve();
 }
 

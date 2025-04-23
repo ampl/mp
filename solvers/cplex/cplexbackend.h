@@ -225,10 +225,10 @@ private:
     silenceOutput_ = doSilence;
   }
   
-  void mymsgfunc(const char* msg, const char* level)
+  void mymsgfunc(const char* msg, const char* )
   {
     if (!silenceOutput_)
-      fmt::print("{} - {}", level, msg);
+      fmt::print("{}", msg);
   }
   void RedirectOutput();
 

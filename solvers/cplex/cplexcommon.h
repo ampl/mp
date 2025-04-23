@@ -52,7 +52,7 @@ public:
     char BUFFER[512];
     CPXgeterrorstring(env, e, BUFFER);
     return std::runtime_error(
-      fmt::format("  Call failed: '{}' with code {}:\n  ", func, e, BUFFER));
+      fmt::format("  Call failed: '{}' with code {}:\n  {}", func, e, BUFFER));
   }
 protected:
   int NumLinCons() const;
@@ -67,7 +67,10 @@ protected:
 };
 
 
-/// Convenience macro
+/// Convenience macro.
+/// We don't fail and throw message
+/// because it is less useful than when printed by CPLEX 22.1.1.
+/// And, we could obtain an intermediate solution...
 #define CPLEX_CALL( call ) do { if (int e=call) \
         GetException(#call, e, env()); } while (0)
 
