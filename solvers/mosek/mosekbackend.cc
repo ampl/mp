@@ -813,17 +813,22 @@ SensRangesPresolved MosekBackend::GetSensRangesPresolved()
   std::transform(crangelbhi.begin(), crangelbhi.end(), cbl.begin(), crangelbhi.begin(), std::plus<MSKrealt>());
   std::transform(crangeublo.begin(), crangeublo.end(), cbu.begin(), crangeublo.begin(), std::plus<MSKrealt>());
   std::transform(crangeubhi.begin(), crangeubhi.end(), cbu.begin(), crangeubhi.begin(), std::plus<MSKrealt>());
+  std::vector<MSKrealt> rhslo(lencon, 0.0), rhshi(lencon, 0.0);
   for (int i=0; i<lencon; i++)
   {
     if (cbk[i] == MSK_BK_UP || cbk[i] == MSK_BK_FR)
     {
       crangelblo[i] = -MSK_INFINITY;
       crangelbhi[i] = MSK_INFINITY;
+      rhslo[i] = crangeublo[i];
+      rhshi[i] = crangeubhi[i];
     }
     if (cbk[i] == MSK_BK_LO || cbk[i] == MSK_BK_FR)
     {
       crangeublo[i] = -MSK_INFINITY;
       crangeubhi[i] = MSK_INFINITY;
+      rhslo[i] = crangelblo[i];
+      rhshi[i] = crangelbhi[i];
     }
   }
 
@@ -846,9 +851,8 @@ SensRangesPresolved MosekBackend::GetSensRangesPresolved()
 	sensr.conlblo = { {}, {{{CG_Algebraic, crangelblo}}} };
 	sensr.conubhi = { {}, {{{CG_Algebraic, crangeubhi}}} };
 	sensr.conublo = { {}, {{{CG_Algebraic, crangeublo}}} };
-  std::vector<MSKrealt> rhs(lencon, 0.0);
-	sensr.conrhshi = { {}, {{{CG_Algebraic, rhs}}} };
-	sensr.conrhslo = { {}, {{{CG_Algebraic, rhs}}} };
+  sensr.conrhshi = { {}, {{{CG_Algebraic, rhshi}}} };
+  sensr.conrhslo = { {}, {{{CG_Algebraic, rhslo}}} };
 
   return sensr;
 }

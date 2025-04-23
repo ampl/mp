@@ -377,11 +377,16 @@ public:
     // ReportSuffix( {"sensub", suf::Kind::VAR}, sensr.varub );
     ReportSuffix( {"sensublo", suf::Kind::VAR}, sensr.varublo );
     ReportSuffix( {"sensobjhi", suf::Kind::VAR}, sensr.varobjhi );
+    ReportSuffix( {"up", suf::Kind::VAR}, sensr.varobjhi );   // CPLEXASL
     ReportSuffix( {"sensobj", suf::Kind::VAR}, sensr.varobj );
+    ReportSuffix( {"current", suf::Kind::VAR}, sensr.varobj );
     ReportSuffix( {"sensobjlo", suf::Kind::VAR}, sensr.varobjlo );
+    ReportSuffix( {"down", suf::Kind::VAR}, sensr.varobjlo );
     ReportSuffix( {"sensrhshi", suf::Kind::CON}, sensr.conrhshi );
+    ReportSuffix( {"up", suf::Kind::CON}, sensr.conrhshi );
     // ReportSuffix( {"sensrhs", suf::Kind::CON}, sensr.conrhs );
     ReportSuffix( {"sensrhslo", suf::Kind::CON}, sensr.conrhslo );
+    ReportSuffix( {"down", suf::Kind::CON}, sensr.conrhslo );
     ReportSuffix( {"senslbhi", suf::Kind::CON}, sensr.conlbhi );
     // ReportSuffix( {"senslb", suf::Kind::CON}, sensr.conlb );
     ReportSuffix( {"senslblo", suf::Kind::CON}, sensr.conlblo );
@@ -602,14 +607,17 @@ protected:
                       "|  0 - No (default)\n"
                       "|  1 - Yes:  suffixes returned on variables are\n"
                       "|    .sensobjlo = smallest objective coefficients\n"
+                      "|    .down      = same as .sensobjlo\n"
                       "|    .sensobj   = current objective coefficients\n"
+                      "|    .current   = same as .sensobj\n"
                       "|    .sensobjhi = greatest objective coefficients\n"
-                      "|    .senslblo = smallest variable lower bounds\n"
+                      "|    .up        = same as .sensobjhi\n"
+                      "|    .senslblo  = smallest variable lower bounds\n"
                       // "|    .senslb   = current variable lower bounds\n"
-                      "|    .senslbhi = greatest variable lower bounds\n"
-                      "|    .sensublo = smallest variable upper bounds\n"
+                      "|    .senslbhi  = greatest variable lower bounds\n"
+                      "|    .sensublo  = smallest variable upper bounds\n"
                       // "|    .sensub   = current variable upper bounds\n"
-                      "|    .sensubhi = greatest variable upper bounds;\n\n"
+                      "|    .sensubhi  = greatest variable upper bounds;\n\n"
                       " suffixes for all constraints are\n"
                       "|    .senslblo = smallest constraint lower bounds\n"
                       // "|    .senslb   = current constraint lower bounds\n"
@@ -619,8 +627,10 @@ protected:
                       "|    .sensubhi = greatest constraint upper bounds;\n\n"
                       " suffixes for one-sided constraints only:\n"
                       "|    .sensrhslo = smallest right-hand side values\n"
+                      "|    .down      = same as .sensrhslo\n"
                       // "|    .sensrhs   = current right-hand side values\n"
                       "|    .sensrhshi = greatest right-hand side values.\n"
+                      "|    .up        = same as .sensrhshi.\n"
                       "\n"
                       "The suffixes correspond to the AMPL solver model, "
                       "command 'solexpand'. For easiest interpretation, "

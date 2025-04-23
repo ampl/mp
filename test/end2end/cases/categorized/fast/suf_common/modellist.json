@@ -59,9 +59,17 @@
       "Diet_Min['CAL'].senslblo": 15246.0,
       "Diet_Min['CAL'].senslbhi": 16670.0,
       "Diet_Max['CAL'].sensublo": 16000.0,
+      "Diet_Min['CAL'].sensrhshi": 16670.0,
+      "Diet_Max['CAL'].sensrhslo": 16000.0,
+      "Diet_Min['CAL'].up": 16670.0,
+      "Diet_Max['CAL'].down": 16000.0,
       "if Diet_Max['CAL'].sensubhi >= 1e20 then 1": 1,
       "Buy['CHK'].sensobjhi": 3.443370786516854,
-      "Buy['MTL'].sensobjlo": 1.792727272727273
+      "Buy['MTL'].sensobjlo": 1.792727272727273,
+      "Buy['CHK'].sensobj": 2.59,
+      "Buy['CHK'].current": 2.59,
+      "Buy['CHK'].up": 3.443370786516854,
+      "Buy['MTL'].down": 1.792727272727273
     }
   },
   {
