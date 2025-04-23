@@ -381,7 +381,7 @@ protected:
       int index_add = 3*(!is_var_original(i));
       ++vi[index_add];
       if (is_int) {
-        bool is_bin = !var_lb_[i] && 1==var_ub_[i];
+        bool is_bin = !var_lb_[i] && 1.0==var_ub_[i];
         ++vi[index_add + 1 + is_bin];
       }
     }
@@ -407,6 +407,7 @@ protected:
 
   template <class Backend>
   void PushVariablesTo(Backend& backend) const {
+    assert(check_vars());
     // Fix 'eliminated' variables - no proper deletion
     var_lb_subm_ = var_lb_;
     var_ub_subm_ = var_ub_;

@@ -1635,6 +1635,22 @@ public:
   { assert(suf_get_set_.sgd_); return suf_get_set_.sgd_(sd); }
 
 
+protected:
+  void CheckNumVars(pre::ModelValuesDbl& sol) {
+    auto& xx = sol.GetVarValues()();
+    if (xx.size()) {                    // solution available
+      if (xx.size() < MPCD( num_vars() )) {
+        MPCD( GetEnv() ).AddWarning(
+            "FewerVariables",
+            fmt::format("Solver reported {} variables,\n"
+                        "less than {} received.\n"
+                        "Solution might be incorrect.",
+                        xx.size(), MPCD( num_vars() )));
+        xx.resize( MPCD( num_vars() ) );
+      }
+    }
+  }
+
 private:
   /// We store ModelApi in the converter for speed.
   /// Should be before constraints
@@ -1658,6 +1674,7 @@ private:
       },
       [this](pre::ModelValuesDbl& sol)  // Solution pre-postsolver
       {
+        MPD( CheckNumVars(sol) );       // XPRESS 44.01.04
         MPD( RecomputeNLAuxVars(sol) );
         MPD( ProcessMOIterationUnpostsolvedSolution(sol) );
       }
