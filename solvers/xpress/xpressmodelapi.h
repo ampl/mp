@@ -34,7 +34,7 @@ namespace mp {
       types_.push_back(exp.first);
       values_.push_back(exp.second);
     }
-    void addMembers(NLParams& p) {
+    void addMembers(const NLParams& p) {
       types_.insert(types_.end(), p.types_.begin(), p.types_.end());
       values_.insert(values_.end(), p.values_.begin(), p.values_.end());
     }
