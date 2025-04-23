@@ -260,8 +260,8 @@ private:
     int nPoolMode_=2;
     int populate_ = -1;
     int poolIntensity_ = -1;
-    int algMethod_ = -1;
-    int nodeMethod_ = -1;
+    int algMethod_ = CPX_ALG_AUTOMATIC;
+    int nodeMethod_ = CPX_ALG_AUTOMATIC;
     int cpxMethod_ = CPX_ALG_AUTOMATIC; // to store actual method
     int crossover_ = 0;
     int solutionType_ = 0;

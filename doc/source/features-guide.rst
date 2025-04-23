@@ -31,7 +31,7 @@ controlling solver behavior and information flow.
 
 * Option :ref:`mip:return_gap <returnMIPgap>` requests reporting of the final MIP gap
 
-* Options :ref:`method/lpmethod <ampl-solver-options>` -
+* Options :ref:`alg:method/alg:nodemethod <ampl-solver-options>` -
   control the method chosen to solve the continuous relaxation in MIP nodes,
   which can have strong impact on solving time.
 
@@ -52,10 +52,10 @@ controlling solver behavior and information flow.
 * Option :ref:`scale <ampl-solver-options>` -
   controls coefficient scaling for numerical stability
 
-* Options :ref:`sol:stub, sol:count, sol:poollimit <multiplesolutions>` -
+* :ref:`multiplesolutions` (options ``sol:stub, sol:count, sol:poollimit``) -
   control exploration of alternative solutions
 
-* Option :ref:`obj:multi (multiobj) <multipleObjectives>` -
+* :ref:`multipleObjectives` (option ``obj:multi``) -
   controls multiple-objective solving, including hierarchical
   and blended objectives
 

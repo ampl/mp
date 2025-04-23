@@ -1276,13 +1276,14 @@ static const mp::OptionValueInfo values_poolreplace[] = {
 };
 
 static const mp::OptionValueInfo values_method[] = {
-    { "-1", "Automatic (default)", -1},
-    { "0", "Primal simplex", 0},
-    { "1", "Dual simplex", 1},
-    { "2", "Barrier", 2},
-    { "3", "Nondeterministic concurrent (several solves in parallel)", 3},
-    { "4", "Network simplex", 4},
-    { "5", "Sifting", 5}
+    { "0", "Automatic (default)",0},
+    { "1", "Primal simplex", 1},
+    { "2", "Dual simplex", 2},
+    { "3", "Network simplex", 3},
+    { "4", "Barrier", 4},
+    { "5", "Sifting", 5},
+    { "6", "Concurrent (dual, barrier and primal in opportunistic mode; "
+          "dual and barrier in deterministic mode; 4 is used for MIPQs).", 6}
 };
 
 static const mp::OptionValueInfo values_netopt[] = {
@@ -1340,6 +1341,7 @@ static const mp::OptionValueInfo values_submipstartalg[] = {
   { "6", "Concurrent (dual, barrier and primal in opportunistic mode; "
          "dual and barrier in deterministic mode; 4 is used for MIPQs).", 6}
 };
+
 static const mp::OptionValueInfo values_dgradient[] = {
   { "0", "Automatic (default)",0},
   { "1", "Standard dual pricing", 1},
@@ -1512,6 +1514,8 @@ static const mp::OptionValueInfo values_nodefile[] = {
 
   
 void CplexBackend::setSolutionMethod() {
+  if (storedOptions_.netopt_>0)         // netopt: lowest priority
+    storedOptions_.cpxMethod_ = CPX_ALG_NET;
   int nFlags = bool(storedOptions_.fBarrier_)
     + bool(storedOptions_.fPrimal_)
     + bool(storedOptions_.fDual_)
@@ -1519,9 +1523,9 @@ void CplexBackend::setSolutionMethod() {
     + bool(storedOptions_.fNetwork_)
     + bool(storedOptions_.fSifting_);
   if (nFlags>= 2) 
-    AddWarning("Ambiguous LP method",
+    AddWarning("Ambiguous solving method",
       "Only one of barrier/primalopt/dualopt/network/sifting/benders should be specified.");
-  if (nFlags >= 1)
+  if (nFlags >= 1)                  // 2nd-lowest priority
   {
     if (storedOptions_.fPrimal_)
       storedOptions_.cpxMethod_ = CPX_ALG_PRIMAL;
@@ -1534,23 +1538,15 @@ void CplexBackend::setSolutionMethod() {
     if (storedOptions_.fSifting_)
       storedOptions_.cpxMethod_ = CPX_ALG_SIFTING;
   }
-  else if (storedOptions_.algMethod_ != -1) {
-    int mapMethods[] = {
-      CPX_ALG_AUTOMATIC,
-      CPX_ALG_PRIMAL,
-      CPX_ALG_DUAL,
-      CPX_ALG_BARRIER,
-      CPX_ALG_CONCURRENT,
-      CPX_ALG_NET,
-      CPX_ALG_SIFTING
-    };
-    storedOptions_.cpxMethod_ = mapMethods[storedOptions_.algMethod_ + 1];
-  } else {
-    if (storedOptions_.netopt_>0)
-      storedOptions_.cpxMethod_ = CPX_ALG_NET;
-  }
-  if (IsMIP())
+  if (storedOptions_.algMethod_)   // Highest priority
+    storedOptions_.cpxMethod_ = storedOptions_.algMethod_;
+  auto nodeMethod = storedOptions_.cpxMethod_;
+  if (storedOptions_.nodeMethod_)  // Highest priority
+    nodeMethod = storedOptions_.nodeMethod_;
+  if (IsMIP()) {
     SetSolverOption(CPX_PARAM_STARTALG, storedOptions_.cpxMethod_);
+    SetSolverOption(CPX_PARAM_SUBALG, storedOptions_.nodeMethod_);
+  }
   else if (IsQP())
     SetSolverOption(CPX_PARAM_QPMETHOD, storedOptions_.cpxMethod_);
   else
@@ -1567,7 +1563,7 @@ void CplexBackend::setSolutionMethod() {
     else AddToSolverMessage("Invalid crossover value specified, see -= output");
   }
 
-  if (storedOptions_.fBenders_)
+  if (storedOptions_.fBenders_)             // at last
   {
     storedOptions_.cpxMethod_ = CPX_ALG_BENDERS;
     ReadBendersSuffix();
@@ -1705,29 +1701,32 @@ void CplexBackend::InitCustomOptions() {
 
 
   // Solution method
-  AddStoredOption("alg:method method lpmethod simplex mipstartalg",
-                  "Which algorithm to use for non-MIP problems or for the root node of MIP problems, unless "
-                  "primalopt/dualopt/barrier/network/sifting flags are specified:\n"
+  AddStoredOption("alg:method method lpmethod qpmethod simplex mip:method mipstartalg",
+                  "Which algorithm to use for non-MIP problems or for the root node "
+                  "of MIP problems:\n"
                   "\n.. value-table::\n"
                   "For MIQP problems (quadratic objective, linear constraints), setting 5 "
                   "is treated as 0 and 6 as 4. For MIQCP problems (quadratic objective & "
-                  "constraints), all settings are treated as 4.",
+                  "constraints), all settings are treated as 4. See also mip:nodemethod."
+                  "\n"
+                  "Overrides netopt option and "
+                  "primalopt/dualopt/barrier/network/sifting flags.",
                   storedOptions_.algMethod_, values_method);
 
   AddStoredOption("alg:barrier barrier baropt",
-    "Solve (MIP root) LPs by barrier method.",
+    "Solve (MIP node) LP/QPs by barrier method.",
     storedOptions_.fBarrier_);
 
   AddStoredOption("alg:primal primalopt",
-    "Solve (MIP root) LPs by primal simplex method.",
+    "Solve (MIP node) LPs by primal simplex method.",
     storedOptions_.fPrimal_);
 
   AddStoredOption("alg:dual dualopt",
-    "Solve (MIP root) LPs by dual simplex method.",
+    "Solve (MIP node) LPs by dual simplex method.",
     storedOptions_.fDual_);
 
   AddStoredOption("alg:sifting sifting siftopt siftingopt",
-    "Solve (MIP root) LPs by sifting method.",
+    "Solve (MIP node) LPs by sifting method.",
     storedOptions_.fSifting_);
 
   AddStoredOption("alg:network network",
@@ -1738,6 +1737,7 @@ void CplexBackend::InitCustomOptions() {
   AddStoredOption("alg:netopt netopt",
                   "Whether to use network simplex method for non-MIP problems "
                   "or for the continuous relaxations of MIP nodes, unless "
+                  "alg:(node)method or"
                   "primalopt/dualopt/barrier/network/sifting flags are specified. "
                   "Options alg:(node)method override (for MIP, in the root or "
                   "subnodes):\n"
@@ -2059,13 +2059,17 @@ void CplexBackend::InitCustomOptions() {
     CPXPARAM_MIP_SubMIP_StartAlg, values_submipstartalg, 0);
 
 
-  AddSolverOption("mip:nodemethod nodemethod mipalg mipalgorithm",
-    "Algorithm used to solve relaxed MIP node problems; for MIQP problems "
+  AddStoredOption("mip:nodemethod nodemethod mipalg mipalgorithm",
+    "Algorithm used to solve relaxed MIP node problems "
+                  "(after the initial relaxation); for MIQP problems "
     "(quadratic objective, linear constraints), settings other than 3 and 5 " 
     "are treated as 0. For MIQCP problems (quadratic objective and "
 		"constraints), only 0 is permitted.\n"
-    "\n.. value-table::\n",
-                  CPXPARAM_MIP_Strategy_SubAlgorithm, values_nodemethod, 0);
+    "\n.. value-table::\n"
+                  "\n"
+                  "See also alg:method. Overrides netopt option and "
+                  "primalopt/dualopt/barrier/network/sifting flags.",
+                  storedOptions_.nodeMethod_, values_nodemethod);
 
   AddSolverOption("mip:nodesel nodesel nodeselect",
     "Strategy for choosing next node while optimizing\n\
