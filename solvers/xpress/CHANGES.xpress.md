@@ -4,6 +4,9 @@ Summary of recent updates to Xpress for AMPL
 
 ## unreleased
 - XPRESS 44.01.04
+- Changes in MP:
+  - Option cvt:qp2pass
+
 
 ## 20250329
 - Changes in MP:

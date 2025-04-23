@@ -80,6 +80,22 @@ void XpressmpBackend::OpenSolver() {
   copy_common_info_to_other();
 }
 
+void XpressmpBackend::FinishOptionParsing() {
+  bool doLog = outlev_ > 0 && outlev_ < 5;
+  set_verbose_mode(doLog);
+  if (doLog && !msgCallbackSet_)
+  {
+    msgCallbackSet_ = true;
+    XPRSaddcbmessage(lp(), xpdisplay, NULL, 0);
+  }
+
+  if (storedOptions_.logFile_.size())
+  {
+    XPRESSMP_CCALL(XPRSsetlogfile(lp(), storedOptions_.logFile_.c_str()));
+    XPRSsetintcontrol(lp(), XPRS_OUTPUTLOG, 1);        /* Chat mode */
+  }
+}
+
 void XpressmpBackend::CloseSolver() {
 
   /* Free the fixed model */
@@ -473,22 +489,6 @@ std::string XpressmpBackend::DoXpressFixedModel()
     InputXPRESSExtras();
   }
   void XpressmpBackend::InputXPRESSExtras() {
-
-
-    bool doLog = outlev_ > 0 && outlev_ < 5;
-    set_verbose_mode(doLog);
-    if (doLog && !msgCallbackSet_)
-    {
-      msgCallbackSet_ = true;
-      XPRSaddcbmessage(lp(), xpdisplay, NULL, 0);
-    }
-
-    if (storedOptions_.logFile_.size())
-    {
-      XPRESSMP_CCALL(XPRSsetlogfile(lp(), storedOptions_.logFile_.c_str()));
-      XPRSsetintcontrol(lp(), XPRS_OUTPUTLOG, 1);        /* Chat mode */
-    }
-
     if (need_multiple_solutions())
       CreateSolutionPoolEnvironment();
   }

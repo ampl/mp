@@ -153,6 +153,8 @@ protected:
   void OpenSolver();
   void CloseSolver();
 
+  void FinishOptionParsing() override;
+
   double ObjectiveValue() const;
 
   /// Solution values. The vectors are emptied if not available
