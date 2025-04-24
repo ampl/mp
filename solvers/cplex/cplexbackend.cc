@@ -1507,10 +1507,22 @@ static const mp::OptionValueInfo values_mipsearch[] = {
 };
   
 static const mp::OptionValueInfo values_nodefile[] = {
-  { "0", "no", 0},
-  { "1", "compressed node file in memory (default)", 1},
-  { "2", "node file on disk", 2},
-  { "3", "compressed node file on disk", 3}
+  { "0", "No", 0},
+  { "1", "Compressed node file in memory (default)", 1},
+  { "2", "Node file on disk", 2},
+  { "3", "Compressed node file on disk", 3}
+};
+
+static const mp::OptionValueInfo values_mipemphasis[] = {
+  { "0", "Balance finding good feasible solutions and "
+    "proving optimality (default)", 0},
+  { "1", "Favor finding feasible solutions", 1},
+  { "2", "Favor providing optimality", 2},
+  { "3", "Focus on improving the best objective bound", 3},
+  { "4", "Focus on finding hidden feasible solutions", 4},
+  { "5", "Focus on finding high quality solutions earlier (heuristic).", 5}
+
+
 };
 
   
@@ -2001,6 +2013,9 @@ void CplexBackend::InitCustomOptions() {
     "\n.. value-table::",
     CPXPARAM_MIP_Strategy_Branch, values_branchdir, 0);
 
+  AddSolverOption("mip:focus mip:emphasis mipemphasis mipfocus",
+    "MIP solution strategy:\n" "\n.. value-table::\n",
+    CPXPARAM_Emphasis_MIP, values_mipemphasis, 0);
 
 
   AddSolverOption("mip:gapabs mipgapabs absmipgap",
