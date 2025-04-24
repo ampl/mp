@@ -1312,7 +1312,7 @@ protected:
 private:
   struct Options {
     int sos_ = 1;
-    int sos2_ = 1;
+    int sos2_ = 0;
   };
   Options options_;
 
@@ -1375,9 +1375,9 @@ private:
         "corresponding reference values used to order the variables.",
         options_.sos_, 0, 1);
     GetEnv().AddOption("cvt:sos2 sos2",
-        "0/1*: Whether to honor SOS2 constraints for nonconvex "
+        "0*/1: Whether to honor SOS2 constraints for nonconvex "
         "piecewise-linear terms, using suffixes .sos and .sosref "
-        "provided by AMPL.",
+        "provided by AMPL. Currently under rework.",
         options_.sos2_, 0, 1);
     GetEnv().AddOption("cvt:prod cvt:pre:prod",
                        fmt::format("Product preprocessing flags. "
