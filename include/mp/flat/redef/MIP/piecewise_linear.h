@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <numeric>
+#include <cassert>
 
 #include "mp/flat/redef/redef_base.h"
 #include "mp/flat/constr_std.h"
@@ -32,18 +33,18 @@ public:
     points_ = cc.GetParameters().GetPLPoints();
     i0=0;                              // first breakpoint
     i1=points_.x_.size()-1;            // last breakpoint
-    y = cc.GetResultVar();
+		MP_ASSERT_ALWAYS(i1>=i0, "PL->SOS2: no breakpoints");
+		y = cc.GetResultVar();
     x = cc.GetArguments()[0];
-    MP_ASSERT_ALWAYS(i1>=i0, "PL->SOS2: no breakpoints");
+		if (ConsiderDegenerateCases(cc))
+			return Context::CTX_MIX;
+		if (ConsiderConvexity(cc))
+			return cc.GetContext();          // convex case
     if (i1>i0)                         // Gurobi 9 does this.
       ConsiderExtendingEndSegments();  // Bad when approximating
     ConsiderShorteningPL();
-    if (ConsiderDegenerateCases())
-      return Context::CTX_MIX;
-    if (ConsiderConvexity())
-      return Context::CTX_MIX;
     RedefineInSOS2();
-    return Context::CTX_MIX;
+		return Context::CTX_MIX;           // general case
   }
 
 
@@ -74,14 +75,69 @@ protected:
   /// See if we obtain a single point or segment
   /// @return true iff that
   /// (a corresponding simpler constraint is added)
-  bool ConsiderDegenerateCases() {
+	bool ConsiderDegenerateCases(const ItemType& cc) {
+		assert(points_ == cc.GetParameters().GetPLPoints());
+		if (2 >= points_.size()) {
+			y = cc.GetResultVar();
+			x = cc.GetArguments()[0];
+			MP_ASSERT_ALWAYS(points_.size(), "PL expression: no breakpoints");
+			if (1==points_.size()) {
+				GetMC().NarrowVarBounds(x, points_.x_[0], points_.x_[0]);
+				GetMC().NarrowVarBounds(y, points_.y_[0], points_.y_[0]);
+			} else if (2==points_.size()) {
+				MP_ASSERT_ALWAYS(points_.x_[0] < points_.x_[1],
+						"Empty 1-segment PL expression");
+				long double slope
+						= ((long double)(points_.y_[1] - points_.y_[0]))
+						/ (points_.x_[1] - points_.x_[0]);
+				GetMC().AddConstraint(
+							LinConEQ{ {{1.0, double(-slope)}, {y, x}},
+							points_.y_[0] - slope*points_.x_[0]});
+			}
+			return true;
+		}
     return false;
   }
   /// See if have a convex case
-  bool ConsiderConvexity() {
+	bool ConsiderConvexity(const ItemType& cc) {
+		if (cc.GetContext().IsPositive()) {
+			if (IsConcave(cc.GetParameters())) {
+				RedefineConcave(cc);
+				return true;
+			}
+		} else if (cc.GetContext().IsNegative()) {
+			if (IsConvex(cc.GetParameters())) {
+				RedefineConvex(cc);
+				return true;
+			}
+		}
     return false;
   }
-  /// Non-convex redefinition into SOS2 + linear
+	/// Redefine concave PL
+	void RedefineConcave(const ItemType& cc) {
+		const auto& slopes = cc.GetParameters().GetPLSlopes().GetSlopes();
+		assert(slopes.size() == points_.size()-1);
+		for (auto i=slopes.size(); i--; ) {
+			auto Xi = points_.x_[i+1];
+			auto Yi = points_.y_[i+1];
+			GetMC().AddConstraint(
+						LinConLE{ {{1.0, -slopes[i]}, {y, x}},
+						Yi - slopes[i]*Xi});
+		}
+	}
+	/// Redefine convex PL
+	void RedefineConvex(const ItemType& cc) {
+		const auto& slopes = cc.GetParameters().GetPLSlopes().GetSlopes();
+		assert(slopes.size() == points_.size()-1);
+		for (auto i=slopes.size(); i--; ) {
+			auto Xi = points_.x_[i+1];
+			auto Yi = points_.y_[i+1];
+			GetMC().AddConstraint(
+						LinConGE{ {{1.0, -slopes[i]}, {y, x}},
+						Yi - slopes[i]*Xi});
+		}
+	}
+	/// Non-convex redefinition into SOS2 + linear
   void RedefineInSOS2() {
     auto lambda = GetMC().AddVars_returnIds(i1-i0+1, 0.0, 1.0);
     std::vector<double> weights(i1-i0+1);

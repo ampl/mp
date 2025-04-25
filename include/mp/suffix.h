@@ -28,6 +28,7 @@
 #include <cstddef>     // for std::size_t
 #include <algorithm>   // for std::fill_n
 #include <iterator>
+#include <functional>
 #include <set>
 #include <string>      // for std::char_traits
 #include <memory>

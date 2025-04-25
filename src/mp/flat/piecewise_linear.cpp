@@ -1163,4 +1163,36 @@ PLPoints::PLPoints(const PLSlopes &pls) {
   }
 }
 
+PLSlopes::PLSlopes(const PLPoints& plp) {
+	assert(plp.size() >= 3);      // Otherwise caught as degenerate
+	X0_ = plp.x_[0];
+	Y0_ = plp.y_[0];
+	breakpoints_.assign(plp.x_.begin()+1, plp.x_.end()-1);
+	slopes_.resize(plp.size()-1);
+	for (auto i=slopes_.size(); i--; ) {
+		long double div = (long double)plp.x_[i+1] - plp.x_[i];
+		MP_ASSERT_ALWAYS(div > 0.0,
+										 "PL expression: coinciding breakpoints");
+		slopes_[i] = ((long double)plp.y_[i+1] - plp.y_[i]) / div;
+	}
+}
+
+bool IsConvex(const PLSlopes& pls) {
+	const auto& sl = pls.GetSlopes();
+	MP_ASSERT_ALWAYS(sl.size(), "Empty PL expression");
+	for (auto i=sl.size()-1; i--; )
+		if (sl[i] > sl[i+1])
+			return false;
+	return true;
+}
+
+bool IsConcave(const PLSlopes& pls) {
+	const auto& sl = pls.GetSlopes();
+	MP_ASSERT_ALWAYS(sl.size(), "Empty PL expression");
+	for (auto i=sl.size()-1; i--; )
+		if (sl[i] < sl[i+1])
+			return false;
+	return true;
+}
+
 }  // namepsace mp

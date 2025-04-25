@@ -341,6 +341,8 @@ inline void WriteJSON(JSONW jw,
 }
 
 
+struct PLPoints;
+
 ////////////////////////////////////////////////////////////////////////
 /// AMPL represents PWL by a list of slopes
 /// and breakpoints between them, assuming (X0,Y0) is on the line
@@ -353,13 +355,17 @@ public:
   PLSlopes(Vec&& bp, Vec&& sl, double x, double y) noexcept :
     breakpoints_(std::forward<Vec>(bp)), slopes_(std::forward<Vec>(sl)),
     X0_(x), Y0_(y) { assert(check()); }
-  /// Get breakpoints
+	/// Construct from PLPoints
+	PLSlopes(const PLPoints& );
+	/// Check if have information
+	bool empty() const { assert(!GetNBP() || check()); return !GetNBP(); }
+	/// Get breakpoints
   const std::vector<double>& GetBP() const { return breakpoints_; }
   /// Get slopes
   const std::vector<double>& GetSlopes() const { return slopes_; }
   /// Get sample point's X
   double GetX0() const { return X0_; }
-  /// Get sample poont's Y
+	/// Get sample point's Y
   double GetY0() const { return Y0_; }
   /// Get number of bp
   int GetNBP() const { return (int)GetBP().size(); }
@@ -379,7 +385,8 @@ struct PLPoints {
   /// Check if have information
   bool empty() const { return x_.empty(); }
   /// size()
-  int size() const { return (int)x_.size(); }
+	int size() const
+	{ assert(x_.size()==y_.size()); return (int)x_.size(); }
   /// The x, y coordinates of the PL function
   std::vector<double> x_, y_;
   /// Default construct
@@ -442,15 +449,33 @@ public:
       plp_ = pls_;
     return plp_;
   }
-  /// operator==
+	/// Produce PLSlopes, either stored or from PLPoints
+	const PLSlopes& GetPLSlopes() const {
+		if (pls_.empty())
+			pls_ = plp_;
+		return pls_;
+	}
+	/// operator==
   bool operator==(const PLConParams& plcp) const
   { return GetPLPoints() == plcp.GetPLPoints(); }
 
 private:
-  PLSlopes pls_;
+	mutable PLSlopes pls_;
   mutable PLPoints plp_;
 };
 
+
+/// Is PL convex?
+bool IsConvex(const PLSlopes& pls);
+/// Is PL concave?
+bool IsConcave(const PLSlopes& pls);
+
+/// Is PL convex?
+inline bool IsConvex(const PLConParams& plp)
+{ return IsConvex(plp.GetPLSlopes()); }
+/// Is PL concave?
+inline bool IsConcave(const PLConParams& plp)
+{ return IsConcave(plp.GetPLSlopes()); }
 
 /// Define PLConstraint
 DEF_NUMERIC_FUNC_CONSTR_WITH_PRM( PL,
