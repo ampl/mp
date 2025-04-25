@@ -386,7 +386,7 @@ struct PLPoints {
   PLPoints() { }
   /// Construct from 2 vectors
   PLPoints(std::vector<double> x, std::vector<double> y) :
-    x_{x}, y_{y} { }
+    x_{std::move(x)}, y_{std::move(y)} { }
   /// Construct from PLSlopes
   PLPoints(const PLSlopes& pls);
   /// Add point

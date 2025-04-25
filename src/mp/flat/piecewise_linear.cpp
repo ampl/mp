@@ -1142,23 +1142,24 @@ PLPoints::PLPoints(const PLSlopes &pls) {
   const auto X0 = pls.GetX0(), Y0 = pls.GetY0();
   x_.resize(nsl+1);
   y_.resize(nsl+1);
+  SmallVec<long double, 32> YL(nsl+1);   // leftmost point: YL[0]=0
   /// Copy and add dummy breakpoints on both ends
   std::copy(bp.begin(), bp.end(), x_.begin()+1);
   x_[0] = x_[1] - eps;
   x_[nsl] = x_[nsl-1] + eps;
-  y_[0] = 0.0;                        // initialize leftmost point
   /// Lift the line by this
-  double deltaH {};
+  long double deltaH {};
   if (x_[0] > X0)                     // if left x > reference point
-    deltaH = sl[0] * (x_[0]-X0) + Y0;
+    deltaH = ((long double)sl[0])
+                 * ((long double)x_[0]-X0) + Y0;
   for (size_t i = 0; i < nsl; ++i) {
     assert( x_[i+1] > x_[i] );
-    y_[i+1] = y_[i] + sl[i] * (x_[i+1]-x_[i]);
+    YL[i+1] = YL[i] + sl[i] * ((long double)x_[i+1]-x_[i]);
     if (x_[i]<=X0 && (x_[i+1]>=X0 || i==nsl-1))
-      deltaH = Y0 - (y_[i] + sl[i]*(-x_[i]-X0));
+      deltaH = Y0 - (YL[i] + sl[i]*(-(long double)x_[i]-X0));
   }
   for (size_t i = 0; i <= nsl; ++i) {
-    y_[i] += deltaH;
+    y_[i] = YL[i] + deltaH;
   }
 }
 
