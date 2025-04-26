@@ -2,7 +2,8 @@ Summary of recent updates to MOSEK for AMPL
 ===========================================
 
 
-## unreleased
+## 20250426
+- Updated to MOSEK 11.0.18
 - Return solution whenever available (even 'unknown'
   or 'infeasible'). This seems helpful on some
   numerically tough models.
@@ -11,7 +12,7 @@ Summary of recent updates to MOSEK for AMPL
     out-multiplied QP expressions. Can improve speed
     on large models.
   - Improved parsing of quadratic expressions.
-- Option mip:conic:outerapprox, useful to find
+- Option mip:conic:outapprox, useful to find
   feasible solutions in numerically tough conic
   models.
 

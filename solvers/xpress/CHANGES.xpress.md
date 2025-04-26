@@ -2,8 +2,10 @@ Summary of recent updates to Xpress for AMPL
 ============================================
 
 
-## unreleased
-- XPRESS 44.01.04
+## 20250426
+- Relinked with XPRESS 44.01.04.
+- Non-linear constraints are now passed via the expression
+  API, that can improve performance.
 - Changes in MP:
   - Option cvt:qp2pass
 
