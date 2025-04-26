@@ -92,7 +92,7 @@ protected:
 						/ (points_.x_[1] - points_.x_[0]);
 				GetMC().AddConstraint(
 							LinConEQ{ {{1.0, double(-slope)}, {y, x}},
-							points_.y_[0] - slope*points_.x_[0]});
+							double(points_.y_[0] - slope*points_.x_[0])});
 			}
 			return true;
 		}
