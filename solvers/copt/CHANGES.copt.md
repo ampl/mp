@@ -2,6 +2,12 @@ Summary of recent updates to COPT for AMPL
 ==========================================
 
 
+## 20250424
+- Changes in MP
+  - Option cvt:qp2pass (default even faster parsing
+    of quadratics)
+
+
 ## 20250408
 - Fixed a bug in parsing of quadratic expressions
 

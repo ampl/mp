@@ -2,7 +2,7 @@ Summary of recent updates to CPLEX for AMPL
 ==============================================
 
 
-## unreleased
+## 20250424
 - Changes in MP
   - Option cvt:qp2pass (default even faster parsing
     of quadratics)

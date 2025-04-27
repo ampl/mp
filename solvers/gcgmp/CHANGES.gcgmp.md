@@ -1,8 +1,12 @@
 Summary of recent updates to GCG for AMPL
 =========================================
 
+
 ## 20250426
 - Relinked with SCIP version 9.2.2
+- Changes in MP
+  - Option cvt:qp2pass (default even faster parsing
+    of quadratics)
 
 
 ## 20250404

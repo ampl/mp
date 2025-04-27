@@ -2,6 +2,12 @@ Summary of recent updates to HiGHS for AMPL
 ===========================================
 
 
+## 20250424
+- Changes in MP
+  - Option cvt:qp2pass (default even faster parsing
+    of quadratics)
+
+
 ## 20250329
 - Changes in MP:
   - Option cvt:multoutcard to limit the size of
