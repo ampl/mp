@@ -41,6 +41,17 @@
     }
   },
   {
+    "name" : "log_1_ccv PLconcave",
+    "tags" : ["log"],
+    "options": { "ANYSOLVER_options": "debug=1 acc:log=0 acc:pl=0 acc:sos2=0" },
+    "comment": "Check concave PL linearization",
+    "values": {
+      "if abs(_obj[1]-1)<=0.01 then 1 else 0": 1,
+      "Initial.flat1_var_aux_bin": 0,
+      "Initial.flat1_var_aux_int": 0
+    }
+  },
+  {
     "name" : "exp_01_check_obj reltol=1e-5",
     "objective" : 1.6931555,
     "tags" : ["continuous", "nonlinear"],
@@ -49,6 +60,34 @@
       "ANYSOLVER_options": "cvt:plapprox:reltol=1e-5"
     },
     "comment": "Rel error bound 1e-5 for Gurobi's approx, MP plapprox for others"
+  },
+  {
+    "name" : "exp_01_check_obj reltol=1e-5 PLconvex",
+    "objective" : 1.6931555,
+    "tags" : ["continuous", "nonlinear"],
+    "options": {
+      "ANYSOLVER_options": "acc:exp=1 cvt:plapprox:reltol=1e-5 acc:pl=0 acc:sos2=0 debug=1"
+    },
+    "values": {
+      "Initial.flat1_var_aux_bin": 0,
+      "Initial.flat1_var_aux_int": 0
+    },
+    "comment": "MP plapprox for Gurobi",
+    "comment": "Check convex PL linearization"
+  },
+  {
+    "name" : "exp_01_obj_direct reltol=1e-5 PLconvex",
+    "tags" : ["continuous", "nonlinear"],
+    "options": {
+      "ANYSOLVER_options": "acc:exp=1 cvt:plapprox:reltol=1e-5 acc:pl=0 acc:sos2=0 debug=1"
+    },
+    "values": {
+      "if abs(_obj[1]+222.4)<=0.2 then 1 else 0": 1,
+      "Initial.flat1_var_aux_bin": 0,
+      "Initial.flat1_var_aux_int": 0
+    },
+    "comment": "MP plapprox for Gurobi",
+    "comment": "Check convex PL linearization from objective"
   },
   {
     "name" : "exp_01_check_obj check_pl_approx_exp reltol=1e-5",
