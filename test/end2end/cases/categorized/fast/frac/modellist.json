@@ -5,7 +5,8 @@
     "tags" : ["quadraticnonconvex"],
     "options": {
       "gurobi_options": "nonconvex=2",
-      "cplex_options": "qp:target=3"
+      "cplex_options": "qp:target=3",
+      "scip_options": "lim:time=10"
     }
   },
   {

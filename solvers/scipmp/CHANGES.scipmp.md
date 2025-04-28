@@ -4,6 +4,9 @@ Summary of recent updates to SCIP for AMPL
 
 ## 20250426
 - Relinked with SCIP version 9.2.2
+- Disabled native OR constraint by default
+  - Enabled native AND constraint which seems
+    correct now
 
 
 ## 20250426

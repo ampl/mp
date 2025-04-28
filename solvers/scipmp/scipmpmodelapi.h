@@ -278,9 +278,10 @@ public:
   // void AddExpression(const AndExpression& cc);
   // ACCEPT_EXPRESSION(OrExpression, Recommended)
   // void AddExpression(const OrExpression& dc);
-  ACCEPT_CONSTRAINT(AndConstraint, AcceptedButNotRecommended, CG_General)
+  ACCEPT_CONSTRAINT(AndConstraint, Recommended, CG_General)
   void AddConstraint(const AndConstraint& cc);
-  ACCEPT_CONSTRAINT(OrConstraint, Recommended, CG_General)
+  ACCEPT_CONSTRAINT(OrConstraint,   // SCIP 9.2.2: OR seems not correct
+      AcceptedButNotRecommended, CG_General)
   void AddConstraint(const OrConstraint& dc);
 
   /// Linear indicator constraints can be used as
