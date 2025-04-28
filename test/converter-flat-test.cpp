@@ -18,6 +18,9 @@ TEST_F(InterfaceTester_MaxConstraint, MaximumConstraintIsPassedToBackend) {
 
 
 /////////////////////////////// Quadratics //////////////////////////////////
+///
+/// Probably this tests more the Problem Flattener,
+/// or the whole chain up to ModelAPI
 using InterfaceTester_QuadraticConstraint =
              InterfaceTesterWithBackendAcceptingConstraints<mp::QuadConRange>;
 
@@ -66,5 +69,30 @@ TEST_F(InterfaceTester_QuadraticConstraint, QuadConstraintIsPassedToBackend__Old
                            { mp::LinTerms{}, std::move(qt) },
     {5.0, 5.0} ) );
 }
+
+TEST_F(InterfaceTester_QuadraticConstraint, QP2Pass1) {
+  auto modeler = mp::MakeEasyModeler(GetModel());
+  auto vars0 = modeler.AddVars(4, -1.0, 11.0);
+  auto x = vars0[0], y = vars0[1], z = vars0[2], t = vars0[3];
+  modeler.AddAlgCon(-INFINITY,
+                    (((5*x-2)^2) - (4*x-3)*(2*y-1) + ((3*x+2*z+8)^2))
+                    * ((5*t-2)^2) / 4             // C++ operator precedence
+                        + ((2*x-8)^2) - (y-z)*z + (x-3)*(x-z+5),
+                    200);
+  GetInterface().ConvertModel();
+  {
+    const auto vars0i = modeler.GetVarIndices(vars0);
+    auto x = vars0i[0], y = vars0i[1], z = vars0i[2], t = vars0i[3];
+    int u = t+1, v = t+2;            // aux vars
+    // Check that we have the left factor of the 4th-degree term
+    ASSERT_HAS_CONSTRAINT(
+        GetBackend(),
+        mp::QuadConEQ(
+            { { {32, 6, 32, -1}, {x, y, z, v} },    // v: do we flatten the 2nd factor 1st?
+             { {34, 4, -8, 12}, {x, z, x, x}, {x, z, y, z} } },
+            {-65} ) );
+  }
+}
+
 
 } // namespace

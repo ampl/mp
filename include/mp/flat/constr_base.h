@@ -64,7 +64,7 @@ public:
       : p_names_given_(&nm), nm_dfl_(nmd) { }
   /// Obtain name[i]
   const char* at(size_t i) {
-    if (i<p_names_given_->size())
+    if (p_names_given_ && i<p_names_given_->size())
       return (*p_names_given_)[i].c_str();
     if (i>=names_gen_.size())
       names_gen_.resize((size_t)(1.3*i+100));

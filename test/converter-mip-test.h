@@ -143,7 +143,7 @@ class MIPConverterTester :
     mp::FlatCvtImpl<mp::MIPFlatConverter, MIPInstanceBackend> >;
 public:
   /// Construct
-  MIPConverterTester(mp::Env& e) : Base(e) { }
+  MIPConverterTester(mp::Env& e) : Base(e) { InitOptions(); }
   /// This is testing API
   bool ObjsEqual(const MIPInstance& mip) {
     return GetBackend().GetInstance().ObjsEqual( mip );

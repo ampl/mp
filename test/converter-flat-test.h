@@ -8,6 +8,9 @@
 #include "mp/flat/model_api_base.h"
 #include "mp/flat/problem_flattener.h"
 #include "mp/flat/converter.h"
+#include "mp/flat/constr_algebraic.h"
+
+using namespace mp;
 
 template <class Constraint>
 class TestBackendAcceptingConstraints :
@@ -16,7 +19,6 @@ class TestBackendAcceptingConstraints :
   /// VARIABLES
   mp::VarArrayDef vars_;
 
-  std::vector<mp::LinConEQ> lin_constr_;
 public:
   TestBackendAcceptingConstraints() { }
   TestBackendAcceptingConstraints(mp::Env& ) { }
@@ -25,33 +27,58 @@ public:
 
   void AddVariables(const mp::VarArrayDef& v) { vars_ = v; }
   int NumVars() const { return (int)vars_.size(); }
-  void AddConstraint(const mp::LinConEQ& lc) {
-    lin_constr_.push_back( lc );
+
+public:
+  USE_BASE_CONSTRAINT_HANDLERS(Base)
+
+#define STORE_CONSTR(Type, accLevel, grp)  \
+private: \
+  std::vector<Type> con_ ## Type ## _;  \
+public:  \
+  const std::vector<Type>& GetCons(const Type& ) const  \
+  { return con_ ## Type ## _; }  \
+  ACCEPT_CONSTRAINT(Type, accLevel, grp)  \
+  void AddConstraint(const Type& con) {  \
+    con_ ## Type ## _.push_back(con);  \
+  }   \
+  bool HasConstraint(const Type& con) {  \
+    return con_ ## Type ## _.end()  \
+      != std::find(con_ ## Type ## _.begin(),  \
+           con_ ## Type ## _.end(), con);  \
   }
 
   /// ACCEPTING THE CUSTOM CONSTRAINT
-public:
-  USE_BASE_CONSTRAINT_HANDLERS(Base)
-private:
-  std::vector<Constraint> constr_;
-public:
-  ACCEPT_CONSTRAINT(Constraint, Recommended, mp::CG_Default)
-  ACCEPT_CONSTRAINT(mp::LinConEQ, Recommended, mp::CG_Default)
-  void AddConstraint(const Constraint& con) {
-    constr_.push_back(con);
-  }
-  bool HasConstraint(const Constraint& con) {
-    return constr_.end() != std::find(constr_.begin(), constr_.end(), con);
-  }
-  std::string GetConstraintsPrintout() const {
+  STORE_CONSTR(Constraint, Recommended, mp::CG_Default)
+
+  /// ACCEPT LINEAR CONS
+  STORE_CONSTR(LinConEQ, Recommended, mp::CG_Default)
+  STORE_CONSTR(LinConLE, Recommended, mp::CG_Default)
+  STORE_CONSTR(LinConGE, Recommended, mp::CG_Default)
+  STORE_CONSTR(LinConRange, Recommended, mp::CG_Default)
+
+  /// ACCEPT Q CONS
+  STORE_CONSTR(QuadConEQ, Recommended, mp::CG_Default)
+  STORE_CONSTR(QuadConLE, Recommended, mp::CG_Default)
+  STORE_CONSTR(QuadConGE, Recommended, mp::CG_Default)
+  // STORE_CONSTR(QuadConRange, Recommended, mp::CG_Default)
+
+  mutable ItemNamer in_ {"x"};
+
+  template <class ConType>
+  std::string GetConstraintsPrintout(const ConType& con) const {
     std::ostringstream oss;
     int i=0;
-    for (const auto& con: constr_) {
-      oss << con.GetTypeName() << ' ' << (i++)
+    for (const auto& c: GetCons(con)) {
+      oss << c.GetTypeName() << ' ' << (i++)
           << ":  ";
-//      con.print(oss);
-      oss << std::endl;
+      fmt::MemoryWriter wrt;
+      WriteModelItem(wrt, c, in_);
+      oss << wrt.str() << std::endl;
     }
+    oss << "    ====================\n  <== Searched for:  ";
+    fmt::MemoryWriter wrt;
+    WriteModelItem(wrt, con, in_);
+    oss << wrt.str() << std::endl;
     return oss.str();
   }
 
@@ -88,7 +115,7 @@ class InterfaceTesterWithBackendAcceptingConstraints : public ::testing::Test {
   mp::Env env_;
 public:
   InterfaceTesterWithBackendAcceptingConstraints() :
-    interface_(env_) { }
+    interface_(env_) { interface_.InitOptions(); }
   InterfaceTesterWithBackendAcceptingConstraints(mp::Env& e) :
     interface_(e) { }
   Interface& GetInterface() { return interface_; }
@@ -99,7 +126,7 @@ public:
 
 #define ASSERT_HAS_CONSTRAINT( backend, constr ) \
   ASSERT_TRUE( (backend).HasConstraint( constr ) ) \
-    << (backend).GetConstraintsPrintout()
+    << (backend).GetConstraintsPrintout(constr)
 
 } // namespace
 
