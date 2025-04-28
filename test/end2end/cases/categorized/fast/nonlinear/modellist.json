@@ -449,14 +449,15 @@
     "name" : "hs54_inspired",
     "tags" : ["continuous", "nonlinear", "quadraticnonconvex"],
     "objective": -0.580173372427884,
-    "options": { "xpress_options": "lim:time=2" }
+    "options": { "xpress_options": "lim:time=2" },
+    "options": { "scip_options": "lim:time=2" }
   },
   {
     "name" : "hs54_inspired_2",
     "tags" : ["continuous", "nonlinear", "quadraticnonconvex"],
     "objective": -0.5469485038,
-    "options": { "xpress_options": "lim:time=2" }
-
+    "options": { "xpress_options": "lim:time=2" },
+    "options": { "scip_options": "lim:time=2" }
   },
   {
     "name" : "hs54_inspired_2 cvt:qp2pass=0",
@@ -464,7 +465,8 @@
     "objective": -0.5469485038,
     "options": {
       "mp_options": "cvt:qp2pass=0 lim:time=2",
-      "xpress_options": "cvt:qp2pass=0 lim:time=2"
+      "xpress_options": "cvt:qp2pass=0 lim:time=2",
+      "scip_options": "cvt:qp2pass=0 lim:time=2"
     }
   },
   {
@@ -473,7 +475,8 @@
     "objective": -0.5469485038,
     "options": {
       "mp_options": "cvt:qp2pass=1 cvt:multoutcard=0 lim:time=2",
-      "xpress_options": "cvt:qp2pass=1 cvt:multoutcard=0 lim:time=2"
+      "xpress_options": "cvt:qp2pass=1 cvt:multoutcard=0 lim:time=2",
+      "scip_options": "cvt:qp2pass=1 cvt:multoutcard=0 lim:time=2"
     }
   },
   {
@@ -482,7 +485,8 @@
     "objective": -0.5469485038,
     "options": {
       "mp_options": "cvt:qp2pass=0 cvt:multoutcard=0 lim:time=2",
-      "xpress_options": "cvt:qp2pass=0 cvt:multoutcard=0 lim:time=2"
+      "xpress_options": "cvt:qp2pass=0 cvt:multoutcard=0 lim:time=2",
+      "scip_options": "cvt:qp2pass=0 cvt:multoutcard=0 lim:time=2"
     }
   }
 ]
