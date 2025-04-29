@@ -498,7 +498,8 @@ public:
   virtual ~BasicSolver() { }
 
   /// Parses a solver option string.
-  void ParseOptionString(const char *s, unsigned flags);
+  void ParseOptionString(
+      const char *s, unsigned flags=NO_OPTION_ECHO);
 
   /// Map to count warnings by types.
   /// Stores just 1 message for each type.

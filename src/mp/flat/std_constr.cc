@@ -278,6 +278,7 @@ QuadTerms MultiplyOut(const LinTerms& ae1, const LinTerms& ae2) {
   QuadTerms result;
   result.reserve(ae1.size()*ae2.size());
 
+// #define OLD_MULTOUT
 #ifndef OLD_MULTOUT
   // Dave style
   size_t i=0, j=0;
@@ -316,6 +317,12 @@ QuadTerms MultiplyOut(const LinTerms& ae1, const LinTerms& ae2) {
           ++j1;
         }
       }
+      for ( ; i1<ae1.size(); ++i1)   // follow from i1
+        result.add_term(
+            ae1.coef(i1)*ae2.coef(j), vj, ae1.var(i1));
+      for ( ; j1<ae2.size(); ++j1)   // follow from j1
+        result.add_term(
+            ae1.coef(i)*ae2.coef(j1), vi, ae2.var(j1));
       ++i;
       ++j;
     }

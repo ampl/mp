@@ -448,25 +448,35 @@
   {
     "name" : "hs54_inspired",
     "tags" : ["continuous", "nonlinear", "quadraticnonconvex"],
-    "objective": -0.580173372427884,
-    "options": { "xpress_options": "lim:time=2" },
-    "options": { "scip_options": "lim:time=2" }
+    "options": {
+      "xpress_options": "lim:time=2",
+      "scip_options": "lim:time=2"
+    },
+    "values": {
+      "if abs(_obj[1] + 0.59) < 0.1 then 1": 1
+    }
   },
   {
     "name" : "hs54_inspired_2",
     "tags" : ["continuous", "nonlinear", "quadraticnonconvex"],
-    "objective": -0.5469485038,
-    "options": { "xpress_options": "lim:time=2" },
-    "options": { "scip_options": "lim:time=2" }
+    "options": {
+      "xpress_options": "lim:time=2",
+      "scip_options": "lim:time=2"
+    },
+    "values": {
+      "if abs(_obj[1] + 0.5469485038) < 0.1 then 1": 1
+    }
   },
   {
     "name" : "hs54_inspired_2 cvt:qp2pass=0",
     "tags" : ["continuous", "nonlinear", "quadraticnonconvex"],
-    "objective": -0.5469485038,
     "options": {
       "mp_options": "cvt:qp2pass=0 lim:time=2",
       "xpress_options": "cvt:qp2pass=0 lim:time=2",
       "scip_options": "cvt:qp2pass=0 lim:time=2"
+    },
+    "values": {
+      "if abs(_obj[1] + 0.5469485038) < 0.1 then 1": 1
     }
   },
   {
@@ -487,6 +497,26 @@
       "mp_options": "cvt:qp2pass=0 cvt:multoutcard=0 lim:time=2",
       "xpress_options": "cvt:qp2pass=0 cvt:multoutcard=0 lim:time=2",
       "scip_options": "cvt:qp2pass=0 cvt:multoutcard=0 lim:time=2"
+    }
+  },
+  {
+    "name" : "hs54_inspired_3_qp",
+    "tags" : ["continuous", "nonlinear", "quadraticnonconvex"],
+    "objective": -4.237966421243e+03,
+    "options": {
+      "mp_options": "lim:time=2",
+      "xpress_options": "lim:time=2",
+      "scip_options": "lim:time=2"
+    }
+  },
+  {
+    "name" : "hs54_inspired_4_qp",
+    "tags" : ["continuous", "nonlinear", "quadraticnonconvex"],
+    "objective": -1.80942583174813,
+    "options": {
+      "mp_options": "lim:time=2",
+      "xpress_options": "lim:time=2",
+      "scip_options": "lim:time=2"
     }
   }
 ]

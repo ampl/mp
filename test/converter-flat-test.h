@@ -118,6 +118,7 @@ public:
     interface_(env_) { interface_.InitOptions(); }
   InterfaceTesterWithBackendAcceptingConstraints(mp::Env& e) :
     interface_(e) { }
+  Env& GetEnv() { return env_; }
   Interface& GetInterface() { return interface_; }
   typename Interface::ModelType& GetModel() { return interface_.GetModel(); }
   Backend& GetBackend()
