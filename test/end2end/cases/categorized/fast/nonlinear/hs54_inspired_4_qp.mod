@@ -2,6 +2,7 @@
 # Derived from hs54.mod to test summing up and out-multiplication
 # of quadratics / polynomials
 # -- Just 3 variables in the QP terms to invoke QP2Pass by default
+# -- Using proper vars to do invoke QP2Pass (it avoids defvars)
 
 # hs54.mod	OLR2-MN-6-13
 # Original AMPL coding by Elena Bobrovnikova (summer 1996 at Bell Labs).
@@ -20,11 +21,11 @@
 # corrected by substituting 6.4E+7 by 6.4E+13 in h(x). The correct result
 # is different from the solution of the book.
 
-var xx{1..6};
-var x = xx[1];
-var y = xx[2];
-var z = xx[3];
-var t = xx[4];
+var xx{5..6};
+var x;
+var y;
+var z;
+var t;
 var h = ((2*x-8)^2) - (y-z)*z + (x-3)*(x-2*z+5);
 
 minimize Obj:
@@ -32,15 +33,15 @@ minimize Obj:
       h;
 
 s.t. C1:
-     xx[1] + 40 * xx[2] - 1.76E+2 = 0;
+     x + 40 * y - 1.76E+2 = 0;
 s.t. B1:
-     0 <= xx[1] <= 200;
+     0 <= x <= 200;
 s.t. B2:
-     -10 <= xx[2] <= 10;
+     -10 <= y <= 10;
 s.t. B3:
-     -5 <= xx[3] <= 12;
+     -5 <= z <= 12;
 s.t. B4:
-     -15 <= xx[4] <= 20;
+     -15 <= t <= 20;
 s.t. B5:
      -100 <= xx[5] <= 1;
 s.t. B6:

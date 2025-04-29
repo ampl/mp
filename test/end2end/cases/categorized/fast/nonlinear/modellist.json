@@ -510,13 +510,23 @@
     }
   },
   {
-    "name" : "hs54_inspired_4_qp",
+    "name" : "hs54_inspired_4_qp qp2pass=1",
     "tags" : ["continuous", "nonlinear", "quadraticnonconvex"],
     "objective": -1.80942583174813,
     "options": {
-      "mp_options": "lim:time=2",
-      "xpress_options": "lim:time=2",
-      "scip_options": "lim:time=2"
+      "mp_options": "qp2pass=1 lim:time=2",
+      "xpress_options": "qp2pass=1 lim:time=2",
+      "scip_options": "qp2pass=1 lim:time=2"
+    }
+  },
+  {
+    "name" : "hs54_inspired_4_qp qp2pass=0",
+    "tags" : ["continuous", "nonlinear", "quadraticnonconvex"],
+    "objective": -1.80942583174813,
+    "options": {
+      "mp_options": "qp2pass=0 lim:time=2",
+      "xpress_options": "qp2pass=0 lim:time=2",
+      "scip_options": "qp2pass=0 lim:time=2"
     }
   }
 ]

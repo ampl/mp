@@ -59,7 +59,7 @@ private:
 
   internal::ExprTypes::SumExpr top_expr_;
   std::vector<bool> is_term_qp_;
-  unsigned int n_qp_terms_ {};
+  unsigned int n_qp_terms_ {};     // N terms of degree <=2
   EExpr result_;
 };
 
