@@ -2,6 +2,15 @@ Summary of recent updates to BARONMP for AMPL
 =============================================
 
 
+## unreleased
+- Changes in MP
+  - Option cvt:qp2pass (default even faster parsing
+    of quadratics)
+  - Fix a bug in parsing of quadratic expressions,
+    which could wrongly parse products of unequal
+    linear expressions, such as (x-3)*(x-z-5).
+
+
 ## 20250329
 - Changes in MP:
   - Option cvt:multoutcard to limit the size of

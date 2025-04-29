@@ -2,6 +2,12 @@ Summary of recent updates to SCIP for AMPL
 ==========================================
 
 
+## 20250429
+- Fix a bug in parsing of quadratic expressions,
+  which could wrongly parse products of unequal
+  linear expressions, such as (x-3)*(x-z-5).
+
+
 ## 20250426
 - Relinked with SCIP version 9.2.2
 - Disabled native OR constraint by default

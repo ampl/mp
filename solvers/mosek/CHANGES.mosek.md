@@ -2,6 +2,12 @@ Summary of recent updates to MOSEK for AMPL
 ===========================================
 
 
+## 20250429
+- Fix a bug in parsing of quadratic expressions,
+  which could wrongly parse products of unequal
+  linear expressions, such as (x-3)*(x-z-5).
+
+
 ## 20250426
 - Updated to MOSEK 11.0.18
 - Return solution whenever available (even 'unknown'
