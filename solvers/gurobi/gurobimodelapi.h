@@ -255,6 +255,8 @@ public:
   Expr AddExpression(const SinExpression& );
   ACCEPT_EXPRESSION(CosExpression, Recommended)
   Expr AddExpression(const CosExpression& );
+  ACCEPT_EXPRESSION(TanExpression, Recommended)
+  Expr AddExpression(const TanExpression& );
 
   ACCEPT_EXPRESSION(DivExpression, Recommended)
   Expr AddExpression(const DivExpression& );
