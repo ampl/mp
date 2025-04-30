@@ -352,6 +352,10 @@ GRB_Expr GurobiModelAPI::AddExpression(const SinExpression& e) {
 GRB_Expr GurobiModelAPI::AddExpression(const CosExpression& e) {
   return CreateFormula(e, GRB_OPCODE_COS);
 }
+GRB_Expr GurobiModelAPI::AddExpression(const TanExpression &e)
+{
+  return CreateFormula(e, GRB_OPCODE_TAN);
+}
 
 GRB_Expr GurobiModelAPI::AddExpression(const DivExpression& e) {
   return CreateFormula(e, GRB_OPCODE_DIVIDE);
