@@ -326,12 +326,12 @@ public:
   const std::string& MakeCurrentName() const
   { return s_; }
 
-  /// Produce name s + '_<counter>_' if n_>0.
+  /// Produce name s + '_<counter>_'.
   /// Post-increment counter.
   std::string MakeCountedName() const {
     return
         n_++==0
-        ? s_
+        ? s_ + '_'
         : s_ + '_' + std::to_string(n_) + '_';
   }
   /// Use MakeCountedName().
