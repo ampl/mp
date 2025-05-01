@@ -3,7 +3,9 @@ Summary of recent updates to gurobi for AMPL
 
 
 ## 20250429
-- Fix a bug in parsing of quadratic expressions,
+- Added the Tan expression (previously always submitted
+	to Gurobi as a general constraint).
+- Fixed a bug in parsing of quadratic expressions,
   which could wrongly parse products of unequal
   linear expressions, such as (x-3)*(x-z-5).
 
