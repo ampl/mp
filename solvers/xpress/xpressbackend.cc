@@ -1365,11 +1365,11 @@ void XpressmpBackend::InitCustomOptions() {
                   "Solve (MIP node) LPs by barrier method.",
                   storedOptions_.fBarrier_);
 
-  AddStoredOption("alg:primal primal",
+	AddStoredOption("alg:primal alg:primalopt primal primalopt",
                   "Solve (MIP node) LPs by primal simplex method.",
                   storedOptions_.fPrimal_);
 
-  AddStoredOption("alg:dual dual",
+	AddStoredOption("alg:dual alg:dualopt dual dualopt",
                   "Solve (MIP node) LPs by dual simplex method.",
                   storedOptions_.fDual_);
 

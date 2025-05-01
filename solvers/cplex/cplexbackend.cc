@@ -1565,6 +1565,11 @@ void CplexBackend::setSolutionMethod() {
   else
     SetSolverOption(CPX_PARAM_LPMETHOD, storedOptions_.cpxMethod_);
 
+	if (storedOptions_.dualprob_)
+		storedOptions_.predual_ *= -1;
+	if (storedOptions_.predual_)
+		SetSolverOption(CPXPARAM_Preprocessing_Dual, storedOptions_.predual_);
+
   if (storedOptions_.cpxMethod_ == CPX_ALG_BARRIER) {
     SetSolverOption(CPX_PARAM_SOLUTIONTYPE, storedOptions_.solutionType_);
     if (storedOptions_.crossover_ == -1) // translate from MP to cplex
@@ -1730,11 +1735,11 @@ void CplexBackend::InitCustomOptions() {
     "Solve (MIP node) LP/QPs by barrier method.",
     storedOptions_.fBarrier_);
 
-  AddStoredOption("alg:primal primalopt",
+	AddStoredOption("alg:primalopt alg:primal primalopt",
     "Solve (MIP node) LPs by primal simplex method.",
     storedOptions_.fPrimal_);
 
-  AddStoredOption("alg:dual dualopt",
+	AddStoredOption("alg:dualopt alg:dual dualopt",
     "Solve (MIP node) LPs by dual simplex method.",
     storedOptions_.fDual_);
 
@@ -2361,20 +2366,28 @@ void CplexBackend::InitCustomOptions() {
     "\n.. value-table::\n",
     CPXPARAM_Preprocessing_Presolve, values_01_noyes_1default_, 1);
 
-  AddSolverOption("pre:dual predual",
-    "Whether CPLEX's presolve phase should present the "
+	AddStoredOption("pre:dual predual",
+		"Whether CPLEX' presolve phase should present the "
     "CPLEX solution algorithm with the primal(-1) or "
     "dual(1) problem or (default = 0) should decide "
-    "automatically.",
-    CPXPARAM_Preprocessing_Dual, -1, 1);
+		"automatically.\n"
+									"\n"
+									"For compatibility, pre:dual interacts with alg:dualproblem.",
+		storedOptions_.predual_);
 
   AddStoredOption("alg:dualproblem dual",
-                  "Compatibility option with the legacy cplexasl driver. No effect.",
-                  storedOptions_.dummy_);
+									"Compatibility option with the legacy cplexasl driver. "
+									"Interacts with pre:dual as follows:\n"
+									"\n"
+									"| alg:dualproblem - alone, equivalent to pre:dual=0\n"
+									"| alg:dualproblem pre:dual=-1 - together, equivalent to pre:dual=1\n"
+									"| alg:dualproblem pre:dual=0 - together, equivalent to pre:dual=0\n"
+									"| alg:dualproblem pre:dual=1 - together, equivalent to pre:dual=-1.",
+									storedOptions_.dualprob_);
 
   AddStoredOption("alg:primalproblem primal",
                   "Compatibility option with the legacy cplexasl driver. No effect.",
-                  storedOptions_.dummy_);
+									storedOptions_.primalprob_dummy_);
 
   AddSolverOption("pre:node presolvenode",
     "Whether to run presolve at each node of the MIP branch-and-bound:\n"
