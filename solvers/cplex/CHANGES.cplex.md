@@ -6,6 +6,8 @@ Summary of recent updates to CPLEX for AMPL
 - Fix a bug in parsing of quadratic expressions,
   which could wrongly parse products of unequal
   linear expressions, such as (x-3)*(x-z-5).
+- Options alg:dual and pre:dual are coordinated for
+	compatibility with the legacy ASL driver.
 
 
 ## 20250424
