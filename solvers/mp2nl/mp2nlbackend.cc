@@ -1,6 +1,7 @@
 #include <vector>
 #include <climits>
 #include <cfloat>
+#include <filesystem>
 
 #include "mp/env.h"
 #include "mp/flat/model_api_base.h"
@@ -27,6 +28,12 @@ namespace mp {
 /// @return MP2NLModelMgr
 std::unique_ptr<BasicModelManager>
 CreateMP2NLModelMgr(MP2NLCommon&, Env&, pre::BasicValuePresolver*&);
+
+MP2NLBackend::ConfigMap MP2NLBackend::config_map_ {
+	{ "baron",
+		"acc:alldiff=0 acc:numberofconst=0 acc:numberofvar=0 "
+		"acc:count=0 acc:ifthen=0 acc:impl=0 acc:and=0 acc:or=0 acc:not=0" }
+};
 
 
 /// Implement MP2NLSolverQueryCallbacks
@@ -271,8 +278,15 @@ std::pair<int, std::string> MP2NLBackend::GetSolveResult() {
 
 
 void MP2NLBackend::FinishOptionParsing() {
-  int v=storedOptions_.outlev_;
-  set_verbose_mode(v>0);
+	if (storedOptions_.config_attempted_.size()
+			&& !storedOptions_.config_.size())
+		AddWarning("SolverConfig",
+							 fmt::format("MP2NL: configuration '{}', \n"
+													 "assumed for solver '{}',\n"
+													 "is unknown\n"
+													 "(use nl:printconfigs and/or nl:config)",
+													 storedOptions_.config_attempted_,
+													 storedOptions_.solver_) );
 }
 
 
@@ -295,28 +309,45 @@ void MP2NLBackend::InitCustomOptions() {
     "MP2NL Optimizer Options for AMPL\n"
     "--------------------------------------------\n"
     "\n"
-    "To set these options, assign a string specifying their values to the "
-    "AMPL option ``mp2nl_options``. For example::\n"
+		"To configure MP2NL, assign a string specifying option values to the "
+		"AMPL option ``mp2nl_options``, as well as the subsolver option values "
+		"to its own AMPL option. For example::\n"
     "\n"
     "  ampl: option mp2nl_options 'solver=baron';\n"
     "  ampl: option baron_options 'outlev=1 iisfind=1';"
       );
 
-  AddStoredOption("tech:outlev outlev",
+	AddIntOption("tech:outlev outlev",
     "0*/1: Verbosity for the MP2NL driver. "
                   "For the underlying solver, use the <subsolver>_options "
                   "environment variable.",
-    storedOptions_.outlev_);
+		&MP2NLBackend::GetOutlev, &MP2NLBackend::SetOutlev);
 
   // AddStoredOption("tech:logfile logfile",
   //                 "Log file name.",
   //                 storedOptions_.logFile_);
 
-  AddStoredOption("nl:solver solver nlsolver",
-                  "Subsolver (underlying AMPL solver.)",
-                  storedOptions_.solver_);
+	AddStrOption("nl:solver solver nlsolver",
+									"Subsolver (underlying AMPL solver.)\n"
+							 "\n"
+							 "Automatically sets solver configuration, if known.",
+							 &MP2NLBackend::GetSolver,
+									 &MP2NLBackend::SetSolver);
 
-  AddStoredOption("nl:solver_options solver_options slv_opts",
+	AddFlagOption(
+		"nl:printconfigs printconfigs",
+		"Print the configurations for various values of the "
+		"solver/config options.",
+		&MP2NLBackend::GetDummyFlagOption,
+				&MP2NLBackend::SetConfigPrintFlag);
+
+	AddStrOption(
+		"nl:config config",
+		"Choose subsolver configuration (see nl:printconfigs).",
+		&MP2NLBackend::GetConfig,
+				&MP2NLBackend::SetConfig);
+
+	AddStoredOption("nl:solver_options solver_options slv_opts",
                   "Subsolver options.\n\n"
                   "This way is for convenience; the preferred and "
                   "dominating way is to use the <subsolver>_options "
@@ -536,6 +567,57 @@ void MP2NLBackend::AddMIPStart(
       x0_.push_back( {i, x0[i]} );
     }
   }
+}
+
+
+void MP2NLBackend::SetOutlev(const SolverOption& , int val) {
+	storedOptions_.outlev_ = val>0;
+	set_verbose_mode(val>0);
+}
+
+void MP2NLBackend::SetSolver(const SolverOption& , fmt::StringRef val) {
+	storedOptions_.solver_ = val;
+	auto cfg = ExtractSolverConfigName(val);
+	if (DoSetConfig(cfg)) {
+		storedOptions_.config_ = cfg;
+		if (verbose_mode())
+			this->Print("Set solver configuration '{}'\n", cfg);
+	} else
+		storedOptions_.config_attempted_ = cfg;
+}
+
+std::string MP2NLBackend::ExtractSolverConfigName(
+		fmt::StringRef solver){
+	std::filesystem::path p {solver};
+	if (p.has_stem())
+		return p.stem();
+	return "";
+}
+
+void MP2NLBackend::SetConfigPrintFlag(const SolverOption& , bool ) {
+	fmt::print("Solver configurations (options solver, config):\n");
+	fmt::print("-----------------------------------------------\n");
+	for (const auto& [key, val]: config_map_) {
+		fmt::MemoryWriter writer;
+		internal::FormatRST(writer, val, 8);
+		this->Print("\"{}\":\n\t{}\n", key, writer.c_str());
+	}
+	fmt::print("-----------------------------------------------\n\n");
+}
+
+void MP2NLBackend::SetConfig(const SolverOption& , fmt::StringRef val) {
+	MP_ASSERT_ALWAYS( DoSetConfig(val),
+										fmt::format("MP2NL: solver configuration '{}' unknown\n"
+																"(see nl:printconfigs)", val) );
+	storedOptions_.config_ = val;
+}
+
+bool MP2NLBackend::DoSetConfig(fmt::StringRef val) {
+	auto it = config_map_.find(val);
+	if (config_map_.end() == it)
+		return false;
+	ParseOptionString(it->second.c_str(), NO_OPTION_ECHO);
+	return true;
 }
 
 void MP2NLBackend::DoWriteProblem(const std::string& name) {

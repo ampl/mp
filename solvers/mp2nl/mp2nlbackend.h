@@ -2,6 +2,7 @@
 #define MP2NL_BACKEND_H_
 
 #include <string>
+#include <map>
 
 #include "mp/backend-mip.h"
 #include "mp/flat/backend_flat.h"
@@ -131,6 +132,9 @@ public:  // public for static polymorphism
   ArrayRef<double> GetInitialDualGuess()
   { return y0_; }
 
+	/// Typedef map of default solver configs
+	using ConfigMap = std::map<std::string, std::string>;
+
   //////////////////// [[ Implementation details ]] //////////////////////
   ///////////////////////////////////////////////////////////////////////////////
 protected:
@@ -167,11 +171,33 @@ protected:
   void VarStatii(ArrayRef<int>);
   void ConStatii(ArrayRef<int>);
 
+	int GetOutlev(const SolverOption& ) const
+	{ return storedOptions_.outlev_; }
+	void SetOutlev(const SolverOption& , int ol);
+
+	/// Only the last one if several solver=... options
+	std::string GetSolver(const SolverOption& ) const
+	{ return storedOptions_.solver_; }
+	void SetSolver(const SolverOption&, fmt::StringRef val);
+	std::string ExtractSolverConfigName(fmt::StringRef solver);
+
+	bool GetDummyFlagOption(const SolverOption& ) const
+	{ return false; }
+	/// Just prints possible configs
+	void SetConfigPrintFlag(const SolverOption& , bool );
+	/// Only the last one if several config=... options
+	std::string GetConfig(const SolverOption& ) const
+	{ return storedOptions_.config_; }
+	void SetConfig(const SolverOption&, fmt::StringRef val);
+
+	bool DoSetConfig(fmt::StringRef cfg);
+
 private:
   /// These options are stored in the class
   struct Options {
     std::string solver_,
         solver_options_;
+		std::string config_, config_attempted_;
     std::string logFile_,
         nlstub_;
     int outlev_ = 0;
@@ -179,6 +205,7 @@ private:
     double tilim_ = 1e20;
   };
   Options storedOptions_;
+	static ConfigMap config_map_;
 
   std::unique_ptr<MP2NLSolverQueryCallbacks> p_qc_;
 

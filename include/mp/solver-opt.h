@@ -437,6 +437,36 @@ public:
     }
   };
 
+	/// Flag option
+	/// @param Handler is a class (derived from BasicSolver?)
+	template <class Handler>
+	class FlagOption : public SolverOption {
+		typedef bool (Handler::*Get)(const SolverOption &) const;
+		typedef void (Handler::*Set)(
+				const SolverOption &, bool );
+
+		Handler &handler_;
+		Get get_;
+		Set set_;
+
+	public:
+		/// Construct
+		FlagOption(const char* name, const char* descr,
+							 Handler* s, Get get, Set set)
+			: SolverOption(name, descr, ValueArrayRef(),
+																					true),    // true: for flag
+			handler_(*s), get_(get), set_(set) {}
+
+		void Write(fmt::Writer& w)
+		{ w << ((handler_.*get_)(*this) ? "true" : "false"); }
+		void Parse(const char*&, bool b)
+		{ (handler_.*set_)(*this, b); }
+		Option_Type type() {
+			return Option_Type::BOOL;
+		}
+	};
+
+
   /// Sets a text to be displayed before option descriptions.
   void set_option_header(const char *header) { option_header_ = header; }
 
@@ -758,6 +788,21 @@ public:
     AddOption(OptionPtr(new ConcreteOptionWithInfo<Handler, std::string, Info>(
                           name, description, this, get, set, info, values)));
   }
+
+	/// Adds a flag option.
+	/// The option stores pointers to the name and the description so make
+	/// sure that these strings have sufficient lifetimes (normally these are
+	/// string literals).
+	/// The arguments get and set should be pointers to member functions in the
+	/// solver class. They are used to get and set an option value respectively.
+	/// @note description "HIDDEN" means the option is not printed
+	template <typename Handler>
+	void AddFlagOption(const char *name, const char *description,
+										bool (Handler::*get)(const SolverOption &) const,
+										void (Handler::*set)(const SolverOption &, bool)) {
+		AddOption(OptionPtr(new FlagOption<Handler>(
+													name, description, (Handler*)this, get, set)));
+	}
 
 private:
   struct OptionNameLess {

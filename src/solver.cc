@@ -675,6 +675,7 @@ void BasicSolver::InitMetaInfoAndOptions(
     "| 2 - Second (if available), etc.\n",
     &Solver::GetObjNo, &Solver::SetObjNo);
 
+	/// Actually int, restricted to 0/1
   struct BoolOption : TypedSolverOption<int> {
     bool& value_;
     BoolOption(bool& value, const char* name, const char* description)
@@ -958,7 +959,7 @@ bool Solver::ShowVersion() {
 bool BasicSolver::ShowConstraintDescriptions() {
   Print("{}\n\n", constr_descr_header_);
   if (constr_descr_.empty())
-    Print("No constraint descrptions filled.\n");
+		Print("No constraint descriptions filled.\n");
   else {
     int i=0;
     for (const auto& cd: constr_descr_) {
