@@ -39,9 +39,9 @@ endfunction ()
 # LIBRARIES gives a list of solver libraries. If omitted, add_ampl_solver
 # uses <module>_LIBRARIES.
 #
-# ADDITIONAL_DEPS is a list of targets that the solver depends on, this 
+# ADDITIONAL_DEPS is a list of targets that the solver depends on, this
 # ensures that the binaries are built in the correct order, useful when
-# renaming a driver after it is built 
+# renaming a driver after it is built
 function(add_ampl_solver name)
   cmake_parse_arguments(add_ampl_solver
     "DLL_RUNTIME;EXTERNAL;SHARED_LIB;OLD_SHARED_LIB;OVERRIDELIBS"
@@ -58,7 +58,7 @@ function(add_ampl_solver name)
   if (NOT build_solver)
     return ()
   endif ()
-  
+
   if(add_ampl_solver_OVERRIDELIBS)
      message("Overriding libs detection, using ${libraries} directly")
   else()
@@ -133,7 +133,7 @@ function(add_ampl_solver name)
   if(add_ampl_solver_ADDITIONAL_SOURCES)
     foreach(s ${add_ampl_solver_ADDITIONAL_SOURCES})
       set(sources ${sources} ${s})
-    endforeach() 
+    endforeach()
   endif()
 
   # Add a solver static library to be linked with the shared library and
@@ -246,27 +246,27 @@ endfunction()
 
 add_ampl_backend(visitor DLL_RUNTIME)
 
-add_ampl_backend(mosek DLL_RUNTIME MODULE MOSEK 
+add_ampl_backend(mosek DLL_RUNTIME MODULE MOSEK
   LIBRARIES ${MOSEK_LIBS} ${CMAKE_DL_LIBS})
-add_ampl_backend(copt DLL_RUNTIME SHARED_LIB MODULE COPT 
+add_ampl_backend(copt DLL_RUNTIME SHARED_LIB MODULE COPT
   LIBRARIES ${COPT_LIBS} ${CMAKE_DL_LIBS})
 
 
-add_ampl_backend(cbcmp DLL_RUNTIME SHARED_LIB MODULE CBC 
+add_ampl_backend(cbcmp DLL_RUNTIME SHARED_LIB MODULE CBC
   LIBRARIES ${CBC_LIBS} ${CMAKE_DL_LIBS})
 
 
-add_ampl_backend(gcgmp DLL_RUNTIME SHARED_LIB MODULE GCG 
+add_ampl_backend(gcgmp DLL_RUNTIME SHARED_LIB MODULE GCG
   LIBRARIES ${GCG_LIBS} ${CMAKE_DL_LIBS})
 
-add_ampl_backend(scipmp DLL_RUNTIME SHARED_LIB MODULE SCIP 
+add_ampl_backend(scipmp DLL_RUNTIME SHARED_LIB MODULE SCIP
   LIBRARIES ${SCIP_LIBS} ${CMAKE_DL_LIBS})
 
 add_ampl_backend(highsmp highsmploader.h highsmploader.cc
-                  DLL_RUNTIME SHARED_LIB MODULE HIGHS 
+                  DLL_RUNTIME SHARED_LIB MODULE HIGHS
                   LIBRARIES ${HIGHS_LIBS} ${CMAKE_DL_LIBS})
 
-add_ampl_backend(ortoolsmp DLL_RUNTIME SHARED_LIB MODULE ortoolsmp 
+add_ampl_backend(ortoolsmp DLL_RUNTIME SHARED_LIB MODULE ortoolsmp
   LIBRARIES ${ortoolsmp_LIBS} ${CMAKE_DL_LIBS})
 
 add_ampl_backend(cplex DLL_RUNTIME SHARED_LIB MODULE CPLEX
@@ -339,7 +339,7 @@ if (TARGET ilogcp)
   add_ampl_solver(ssdsolver LIBRARIES amplilogcp-static)
   if (TARGET ssdsolver)
     add_ampl_library(ssd ssdsolver/ssd.cc)
-    target_include_directories(ssd PRIVATE . 
+    target_include_directories(ssd PRIVATE .
     ${CMAKE_SOURCE_DIR}/src/asl/solvers)
     if (HAVE_UNIQUE_PTR)      ## Need because of nested target definition
       target_compile_definitions(ssd PUBLIC MP_USE_UNIQUE_PTR)
@@ -386,4 +386,8 @@ if (TARGET cplexodh)
   endif()
 endif()
 
-  
+find_package(CUOPT REQUIRED)
+
+add_ampl_backend(cuoptlp DLL_RUNTIME SHARED_LIB MODULE CUOPT
+  LIBRARIES cuopt ${CMAKE_DL_LIBS} INCLUDE_DIRS ${CUOPT_INCLUDE_DIRS} CXX_STANDARD 17 PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:${CUOPT_CXX_FLAGS}>")
+
