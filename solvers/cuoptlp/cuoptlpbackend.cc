@@ -56,6 +56,11 @@ CuoptlpBackend::~CuoptlpBackend() {
 }
 
 void CuoptlpBackend::OpenSolver() {
+  fmt::print("opening solver\n");
+
+  lp_ = new ProblemData();
+  printf("lp_ %p this %p\n", lp_, this);
+
   int status = 0;
   // TODO Typically this function creates an instance of the solver environment
   // and an empty model
@@ -85,11 +90,11 @@ void CuoptlpBackend::OpenSolver() {
   cuoptlp_prob* prob;
   status = CUOPTLP_CreateProb(env_p, &prob);
  */
-  Solver::SolverModel* prob = Solver::CreateSolverModel();
-  set_lp(prob); // Assign it
-  if (status)
-    throw std::runtime_error( fmt::format(
-          "Failed to create problem, error code {}.", status ) );
+  //Solver::SolverModel* prob = Solver::CreateSolverModel();
+  //set_lp(prob); // Assign it
+  //if (status)
+  //  throw std::runtime_error( fmt::format(
+  //        "Failed to create problem, error code {}.", status ) );
   /* TODO Typically check call */
   /// Turn off verbosity by default
   // CUOPTLP_CCALL(CUOPTLP_SetIntParam(prob, "Logging", 0));
@@ -97,14 +102,14 @@ void CuoptlpBackend::OpenSolver() {
 }
 
 void CuoptlpBackend::CloseSolver() {
-  /* TODO Cleanup: close problem and environment
+  fmt::print("closing solver\n");
+  /* Cleanup: close problem and environment */
   if ( lp() != NULL ) {
-    CUOPTLP_CCALL(CUOPTLP_DeleteProb(&lp_) );
+    cuOptDestroyProblem(&lp_->problem);
+    cuOptDestroySolverSettings(&lp_->settings);
+    cuOptDestroySolution(&lp_->solution);
+    delete lp_;
   }
-  if ( env() != NULL ) {
-    CUOPTLP_CCALL(CUOPTLP_DeleteEnv(&env_) );
-  }
-  */
 }
 
 const char* CuoptlpBackend::GetBackendName()
@@ -115,22 +120,20 @@ std::string CuoptlpBackend::GetSolverVersion() {
   int32_t major, minor, patch;
   cuOptGetSemanticVersion(&major, &minor, &patch);
   return fmt::format("{}.{}.{}", major, minor, patch);
-  //return fmt::format("{}.{}.{}", CUOPTLP_VERSION_MAJOR,
-  //  CUOPTLP_VERSION_MINOR, CUOPTLP_VERSION_TECHNICAL);
 }
 
 
 bool CuoptlpBackend::IsMIP() const {
-  // TODO. Use most precise information
-  // (nonconvexities etc.)
-  return getIntAttr(Solver::NVARS_INT) > 0;
-  //return getIntAttr(CUOPTLP_INTATTR_ISMIP);
-}
+  ProblemData* problem_data = lp();
+  cuopt_int_t is_mip;
+  cuopt_int_t status = cuOptIsMIP(problem_data->problem, &is_mip);
+  if (status != CUOPT_SUCCESS) {
+    fmt::print("Error checking if problem is MIP\n");
+  }
+  return is_mip == 1;
+ }
 
-bool CuoptlpBackend::IsQCP() const {
-  return getIntAttr(Solver::NCONS_TYPE, Solver::ConsType::CONS_QUAD) > 0;
-// return getIntAttr(CUOPTLP_INTATTR_QELEMS) > 0;
-}
+
 
 ArrayRef<double> CuoptlpBackend::PrimalSolution() {
   int num_vars = NumVars();
@@ -139,14 +142,11 @@ ArrayRef<double> CuoptlpBackend::PrimalSolution() {
   // We should always return a solution when available,
   // even if infeasible/suboptimal etc.
   // User decides on it using solve_result.
-  /*
-  if (IsMIP())
-    error = CUOPTLP_GetSolution(lp(), x.data());
-  else
-    error = CUOPTLP_GetLpSolution(lp(), x.data(), NULL, NULL, NULL);
-    */
-  if (error)
+  ProblemData* problem_data = lp();
+  cuopt_int_t status = cuOptGetPrimalSolution(problem_data->solution, x.data());
+  if (status != CUOPT_SUCCESS) {
     x.clear();
+  }
   return x;
 }
 
@@ -159,29 +159,27 @@ pre::ValueMapDbl CuoptlpBackend::DualSolution() {
 ArrayRef<double> CuoptlpBackend::DualSolution_LP() {
   int num_cons = NumLinCons();
   std::vector<double> pi(num_cons);
- // int error = CUOPTLP_GetLpSolution(lp(), NULL, NULL, pi.data(), NULL);
-  int error = 1;
-  if (error)
+  ProblemData* problem_data = lp();
+  cuopt_int_t status = cuOptGetDualSolution(problem_data->solution, pi.data());
+  if (status != CUOPT_SUCCESS) {
     pi.clear();
+  }
   return pi;
 }
 ArrayRef<double> CuoptlpBackend::DualSolution_QP() {
-  int num_cons = NumQPCons();
-  std::vector<double> pi(num_cons);
-  // int error = CUOPTLP_GetQpSolution(lp(), NULL, NULL, pi.data(), NULL);
-  int error = 1;
-  if (error)
-    pi.clear();
+  std::vector<double> pi(1);
+  pi.clear();
   return pi;
 }
 
 double CuoptlpBackend::ObjectiveValue() const {
- /* if (IsMIP())
-    return getDblAttr(CUOPTLP_DBLATTR_BESTOBJ);
-  else
-    return getDblAttr(CUOPTLP_DBLATTR_LPOBJVAL);
-    */
-  return 0;
+  ProblemData* problem_data = lp();
+  cuopt_float_t objective_value;
+  cuopt_int_t status = cuOptGetObjectiveValue(problem_data->solution, &objective_value);
+  if (status != CUOPT_SUCCESS) {
+    fmt::print("Error getting objective value\n");
+  }
+  return objective_value;
 }
 
 double CuoptlpBackend::NodeCount() const {
@@ -201,13 +199,34 @@ int CuoptlpBackend::BarrierIterations() const {
 
 
 void CuoptlpBackend::SetInterrupter(mp::Interrupter *inter) {
-  inter->SetHandler(InterruptCuoptlp, lp());
+ // inter->SetHandler(InterruptCuoptlp, lp());
   // TODO Check interrupter
   //CUOPTLP_CCALL( CPXsetterminate (env(), &terminate_flag) );
 }
 
 void CuoptlpBackend::Solve() {
-  //CUOPTLP_CCALL(CUOPTLP_Solve(lp()));
+  ProblemData* problem_data = lp();
+
+  cuopt_int_t is_mip;
+  cuopt_int_t status = cuOptIsMIP(problem_data->problem, &is_mip);
+  if (status != CUOPT_SUCCESS) {
+    throw std::runtime_error(fmt::format("Failed to check if problem is MIP, error code {}.", status));
+  }
+  status = cuOptCreateSolverSettings(&problem_data->settings);
+  if (status != CUOPT_SUCCESS) {
+    throw std::runtime_error(fmt::format("Failed to create solver settings, error code {}.", status));
+  }
+  status = cuOptSetIntegerParameter(problem_data->settings, CUOPT_SOLVER_MODE, CUOPT_SOLVER_MODE_DUAL_SIMPLEX);
+  if (status != CUOPT_SUCCESS) {
+    throw std::runtime_error(fmt::format("Failed to set solver mode, error code {}.", status));
+  }
+
+  status = cuOptSolve(problem_data->problem, problem_data->settings, &problem_data->solution);
+  if (status != CUOPT_SUCCESS) {
+    throw std::runtime_error(fmt::format("Failed to solve problem, error code {}.", status));
+  }
+
+
   WindupCUOPTLPSolve();
 }
 
@@ -251,57 +270,8 @@ void CuoptlpBackend::ReportCUOPTLPPool() {
   */
 }
 
-void CuoptlpBackend::printModelStats() {
 
-  std::map<Solver::ConsType, std::string> names;
-    names[Solver::CONS_LIN] = "Linear";
-    names[Solver::CONS_QUAD]= "Quadratic";
-    names[Solver::CONS_QUAD_CONE]= "Cone quadratic";
-    names[Solver::CONS_QUAD_CONE_ROTATED]= "Cone rotated";
-    names[Solver::CONS_QUAD_CONE_EXP] = "Cone exponential";
-    names[Solver::CONS_INDIC]= "Indicator";
-    names[Solver::CONS_SOS]= "SOS";
-
-    names[Solver::CONS_MAX]= "Max";
-    names[Solver::CONS_MIN]= "Min";
-    names[Solver::CONS_ABS]= "Abs";
-    names[Solver::CONS_AND]= "And";
-    names[Solver::CONS_OR]= "Or";
-
-    names[Solver::CONS_EXP]= "Exp";
-    names[Solver::CONS_EXPA]= "ExpA";
-    names[Solver::CONS_LOG]= "Log";
-    names[Solver::CONS_LOGA]= "LogA";
-
-    names[Solver::CONS_POW]= "Pow";
-    names[Solver::CONS_SIN]= "Sin";
-    names[Solver::CONS_COS]= "Cos";
-    names[Solver::CONS_TAN]= "Tan";
-    names[Solver::CONS_PL] = "Piecewise linear";
-
-    AddToSolverMessage("\n\n##### Model stats #####\n");
-
-    AddToSolverMessage(fmt::format("Variables: ({})\n", getIntAttr(Solver::NVARS)));
-    AddToSolverMessage(fmt::format("  {} continuous\n", getIntAttr(Solver::NVARS_CONT)));
-    AddToSolverMessage(fmt::format("  {} integer\n", getIntAttr(Solver::NVARS_INT)));
-    AddToSolverMessage(fmt::format("  {} binary\n", getIntAttr(Solver::NVARS_BIN)));
-
-
-    AddToSolverMessage(fmt::format("\nObjectives: ({})\n", getIntAttr(Solver::NOBJS)));
-    AddToSolverMessage(fmt::format("  {} linear\n", getIntAttr(Solver::NOBJS, Solver::CONS_LIN)));
-    AddToSolverMessage(fmt::format("  {} quadratic\n", getIntAttr(Solver::NOBJS, Solver::CONS_QUAD)));
-    AddToSolverMessage(fmt::format("  {} non-linear\n", getIntAttr(Solver::NOBJS, Solver::CONS_NL)));
-
-
-    AddToSolverMessage(fmt::format("\nConstraints: ({})\n", getIntAttr(Solver::NCONS)));
-    for (const auto& i : names) {
-      auto n = getIntAttr(Solver::NCONS_TYPE, i.first);
-      if (n == 0) continue;
-      AddToSolverMessage(fmt::format("  {} {}\n", n, i.second));
-    }
-}
 void CuoptlpBackend::AddCUOPTLPMessages() {
-  printModelStats();
   if(auto si = SimplexIterations())
   AddToSolverMessage(
           fmt::format("{} simplex iterations\n", si));
@@ -321,14 +291,36 @@ std::pair<int, std::string> CuoptlpBackend::GetSolveResult() {
      * Keep new result codes added
      * in AddOptions() via AddSolveResults().
      */
-  if (IsMIP())
-  {
-  //
+  ProblemData* problem_data = lp();
+  cuopt_int_t termination_status;
+  cuopt_int_t status = cuOptGetTerminationStatus(problem_data->solution, &termination_status);
+  if (status != CUOPT_SUCCESS) {
+    fmt::print("Error getting termination status\n");
   }
-  else {
-  //
+  switch (termination_status) {
+    case CUOPT_TERIMINATION_STATUS_OPTIMAL:
+      return { sol::SOLVED, "optimal" };
+    case CUOPT_TERIMINATION_STATUS_INFEASIBLE:
+      return { sol::INFEASIBLE_NO_IIS, "infeasible" };
+    case CUOPT_TERIMINATION_STATUS_UNBOUNDED:
+      return { sol::UNBOUNDED, "unbounded" };
+    case CUOPT_TERIMINATION_STATUS_ITERATION_LIMIT:
+      return { sol::LIMIT_NO_FEAS_ITER, "iteration limit" }; // TODO: check if solution is feasible
+    case CUOPT_TERIMINATION_STATUS_TIME_LIMIT:
+      return { sol::LIMIT_NO_FEAS_TIME, "time limit" };  // TODO: check if solution is feasible
+    case CUOPT_TERIMINATION_STATUS_NUMERICAL_ERROR:
+      return { sol::NUMERIC, "numerical error" };
+    case CUOPT_TERIMINATION_STATUS_PRIMAL_FEASIBLE:
+      return { sol::LIMIT_FEAS, "primal feasible" };
+    case CUOPT_TERIMINATION_STATUS_FEASIBLE_FOUND:
+      return { sol::LIMIT_FEAS_TIME, "feasible found" };
+    case CUOPT_TERIMINATION_STATUS_CONCURRENT_LIMIT:
+      return { sol::LIMIT_FEAS_WORK, "concurrent limit" };
+    case CUOPT_TERIMINATION_STATUS_NO_TERMINATION:
+      return { sol::UNKNOWN, "not solved" };
+    default:
+      return { sol::UNKNOWN, "unknown termination status" };
   }
-  return { sol::UNKNOWN, "not solved" };
 }
 
 
@@ -352,7 +344,7 @@ void CuoptlpBackend::FinishOptionParsing() {
     //  GRBwriteparams(GRBgetenv(model()),
     //    paramfile_write().c_str()));
   }
-  lp()->SetVerbosity(storedOptions_.verbosity_);
+  //lp()->SetVerbosity(storedOptions_.verbosity_);
 }
 
 
@@ -434,12 +426,29 @@ void CuoptlpBackend::InitCustomOptions() {
 
 
 double CuoptlpBackend::MIPGap() {
-  return 0;
-//  return getDblAttr(CUOPTLP_DBLATTR_BESTGAP);
+  ProblemData* problem_data = lp();
+  if (!IsMIP()) {
+    return std::numeric_limits<double>::quiet_NaN();
+  }
+  cuopt_float_t mip_gap;
+  cuopt_int_t status = cuOptGetMIPGap(problem_data->solution, &mip_gap);
+  if (status != CUOPT_SUCCESS) {
+    throw std::runtime_error(fmt::format("Error getting MIP gap, error code {}.", status));
+  }
+  return mip_gap;
 }
+
 double CuoptlpBackend::BestDualBound() {
-  return 0;
-  //return getDblAttr(CUOPTLP_DBLATTR_BESTBND);
+  ProblemData* problem_data = lp();
+  if (!IsMIP()) {
+    return std::numeric_limits<double>::quiet_NaN();
+  }
+  cuopt_float_t best_dual_bound;
+  cuopt_int_t status = cuOptGetSolutionBound(problem_data->solution, &best_dual_bound);
+  if (status != CUOPT_SUCCESS) {
+    throw std::runtime_error(fmt::format("Error getting best dual bound, error code {}.", status));
+  }
+  return best_dual_bound;
 }
 
 double CuoptlpBackend::MIPGapAbs() {
@@ -447,7 +456,7 @@ double CuoptlpBackend::MIPGapAbs() {
     ObjectiveValue() - BestDualBound());
 }
 
-
+#if 0
 ArrayRef<int> CuoptlpBackend::VarStatii() {
 
   std::vector<int> vars(NumVars());
@@ -605,47 +614,11 @@ void CuoptlpBackend::SetBasis(SolutionBasis basis) {
   ConStatii(constt);
 }
 
-
-void CuoptlpBackend::ComputeIIS() {
-  //CUOPTLP_CCALL(CUOPTLP_ComputeIIS(lp()));
-  SetStatus(GetSolveResult());   // could be new information
-}
-
-IIS CuoptlpBackend::GetIIS() {
-  auto variis = VarsIIS();
-  auto coniis = ConsIIS();
-  auto mv = GetValuePresolver().PostsolveIIS(
-    { variis, coniis });
-  return { mv.GetVarValues()(), mv.GetConValues()() };
-}
-
-ArrayRef<int> CuoptlpBackend::VarsIIS() {
-  return ArrayRef<int>();
-//  return getIIS(lp(), NumVars(), CUOPTLP_GetColLowerIIS, CUOPTLP_GetColUpperIIS);
-}
-pre::ValueMapInt CuoptlpBackend::ConsIIS() {
-  /*auto iis_lincon = getIIS(lp(), NumLinCons(), CUOPTLP_GetRowLowerIIS, CUOPTLP_GetRowUpperIIS);
-
-  std::vector<int> iis_soscon(NumSOSCons());
-  CUOPTLP_GetSOSIIS(lp(), NumSOSCons(), NULL, iis_soscon.data());
-  ConvertIIS2AMPL(iis_soscon);
-
-  std::vector<int> iis_indicon(NumIndicatorCons());
-  CUOPTLP_GetIndicatorIIS(lp(), NumIndicatorCons(), NULL, iis_indicon.data());
-  ConvertIIS2AMPL(iis_indicon);
-
-  return { {{ CG_Linear, iis_lincon },
-      { CG_SOS, iis_soscon },
-      { CG_Logical, iis_indicon }} };
-      */
-  return { {{ 0, std::vector<int>()}} };
-}
-
 void CuoptlpBackend::AddMIPStart(
     ArrayRef<double> x0, ArrayRef<int> sparsity) {
   //CUOPTLP_CCALL(CUOPTLP_AddMipStart(lp(), NumVars(), NULL, const_cast<double*>(x0.data())));
 }
-
+#endif
 
 } // namespace mp
 

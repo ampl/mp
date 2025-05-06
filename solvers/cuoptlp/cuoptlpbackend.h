@@ -28,14 +28,14 @@ public:
   static const char* GetAMPLSolverName() { return "cuoptlp"; }
 
   /// AMPL driver name displayed in messages
-  static const char* GetAMPLSolverLongName() { return "AMPL-CUOPTLP"; }
+  static const char* GetAMPLSolverLongName() { return "AMPL-CUOPT"; }
   /// Solver name displayed in messages
-  static const char* GetSolverName() { return "x-CUOPTLP"; }
+  static const char* GetSolverName() { return "CUOPT"; }
   /// Version displayed with -v
   std::string GetSolverVersion();
   /// External libraries displayed with -v
   std::string set_external_libs() override { return ""; };
-  
+
   /// Name for diagnostic messages
   static const char* GetBackendName();
   /// "long name", rarely used
@@ -77,27 +77,27 @@ public:
    *  If (need_multiple_solutions()),
    *  call ReportIntermediateSolution() during solve or after.
    **/
-  ALLOW_STD_FEATURE(MULTISOL, true)
+  //ALLOW_STD_FEATURE(MULTISOL, true)
 
   /**
    * Get/Set AMPL var/con statii
    **/
-  ALLOW_STD_FEATURE(BASIS, true)
+  //ALLOW_STD_FEATURE(BASIS, true)
   /// TODO If getting/setting a basis is supported, implement the
   /// accessor and the setter below.
   /// Should return empty basis if not available
   /// (e.g., not an LP.)
-  SolutionBasis GetBasis() override;
-  void SetBasis(SolutionBasis) override;
+  //SolutionBasis GetBasis() override;
+  //void SetBasis(SolutionBasis) override;
 
   /**
   * MIP warm start
   **/
   /// TODO If MIP warm start is supported, implement the function below
   /// to set a non-presolved starting solution
-  ALLOW_STD_FEATURE(MIPSTART, true)
-  void AddMIPStart(ArrayRef<double> x0,
-                   ArrayRef<int> sparsity) override;
+  //ALLOW_STD_FEATURE(MIPSTART, true)
+  //void AddMIPStart(ArrayRef<double> x0,
+  //                 ArrayRef<int> sparsity) override;
 
 
   /**
@@ -120,14 +120,14 @@ public:
   /**
   * Compute the IIS and obtain relevant values
   **/
-  ALLOW_STD_FEATURE(IIS, true)
+  //ALLOW_STD_FEATURE(IIS, true)
   /// Compute IIS.
   /// This method can fail (MP_RAISE)
   /// if it discovers a different problem status.
-  void ComputeIIS() override;
+  //void ComputeIIS() override;
   /// Retrieve IIS elements.
   /// Only called if the status was confirmed Infeasible.
-  IIS GetIIS() override;
+  //  IIS GetIIS() override;
 
   /////////////////////////// Model attributes /////////////////////////
 
@@ -135,8 +135,8 @@ public:
   /// than just the number of non-fixed integer variables
   /// (e.g., the solver might consider if it has PL expressions.)
   bool IsMIP() const override;
-  bool IsQCP() const override;
-  
+  //bool IsQCP() const override;
+
   //////////////////////////// SOLVING ///////////////////////////////
 
   /// Note the interrupt notifier
@@ -155,7 +155,7 @@ public:  // public for static polymorphism
 
   /// Default impl of GetObjValues()
   ArrayRef<double> GetObjectiveValues() override
-  { return std::vector<double>{ObjectiveValue()}; } 
+  { return std::vector<double>{ObjectiveValue()}; }
 
 
   //////////////////// [[ Implementation details ]] //////////////////////

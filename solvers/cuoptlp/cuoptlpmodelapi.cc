@@ -4,33 +4,74 @@
 namespace mp {
 
 void CuoptlpModelAPI::InitProblemModificationPhase(
-    const FlatModelInfo*) {
-  auto varname = std::bind(&Solver::SolverModel::var_name, this->lp(),
-    std::placeholders::_1);
-  GetVarName = varname;
+    const FlatModelInfo* flat_model_info) {
+  //auto varname = std::bind(&Solver::SolverModel::var_name, this->lp(),
+  //  std::placeholders::_1);
+  //GetVarName = varname;
   // Allocate storage if needed:
   // auto n_linear_cons =
   //   flat_model_info->GetNumberOfConstraintsOfGroup(CG_LINEAR);
   // reallocate_linear_cons( n_linear_cons );
+  fmt::print("Initializing problem modification phase\n");
+  //fmt::print("Number of variables: {}\n", flat_model_info->GetNumberOfVariables());
+  fmt::print("Number of constraints: {}\n", flat_model_info->GetNumberOfConstraintsOfGroup(mp::ConstraintGroup::CG_Linear));
+
+  if (lp_ == nullptr) {
+    return;
+  }
+
+  lp_->num_constraints = 0;
+  lp_->num_variables = 0;
+  lp_->constraint_matrix_row_offsets.clear();
+  lp_->constraint_matrix_coefficients.clear();
+  lp_->constraint_matrix_column_indices.clear();
+  lp_->constraint_sense.clear();
+  lp_->rhs.clear();
+  lp_->lower_bounds.clear();
+  lp_->upper_bounds.clear();
+  lp_->variable_types.clear();
+  lp_->objective_coefficients.clear();
+  lp_->objective_sense = CUOPT_MINIMIZE;
+  lp_->objective_offset = 0.0;
 }
 
 void CuoptlpModelAPI::AddVariables(const VarArrayDef& v) {
   // TODO Add variables using solver API; typically,
   // first convert the MP variable type to the appropriate solver-defined type,
   // then add them
+  fmt::print("Adding {} variables\n", v.size());
+  lp_->lower_bounds.resize(v.size());
+  lp_->upper_bounds.resize(v.size());
+  lp_->variable_types.resize(v.size());
+  lp_->num_variables = v.size();
+  for (auto i = 0; i<v.size();  i++) {
+    lp_->lower_bounds[i] = v.plb()[i];
+    lp_->upper_bounds[i] = v.pub()[i];
+    lp_->variable_types[i] = v.ptype()[i] == var::Type::CONTINUOUS ? CUOPT_CONTINUOUS : CUOPT_INTEGER;
+    fmt::print("Adding variable of type {} lower bound {} upper bound {}\n", v.ptype()[i], v.plb()[i], v.pub()[i]);
+  }
+
+
+  if (v.pnames() != nullptr) {
+    for (auto i = 0; i<v.size();  i++) {
+      fmt::print("Adding variable of name {}\n", v.pnames()[i]);
+    }
+  } else {
+    fmt::print("No variable names provided\n");
+  }
 
   // Preallocate in solver mem
-  lp()->allocateVars(v.size());
+  //lp()->allocateVars(v.size());
   // Assign one by one
-  for (auto i = 0; i<v.size();  i++)
-    lp()->AddVariable(v.ptype()[i],
-      v.plb()[i], v.pub()[i]),
-      v.pnames() == NULL ? nullptr : v.pnames()[i];
+  //for (auto i = 0; i<v.size();  i++)
+  //  lp()->AddVariable(v.ptype()[i],
+  //    v.plb()[i], v.pub()[i]),
+  //    v.pnames() == NULL ? nullptr : v.pnames()[i];
 
-  fmt::print("Added {} continuous, {} integer and {} binary variables.\n",
-    lp()->getNumVars(Solver::VarType::CONTINUOUS),
-    lp()->getNumVars(Solver::VarType::INTEGER),
-    lp()->getNumVars(Solver::VarType::BINARY));
+  //fmt::print("Added {} continuous, {} integer and {} binary variables.\n",
+  //  lp()->getNumVars(Solver::VarType::CONTINUOUS),
+  //  lp()->getNumVars(Solver::VarType::INTEGER),
+  //  lp()->getNumVars(Solver::VarType::BINARY));
 
   /* Typical implementation when passing all the arrays
   for (size_t i=v.size(); i--; )
@@ -52,23 +93,6 @@ void PrintCoefficient(double value, bool first) {
     // If the coefficient is -1, just print ' - ', otherwise print the coefficient
     if (value == -1) fmt::print("-");
     else  fmt::print("{}*", value);
-  }
-}
-void PrintQuadTerm(double coeff, const char* v1, const char* v2 = nullptr, bool first = false)
-{
-  PrintCoefficient(coeff, first);
-  if (v2)
-    fmt::print("{}*{}", v1, v2);
-  else
-    fmt::print("{}^2", v1);
-}
-void PrintQuadBody(std::function<std::string_view(int)> varName,
-  int size, const int* vars1, const int* vars2, const double* values)
-{
-  for (int i = 0; i < size; i++) {
-    PrintQuadTerm(values[i], varName(vars1[i]).data(),
-      vars1[i] != vars2[i] ? varName(vars2[i]).data() : nullptr,
-      i == 0);
   }
 }
 
@@ -114,68 +138,26 @@ void PrintLinearObjective(std::string_view name, std::function<std::string_view(
   PrintLinearBody(varName, size, vars, values);
   fmt::print("\n");
 }
-void PrintQuadraticObjective(std::string_view name, std::function<std::string_view(int)> varName,
-  int size, const int* vars, const double* values, bool maximize,
-  int sizequad, const int* vars1, const int* vars2, const double* valuesquad) {
-  PrintConsName(name);
-  std::string direction = maximize ? "maximize" : "minimize";
-  fmt::print("{} ", direction);
-  PrintQuadBody(varName, sizequad, vars1, vars2, valuesquad);
-  PrintLinearBody(varName, size, vars, values, false);
-  fmt::print("\n");
-}
-void PrintQuadraticConstraint(std::string_view name, std::function<std::string_view(int)> varName,
-  int size, const int* vars, const double* values,
-  double lhs, double rhs,
-  int sizequad, const int* vars1, const int* vars2, const double* valuesquad)
-{
-  PrintConsName(name);
-  PrintLhs(lhs, rhs);
-  PrintQuadBody(varName, sizequad, vars1, vars2, valuesquad);
-  PrintLinearBody(varName, size, vars, values, false);
-  PrintRhs(lhs, rhs);
-}
-
-void PrintIndicator(std::string_view name,
-  std::function<std::string_view(int)> varName,
-  int binaryVar, int binaryValue, int size, const int* vars, const double* values,
-  double lhs, double rhs) {
-  PrintConsName(name);
-  // print condition
-  fmt::print("{}=={} ==> ", varName(binaryVar).data(), binaryValue);
-  PrintLhs(lhs, rhs);
-  PrintLinearBody(varName, size, vars, values);
-  PrintRhs(lhs, rhs);
-
-}
-void PrintFunctionalConstraintNoParam(std::string_view name, std::function<std::string_view(int)> varName,
-  int resvar, int nargs, const int* argvars, std::string_view func) {
-  PrintConsName(name);
-  fmt::print("{} = {}({}", varName(resvar).data(), func.data(), varName(argvars[0]).data());
-  for (int i = 1; i < nargs; i++)
-    fmt::print(",{}", varName(argvars[i]).data());
-  fmt::print(")\n");
-}
-void PrintExpConstraint(std::string_view name, std::function<std::string_view(int)> varName,
-  int resvar, int npar, double param) {
-  PrintConsName(name);
-  std::string exponent = npar == 1 ? fmt::format("{}", param) : "e";
-  fmt::print("{} = {}^{}\n", varName(resvar).data(), exponent);
-}
-
-void PrintPowConstraint(std::string_view name, const std::string& res, const std::string& base, const std::string& exponent) {
-  PrintConsName(name);
-  fmt::print("{} = {}^{}\n", res, base, exponent);
-}
 
 
 void CuoptlpModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
-  std::string name = lp()->AddObjective(lo.name(), Solver::OBJ_LIN);
-  if (lp()->GetVerbosity() < 1)
-    return;
-  if (iobj<1) {
-    PrintLinearObjective(name, GetVarName, lo.num_terms(), lo.vars().data(), lo.coefs().data(),
-      lo.obj_sense() == mp::obj::MAX);
+  fmt::print("Setting linear objective\n");
+
+  lp_->objective_sense = lo.obj_sense() == mp::obj::MAX ? CUOPT_MAXIMIZE : CUOPT_MINIMIZE;
+  lp_->objective_coefficients.resize(lp_->variable_types.size());
+
+  for (auto k = 0; k < lo.num_terms(); k++) {
+    lp_->objective_coefficients[lo.vars()[k]] = lo.coefs()[k];
+    fmt::print("Setting objective coefficient {} for variable {}\n", lo.coefs()[k], lo.vars()[k]);
+  }
+
+
+  //std::string name = lp()->AddObjective(lo.name(), Solver::OBJ_LIN);
+  //if (lp()->GetVerbosity() < 1)
+  //  return;
+  //if (iobj<1) {
+  //  PrintLinearObjective(name, GetVarName, lo.num_terms(), lo.vars().data(), lo.coefs().data(),
+  //    lo.obj_sense() == mp::obj::MAX);
     /*
     CUOPTLP_CCALL(CUOPTLP_SetObjSense(lp(),
                     obj::Type::MAX==lo.obj_sense() ? CUOPTLP_MAXIMIZE : CUOPTLP_MINIMIZE) );
@@ -183,80 +165,120 @@ void CuoptlpModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) 
     // even when changing from a previous objective.
     CUOPTLP_CCALL(CUOPTLP_SetColObj(lp(), lo.num_terms(),
                            lo.vars().data(), lo.coefs().data()) ); */
-  } else {
+  //} else {
 //    TODO If we support mutiple objectives, pass them to the solver
-    fmt::print("Setting {}-th linear objective\n");
-    PrintLinearObjective(name, GetVarName, lo.num_terms(), lo.vars().data(), lo.coefs().data(),
-      lo.obj_sense() == mp::obj::MAX);
-  }
+    //fmt::print("Setting {}-th linear objective\n");
+    //PrintLinearObjective(name, GetVarName, lo.num_terms(), lo.vars().data(), lo.coefs().data(),
+    //  lo.obj_sense() == mp::obj::MAX);
+  //}
 }
 
 
-void CuoptlpModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective& qo) {
-  std::string name = lp()->AddObjective(qo.name(), Solver::OBJ_QUAD);
-  if (lp()->GetVerbosity() < 1)
-    return;
-
-  const auto &q = qo.GetQPTerms();
-  const auto &l = qo.GetLinTerms();
-  if (1 > iobj) {
-    PrintQuadraticObjective(name, GetVarName, l.size(), l.pvars(), l.pcoefs(),
-      qo.obj_sense() == mp::obj::MAX,
-      q.size(), q.pvars1(), q.pvars2(), q.pcoefs());
-
-    // Typical implementation
-    //CUOPTLP_CCALL(CUOPTLP_SetQuadObj(lp(), qt.size(),
-    //  (int*)qt.pvars1(), (int*)qt.pvars2(),
-    //  (double*)qt.pcoefs()));
-  }
-  else {
-    fmt::print("Setting {}-th objective\n");
-    PrintQuadraticObjective(name, GetVarName, l.size(), l.pvars(), l.pcoefs(),
-      qo.obj_sense() == mp::obj::MAX,
-      q.size(), q.pvars1(), q.pvars2(), q.pcoefs());
-
-  }
-}
-
-
-
+#if 0
 void CuoptlpModelAPI::AddConstraint(const LinConRange& lc) {
-  std::string name = lp()->AddConstraintFlat(Solver::ConsType::CONS_LIN, lc.name());
-  if (lp()->GetVerbosity() < 1)
-    return;
-  PrintLinearConstraint(name, GetVarName,
-    lc.size(), lc.pvars(), lc.pcoefs(), lc.lb(), lc.ub());
+  fmt::print("Adding linear constraint with range\n");
+  //std::string name = lp()->AddConstraintFlat(Solver::ConsType::CONS_LIN, lc.name());
+  //if (lp()->GetVerbosity() < 1)
+  //  return;
+  //PrintLinearConstraint(lc.name(), GetVarName,
+  //  lc.size(), lc.pvars(), lc.pcoefs(), lc.lb(), lc.ub());
 
-//  CUOPTLP_CCALL(CUOPTLP_AddRow(lp(), lc.size(), lc.pvars(), lc.pcoefs(),
- //   NULL, lc.lb(), lc.ub(), lc.name()));
+  if (constraint_matrix_row_offsets_.size() == 0) {
+    constraint_matrix_row_offsets_.push_back(0);
+  }
+
+  for (auto i = 0; i < lc.size(); i++) {
+    fmt::print("Adding constraint coefficient {} for variable {}\n", lc.pcoefs()[i], lc.pvars()[i]);
+    constraint_matrix_coefficients_.push_back(lc.pcoefs()[i]);
+    constraint_matrix_column_indices_.push_back(lc.pvars()[i]);
+    nnz_++;
+  }
+  constraint_matrix_row_offsets_.push_back(nnz_);
+  constraint_lower_bounds_.push_back(lc.lb());
+  constraint_upper_bounds_.push_back(lc.ub());
+  num_constraints_++;
 }
+#endif
+
+
+void CuoptlpModelAPI::cuOptAddConstraint(size_t num_coefficients, const double* coefficients, const int* variables, char sense, double rhs) {
+  fmt::print("Adding constraint with {} coefficients\n", num_coefficients);
+  fmt::print("Adding constraint with sense {}\n", sense);
+  fmt::print("Adding constraint with rhs {}\n", rhs);
+
+  if (lp_->constraint_matrix_row_offsets.size() == 0) {
+    lp_->constraint_matrix_row_offsets.push_back(0);
+  }
+
+  for (auto k = 0; k < num_coefficients; k++) {
+    lp_->constraint_matrix_coefficients.push_back(coefficients[k]);
+    lp_->constraint_matrix_column_indices.push_back(variables[k]);
+    lp_->nnz++;
+  }
+  lp_->constraint_matrix_row_offsets.push_back(lp_->nnz);
+  lp_->constraint_sense.push_back(sense);
+  lp_->rhs.push_back(rhs);
+  lp_->num_constraints++;
+}
+
 void CuoptlpModelAPI::AddConstraint(const LinConLE& lc) {
-  std::string name = lp()->AddConstraintFlat(Solver::ConsType::CONS_LIN, lc.name());
-  if (lp()->GetVerbosity() < 1)
-    return;
-  PrintLinearConstraint(name, GetVarName,
-    lc.size(), lc.pvars(), lc.pcoefs(), MinusInfinity(), lc.rhs());
+  fmt::print("Adding linear constraint with less than or equal to\n");
+  cuOptAddConstraint(lc.size(), lc.pcoefs(), lc.pvars(), CUOPT_LESS_THAN, lc.rhs());
+  //std::string name = lp()->AddConstraintFlat(Solver::ConsType::CONS_LIN, lc.name());
+  //if (lp()->GetVerbosity() < 1)
+  //  return;
+  //PrintLinearConstraint(name, GetVarName,
+  //  lc.size(), lc.pvars(), lc.pcoefs(), MinusInfinity(), lc.rhs());
 
 }
 void CuoptlpModelAPI::AddConstraint(const LinConEQ& lc) {
-  std::string name = lp()->AddConstraintFlat(Solver::ConsType::CONS_LIN, lc.name());
-  if (lp()->GetVerbosity() < 1)
-    return;
-  PrintLinearConstraint(name, GetVarName,
-    lc.size(), lc.pvars(), lc.pcoefs(), lc.rhs(), lc.rhs());
+  fmt::print("Adding linear constraint with equal to\n");
+  cuOptAddConstraint(lc.size(), lc.pcoefs(), lc.pvars(), CUOPT_EQUAL, lc.rhs());
+  //std::string name = lp()->AddConstraintFlat(Solver::ConsType::CONS_LIN, lc.name());
+  //if (lp()->GetVerbosity() < 1)
+  //  return;
+  //PrintLinearConstraint(name, GetVarName,
+  //  lc.size(), lc.pvars(), lc.pcoefs(), lc.rhs(), lc.rhs());
 
 }
 void CuoptlpModelAPI::AddConstraint(const LinConGE& lc) {
-  std::string name = lp()->AddConstraintFlat(Solver::ConsType::CONS_LIN, lc.name());
-  if (lp()->GetVerbosity() < 1)
-    return;
-  PrintLinearConstraint(name, GetVarName,
-    lc.size(), lc.pvars(), lc.pcoefs(), lc.rhs(), Infinity());
+  fmt::print("Adding linear constraint with greater than or equal to\n");
+  cuOptAddConstraint(lc.size(), lc.pcoefs(), lc.pvars(), CUOPT_GREATER_THAN, lc.rhs());
+  //std::string name = lp()->AddConstraintFlat(Solver::ConsType::CONS_LIN, lc.name());
+  //if (lp()->GetVerbosity() < 1)
+  //  return;
+  //PrintLinearConstraint(name, GetVarName,
+  //  lc.size(), lc.pvars(), lc.pcoefs(), lc.rhs(), Infinity());
 
 }
 
 
 void CuoptlpModelAPI::FinishProblemModificationPhase() {
+  fmt::print("Finishing problem modification phase\n");
+  fmt::print("Number of constraints: {}\n", lp_->num_constraints);
+  fmt::print("Number of variables: {}\n", lp_->num_variables);
+  fmt::print("Number of non-zeros: {}\n", lp_->nnz);
+
+
+  cuopt_int_t status = cuOptCreateProblem(
+    lp_->num_constraints,
+    lp_->num_variables,
+    lp_->objective_sense,
+    lp_->objective_offset,
+    lp_->objective_coefficients.data(),
+    lp_->constraint_matrix_row_offsets.data(),
+    lp_->constraint_matrix_column_indices.data(),
+    lp_->constraint_matrix_coefficients.data(),
+    lp_->constraint_sense.data(),
+    lp_->rhs.data(),
+    lp_->lower_bounds.data(),
+    lp_->upper_bounds.data(),
+    lp_->variable_types.data(),
+    &lp_->problem
+  );
+  if (status != CUOPT_SUCCESS) {
+    throw std::runtime_error(fmt::format("Error creating problem: {}", status));
+  }
 }
 
 

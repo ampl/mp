@@ -53,7 +53,7 @@ public:
   /// 0 - no, 1 - convex, 2 - nonconvex
   static int AcceptsQuadObj() { return 0; }
   /// TODO Implement setting (also changing) a quadratic objective
-  void SetQuadraticObjective(int iobj, const QuadraticObjective& qo);
+  void SetQuadraticObjective(int iobj, const QuadraticObjective& qo) {}
 
   //////////////////////////// GENERAL CONSTRAINTS ////////////////////////////
   USE_BASE_CONSTRAINT_HANDLERS(BaseModelAPI)
@@ -71,8 +71,8 @@ public:
 
 
   /// The linear range constraint, if fully supported with basis info etc.
-  ACCEPT_CONSTRAINT(LinConRange, Recommended, CG_Linear)
-  void AddConstraint(const LinConRange& lc);
+  //ACCEPT_CONSTRAINT(LinConRange, Recommended, CG_Linear)
+  //void AddConstraint(const LinConRange& lc);
 
   /// LinCon(LE/EQ/GE) should have 'Recommended' for all backends
   /// and have an implementation,
@@ -83,6 +83,8 @@ public:
   void AddConstraint(const LinConEQ& lc);
   ACCEPT_CONSTRAINT(LinConGE, Recommended, CG_Linear)
   void AddConstraint(const LinConGE& lc);
+
+  void cuOptAddConstraint(size_t num_coefficients, const double* coefficients, const int* variables, char sense, double rhs);
 
   private:
     // Helper function to fetch variable names from the solver API stub,

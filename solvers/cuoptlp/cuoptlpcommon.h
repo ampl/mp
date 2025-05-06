@@ -18,24 +18,50 @@
 
 namespace mp {
 
+struct ProblemData {
+  cuOptOptimizationProblem problem;
+  cuOptSolverSettings settings;
+  cuOptSolution solution;
+
+
+  std::vector<cuopt_float_t> lower_bounds;
+  std::vector<cuopt_float_t> upper_bounds;
+  std::vector<char> variable_types;
+
+  std::vector<cuopt_float_t> constraint_matrix_coefficients;
+  std::vector<cuopt_int_t> constraint_matrix_row_offsets;
+  std::vector<cuopt_int_t> constraint_matrix_column_indices;
+
+  cuopt_int_t num_constraints;
+  cuopt_int_t num_variables;
+  cuopt_int_t nnz;
+
+  std::vector<char> constraint_sense;
+  std::vector<cuopt_float_t> rhs;
+
+  std::vector<cuopt_float_t> objective_coefficients;
+  cuopt_int_t objective_sense;
+  cuopt_float_t objective_offset;
+};
+
+
 /// Information shared by both
 /// `CuoptlpBackend` and `CuoptlpModelAPI`
 struct CuoptlpCommonInfo {
 
   // TODO provide accessors to the solver's in-memory model/environment
   //cuoptlp_env* env() const { return env_; }
-  Solver::SolverModel* lp() const { return lp_; }
+  ProblemData* lp() const { return lp_; }
 
   // TODO provide accessors to the solver's in-memory model/environment
   //void set_env(cuoptlp_env* e) { env_ = e; }
-  void set_lp(Solver::SolverModel* lp) { lp_ = lp; }
+  void set_lp(ProblemData* lp) { lp_ = lp; }
 
+  ProblemData* lp_ = nullptr;
 
 private:
   // TODO provide accessors to the solver's in-memory model/environment
   //cuoptlp_env*      env_ = NULL;
-  Solver::SolverModel*      lp_ = NULL;
-
 };
 
 
@@ -56,8 +82,6 @@ public:
   static constexpr double MinusInfinity() { return -INFINITY; }
 
 protected:
-  int getIntAttr(Solver::ATTRIBS name, Solver::ConsType subtype=Solver::ConsType::CONS_LIN) const;
-  double getDblAttr(const char* name) const;
 
   int NumLinCons() const;
   int NumVars() const;
@@ -77,8 +101,7 @@ protected:
 // TODO This macro is useful to automatically throw an error if a function in the
 // solver API does not return a valid errorcode. In this mock driver, we define it
 // ourselves, normally this constant would be defined in the solver's API.
-#define CUOPTLP_RETCODE_OK 0
-#define CUOPTLP_CCALL( call ) do { if (int e = (call) != CUOPTLP_RETCODE_OK) \
+#define CUOPT_CCALL( call ) do { if (int e = (call) != CUOPT_SUCCESS) \
   throw std::runtime_error( \
     fmt::format("  Call failed: '{}' with code {}", #call, e )); } while (0)
 
