@@ -449,6 +449,7 @@
     "name" : "hs54_inspired",
     "tags" : ["continuous", "nonlinear", "quadraticnonconvex"],
     "options": {
+      "mp_options": "lim:time=2",
       "xpress_options": "lim:time=2",
       "scip_options": "lim:time=2"
     },
@@ -460,6 +461,7 @@
     "name" : "hs54_inspired_2",
     "tags" : ["continuous", "nonlinear", "quadraticnonconvex"],
     "options": {
+      "mp_options": "lim:time=2",
       "xpress_options": "lim:time=2",
       "scip_options": "lim:time=2"
     },
@@ -528,5 +530,10 @@
       "xpress_options": "qp2pass=0 lim:time=2",
       "scip_options": "qp2pass=0 lim:time=2"
     }
+  },
+  {
+    "name" : "sinrosnb",
+    "tags" : ["continuous", "nonlinear", "quadraticnonconvex"],
+    "objective": -99901
   }
 ]

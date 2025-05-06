@@ -301,7 +301,7 @@ void MP2NLBackend::FinishOptionParsing() {
 		AddWarning("SolverConfig",
 							 fmt::format("MP2NL: configuration '{}', \n"
 													 "assumed for solver '{}',\n"
-													 "is unknown\n"
+													 "is unknown. Defaults applied\n"
 													 "(use nl:printconfigs and/or nl:config)",
 													 storedOptions_.config_attempted_,
 													 storedOptions_.solver_) );
