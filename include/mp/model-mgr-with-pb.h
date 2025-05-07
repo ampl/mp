@@ -163,14 +163,27 @@ protected:
       }
       if (WantNames()>=2
           || npv.number_read()+npc.number_read()) {
+				bool var_names_empty = false;
         GetModel().SetVarNames(
               npv.get_names(
                 GetModel().num_vars() + GetModel().num_common_exprs(),
-                GetModel().num_vars()));
-        GetModel().SetConNames(
+								GetModel().num_vars(), &var_names_empty));
+				if (var_names_empty)
+					GetEnv().AddWarning(
+								"VarNameEmpty",
+								"Some variable names are empty in the input, "
+								"using generic names");
+				bool con_names_empty = false;
+				GetModel().SetConNames(
               npc.get_names(GetModel().num_cons(),
-                            GetModel().num_algebraic_cons()) );
-        SetObjNames(npc);
+														GetModel().num_algebraic_cons(),
+														&con_names_empty) );
+				if (con_names_empty)
+					GetEnv().AddWarning(
+								"ConNameEmpty",
+								"Some constraint names are empty in the input, "
+								"using generic names");
+				SetObjNames(npc);
       }
     }
   }
@@ -193,12 +206,20 @@ protected:
       }
       std::vector<std::string> names_o;
       for (auto io=num_c+o1; io<num_c+o2; ++io) {
-        if (npco.number_read()>(size_t)io)
+				auto name_generated {"_sobj["
+														 + std::to_string(io-num_c+1)
+														 + ']'};
+				if (npco.number_read()>(size_t)io) {
           names_o.push_back(npco.name(io));
-        else
-          names_o.push_back("_sobj["
-                            + std::to_string(io-num_c+1)
-                            + ']');
+					if (!names_o.back().size()) {
+						GetEnv().AddWarning(
+									"ObjNameEmpty",
+									"Some objective names are empty in the input, "
+									"using generic names");
+						names_o.back() = name_generated;
+					}
+				} else
+					names_o.push_back(name_generated);
       }
       GetModel().SetObjNames( std::move( names_o ) );
     }
