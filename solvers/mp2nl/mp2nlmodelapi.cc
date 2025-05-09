@@ -1,3 +1,4 @@
+#include <cstring>
 
 #include "mp2nlmodelapi.h"
 #include "mp/nl-solver.hpp"
@@ -1218,7 +1219,12 @@ void MP2NLModelAPI::Feed1Suffix(
 template <class ColNameWriter>
 void MP2NLModelAPI::FeedRowAndObjNames(ColNameWriter& wrt) {
 	auto has_name0 = [](const auto& infos) {
-    return infos.size() && infos.front().GetDispatcher().GetName(infos.front().GetPItem());
+		if (infos.size()) {
+				const auto nm = infos.front().GetDispatcher().GetName(
+					infos.front().GetPItem());
+				return (nm && std::strlen(nm));     // remove padding?
+		}
+		return false;
   };
   if ((has_name0(alg_con_info_)
        || has_name0(log_con_info_) || has_name0(obj_info_)) && wrt) {
@@ -1232,7 +1238,8 @@ void MP2NLModelAPI::FeedRowAndObjNames(ColNameWriter& wrt) {
     for (size_t i=0; i<alg_con_info_.size(); ++i) {
       auto i0 = GetOldAlgConIndex(i);
       const auto* nm
-          = alg_con_info_[i0].GetDispatcher().GetName(alg_con_info_[i0].GetPItem());
+					= alg_con_info_[i0].GetDispatcher().GetName(
+						alg_con_info_[i0].GetPItem());
       wrt << (nm ? nm : "..");
     }
     write_names(log_con_info_);
