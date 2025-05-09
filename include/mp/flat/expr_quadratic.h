@@ -68,7 +68,7 @@ public:
   }
 
   void add_term(double coef, int var1, int var2)
-  { add_index_value({{var1, var2}, coef}); }
+	{ add_index_value({{var1, var2}, coef}); clear_unfolded(); }
 
   void reserve(std::size_t num_terms)
   { folded_.reserve(num_terms); }
@@ -92,6 +92,7 @@ public:
   void negate() {
     for (auto& iv: folded_)
       iv.second = -iv.second;
+		clear_unfolded();
   }
 
   void add(const QuadTerms& li) {
@@ -99,6 +100,7 @@ public:
     /// eliminate duplicates when?
     auto fld = li.get_folded();
     folded_.insert(folded_.end(), fld.begin(), fld.end());
+		clear_unfolded();
   }
 
   void subtract(QuadTerms&& ae) {
@@ -109,6 +111,7 @@ public:
   void operator*=(double n) {
     for (auto& c: folded_)
       c.second *= n;
+		clear_unfolded();
   }
 
   /// Is the expression sorted,
@@ -124,7 +127,7 @@ public:
 
   /// Add ({var1, var2}, coef)
   void add_index_value(TupleType iv)
-  { folded_.push_back(iv); }
+	{ folded_.push_back(iv); clear_unfolded(); }
 
   /// Clear
   void clear() {

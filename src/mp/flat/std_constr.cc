@@ -216,6 +216,7 @@ void QuadTerms::sort_terms()  {
     }
   }
   assert(is_sorted());
+	clear_unfolded();
 }
 
 

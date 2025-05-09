@@ -1035,7 +1035,8 @@ for examples.
      - Values:
 
        * **0** - No (default)
-       * **1** - Yes, natively supported if available, otherwise emulated
+			 * **1** - Yes, natively supported if available, otherwise emulated.
+				 Most solvers only support linear objectives natively.
        * **2** - Yes, emulated
    * - **Example**
      - Use :ref:`multiObjectiveDiet`

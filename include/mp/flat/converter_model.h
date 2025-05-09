@@ -474,6 +474,7 @@ public:
       backend.SetQuadraticObjective(i, obj);
     else
       backend.SetLinearObjective(i, obj);
+		ExportObjective(i, obj);
   }
 
   /// Var namer

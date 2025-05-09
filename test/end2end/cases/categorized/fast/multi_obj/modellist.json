@@ -102,6 +102,21 @@
     }
   },
   {
+    "name" : "dietQobj_1000 multiobj=2 writegraph",
+    "tags" : ["quadratic", "quadratic_obj", "multiobj"],
+    "files" : ["dietqobj_1000.mod", "dietobj.dat"],
+    "options": {
+      "ANYSOLVER_options": "multiobj=2 writegraph=dietqobj_1000.jsonl"
+    },
+    "values": {
+      "total_cost[\"A&P\"]": 920.6492623659187,
+      "total_cost[\"JEWEL\"]": 914.6919717993438,
+      "total_cost[\"VONS\"]": 914.081415223036,
+      "total_number": 44.80888220421118,
+      "_sobj[4]": 44.80888220421118
+    }
+  },
+  {
     "name" : "dietQobj_1000 multiobj=2 obj_pr_2",
     "tags" : ["quadraticnonconvex", "quadratic_obj", "multiobj"],
     "files" : ["dietqobj_1000.mod", "dietobj.dat", "dietobj_pr_2.inc"],

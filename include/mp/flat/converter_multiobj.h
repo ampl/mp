@@ -173,6 +173,8 @@ protected:
       }
       obj_new_.back().GetLinTerms().sort_terms();
       obj_new_.back().GetQPTerms().sort_terms();
+			obj_new_.back().set_name(
+						"ObjHierarc_" + std::to_string(obj_new_.size()) + "_");
     }
     if (MPD( GetEnv() ).verbose_mode())
       MPD( GetEnv() ).Print(
