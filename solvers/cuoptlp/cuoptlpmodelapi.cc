@@ -12,10 +12,7 @@ void CuoptlpModelAPI::InitProblemModificationPhase(
   // auto n_linear_cons =
   //   flat_model_info->GetNumberOfConstraintsOfGroup(CG_LINEAR);
   // reallocate_linear_cons( n_linear_cons );
-  fmt::print("Initializing problem modification phase\n");
   //fmt::print("Number of variables: {}\n", flat_model_info->GetNumberOfVariables());
-  fmt::print("Number of constraints: {}\n", flat_model_info->GetNumberOfConstraintsOfGroup(mp::ConstraintGroup::CG_Linear));
-
   if (lp_ == nullptr) {
     return;
   }
@@ -39,7 +36,6 @@ void CuoptlpModelAPI::AddVariables(const VarArrayDef& v) {
   // TODO Add variables using solver API; typically,
   // first convert the MP variable type to the appropriate solver-defined type,
   // then add them
-  fmt::print("Adding {} variables\n", v.size());
   lp_->lower_bounds.resize(v.size());
   lp_->upper_bounds.resize(v.size());
   lp_->variable_types.resize(v.size());
@@ -48,16 +44,6 @@ void CuoptlpModelAPI::AddVariables(const VarArrayDef& v) {
     lp_->lower_bounds[i] = v.plb()[i];
     lp_->upper_bounds[i] = v.pub()[i];
     lp_->variable_types[i] = v.ptype()[i] == var::Type::CONTINUOUS ? CUOPT_CONTINUOUS : CUOPT_INTEGER;
-    fmt::print("Adding variable of type {} lower bound {} upper bound {}\n", v.ptype()[i], v.plb()[i], v.pub()[i]);
-  }
-
-
-  if (v.pnames() != nullptr) {
-    for (auto i = 0; i<v.size();  i++) {
-      fmt::print("Adding variable of name {}\n", v.pnames()[i]);
-    }
-  } else {
-    fmt::print("No variable names provided\n");
   }
 
   // Preallocate in solver mem
@@ -141,14 +127,11 @@ void PrintLinearObjective(std::string_view name, std::function<std::string_view(
 
 
 void CuoptlpModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
-  fmt::print("Setting linear objective\n");
-
   lp_->objective_sense = lo.obj_sense() == mp::obj::MAX ? CUOPT_MAXIMIZE : CUOPT_MINIMIZE;
   lp_->objective_coefficients.resize(lp_->variable_types.size());
 
   for (auto k = 0; k < lo.num_terms(); k++) {
     lp_->objective_coefficients[lo.vars()[k]] = lo.coefs()[k];
-    fmt::print("Setting objective coefficient {} for variable {}\n", lo.coefs()[k], lo.vars()[k]);
   }
 
 
@@ -202,10 +185,6 @@ void CuoptlpModelAPI::AddConstraint(const LinConRange& lc) {
 
 
 void CuoptlpModelAPI::cuOptAddConstraint(size_t num_coefficients, const double* coefficients, const int* variables, char sense, double rhs) {
-  fmt::print("Adding constraint with {} coefficients\n", num_coefficients);
-  fmt::print("Adding constraint with sense {}\n", sense);
-  fmt::print("Adding constraint with rhs {}\n", rhs);
-
   if (lp_->constraint_matrix_row_offsets.size() == 0) {
     lp_->constraint_matrix_row_offsets.push_back(0);
   }
@@ -222,44 +201,18 @@ void CuoptlpModelAPI::cuOptAddConstraint(size_t num_coefficients, const double* 
 }
 
 void CuoptlpModelAPI::AddConstraint(const LinConLE& lc) {
-  fmt::print("Adding linear constraint with less than or equal to\n");
   cuOptAddConstraint(lc.size(), lc.pcoefs(), lc.pvars(), CUOPT_LESS_THAN, lc.rhs());
-  //std::string name = lp()->AddConstraintFlat(Solver::ConsType::CONS_LIN, lc.name());
-  //if (lp()->GetVerbosity() < 1)
-  //  return;
-  //PrintLinearConstraint(name, GetVarName,
-  //  lc.size(), lc.pvars(), lc.pcoefs(), MinusInfinity(), lc.rhs());
-
 }
 void CuoptlpModelAPI::AddConstraint(const LinConEQ& lc) {
-  fmt::print("Adding linear constraint with equal to\n");
   cuOptAddConstraint(lc.size(), lc.pcoefs(), lc.pvars(), CUOPT_EQUAL, lc.rhs());
-  //std::string name = lp()->AddConstraintFlat(Solver::ConsType::CONS_LIN, lc.name());
-  //if (lp()->GetVerbosity() < 1)
-  //  return;
-  //PrintLinearConstraint(name, GetVarName,
-  //  lc.size(), lc.pvars(), lc.pcoefs(), lc.rhs(), lc.rhs());
-
 }
-void CuoptlpModelAPI::AddConstraint(const LinConGE& lc) {
-  fmt::print("Adding linear constraint with greater than or equal to\n");
-  cuOptAddConstraint(lc.size(), lc.pcoefs(), lc.pvars(), CUOPT_GREATER_THAN, lc.rhs());
-  //std::string name = lp()->AddConstraintFlat(Solver::ConsType::CONS_LIN, lc.name());
-  //if (lp()->GetVerbosity() < 1)
-  //  return;
-  //PrintLinearConstraint(name, GetVarName,
-  //  lc.size(), lc.pvars(), lc.pcoefs(), lc.rhs(), Infinity());
 
+void CuoptlpModelAPI::AddConstraint(const LinConGE& lc) {
+  cuOptAddConstraint(lc.size(), lc.pcoefs(), lc.pvars(), CUOPT_GREATER_THAN, lc.rhs());
 }
 
 
 void CuoptlpModelAPI::FinishProblemModificationPhase() {
-  fmt::print("Finishing problem modification phase\n");
-  fmt::print("Number of constraints: {}\n", lp_->num_constraints);
-  fmt::print("Number of variables: {}\n", lp_->num_variables);
-  fmt::print("Number of non-zeros: {}\n", lp_->nnz);
-
-
   cuopt_int_t status = cuOptCreateProblem(
     lp_->num_constraints,
     lp_->num_variables,

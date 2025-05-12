@@ -216,7 +216,7 @@ void CuoptlpBackend::Solve() {
   if (status != CUOPT_SUCCESS) {
     throw std::runtime_error(fmt::format("Failed to create solver settings, error code {}.", status));
   }
-  status = cuOptSetIntegerParameter(problem_data->settings, CUOPT_SOLVER_MODE, CUOPT_SOLVER_MODE_DUAL_SIMPLEX);
+  status = cuOptSetIntegerParameter(problem_data->settings, CUOPT_METHOD, CUOPT_METHOD_DUAL_SIMPLEX);
   if (status != CUOPT_SUCCESS) {
     throw std::runtime_error(fmt::format("Failed to set solver mode, error code {}.", status));
   }
