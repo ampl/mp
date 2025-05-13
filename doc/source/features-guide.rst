@@ -56,7 +56,7 @@ controlling solver behavior and information flow.
 * Option :ref:`cvt:bigM <ampl-solver-options>` -
   sets universal bounds on variables in logical expressions;
   relates to the modeling topic recommending
-  :ref:`tight bounds on all variables <importance-of-tight-bounds-big-m-constraints>`
+  :ref:`tight bounds on all variables <tight_bounds>`
 
 * :ref:`multiplesolutions` (options ``sol:stub, sol:count, sol:poollimit``) -
   control exploration of alternative solutions

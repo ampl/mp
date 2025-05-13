@@ -18,6 +18,8 @@ Try & keep the model's coefficients
 close to :math:`\pm1` by rescaling your data.
 
 
+.. _tight_bounds:
+
 Importance of tight bounds: "big-M" constraints
 **************************************************
 
