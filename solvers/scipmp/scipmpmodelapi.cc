@@ -151,9 +151,13 @@ void ScipModelAPI::AddConstraint(const AbsConstraint &absc)  {
 void ScipModelAPI::AddConstraint(const AndConstraint &cc)  {
   SCIP_VAR** vars = NULL;
   SCIP_CCALL( SCIPallocBufferArray(getSCIP(), &vars, cc.GetArguments().size()) );
-  for (size_t i = 0; i < cc.GetArguments().size(); i++) {
+	SCIP_Bool infeas = false;
+	SCIP_CCALL( SCIPchgVarType(getSCIP(), getPROBDATA()->vars[cc.GetResultVar()],
+														 SCIP_VARTYPE_BINARY, &infeas) );
+	for (size_t i = 0; i < cc.GetArguments().size(); i++) {
     vars[i] = getPROBDATA()->vars[cc.GetArguments()[i]];
-  }
+		SCIP_CCALL( SCIPchgVarType(getSCIP(), vars[i], SCIP_VARTYPE_BINARY, &infeas) );
+	}
 
   SCIP_CONS* cons;
   SCIP_CCALL( SCIPcreateConsBasicAnd(getSCIP(), &cons, cc.GetName(), getPROBDATA()->vars[cc.GetResultVar()],
@@ -167,8 +171,12 @@ void ScipModelAPI::AddConstraint(const AndConstraint &cc)  {
 void ScipModelAPI::AddConstraint(const OrConstraint &dc)  {
   SCIP_VAR** vars = NULL;
   SCIP_CCALL( SCIPallocBufferArray(getSCIP(), &vars, dc.GetArguments().size()) );
-  for (size_t i = 0; i < dc.GetArguments().size(); i++) {
+	SCIP_Bool infeas = false;
+	SCIP_CCALL( SCIPchgVarType(getSCIP(), getPROBDATA()->vars[dc.GetResultVar()],
+														 SCIP_VARTYPE_BINARY, &infeas) );
+	for (size_t i = 0; i < dc.GetArguments().size(); i++) {
     vars[i] = getPROBDATA()->vars[dc.GetArguments()[i]];
+		SCIP_CCALL( SCIPchgVarType(getSCIP(), vars[i], SCIP_VARTYPE_BINARY, &infeas) );
   }
 
   SCIP_CONS* cons;
