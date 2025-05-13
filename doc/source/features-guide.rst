@@ -53,6 +53,11 @@ controlling solver behavior and information flow.
 * Option :ref:`scale <ampl-solver-options>` -
   controls coefficient scaling for numerical stability
 
+* Option :ref:`cvt:bigM <ampl-solver-options>` -
+  sets universal bounds on variables in logical expressions;
+  relates to the modeling topic recommending
+  :ref:`tight bounds on all variables <importance-of-tight-bounds-big-m-constraints>`
+
 * :ref:`multiplesolutions` (options ``sol:stub, sol:count, sol:poollimit``) -
   control exploration of alternative solutions
 
@@ -1035,8 +1040,8 @@ for examples.
      - Values:
 
        * **0** - No (default)
-			 * **1** - Yes, natively supported if available, otherwise emulated.
-				 Most solvers only support linear objectives natively.
+       * **1** - Yes, natively supported if available, otherwise emulated.
+         Most solvers only support linear objectives natively.
        * **2** - Yes, emulated
    * - **Example**
      - Use :ref:`multiObjectiveDiet`

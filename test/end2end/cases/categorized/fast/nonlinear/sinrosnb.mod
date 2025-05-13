@@ -31,6 +31,6 @@ subject to cons2:
 	-pi <= x[1] <= pi;
 ;
 
-solve;
-display f;
-display x;
+# solve;
+# display f;
+# display x;

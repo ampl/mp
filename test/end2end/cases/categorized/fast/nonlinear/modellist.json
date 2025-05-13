@@ -534,6 +534,9 @@
   {
     "name" : "sinrosnb",
     "tags" : ["continuous", "nonlinear", "quadraticnonconvex"],
-    "objective": -99901
+    "objective": -99901,
+    "values": {
+      "solve_result": "solved"
+    }
   }
 ]
