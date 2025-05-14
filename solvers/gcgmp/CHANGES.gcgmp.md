@@ -2,6 +2,11 @@ Summary of recent updates to GCG for AMPL
 =========================================
 
 
+## unreleased
+- Ask MP to logicalize products of 2 binaries
+  (previously only for 3 or more).
+
+
 ## 20250429
 - Fix a bug in parsing of quadratic expressions,
   which could wrongly parse products of unequal

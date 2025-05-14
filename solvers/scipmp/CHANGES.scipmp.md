@@ -2,6 +2,14 @@ Summary of recent updates to SCIP for AMPL
 ==========================================
 
 
+## unreleased
+- Reenable native OR constraint by default
+  (requires marking all variables as integer,
+  even if fixed). See option acc:or.
+- Enable native indicator constraints and cos().
+  Options acc:ind.. and acc:cos.
+
+
 ## 20250429
 - Fix a bug in parsing of quadratic expressions,
   which could wrongly parse products of unequal
