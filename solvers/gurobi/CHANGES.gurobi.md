@@ -2,6 +2,10 @@ Summary of recent updates to gurobi for AMPL
 ============================================
 
 
+## 20250514
+- Updated to Gurobi 12.0.2, which includes bugfixes
+
+
 ## 20250429
 - Added the Tan expression (previously always submitted
 	to Gurobi as a general constraint).
