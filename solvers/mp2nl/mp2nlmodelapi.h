@@ -1045,9 +1045,9 @@ protected:
   /// Mark linear part of any objective
   void MarkRangeOrEqn(const LinearObjective& ) { }
 
-  /// Mark LinConRange
+  /// Mark LinConRange.
+  /// Column sizes are accumulated in the caller.
   void MarkRangeOrEqn(const LinConRange& lcr) {
-    Add2ColSizes(lcr.vars());
     if (lcr.lb() > MinusInfinity()
         && lcr.ub() < Infinity()) {
       if (lcr.lb() < lcr.ub())
