@@ -49,15 +49,14 @@ template <class Vec>
 void LinTerms::fold_into(Vec& vec) {
   vec.resize(size());
   for (size_t i=0; i<size(); ++i)
-    vec.push_back({ var(i), coef(i) });
+    vec[i] = { var(i), coef(i) };
 }
 
 template <class Vec>
 void LinTerms::unfold_from(const Vec& vec) {
-  clear();
-  reserve(vec.size());
-  for (const auto& v: vec)
-    add_term(v.second, v.first);
+  resize(vec.size());
+  for (auto i = size(); i--; )
+    set_index_value(i, vec[i]);
 }
 
 bool LinTerms::is_sorted() const {
@@ -67,6 +66,16 @@ bool LinTerms::is_sorted() const {
     for (auto i = size()-1; i--; ) {
       if (vars_[i] >= vars_[i+1]
           || !coefs_[i])      // coef == 0
+        return false;
+    }
+  }
+  return true;            // Check emptyness elsewhere? @todo
+}
+
+bool LinTerms::is_sorted__maybe_0s() const {
+  if (size()) {           // empty expr ==> "sorted" ???
+    for (auto i = size()-1; i--; ) {
+      if (vars_[i] >= vars_[i+1])
         return false;
     }
   }
@@ -94,13 +103,34 @@ void SortUnifyNon0(Vec& vec) {
     if (i1->first == i2->first)
       i1->second += i2->second;
     else {
-      if (i1->second)
+      if (i1->second)              // last target coef non-0
         ++i1;
       *i1 = *i2;
     }
   }
   vec.resize(i1-vec.begin()
-             +bool(i1->second));   // last target element non-0
+             +bool(i1->second));   // last target coef non-0
+}
+
+/// Sort, leave only unique keys with also 0 values
+/// @param vec: some_vector< std::pair<Key, Value> >
+template <class Vec>
+void SortUnifyMaybe0(Vec& vec) {
+  assert(vec.size() >= 1);
+  if (vec.size() < 1)
+    return;
+  std::sort(vec.begin(), vec.end());
+  // Merge same keys, leaving also 0 values
+  auto i2=vec.begin(), i1=i2;
+  while (++i2!=vec.end()) {
+    if (i1->first == i2->first)
+      i1->second += i2->second;
+    else {
+      ++i1;
+      *i1 = *i2;
+    }
+  }
+  vec.resize(i1-vec.begin()+1); // last target element even if 0
 }
 
 void LinTerms::sort_terms(bool force_sort) {
@@ -113,11 +143,45 @@ void LinTerms::sort_terms(bool force_sort) {
       fold_into(fold);
       SortUnifyNon0(fold);
       assert(fold.size() <= size());
+#ifndef NDEBUG
+      if (fold.size()) {
+        auto fold1 = fold;
+        SortUnifyNon0(fold1);
+        assert(fold1 == fold);
+        SortUnifyMaybe0(fold1);
+        assert(fold1 == fold);
+      }
+#endif
       if (force_sort || fold.size() < size())
         unfold_from(fold);
     }
   }
   assert(!force_sort || is_sorted());
+}
+
+void LinTerms::sort_terms__leave_0s() {
+  if (1<size() && !is_sorted__maybe_0s()) {
+    SmallVec< std::pair<int, double>, 256 > fold;
+    fold_into(fold);
+    SortUnifyMaybe0(fold);
+#ifndef NDEBUG
+    if (!(fold.size() <= size())) {
+      printf("LT size: %ld\n", size());
+      for (size_t i=0; i<size(); ++i)
+        printf("   lt[%ld] = (%d, %g)\n", i, var(i), coef(i));
+      printf("\n\nFOLD size = %ld\n", fold.size());
+      for (size_t i=0; i<fold.size(); ++i)
+        printf("   fold[%ld] = (%d, %g)\n", i, fold[i].first, fold[i].second);
+      fold_into(fold);
+      printf("\n\nFOLD ORIG size = %ld\n", fold.size());
+      for (size_t i=0; i<fold.size(); ++i)
+        printf("   fold[%ld] = (%d, %g)\n", i, fold[i].first, fold[i].second);
+      printf("\n");
+    }
+#endif
+    unfold_from(fold);
+  }
+  assert(is_sorted__maybe_0s());
 }
 
 QuadTerms::QuadTerms(const std::vector<double>& c,

@@ -774,10 +774,17 @@ void MP2NLModelAPI::FeedExtLinPart(
     ConLinearExprWriterFactory& svwf) {
   const auto& lp_ext = item.GetExtLinPart();
   if (lp_ext.size()) {
-    auto svw = svwf.MakeVectorWriter(lp_ext.size());
-    for (int j=0; j<lp_ext.size(); ++j) {
-      svw.Write(GetNewVarIndex( lp_ext.vars()[j]),      // new ordering
-                lp_ext.coefs()[j]);
+    std::vector<int> vars_tmp = lp_ext.vars();
+    for (auto j=vars_tmp.size(); j--; )
+      vars_tmp[j] = GetNewVarIndex( vars_tmp[j] );        // new ordering
+    LinTerms lt_srt {lp_ext.coefs(), std::move(vars_tmp)};
+    lt_srt.sort_terms__leave_0s();   // Leave sparsity pattern
+    assert(lt_srt.size());
+    {   // Sparsity pattern can have coefs 0.0
+      auto svw = svwf.MakeVectorWriter(lt_srt.size());
+      for (int j=0; j<lt_srt.size(); ++j) {
+        svw.Write(lt_srt.var(j), lt_srt.coef(j));
+      }
     }
   }
 }
