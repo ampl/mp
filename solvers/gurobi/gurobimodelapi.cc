@@ -28,6 +28,11 @@ void GurobiModelAPI::AddVariables(const VarArrayDef& v) {
                        (double*)v.plb(), (double*)v.pub(),
                        vtypes.data(), (char**)v.pnames()) );
 }
+void ThrowForUnsupportedObjectives()
+{
+  throw std::runtime_error(format_error("Multiple quadratic objectives are not supported natively by Gurobi; "
+                                        "enable multi-objective emulator by setting the option obj:multi=2"));
+}
 
 void GurobiModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
   if (1>iobj) {
@@ -41,6 +46,8 @@ void GurobiModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
     GrbSetDblAttrList( GRB_DBL_ATTR_OBJ, lo.vars(), lo.coefs() );
     obj_ind_save_ = lo.vars();
   } else {
+    if (has_quadratic_obj_) ThrowForUnsupportedObjectives();
+
     GRB_CALL( GRBsetobjectiven(model(), iobj, 0,           // default priority 0
                                /// Gurobi allows opposite sense by weight sign
                                lo.obj_sense()==GetGurobiMainObjSense() ? 1.0 : -1.0,
@@ -51,6 +58,7 @@ void GurobiModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
 }
 
 void GurobiModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective &qo) {
+  has_quadratic_obj_ = true;
   if (1>iobj) {
     GRB_CALL( GRBdelq(model()) );                         // delete current QP terms
     SetLinearObjective(iobj, qo);                         // add the linear part
@@ -59,7 +67,7 @@ void GurobiModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective &q
                                 (int*)qt.pvars1(), (int*)qt.pvars2(),
                             (double*)qt.pcoefs()) );
   } else {
-    throw std::runtime_error("Multiple quadratic objectives not supported");
+    ThrowForUnsupportedObjectives();
   }
 }
 
