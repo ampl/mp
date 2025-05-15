@@ -100,6 +100,12 @@ public:
     vars_.reserve(s);
   }
 
+  /// Resize
+  void resize(size_t s) {
+    coefs_.resize(s);
+    vars_.resize(s);
+  }
+
   /// shrink_to_fit.
   /// Takes time, so use only when necessary.
   void shrink_to_fit() {
@@ -159,6 +165,10 @@ public:
   /// all elements non-0 and unique?
   bool is_sorted() const;
 
+  /// Is the expression sorted,
+  /// all elements unique but maybe 0 coefs?
+  bool is_sorted__maybe_0s() const;
+
   /// This a NASTY one (when not used).
   /// Use it before adding
   /// constraints / objectives / expressions.
@@ -169,6 +179,10 @@ public:
   /// all elements unique and non-0.
   void sort_terms(bool force_sort=true);
 
+  /// Sort and unify but leave 0's
+  /// which can represent sparsity pattern
+  void sort_terms__leave_0s();
+
   /// (var, coef)
   std::pair<int, double> IndexValue(size_t i) const
   { return {var(i), coef(i)}; }
@@ -176,6 +190,12 @@ public:
   /// Add (var, coef)
   void add_index_value(std::pair<int, double> iv)
   { add_term(iv.second, iv.first); }
+
+  /// Set [i] = (var, coef)
+  void set_index_value(size_t i, std::pair<int, double> iv) {
+    assert(i<size());
+    vars_[i] = iv.first; coefs_[i] = iv.second;
+  }
 
   /// Equality. Assumes being sorted
   bool equals(const LinTerms& lt) const {

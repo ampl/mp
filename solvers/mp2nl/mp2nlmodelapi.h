@@ -1480,7 +1480,8 @@ protected:
   /// (NNZ, nlo(i), nlb(i))
   void ResetObjMetaInfo();
 
-  /// Merge algcon/obj sparsity pattern with jacobian/gradient
+  /// Merge algcon/obj sparsity pattern with jacobian/gradient.
+  /// We don't sort indexes because they are output in the NL order
   void MergeItemSparsity(
       const ItemInfo& info, int item_kind, MP2NL_Expr expr);
 
