@@ -2,8 +2,9 @@ Summary of recent updates to gurobi for AMPL
 ============================================
 
 
-## 20250514
+## 20250515
 - Updated to Gurobi 12.0.2, which includes bugfixes
+- Improved detection of unsupported multiobjective models
 
 
 ## 20250429
