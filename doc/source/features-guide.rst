@@ -58,6 +58,12 @@ controlling solver behavior and information flow.
   relates to the modeling topic recommending
   :ref:`tight bounds on all variables <tight_bounds>`
 
+* We recommend
+  :ref:`original piecewise-linear expressions <piecewise_linear_modeling>`
+  with MP solvers
+  (`AMPL option <https://dev.ampl.com/ampl/reference/options.html>`_
+  ``pl_linearize`` set to 0).
+
 * :ref:`multiplesolutions` (options ``sol:stub, sol:count, sol:poollimit``) -
   control exploration of alternative solutions
 
