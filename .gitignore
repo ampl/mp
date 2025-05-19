@@ -25,3 +25,4 @@ Testing
 /test/end2end/*.pyproj
 /doc/env
 /doc/.venv
+.DS_Store

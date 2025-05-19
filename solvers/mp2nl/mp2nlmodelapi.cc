@@ -1,4 +1,5 @@
 #include <cstring>
+#include <unordered_map>
 
 #include "mp2nlmodelapi.h"
 #include "mp/nl-solver.hpp"
