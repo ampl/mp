@@ -87,6 +87,10 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   /// Only markers
   std::vector<bool> is_var_deleted_;
 
+  int n_objs_total_ {};        // in the NL file
+  bool multiobj_ {};
+  int objno_used_ {};
+
   /// Packed objective type information.
   /// is_obj_max_[i] specifies whether objective i is maximization.
   std::vector<bool> is_obj_max_;
@@ -788,6 +792,7 @@ public:
 
   /// Adds an objective.
   /// Returns a builder for the linear part of an objective expression.
+  /// @note Not used from NL Reader.
   LinearObjBuilder AddObj(obj::Type type, NumericExpr expr,
                           int num_linear_terms = 0);
 
@@ -795,6 +800,20 @@ public:
     return AddObj(type, NumericExpr(), num_linear_terms);
   }
 
+  /// Receive info on the objective numbers
+  /// and multiobj/objno selection
+  void NotifyObjChoice(int n_obj_total, bool multiobj, int objno) {
+    n_objs_total_ = n_obj_total;
+    assert(linear_objs_.capacity()   // GetSuffixSize() uses this
+           == (size_t)n_obj_total);
+    multiobj_ = multiobj;
+    objno_used_ = objno;
+  }
+
+  /// This is called in the very beginning with the total number
+  /// of objectives (properly considering possible objno option).
+  /// However the capacity of \a linear_objs_, etc. is the total
+  /// number of objectives in the NL file, reserved in SetInfo().
   void AddObjs(int num_objs) {
     linear_objs_.resize(num_objs);
     is_obj_max_.resize(num_objs);
@@ -1161,17 +1180,35 @@ public:
   }
 
   ////////////////////////// HIGH-LEVEL SUFFIX I/O //////////////////////////////
+
+  /// \brief Resultant subvector for suffix type #184.
+  /// Design like this because
+  /// we manage suffix sizes in BasicProblem<>.
+  template <class T>
+  std::pair<int, int> GetSufSubvec(
+      const BasicMutSuffix<T>& suf) const {
+    if (mp::suf::OBJ == suf.kind_pure())
+      if (!multiobj_ && objno_used_) {
+        // objno==0: no objective... but we ignore it
+        return {objno_used_-1, 1};
+      }
+    return {0, suf.num_values()};
+  }
+
+  /// Report suffix.
+  /// For multiple objectives, receives 1-element vectors
+  /// when solving with objno>0.
   template <class T>
   void ReportSuffix(const SuffixDef<T>& sufdef,
                     ArrayRef<T> values) {
     if (values.empty())
       return;
     auto suf = FindOrCreateSuffix(sufdef);
-    auto suf_size = suf.num_values();
-    /// Check this because Converter or solver can add more variables
-    assert(suf_size <= (int)values.size());
-    for (auto i=suf_size; i--; ) {
-      suf.set_value(i, values[i]);
+    auto subvec = GetSufSubvec(suf);
+    /// Check "<=" because Converter or solver can add more variables
+    assert(subvec.second <= (int)values.size());
+    for (auto i=subvec.second; i--; ) {
+      suf.set_value(i + subvec.first, values[i]);
     }
   }
 
@@ -1180,7 +1217,10 @@ public:
     auto suf = FindSuffix(sufdef);
     if (!suf)
       return {};
-    return suf.get_values();
+    auto subvec = GetSufSubvec(suf);
+    auto suf_full = suf.get_values();
+    return
+        {suf_full.begin() + subvec.first, (size_t)subvec.second};
   }
 
   /// Read integer suffix.
@@ -1231,11 +1271,11 @@ public:
   BasicMutSuffix<T> FindOrCreateSuffix(const SuffixDef<T>& sufdef) {
     auto main_kind = (suf::Kind)(sufdef.kind() & suf::KIND_MASK);
     auto suf_raw = FindSuffix(sufdef);
-    auto suf_size = GetSuffixSize(main_kind);    // can be < values.size()
     if (suf_raw) {
       suf_raw.or_kind(suf::OUTPUT);
       return suf_raw;
     }
+    auto suf_size = GetSuffixSize(main_kind);
     return suffixes(main_kind).template
             Add<T>(sufdef.name(), sufdef.kind() | suf::OUTPUT,
                    suf_size, sufdef.table());

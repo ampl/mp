@@ -2120,6 +2120,7 @@ class NLProblemBuilder {
     AddVariables(h);
     if (int n = h.num_common_exprs())
       builder_.AddCommonExprs(n);
+    builder_.NotifyObjChoice(h.num_objs, multiobj(), objno());
     int n_objs = resulting_nobj( h.num_objs );
     if (n_objs != 0)
       builder_.AddObjs( n_objs );

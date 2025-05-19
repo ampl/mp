@@ -74,6 +74,11 @@ class ProblemBuilder : public SuffixManager {
     }
   };
 
+  /// Receive info on the objective numbers
+  /// and multiobj/objno selection
+  void NotifyObjChoice(int , bool , int ) { }
+
+
   typedef LinearExprBuilder LinearObjBuilder;
 
   /// Adds an objective.
