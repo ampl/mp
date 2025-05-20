@@ -38,7 +38,7 @@
     }
   },
   {
-    "name": "flowshp1 [or]",
+    "name": "flowshp1 [or + bigM]",
     "files": [ "flowshp1.mod", "flowshp.dat" ],
     "tags": [ "logical" ],
     "objective": 22,

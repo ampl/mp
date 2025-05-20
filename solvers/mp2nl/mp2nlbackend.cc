@@ -29,6 +29,9 @@ namespace mp {
 std::unique_ptr<BasicModelManager>
 CreateMP2NLModelMgr(MP2NLCommon&, Env&, pre::BasicValuePresolver*&);
 
+
+// We don't provde bigM, it's user's risk
+// 1e5 is usually the maximum numerically stable value
 MP2NLBackend::ConfigMap MP2NLBackend::config_map_ {
     { "baron",
      "acc:alldiff=0 acc:numberofconst=0 acc:numberofvar=0 "
@@ -36,21 +39,22 @@ MP2NLBackend::ConfigMap MP2NLBackend::config_map_ {
      "acc:condlinle=0 acc:condlineq=0 acc:condlinge=0 "
      "acc:condlinlt=0 acc:condlingt=0 acc:ifthen=0 "
      "acc:and=0 acc:or=0 acc:abs=0 acc:max=0 acc:min=0 "
-     "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0 cvt:bigM=1e6" },
-    { "baronmp",
+     "acc:sin=0 acc:tanh=0 "
+     "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },
+    { "baronmp",              // Don't need MP2NL actually
      "acc:alldiff=0 acc:numberofconst=0 acc:numberofvar=0 "
      "acc:indle=0 acc:indge=0 acc:indeq=0 acc:not=0 "
      "acc:condlinle=0 acc:condlineq=0 acc:condlinge=0 "
      "acc:condlinlt=0 acc:condlingt=0 acc:ifthen=0 "
      "acc:and=0 acc:or=0 acc:abs=0 acc:max=0 acc:min=0 "
-     "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0 cvt:bigM=1e6" },
+     "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },
     { "knitro",
      "acc:alldiff=0 acc:numberofconst=0 acc:numberofvar=0 "
      "acc:indle=0 acc:indge=0 acc:indeq=0 acc:not=0 "
      "acc:condlinle=0 acc:condlineq=0 acc:condlinge=0 "
      "acc:condlinlt=0 acc:condlingt=0 acc:ifthen=0 "
      "acc:and=0 acc:or=0 "  //"acc:abs=0 acc:max=0 acc:min=0 "
-     "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0 cvt:bigM=1e6" }
+     "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" }
 };
 
 
