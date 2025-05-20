@@ -28,6 +28,7 @@
 #include <climits>
 #include <cmath>
 #include <vector>
+#include <algorithm>
 
 #include "mp/expr.h"
 #include "mp/expr-linear.h"
@@ -1207,7 +1208,8 @@ public:
     auto subvec = GetSufSubvec(suf);
     /// Check "<=" because Converter or solver can add more variables
     assert(subvec.second <= (int)values.size());
-    for (auto i=subvec.second; i--; ) {
+    for (auto i=std::min(subvec.second, (int)values.size());
+         i--; ) {
       suf.set_value(i + subvec.first, values[i]);
     }
   }
