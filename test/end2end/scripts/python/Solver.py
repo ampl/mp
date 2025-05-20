@@ -245,7 +245,7 @@ class AMPLSolver(Solver):
         # after timeout
         p.kill()
 
-    def _runProcess(self, args : list, vestigial=False, timeout=None, logFile = None):
+    def _runProcess(self, args : list, vestigial=True, timeout=None, logFile = None):
       # ritorna stdout
       # throws if not successfull
          if vestigial:
@@ -255,7 +255,7 @@ class AMPLSolver(Solver):
            else:
               return subprocess.check_output(args, text=True,
                      stderr=subprocess.PIPE)
-         else:
+         else:  # Since adding an NL-file case, this requires Ctrl-C after all tests
               resultTable = []
               SLICE_IN_SECONDS = 1
               p = subprocess.Popen(args, universal_newlines=True,
