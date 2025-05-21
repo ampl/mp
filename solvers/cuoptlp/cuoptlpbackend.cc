@@ -62,6 +62,11 @@ void CuoptlpBackend::OpenSolver() {
   printf("lp_ %p this %p\n", lp_, this);
 
   int status = 0;
+  status = cuOptCreateSolverSettings(&lp_->settings);
+  if (status != CUOPT_SUCCESS) {
+    throw std::runtime_error(fmt::format("Failed to create solver settings, error code {}.", status));
+  }
+
   // TODO Typically this function creates an instance of the solver environment
   // and an empty model
   void* env_p;
@@ -118,7 +123,6 @@ const char* CuoptlpBackend::GetBackendName()
 std::string CuoptlpBackend::GetSolverVersion() {
   // TODO Return version from solver API
   int32_t major, minor, patch;
-  cuOptGetSemanticVersion(&major, &minor, &patch);
   return fmt::format("{}.{}.{}", major, minor, patch);
 }
 
@@ -212,15 +216,10 @@ void CuoptlpBackend::Solve() {
   if (status != CUOPT_SUCCESS) {
     throw std::runtime_error(fmt::format("Failed to check if problem is MIP, error code {}.", status));
   }
-  status = cuOptCreateSolverSettings(&problem_data->settings);
-  if (status != CUOPT_SUCCESS) {
-    throw std::runtime_error(fmt::format("Failed to create solver settings, error code {}.", status));
-  }
-  status = cuOptSetIntegerParameter(problem_data->settings, CUOPT_METHOD, CUOPT_METHOD_DUAL_SIMPLEX);
-  if (status != CUOPT_SUCCESS) {
-    throw std::runtime_error(fmt::format("Failed to set solver mode, error code {}.", status));
-  }
-
+  //status = cuOptCreateSolverSettings(&problem_data->settings);
+  //if (status != CUOPT_SUCCESS) {
+  //  throw std::runtime_error(fmt::format("Failed to create solver settings, error code {}.", status));
+  //}
   status = cuOptSolve(problem_data->problem, problem_data->settings, &problem_data->solution);
   if (status != CUOPT_SUCCESS) {
     throw std::runtime_error(fmt::format("Failed to solve problem, error code {}.", status));
@@ -356,6 +355,23 @@ static const mp::OptionValueInfo verbosity_values_[] = {
   { "1", "All info", 1}
 };
 
+static const mp::OptionValueInfo values_method[] = {
+    { "0", "Concurrent (default)", 0},
+    { "1", "Pdlp", 1},
+    { "2", "Dual simplex", 2}
+};
+
+static const mp::OptionValueInfo values_pdlp_solver_mode[] = {
+    { "0", "Stable1", 0},
+    { "1", "Stable2 (default)", 1},
+    { "2", "Methodical1", 2},
+    { "3", "Fast1", 3}
+};
+
+static const mp::OptionValueInfo values_bool[] = {
+    { "true", "True", 0},
+    { "false", "False", 1}
+};
 
 
 void CuoptlpBackend::InitCustomOptions() {
@@ -371,6 +387,128 @@ void CuoptlpBackend::InitCustomOptions() {
 
   // Use AddSolverOption() for proper solver parameters.
   // Below are examples of options stored in variables for own use.
+
+  AddSolverOption("lim:timelimit timelimit",
+    "Time limit in seconds after which the solver will stop and return the current solution",
+    CUOPT_TIME_LIMIT, 0.0, DBL_MAX);
+
+  AddSolverOption("lim:ncputhreads ncputhreads",
+    "Number of CPU threads used in the LP and MIP solvers",
+    CUOPT_NUM_CPU_THREADS, -1, INT_MAX);
+
+  // LP Solver Options
+
+  AddSolverOption("alg:method method",
+    "Designate the method to solve the LP problem:\n"
+    "\n.. value-table::\n",
+    CUOPT_METHOD,
+    values_method, CUOPT_METHOD_CONCURRENT);
+
+  AddSolverOption("alg:solver_mode solver_mode",
+    "Designate the solver mode used by PDLP to solve the problem:\n"
+    "\n.. value-table::\n",
+    CUOPT_PDLP_SOLVER_MODE,
+    values_pdlp_solver_mode, CUOPT_PDLP_SOLVER_MODE_STABLE2);
+
+  AddSolverOption("lim:iterations iterations",
+    "Iteration limit after which the solver will stop and return the current solution",
+    CUOPT_ITERATION_LIMIT, 0, INT_MAX);
+
+  AddSolverOption("lp:infeasdetect infeasdetect",
+    "Detect infeasibility PDLP",
+    CUOPT_INFEASIBILITY_DETECTION,
+    values_bool, 0);
+
+  AddSolverOption("lp:strictinfeas strictinfeas",
+    "Stop if current or the average solution is detected as infeasible",
+    CUOPT_STRICT_INFEASIBILITY,
+    values_bool, 0);
+
+  AddSolverOption("lp:crossover crossover",
+    "Crossover to a basic solution after a optimal solution is found",
+    CUOPT_CROSSOVER,
+    values_bool, 0);
+
+  AddSolverOption("lp:savebestprimal savebestprimal",
+    "Save the best primal solution so far",
+    CUOPT_SAVE_BEST_PRIMAL_SO_FAR,
+    values_bool, 0);
+
+  AddSolverOption("lp:firstprimalfeas firstprimalfeas",
+    "Stop when the first primal feasible solution is found",
+    CUOPT_FIRST_PRIMAL_FEASIBLE ,
+    values_bool, 0);
+
+  AddSolverOption("lp:perconsres perconsres",
+    "Compute the primal & dual residual per constraint instead of globally",
+    CUOPT_PER_CONSTRAINT_RESIDUAL,
+    values_bool, 0);
+
+  AddSolverOption("lp:absprimaltol absprimaltol",
+    "Absolute primal tolerance used in PDLP's primal feasibility check",
+    CUOPT_ABSOLUTE_PRIMAL_TOLERANCE, 0.0, 1e-1);
+
+  AddSolverOption("lp:absdualtol absdualtol",
+    "Absolute dual tolerance used in PDLP's dual feasibility check",
+    CUOPT_ABSOLUTE_DUAL_TOLERANCE, 0.0, 1e-1);
+
+  AddSolverOption("lp:absgaptol absgaptol",
+    "Absolute gap tolerance used in PDLP's duality gap check",
+    CUOPT_ABSOLUTE_GAP_TOLERANCE, 0.0, 1e-1);
+
+  AddSolverOption("lp:relprimaltol relprimaltol",
+    "Relative primal tolerance used in PDLP's primal feasibility check",
+    CUOPT_RELATIVE_PRIMAL_TOLERANCE, 0.0, 1e-1);
+
+  AddSolverOption("lp:reldualtol reldualtol",
+    "Relative dual tolerance used in PDLP's dual feasibility check",
+    CUOPT_RELATIVE_DUAL_TOLERANCE, 0.0, 1e-1);
+
+  AddSolverOption("lp:relgaptol relgaptol",
+    "Relative gap tolerance used in PDLP's duality gap check",
+    CUOPT_RELATIVE_GAP_TOLERANCE, 0.0, 1e-1);
+
+  // MIP Solver Options
+
+  AddSolverOption("mip:abstol abstol",
+    "Absolute tolerance used in mip",
+    CUOPT_MIP_ABSOLUTE_TOLERANCE, 0.0, 1e-1);
+
+  AddSolverOption("mip:reltol reltol",
+    "Relative tolerance used in mip",
+    CUOPT_MIP_RELATIVE_TOLERANCE, 0.0, 1e-1);
+
+  AddSolverOption("mip:inttol inttol",
+    "Integrality tolerance used in mip",
+    CUOPT_MIP_INTEGRALITY_TOLERANCE, 0.0, 1e-1);
+
+  AddSolverOption("mip:absgap absgap",
+    "Absolute tolerance used to terminate the MIP solve",
+    CUOPT_MIP_ABSOLUTE_GAP, 0.0, 1e-1);
+
+  AddSolverOption("lp:relgap relgap",
+    "Relative tolerance used to terminate the MIP solve",
+    CUOPT_MIP_RELATIVE_GAP, 0.0, 1e-1);
+
+  AddSolverOption("mip:hueristicsonly hueristicsonly",
+    "Run only the GPU heuristics",
+    CUOPT_MIP_HEURISTICS_ONLY,
+    values_bool, 0);
+
+  AddSolverOption("mip:scale scale",
+    "Apply Scaling to MIP problems",
+    CUOPT_MIP_SCALING,
+    values_bool, 1);
+
+  // Logging Options
+
+  AddSolverOption("tech:consolelog consolelog",
+    "Log information to the console during a solve",
+    CUOPT_LOG_TO_CONSOLE,
+    values_bool, 1);
+
+  AddStoredOption("tech:logfile logfile",
+    "Log file name.", storedOptions_.logFile_);
 
   AddStoredOption("tech:option_example opt_example example_opt",
       "Example option. "

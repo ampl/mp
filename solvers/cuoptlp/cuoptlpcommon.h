@@ -101,7 +101,7 @@ protected:
 // TODO This macro is useful to automatically throw an error if a function in the
 // solver API does not return a valid errorcode. In this mock driver, we define it
 // ourselves, normally this constant would be defined in the solver's API.
-#define CUOPT_CCALL( call ) do { if (int e = (call) != CUOPT_SUCCESS) \
+#define CUOPTLP_CCALL( call ) do { if (int e = (call) != CUOPT_SUCCESS) \
   throw std::runtime_error( \
     fmt::format("  Call failed: '{}' with code {}", #call, e )); } while (0)
 
