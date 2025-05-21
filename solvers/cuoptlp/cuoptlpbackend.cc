@@ -56,58 +56,15 @@ CuoptlpBackend::~CuoptlpBackend() {
 }
 
 void CuoptlpBackend::OpenSolver() {
-  fmt::print("opening solver\n");
-
   lp_ = new ProblemData();
-  printf("lp_ %p this %p\n", lp_, this);
-
   int status = 0;
   status = cuOptCreateSolverSettings(&lp_->settings);
   if (status != CUOPT_SUCCESS) {
     throw std::runtime_error(fmt::format("Failed to create solver settings, error code {}.", status));
   }
-
-  // TODO Typically this function creates an instance of the solver environment
-  // and an empty model
-  void* env_p;
-  // Typically try the registered function first;
-  // if not available call the solver's API function directly
-  /*
-  const auto& create_fn = GetCallbacks().cb_initsolver_;
-  if (create_fn)
-    set_env((GRBenv*)create_fn());
-  else
-    status = createEnv(&env_p);
-    */
-  // set_env(env_p);
-
-  /* Todo catch errors
-  if ( env() == NULL ) {
-    // char  errmsg[CPXMESSAGEBUFSIZE];
-    // CPXgeterrorstring (env(), status, errmsg);
-     throw std::runtime_error(
-       fmt::format("Could not open CUOPTLP environment.\n{}", status) );
-  }
-  */
-
-
-  /* TODO Create problem instance
-  cuoptlp_prob* prob;
-  status = CUOPTLP_CreateProb(env_p, &prob);
- */
-  //Solver::SolverModel* prob = Solver::CreateSolverModel();
-  //set_lp(prob); // Assign it
-  //if (status)
-  //  throw std::runtime_error( fmt::format(
-  //        "Failed to create problem, error code {}.", status ) );
-  /* TODO Typically check call */
-  /// Turn off verbosity by default
-  // CUOPTLP_CCALL(CUOPTLP_SetIntParam(prob, "Logging", 0));
-
 }
 
 void CuoptlpBackend::CloseSolver() {
-  fmt::print("closing solver\n");
   /* Cleanup: close problem and environment */
   if ( lp() != NULL ) {
     cuOptDestroyProblem(&lp_->problem);
@@ -122,7 +79,7 @@ const char* CuoptlpBackend::GetBackendName()
 
 std::string CuoptlpBackend::GetSolverVersion() {
   // TODO Return version from solver API
-  int32_t major, minor, patch;
+  int32_t major = 25, minor = 5, patch = 0;
   return fmt::format("{}.{}.{}", major, minor, patch);
 }
 
@@ -157,7 +114,7 @@ ArrayRef<double> CuoptlpBackend::PrimalSolution() {
 pre::ValueMapDbl CuoptlpBackend::DualSolution() {
   return { {
     { CG_Linear, DualSolution_LP() },
-    { CG_Quadratic, DualSolution_QP() } } };
+  } };
 }
 
 ArrayRef<double> CuoptlpBackend::DualSolution_LP() {
@@ -168,11 +125,6 @@ ArrayRef<double> CuoptlpBackend::DualSolution_LP() {
   if (status != CUOPT_SUCCESS) {
     pi.clear();
   }
-  return pi;
-}
-ArrayRef<double> CuoptlpBackend::DualSolution_QP() {
-  std::vector<double> pi(1);
-  pi.clear();
   return pi;
 }
 
@@ -188,7 +140,6 @@ double CuoptlpBackend::ObjectiveValue() const {
 
 double CuoptlpBackend::NodeCount() const {
   return 0;
-//  return getIntAttr(CUOPTLP_INTATTR_NODECNT);
 }
 
 double CuoptlpBackend::SimplexIterations() const {
@@ -198,7 +149,6 @@ double CuoptlpBackend::SimplexIterations() const {
 
 int CuoptlpBackend::BarrierIterations() const {
   return 0;
-//  return getIntAttr(CUOPTLP_INTATTR_BARRIERITER);
 }
 
 
@@ -216,10 +166,6 @@ void CuoptlpBackend::Solve() {
   if (status != CUOPT_SUCCESS) {
     throw std::runtime_error(fmt::format("Failed to check if problem is MIP, error code {}.", status));
   }
-  //status = cuOptCreateSolverSettings(&problem_data->settings);
-  //if (status != CUOPT_SUCCESS) {
-  //  throw std::runtime_error(fmt::format("Failed to create solver settings, error code {}.", status));
-  //}
   status = cuOptSolve(problem_data->problem, problem_data->settings, &problem_data->solution);
   if (status != CUOPT_SUCCESS) {
     throw std::runtime_error(fmt::format("Failed to solve problem, error code {}.", status));
@@ -240,35 +186,7 @@ void CuoptlpBackend::ReportResults() {
 void CuoptlpBackend::ReportCUOPTLPResults() {
   SetStatus( GetSolveResult() );
   AddCUOPTLPMessages();
-  if (need_multiple_solutions())
-    ReportCUOPTLPPool();
 }
-std::vector<double> CuoptlpBackend::getPoolSolution(int i)
-{
-  std::vector<double> vars(NumVars());
- // CUOPTLP_CCALL(CUOPTLP_GetPoolSolution(lp(), i, NumVars(), NULL, vars.data()));
-  return vars;
-}
-double CuoptlpBackend::getPoolObjective(int i)
-{
-  double obj;
- // CUOPTLP_CCALL(CUOPTLP_GetPoolObjVal(lp(), i, &obj));
-  return obj;
-}
-void CuoptlpBackend::ReportCUOPTLPPool() {
-  if (!IsMIP())
-    return;
-  int iPoolSolution = -1;
-  int nsolutions;
-  /*
-  while (++iPoolSolution < getIntAttr(CUOPTLP_INTATTR_POOLSOLS)) {
-    ReportIntermediateSolution(
-      { getPoolSolution(iPoolSolution),
-        {}, { getPoolObjective(iPoolSolution) } });
-  }
-  */
-}
-
 
 void CuoptlpBackend::AddCUOPTLPMessages() {
   if(auto si = SimplexIterations())
@@ -323,28 +241,7 @@ std::pair<int, std::string> CuoptlpBackend::GetSolveResult() {
 }
 
 
-void CuoptlpBackend::FinishOptionParsing() {
-  int v=-1;
- // GetSolverOption(CUOPTLP_INTPARAM_LOGGING, v);
-  set_verbose_mode(v>0);
-
-  // Nartive params
-  if (storedOptions_.paramread_.size()) {
-    //GRB_CALL(
-    //  GRBreadparams(GRBgetenv(model()),
-    //    paramfile_read().c_str()));
-  }
-  /// Set advanced parameters
-  for (const auto& prm : storedOptions_.inlineparams_)
-    this->SetSolverOption("Dummy", prm);
-  // Write native params
-  if (storedOptions_.paramwrite_.size()) {
-    //GRB_CALL(
-    //  GRBwriteparams(GRBgetenv(model()),
-    //    paramfile_write().c_str()));
-  }
-  //lp()->SetVerbosity(storedOptions_.verbosity_);
-}
+void CuoptlpBackend::FinishOptionParsing() {}
 
 
 ////////////////////////////// OPTIONS /////////////////////////////////
@@ -373,7 +270,6 @@ static const mp::OptionValueInfo values_bool[] = {
     { "false", "False", 1}
 };
 
-
 void CuoptlpBackend::InitCustomOptions() {
 
   set_option_header(
@@ -384,9 +280,6 @@ void CuoptlpBackend::InitCustomOptions() {
       "AMPL option ``cuoptlp_options``. For example::\n"
       "\n"
       "  ampl: option cuoptlp_options 'mipgap=1e-6';\n");
-
-  // Use AddSolverOption() for proper solver parameters.
-  // Below are examples of options stored in variables for own use.
 
   AddSolverOption("lim:timelimit timelimit",
     "Time limit in seconds after which the solver will stop and return the current solution",
@@ -507,21 +400,10 @@ void CuoptlpBackend::InitCustomOptions() {
     CUOPT_LOG_TO_CONSOLE,
     values_bool, "true");
 
-  AddSolverOption("tech:outlevel outlevel",
-    "Set the output level for the solver",
+  AddSolverOption("tech:outlev outlev",
+    "Whether to log information to the console",
     CUOPT_LOG_TO_CONSOLE,
     values_bool, "true");
-
-  AddStoredOption("tech:logfile logfile",
-    "Log file name.", storedOptions_.logFile_);
-
-  ////////////////// CUSTOM RESULT CODES ///////////////////
-  AddSolveResults( {
-                     { sol::FAILURE+1, "fatal error 1" },
-                     { sol::FAILURE+2, "fatal error 2" },
-                     { sol::LIMIT_FEAS_NEW + 1, "AI iteration limit, feasible solution" },
-                     { sol::LIMIT_NO_FEAS_NEW + 1, "AI iteration limit, no feasible solution" }
-                   } );     // No replacement, make sure they are new
 }
 
 
@@ -556,169 +438,6 @@ double CuoptlpBackend::MIPGapAbs() {
     ObjectiveValue() - BestDualBound());
 }
 
-#if 0
-ArrayRef<int> CuoptlpBackend::VarStatii() {
-
-  std::vector<int> vars(NumVars());
-  /*
-  if (!CUOPTLP_GetBasis(lp(), vars.data(), NULL))
-    vars.clear();         // return empty if no basis
-  for (auto& s : vars) {
-    switch (s) {
-    case CUOPTLP_BASIS_BASIC:
-      s = (int)BasicStatus::bas;
-      break;
-    case CUOPTLP_BASIS_LOWER:
-      s = (int)BasicStatus::low;
-      break;
-    case CUOPTLP_BASIS_UPPER:
-      s = (int)BasicStatus::upp;
-      break;
-    case CUOPTLP_BASIS_SUPERBASIC:
-      s = (int)BasicStatus::sup;
-      break;
-    case CUOPTLP_BASIS_FIXED:
-      s = (int)BasicStatus::equ;
-      break;
-    default:
-      MP_RAISE(fmt::format("Unknown Cuoptlp VBasis value: {}", s));
-    }
-  }
-  */
-  return vars;
-}
-
-ArrayRef<int> CuoptlpBackend::ConStatii() {
-
-  std::vector<int> cons(NumLinCons());
-  /*
-  if (!CUOPTLP_GetBasis(lp(), NULL, cons.data()))
-    cons.clear();          // return empty if no basis
-  for (auto& s : cons) {
-    switch (s) {
-    case CUOPTLP_BASIS_BASIC:
-      s = (int)BasicStatus::bas;
-      break;
-    case CUOPTLP_BASIS_LOWER:
-      s = (int)BasicStatus::low;
-      break;
-    case CUOPTLP_BASIS_UPPER:
-      s = (int)BasicStatus::upp;
-      break;
-    case CUOPTLP_BASIS_SUPERBASIC:
-      s = (int)BasicStatus::sup;
-      break;
-    case CUOPTLP_BASIS_FIXED:
-      s = (int)BasicStatus::equ;
-      break;
-    default:
-      MP_RAISE(fmt::format("Unknown Cuoptlp VBasis value: {}", s));
-    }
-  }*/
-  return cons;
-}
-
-void CuoptlpBackend::VarStatii(ArrayRef<int> vst) {
-  int index[1];
-  std::vector<int> stt(vst.data(), vst.data() + vst.size());
-  /*
-  for (auto j = stt.size(); j--; ) {
-    auto& s = stt[j];
-    switch ((BasicStatus)s) {
-    case BasicStatus::bas:
-      s = CUOPTLP_BASIS_BASIC;
-      break;
-    case BasicStatus::low:
-      s = CUOPTLP_BASIS_LOWER;
-      break;
-    case BasicStatus::equ:
-      s = CUOPTLP_BASIS_FIXED;
-      break;
-    case BasicStatus::upp:
-      s = CUOPTLP_BASIS_UPPER;
-      break;
-    case BasicStatus::sup:
-    case BasicStatus::btw:
-      s = CUOPTLP_BASIS_SUPERBASIC;
-      break;
-    case BasicStatus::none:
-      /// 'none' is assigned to new variables. Compute low/upp/sup:
-      /// Depending on where 0.0 is between bounds
-      double lb, ub;
-      index[0] = (int)j;
-      if(!CUOPTLP_GetColInfo(lp(), CUOPTLP_DBLINFO_LB, 1, index, &lb) &&
-        !CUOPTLP_GetColInfo(lp(), CUOPTLP_DBLINFO_UB, 1, index, &ub))
-      {
-        if (lb >= -1e-6)
-          s = -1;
-        else if (ub <= 1e-6)
-          s = -2;
-        else
-          s = -3;  // or, leave at 0?
-      }
-      break;
-    default:
-      MP_RAISE(fmt::format("Unknown AMPL var status value: {}", s));
-    }
-  }
-  CUOPTLP_SetBasis(lp(), stt.data(), NULL);
-  */
-}
-
-void CuoptlpBackend::ConStatii(ArrayRef<int> cst) {
-  /*
-  std::vector<int> stt(cst.data(), cst.data() + cst.size());
-  for (auto& s : stt) {
-    switch ((BasicStatus)s) {
-    case BasicStatus::bas:
-      s = CUOPTLP_BASIS_BASIC;
-      break;
-    case BasicStatus::none:   // for 'none', which is the status
-    case BasicStatus::upp:    // assigned to new rows, it seems good to guess
-    case BasicStatus::sup:    // a valid status.
-    case BasicStatus::low:    //
-    case BasicStatus::equ:    // For active constraints, it is usually 'sup'.
-    case BasicStatus::btw:    // We could compute slack to decide though.
-      s = CUOPTLP_BASIS_SUPERBASIC;
-      break;
-    default:
-      MP_RAISE(fmt::format("Unknown AMPL con status value: {}", s));
-    }
-  }
-  CUOPTLP_SetBasis(lp(), NULL, stt.data());
-  */
-}
-
-SolutionBasis CuoptlpBackend::GetBasis() {
-  std::vector<int> varstt = VarStatii();
-  std::vector<int> constt = ConStatii();
-  if (varstt.size() && constt.size()) {
-    auto mv = GetValuePresolver().PostsolveBasis(
-      { std::move(varstt),
-        {{{ CG_Linear, std::move(constt) }}} });
-    varstt = mv.GetVarValues()();
-    constt = mv.GetConValues()();
-    assert(varstt.size());         // not for constraints, can be QCP
-  }
-  return { std::move(varstt), std::move(constt) };
-}
-
-void CuoptlpBackend::SetBasis(SolutionBasis basis) {
-  auto mv = GetValuePresolver().PresolveBasis(
-    { basis.varstt, basis.constt });
-  auto varstt = mv.GetVarValues()();
-  auto constt = mv.GetConValues()(CG_Linear);
-  assert(varstt.size());
-  assert(constt.size());
-  VarStatii(varstt);
-  ConStatii(constt);
-}
-
-void CuoptlpBackend::AddMIPStart(
-    ArrayRef<double> x0, ArrayRef<int> sparsity) {
-  //CUOPTLP_CCALL(CUOPTLP_AddMipStart(lp(), NumVars(), NULL, const_cast<double*>(x0.data())));
-}
-#endif
 
 } // namespace mp
 

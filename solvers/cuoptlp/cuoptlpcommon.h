@@ -5,14 +5,9 @@
 
 #include "mp/backend-to-model-api.h"
 
-//extern "C" {
-// TODO Typically import here the solver's C API headers
-
+extern "C" {
 #include <cuopt/linear_programming/cuopt_c.h>
-
-// Here we use a cplus plus stub instead
-   #include "cuoptlp-solvermodel.h"
-//}
+};
 
 #include "mp/format.h"
 

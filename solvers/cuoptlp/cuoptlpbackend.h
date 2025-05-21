@@ -48,8 +48,6 @@ public:
   /// Chance to consider options immediately (open cloud, etc)
   void FinishOptionParsing() override;
 
-
-
   ////////////////////////////////////////////////////////////
   /////////////// OPTIONAL STANDARD FEATURES /////////////////
   ////////////////////////////////////////////////////////////
@@ -60,50 +58,14 @@ public:
   USING_STD_FEATURES;
 
   /**
-  * EXPORT PROBLEM
-  **/
-  ALLOW_STD_FEATURE(WRITE_PROBLEM, true)
-  void DoWriteProblem(const std::string& name) override { }
-
-  /**
   * EXPORT SOLUTION
   **/
   ALLOW_STD_FEATURE(WRITE_SOLUTION, true)
   void DoWriteSolution(const std::string& name) override { }
 
-
-  /**
-   * MULTISOL support.
-   *  If (need_multiple_solutions()),
-   *  call ReportIntermediateSolution() during solve or after.
-   **/
-  //ALLOW_STD_FEATURE(MULTISOL, true)
-
-  /**
-   * Get/Set AMPL var/con statii
-   **/
-  //ALLOW_STD_FEATURE(BASIS, true)
-  /// TODO If getting/setting a basis is supported, implement the
-  /// accessor and the setter below.
-  /// Should return empty basis if not available
-  /// (e.g., not an LP.)
-  //SolutionBasis GetBasis() override;
-  //void SetBasis(SolutionBasis) override;
-
-  /**
-  * MIP warm start
-  **/
-  /// TODO If MIP warm start is supported, implement the function below
-  /// to set a non-presolved starting solution
-  //ALLOW_STD_FEATURE(MIPSTART, true)
-  //void AddMIPStart(ArrayRef<double> x0,
-  //                 ArrayRef<int> sparsity) override;
-
-
   /**
   * Get MIP Gap
   **/
-  // TODO Implement to return MIP gap
   // (adds option mip:return_gap)
   ALLOW_STD_FEATURE(RETURN_MIP_GAP, true)
   double MIPGap() override;
@@ -112,30 +74,13 @@ public:
   /**
   * Get MIP dual bound
   **/
-  // TODO Implement to return the best dual bound value
   // (adds option mip:bestbound)
   ALLOW_STD_FEATURE(RETURN_BEST_DUAL_BOUND, true)
   double BestDualBound() override;
 
-  /**
-  * Compute the IIS and obtain relevant values
-  **/
-  //ALLOW_STD_FEATURE(IIS, true)
-  /// Compute IIS.
-  /// This method can fail (MP_RAISE)
-  /// if it discovers a different problem status.
-  //void ComputeIIS() override;
-  /// Retrieve IIS elements.
-  /// Only called if the status was confirmed Infeasible.
-  //  IIS GetIIS() override;
-
   /////////////////////////// Model attributes /////////////////////////
 
-  /// Reimplement if the solver gives more information
-  /// than just the number of non-fixed integer variables
-  /// (e.g., the solver might consider if it has PL expressions.)
   bool IsMIP() const override;
-  //bool IsQCP() const override;
 
   //////////////////////////// SOLVING ///////////////////////////////
 
@@ -175,16 +120,12 @@ protected:
 	/// Dual solution for the LP part only.
 	/// @return empty vector if none.
   ArrayRef<double> DualSolution_LP();
-  /// Dual solution for the QP part only.
-  /// @return empty vector if none.
-  ArrayRef<double> DualSolution_QP();
 
   void WindupCUOPTLPSolve();
 
   void ReportResults() override;
   void ReportCUOPTLPResults();
 
-  void ReportCUOPTLPPool();
 
   std::vector<double> getPoolSolution(int i);
   double getPoolObjective(int i);
@@ -196,42 +137,6 @@ protected:
 
   std::pair<int, std::string> GetSolveResult() override;
   void AddCUOPTLPMessages();
-
-  /// Return basis.
-  /// @return empty vector if not available.
-  ArrayRef<int> VarStatii();
-  /// @return empty vector if not available.
-  ArrayRef<int> ConStatii();
-
-  /// Set var basis statuses.
-  void VarStatii(ArrayRef<int>);
-  /// Set con basis statuses.
-  void ConStatii(ArrayRef<int>);
-
-  ArrayRef<int> VarsIIS();
-  pre::ValueMapInt ConsIIS();
-
-
-private:
-  /// These options are stored in the class
-  struct Options {
-    std::string option_example_;
-    bool flag_option_ = false;
-    std::vector<double> list_option_;
-    std::string paramread_, paramwrite_;
-    std::list<std::string> inlineparams_;
-    std::string logFile_;
-    int verbosity_= 1;
-  };
-  Options storedOptions_;
-  void printModelStats();
-
-protected:
-  const std::string& get_example_option() const
-  { return storedOptions_.option_example_; }
-  const std::vector<double>& get_list_option() const
-  { return storedOptions_.list_option_; }
-
 };
 
 }  // namespace mp
