@@ -78,7 +78,7 @@ class Tester:
                             help="stub for CSV test report filename, e.g., /tmp/report, default: report")
         parser.add_argument("--printsolvers", action="store_true",
                             help="print available solvers and exit")
-        parser.add_argument("--timeout", type=int, metavar="T", default=2400,
+        parser.add_argument("--timeout", type=float, metavar="T", default=2400,
                         help="timeout per instance, seconds")
         parser.add_argument("--nthreads", type=int, metavar="N", default=8,
                         help="number of threads in a solver")

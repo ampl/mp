@@ -163,6 +163,10 @@ class Solver(object):
         return self._unsupportedTags
 
 
+def on_terminate(proc):
+    print("Process {} terminated with exit code {}".format(proc, proc.returncode))
+
+
 class AMPLSolver(Solver):
     """ Main class to inherit from when adding a new solver.
 
@@ -249,9 +253,29 @@ class AMPLSolver(Solver):
       # ritorna stdout
       # throws if not successfull
          if vestigial:
-           if timeout:
-              return subprocess.check_output(args, text=True,
-                     stderr=subprocess.PIPE, timeout=self._timeout)
+           if timeout:   ## https://psutil.readthedocs.io/en/latest/#terminate-my-children
+             proc = psutil.Popen(args, universal_newlines=True,
+             stdout=subprocess.PIPE,        ## PIPE still from subprocess?
+             stderr=subprocess.PIPE)
+             out = ""
+             err = ""
+             try:
+               out, err = proc.communicate(timeout=timeout)
+             except TimeoutExpired:
+               print("Timeout expired...")
+               procs = proc.children()
+               for p in procs:
+                   print("Terminate ", p.pid)
+                   p.terminate()
+               gone, alive = psutil.wait_procs(procs, timeout=3, callback=on_terminate)
+               for p in alive:
+                   print("Kill ", p.pid)
+                   p.kill()
+               out, err = proc.communicate()
+             return out + '\n\nSTDERR:\n' + err
+              ## This does not timeout with MP2NL:
+              ## return subprocess.check_output(args, text=True,
+              ##       stderr=subprocess.PIPE, timeout=self._timeout)
            else:
               return subprocess.check_output(args, text=True,
                      stderr=subprocess.PIPE)
