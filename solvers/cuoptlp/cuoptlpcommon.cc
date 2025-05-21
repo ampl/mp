@@ -32,7 +32,9 @@ void CuoptlpCommon::GetSolverOption(const char* key, int &value) const {
 }
 
 void CuoptlpCommon::SetSolverOption(const char* key, int value) {
-  //CUOPTLP_CCALL(CUOPTLP_SetIntParam(lp_, key, value));
+  printf("\n SetSolverOption Int \n");
+  printf("\n %s, %d \n", key, value);
+  CUOPTLP_CCALL(cuOptSetIntegerParameter(lp_->settings, key, value));
 }
 
 void CuoptlpCommon::GetSolverOption(const char* key, double &value) const {
@@ -40,7 +42,9 @@ void CuoptlpCommon::GetSolverOption(const char* key, double &value) const {
 }
 
 void CuoptlpCommon::SetSolverOption(const char* key, double value) {
- // CUOPTLP_CCALL(CUOPTLP_SetDblParam(lp_, key, value) );
+  printf("\n SetSolverOption double \n");
+  printf("\n %s, %f \n", key, value);
+  CUOPTLP_CCALL(cuOptSetFloatParameter(lp_->settings, key, value) );
 }
 
 void CuoptlpCommon::GetSolverOption(const char* key, std::string &value) const {

@@ -218,10 +218,9 @@ private:
     std::string option_example_;
     bool flag_option_ = false;
     std::vector<double> list_option_;
-
-	  std::string paramread_, paramwrite_;
+    std::string paramread_, paramwrite_;
     std::list<std::string> inlineparams_;
-
+    std::string logFile_;
     int verbosity_= 1;
   };
   Options storedOptions_;
