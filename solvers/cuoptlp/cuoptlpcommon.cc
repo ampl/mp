@@ -28,31 +28,43 @@ int CuoptlpCommon::NumQPCons() const {
 }
 
 void CuoptlpCommon::GetSolverOption(const char* key, int &value) const {
-  //CUOPTLP_CCALL( CUOPTLP_GetIntParam(lp_, key, &value) );
+  printf("GetSolverOption Int %s", key);
+  int value_out;
+  CUOPTLP_CCALL(cuOptGetIntegerParameter(lp_->settings, key, &value_out));
+  printf(" %d\n", value_out);
+  value = value_out;
 }
 
 void CuoptlpCommon::SetSolverOption(const char* key, int value) {
-  printf("\n SetSolverOption Int \n");
-  printf("\n %s, %d \n", key, value);
+  printf("SetSolverOption Int %s, %d\n", key, value);
   CUOPTLP_CCALL(cuOptSetIntegerParameter(lp_->settings, key, value));
 }
 
 void CuoptlpCommon::GetSolverOption(const char* key, double &value) const {
-  //CUOPTLP_CCALL(CUOPTLP_GetDblParam(lp_, key, &value) );
+  printf("GetSolverOption double %s, %f\n", key, value);
+  double value_out;
+  CUOPTLP_CCALL(cuOptGetFloatParameter(lp_->settings, key, &value_out));
+  printf(" %f\n", value_out);
+  value = value_out;
 }
 
 void CuoptlpCommon::SetSolverOption(const char* key, double value) {
-  printf("\n SetSolverOption double \n");
-  printf("\n %s, %f \n", key, value);
+  printf("SetSolverOption double %s, %f\n", key, value);
   CUOPTLP_CCALL(cuOptSetFloatParameter(lp_->settings, key, value) );
 }
 
 void CuoptlpCommon::GetSolverOption(const char* key, std::string &value) const {
-  throw std::runtime_error("Not implemented"); // TODO
+  printf("GetSolverOption string %s\n", key);
+#define BUFFER_SIZE 1024
+  char buffer[BUFFER_SIZE];
+  CUOPTLP_CCALL(cuOptGetParameter(lp_->settings, key, BUFFER_SIZE, buffer));
+  printf(" %s\n", buffer);
+  value = std::string(buffer);
 }
 
 void CuoptlpCommon::SetSolverOption(const char* key, const std::string& value) {
-  throw std::runtime_error("Not implemented"); // TODO
+  printf("SetSolverOption string %s, %s\n", key, value.c_str());
+  CUOPTLP_CCALL(cuOptSetParameter(lp_->settings, key, value.c_str()));
 }
 
 

@@ -417,32 +417,32 @@ void CuoptlpBackend::InitCustomOptions() {
   AddSolverOption("lp:infeasdetect infeasdetect",
     "Detect infeasibility PDLP",
     CUOPT_INFEASIBILITY_DETECTION,
-    values_bool, 0);
+    values_bool, "false");
 
   AddSolverOption("lp:strictinfeas strictinfeas",
     "Stop if current or the average solution is detected as infeasible",
     CUOPT_STRICT_INFEASIBILITY,
-    values_bool, 0);
+    values_bool, "false");
 
   AddSolverOption("lp:crossover crossover",
     "Crossover to a basic solution after a optimal solution is found",
     CUOPT_CROSSOVER,
-    values_bool, 0);
+    values_bool, "false");
 
   AddSolverOption("lp:savebestprimal savebestprimal",
     "Save the best primal solution so far",
     CUOPT_SAVE_BEST_PRIMAL_SO_FAR,
-    values_bool, 0);
+    values_bool, "false");
 
   AddSolverOption("lp:firstprimalfeas firstprimalfeas",
     "Stop when the first primal feasible solution is found",
     CUOPT_FIRST_PRIMAL_FEASIBLE ,
-    values_bool, 0);
+    values_bool, "false");
 
   AddSolverOption("lp:perconsres perconsres",
     "Compute the primal & dual residual per constraint instead of globally",
     CUOPT_PER_CONSTRAINT_RESIDUAL,
-    values_bool, 0);
+    values_bool, "false");
 
   AddSolverOption("lp:absprimaltol absprimaltol",
     "Absolute primal tolerance used in PDLP's primal feasibility check",
@@ -493,65 +493,27 @@ void CuoptlpBackend::InitCustomOptions() {
   AddSolverOption("mip:hueristicsonly hueristicsonly",
     "Run only the GPU heuristics",
     CUOPT_MIP_HEURISTICS_ONLY,
-    values_bool, 0);
+    values_bool, "false");
 
   AddSolverOption("mip:scale scale",
     "Apply Scaling to MIP problems",
     CUOPT_MIP_SCALING,
-    values_bool, 1);
+    values_bool, "true");
 
   // Logging Options
 
   AddSolverOption("tech:consolelog consolelog",
     "Log information to the console during a solve",
     CUOPT_LOG_TO_CONSOLE,
-    values_bool, 1);
+    values_bool, "true");
+
+  AddSolverOption("tech:outlevel outlevel",
+    "Set the output level for the solver",
+    CUOPT_LOG_TO_CONSOLE,
+    values_bool, "true");
 
   AddStoredOption("tech:logfile logfile",
     "Log file name.", storedOptions_.logFile_);
-
-  AddStoredOption("tech:option_example opt_example example_opt",
-      "Example option. "
-      "Default = \"\" (don't work too hard).",
-      storedOptions_.option_example_);
-
-  AddStoredOption("tech:flag1 flag1",
-      "Flag option. Use without value. Can only be set to True.",
-      storedOptions_.flag_option_);
-
-  AddListOption("tech:list_option opt_list multi_valued_option",
-      "Multi-valued option when repeated.",
-      storedOptions_.list_option_);
-
-  // Native solver options handling.
-  // Actual processing of these options can be done in FinishOptionParsing().
-  AddListOption("tech:optionnative optionnative optnative tech:param",
-      "General way to specify values of both documented and "
-      "undocumented Gurobi parameters; value should be a quoted "
-      "string (delimited by ' or \") containing a parameter name, a "
-      "space, and the value to be assigned to the parameter.  Can "
-      "appear more than once.  Cannot be used to query current "
-      "parameter values.",
-      storedOptions_.inlineparams_);
-  AddStoredOption("tech:optionnativeread tech:param:read param:read optnative:read",
-      "Name of Gurobi parameter file (surrounded by 'single' or "
-      "\"double\" quotes if the name contains blanks). "
-      "The suffix on a parameter file should be .prm, optionally followed "
-      "by .zip, .gz, .bz2, or .7z.\n"
-      "\n"
-      "Lines that start with # are ignored.  Otherwise, each nonempty "
-      "line should contain a name and a value, separated by a space.",
-      storedOptions_.paramread_);
-  AddStoredOption("tech:optionnativewrite tech:param:write param:write optnative:write",
-      "Name of Gurobi parameter file (surrounded by 'single' or \"double\" quotes if the "
-      "name contains blanks) to be written.",
-      storedOptions_.paramwrite_);
-
-  // Example of an option with possible values defined in a table. Look at other drivers
-  // for predefined value tables (eg. values_autonoyes_, ...)
-  AddStoredOption("tech:verbosity verbosity",
-    "Set the verbosity of this run, deciding what to print to console:\n"
-    "\n.. value-table::\n", storedOptions_.verbosity_, verbosity_values_);
 
   ////////////////// CUSTOM RESULT CODES ///////////////////
   AddSolveResults( {
