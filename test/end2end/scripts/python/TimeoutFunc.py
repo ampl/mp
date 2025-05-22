@@ -59,25 +59,36 @@ def cleanup_non_immediate_descendants(
     if main_pid is None:
         main_pid = os.getpid()
 
+    non_immed_0 = set()         ## Linux: need to remember all
+
     for i, timeout in enumerate(timeout_sequence):
         _, non_immediate = get_children_immediate_nonimmediate(main_pid)
+        non_immed_now = non_immediate
+        non_immediate = set(non_immediate) | non_immed_0
         if not non_immediate:
             print(f"[CLEANUP] No non-immediate child processes at stage {i+1}.")
             return
 
+        non_immed_0 = non_immediate
         is_final = i == len(timeout_sequence) - 1
 
         action = "KILL" if is_final else "TERMINATE"
         print(f"[CLEANUP] Stage {i+1}: {action} {len(non_immediate)} non-immediate processes (timeout={timeout}s)...")
 
+        killedSome = False
         for proc in non_immediate:
             try:
                 print(f"  [{action}] PID={proc.pid}, name={proc.name()}")
                 proc.kill() if is_final else proc.terminate()
+                killedSome = True
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 continue
             except Exception as e:
                 print(f"  [ERROR] Failed to {action.lower()} PID {proc.pid}: {e}")
+
+        if not killedSome and not non_immed_now:
+            print(f"[CLEANUP] Stage {i+1} complete. All targeted processes terminated.")
+            return
 
         gone, alive = psutil.wait_procs(non_immediate, timeout=timeout)
 

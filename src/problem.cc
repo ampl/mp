@@ -56,8 +56,8 @@ int BasicProblem<Alloc>::GetSuffixSize(suf::Kind kind) {
     size = algebraic_cons_.capacity() +
         logical_cons_.capacity();
     break;
-  case suf::OBJ:
-    size = linear_objs_.capacity();
+  case suf::OBJ:     // we now know about objno.
+    size = linear_objs_.capacity();  // This is to return for all objs #184
     break;
   case suf::PROBLEM:
     size = 1;
