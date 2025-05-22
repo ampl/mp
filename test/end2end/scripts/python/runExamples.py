@@ -10,7 +10,7 @@ import SolverCollection
 class Tester:
     def runTestsAPI(self, ampl: str, solvers: list, lpmethod: str = None, nlpmethod: str = None,
                     options: str = None, bin_path: str= "", reportstub: str=None,printsolvers:bool = False,
-                    timeout: int = 2400, nthreads: int = 8, dir: str="", 
+                    timeout: float = 2400, nthreads: int = 8, dir: str="", 
                     benchmark: bool = False, junit: bool=False, nonrecursive: bool=False,
                     allfiles: bool=False, prefer_nl: bool = False, export_lp: bool = False,
                     just_nl: bool = False, keep_logs: bool = False, verbose: bool = False,
@@ -109,7 +109,7 @@ class Tester:
 
         return parser.parse_args()
 
-    def initSolvers(self,  timeout: int, nthreads: int, ampl: str = None, bin_path:str = None,
+    def initSolvers(self,  timeout: float, nthreads: int, ampl: str = None, bin_path:str = None,
                     lpmethod: str = None, nlpmethod: str = None,
                     export_lp: bool = False):
         self._ampl = ampl
@@ -141,7 +141,7 @@ class Tester:
     def collectAndRunCases(self,
                     solvers: list, lpmethod: str = None, nlpmethod: str = None,
                     options: str = None, binPath: str= None, reportstub: str=None,
-                    timeout: int = 2400, nthreads: int = 8, dir: str="", 
+                    timeout: float = 2400, nthreads: int = 8, dir: str="",
                     benchmark: bool = False, junit: bool=False, nonrecursive: bool=False,
                     allfiles: bool=False, prefer_nl: bool = False, exportLP: bool = False,
                     just_nl: bool = False, keep_logs: bool = False, verbose: bool = False,
@@ -177,6 +177,7 @@ def runTester():
     
 
 if __name__ == "__main__":
+    multiprocessing.freeze_support()
     runTester()
 
 # Write NL files

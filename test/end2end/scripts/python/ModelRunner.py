@@ -53,7 +53,8 @@ class ModelRunner(object):
                     print("AMPL executable: '{}'".format(self._ampl))
                     self._amplRunners = [
                         AMPLRunner(self._ampl, r, self._optionsExtra,
-                                   printOutput=verbose, storeOutput=keep_output)
+                                   printOutput=verbose, storeOutput=keep_output,
+                                   timeout=r.getTimeout())
                         for r in self._runners ]
                 cr = self._amplRunners
                 msg = "{}. Solving with AMPL: '{}'".format(n, m.getName())
