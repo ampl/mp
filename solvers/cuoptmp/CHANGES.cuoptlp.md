@@ -1,4 +1,4 @@
-Summary of recent updates to CUOPTLP for AMPL
+Summary of recent updates to cuoptmp for AMPL
 =============================================
 
 

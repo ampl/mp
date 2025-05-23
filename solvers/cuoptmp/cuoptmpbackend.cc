@@ -4,46 +4,47 @@
 
 #include "mp/env.h"
 #include "mp/flat/model_api_base.h"
-#include "cuoptlpbackend.h"
+#include "cuoptmpbackend.h"
 
 extern "C" {
-  #include "cuoptlp-ampls-c-api.h"    // Cuoptlp AMPLS C API
+  #include "cuoptmp-ampls-c-api.h"    // cuoptmp AMPLS C API
 }
 #include "mp/ampls-cpp-api.h"
+
+#include "cuopt/version_config.hpp"
 
 namespace {
 
 
-bool InterruptCuoptlp(void* prob) {
-  //return CUOPTLP_Interrupt((cuoptlp_prob*)prob);
+bool InterruptCuoptMp(void* prob) {
   return true;
 }
 
 }  // namespace {}
 
-std::unique_ptr<mp::BasicBackend> CreateCuoptlpBackend() {
-  return std::unique_ptr<mp::BasicBackend>{new mp::CuoptlpBackend()};
+std::unique_ptr<mp::BasicBackend> CreateCuoptmpBackend() {
+  return std::unique_ptr<mp::BasicBackend>{new mp::CuoptmpBackend()};
 }
 
 
 namespace mp {
 
-/// Create Cuoptlp Model Manager
-/// @param gc: the Cuoptlp common handle
+/// Create Cuoptmp Model Manager
+/// @param gc: the Cuoptmp common handle
 /// @param e: environment
 /// @param pre: presolver to be names[Solver::returned]= "";
 /// need it to convert solution data
-/// @return CuoptlpModelMgr
+/// @return CuoptmptModelMgr
 std::unique_ptr<BasicModelManager>
-CreateCuoptlpModelMgr(CuoptlpCommon&, Env&, pre::BasicValuePresolver*&);
+CreateCuoptmpModelMgr(CuoptmpCommon&, Env&, pre::BasicValuePresolver*&);
 
 
-CuoptlpBackend::CuoptlpBackend() {
+CuoptmpBackend::CuoptmpBackend() {
   OpenSolver();
 
   /// Create a ModelManager
   pre::BasicValuePresolver* pPre;
-  auto data = CreateCuoptlpModelMgr(*this, *this, pPre);
+  auto data = CreateCuoptmpModelMgr(*this, *this, pPre);
   SetMM( std::move( data ) );
   SetValuePresolver(pPre);
 
@@ -51,11 +52,11 @@ CuoptlpBackend::CuoptlpBackend() {
   copy_common_info_to_other();
 }
 
-CuoptlpBackend::~CuoptlpBackend() {
+CuoptmpBackend::~CuoptmpBackend() {
   CloseSolver();
 }
 
-void CuoptlpBackend::OpenSolver() {
+void CuoptmpBackend::OpenSolver() {
   lp_ = new ProblemData();
   int status = 0;
   status = cuOptCreateSolverSettings(&lp_->settings);
@@ -64,7 +65,7 @@ void CuoptlpBackend::OpenSolver() {
   }
 }
 
-void CuoptlpBackend::CloseSolver() {
+void CuoptmpBackend::CloseSolver() {
   /* Cleanup: close problem and environment */
   if ( lp() != NULL ) {
     cuOptDestroyProblem(&lp_->problem);
@@ -74,17 +75,16 @@ void CuoptlpBackend::CloseSolver() {
   }
 }
 
-const char* CuoptlpBackend::GetBackendName()
-  { return "CuoptlpBackend"; }
+const char* CuoptmpBackend::GetBackendName()
+  { return "CuoptmpBackend"; }
 
-std::string CuoptlpBackend::GetSolverVersion() {
-  // TODO Return version from solver API
-  int32_t major = 25, minor = 5, patch = 0;
+std::string CuoptmpBackend::GetSolverVersion() {
+  int32_t major = CUOPT_VERSION_MAJOR, minor = CUOPT_VERSION_MINOR, patch = CUOPT_VERSION_PATCH;
   return fmt::format("{}.{}.{}", major, minor, patch);
 }
 
 
-bool CuoptlpBackend::IsMIP() const {
+bool CuoptmpBackend::IsMIP() const {
   ProblemData* problem_data = lp();
   cuopt_int_t is_mip;
   cuopt_int_t status = cuOptIsMIP(problem_data->problem, &is_mip);
@@ -96,7 +96,7 @@ bool CuoptlpBackend::IsMIP() const {
 
 
 
-ArrayRef<double> CuoptlpBackend::PrimalSolution() {
+ArrayRef<double> CuoptmpBackend::PrimalSolution() {
   int num_vars = NumVars();
   int error = 1;
   std::vector<double> x(num_vars);
@@ -111,13 +111,13 @@ ArrayRef<double> CuoptlpBackend::PrimalSolution() {
   return x;
 }
 
-pre::ValueMapDbl CuoptlpBackend::DualSolution() {
+pre::ValueMapDbl CuoptmpBackend::DualSolution() {
   return { {
     { CG_Linear, DualSolution_LP() },
   } };
 }
 
-ArrayRef<double> CuoptlpBackend::DualSolution_LP() {
+ArrayRef<double> CuoptmpBackend::DualSolution_LP() {
   int num_cons = NumLinCons();
   std::vector<double> pi(num_cons);
   ProblemData* problem_data = lp();
@@ -128,7 +128,7 @@ ArrayRef<double> CuoptlpBackend::DualSolution_LP() {
   return pi;
 }
 
-double CuoptlpBackend::ObjectiveValue() const {
+double CuoptmpBackend::ObjectiveValue() const {
   ProblemData* problem_data = lp();
   cuopt_float_t objective_value;
   cuopt_int_t status = cuOptGetObjectiveValue(problem_data->solution, &objective_value);
@@ -138,27 +138,27 @@ double CuoptlpBackend::ObjectiveValue() const {
   return objective_value;
 }
 
-double CuoptlpBackend::NodeCount() const {
+double CuoptmpBackend::NodeCount() const {
   return 0;
 }
 
-double CuoptlpBackend::SimplexIterations() const {
+double CuoptmpBackend::SimplexIterations() const {
   return 0;
 //  return getIntAttr(CUOPTLP_INTATTR_SIMPLEXITER);
 }
 
-int CuoptlpBackend::BarrierIterations() const {
+int CuoptmpBackend::BarrierIterations() const {
   return 0;
 }
 
 
-void CuoptlpBackend::SetInterrupter(mp::Interrupter *inter) {
- // inter->SetHandler(InterruptCuoptlp, lp());
+void CuoptmpBackend::SetInterrupter(mp::Interrupter *inter) {
+ // inter->SetHandler(InterruptCuoptmp, lp());
   // TODO Check interrupter
   //CUOPTLP_CCALL( CPXsetterminate (env(), &terminate_flag) );
 }
 
-void CuoptlpBackend::Solve() {
+void CuoptmpBackend::Solve() {
   ProblemData* problem_data = lp();
 
   cuopt_int_t is_mip;
@@ -175,20 +175,20 @@ void CuoptlpBackend::Solve() {
   WindupCUOPTLPSolve();
 }
 
-void CuoptlpBackend::WindupCUOPTLPSolve() {
+void CuoptmpBackend::WindupCUOPTLPSolve() {
 }
 
-void CuoptlpBackend::ReportResults() {
+void CuoptmpBackend::ReportResults() {
   ReportCUOPTLPResults();
   BaseBackend::ReportResults();
 }
 
-void CuoptlpBackend::ReportCUOPTLPResults() {
+void CuoptmpBackend::ReportCUOPTLPResults() {
   SetStatus( GetSolveResult() );
   AddCUOPTLPMessages();
 }
 
-void CuoptlpBackend::AddCUOPTLPMessages() {
+void CuoptmpBackend::AddCUOPTLPMessages() {
   if(auto si = SimplexIterations())
   AddToSolverMessage(
           fmt::format("{} simplex iterations\n", si));
@@ -200,7 +200,7 @@ void CuoptlpBackend::AddCUOPTLPMessages() {
           fmt::format("{} branching nodes\n", nnd));
 }
 
-std::pair<int, std::string> CuoptlpBackend::GetSolveResult() {
+std::pair<int, std::string> CuoptmpBackend::GetSolveResult() {
   namespace sol = mp::sol;
   /*
    * TODO.
@@ -241,7 +241,7 @@ std::pair<int, std::string> CuoptlpBackend::GetSolveResult() {
 }
 
 
-void CuoptlpBackend::FinishOptionParsing() {}
+void CuoptmpBackend::FinishOptionParsing() {}
 
 
 ////////////////////////////// OPTIONS /////////////////////////////////
@@ -270,16 +270,16 @@ static const mp::OptionValueInfo values_bool[] = {
     { "false", "False", 1}
 };
 
-void CuoptlpBackend::InitCustomOptions() {
+void CuoptmpBackend::InitCustomOptions() {
 
   set_option_header(
       "CUOPTLP Optimizer Options for AMPL\n"
       "--------------------------------------------\n"
       "\n"
       "To set these options, assign a string specifying their values to the "
-      "AMPL option ``cuoptlp_options``. For example::\n"
+      "AMPL option ``cuoptmp_options``. For example::\n"
       "\n"
-      "  ampl: option cuoptlp_options 'mipgap=1e-6';\n");
+      "  ampl: option cuoptmp_options 'mipgap=1e-6';\n");
 
   AddSolverOption("lim:timelimit timelimit",
     "Time limit in seconds after which the solver will stop and return the current solution",
@@ -407,7 +407,7 @@ void CuoptlpBackend::InitCustomOptions() {
 }
 
 
-double CuoptlpBackend::MIPGap() {
+double CuoptmpBackend::MIPGap() {
   ProblemData* problem_data = lp();
   if (!IsMIP()) {
     return std::numeric_limits<double>::quiet_NaN();
@@ -420,7 +420,7 @@ double CuoptlpBackend::MIPGap() {
   return mip_gap;
 }
 
-double CuoptlpBackend::BestDualBound() {
+double CuoptmpBackend::BestDualBound() {
   ProblemData* problem_data = lp();
   if (!IsMIP()) {
     return std::numeric_limits<double>::quiet_NaN();
@@ -433,7 +433,7 @@ double CuoptlpBackend::BestDualBound() {
   return best_dual_bound;
 }
 
-double CuoptlpBackend::MIPGapAbs() {
+double CuoptmpBackend::MIPGapAbs() {
   return std::fabs(
     ObjectiveValue() - BestDualBound());
 }
@@ -443,18 +443,18 @@ double CuoptlpBackend::MIPGapAbs() {
 
 
 // AMPLs
-void* AMPLSOpenCuoptlp(
+void* AMPLSOpenCuoptmp(
   const char* slv_opt, CCallbacks cb = {}) {
   return AMPLS__internal__Open(
-        std::unique_ptr<mp::BasicBackend>{new mp::CuoptlpBackend()},
+        std::unique_ptr<mp::BasicBackend>{new mp::CuoptmpBackend()},
         cb);
 }
 
-void AMPLSCloseCuoptlp(AMPLS_MP_Solver* slv) {
+void AMPLSCloseCuoptmp(AMPLS_MP_Solver* slv) {
   AMPLS__internal__Close(slv);
 }
 
-void* GetCuoptlpmodel(AMPLS_MP_Solver* slv) {
+void* GetCuoptmpmodel(AMPLS_MP_Solver* slv) {
   return
-    dynamic_cast<mp::CuoptlpBackend*>(AMPLSGetBackend(slv))->lp();
+    dynamic_cast<mp::CuoptmpBackend*>(AMPLSGetBackend(slv))->lp();
 }

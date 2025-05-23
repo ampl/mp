@@ -41,30 +41,19 @@ struct ProblemData {
 
 
 /// Information shared by both
-/// `CuoptlpBackend` and `CuoptlpModelAPI`
-struct CuoptlpCommonInfo {
-
-  // TODO provide accessors to the solver's in-memory model/environment
-  //cuoptlp_env* env() const { return env_; }
+/// `CuoptmpBackend` and `CuoptmpModelAPI`
+struct CuoptmpCommonInfo {
   ProblemData* lp() const { return lp_; }
-
-  // TODO provide accessors to the solver's in-memory model/environment
-  //void set_env(cuoptlp_env* e) { env_ = e; }
   void set_lp(ProblemData* lp) { lp_ = lp; }
-
   ProblemData* lp_ = nullptr;
-
-private:
-  // TODO provide accessors to the solver's in-memory model/environment
-  //cuoptlp_env*      env_ = NULL;
 };
 
 
-/// Common API for Cuoptlp classes
-class CuoptlpCommon :
-    public Backend2ModelAPIConnector<CuoptlpCommonInfo> {
+/// Common API for Cuoptmp classes
+class CuoptmpCommon :
+    public Backend2ModelAPIConnector<CuoptmpCommonInfo> {
 public:
-  /// These methods access Cuoptlp options. Used by AddSolverOption()
+  /// These methods access Cuoptmp options. Used by AddSolverOption()
   void GetSolverOption(const char* key, int& value) const;
   void SetSolverOption(const char* key, int value);
   void GetSolverOption(const char* key, double& value) const;

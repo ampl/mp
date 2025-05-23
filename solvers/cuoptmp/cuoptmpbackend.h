@@ -7,25 +7,25 @@
 
 #include "mp/backend-mip.h"
 #include "mp/flat/backend_flat.h"
-#include "cuoptlpcommon.h"
+#include "cuoptmpcommon.h"
 
 namespace mp {
 
-class CuoptlpBackend :
-    public FlatBackend< MIPBackend<CuoptlpBackend> >,
-    public CuoptlpCommon
+class CuoptmpBackend :
+    public FlatBackend< MIPBackend<CuoptmpBackend> >,
+    public CuoptmpCommon
 {
-  using BaseBackend = FlatBackend< MIPBackend<CuoptlpBackend> >;
+  using BaseBackend = FlatBackend< MIPBackend<CuoptmpBackend> >;
 
   //////////////////// [[ The public interface ]] //////////////////////
 public:
   /// Construct
-  CuoptlpBackend();
+  CuoptmpBackend();
   /// Destruct
-  ~CuoptlpBackend();
+  ~CuoptmpBackend();
 
   /// Prefix used for the <prefix>_options environment variable
-  static const char* GetAMPLSolverName() { return "cuoptlp"; }
+  static const char* GetAMPLSolverName() { return "cuoptmp"; }
 
   /// AMPL driver name displayed in messages
   static const char* GetAMPLSolverLongName() { return "AMPL-CUOPT"; }
@@ -125,10 +125,6 @@ protected:
 
   void ReportResults() override;
   void ReportCUOPTLPResults();
-
-
-  std::vector<double> getPoolSolution(int i);
-  double getPoolObjective(int i);
 
   /// Solution attributes
   double NodeCount() const;
