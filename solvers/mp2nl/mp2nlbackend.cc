@@ -610,9 +610,9 @@ void MP2NLBackend::SetSolver(const SolverOption& , fmt::StringRef val) {
 
 std::string MP2NLBackend::ExtractSolverConfigName(
 		fmt::StringRef solver){
-	std::filesystem::path p {solver};
+	std::filesystem::path p {solver.to_string()};
 	if (p.has_stem())
-		return p.stem();
+		return p.stem().string();
 	return "";
 }
 
