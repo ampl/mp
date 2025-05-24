@@ -1203,6 +1203,21 @@ class COPTSolver(MPDirectSolver):
                  }
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
+class cuOptSolver(MPDirectSolver):
+    def _setLPMethod(self, method : str):
+        mymap = { "SIMPLEX" : 2,
+                  "PDLP"    : 1}
+        return f"alg:method {mymap[method]}"
+
+
+    def _getAMPLOptionsName(self):
+        return "cuoptmp"
+
+    def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
+        stags = {ModelTags.continuous, ModelTags.linear,
+                 ModelTags.integer, ModelTags.binary,
+                 }
+        super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
 class MosekSolver(MPDirectSolver):
     def _setLPMethod(self, method : str):

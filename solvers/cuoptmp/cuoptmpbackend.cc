@@ -285,7 +285,15 @@ void CuoptmpBackend::InitCustomOptions() {
     "Time limit in seconds after which the solver will stop and return the current solution",
     CUOPT_TIME_LIMIT, 0.0, DBL_MAX);
 
+  AddSolverOption("timelim timelim",
+    "Time limit in seconds after which the solver will stop and return the current solution",
+    CUOPT_TIME_LIMIT, 0.0, DBL_MAX);
+
   AddSolverOption("lim:ncputhreads ncputhreads",
+    "Number of CPU threads used in the LP and MIP solvers",
+    CUOPT_NUM_CPU_THREADS, -1, INT_MAX);
+
+  AddSolverOption("threads threads",
     "Number of CPU threads used in the LP and MIP solvers",
     CUOPT_NUM_CPU_THREADS, -1, INT_MAX);
 
