@@ -45,12 +45,51 @@ MP2NLBackend::ConfigMap MP2NLBackend::config_map_ {
      // "acc:log=0 "  // Actually PLApprox performs better
      "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },
     { "baronmp",              // Don't need MP2NL actually
-     "acc:alldiff=0 acc:numberofconst=0 acc:numberofvar=0 "
+     "" },
+    { "cbc", "" },
+    { "gurobi", "" },
+    { "gcg", "" },
+    { "highs", "" },
+    { "cplex", "" },
+    { "mosek", "" },
+    { "copt", "" },
+    { "xpress", "" },
+    { "scip", "" },
+    { "gurobiasl",
      "acc:count=0 "
+     "acc:alldiff=0 acc:numberofconst=0 acc:numberofvar=0 "
      "acc:indle=0 acc:indge=0 acc:indeq=0 acc:not=0 "
      "acc:condlinle=0 acc:condlineq=0 acc:condlinge=0 "
      "acc:condlinlt=0 acc:condlingt=0 acc:ifthen=0 "
      "acc:and=0 acc:or=0 acc:abs=0 acc:max=0 acc:min=0 "
+     "acc:pow=0 acc:powconstexp=0 "
+     "acc:log=0 acc:logA=0 acc:exp=0 acc:expA=0 "
+     "acc:sin=0 acc:cos=0 acc:tan=0 acc:asin=0 acc:acos=0 acc:atan=0 "
+     "acc:sinh=0 acc:cosh=0 acc:tanh=0 acc:asinh=0 acc:acosh=0 acc:atanh=0 "
+     "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },
+    { "cplexasl",
+     "acc:count=0 "
+     "acc:alldiff=0 acc:numberofconst=0 acc:numberofvar=0 "
+     "acc:indle=0 acc:indge=0 acc:indeq=0 acc:not=0 "
+     "acc:condlinle=0 acc:condlineq=0 acc:condlinge=0 "
+     "acc:condlinlt=0 acc:condlingt=0 acc:ifthen=0 "
+     "acc:and=0 acc:or=0 acc:abs=0 acc:max=0 acc:min=0 "
+     "acc:pow=0 acc:powconstexp=0 "
+     "acc:log=0 acc:logA=0 acc:exp=0 acc:expA=0 "
+     "acc:sin=0 acc:cos=0 acc:tan=0 acc:asin=0 acc:acos=0 acc:atan=0 "
+     "acc:sinh=0 acc:cosh=0 acc:tanh=0 acc:asinh=0 acc:acosh=0 acc:atanh=0 "
+     "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },
+    { "xpressasl",
+     "acc:count=0 "
+     "acc:alldiff=0 acc:numberofconst=0 acc:numberofvar=0 "
+     "acc:indle=0 acc:indge=0 acc:indeq=0 acc:not=0 "
+     "acc:condlinle=0 acc:condlineq=0 acc:condlinge=0 "
+     "acc:condlinlt=0 acc:condlingt=0 acc:ifthen=0 "
+     "acc:and=0 acc:or=0 acc:abs=0 acc:max=0 acc:min=0 "
+     "acc:pow=0 acc:powconstexp=0 "
+     "acc:log=0 acc:logA=0 acc:exp=0 acc:expA=0 "
+     "acc:sin=0 acc:cos=0 acc:tan=0 acc:asin=0 acc:acos=0 acc:atan=0 "
+     "acc:sinh=0 acc:cosh=0 acc:tanh=0 acc:asinh=0 acc:acosh=0 acc:atanh=0 "
      "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },
     { "knitro",
      "acc:count=0 "
@@ -58,8 +97,114 @@ MP2NLBackend::ConfigMap MP2NLBackend::config_map_ {
      "acc:indle=0 acc:indge=0 acc:indeq=0 acc:not=0 "
      "acc:condlinle=0 acc:condlineq=0 acc:condlinge=0 "
      "acc:condlinlt=0 acc:condlingt=0 acc:ifthen=0 "
-     "acc:and=0 acc:or=0 "  //"acc:abs=0 acc:max=0 acc:min=0 "
-     "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" }
+     "acc:and=0 acc:or=0 acc:abs=0 acc:max=0 acc:min=0 "
+     // minmaxabs: indeed better linearize as Bob said
+     "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },  // @todo compl
+    { "lindoglobal",
+     "acc:count=0 "
+     "acc:alldiff=0 acc:numberofconst=0 acc:numberofvar=0 "
+     "acc:indle=0 acc:indge=0 acc:indeq=0 acc:not=0 "
+     "acc:condlinle=0 acc:condlineq=0 acc:condlinge=0 "
+     "acc:condlinlt=0 acc:condlingt=0 acc:ifthen=0 "
+     "acc:and=0 acc:or=0 "   // acc:abs=0 acc:max=0 acc:min=0 "
+     "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },   // @todo compl
+    { "couenne",
+     "acc:count=0 "
+     "acc:alldiff=0 acc:numberofconst=0 acc:numberofvar=0 "
+     "acc:indle=0 acc:indge=0 acc:indeq=0 acc:not=0 "
+     "acc:condlinle=0 acc:condlineq=0 acc:condlinge=0 "
+     "acc:condlinlt=0 acc:condlingt=0 acc:ifthen=0 "
+     "acc:and=0 acc:or=0 acc:abs=0 acc:max=0 acc:min=0 "
+     "acc:asin=0 acc:acos=0 acc:atan=0 "
+     "acc:asinh=0 acc:acosh=0 acc:atanh=0 "
+     "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },  // @todo compl
+    { "bonmin",
+     "acc:count=0 "
+     "acc:alldiff=0 acc:numberofconst=0 acc:numberofvar=0 "
+     "acc:indle=0 acc:indge=0 acc:indeq=0 acc:not=0 "
+     "acc:condlinle=0 acc:condlineq=0 acc:condlinge=0 "
+     "acc:condlinlt=0 acc:condlingt=0 acc:ifthen=0 "
+     "acc:and=0 acc:or=0 acc:abs=0 acc:max=0 acc:min=0 "
+     "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },  // @todo compl
+    { "conopt",
+     "acc:count=0 "
+     "acc:alldiff=0 acc:numberofconst=0 acc:numberofvar=0 "
+     "acc:indle=0 acc:indge=0 acc:indeq=0 acc:not=0 "
+     "acc:condlinle=0 acc:condlineq=0 acc:condlinge=0 "
+     "acc:condlinlt=0 acc:condlingt=0 acc:ifthen=0 "
+     "acc:and=0 acc:or=0 acc:abs=0 acc:max=0 acc:min=0 "
+     "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },  // @todo compl
+    { "conopt4",
+     "acc:count=0 "
+     "acc:alldiff=0 acc:numberofconst=0 acc:numberofvar=0 "
+     "acc:indle=0 acc:indge=0 acc:indeq=0 acc:not=0 "
+     "acc:condlinle=0 acc:condlineq=0 acc:condlinge=0 "
+     "acc:condlinlt=0 acc:condlingt=0 acc:ifthen=0 "
+     "acc:and=0 acc:or=0 acc:abs=0 acc:max=0 acc:min=0 "
+     "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },  // @todo compl
+    { "snopt",
+     "acc:count=0 "
+     "acc:alldiff=0 acc:numberofconst=0 acc:numberofvar=0 "
+     "acc:indle=0 acc:indge=0 acc:indeq=0 acc:not=0 "
+     "acc:condlinle=0 acc:condlineq=0 acc:condlinge=0 "
+     "acc:condlinlt=0 acc:condlingt=0 acc:ifthen=0 "
+     "acc:and=0 acc:or=0 acc:abs=0 acc:max=0 acc:min=0 "
+     // minmaxabs: rely on ASL, or better linearize?
+     "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },  // @todo compl
+    { "ipopt",
+     "acc:count=0 "
+     "acc:alldiff=0 acc:numberofconst=0 acc:numberofvar=0 "
+     "acc:indle=0 acc:indge=0 acc:indeq=0 acc:not=0 "
+     "acc:condlinle=0 acc:condlineq=0 acc:condlinge=0 "
+     "acc:condlinlt=0 acc:condlingt=0 acc:ifthen=0 "
+     "acc:and=0 acc:or=0 acc:abs=0 acc:max=0 acc:min=0 "
+     // minmaxabs: indeed better linearize as Bob said?
+     "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },  // @todo compl
+    { "minos",
+     "acc:count=0 "
+     "acc:alldiff=0 acc:numberofconst=0 acc:numberofvar=0 "
+     "acc:indle=0 acc:indge=0 acc:indeq=0 acc:not=0 "
+     "acc:condlinle=0 acc:condlineq=0 acc:condlinge=0 "
+     "acc:condlinlt=0 acc:condlingt=0 acc:ifthen=0 "
+     "acc:and=0 acc:or=0 acc:abs=0 acc:max=0 acc:min=0 "
+     // minmaxabs: indeed better linearize as Bob said?
+     "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },  // @todo compl
+    { "lgo",
+     "acc:count=0 "
+     "acc:alldiff=0 acc:numberofconst=0 acc:numberofvar=0 "
+     "acc:indle=0 acc:indge=0 acc:indeq=0 acc:not=0 "
+     "acc:condlinle=0 acc:condlineq=0 acc:condlinge=0 "
+     "acc:condlinlt=0 acc:condlingt=0 acc:ifthen=0 "
+     "acc:and=0 acc:or=0 acc:abs=0 acc:max=0 acc:min=0 "
+     "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },  // @todo compl
+    { "loqo",
+     "acc:count=0 "
+     "acc:alldiff=0 acc:numberofconst=0 acc:numberofvar=0 "
+     "acc:indle=0 acc:indge=0 acc:indeq=0 acc:not=0 "
+     "acc:condlinle=0 acc:condlineq=0 acc:condlinge=0 "
+     "acc:condlinlt=0 acc:condlingt=0 acc:ifthen=0 "
+     "acc:and=0 acc:or=0 acc:abs=0 acc:max=0 acc:min=0 "
+     "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },  // @todo compl
+    { "raposa",
+     "acc:count=0 "
+     "acc:alldiff=0 acc:numberofconst=0 acc:numberofvar=0 "
+     "acc:indle=0 acc:indge=0 acc:indeq=0 acc:not=0 "
+     "acc:condlinle=0 acc:condlineq=0 acc:condlinge=0 "
+     "acc:condlinlt=0 acc:condlingt=0 acc:ifthen=0 "
+     "acc:and=0 acc:or=0 acc:abs=0 acc:max=0 acc:min=0 "
+     "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },  // @todo compl
+    { "octeract",
+     "acc:count=0 "
+     "acc:alldiff=0 acc:numberofconst=0 acc:numberofvar=0 "
+     "acc:indle=0 acc:indge=0 acc:indeq=0 acc:not=0 "
+     "acc:condlinle=0 acc:condlineq=0 acc:condlinge=0 "
+     "acc:condlinlt=0 acc:condlingt=0 acc:ifthen=0 "
+     "acc:and=0 acc:or=0 acc:abs=0 acc:max=0 acc:min=0 "
+     "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },  // @todo compl
+    { "ilogcp",
+     "acc:compl=0" },
+    { "gecode",
+     "acc:compl=0" },
 };
 
 

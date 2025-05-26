@@ -127,7 +127,7 @@
     }
   },
   {
-    "name" : "log_01_check_obj",
+    "name" : "log_01_check_obj funcpieces=-2 fpe=1e-5",
     "tags" : ["continuous", "nonlinear"],
     "options": { "gurobi_options": "funcpieces=-2 funcpieceerror=1e-5" },
     "comment": "Rel error bound 1e-5 for Gurobi, own plapprox for others",
