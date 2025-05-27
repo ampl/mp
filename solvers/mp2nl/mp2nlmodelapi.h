@@ -1596,7 +1596,7 @@ protected:
   void RegisterExpression(MP2NL_Expr expr);
 
   /// Count expression depending on its kind.
-  void CountExpression(MP2NL_Expr expr);
+  void CountExpressionOccurrences(MP2NL_Expr expr);
 
   /// Single template code to add any expression
   /// where eid is provided

@@ -166,7 +166,7 @@ MP2NL_Expr MP2NLModelAPI::StoreMP2NLExprID(
 }
 
 void MP2NLModelAPI::RegisterExpression(MP2NL_Expr expr) {
-  CountExpression(expr);
+  CountExpressionOccurrences(expr);
 }
 
 void MP2NLModelAPI::MergeSparsityTmp(
@@ -182,7 +182,7 @@ void MP2NLModelAPI::MergeSparsityTmp(
 /// Count expression depending on its kind.
 /// This duplicates the counters in FlatConverter
 ///   -- could check equality.
-void MP2NLModelAPI::CountExpression(MP2NL_Expr expr) {
+void MP2NLModelAPI::CountExpressionOccurrences(MP2NL_Expr expr) {
   if (expr.IsExpression()) {
     auto index = expr.GetExprIndex();
     assert(index >=0 && index < (int)expr_counter_.size()
