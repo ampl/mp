@@ -1908,6 +1908,13 @@ void GurobiBackend::InitCustomOptions() {
         "much better than the automatic choice.",
     GRB_INT_PAR_NORMADJUST, -1, 3);
 
+
+  AddSolverOption("lp:opttol opttol optimalitytolerance",
+    "Dual optimality tolerance: for the simplex algorithm and crossover, "
+    "reduced costs must all be smaller than this value in the improving "
+    "direction in order for a model to be declared optimal.",
+    GRB_DBL_PAR_OPTIMALITYTOL, 1e-9, 1e-2);
+
   AddSolverOption("lp:perturb perturb",
     "Magnitude of simplex perturbation (when needed; default 2e-4).",
     GRB_DBL_PAR_PERTURBVALUE, 0.0, DBL_MAX);
@@ -2079,9 +2086,6 @@ void GurobiBackend::InitCustomOptions() {
 
 
 
-  AddSolverOption("mip:opttol opttol optimalitytolerance",
-      "Dual feasibility tolerance.",
-      GRB_DBL_PAR_OPTIMALITYTOL, 1e-9, 1e-2);
 
   AddSolverOption("mip:partition partitionplace",
       "Whether and how to use the .partition suffix on variables "
