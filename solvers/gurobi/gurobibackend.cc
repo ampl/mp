@@ -1912,7 +1912,7 @@ void GurobiBackend::InitCustomOptions() {
   AddSolverOption("lp:opttol opttol optimalitytolerance",
     "Dual optimality tolerance: for the simplex algorithm and crossover, "
     "reduced costs must all be smaller than this value in the improving "
-    "direction in order for a model to be declared optimal.",
+    "direction in order for a model to be declared optimal. Default 1e-6.",
     GRB_DBL_PAR_OPTIMALITYTOL, 1e-9, 1e-2);
 
   AddSolverOption("lp:perturb perturb",
