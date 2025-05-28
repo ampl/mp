@@ -59,9 +59,10 @@ protected:
       auto y = qp_terms.var2(i);
       lin_terms.add( LinearizeQPTerm(c, x, y) );
     }
-    // Sort linear body. AS_ROOT propagates context
+    // Sort linear body.
     lin_terms.sort_terms();
-    GetMC().AddConstraint_AS_ROOT( LinConRhs< sens >{
+    // Not _AS_ROOT: see #248
+    GetMC().AddConstraint( LinConRhs< sens >{
                              lin_terms, qc.GetRhsOrRange() } );
   }
 

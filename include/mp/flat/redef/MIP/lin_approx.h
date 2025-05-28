@@ -82,9 +82,9 @@ public:
       }
       GetMC().RedefineVariable(y,
                                PLConstraint({x}, laPrm.plPoints));
-      GetMC().PropagateResultOfInitExpr(
-            // propagate ctx into new constr
-            con.GetResultVar(), con.GetContext());
+      // No: GetMC().PropagateResultOfInitExpr(
+      // (see #248)     con.GetResultVar(), con.GetContext());
+      GetMC().SetInitExprContext(con.GetResultVar(), con.GetContext());
     } else {
       auto rmd = GetMC().AddVar(
             laPrm.periodRemainderRange.lb,
@@ -95,9 +95,9 @@ public:
             var::INTEGER);
       GetMC().RedefineVariable(y,
                                PLConstraint({int(rmd)}, laPrm.plPoints));
-      GetMC().PropagateResultOfInitExpr(
-            // propagate ctx into new constr
-            con.GetResultVar(), con.GetContext());
+      // No: GetMC().PropagateResultOfInitExpr(
+      // (see #248)     con.GetResultVar(), con.GetContext());
+      GetMC().SetInitExprContext(con.GetResultVar(), con.GetContext());
       GetMC().AddConstraint( LinConEQ{  // x = period * factor + rmd
                                { {laPrm.periodLength, 1.0, -1.0},
                                  {int(factor), int(rmd), x} },
