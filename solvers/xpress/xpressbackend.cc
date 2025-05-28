@@ -1965,7 +1965,7 @@ void XpressmpBackend::InitCustomOptions() {
       XPRS_NETSTALLLIMIT, values_netstalllimit, -1);
 
    
-    AddSolverOption("lp:optimalitytol optimalitytol",
+    AddSolverOption("lp:opttol lp:optimalitytol opttol optimalitytol",
       "This is the zero tolerance for reduced costs. On each "
       "iteration, the simplex method searches for a variable to enter "
       "the basis which has a negative reduced cost. The candidates are "

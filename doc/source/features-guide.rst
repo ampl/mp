@@ -26,8 +26,8 @@ controlling solver behavior and information flow.
 * Option :ref:`lim:time (timelimit) <ampl-solver-options>` -
   sets solver time limit
 
-* Options :ref:`mipgap, mipgapabs <ampl-solver-options>` -
-  set required MIP optimality gap
+* Options :ref:`mipgap, mipgapabs <ampl-solver-options>, lp:opttol` -
+  set required MIP optimality gap and LP reduced cost tolerance
 
 * Option :ref:`mip:return_gap <returnMIPgap>` requests reporting of the final MIP gap
 

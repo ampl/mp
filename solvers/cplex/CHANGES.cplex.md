@@ -2,6 +2,10 @@ Summary of recent updates to CPLEX for AMPL
 ==============================================
 
 
+## unreleased
+- Option lp:opttol (opttol).
+
+
 ## 20250429
 - Fix a bug in parsing of quadratic expressions,
   which could wrongly parse products of unequal

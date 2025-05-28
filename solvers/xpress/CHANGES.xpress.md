@@ -2,6 +2,11 @@ Summary of recent updates to Xpress for AMPL
 ============================================
 
 
+## unreleased
+- Option lp:opttol (opttol), synonym for previous
+  lp:optimalitytolerance.
+
+
 ## 20250429
 - Fix a bug in parsing of quadratic expressions,
   which could wrongly parse products of unequal
