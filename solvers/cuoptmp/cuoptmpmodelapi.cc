@@ -39,6 +39,7 @@ void CuoptmpModelAPI::AddVariables(const VarArrayDef& v) {
 
 void CuoptmpModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
   lp_->objective_sense = lo.obj_sense() == mp::obj::MAX ? CUOPT_MAXIMIZE : CUOPT_MINIMIZE;
+  lp_->objective_coefficients.clear();
   lp_->objective_coefficients.resize(lp_->variable_types.size());
 
   for (auto k = 0; k < lo.num_terms(); k++) {

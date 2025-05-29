@@ -108,6 +108,13 @@ ArrayRef<double> CuoptmpBackend::PrimalSolution() {
   if (status != CUOPT_SUCCESS) {
     x.clear();
   }
+
+  for (int j = 0; j < num_vars; j++) {
+    if (problem_data->variable_types[j] == CUOPT_INTEGER) {
+      x[j] = std::round(x[j]);
+    }
+  }
+
   return x;
 }
 
