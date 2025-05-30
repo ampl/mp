@@ -368,11 +368,28 @@ public:
 /// Manage ConstraintKeepers for different constraint types
 class ConstraintManager {
 public:
-  /// Add a new CKeeper with given conversion priority (smaller = sooner)
+  /// Add a new CKeeper with given conversion priority (smaller = sooner).
+  /// Adds it to conversion actions.
   void AddConstraintKeeper(BasicConstraintKeeper& ck, double priority) {
     auto insres = con_keepers_.insert( { priority, ck } );
     MP_ASSERT_ALWAYS(insres.second, "Duplicated constraint priority");
+    AddConversionAction(
+        [&ck](BasicFlatConverter& cvt) {
+          return ck.ConvertAllNewWith(cvt);
+        },
+        priority);
     ck.SetLogger(&*graph_exporter_app_);
+  }
+
+public:
+  /// Typedef ConversionAction
+  using ConversionAction
+      = std::function<bool (BasicFlatConverter&)>;
+
+  /// Add a conversion action with a given priority
+  void AddConversionAction(ConversionAction cva, double priority) {
+    auto insres = conv_actions_.insert( { priority, cva } );
+    MP_ASSERT_ALWAYS(insres.second, "Duplicated constraint priority");
   }
 
   /// This should be called after adding all constraint keepers
@@ -389,8 +406,8 @@ public:
     bool any_converted;
     do {
       any_converted = false;
-      for (auto& ck: con_keepers_)
-        any_converted = any_converted || ck.second.ConvertAllNewWith(cvt);
+      for (auto& cva: conv_actions_)
+        any_converted = any_converted || cva.second(cvt);
     } while (any_converted);
   }
 
@@ -458,6 +475,7 @@ public:
 
 private:
   std::map<double, BasicConstraintKeeper&> con_keepers_;
+  std::map<double, ConversionAction> conv_actions_;
   /// Conversion graph exporter file appender
   std::unique_ptr<BasicFileAppender>
       graph_exporter_app_{MakeFileAppender()};

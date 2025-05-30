@@ -157,6 +157,9 @@ class MockProblemBuilder {
 
   typedef TestLinearObjBuilder LinearObjBuilder;
 
+  MOCK_METHOD3(NotifyObjChoice,
+               int (int, bool, int));
+
   MOCK_METHOD1(AddObj, void (mp::obj::Type type));
   MOCK_METHOD1(AddObjs, void (int num_objs));
 

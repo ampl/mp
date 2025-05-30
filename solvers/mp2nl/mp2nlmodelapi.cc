@@ -1,3 +1,5 @@
+#include <cstring>
+#include <unordered_map>
 
 #include "mp2nlmodelapi.h"
 #include "mp/nl-solver.hpp"
@@ -164,7 +166,7 @@ MP2NL_Expr MP2NLModelAPI::StoreMP2NLExprID(
 }
 
 void MP2NLModelAPI::RegisterExpression(MP2NL_Expr expr) {
-  CountExpression(expr);
+  CountExpressionOccurrences(expr);
 }
 
 void MP2NLModelAPI::MergeSparsityTmp(
@@ -180,7 +182,7 @@ void MP2NLModelAPI::MergeSparsityTmp(
 /// Count expression depending on its kind.
 /// This duplicates the counters in FlatConverter
 ///   -- could check equality.
-void MP2NLModelAPI::CountExpression(MP2NL_Expr expr) {
+void MP2NLModelAPI::CountExpressionOccurrences(MP2NL_Expr expr) {
   if (expr.IsExpression()) {
     auto index = expr.GetExprIndex();
     assert(index >=0 && index < (int)expr_counter_.size()
@@ -199,6 +201,13 @@ MP2NL_Expr MP2NLModelAPI::AddExpression(const AbsExpression &expr)
 
 MP2NL_Expr MP2NLModelAPI::AddExpression(const AllDiffExpression &expr)
 { return AddExpression(expr, ExpressionTypeID::ID_AllDiff); }
+MP2NL_Expr MP2NLModelAPI::AddExpression(const NumberofConstExpression &expr)
+{ return AddExpression(expr, ExpressionTypeID::ID_NumberofConst); }
+MP2NL_Expr MP2NLModelAPI::AddExpression(const NumberofVarExpression &expr)
+{ return AddExpression(expr, ExpressionTypeID::ID_NumberofVar); }
+MP2NL_Expr MP2NLModelAPI::AddExpression(const mp::CountExpression &expr)
+{ return AddExpression(expr, ExpressionTypeID::ID_Count); }
+
 MP2NL_Expr MP2NLModelAPI::AddExpression(const AndExpression &expr)
 { return AddExpression(expr, ExpressionTypeID::ID_And); }
 MP2NL_Expr MP2NLModelAPI::AddExpression(const OrExpression &expr)
@@ -231,16 +240,42 @@ MP2NL_Expr MP2NLModelAPI::AddExpression(const MaxExpression &expr)
 
 MP2NL_Expr MP2NLModelAPI::AddExpression(const ExpExpression &expr)
 { return AddExpression(expr, ExpressionTypeID::ID_Exp); }
+MP2NL_Expr MP2NLModelAPI::AddExpression(const ExpAExpression &expr)
+{ return AddExpression(expr, ExpressionTypeID::ID_ExpA); }
 MP2NL_Expr MP2NLModelAPI::AddExpression(const LogExpression &expr)
 { return AddExpression(expr, ExpressionTypeID::ID_Log); }
+MP2NL_Expr MP2NLModelAPI::AddExpression(const LogAExpression &expr)
+{ return AddExpression(expr, ExpressionTypeID::ID_LogA); }
 MP2NL_Expr MP2NLModelAPI::AddExpression(const PowExpression &expr)
 { return AddExpression(expr, ExpressionTypeID::ID_Pow); }
 MP2NL_Expr MP2NLModelAPI::AddExpression(const PowConstExpExpression &expr)
 { return AddExpression(expr, ExpressionTypeID::ID_PowConstExp); }
+
 MP2NL_Expr MP2NLModelAPI::AddExpression(const SinExpression &expr)
 { return AddExpression(expr, ExpressionTypeID::ID_Sin); }
 MP2NL_Expr MP2NLModelAPI::AddExpression(const CosExpression &expr)
 { return AddExpression(expr, ExpressionTypeID::ID_Cos); }
+MP2NL_Expr MP2NLModelAPI::AddExpression(const TanExpression &expr)
+{ return AddExpression(expr, ExpressionTypeID::ID_Tan); }
+MP2NL_Expr MP2NLModelAPI::AddExpression(const AsinExpression &expr)
+{ return AddExpression(expr, ExpressionTypeID::ID_Asin); }
+MP2NL_Expr MP2NLModelAPI::AddExpression(const AcosExpression &expr)
+{ return AddExpression(expr, ExpressionTypeID::ID_Acos); }
+MP2NL_Expr MP2NLModelAPI::AddExpression(const AtanExpression &expr)
+{ return AddExpression(expr, ExpressionTypeID::ID_Atan); }
+
+MP2NL_Expr MP2NLModelAPI::AddExpression(const SinhExpression &expr)
+{ return AddExpression(expr, ExpressionTypeID::ID_Sinh); }
+MP2NL_Expr MP2NLModelAPI::AddExpression(const CoshExpression &expr)
+{ return AddExpression(expr, ExpressionTypeID::ID_Cosh); }
+MP2NL_Expr MP2NLModelAPI::AddExpression(const TanhExpression &expr)
+{ return AddExpression(expr, ExpressionTypeID::ID_Tanh); }
+MP2NL_Expr MP2NLModelAPI::AddExpression(const AsinhExpression &expr)
+{ return AddExpression(expr, ExpressionTypeID::ID_Asinh); }
+MP2NL_Expr MP2NLModelAPI::AddExpression(const AcoshExpression &expr)
+{ return AddExpression(expr, ExpressionTypeID::ID_Acosh); }
+MP2NL_Expr MP2NLModelAPI::AddExpression(const AtanhExpression &expr)
+{ return AddExpression(expr, ExpressionTypeID::ID_Atanh); }
 
 MP2NL_Expr MP2NLModelAPI::AddExpression(const DivExpression &expr)
 { return AddExpression(expr, ExpressionTypeID::ID_Div); }
@@ -773,10 +808,17 @@ void MP2NLModelAPI::FeedExtLinPart(
     ConLinearExprWriterFactory& svwf) {
   const auto& lp_ext = item.GetExtLinPart();
   if (lp_ext.size()) {
-    auto svw = svwf.MakeVectorWriter(lp_ext.size());
-    for (int j=0; j<lp_ext.size(); ++j) {
-      svw.Write(GetNewVarIndex( lp_ext.vars()[j]),      // new ordering
-                lp_ext.coefs()[j]);
+    std::vector<int> vars_tmp = lp_ext.vars();
+    for (auto j=vars_tmp.size(); j--; )
+      vars_tmp[j] = GetNewVarIndex( vars_tmp[j] );        // new ordering
+    LinTerms lt_srt {lp_ext.coefs(), std::move(vars_tmp)};
+    lt_srt.sort_terms__leave_0s();   // Leave sparsity pattern
+    assert(lt_srt.size());
+    {   // Sparsity pattern can have coefs 0.0
+      auto svw = svwf.MakeVectorWriter(lt_srt.size());
+      for (int j=0; j<lt_srt.size(); ++j) {
+        svw.Write(lt_srt.var(j), lt_srt.coef(j));
+      }
     }
   }
 }
@@ -885,9 +927,10 @@ case ExpressionTypeID::ID_ ## Expr: \
     break;
 #define HANDLE_OPCODE_CASE_N_ARG(Expr, Opcode, fdr) \
 case ExpressionTypeID::ID_ ## Expr: \
-    fdr(*(const Expr ## Expression*)pitem, \
+    fdr(*(const mp::Expr ## Expression*)pitem, \
       ew.OPutN(nl::Opcode, \
-        GetNumArguments(*(const Expr ## Expression*)pitem))); \
+        GetNumArguments(*(const mp::Expr ## Expression*)pitem) \
+        + GetNumParameters(*(const mp::Expr ## Expression*)pitem))); \
     break;
 #define HANDLE_OPCODE_CASE_N_OR_2_ARG(Expr, Opcode, Opcode2, fdr) \
 case ExpressionTypeID::ID_ ## Expr: { \
@@ -916,6 +959,9 @@ void MP2NLModelAPI::FeedOpcode(Expr expr, ExprWriter& ew) {
     break;
 
     HANDLE_OPCODE_CASE_N_ARG(AllDiff, ALLDIFF, FdArgs)
+    HANDLE_OPCODE_CASE_N_ARG(NumberofConst, NUMBEROF, FdArgs_Params1st)
+    HANDLE_OPCODE_CASE_N_ARG(NumberofVar, NUMBEROF, FdArgs)
+    HANDLE_OPCODE_CASE_N_ARG(Count, COUNT, FdLogicArgs)
     HANDLE_OPCODE_CASE_N_OR_2_ARG(And, FORALL, AND, FdLogicArgs)
     HANDLE_OPCODE_CASE_N_OR_2_ARG(Or, EXISTS, OR, FdLogicArgs)
     HANDLE_OPCODE_CASE_2_ARG(Equivalence, IFF, FdLogicArgs)
@@ -935,11 +981,26 @@ void MP2NLModelAPI::FeedOpcode(Expr expr, ExprWriter& ew) {
     HANDLE_OPCODE_CASE_N_ARG(Max, MAX, FdArgs)
 
     HANDLE_OPCODE_CASE_1_ARG(Exp, EXP, FdArgs)
+    HANDLE_OPCODE_CASE_2_ARG(ExpA, POW, FdArgs_Params1st)
     HANDLE_OPCODE_CASE_1_ARG(Log, LOG, FdArgs)
+  case ExpressionTypeID::ID_LogA:
+    FdLogA(*(const LogAExpression*)pitem, ew);
+    break;
+
     HANDLE_OPCODE_CASE_2_ARG(Pow, POW, FdArgs)
     HANDLE_OPCODE_CASE_2_ARG(PowConstExp, POW, FdArgs)
     HANDLE_OPCODE_CASE_1_ARG(Sin, SIN, FdArgs)
     HANDLE_OPCODE_CASE_1_ARG(Cos, COS, FdArgs)
+    HANDLE_OPCODE_CASE_1_ARG(Tan, TAN, FdArgs)
+    HANDLE_OPCODE_CASE_1_ARG(Asin, ASIN, FdArgs)
+    HANDLE_OPCODE_CASE_1_ARG(Acos, ACOS, FdArgs)
+    HANDLE_OPCODE_CASE_1_ARG(Atan, ATAN, FdArgs)
+    HANDLE_OPCODE_CASE_1_ARG(Sinh, SINH, FdArgs)
+    HANDLE_OPCODE_CASE_1_ARG(Cosh, COSH, FdArgs)
+    HANDLE_OPCODE_CASE_1_ARG(Tanh, TANH, FdArgs)
+    HANDLE_OPCODE_CASE_1_ARG(Asinh, ASINH, FdArgs)
+    HANDLE_OPCODE_CASE_1_ARG(Acosh, ACOSH, FdArgs)
+    HANDLE_OPCODE_CASE_1_ARG(Atanh, ATANH, FdArgs)
 
     HANDLE_OPCODE_CASE_2_ARG(Div, DIV, FdArgs)
 
@@ -1039,6 +1100,35 @@ void MP2NLModelAPI::FdArgs(
     ew_arg.EPut(GetArgExpression(e, i));
   for (int i=0; i<GetNumParameters(e); ++i)
     ew_arg.NPut(GetParameter(e, i));
+}
+
+template <class MPExpr, class ArgWriter>
+void MP2NLModelAPI::FdArgs_Params1st(
+    const MPExpr& e, ArgWriter ew_arg) {
+  for (int i=0; i<GetNumParameters(e); ++i)
+    ew_arg.NPut(GetParameter(e, i));
+  for (int i=0; i<GetNumArguments(e); ++i)
+    ew_arg.EPut(GetArgExpression(e, i));
+}
+
+template <class MPExpr, class ArgWriter>
+void MP2NLModelAPI::FdLogA(
+    const MPExpr& e, ArgWriter& aw) {
+  auto A = GetParameter(e, 0);
+  if (std::fabs(10.0-A) < 1e-15) {
+    auto aw1 = aw.OPut1(nl::LOG10);
+    aw1.EPut(GetArgExpression(e, 0));
+  } else if (std::fabs(exp(1.0)-A) < 1e-15) {
+    auto aw1 = aw.OPut1(nl::LOG);
+    aw1.EPut(GetArgExpression(e, 0));
+  } else {
+    MP_ASSERT_ALWAYS(std::fabs(1.0-A)>1e-15,
+                     "logarithm with base 1");
+    auto aw1 = aw.OPut2(nl::MUL);
+    aw1.NPut(1.0/std::log(A));
+    auto aw2 = aw1.OPut1(nl::LOG);
+    aw2.EPut(GetArgExpression(e, 0));
+  }
 }
 
 template <class MPExpr, class ArgWriter>
@@ -1218,7 +1308,12 @@ void MP2NLModelAPI::Feed1Suffix(
 template <class ColNameWriter>
 void MP2NLModelAPI::FeedRowAndObjNames(ColNameWriter& wrt) {
 	auto has_name0 = [](const auto& infos) {
-    return infos.size() && infos.front().GetDispatcher().GetName(infos.front().GetPItem());
+		if (infos.size()) {
+				const auto nm = infos.front().GetDispatcher().GetName(
+					infos.front().GetPItem());
+				return (nm && std::strlen(nm));     // remove padding?
+		}
+		return false;
   };
   if ((has_name0(alg_con_info_)
        || has_name0(log_con_info_) || has_name0(obj_info_)) && wrt) {
@@ -1232,7 +1327,8 @@ void MP2NLModelAPI::FeedRowAndObjNames(ColNameWriter& wrt) {
     for (size_t i=0; i<alg_con_info_.size(); ++i) {
       auto i0 = GetOldAlgConIndex(i);
       const auto* nm
-          = alg_con_info_[i0].GetDispatcher().GetName(alg_con_info_[i0].GetPItem());
+					= alg_con_info_[i0].GetDispatcher().GetName(
+						alg_con_info_[i0].GetPItem());
       wrt << (nm ? nm : "..");
     }
     write_names(log_con_info_);

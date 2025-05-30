@@ -229,8 +229,16 @@ Piecewise-linear expressions
     *expr-valued:* Equals the largest value among the *expr* operands.
 - max ( expr-list )
     *expr-valued:* Equals the largest value among all of the operands in the *expr-list*.
+- << *slope-list*; *breakpoint-list* >> var
+    *expr-valued:* Computes a piecewise-linear function of a single variable; see
+    `Chapter 17. Piecewise-Linear Programs <https://ampl.com/BOOK/CHAPTERS/20-piecewise.pdf>`_ in
+    the `AMPL book <https://ampl.com/resources/the-ampl-book/>`_ for a complete description of the
+    forms that AMPL recognizes.
 
-Expressions using these operators are transformed to use Gurobi's native ABS, MIN, and MAX
+ABS, MIN, MAX
+^^^^^^^^^^^^^^^^^^^
+
+Expressions using abs, min, and max are transformed to use Gurobi's native ABS, MIN, and MAX
 "general constraints" when possible. In other cases, they are transformed to simpler constraints
 that use relational operators, and in particular are linearized where all of the operands are linear.
 
@@ -250,24 +258,24 @@ that use relational operators, and in particular are linearized where all of the
     maximize WeightSum:
        sum {t in TRAJ} max {n in NODE} weight[t,n] * Use[n];
 
-- << *slope-list*; *breakpoint-list* >> var
-    *expr-valued:* Computes a piecewise-linear function of a single variable; see
-    `Chapter 17. Piecewise-Linear Programs <https://ampl.com/BOOK/CHAPTERS/20-piecewise.pdf>`_ in
-    the `AMPL book <https://ampl.com/resources/the-ampl-book/>`_ for a complete description of the
-    forms that AMPL recognizes.
+General piecewise-linear expressions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This piecewise-linear expression is defined by lists of ``n`` *breakpoints* and ``n+1``
+A piecewise-linear expression
+<< *slope-list*; *breakpoint-list* >> *var*
+is defined by a list of ``n`` *breakpoints* and ``n+1``
 *slopes*. The *var* must be a reference to a single variable.
 
-When AMPL's option ``pl_linearize`` is at its default value of 1, AMPL linearizes these
+We recommend setting `AMPL option <https://dev.ampl.com/ampl/reference/options.html>`_
+``pl_linearize`` to 0 for MP solvers. Then piecewise-linear expressions are represented to the solver
+in the form of expression trees. The MP-based interface transforms them to use a solver's native
+methods for piecewise-linear functions (Gurobi, COPT), and linearizes them for other solvers (HiGHS).
+
+When AMPL option ``pl_linearize`` is at its default value of 1, AMPL linearizes these
 piecewise-linear expressions, and sends the linearized versions to the solver. The linearization
 is continuous where possible, in certain convex and concave cases (where the slopes are
 increasing and decreasing, respectively); but in general, the linearization includes both
 continuous and binary variables.
-
-When ``pl_linearize`` is set to 0, piecewise-linear expressions are represented to the solver
-in the form of expression trees. The MP-based interface transforms them to use a solver's native
-methods for piecewise-linear functions (Gurobi, COPT), and linearizes them for other solvers (HiGHS).
 
 When a piecewise-linear function is linearized (rather than being handled natively by the solver),
 numerical accuracy becomes a concern. To promote numerical stability, it is recommended that

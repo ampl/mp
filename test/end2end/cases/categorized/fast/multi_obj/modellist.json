@@ -102,6 +102,21 @@
     }
   },
   {
+    "name" : "dietQobj_1000 multiobj=2 writegraph",
+    "tags" : ["quadratic", "quadratic_obj", "multiobj"],
+    "files" : ["dietqobj_1000.mod", "dietobj.dat"],
+    "options": {
+      "ANYSOLVER_options": "multiobj=2 writegraph=dietqobj_1000.jsonl"
+    },
+    "values": {
+      "total_cost[\"A&P\"]": 920.6492623659187,
+      "total_cost[\"JEWEL\"]": 914.6919717993438,
+      "total_cost[\"VONS\"]": 914.081415223036,
+      "total_number": 44.80888220421118,
+      "_sobj[4]": 44.80888220421118
+    }
+  },
+  {
     "name" : "dietQobj_1000 multiobj=2 obj_pr_2",
     "tags" : ["quadraticnonconvex", "quadratic_obj", "multiobj"],
     "files" : ["dietqobj_1000.mod", "dietobj.dat", "dietobj_pr_2.inc"],
@@ -123,8 +138,8 @@
       "total_cost[\"A&P\"]": 915.7758062677805,
       "total_cost[\"JEWEL\"]": 936.1063903862278,
       "total_cost[\"VONS\"]": 924.2202858257223,
-      "total_number": 17.788529715326852,
-      "_sobj[4]": 17.788529715326852
+      "total_number": 17.78751659375974,
+      "_sobj[4]": 17.78751659375974
     }
   },
   {
@@ -296,7 +311,7 @@
     "options": {
       "ANYSOLVER_options": "obj:no=2"
     },
-    "objective": 4.3333333333333333333
+    "objective": 13
   },
   {
     "name" : "obj_expr_01 obj:multi=2",
@@ -306,6 +321,6 @@
     },
     "values": {
       "_sobj[1]": 71.42954735,
-      "_sobj[2]": 218.15991306655104
+      "_sobj[2]": 218.12135956803908
     }  }
 ]

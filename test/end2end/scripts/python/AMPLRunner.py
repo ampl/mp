@@ -10,6 +10,7 @@ from amplpy import AMPL, Kind, OutputHandler, ErrorHandler, Environment
 from Model import Model
 import time
 from TimeMe import TimeMe
+import TimeoutFunc
 
 class InnerOutputHandler(OutputHandler):
     def isInvalidOption(msg):
@@ -79,7 +80,7 @@ class AMPLRunner(object):
 
     def __init__(self, ampl=None, solver=None, optionsExtra=None, writeSolverName = False,
                  printOutput=False,
-                 storeOutput = False):
+                 storeOutput = False, timeout=None):
         self._ampl_dir_name = os.path.dirname(ampl)
         self._ampl_file_name = os.path.basename(ampl)
         self.isBenchmark = False
@@ -91,6 +92,7 @@ class AMPLRunner(object):
         self._amplInitialized = False
         self._storeOutput = storeOutput
         self._printOutput = printOutput
+        self._timeout = timeout
         self._optionsExtra = optionsExtra
         self._logFile = None
         self._version = None
@@ -312,7 +314,13 @@ class AMPLRunner(object):
           if self.isBenchmark:
             print("Solving... ", end="", flush=True)
           t.tick()
-          self._ampl.solve()
+          if self._timeout is None:
+              self._ampl.solve()
+          else:
+              TimeoutFunc.run_with_timeout_cleanup_multiprocessing_watcher(
+                  lambda: self._ampl.solve(),
+                  TimeoutFunc.cleanup_non_immediate_descendants,
+                  self._timeout, 5)
           solve_result = self._ampl.get_value("solve_result")
           if solve_result != "solved":
               print("WARNING: not solved (solve_result: {})".format(solve_result))

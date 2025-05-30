@@ -378,6 +378,12 @@ public:
 
   ACCEPT_EXPRESSION(AllDiffExpression, Recommended)
   Expr AddExpression(const AllDiffExpression& absc);
+  ACCEPT_EXPRESSION(NumberofConstExpression, Recommended)
+  Expr AddExpression(const NumberofConstExpression& absc);
+  ACCEPT_EXPRESSION(NumberofVarExpression, Recommended)
+  Expr AddExpression(const NumberofVarExpression& absc);
+  ACCEPT_EXPRESSION(mp::CountExpression, Recommended)
+  Expr AddExpression(const mp::CountExpression& absc);
 
   /// And/Or/Equivalence
   /// @note Use GetNumArguments(expr)
@@ -415,18 +421,44 @@ public:
 
   ACCEPT_EXPRESSION(ExpExpression, Recommended)
   Expr AddExpression(const ExpExpression& );
+  ACCEPT_EXPRESSION(ExpAExpression, Recommended)
+  Expr AddExpression(const ExpAExpression& );
   ACCEPT_EXPRESSION(LogExpression, Recommended)
   Expr AddExpression(const LogExpression& );
+  ACCEPT_EXPRESSION(LogAExpression, Recommended)
+  Expr AddExpression(const LogAExpression& );
   ACCEPT_EXPRESSION(PowExpression, Recommended)
   Expr AddExpression(const PowExpression& );
   /// @note Use accessor: GetParameter(pe, 0)
   ///   - don't use PowConstExpExpression's methods.
   ACCEPT_EXPRESSION(PowConstExpExpression, Recommended)
   Expr AddExpression(const PowConstExpExpression& );
+
   ACCEPT_EXPRESSION(SinExpression, Recommended)
   Expr AddExpression(const SinExpression& );
   ACCEPT_EXPRESSION(CosExpression, Recommended)
   Expr AddExpression(const CosExpression& );
+  ACCEPT_EXPRESSION(TanExpression, Recommended)
+  Expr AddExpression(const TanExpression& );
+  ACCEPT_EXPRESSION(AsinExpression, Recommended)
+  Expr AddExpression(const AsinExpression& );
+  ACCEPT_EXPRESSION(AcosExpression, Recommended)
+  Expr AddExpression(const AcosExpression& );
+  ACCEPT_EXPRESSION(AtanExpression, Recommended)
+  Expr AddExpression(const AtanExpression& );
+
+  ACCEPT_EXPRESSION(SinhExpression, Recommended)
+  Expr AddExpression(const SinhExpression& );
+  ACCEPT_EXPRESSION(CoshExpression, Recommended)
+  Expr AddExpression(const CoshExpression& );
+  ACCEPT_EXPRESSION(TanhExpression, Recommended)
+  Expr AddExpression(const TanhExpression& );
+  ACCEPT_EXPRESSION(AsinhExpression, Recommended)
+  Expr AddExpression(const AsinhExpression& );
+  ACCEPT_EXPRESSION(AcoshExpression, Recommended)
+  Expr AddExpression(const AcoshExpression& );
+  ACCEPT_EXPRESSION(AtanhExpression, Recommended)
+  Expr AddExpression(const AtanhExpression& );
 
   ACCEPT_EXPRESSION(DivExpression, Recommended)
   Expr AddExpression(const DivExpression& );
@@ -731,6 +763,17 @@ public:
   /// @param aw: argument writer produced by OPutN() or similar.
   template <class MPExpr, class ArgWriter>
   void FdArgs(const MPExpr& e, ArgWriter aw);
+
+  /// Write opcode arguments.
+  /// Parameters written before the expression arguments.
+  /// @param aw: argument writer produced by OPutN() or similar.
+  template <class MPExpr, class ArgWriter>
+  void FdArgs_Params1st(const MPExpr& e, ArgWriter aw);
+
+  /// Write LogA.
+  /// @param aw: argument writer produced by OPutN() or similar.
+  template <class MPExpr, class ArgWriter>
+  void FdLogA(const MPExpr& e, ArgWriter& aw);
 
   /// Write opcode logical arguments.
   /// Variables are written as "var==1".
@@ -1045,9 +1088,9 @@ protected:
   /// Mark linear part of any objective
   void MarkRangeOrEqn(const LinearObjective& ) { }
 
-  /// Mark LinConRange
+  /// Mark LinConRange.
+  /// Column sizes are accumulated in the caller.
   void MarkRangeOrEqn(const LinConRange& lcr) {
-    Add2ColSizes(lcr.vars());
     if (lcr.lb() > MinusInfinity()
         && lcr.ub() < Infinity()) {
       if (lcr.lb() < lcr.ub())
@@ -1127,6 +1170,9 @@ protected:
     ID_NLQuad,
 
     ID_AllDiff,
+    ID_NumberofConst,
+    ID_NumberofVar,
+    ID_Count,
     ID_And,
     ID_Not,
     ID_Or,
@@ -1145,11 +1191,25 @@ protected:
     ID_Max,
 
     ID_Exp,
+    ID_ExpA,
     ID_Log,
+    ID_LogA,
     ID_Pow,
     ID_PowConstExp,
+
     ID_Sin,
     ID_Cos,
+    ID_Tan,
+    ID_Asin,
+    ID_Acos,
+    ID_Atan,
+
+    ID_Sinh,
+    ID_Cosh,
+    ID_Tanh,
+    ID_Asinh,
+    ID_Acosh,
+    ID_Atanh,
 
     ID_Div
   };
@@ -1303,6 +1363,9 @@ protected:
   CREATE_EXPRESSION_DISPATCHER(Equivalence)
 
   CREATE_EXPRESSION_DISPATCHER(AllDiff)
+  CREATE_EXPRESSION_DISPATCHER(NumberofConst)
+  CREATE_EXPRESSION_DISPATCHER(NumberofVar)
+  CREATE_EXPRESSION_DISPATCHER(Count)
   CREATE_EXPRESSION_DISPATCHER(CondLT)
   CREATE_EXPRESSION_DISPATCHER(CondLE)
   CREATE_EXPRESSION_DISPATCHER(CondEQ)
@@ -1317,11 +1380,25 @@ protected:
   CREATE_EXPRESSION_DISPATCHER(Max)
 
   CREATE_EXPRESSION_DISPATCHER(Exp)
+  CREATE_EXPRESSION_DISPATCHER(ExpA)
   CREATE_EXPRESSION_DISPATCHER(Log)
+  CREATE_EXPRESSION_DISPATCHER(LogA)
   CREATE_EXPRESSION_DISPATCHER(Pow)
   CREATE_EXPRESSION_DISPATCHER(PowConstExp)
+
   CREATE_EXPRESSION_DISPATCHER(Sin)
   CREATE_EXPRESSION_DISPATCHER(Cos)
+  CREATE_EXPRESSION_DISPATCHER(Tan)
+  CREATE_EXPRESSION_DISPATCHER(Asin)
+  CREATE_EXPRESSION_DISPATCHER(Acos)
+  CREATE_EXPRESSION_DISPATCHER(Atan)
+
+  CREATE_EXPRESSION_DISPATCHER(Sinh)
+  CREATE_EXPRESSION_DISPATCHER(Cosh)
+  CREATE_EXPRESSION_DISPATCHER(Tanh)
+  CREATE_EXPRESSION_DISPATCHER(Asinh)
+  CREATE_EXPRESSION_DISPATCHER(Acosh)
+  CREATE_EXPRESSION_DISPATCHER(Atanh)
 
   CREATE_EXPRESSION_DISPATCHER(Div)
 
@@ -1480,7 +1557,8 @@ protected:
   /// (NNZ, nlo(i), nlb(i))
   void ResetObjMetaInfo();
 
-  /// Merge algcon/obj sparsity pattern with jacobian/gradient
+  /// Merge algcon/obj sparsity pattern with jacobian/gradient.
+  /// We don't sort indexes because they are output in the NL order
   void MergeItemSparsity(
       const ItemInfo& info, int item_kind, MP2NL_Expr expr);
 
@@ -1518,7 +1596,7 @@ protected:
   void RegisterExpression(MP2NL_Expr expr);
 
   /// Count expression depending on its kind.
-  void CountExpression(MP2NL_Expr expr);
+  void CountExpressionOccurrences(MP2NL_Expr expr);
 
   /// Single template code to add any expression
   /// where eid is provided

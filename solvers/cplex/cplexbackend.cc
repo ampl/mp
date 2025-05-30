@@ -1865,6 +1865,13 @@ void CplexBackend::InitCustomOptions() {
     "must be positive.",
     CPXPARAM_Simplex_Perturbation_Constant, 1e-8, DBL_MAX);
 
+  AddSolverOption("lp:opttol optimality opttol optimalitytolerance",
+    "Dual optimality tolerance: simplex will stop when all "
+    "reduced costs are smaller than this value in the improving "
+    "direction; default=1e-6.",
+    CPXPARAM_Simplex_Tolerances_Optimality, 1e-9, 1e-1);
+
+
   // Cut generation
   
   // Hidden param

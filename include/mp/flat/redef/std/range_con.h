@@ -264,7 +264,7 @@ protected:
     } // else, both are inf, forget
   }
 
-  using SlackLink = pre::RangeLinCon2Slack<ModelConverter>;
+	using SlackLink = pre::RangeCon2Slack<ModelConverter, ItemType>;
   SlackLink& GetSlackLink() { return link_rng2slk_; }
 
 private:

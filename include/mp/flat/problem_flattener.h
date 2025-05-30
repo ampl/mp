@@ -482,13 +482,15 @@ protected:
       };                    // assume the constraint order in NL
       auto e = GetModel().logical_con(i);
       const auto resvar = MP_DISPATCH( Convert2Var(e.expr()) );
-      if (GetFlatCvt().is_fixed(resvar)) {
+			if (GetFlatCvt().is_fixed(resvar)) {
         if (0==GetFlatCvt().fixed_value(resvar)) {
           MP_INFEAS("Constraint is false");
         }
-      } else {
-        GetFlatCvt().FixAsTrue(resvar);
-        assert(GetFlatCvt().HasInitExpression(resvar));
+			} else {
+				GetFlatCvt().FixAsTrue(resvar);
+				// No: assert(GetFlatCvt().HasInitExpression(resvar));
+				// The constraint was simplified to 1 variable
+				// see hanoi1.mod
       }
     } catch (const Error& err) {
       MP_RAISE_WITH_CODE(

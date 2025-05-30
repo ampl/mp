@@ -2,6 +2,11 @@ Summary of recent updates to COPT for AMPL
 ==========================================
 
 
+## unreleased
+- Enable native indicator constraints by default
+  (options acc:ind..)
+
+
 ## 20250429
 - Fix a bug in parsing of quadratic expressions,
   which could wrongly parse products of unequal

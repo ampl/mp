@@ -102,6 +102,15 @@ inline OptionError OptionTypeError(fmt::StringRef name, fmt::StringRef type) {
 
 }  // namespace internal
 
+/// Formats and return the string (possibly containing RST markup).
+/// Useful for formatting error messages to fit a predetermined terminal width
+/// Placed here to avoid polluting utils-string with unnecessary includes.
+template <class Str> std::string format_error(const Str& str) {
+  fmt::MemoryWriter writer;
+  internal::FormatRST(writer, str);
+  return writer.str();
+}
+
 
 /// A solver option.
 /// @note description "HIDDEN" means the option is not printed

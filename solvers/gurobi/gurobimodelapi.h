@@ -346,6 +346,7 @@ protected:
 
 
 private:
+  bool has_quadratic_obj_ = false;
   /// The sense of the main objective
   obj::Type main_obj_sense_;
 

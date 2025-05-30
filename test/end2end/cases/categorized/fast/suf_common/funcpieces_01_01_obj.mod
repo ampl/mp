@@ -4,7 +4,7 @@
 # into flat constraints, both from constraints and objective.
 # In this example, .funcpieces for exp(x+3) receives
 # different values through Obj1, C2 and C3.
-# With debug=1, x-gurobi should return
+# With debug=1 and objno=2, x-gurobi should return
 # Initial.test_funcpieces_presolved = 58 (maximum)
 # -------------------------------------------------------------
 
@@ -12,8 +12,12 @@ var x;
 var y;
 var z;
 
+minimize Obj0: x+y;
+
 minimize Obj1:
     y - 2*x - 3*exp(x+3);
+
+minimize Obj2: -x-2*y;
 
 subj to C1:
        x+y >= 1;
@@ -27,7 +31,9 @@ subj to C3:
 
 suffix funcpieces IN;
 
+let Obj0.funcpieces := -8;
 let Obj1.funcpieces := 58;
+let Obj2.funcpieces := 98;
 
 let C1.funcpieces := 12;
 let C2.funcpieces := 23;

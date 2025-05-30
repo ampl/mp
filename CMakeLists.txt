@@ -1,7 +1,7 @@
 # CMake 3.30 or later is required for FindBoost.
 # It can be easily obtained and used without superuser privileges
 # even if the system has an older version of CMake installed.
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.5...3.10)
 
 if (CMAKE_MAJOR_VERSION LESS 3)
   # CMake 3.0 is used for generator expressions in install(FILES).

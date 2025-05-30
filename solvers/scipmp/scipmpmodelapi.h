@@ -280,8 +280,7 @@ public:
   // void AddExpression(const OrExpression& dc);
   ACCEPT_CONSTRAINT(AndConstraint, Recommended, CG_General)
   void AddConstraint(const AndConstraint& cc);
-  ACCEPT_CONSTRAINT(OrConstraint,   // SCIP 9.2.2: OR seems not correct
-      AcceptedButNotRecommended, CG_General)
+	ACCEPT_CONSTRAINT(OrConstraint, Recommended, CG_General)
   void AddConstraint(const OrConstraint& dc);
 
   /// Linear indicator constraints can be used as
@@ -289,13 +288,13 @@ public:
   /// If not handled, the compared expressions need
   /// deducible finite bounds for a big-M redefinition.
   ///
-  /// @note Indicators 'AcceptedButNotRecommended':
-  ///   not sure about performance (vs big-M) as of SCIP 9.
-  ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, AcceptedButNotRecommended, CG_General)
+  /// @note Used to be 'AcceptedButNotRecommended':
+  ///   not sure about performance (vs big-M) before SCIP 9.2.2.
+  ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, Recommended, CG_General)
   void AddConstraint(const IndicatorConstraintLinLE& mc);
-  ACCEPT_CONSTRAINT(IndicatorConstraintLinEQ, AcceptedButNotRecommended, CG_General)
+  ACCEPT_CONSTRAINT(IndicatorConstraintLinEQ, Recommended, CG_General)
   void AddConstraint(const IndicatorConstraintLinEQ& mc);
-  ACCEPT_CONSTRAINT(IndicatorConstraintLinGE, AcceptedButNotRecommended, CG_General)
+  ACCEPT_CONSTRAINT(IndicatorConstraintLinGE, Recommended, CG_General)
   void AddConstraint(const IndicatorConstraintLinGE& mc);
 
   /// Cones
@@ -340,9 +339,9 @@ public:
   ACCEPT_CONSTRAINT(SinConstraint, Recommended, CG_General)
   void AddConstraint(const SinConstraint& cc);
 
-  ACCEPT_EXPRESSION(CosExpression, AcceptedButNotRecommended)  //pretty slow in SCIP 8/9
+  ACCEPT_EXPRESSION(CosExpression, Recommended)  //pretty slow in SCIP 8/9
   SCIP_EXPR* AddExpression(const CosExpression& );
-  ACCEPT_CONSTRAINT(CosConstraint, AcceptedButNotRecommended, CG_General)
+  ACCEPT_CONSTRAINT(CosConstraint, Recommended, CG_General)
   void AddConstraint(const CosConstraint& cc);
 
   // TODO Div; PowVarVar;

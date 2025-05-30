@@ -27,7 +27,9 @@ public:
   /// Constraint name
   const char* name() const { return GetName(); }
   /// Set constraint name
-  void SetName(std::string nm) { name_ = std::move(nm); }
+	void SetName(std::string nm) {
+		name_ = std::move(nm);
+	}
   /// Whether context is meaningful here
   static constexpr bool UsesContext() { return false; }
   /// Get context, if meaningful

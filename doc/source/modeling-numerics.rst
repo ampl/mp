@@ -18,6 +18,8 @@ Try & keep the model's coefficients
 close to :math:`\pm1` by rescaling your data.
 
 
+.. _tight_bounds:
+
 Importance of tight bounds: "big-M" constraints
 **************************************************
 
@@ -38,7 +40,9 @@ may be linearized as
 
       x <= upper_bound(x) * b;
 
-with the big-M constant taken as the upper bound on :math:`x`.
+with the big-M constant taken as the upper bound on :math:`x`. Moreover,
+such a linearizaton can be performed to compute a continuous relaxation
+of the MIP model, facilitating faster solving.
 
 Thus, big-M constraints require finite bounds on participating variables.
 They should be as tight as possible, ideally between :math:`\pm10^4`.

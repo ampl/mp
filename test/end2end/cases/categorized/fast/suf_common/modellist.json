@@ -190,17 +190,18 @@
     }
   },
   {
-    "name": "funcpieces_01_01_obj acc:_expr=0",
+    "name": "funcpieces_01_01_obj acc:_expr=0 objno=2",
     "tags": [ "nonlinear", "funcpieces" ],
     "options": {
-      "ANYSOLVER_options": "debug=1",
-      "gurobi_options": "debug=1 acc:_expr=0"
+      "ANYSOLVER_options": "debug=1 objno=2",
+      "gurobi_options": "debug=1 acc:_expr=0 objno=2"
     },
     "comment": "Gurobi with expressions orders cons differently",
     "comment1": "This also tests acc:_expr=0",
-    "objective": -62.3363,
+    "objective": 1,
     "values": {
-      "Initial.test_funcpieces_presolved": 58
+      "Initial.test_funcpieces_presolved": 58,
+      "_obj[2]": -62.3363
     }
   }
 ]

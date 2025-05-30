@@ -2,6 +2,15 @@ Summary of recent updates to gurobi for AMPL
 ============================================
 
 
+## unreleased
+- Option mip:opttol renamed as lp:opttol (opttol).
+
+
+## 20250515
+- Updated to Gurobi 12.0.2, which includes bugfixes
+- Improved detection of unsupported multiobjective models
+
+
 ## 20250429
 - Added the Tan expression (previously always submitted
 	to Gurobi as a general constraint).

@@ -26,8 +26,8 @@ controlling solver behavior and information flow.
 * Option :ref:`lim:time (timelimit) <ampl-solver-options>` -
   sets solver time limit
 
-* Options :ref:`mipgap, mipgapabs <ampl-solver-options>` -
-  set required MIP optimality gap
+* Options :ref:`mipgap, mipgapabs, lp:opttol <ampl-solver-options>` -
+  set required MIP optimality gap and LP reduced cost tolerance
 
 * Option :ref:`mip:return_gap <returnMIPgap>` requests reporting of the final MIP gap
 
@@ -52,6 +52,17 @@ controlling solver behavior and information flow.
 
 * Option :ref:`scale <ampl-solver-options>` -
   controls coefficient scaling for numerical stability
+
+* Option :ref:`cvt:bigM <ampl-solver-options>` -
+  sets universal bounds on variables in logical expressions;
+  relates to the modeling topic recommending
+  :ref:`tight bounds on all variables <tight_bounds>`
+
+* We recommend
+  :ref:`original piecewise-linear expressions <piecewise_linear_modeling>`
+  with MP solvers
+  (`AMPL option <https://dev.ampl.com/ampl/reference/options.html>`_
+  ``pl_linearize`` set to 0).
 
 * :ref:`multiplesolutions` (options ``sol:stub, sol:count, sol:poollimit``) -
   control exploration of alternative solutions
@@ -1035,7 +1046,8 @@ for examples.
      - Values:
 
        * **0** - No (default)
-       * **1** - Yes, natively supported if available, otherwise emulated
+       * **1** - Yes, natively supported if available, otherwise emulated.
+         Most solvers only support linear objectives natively.
        * **2** - Yes, emulated
    * - **Example**
      - Use :ref:`multiObjectiveDiet`

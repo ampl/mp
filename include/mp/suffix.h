@@ -236,6 +236,7 @@ class BasicSuffix : private internal::SuffixBase {
 
   using SuffixBase::name;
   using SuffixBase::kind;
+  using SuffixBase::kind_pure;
   using SuffixBase::or_kind;
   using SuffixBase::num_values;
   using SuffixBase::operator SafeBool;

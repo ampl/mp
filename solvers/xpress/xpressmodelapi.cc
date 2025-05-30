@@ -343,11 +343,8 @@ void XpressmpModelAPI::AddGlobalConstraint(const NLParams& params, char type) {
   XPRESSMP_CCALL(XPRSaddrows(lp(), 1, 1, &type, &rhs, NULL, &start, params.resultVar(), &coef));
   int rowindex = NumLinCons() - 1;
   int formulaStart[] = { 0, params.size() };
-  status = XPRSnlpaddformulas(lp(), 1, &rowindex, formulaStart, true, params.types(), params.values());
-  if (status) {
-    XPRSgetlasterror(lp(), BUFFER);
-    printf("%s", BUFFER);
-  }
+  XPRESSMP_CCALL(
+      XPRSnlpaddformulas(lp(), 1, &rowindex, formulaStart, true, params.types(), params.values()));
 }
 
 

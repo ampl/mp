@@ -29,6 +29,7 @@ Otherwise, only the 1st objective is considered
 
     minimize total_number:  sum {j in FOOD} Buy[j];
 
+Objectives can be blended, or hierarchical (Lexicographical).
 
 
 Blended objectives
@@ -47,6 +48,8 @@ To apply hierarchical optimization, use suffix ``.objpriority``,
 as described in the ``obj:multi`` option description.
 
 .. code-block:: ampl
+
+		suffix objpriority;
 
     maximize ReverseSeniority {e in 1..2, i in I: E[i]==e}:
       sum {t in V[i]: Pr[i, t]==0}

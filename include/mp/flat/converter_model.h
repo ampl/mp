@@ -91,8 +91,7 @@ protected:
         int i_actual = i+i_start;
         jw["VAR_index"] = i_actual;
         {
-          int i = i_actual;
-          auto name = GetVarNamer().at(i);
+					auto name = GetVarNamer().at(i_actual);
           jw["name"] = name;
           fmt::MemoryWriter pr;
           WriteVar(pr, name, lbs[i], ubs[i], types[i]);
@@ -475,6 +474,7 @@ public:
       backend.SetQuadraticObjective(i, obj);
     else
       backend.SetLinearObjective(i, obj);
+		ExportObjective(i, obj);
   }
 
   /// Var namer

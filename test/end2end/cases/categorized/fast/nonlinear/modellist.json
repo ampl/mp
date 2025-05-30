@@ -127,7 +127,7 @@
     }
   },
   {
-    "name" : "log_01_check_obj",
+    "name" : "log_01_check_obj funcpieces=-2 fpe=1e-5",
     "tags" : ["continuous", "nonlinear"],
     "options": { "gurobi_options": "funcpieces=-2 funcpieceerror=1e-5" },
     "comment": "Rel error bound 1e-5 for Gurobi, own plapprox for others",
@@ -449,6 +449,7 @@
     "name" : "hs54_inspired",
     "tags" : ["continuous", "nonlinear", "quadraticnonconvex"],
     "options": {
+      "mp_options": "lim:time=2",
       "xpress_options": "lim:time=2",
       "scip_options": "lim:time=2"
     },
@@ -460,6 +461,7 @@
     "name" : "hs54_inspired_2",
     "tags" : ["continuous", "nonlinear", "quadraticnonconvex"],
     "options": {
+      "mp_options": "lim:time=2",
       "xpress_options": "lim:time=2",
       "scip_options": "lim:time=2"
     },
@@ -527,6 +529,14 @@
       "mp_options": "qp2pass=0 lim:time=2",
       "xpress_options": "qp2pass=0 lim:time=2",
       "scip_options": "qp2pass=0 lim:time=2"
+    }
+  },
+  {
+    "name" : "sinrosnb",
+    "tags" : ["continuous", "nonlinear", "quadraticnonconvex"],
+    "objective": -99901,
+    "values": {
+      "solve_result": "solved"
     }
   }
 ]

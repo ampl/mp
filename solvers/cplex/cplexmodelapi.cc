@@ -53,9 +53,8 @@ void CplexModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
     if (status)
     {
       CPXgeterrorstring(env(), status, ERROR);
-      printf(ERROR);
+      MP_RAISE(ERROR);
     }
-
   }
 }
 void CplexModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective& qo) {
