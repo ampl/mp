@@ -76,6 +76,24 @@ void CuoptmpModelAPI::AddConstraint(const LinConGE& lc) {
 
 
 void CuoptmpModelAPI::FinishProblemModificationPhase() {
+  if (lp_->num_constraints == 0) {
+    // Add a dummy constraint to make the problem non-empty
+    // 0.0 * x[0] == 0.0
+    lp_->num_constraints = 1;
+    lp_->constraint_matrix_row_offsets.push_back(0);
+    lp_->constraint_matrix_row_offsets.push_back(1);
+    lp_->constraint_matrix_coefficients.push_back(0.0);
+    lp_->constraint_matrix_column_indices.push_back(0);
+    lp_->constraint_sense.push_back(CUOPT_EQUAL);
+    lp_->rhs.push_back(0.0);
+    lp_->nnz = 1;
+  }
+
+  if (lp_->objective_coefficients.size() == 0)
+  {
+    lp_->objective_coefficients.resize(lp_->num_variables, 0.0);
+  }
+
   cuopt_int_t status = cuOptCreateProblem(
     lp_->num_constraints,
     lp_->num_variables,
