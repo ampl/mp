@@ -73,6 +73,18 @@
     }
   },
   {
+    "name" : "diet   DUALS ONLY",
+    "files" : ["diet.mod", "diet.dat"],
+    "tags" : ["linear", "continuous"],
+    "objective" : 88.2,
+    "values": {
+      "Diet['A']": 0,
+      "Diet['B1']": 0,
+      "Diet['B2']": 0.126,
+      "Diet['C']": 0
+    }
+  },
+  {
     "name" : "diet_max solnsens=1",
     "files" : ["diet_max.mod", "diet.dat"],
     "options": {
@@ -89,6 +101,18 @@
       "Diet['A'].sensubhi": 11600,
       "Diet['C'].sensublo": 9466.66666666666666,
       "Diet['C'].sensubhi": 11500,
+      "Diet['A']": 0.04788,
+      "Diet['B1']": 0,
+      "Diet['B2']": 0,
+      "Diet['C']": 0.01586
+    }
+  },
+  {
+    "name" : "diet_max   DUALS ONLY",
+    "files" : ["diet_max.mod", "diet.dat"],
+    "tags" : ["linear", "continuous"],
+    "objective" : 1128.642,
+    "values": {
       "Diet['A']": 0.04788,
       "Diet['B1']": 0,
       "Diet['B2']": 0,
@@ -122,6 +146,23 @@
       "Diet_Max['B1'].status": "bas",
       "Diet_Max['B1'].status": "bas",
       "Diet_Max['C'].status": "upp",
+      "Diet_Min['A']": 0,
+      "Diet_Min['B1']": 0,
+      "Diet_Min['B2']": 0,
+      "Diet_Min['C']": 0,
+      "Diet_Max['A']": 0.04788,
+      "Diet_Max['B1']": 0,
+      "Diet_Max['B2']": 0,
+      "Diet_Max['C']": 0.01586
+    }
+  },
+  {
+    "name" : "diet_nonrng_max DUALS ONLY",
+    "files" : ["diet_nonrng_max.mod", "diet.dat"],
+    "tags" : ["linear", "continuous"],
+    "objective" : 1128.642,
+    "comment": "Diet_Min{} constraints are converted to <= by AMPL",
+    "values": {
       "Diet_Min['A']": 0,
       "Diet_Min['B1']": 0,
       "Diet_Min['B2']": 0,
