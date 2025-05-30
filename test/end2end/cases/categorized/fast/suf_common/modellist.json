@@ -73,7 +73,7 @@
     }
   },
   {
-    "name" : "diet   DUALS ONLY",
+    "name" : "diet   DUALS ONLY -- EXACT",
     "files" : ["diet.mod", "diet.dat"],
     "tags" : ["linear", "continuous"],
     "objective" : 88.2,
@@ -82,6 +82,15 @@
       "Diet['B1']": 0,
       "Diet['B2']": 0.126,
       "Diet['C']": 0
+    }
+  },
+  {
+    "name" : "diet   DUALS ONLY -- GENERAL",
+    "files" : ["diet.mod", "diet.dat"],
+    "tags" : ["linear", "continuous"],
+    "objective" : 88.2,
+    "values": {
+      "sum{i in 1 .. _ncons} _con[i]*_con[i].lb": 88.2
     }
   },
   {
