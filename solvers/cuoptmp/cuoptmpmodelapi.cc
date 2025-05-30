@@ -8,20 +8,6 @@ void CuoptmpModelAPI::InitProblemModificationPhase(
   if (lp_ == nullptr) {
     return;
   }
-
-  lp_->num_constraints = 0;
-  lp_->num_variables = 0;
-  lp_->constraint_matrix_row_offsets.clear();
-  lp_->constraint_matrix_coefficients.clear();
-  lp_->constraint_matrix_column_indices.clear();
-  lp_->constraint_sense.clear();
-  lp_->rhs.clear();
-  lp_->lower_bounds.clear();
-  lp_->upper_bounds.clear();
-  lp_->variable_types.clear();
-  lp_->objective_coefficients.clear();
-  lp_->objective_sense = CUOPT_MINIMIZE;
-  lp_->objective_offset = 0.0;
 }
 
 void CuoptmpModelAPI::AddVariables(const VarArrayDef& v) {
