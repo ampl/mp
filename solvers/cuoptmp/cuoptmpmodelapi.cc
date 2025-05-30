@@ -94,6 +94,16 @@ void CuoptmpModelAPI::FinishProblemModificationPhase() {
     lp_->objective_coefficients.resize(lp_->num_variables, 0.0);
   }
 
+  for (int j = 0; j < lp_->num_variables; j++) {
+    if (lp_->lower_bounds[j] < -1e20) {
+      lp_->lower_bounds[j] = -INFINITY;
+    }
+    if (lp_->upper_bounds[j] > 1e20) {
+      lp_->upper_bounds[j] = INFINITY;
+    }
+  }
+
+
   cuopt_int_t status = cuOptCreateProblem(
     lp_->num_constraints,
     lp_->num_variables,
