@@ -144,6 +144,10 @@ ArrayRef<double> CuoptmpBackend::DualSolution_LP() {
   cuopt_int_t status = cuOptGetDualSolution(problem_data->solution, pi.data());
   if (status != CUOPT_SUCCESS) {
     pi.clear();
+    return pi;
+  }
+  for (int i = 0; i < num_cons; i++) {
+   pi[i] *= -1.0;
   }
   return pi;
 }
