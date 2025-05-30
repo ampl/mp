@@ -42,6 +42,7 @@ def addStdSolvers(solvers: SolverCollection, binPath=""):
     solvers.addSolver(Solver.ConoptSolver(path.join(binPath,"conopt4")))
     solvers.addSolver(Solver.ConoptSolver(path.join(binPath,"conopt")))
     solvers.addSolver(Solver.COPTSolver(path.join(binPath,"copt")))
+    solvers.addSolver(Solver.cuOptSolver(path.join(binPath,"cuoptmp")))
     solvers.addSolver(Solver.MindoptSolver(path.join(binPath,"mindoptampl")))
     solvers.addSolver(Solver.HighsSolver(path.join(binPath,"highs")), aliases=["highsmp"])
     solvers.addSolver(Solver.KnitroSolver(path.join(binPath,"knitro")))

@@ -386,4 +386,7 @@ if (TARGET cplexodh)
   endif()
 endif()
 
-  
+
+add_ampl_backend(cuoptmp DLL_RUNTIME SHARED_LIB MODULE CUOPT
+                 LIBRARIES cuopt ${CMAKE_DL_LIBS}
+                )

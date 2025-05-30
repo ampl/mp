@@ -1,0 +1,94 @@
+#ifndef CUOPTLPCOMMON_H
+#define CUOPTLPCOMMON_H
+
+#include <string>
+
+#include "mp/backend-to-model-api.h"
+
+extern "C" {
+#include <cuopt/linear_programming/cuopt_c.h>
+};
+
+#include "mp/format.h"
+
+namespace mp {
+
+struct ProblemData {
+  cuOptOptimizationProblem problem;
+  cuOptSolverSettings settings;
+  cuOptSolution solution;
+
+
+  std::vector<cuopt_float_t> lower_bounds;
+  std::vector<cuopt_float_t> upper_bounds;
+  std::vector<char> variable_types;
+
+  std::vector<cuopt_float_t> constraint_matrix_coefficients;
+  std::vector<cuopt_int_t> constraint_matrix_row_offsets;
+  std::vector<cuopt_int_t> constraint_matrix_column_indices;
+
+  cuopt_int_t num_constraints;
+  cuopt_int_t num_variables;
+  cuopt_int_t nnz;
+
+  std::vector<char> constraint_sense;
+  std::vector<cuopt_float_t> rhs;
+
+  std::vector<cuopt_float_t> objective_coefficients;
+  cuopt_int_t objective_sense;
+  cuopt_float_t objective_offset;
+};
+
+
+/// Information shared by both
+/// `CuoptmpBackend` and `CuoptmpModelAPI`
+struct CuoptmpCommonInfo {
+  ProblemData* lp() const { return lp_; }
+  void set_lp(ProblemData* lp) { lp_ = lp; }
+  ProblemData* lp_ = nullptr;
+};
+
+
+/// Common API for Cuoptmp classes
+class CuoptmpCommon :
+    public Backend2ModelAPIConnector<CuoptmpCommonInfo> {
+public:
+  /// These methods access Cuoptmp options. Used by AddSolverOption()
+  void GetSolverOption(const char* key, int& value) const;
+  void SetSolverOption(const char* key, int value);
+  void GetSolverOption(const char* key, double& value) const;
+  void SetSolverOption(const char* key, double value);
+  void GetSolverOption(const char* key, std::string& value) const;
+  void SetSolverOption(const char* key, const std::string& value);
+
+  /// TODO Typically solvers define their own infinity; use them here
+  static constexpr double Infinity() { return INFINITY;  }
+  static constexpr double MinusInfinity() { return -INFINITY; }
+
+protected:
+
+  int NumLinCons() const;
+  int NumVars() const;
+  int NumObjs() const;
+  int NumQPCons() const;
+
+
+protected:
+  // TODO if desirable, provide function to create the solver's environment
+  // with own license
+  // int (*createEnv) (solver_env**) = nullptr;
+
+};
+
+
+/// Convenience macro
+// TODO This macro is useful to automatically throw an error if a function in the
+// solver API does not return a valid errorcode. In this mock driver, we define it
+// ourselves, normally this constant would be defined in the solver's API.
+#define CUOPTLP_CCALL( call ) do { if (int e = (call) != CUOPT_SUCCESS) \
+  throw std::runtime_error( \
+    fmt::format("  Call failed: '{}' with code {}", #call, e )); } while (0)
+
+} // namespace mp
+
+#endif // CUOPTLPCOMMON_H
