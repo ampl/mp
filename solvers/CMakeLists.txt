@@ -386,9 +386,7 @@ if (TARGET cplexodh)
   endif()
 endif()
 
-add_ampl_backend(cuoptmp DLL_RUNTIME SHARED_LIB MODULE CUOPT
-LIBRARIES cuopt ${CMAKE_DL_LIBS} INCLUDE_DIRS ${CUOPT_INCLUDE_DIRS} CXX_STANDARD 17 PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:${CUOPT_CXX_FLAGS}>")
 
-if (TARGET cuoptmp)
-  find_package(CUOPT REQUIRED)
- endif()
+add_ampl_backend(cuoptmp DLL_RUNTIME SHARED_LIB MODULE CUOPT
+                 LIBRARIES cuopt ${CMAKE_DL_LIBS}
+                )
