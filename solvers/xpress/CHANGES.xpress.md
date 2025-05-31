@@ -2,9 +2,15 @@ Summary of recent updates to Xpress for AMPL
 ============================================
 
 
-## unreleased
-- Option lp:opttol (opttol), synonym for previous
-  lp:optimalitytolerance.
+## 20250531
+- Updated to Xpress 45.01.01 (9.6) that includes:
+  - Pre root parallel heuristics phase.
+  - New deterministic measure of algorithmic work.
+  - Performance improvements.
+- Option *lp:opttol* (*opttol*), synonym for previous
+  *lp:optimalitytolerance*.
+- Added keywords *lim:work*, *lim:prerootwork* and *mip:prerooteffort*.
+- Added value *3* to *pre:domcol*.
 
 
 ## 20250429
@@ -18,13 +24,13 @@ Summary of recent updates to Xpress for AMPL
 - Non-linear constraints are now passed via the expression
   API, that can improve performance.
 - Changes in MP
-  - Option cvt:qp2pass (default even faster parsing
+  - Option *cvt:qp2pass* (default even faster parsing
     of quadratics)
 
 
 ## 20250329
 - Changes in MP:
-  - Option cvt:multoutcard to limit the size of
+  - Option *cvt:multoutcard* to limit the size of
     out-multiplied QP expressions. Can improve speed
     on large models.
   - Improved parsing of quadratic expressions.

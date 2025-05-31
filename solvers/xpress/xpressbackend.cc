@@ -373,13 +373,37 @@ std::string XpressmpBackend::DoXpressFixedModel()
     namespace sol = mp::sol;
     auto solvestatus = getIntAttr(XPRS_SOLVESTATUS);
     auto solstatus = getIntAttr(XPRS_SOLSTATUS);
+    auto stopstatus = getIntAttr(XPRS_STOPSTATUS);
     bool fFeasible = (XPRS_SOLSTATUS_FEASIBLE==solstatus);
+
     if (true) {  // Assume we used XPRSoptimize() but should generally work
       switch (solstatus) {
       case XPRS_SOLSTATUS_OPTIMAL:
         return { sol::SOLVED, "optimal solution" };
       case XPRS_SOLSTATUS_FEASIBLE:
-        return { sol::LIMIT_FEAS, "limit, feasible solution" };
+        switch (stopstatus) {
+          case XPRS_STOP_TIMELIMIT:
+            return { sol::LIMIT_FEAS_TIME, "time limit, feasible solution" };
+          case XPRS_STOP_WORKLIMIT:
+            return { sol::LIMIT_FEAS_WORK, "work limit, feasible solution" };
+          case XPRS_STOP_CTRLC:
+          case XPRS_STOP_USER:
+            return { sol::LIMIT_FEAS_INTERRUPT, "interrupted, feasible solution" };
+          case XPRS_STOP_NODELIMIT:
+            return { sol::LIMIT_FEAS_NODES, "node limit, feasible solution" };
+          case XPRS_STOP_ITERLIMIT:
+            return{ sol::LIMIT_FEAS_ITER, "iteration limit, feasible solution" };
+          case XPRS_STOP_MIPGAP:
+            return{ sol::LIMIT_FEAS_GAP, "MIP gap reached, feasible solution" };
+          case XPRS_STOP_SOLLIMIT:
+            return { sol::LIMIT_FEAS_NUMSOLS, "solution limit" };
+          case XPRS_STOP_MEMORYERROR:
+            return { sol::LIMIT_FEAS_SOFTMEM, "memory limit, feasible solution" };
+          case XPRS_STOP_NUMERICALERROR:
+            return { sol::UNCERTAIN, "numerical error, solution candidate returned" };
+          default:
+            return { sol::LIMIT_FEAS, "limit, feasible solution" };
+        }
       case XPRS_SOLSTATUS_INFEASIBLE:
         return { sol::INFEASIBLE, "infeasible problem" };
       case XPRS_SOLSTATUS_UNBOUNDED:
@@ -391,7 +415,25 @@ std::string XpressmpBackend::DoXpressFixedModel()
       case XPRS_SOLSTATUS_NOTFOUND:
         if (XPRS_SOLVESTATUS_FAILED==solvestatus)
           return { sol::FAILURE, "failure, no solution" };
-        return { sol::LIMIT_NO_FEAS, "interrupted, no solution" };
+        switch (stopstatus) {
+          case XPRS_STOP_TIMELIMIT:
+            return { sol::LIMIT_NO_FEAS_TIME, "time limit, without a feasible solution" };
+          case XPRS_STOP_WORKLIMIT:
+            return { sol::LIMIT_NO_FEAS_WORK, "work limit, without a feasible solution" };
+          case XPRS_STOP_CTRLC:
+          case XPRS_STOP_USER:
+            return { sol::LIMIT_NO_FEAS_INTERRUPT, "interrupted, without a feasible solution" };
+          case XPRS_STOP_NODELIMIT:
+            return { sol::LIMIT_NO_FEAS_NODES, "node limit, without a feasible solution" };
+          case XPRS_STOP_ITERLIMIT:
+            return{ sol::LIMIT_NO_FEAS_ITER, "iteration limit, without a feasible solution" };
+          case XPRS_STOP_MEMORYERROR:
+            return { sol::LIMIT_NO_FEAS_SOFTMEM, "memory limit, without a feasible solution" };
+          case XPRS_STOP_NUMERICALERROR:
+            return { sol::UNCERTAIN, "numerical error" };
+          default:
+            return { sol::LIMIT_NO_FEAS, "limit, without a feasible solution" };
+          }
       }
     } else if (IsMIP())    // After XPRSmipoptimize().
     {
@@ -861,7 +903,7 @@ std::string XpressmpBackend::DoXpressFixedModel()
             {"-1", "default strategy (default)", -1},
             {"0", "disable heuristics", 0},
             {"1", "focus on reducing the gap early", 1},
-            {"2", "extremely aggressive heuristics", 2},
+            {"2", "extremely aggressive heuristics, also enables pre-root heuristics", 2},
     };
 
     static const mp::OptionValueInfo values_heursearchfreq[] = {
@@ -1026,10 +1068,11 @@ std::string XpressmpBackend::DoXpressFixedModel()
  };
 
   static const mp::OptionValueInfo values_predomcol[]{
-{"-1","automatic (default)", -1},
-{"0", "disable", 0},
-{"1", "cautious", 1},
-{"2", "aggressive: all candidate will be checked", 2}
+    {"-1","automatic (default)", -1},
+    {"0", "disable", 0},
+    {"1", "cautious", 1},
+    {"2", "aggressive: all candidate will be checked", 2},
+    {"3", "includes 1 and 2 but also looks for more generic column domination", 3}
   };
 
   static const mp::OptionValueInfo values_predomrow[] = {
@@ -1145,6 +1188,22 @@ std::string XpressmpBackend::DoXpressFixedModel()
     {">0", "use the barrier algorithm while the number of dual infeasibilities is larger than this value, otherwise use dual simplex", 1}
   };
 
+  const mp::OptionValueInfo values_prerootwork[] = {
+   {"-1", "no explicit limit; if enabled, the work limit for this "
+          "phase is controlled via prerooteffeort (default)", -1},
+   {"0", "disable preroot parallel heuristics", 0},
+   {">0", "limit for work in preroot heuristics", 1}
+  };
+
+  const mp::OptionValueInfo values_prerooteffort[] = {
+       {"-2", "enable pre-root parallel heuristics without a specific work "
+              "limit for this phase", -2},
+       {"-1", "enablement of pre-root parallel heuristics is subject to mip:heuremphasis (default)", 0},
+       {"0", "disable preroot heuristics", 1},
+        {">0", "enable preroot heuristics with a work limit proportional to this factor", 1},
+  };
+
+
   const mp::OptionValueInfo values_sleeponthreadwait[] = {
    {"-1", "automatically determined", -1},
    {"0", "no (busy-wait)", 0},
@@ -1249,6 +1308,25 @@ void XpressmpBackend::InitCustomOptions() {
   AddSolverOption("lim:time timelim timelimit",
     "Limit on solve time (in seconds; default: no limit). ",
     XPRS_TIMELIMIT, 0.0, Infinity());
+
+
+  AddSolverOption("lim:prerootwork prerootworklim prerootworklimit",
+    "Limit on work units for different heuristics executed in parallel "
+    "before the initial LP root relaxation is solved:\n"
+    "\n.. value-table::\n",
+    XPRS_PREROOTWORKLIMIT, values_prerootwork,-1);
+  
+    AddSolverOption("mip:prerooteffort prerooteffort",
+      "Dial for the work spent during the Pre-root parallel heuristic phase:\n"
+      "\n.. value-table::\n",
+      XPRS_PREROOTEFFORT, values_prerooteffort, -1);
+
+  AddSolverOption("lim:work worklim worklimit",
+    "Limit on work units, a hardware and platform independent "
+    "measure of effort; see control mip:deterministi for full "
+    "repreducibility (default: 1e20)",
+    XPRS_WORKLIMIT, 0.0, DBL_MAX);
+
 
   AddSolverOption("lim:soltime soltimelim soltimelimit",
     "Limit on solve time (in seconds; default: no limit) to be applied only "
