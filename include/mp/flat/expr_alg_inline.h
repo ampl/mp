@@ -7,6 +7,7 @@
 #include "mp/flat/constr_std.h"
 #include "mp/flat/bucketaccum.h"
 #include "mp/flat/eexpr.h"
+#include "mp/valcvt-link.h"
 
 namespace mp {
 
@@ -24,7 +25,7 @@ public:
         (LinearFunctionalConstraint*)nullptr) );
     auto nqfc = MPCD( GetNumberOfAddable(
         (QuadraticFunctionalConstraint*)nullptr) );
-    if (nlfc && (fLin || fQuad) || nqfc && fQuad) {
+    if ((nlfc && (fLin || fQuad)) || (nqfc && fQuad)) {
       fLin_ = fLin;
       fQuad_ = fQuad;
       return DoConsiderInlining();
@@ -63,21 +64,46 @@ protected:
   }
 
   /// @todo just once?
-  void WalkObjectives() {}
+  void WalkObjectives() {
+    for (auto& obj: MPD( get_objectives() )) {
+      if (HasAlgExpr(obj.GetLinTerms())) {
+        auto qexpr
+            = CollectAlgSubExpr(obj.GetLinTerms(), obj.GetQPTerms());
+        // @todo some linking for this...
+        // but we modify in-place
+        obj.GetLinTerms() = std::move(qexpr.GetBody().GetLinTerms());
+        obj.GetQPTerms() = std::move(qexpr.GetBody().GetQPTerms());
+        if (qexpr.constant_term()) {
+          obj.GetLinTerms().add_term(
+                qexpr.constant_term(),
+                int( MPD( MakeFixedVar(1.0) ) ) );
+          obj.GetLinTerms().sort_terms();     // @todo merge would be faster?
+        }
+      }
+    }
+  }
 
   /// @return true iff made this one redundant
   template <class Body, class RangeOrRHS>
   bool InlineAlgExpr(
       const AlgebraicConstraint<Body, RangeOrRHS>& con, int i) {
-    if (HasAlgExpr(con)) {
-      auto qexpr = CollectAlgSubExpr(con.GetBody().GetLinTerms());
-      if constexpr (std::is_same_v<Body, LinTerms>) {  // a LinCon..
-        assert(
-            qexpr.GetLinTerms()!=con.GetBody().GetLinTerms()
-            || qexpr.GetQPTerms().size());
-      } else {                                         // a QuadCon..
-        assert(qexpr.GetBody()!=con.GetBody());  // Do we receive the final body?
-      }
+    if (HasAlgExpr(con.GetBody().GetLinTerms())) {
+      auto qexpr = CollectAlgSubExpr(con.GetBody());
+      auto range_or_rhs = con.GetRhsOrRange();
+      range_or_rhs.add_to_rhs( -qexpr.constant_term() );   // subtract
+      auto auto_link_scope = MPD( MakeAutoLinker(con, i) );
+      if (qexpr.GetQPTerms().size())
+        MPD( AddConstraint(        // not _AS_ROOT
+               AlgebraicConstraint<QuadAndLinTerms, RangeOrRHS>{
+                 { qexpr.GetLinTerms(), qexpr.GetQPTerms() },
+                 range_or_rhs
+               }) );
+      else
+        MPD( AddConstraint(
+               AlgebraicConstraint<LinTerms, RangeOrRHS>{
+                 { qexpr.GetLinTerms() },
+                 range_or_rhs
+               }) );
       return true;
     }
     return false;
@@ -85,19 +111,67 @@ protected:
 
   /// @return recursively collect linear and/or quadratic
   /// subexpressions
-  QuadraticExpr CollectAlgSubExpr(const LinTerms& lt) {
-    BucketAccumulator<EExpr> buckets;
-    AffineExpr ae_untouched;
-
-    buckets.Add(ae_untouched);
-    return buckets.ExtractSum();
+  /// @todo Consider \a fQuad_
+  template <class Body>
+  EExpr CollectAlgSubExpr(const Body& body) {
+    if constexpr (std::is_same_v<Body, QuadAndLinTerms>) {
+      return CollectAlgSubExpr(
+            body.GetLinTerms(), body.GetQPTerms());
+    }
+    return CollectAlgSubExpr(body.GetLinTerms(), {});
   }
 
-  /// Whether the alg con has alg subexpressions
-  template <class Body, class RangeOrRHS>
-  bool HasAlgExpr(
-      const AlgebraicConstraint<Body, RangeOrRHS>& con) {
-    const auto& lt = con.GetBody().GetLinTerms();
+  /// @return recursively collect linear and/or quadratic
+  /// subexpressions
+  /// @todo Consider \a fQuad_
+  EExpr CollectAlgSubExpr(
+      const LinTerms& lt0, const QuadTerms& qt0) {
+    BucketAccumulator<EExpr> buckets;
+    AffineExpr ae_untouched;     // unmodified linear terms
+
+    auto inline_alg_subexpr
+        = [&](const auto& subexpr, double ci, int vi) {
+      EExpr collected;
+      if (HasAlgExpr(subexpr.GetBody().GetLinTerms())) {
+        collected = CollectAlgSubExpr(
+              subexpr.GetBody());
+        collected.add_to_constant(subexpr.constant_term());
+      } else {
+        collected = EExpr{std::move(subexpr)};
+      }
+      collected *= ci;
+      buckets.Add(std::move(collected));
+      MPD( DecrementVarUsage(vi) );             // 1x unuse vi
+    };
+
+    for (auto i=lt0.size(); i--; ) {
+      auto ci = lt0.coef(i);
+      auto vi = lt0.var(i);
+      if (auto pLFC = MPCD(
+              template GetActiveInitExpressionOfType<
+                  LinearFunctionalConstraint>(vi) ))
+        inline_alg_subexpr(pLFC->GetAffineExpr(), ci, vi);
+      else if (auto pQFC = MPCD(
+              template GetActiveInitExpressionOfType<
+                  QuadraticFunctionalConstraint>(vi) ))
+        inline_alg_subexpr(pQFC->GetArguments(), ci, vi);
+      else
+        ae_untouched.add_term(ci, vi);
+    }
+
+    // untouched as well: reuse all QP terms
+    EExpr ee_untouched
+    { std::move(ae_untouched), qt0, 0.0};
+    buckets.Add(ee_untouched);
+    auto result = buckets.ExtractSum();
+    assert(
+          result.GetLinTerms()!=lt0
+        || result.GetQPTerms()!=qt0);
+    return result;
+  }
+
+  /// Whether the alg con/expr body has alg subexpressions
+  bool HasAlgExpr(const LinTerms& lt) {
     for (auto i=lt.size(); i--; ) {
       auto vi = lt.var(i);
       if (auto pLFC = MPCD(

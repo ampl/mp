@@ -127,6 +127,8 @@ public:
   double lb() const { return lb_; }
   /// range ub()
   double ub() const { return ub_; }
+  /// Add to the range bounds
+  void add_to_rhs(double v) { lb_ += v; ub_ += v; }
   /// negate
   void negate() { auto tmp=ub_; ub_=-lb_; lb_=-tmp; }
   /// operator==

@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <functional>
 #include <cmath>
+#include <climits>
 
 #include "mp/common.h"
 #include "mp/format.h"

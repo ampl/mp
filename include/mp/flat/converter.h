@@ -1437,7 +1437,7 @@ private:
     GetEnv().AddOption("cvt:pre:ineqrhs",
                        "0/1*: Preprocess reified inequality comparison's right-hand sides.",
                        options_.preprocessInequalityRhs_, 0, 1);
-    GetEnv().AddOption("cvt:pre:unnest cvt:pre:inline",
+    GetEnv().AddOption("cvt:pre:unnest cvt:unnest cvt:pre:inline cvt:inline",
         "Inline nested expressions. Bitwise OR of the following values:\n"
                        "\n"
                        "|  1 - Ands and Ors\n"
