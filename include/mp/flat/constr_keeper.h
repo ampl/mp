@@ -79,7 +79,7 @@ public:
   { assert(check_index(i)); return cons_[i].GetCon(); }
 
   /// Is item \a i already bridged or abandoned?
-  bool IsRedundant(int i) const {
+  bool IsRedundant(int i) const override {
     return cons_[i].IsRedundant();
   }
 
@@ -237,9 +237,14 @@ public:
   const std::type_info& GetTypeInfo() const override
   { return typeid(ConstraintType); }
 
+  /// Report total number
+  int Size() const {
+    return (int)cons_.size();
+  }
+
   /// Report how many will be added to Backend
   int GetNumberOfAddable() const override {
-    return (int)cons_.size()-n_bridged_or_unused_;
+    return Size()-n_bridged_or_unused_;
   }
 
   /// Group number of this constraint type in the Backend.
@@ -595,12 +600,20 @@ public:
 
   /// ForEachActive().
   /// Deletes every constraint where fn() returns true.
+  /// @return number of deleted / decreased-usage items.
 	template <class Fn>
-	void ForEachActive(Fn fn) {
-		for (int i=0; i<(int)cons_.size(); ++i)
+  int ForEachActive(
+      Fn fn, int i_start = 0, int i_end = INT_MAX) {
+    int ndel = 0;
+    for (int i=i_start;
+         i<std::min((int)cons_.size(), i_end);
+         ++i)
       if (!cons_[i].IsRedundant())
-        if (fn(cons_[i].GetCon(), i))
+        if (fn(cons_[i].GetCon(), i)) {
           MarkAsBridged(cons_[i], i);
+          ++ndel;
+        }
+    return ndel;
 	}
 
   /// Compute result for constraint \a i

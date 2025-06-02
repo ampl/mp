@@ -499,7 +499,7 @@ protected:
   /// xN, xM >= 0.
   ConeArgs CheckSqrtXnXmNonneg(int res_var) {
     ConeArgs result;
-    if (const auto& pConPow = MC().template
+    if (const auto pConPow = MC().template
         GetInitExpressionOfType<PowConstExpConstraint>(res_var)) {
       if (0.5 == pConPow->GetParameters()[0]) {     // sqrt(arg_pow)
         const auto arg_pow = pConPow->GetArguments()[0];

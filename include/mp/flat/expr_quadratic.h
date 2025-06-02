@@ -140,10 +140,14 @@ public:
     return *this == qt;
   }
 
-  /// Testing API
+  /// operator==: testing API
   bool operator==(const QuadTerms& qt) const {
     return folded_ == qt.folded_;
   }
+
+  /// operator!=
+  bool operator!=(const QuadTerms& qt) const
+  { return !(*this==qt); }
 
 protected:
   /// Unfold if alternative empty
@@ -295,7 +299,9 @@ public:
   /// Value at given variable vector
   template <class VarInfo>
   long double ComputeValue(const VarInfo& x) const {
-    return LinTerms::ComputeValue(x) + QuadTerms::ComputeValue(x);
+    return
+        LinTerms::ComputeValue(x)
+           + QuadTerms::ComputeValue(x);
   }
 
   /// Sort terms
@@ -311,7 +317,12 @@ public:
   }
 
   /// Test equality
-  bool operator==(const QuadAndLinTerms& qlc) const { return equals(qlc); }
+  bool operator==(const QuadAndLinTerms& qlc) const
+  { return equals(qlc); }
+
+  /// Test disuality
+  bool operator!=(const QuadAndLinTerms& qlc) const
+  { return !equals(qlc); }
 };
 
 /// Specialize

@@ -202,6 +202,9 @@ public:
     DoPopulateConstraintList(cvt, ma, env);  // for -c option
   }
 
+  /// Is item \a i already bridged or abandoned?
+  virtual bool IsRedundant(int i) const = 0;
+
   /// Mark as bridged. Use index only.
   virtual void MarkAsBridged(int i) = 0;
 
@@ -315,7 +318,8 @@ using AbstractConstraintLocation =
 class BasicFlatConverter {
 public:
   /// Default conversion priority
-  static constexpr double ConstraintCvtPriority(BasicConstraint*) { return 1.0; }
+  static constexpr double ConstraintCvtPriority(BasicConstraint*)
+  { return 1.0; }
 
 /// Derived converter classes have to tell C++ to use
 /// default handlers if they need them

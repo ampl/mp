@@ -386,7 +386,7 @@ public:
       }
       con.GetArguments() = arg1;
     }
-    if (MPCD( IfPreproNestedAndsOrs() ))
+    if (MPCD( IfPreproUnnest() & 1 ))
       IntegrateNested(con);            // flatten nested
     if (con.GetArguments().empty())
       prepro.narrow_result_bounds(1.0, 1.0);  // empty conjunction
@@ -418,7 +418,7 @@ public:
       }
       con.GetArguments() = arg1;
     }
-    if (MPCD( IfPreproNestedAndsOrs() ))
+    if (MPCD( IfPreproUnnest() & 1 ))
       IntegrateNested(con);            // flatten nested
     if (con.GetArguments().empty())
       prepro.narrow_result_bounds(0.0, 0.0);  // empty disjunction

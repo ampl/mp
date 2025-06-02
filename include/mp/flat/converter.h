@@ -18,6 +18,7 @@
 #include "mp/flat/expr_bounds.h"
 #include "mp/flat/constr_prepro.h"
 #include "mp/flat/constr_prop_down.h"
+#include "mp/flat/expr_alg_inline.h"
 #include "mp/flat/converter_multiobj.h"
 #include "mp/flat/constr_2_expr.h"
 #include "mp/flat/sol_check.h"
@@ -43,6 +44,7 @@ class FlatConverter :
                       public BoundComputations<Impl>,
                       public ConstraintPreprocessors<Impl>,
                       public ConstraintPropagatorsDown<Impl>,
+                      public AlgebraicExpressionInliner<Impl>,
                       public MOManager<Impl>,
                       public Constraints2Expr<Impl>,
                       public SolutionChecker<Impl>,
@@ -53,7 +55,13 @@ public:
   static const char* GetTypeName() { return "FlatConverter"; }
 
   /// Construct with Env&
-  FlatConverter(Env& e) : EnvKeeper(e), modelapi_(e) { }
+  FlatConverter(Env& e) : EnvKeeper(e), modelapi_(e) {
+    this->AddConversionAction(
+        [this](BasicFlatConverter& cvt) {
+          MP_ASSERT_ALWAYS(&cvt == this, "Bad ptr");
+          return this->InlineAlgSubexpr();
+        }, 3099);     // 3099: before LinFuncCon/QuadFuncCon
+  }
 
   /// Trying to use 'Var' instead of bare 'int'
   using Var = typename FlatModel::Var;
@@ -353,6 +361,14 @@ protected:
   /// Can be called from ConvertMaps()
   void ConvertAllConstraints() {
     GetModel().ConvertAllConstraints(*this);
+  }
+
+  /// Inline algebraic subexpr.
+  /// @return true iff anything changed.
+  bool InlineAlgSubexpr() {
+    auto preu = MPCD( IfPreproUnnest() );
+    return MPD(
+        ConsiderInliningAlgExpr(preu & 2, preu & 4) );
   }
 
   /// Default map conversions. Currently empty
@@ -1105,7 +1121,7 @@ public:
   /// Get the init expression pointer.
 	/// @return nullptr if no init expr or not this type
 	template <class ConType>
-	const ConType* GetInitExpressionOfType(int var) {
+  const ConType* GetInitExpressionOfType(int var) const {
 		if (MPCD( HasInitExpression(var) )) {
       const auto& ci0 = MPCD( GetInitExpression(var) );
 			if (IsConInfoType<ConType>(ci0)) {
@@ -1118,7 +1134,25 @@ public:
 		return nullptr;
 	}
 
-	/// Check if the constraint location points to the
+  /// Get the init expression pointer.
+  /// @return nullptr if no init expr,
+  ///   or not this type, or redefined/eliminated.
+  template <class ConType>
+  const ConType* GetActiveInitExpressionOfType(int var) const {
+    if (MPCD( HasInitExpression(var) )) {
+      const auto& ci0 = MPCD( GetInitExpression(var) );
+      if (IsConInfoType<ConType>(ci0)
+              && IsConActive(ci0)) {
+        const auto& con =
+            GetConstraint<ConType>(ci0);
+        assert(&con);
+        return &con;
+      }
+    }
+    return nullptr;
+  }
+
+  /// Check if the constraint location points to the
 	/// constraint keeper used for this ConType.
 	template <class ConType>
 	bool IsConInfoType(const ConInfo& ci) const {
@@ -1126,6 +1160,11 @@ public:
 				(GET_CONST_CONSTRAINT_KEEPER(ConType))
 				== ci.GetCK();
 	}
+
+  /// Check if \a ci points to an active constraint
+  bool IsConActive(const ConInfo& ci) const {
+    return !ci.GetCK()->IsRedundant(ci.GetIndex());
+  }
 
 
   /////////////////////// AUTO LINKING ////////////////////////////
@@ -1266,7 +1305,7 @@ private:
     int preprocessEqualityBvar_ = 1;
     int preprocessInequalityRhs_ = 1;
     int preprocessInequalityResultBounds_ = 1;
-    int preproNestedAndOrs_ = 1;
+    int preproUnnest_ = 7;
 
     int passQuadObj_ = ModelAPIAcceptsQuadObj();
     int passQuadCon_ = 1;
@@ -1398,9 +1437,16 @@ private:
     GetEnv().AddOption("cvt:pre:ineqrhs",
                        "0/1*: Preprocess reified inequality comparison's right-hand sides.",
                        options_.preprocessInequalityRhs_, 0, 1);
-    GetEnv().AddOption("cvt:pre:unnest",
-        "0/1*: Inline nested expressions, currently Ands/Ors.",
-        options_.preproNestedAndOrs_, 0, 1);
+    GetEnv().AddOption("cvt:pre:unnest cvt:pre:inline",
+        "Inline nested expressions. Bitwise OR of the following values:\n"
+                       "\n"
+                       "|  1 - Ands and Ors\n"
+                       "|  2 - Linear subexpressions\n"
+                       "|  4 - Quadratic subexpressions.\n"
+                       "\n"
+                       "See also option cvt:dvelim concerning only the input model. "
+                       "Default 7.",
+        options_.preproUnnest_, 0, 7);
 
     GetEnv().AddOption("cvt:quadobj passquadobj",
                        ModelAPIAcceptsQuadObj() ?
@@ -1573,9 +1619,9 @@ public:
   bool IfPreproIneqRHS() const
   { return MPCD( CanPreprocess(options_.preprocessInequalityRhs_) ); }
 
-  /// Whether inline nested forall, exists
-  bool IfPreproNestedAndsOrs() const
-  { return MPCD( CanPreprocess(options_.preproNestedAndOrs_) ); }
+  /// Whether inline nested forall, exists, lin/quad expr
+  bool IfPreproUnnest() const
+  { return MPCD( CanPreprocess(options_.preproUnnest_) ); }
 
 
   /// Whether we pass quad obj terms to the solver without linearization
@@ -1721,19 +1767,21 @@ protected:
   /// NOTE: The reformulation meta-graph should be acyclic #248.
 
   /// Static algebraic cons
-  STORE_CONSTRAINT_TYPE__NO_MAP(LinConRange,
-                                "acc:linrange acc:linrng", 5000)
+  STORE_CONSTRAINT_TYPE__NO_MAP(LinConRange,   // before QuadFuncCon
+                                "acc:linrange acc:linrng", 3091)
   STORE_CONSTRAINT_TYPE__NO_MAP(LinConLE, "acc:linle", 5100)
   STORE_CONSTRAINT_TYPE__NO_MAP(LinConEQ, "acc:lineq", 5200)
   STORE_CONSTRAINT_TYPE__NO_MAP(LinConGE, "acc:linge", 5300)
 
-  STORE_CONSTRAINT_TYPE__NO_MAP(QuadConRange,
-                                "acc:quadrange acc:quadrng", 4000)
+  STORE_CONSTRAINT_TYPE__NO_MAP(QuadConRange,  // Before LinConRange
+                                "acc:quadrange acc:quadrng", 3090)
   STORE_CONSTRAINT_TYPE__NO_MAP(QuadConLE, "acc:quadle", 4100)
   STORE_CONSTRAINT_TYPE__NO_MAP(QuadConEQ, "acc:quadeq", 4200)
   STORE_CONSTRAINT_TYPE__NO_MAP(QuadConGE, "acc:quadge", 4300)
 
-  /// Our own functional constraints: LFC, QFC
+  /// Our own functional constraints: LFC, QFC.
+  /// We'll also add inlining with priority 3099,
+  /// see AddConversionAction() in the constructor #266.
   STORE_CONSTRAINT_TYPE__WITH_MAP(
       LinearFunctionalConstraint, "acc:linfunccon", 3200)
   STORE_CONSTRAINT_TYPE__WITH_MAP(
