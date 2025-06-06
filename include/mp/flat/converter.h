@@ -86,7 +86,8 @@ public:
   /// Currently this happens for all root-context logical constraints,
   /// i.e., we create an auxiliary variable which is later fixed to 1.
   void FixAsTrue(int resvar) {
-    PropagateResultOfInitExpr(resvar, 1.0, 1.0, +Context());
+    IncrementVarUsage(resvar);
+    PropagateResultOfInitExpr(resvar, 1.0, 1.0, +Context());  // afterwards #201 #266
   }
 
 
@@ -215,10 +216,11 @@ public:
 		auto i = MPD( MapFind(fc) );
     // TODO preprocess, try map again, and use the result.
 		if (i<0)
-      i = int( MPD( AddConstraint(std::move(fc)) ) );
+      i = int( MPD( AddFunctionalConstraint(std::move(fc)) ) );
 		auto& ck = GET_CONSTRAINT_KEEPER( FuncConstraint );
     ConInfo ci{&ck, i};
     ReplaceInitExpression(res_var, ci);
+    MarkAsUsed(ci);          // Now manually #201 #266
     MarkAsBridged(ci_old);
   }
 
@@ -226,29 +228,81 @@ public:
 	/// Variables' reference counting ///////////////////////////////////
 	/// Currently only for defined variables ////////////////////////////
 
-	/// Use "+1" a variable
-	void IncrementVarUsage(int v) {
-		++VarUsageRef(v);
+  /// Use "+1" a variable.
+  /// When changing from 0 to 1,
+  /// mark as "used" if not redefined.
+  void IncrementVarUsage(int v) {
+    printf("++++ var usage: X[%d] becomes used %d times\n",
+           v, VarUsageRef(v)+1);
+    if (1==++VarUsageRef(v)) {
+      if (HasInitExpression(v)) {
+        auto& ci = GetInitExpression(v);
+        printf("          --> INI EXPR '%s' [%d]\n",
+               ci.GetCK()->GetShortTypeName(), ci.GetIndex());
+        if (ci.GetCK()->IsUnused(ci.GetIndex())
+            && !ci.GetCK()->IsBridged(ci.GetIndex())) {
+          printf("                    .... marking USED:\n");
+          MarkAsUsed(ci);
+        }
+      }
+    }
+    // Not catching reuse after redef:
+    // @todo check new context in context propagation.
+#ifdef CATCH_REUSE_AFTER_REDEF
     // If unused, no reformulation tried,
     // currently no repetition of reformulation cycle.
+    // @todo could allow if redefined in CTX_MIX.
     MP_ASSERT_ALWAYS(!IsUnused(GetInitExpression(v))
-        || IsBridgingToBeConsidered(GetInitExpression(v)),
+                     || IsBridgingToBeConsidered(GetInitExpression(v)),
                      "An expression's redefinition\n"
                      "could be lost. Please contact\n"
                      "AMPL customer support.");
-	}
+#endif
+  }
 
 	/// Unuse result variable.
   /// Actually this is to 'unuse' the init expression
   /// - might change naming.
-	/// Throw if already not used.
-	void DecrementVarUsage(int v) {
-		assert(VarUsageRef(v)>0);
-		if (! (--VarUsageRef(v))) {
-			if (HasInitExpression(v))
-        MarkAsUnused(GetInitExpression(v));
-		}
-	}
+  /// Throw if already not used.
+  /// When changing from 1 to 0,
+  /// mark "unused" if not already and not redefined
+  void DecrementVarUsage(int v) {
+    printf("---- var usage: X[%d] becomes used %d times\n",
+           v, VarUsageRef(v)-1);
+    assert(VarUsageRef(v)>0);
+    if (VarUsageRef(v)>0)          // in Release build
+      if (! (--VarUsageRef(v))) {
+        if (HasInitExpression(v)) {
+          auto& ci = GetInitExpression(v);
+          printf("          --> INI EXPR '%s' [%d]\n",
+                 ci.GetCK()->GetShortTypeName(), ci.GetIndex());
+          if (IsConActive(ci)) { // used && !bridged
+            printf("                    .... marking UNUSED:\n");
+            MarkAsUnused(ci);
+          }
+        }
+      }
+  }
+
+  /// Count argument references
+  template <class Constraint>
+  void CountArgRefs(const Constraint& con) {
+    VisitArguments(con,
+                   [this](int v) {
+      IncrementVarUsage(v);
+    });
+  }
+
+  /// Uncount argument references
+  template <class Constraint>
+  void UncountArgRefs(const Constraint& con) {
+    VisitArguments(con,
+                   [this](int v) {
+      DecrementVarUsage(v);
+    });
+  }
+
+
 
   /// Mark unused defined vars for elimination.
 	/// Normally should delete them.
@@ -637,16 +691,21 @@ public:
   /// If any conversions are performed, need to have intermediate nodes,
   /// as for constraints
   pre::NodeRange AddObjective(QuadraticObjective&& qo) {
+    CountArgRefs(qo);     // no "used" flag for objectives
     GetModel().AddObjective( std::move(qo) );
     /// Temporarily removing AutoLinking for objectives
     // return AutoLink( GetObjValueNode().Add() );
     return GetObjValueNode().Select(-1);
   }
 
-  /// ADD CUSTOM CONSTRAINT, does not propagate result
+  /// ADD STATIC CONSTRAINT.
+  ///
+  /// Does not propagate result
   /// (use AddConstraint_AS_ROOT() otherwise).
   ///
-  /// This method might be enough
+  /// Counts argument references.
+  ///
+  /// This method is enough
   /// (instead of the _AS_ROOT() version)
   /// if the arguments already have contexts.
   ///
@@ -658,14 +717,18 @@ public:
   /// @return Node reference for the stored constraint
   template <class Constraint>
   pre::NodeRange AddConstraint(Constraint con) {
+    assert(!con.HasResultVar());
     if (MPD( PreprocessStaticConstraint(con) ))
       return {};  // we should not need the presolver nodes
     auto node_range =
         AddConstraintAndTryNoteResultVariable( std::move(con) );
+    auto& ck = GET_CONSTRAINT_KEEPER( Constraint );
+    ConInfo ci{&ck, int(node_range)};
+    MarkAsUsed(ci);      // this also counts arg refs #266
     return AutoLink( node_range );
   }
 
-  /// ADD CUSTOM CONSTRAINT and propagate root-ness
+  /// ADD STATIC CONSTRAINT and propagate root-ness
   /// (use AddConstraint() otherwise).
   ///
   /// Use only for non-mapped constraints. For functional constraints
@@ -674,11 +737,31 @@ public:
   /// @return Node reference for the stored constraint
   template <class Constraint>
   pre::NodeRange AddConstraint_AS_ROOT(Constraint con) {
-    MPD( PropagateResult(con) );
-    return AddConstraint( std::move(con) );
+    auto nr = AddConstraint( std::move(con) );
+    MPD( PropagateResult(             // after AddConstraint() #201 #266
+           GetConstraint<Constraint>(int(nr))) );
+    return nr;
   }
 
-	/// Retrieve constraint of specified type at location \a ci.
+  /// ADD FUNCTIONAL CONSTRAINT.
+  ///
+  /// Do not use directly. For functional constraints
+  /// stored __WITH_MAP, use AssignResult(Var)2Args().
+  /// Takes ownership.
+  ///
+  /// @note Does not propagate result
+  ///   (use PropagateResult()).
+  ///
+  /// @return Node reference for the stored constraint
+  template <class Constraint>
+  pre::NodeRange AddFunctionalConstraint(Constraint con) {
+    assert(con.HasResultVar());
+    auto node_range =
+        AddConstraintAndTryNoteResultVariable( std::move(con) );
+    return AutoLink( node_range );
+  }
+
+  /// Retrieve constraint of specified type at location \a ci.
   template <class Constraint>
 	const Constraint& GetConstraint(const ConInfo& ci) const {
 		assert(MPCD(template IsConInfoType<Constraint>(ci) ));
@@ -689,7 +772,8 @@ public:
 	/// Retrieve constraint of specified type at index \a i.
 	template <class Constraint>
 	const Constraint& GetConstraint(int i) const {
-		return GET_CONST_CONSTRAINT_KEEPER(Constraint).GetConstraint(i);
+    return
+        GET_CONST_CONSTRAINT_KEEPER(Constraint).GetConstraint(i);
 	}
 
   /// Mark constraint as reformulated
@@ -700,6 +784,17 @@ public:
   /// Mark constraint as unused
   void MarkAsUnused(const ConInfo& ci) {
     ci.GetCK()->MarkAsUnused(ci.GetIndex());
+  }
+
+  /// Mark constraint as unused.
+  /// Do not propagate to arguments.
+  void MarkAsUnused_ThisOnly(const ConInfo& ci) {
+    ci.GetCK()->MarkAsUnused_ThisOnly(ci.GetIndex());
+  }
+
+  /// Mark constraint as used
+  void MarkAsUsed(const ConInfo& ci) {
+    ci.GetCK()->MarkAsUsed(ci.GetIndex());
   }
 
   /// Is bridging of constraint \a i
@@ -1086,6 +1181,7 @@ public:
 
   /// Get the init expr
   const ConInfo& GetInitExpression(int var) const {
+    assert(HasInitExpression(var));
 		return var_info_.at(var);
   }
 
@@ -1599,8 +1695,8 @@ private:
 public:
   /// Wrapper about a specific preprocess option:
   /// checks whether \a preprocessAnything_ is on.
-  bool CanPreprocess(int f) const {
-    return 0!=options_.preprocessAnything_ && 0!=f;
+  int CanPreprocess(int f) const {
+    return options_.preprocessAnything_ ? f : 0;
   }
 
   /// Whether preprocess equality result bounds
@@ -1620,7 +1716,7 @@ public:
   { return MPCD( CanPreprocess(options_.preprocessInequalityRhs_) ); }
 
   /// Whether inline nested forall, exists, lin/quad expr
-  bool IfPreproUnnest() const
+  int IfPreproUnnest() const
   { return MPCD( CanPreprocess(options_.preproUnnest_) ); }
 
 

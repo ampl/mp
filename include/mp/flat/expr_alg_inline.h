@@ -11,7 +11,7 @@
 
 namespace mp {
 
-/// A mix-in class inlining algebraic expressions
+/// A mix-in class inlining algebraic expressions #266,
 /// represented as functional flat constraints
 /// (LFC and QFC).
 template <class Impl>
@@ -141,7 +141,8 @@ protected:
       }
       collected *= ci;
       buckets.Add(std::move(collected));
-      MPD( DecrementVarUsage(vi) );             // 1x unuse vi
+      // No: it is done when removing the old top-level constraint:
+      // MPD( DecrementVarUsage(vi) );
     };
 
     for (auto i=lt0.size(); i--; ) {

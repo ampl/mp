@@ -33,7 +33,7 @@ protected:
       SetResultVar(GetConverter().
                    template GetConstraint<Constraint>(i).
                    GetResultVar());
-      GetConverter().IncrementVarUsage(GetResultVar()); // already here
+      // Not here any more #266: GetConverter().IncrementVarUsage(GetResultVar());
 			if (GetConverter().DoingAutoLinking()) {  // Autolink known targets
         auto& varvn = GetConverter().GetVarValueNode();
         GetConverter().AutoLink( varvn.Select(GetResultVar()) );
@@ -98,8 +98,8 @@ public:
     GetConstraint().SetResultVar( r );
 	}
   void AddConstraint() {
-    GetConverter().AddConstraint( std::move(GetConstraint()) );
-    GetConverter().IncrementVarUsage(GetResultVar());   // ater adding the con
+    GetConverter().AddFunctionalConstraint( std::move(GetConstraint()) );
+    // not here any more #266: GetConverter().IncrementVarUsage(GetResultVar());
   }
 };
 

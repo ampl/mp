@@ -32,7 +32,7 @@ public:
             CondLinConEQ( { {{1.0}, {args[ivar]}}, k } ) );
     }
     coefs.back() = -1.0;
-    GetMC().AddConstraint_AS_ROOT( LinConEQ( {coefs, flags}, {0.0} ) );
+    GetMC().AddConstraint( LinConEQ( {coefs, flags}, {0.0} ) );
     return Context::CTX_MIX;
   }
 

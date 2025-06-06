@@ -392,7 +392,7 @@ inline void VisitArguments(const std::array<int, N>& cnt, std::function<void (in
     argv(v);
 }
 
-/// Generic constraint/objective argument visitor
+/// Generic constraint argument visitor
 template <class Item>
 inline void VisitArguments(const Item& item, std::function<void (int)> argv) {
   VisitArguments(item.GetArguments(), argv);      // redirect to the arguments' visitor

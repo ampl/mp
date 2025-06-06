@@ -2,6 +2,12 @@ Summary of recent updates to the AMPL MP Library
 ================================================
 
 
+## unreleased
+- Option *cvt:unnest*: bits 2 and 4 switch on
+  inlining of linear and quadratic subexpressions
+  produced during reformulations (by default on).
+
+
 ## 20250429
 - Fix a bug in parsing of quadratic expressions,
   which could wrongly parse products of unequal
@@ -9,14 +15,14 @@ Summary of recent updates to the AMPL MP Library
 
 
 ## 20250424
-- Option alg:sens return synonym suffixes
-  .down/.up/.current for objective coefficients
-  and .down/.up for right-hand sides.
+- Option *alg:sens* return synonym suffixes
+  `.down/.up/.current` for objective coefficients
+  and `.down/.up` for right-hand sides.
 - Improved parsing speed of large sums of quadratic
   and polynomial expressions.
-  - Setting option cvt:qp2passes=0 switches to
+  - Setting option *cvt:qp2passes=0* switches to
     a simpler method, usually slightly slower.
-  - Option cvt:multoutcard to limit the size of
+  - Option *cvt:multoutcard* to limit the size of
     out-multiplied QP expressions. Can improve speed
     on large models, but prone to numerical issues.
 
@@ -26,7 +32,7 @@ Summary of recent updates to the AMPL MP Library
   have led to wrong models using a^x with a<1.
 - Reduced memory fragmentation for linear
   and quadratic expressions.
-- Option tech:outlev_mp=1 (implied by tech:outlev=1)
+- Option *tech:outlev_mp=1* (implied by *tech:outlev=1*)
   prints initial and transformed model statistics.
 - Improved presolve for disequality: more cases when
   no logical disjunction is needed.
@@ -35,49 +41,49 @@ Summary of recent updates to the AMPL MP Library
 ## 20250205
 - Fixed a bug in model reformulations which could
   cause some constraints to be lost, see issue 248.
-- Option alg:sens=1 now returns suffix .sensobj with
+- Option *alg:sens=1* now returns suffix `.sensobj` with
   current objective coefficients in the solver model
-  (this is the model corresponding to AMPL command solexpand.)
-- Option acc:_all is overridden by individual acceptance
-  options, e.g., acc:or.
+  (this is the model corresponding to AMPL command `solexpand`.)
+- Option *acc:_all* is overridden by individual acceptance
+  options, e.g., *acc:or*.
 - Substitute AMPL defined variables
   into linear, quadratic, and polynomial expressions
-  (option cvt:dvelim).
+  (option *cvt:dvelim*).
   This can simplify quadratic and polynomial models
   (linear substitutions are already performed by AMPL,
-  see AMPL options linelim and substout.)
-- cvt:prod=7 default for LP and convex solvers,
+  see AMPL options *linelim* and *substout.)
+- *cvt:prod=7* default for LP and convex solvers,
   logicalizing also products of just 2 binary variables.
 - More presolve for logical expressions
   (Not, And, Or, Indicator), and new options to control
-  some of them: cvt:pre:ineqresult, cvt:pre:ineqrhs.
+  some of them: *cvt:pre:ineqresult*, *cvt:pre:ineqrhs*.
 - Fix lower bound calculation of the division result.
 - [BREAKING] Option acc:pow now affects only expressions x^y
-  with both x, y variable; previous meaning of acc:pow
-  is now with acc:powconstexp.
-- Option tech:writemodel:index to choose the iteration
+  with both x, y variable; previous meaning of *acc:pow*
+  is now with *acc:powconstexp*.
+- Option *tech:writemodel:index* to choose the iteration
   when solver model is exported
   in the multi-objective emulator.
 - SCIP (and any solver with linear objective
 	and non-linear constraints): improve reformulation
 	of QP objectives.
 - Fix reformulation of non-linear objective expressions
-	for the multi-objective case (option obj:multi) when
-	negative objective weights are used (obj:multi:weight.)
+  for the multi-objective case (option *obj:multi*) when
+  negative objective weights are used (*obj:multi:weight*).
 
 
 ## 20240724
 - Option *acc:_all*
-	- Useful to disable all reformulations (acc:_all=2),
-		or force linearization (acc:_all=0.)
+  - Useful to disable all reformulations (*acc:_all=2*),
+    or force linearization (*acc:_all=0*).
 - Faster input of quadratic expressions.
 
 
 ## 20240617
 - *Multi-objective emulator*
-	- obj:multi=2 forces emulation, even if MO natively supported.
+  - *obj:multi=2* forces emulation, even if MO natively supported.
 	- Fixed a bug in the objective degradation suffixes
-    .objabstol, .objreltol.
+    `.objabstol`, `.objreltol`.
 
 
 ## 20240604
@@ -87,11 +93,11 @@ Summary of recent updates to the AMPL MP Library
 
 ## 20240529
 - *Multi-objective emulator*
-	- All flat MP solvers support multi-objective mode (obj:multi=1),
+  - All flat MP solvers support multi-objective mode (*obj:multi=1*),
 		either natively, or via emulation.
-	- Suffixes .objpriority, .objweight, .objabstol, .objreltol.
-	- [BREAKING] Default intuitive handling of .objweight,
-		see option obj:multi:weight, even when natively supported.
+  - Suffixes `.objpriority`, `.objweight`, `.objabstol`, `.objreltol`.
+  - [BREAKING] Default intuitive handling of `.objweight`,
+    see option `obj:multi:weight`, even when natively supported.
 
 
 ## 20240429
@@ -108,11 +114,11 @@ Summary of recent updates to the AMPL MP Library
     pl_linearize 1`, default; set to 0 to use the solver's
     native PL functions if supported, or MP linearization.)
   - Disallow repeated weights for SOS constraints
-    (suffixes `.sosno`/`.ref`.)
+    (suffixes `.sosno`/`.ref`).
 - *Reformulation explorer*.
-  - Upgraded option `writegraph` exports the reformulation
+  - Upgraded option *writegraph* exports the reformulation
     graph which can be explored with the script in
-    support/modelexplore (WIP.)
+    support/modelexplore (WIP).
 - *Native handling of POW(x, INT)*.
   - Power expressions with positive integer exponent
     are passed natively to the solvers accepting them,
@@ -138,9 +144,9 @@ Summary of recent updates to the AMPL MP Library
     - 300-349 means unbounded problem but
       feasible solution returned
     - 400-449 means limit/interrupt but feasible
-  - [BREAKING] sol:chk:fail returns code 150 (solved?)
+  - [BREAKING] *sol:chk:fail* returns code 150 (solved?)
 - Improved translation of *SOCP constraints*.
-  - Options cvt:socp, cvt:socp2qc.
+  - Options *cvt:socp*, *cvt:socp2qc*.
 - Compact solution check warnings
 - Fixed presolve of the power function #226.
 - Fixed graceful exit on Ctrl-C from AMPL in Linux.
@@ -159,13 +165,13 @@ Summary of recent updates to the AMPL MP Library
 ## 20230919
 - *mp_options*.
 	Receive mp_options from AMPL (for all MP solvers).
-	They are parsed before (solvername)_options.
+  They are parsed before `(solvername)_options`.
 - Solution checking: relative tolerance
-	sol:chk:feastolrel; options sol:chk:round, sol:chk:prec.
+  *sol:chk:feastolrel*; options *sol:chk:round*, *sol:chk:prec*.
 
 
 ## 20230831
-- Solution checking, options sol:chk:* (experimental).
+- Solution checking, options *sol:chk:...* (experimental).
 - Preprocess And/Or constraints.
 
 

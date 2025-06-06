@@ -454,7 +454,8 @@ public:
         const auto& args2 = pNested->GetArguments();
         args_new.insert(args_new.end(),
                         args2.begin(), args2.end());
-        MPD( DecrementVarUsage(v) );
+        // Not any more #201 #266: now usage++ by FixAsTrue()
+        // MPD( DecrementVarUsage(v) );
       } else {
         args_new.push_back(v);
       }

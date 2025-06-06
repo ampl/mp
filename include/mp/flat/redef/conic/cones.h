@@ -472,7 +472,8 @@ protected:
             c = std::sqrt(c);
           result.vars_ = qpterms.vars1();
           result.const_term = args_qdc.constant_term();
-          result.res_vars_to_delete_ = { res_var, arg_pow };
+          // No more: removed with the original con #201
+          // result.res_vars_to_delete_ = { res_var, arg_pow };
           return result;
         }
       }
@@ -490,7 +491,8 @@ protected:
     const auto arg_abs = con_abs.GetArguments()[0];
     result.coefs_ = { 1.0 };
     result.vars_ = { arg_abs };
-    result.res_vars_to_delete_ = { res_var };
+    // No more: removed with the original con #201
+    // result.res_vars_to_delete_ = { res_var };
     result.is_from_abs_ = true;
     return result;
   }
@@ -516,7 +518,8 @@ protected:
                 MC().lb(qpterms.var2(0)) >= 0.0) {
               result.coefs_ = {qpterms.coef(0), 1.0};
               result.vars_ = {qpterms.var1(0), qpterms.var2(0)};
-              result.res_vars_to_delete_ = {res_var, arg_pow};
+              // No more: removed with the original con #201
+              // result.res_vars_to_delete_ = {res_var, arg_pow};
               return result;
             }
           }
@@ -525,7 +528,8 @@ protected:
             result.coefs_ = {1.0};
             result.vars_ = {arg_pow};
             result.coef_extra = 1.0;   // for a new fixed var
-            result.res_vars_to_delete_ = {res_var};
+            // No more: removed with the original con #201
+            // result.res_vars_to_delete_ = {res_var};
             return result;
           }
         }
@@ -600,11 +604,11 @@ protected:
       x.back() = int( MC().MakeFixedVar(1.0) );
       c.back() = coefY_abs * std::sqrt(rhs_args.const_term);
     }
-    for (auto r: rhs_args.res_vars_to_delete_)
-      MC().DecrementVarUsage(r);
     MC().AddConstraint(
           QuadraticConeConstraint(
             std::move(x), std::move(c)));
+    for (auto r: rhs_args.res_vars_to_delete_)   // after adding new con #201
+      MC().DecrementVarUsage(r);
     return true;
   }
 
