@@ -191,14 +191,15 @@ protected:
   void WarnOnMix() {
     if ( !MC().ModelAPICanMixConicQCAndQC()) {  // cannot mix
       if ((HasAnyCones()                        // exp cones
-           && (MC().NumQC2SOCPAttempted() > MC().NumQC2SOCPSucceeded()
+           && ((MC().NumQC2SOCPAttempted() > MC().NumQC2SOCPSucceeded()
+                && MC().NumQC2SOCPSucceeded())
                || MC().HasQPObjective()))       // and quadratics left in
            && !MC().IfConvertSOCP2QC()          // and not decided to convert
           ) {
         MC().AddWarning("Mix QC+cones",
                         "Not all quadratic constraints could "
                         "be recognized\nas quadratic cones; "
-                        "or, the objective is quadratic;\n"
+                        "or, the objective\nis quadratic and cones are present;\n"
                         "additionally, further conversion back to QC\n"
                         "not desired (option cvt:socp2qc) or other cone types present;\n"
                         "solver might not accept the model.\n"
@@ -790,7 +791,8 @@ protected:
       if (auto pConExp = MC().template
           GetInitExpressionOfType<ExpConstraint>(v)) {
         result.vars_[1] = pConExp->GetArguments()[0];  // the z
-        result.vars2del_ = {v};                        // delete v
+        // Similarly to SOCP, not any more #201
+        // result.vars2del_ = {v};                        // delete v
         result.valid_ = true;
       }
     }
@@ -814,7 +816,8 @@ protected:
           int y0 = pConDiv->GetArguments()[1];
           if (y0==y) {                                   // v2 = z/y
             result.vars_ = {y, z};
-            result.vars2del_ = {v1, v2};                 // delete v1, v2
+            // Similarly to SOCP, not any more #201
+            // result.vars2del_ = {v1, v2};                 // delete v1, v2
             result.valid_ = true;
           } else if (auto pConLin = MC().template
                      GetInitExpressionOfType<LinearFunctionalConstraint>(y0)) {
@@ -825,7 +828,8 @@ protected:
               if (y == body.var(0)) {           // v2 = z / (c1*y)
                 result.coefs_ = {b, b/body.coef(0)};
                 result.vars_ = {y, z};
-                result.vars2del_ = {v1, v2, y0};    // delete
+                // Similarly to SOCP, not any more #201
+                // result.vars2del_ = {v1, v2, y0};    // delete
                 result.valid_ = true;
               }
             }
