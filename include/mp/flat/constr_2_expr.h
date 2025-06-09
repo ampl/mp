@@ -497,6 +497,7 @@ protected:
           }
           need_nlc = true;
         } else {         // single variable, its expression will be explicified
+          MPD( IncrementVarUsage(exprResVar) );  // Because removed from top-level con #201
           MPD( NarrowVarBounds(exprResVar, rng.lb(), rng.ub()) );
           return true;
         }
