@@ -348,17 +348,6 @@ void BaronmpModelAPI::AddConstraint( const QuadConGE& qc ) {
 }
 
 
-/*
-void BaronmpModelAPI::AddConstraint(const AbsConstraint& c) {
-  assert(c.GetArguments().size() == 1);
-  fmt::MemoryWriter w;
-  w << createConName(c.GetName()) << ": ";
-  w << fmt::format("{} = (({}", varName(c.GetResultVar()), varName(c.GetArguments()[0]));
-  w << "^2 ) ^ 0.5);\n";
-  cons.push_back(w.str());
-}
-*/
-
 void BaronmpModelAPI::AddConstraint(const ExpConstraint& cc) {
   addFunctionalConstraint("exp", cc);
 }

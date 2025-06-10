@@ -30,22 +30,7 @@ namespace mp {
     ABS,
 
     EXP,
-    LOG,
-    
-
-    SIN,
-    COS,
-    TAN,
-    SINH,
-    COSH,
-    TANH,
-    ASIN,
-    ACOS,
-    ATAN,
-    ASINH,
-    ACOSH,
-    ATANH
-    
+    LOG
   };
 
     // Array of strings corresponding to the Opcode enum
@@ -62,22 +47,7 @@ namespace mp {
         "abs",
 
         "exp",
-        "log",
-        
-
-        "sin",
-        "cos",
-        "tan",
-        "sinh",
-        "cosh",
-        "tanh"
-        "asin",
-        "acos",
-        "atan",
-        "asinh",
-        "acosh",
-        "atanh"
-        
+        "log"
     };
   
   class BaronmpModelAPI;
@@ -116,7 +86,7 @@ namespace mp {
       children.push_back(child);
     }
     void append(fmt::MemoryWriter &w, bool endl=true) const {
-            assert(opcode >= Opcode::CONSTANT && opcode <= Opcode::ATANH);
+            assert(opcode >= Opcode::CONSTANT && opcode <= Opcode::LOG);
       if (opcode >= Opcode::EXP)
         w << opcodeStrings[(int)opcode];
       if (!children.empty()) {
