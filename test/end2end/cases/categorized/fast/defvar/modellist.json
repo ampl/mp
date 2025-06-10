@@ -5,7 +5,7 @@
     "tags" : ["quadratic", "quadraticnonconvex"]
   },
   {
-    "name" : "defvar_02",
+    "name" : "defvar_02 cvt:dvelim=1",
     "objective" : 2.864,
     "tags" : ["quadratic", "quadraticnonconvex"],
     "options": {

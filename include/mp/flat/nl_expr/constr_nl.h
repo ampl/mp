@@ -147,11 +147,13 @@ using NLAssignLE = NLBaseAssign<-1>;
 using NLAssignGE = NLBaseAssign<1>;
 
 
-/// Specialize
+/// Specialize.
+/// Don't mark arguments because it was marked 'used'
+/// when extracting it from NLConstraint
 template <int sense>
 inline void VisitArguments(const NLBaseAssign<sense>& nlba,
                            std::function<void (int) > argv) {
-  VisitArguments(VarArray1{nlba.GetVar()}, argv);
+  // VisitArguments(VarArray1{nlba.GetVar()}, argv);
 }
 
 

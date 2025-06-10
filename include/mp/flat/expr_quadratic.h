@@ -333,6 +333,8 @@ void WriteJSON(JSONW jw, const QuadAndLinTerms& qt);
 void VisitArguments(const QuadTerms& lt, std::function<void (int) > argv);
 
 /// Specialize
+/// @warning This may multiply count variables:
+///   occurence in the linear, plus potentially several in the QP part
 void VisitArguments(const QuadAndLinTerms& lt, std::function<void (int) > argv);
 
 
