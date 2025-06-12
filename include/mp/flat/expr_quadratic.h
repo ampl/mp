@@ -329,14 +329,18 @@ public:
 template <>
 void WriteJSON(JSONW jw, const QuadAndLinTerms& qt);
 
-/// Specialize
-void VisitArguments(const QuadTerms& lt, std::function<void (int) > argv);
+/// Special
+void VisitArguments_PossRepeated(
+    const QuadTerms& lt, std::function<void (int) > argv);
 
 /// Specialize
 /// @warning This may multiply count variables:
 ///   occurence in the linear, plus potentially several in the QP part
 void VisitArguments(const QuadAndLinTerms& lt, std::function<void (int) > argv);
 
+/// Visit lin & quad terms without repetitions
+void VisitArgumentsOnce(
+    const LinTerms& lt, const QuadTerms& qt, std::function<void (int) > argv);
 
 /// Typedef QuadraticExpr
 using QuadraticExpr = AlgebraicExpression<QuadAndLinTerms>;

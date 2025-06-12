@@ -289,8 +289,9 @@ public:
     auto& objs
         = objs_emulated.size() ? objs_emulated : objs_original;
     for (size_t iobj=0; iobj<objs.size(); ++iobj) {
-      HandleLogicalArgs(objs[iobj].GetLinTerms(), iobj);
-      HandleLogicalArgs(objs[iobj].GetQPTerms(), iobj);
+      VisitArgumentsOnce(
+            objs[iobj].GetLinTerms(),
+            objs[iobj].GetQPTerms(), MarkVarIfLogical_);
       Convert1ObjWithExpressions(iobj, objs[iobj]);
     }
   }

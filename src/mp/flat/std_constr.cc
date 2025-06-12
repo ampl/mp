@@ -1,4 +1,5 @@
 #include <map>
+#include <unordered_set>
 #include <cfloat>
 #include <cmath>
 #include <cassert>
@@ -695,11 +696,13 @@ void WriteJSON(JSONW jw, const QuadAndLinTerms& qlt) {
 }
 
 void VisitArguments(const LinTerms& lt, std::function<void (int)> argv) {
+  assert(lt.is_sorted());
   for (auto v: lt.vars())
     argv(v);
 }
 
-void VisitArguments(const QuadTerms& lt, std::function<void (int)> argv) {
+void VisitArguments_PossRepeated(
+    const QuadTerms& lt, std::function<void (int)> argv) {
   for (auto v: lt.get_folded()) {
     argv(v.first.first);
     argv(v.first.second);
@@ -707,8 +710,18 @@ void VisitArguments(const QuadTerms& lt, std::function<void (int)> argv) {
 }
 
 void VisitArguments(const QuadAndLinTerms& qlt, std::function<void (int)> argv) {
-  VisitArguments(qlt.GetLinTerms(), argv);
-  VisitArguments(qlt.GetQPTerms(), argv);
+  VisitArgumentsOnce(qlt.GetLinTerms(), qlt.GetQPTerms(), argv);
+}
+
+void VisitArgumentsOnce(
+    const LinTerms& lt, const QuadTerms& qt, std::function<void (int) > argv) {
+  // @todo could use time stamping for speed
+  std::unordered_set<int> args;
+  auto collect = [&args](int v) { args.insert(v); };
+  VisitArguments(lt, collect);
+  VisitArguments_PossRepeated(qt, collect);
+  for (auto v: args)
+    argv(v);
 }
 
 std::unique_ptr<FlatModelInfo> CreateFlatModelInfo() {

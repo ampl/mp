@@ -246,8 +246,8 @@ public:
 
   /// Report how many will be added to Backend
   int GetNumberOfAddable() const override {
-    printf("   N ADDABLE '%s': %d - %d = %d\n", GetShortTypeName(),
-           Size(), n_bridged_or_unused_, Size()-n_bridged_or_unused_);
+    // printf("   N ADDABLE '%s': %d - %d = %d\n", GetShortTypeName(),
+    //       Size(), n_bridged_or_unused_, Size()-n_bridged_or_unused_);
     assert(Size() >= n_bridged_or_unused_);
     assert(0 <= n_bridged_or_unused_);
     return Size()-n_bridged_or_unused_;

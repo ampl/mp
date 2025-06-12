@@ -109,8 +109,7 @@ public:
 /// Objective argument visitor
 inline void VisitArguments(
     const QuadraticObjective& obj, std::function<void (int)> argv) {
-  VisitArguments(obj.GetLinTerms(), argv);
-  VisitArguments(obj.GetQPTerms(), argv);
+  VisitArgumentsOnce(obj.GetLinTerms(), obj.GetQPTerms(), argv);
   // not for Expr - it is done as reformulation
 }
 
