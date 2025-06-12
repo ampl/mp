@@ -289,9 +289,7 @@ public:
     auto& objs
         = objs_emulated.size() ? objs_emulated : objs_original;
     for (size_t iobj=0; iobj<objs.size(); ++iobj) {
-      VisitArgumentsOnce(
-            objs[iobj].GetLinTerms(),
-            objs[iobj].GetQPTerms(), MarkVarIfLogical_);
+      HandleLogicalArgs(objs[iobj], iobj);
       Convert1ObjWithExpressions(iobj, objs[iobj]);
     }
   }
@@ -389,8 +387,8 @@ protected:
 
   /// Handle logical expressions in an algebraic con
   /// @return whether to remove the original \a con.
-  template <class Con>
-  bool HandleLogicalArgs(const Con& con, int ) {
+  template <class ConObj>
+  bool HandleLogicalArgs(const ConObj& con, int ) {
     VisitArguments(con, MarkVarIfLogical_);          // Mark as proper vars
     return false;                                    // don't remove immediately
   }
@@ -529,6 +527,7 @@ protected:
         || (qobj.GetQPTerms().size()
             && (!MPCD(IfPassQuadObj())         // cannot or want not
                 || HasExpressionArgs(qobj.GetQPTerms())))) {
+      MPD( UncountArgRefs(qobj) );
       int exprResVar = -1;
       if (lt_in_expr.is_variable() && qobj.GetQPTerms().empty()) {
         exprResVar = lt_in_expr.get_representing_variable();
@@ -562,6 +561,7 @@ protected:
       qobj.GetLinTerms() = lt_varsonly;
       if (exprResVar>=0)
         qobj.SetExprIndex(exprResVar);
+      MPD( CountArgRefs(qobj) );
     }
   }
 

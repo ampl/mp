@@ -284,9 +284,10 @@ public:
       }
   }
 
-  /// Count argument references
-  template <class Constraint>
-  void CountArgRefs(const Constraint& con) {
+  /// Count argument references.
+  /// @todo currently called manually for objectives
+  template <class ConObj>
+  void CountArgRefs(const ConObj& con) {
     VisitArguments(con,
                    [this](int v) {
       IncrementVarUsage(v);
@@ -294,15 +295,14 @@ public:
   }
 
   /// Uncount argument references
-  template <class Constraint>
-  void UncountArgRefs(const Constraint& con) {
+  /// @todo currently called manually for objectives
+  template <class ConObj>
+  void UncountArgRefs(const ConObj& con) {
     VisitArguments(con,
                    [this](int v) {
       DecrementVarUsage(v);
     });
   }
-
-
 
   /// Mark unused defined vars for elimination.
 	/// Normally should delete them.

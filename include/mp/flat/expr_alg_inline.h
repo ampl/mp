@@ -71,6 +71,7 @@ protected:
             = CollectAlgSubExpr(obj.GetLinTerms(), obj.GetQPTerms());
         // @todo some linking for this...
         // but we modify in-place
+        MPD( UncountArgRefs(obj) );
         obj.GetLinTerms() = std::move(qexpr.GetBody().GetLinTerms());
         obj.GetQPTerms() = std::move(qexpr.GetBody().GetQPTerms());
         if (qexpr.constant_term()) {
@@ -79,6 +80,7 @@ protected:
                 int( MPD( MakeFixedVar(1.0) ) ) );
           obj.GetLinTerms().sort_terms();     // @todo merge would be faster?
         }
+        MPD( CountArgRefs(obj) );
       }
     }
   }
@@ -137,7 +139,7 @@ protected:
               subexpr.GetBody());
         collected.add_to_constant(subexpr.constant_term());
       } else {
-        collected = EExpr{std::move(subexpr)};
+        collected = EExpr{subexpr};
       }
       collected *= ci;
       buckets.Add(std::move(collected));
