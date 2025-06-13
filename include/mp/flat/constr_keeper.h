@@ -246,8 +246,6 @@ public:
 
   /// Report how many will be added to Backend
   int GetNumberOfAddable() const override {
-    // printf("   N ADDABLE '%s': %d - %d = %d\n", GetShortTypeName(),
-    //       Size(), n_bridged_or_unused_, Size()-n_bridged_or_unused_);
     assert(Size() >= n_bridged_or_unused_);
     assert(0 <= n_bridged_or_unused_);
     return Size()-n_bridged_or_unused_;
@@ -495,8 +493,6 @@ protected:
   /// Mark item as reformulated
   void MarkAsBridged(Container& cnt, int i) {
     if (!cnt.IsBridged()) {  // can be called 2x,
-      printf("MarkBRIDGED: %s [%d], resvar=%d\n",
-             GetShortTypeName(), i, cnt.GetCon().GetResultVar());
       cnt.MarkAsBridged();   // e.g. IfThen: 1st by RedefineVariable(),
       GetConverter().UncountArgRefs(cnt.GetCon());
       ++n_bridged_or_unused_;  // then in ConvertConstraint()
@@ -505,8 +501,6 @@ protected:
 
   /// Mark item as unused
   void MarkAsUnused(Container& cnt, int i, bool recurs=true) {
-    printf("MarkUNUSED: %s [%d], resvar=%d\n",
-           GetShortTypeName(), i, cnt.GetCon().GetResultVar());
     assert(!cnt.IsUnused());
     if (!cnt.IsUnused()) {        // in Release
       cnt.MarkAsUnused();
@@ -518,8 +512,6 @@ protected:
 
   /// Mark item as used
   void MarkAsUsed(Container& cnt, int i) {
-    printf("MarkUSED: %s [%d], resvar=%d\n",
-           GetShortTypeName(), i, cnt.GetCon().GetResultVar());
     assert(cnt.IsUnused());
     if (cnt.IsUnused()) {
       cnt.MarkAsUsed();

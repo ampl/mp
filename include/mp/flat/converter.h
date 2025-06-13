@@ -232,16 +232,11 @@ public:
   /// When changing from 0 to 1,
   /// mark as "used" if not redefined.
   void IncrementVarUsage(int v) {
-    printf("++++ var usage: X[%d] becomes used %d times\n",
-           v, VarUsageRef(v)+1);
     if (1==++VarUsageRef(v)) {
       if (HasInitExpression(v)) {
         auto& ci = GetInitExpression(v);
-        printf("          --> INI EXPR '%s' [%d]\n",
-               ci.GetCK()->GetShortTypeName(), ci.GetIndex());
         if (ci.GetCK()->IsUnused(ci.GetIndex())
             && !ci.GetCK()->IsBridged(ci.GetIndex())) {
-          printf("                    .... marking USED:\n");
           MarkAsUsed(ci);
         }
       }
@@ -267,17 +262,12 @@ public:
   /// When changing from 1 to 0,
   /// mark "unused" if not already and not redefined
   void DecrementVarUsage(int v) {
-    printf("---- var usage: X[%d] becomes used %d times\n",
-           v, VarUsageRef(v)-1);
     assert(VarUsageRef(v)>0);
     if (VarUsageRef(v)>0)          // in Release build
       if (! (--VarUsageRef(v))) {
         if (HasInitExpression(v)) {
           auto& ci = GetInitExpression(v);
-          printf("          --> INI EXPR '%s' [%d]\n",
-                 ci.GetCK()->GetShortTypeName(), ci.GetIndex());
           if (IsConActive(ci)) { // used && !bridged
-            printf("                    .... marking UNUSED:\n");
             MarkAsUnused(ci);
           }
         }
