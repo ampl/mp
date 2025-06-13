@@ -86,6 +86,11 @@ public:
   }
 
 
+  
+
+  SuffixSet& GetSuffixes(suf::Kind kind) {
+    return GetMM().GetSuffixes(kind);
+  }
   /// Get suffix names
   std::set<std::string> GetSuffixNames() {
     return GetMM().GetSuffixNames();

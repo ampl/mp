@@ -1634,6 +1634,9 @@ public:
   ArrayRef<double> ReadDblSuffix(const SuffixDef<double>& sd)
   { assert(suf_get_set_.sgd_); return suf_get_set_.sgd_(sd); }
 
+  const SuffixSet& Suffixes(suf::Kind kind) {
+    { assert(suf_get_set_.ss_); return suf_get_set_.ss_(kind); }
+  }
 
 protected:
   void CheckNumVars(pre::ModelValuesDbl& sol) {

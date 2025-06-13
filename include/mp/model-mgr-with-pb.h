@@ -293,6 +293,10 @@ protected:
     return GetModel().InitialDualValuesSparsity();
   }
 
+  SuffixSet& GetSuffixes(suf::Kind kind) override {
+   return GetModel().suffixes(kind);
+  }
+
   /// Get suffix names
   std::set<std::string> GetSuffixNames() override {
     return GetModel().suffixnames();

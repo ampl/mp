@@ -118,7 +118,102 @@ public:
 
 
 protected:
+  class SuffixStorer {
+    std::unordered_map<int, double> values_;
+  public:
+    struct OptValue {
+      int v;
+      double d;
+      bool isdouble;
+    };
+    void Visit(int index, double value)
+    {
+      values_[index] = value;
+    }
+    OptValue defValue;
+       void SetDefault(int v) {
+      defValue = { v, -1, 0 };
+    }
+    void SetDefault(double v) {
+      defValue = { -1, v, 1 };
+    }
+
+    int GetIntValue(int nobj) const {
+      if (!defValue.isdouble)
+        throw std::runtime_error("Should not happened. Accessing multiobjective double option as integer.");
+      auto it = values_.find(nobj);
+      if (it != values_.end())
+        return static_cast<int>(it->second);
+      else
+        return defValue.v;
+    }
+    double GetDoubleValue(int nobj) const {
+      auto it = values_.find(nobj);
+      if (it != values_.end())
+        return it->second;
+      else
+        return defValue.d;
+    }
+    bool IsDouble() const {
+      return defValue.isdouble;
+    }
+  };
+  std::unordered_map<std::string, SuffixStorer> multiobj_option_values_;
+  std::vector<std::vector<int>> multiobj_option_map_;
+  void ReadMultiObjectiveOptions() {
+    std::string prefix = "option_";
+    auto& sufs = MPD(Suffixes(suf::OBJ));
+
+    for (auto s : sufs) {
+      if (!begins_with(s.name(), prefix))
+        continue;
+
+      int i = 0;
+      SuffixStorer storer;
+      s.VisitValues(storer); // Get ALL the objectives values
+
+      std::string_view name(s.name());
+      std::string opname = std::string(name.substr(prefix.size()));
+      try {
+        double dv = MPD(GetEnv()).GetDblOption(opname.data());
+        storer.SetDefault(dv);
+        multiobj_option_values_[opname] = std::move(storer);;
+      }
+      catch (...) {
+        try {
+          int iv = MPD(GetEnv()).GetIntOption(opname.data());
+          storer.SetDefault(iv);
+          multiobj_option_values_[opname] = std::move(storer);
+        }
+        catch (...) {
+          throw std::runtime_error(fmt::format(
+            "Option not found: {}, check suffix {}\n", opname, s.name()));
+        }
+      }
+    }
+  }
+
+
+  
+  void SetMultiObjectiveOptions(int newobjn) {
+
+    auto obj_numbers = multiobj_option_map_[newobjn];
+    if (obj_numbers.size() > 1)
+      throw std::runtime_error(fmt::format(
+        "Cannot specify objective-specific options if objectives have the same "
+        "priority"));
+    int objn = obj_numbers[0];
+    for (const auto& [key, suffix_map] : multiobj_option_values_) {
+      if (suffix_map.IsDouble())
+        MPD(GetEnv()).SetDblOption(key.c_str(), suffix_map.GetDoubleValue(objn));
+      else
+        MPD(GetEnv()).SetIntOption(key.c_str(), suffix_map.GetIntValue(objn));
+    }
+  }
+
   void SetupMultiobjEmulation() {
+    ReadMultiObjectiveOptions();
+    
     status_ = MOManager::MOManagerStatus::RUNNING;
     MPD(set_skip_pushing_objs());  // could have a cleaner system of linking
       // via custom link restoring original objective values,
@@ -136,14 +231,17 @@ protected:
     objtola.resize(obj_orig.size(), 0.0);
     std::vector<double> objtolr = MPD( ReadDblSuffix( {"objreltol", suf::OBJ} ) );
     objtolr.resize(obj_orig.size(), 0.0);
+
     std::map<int, std::vector<int>, std::greater<int> > pr_map;      // Decreasing order
     for (int i=0; i<objpr.size(); ++i)
       pr_map[objpr[i]].push_back(i);
+
     obj_new_ = {};         ////////////////// Aggregate new objectives ///////////////////
     obj_new_.reserve(pr_map.size());
     obj_new_tola_.reserve(pr_map.size());
     obj_new_tolr_.reserve(pr_map.size());
     for (const auto& pr_level: pr_map) {
+      multiobj_option_map_.push_back(pr_level.second);
       const auto& i0_vec = pr_level.second;
       const auto& obj_orig_1st = obj_orig.at(i0_vec.front());
       const auto objwgt_1st = objwgt.at(i0_vec.front());
@@ -216,10 +314,12 @@ protected:
       }
       RestrictLastObjVal();
     }
+    
     MPD( FillConstraintCounters( MPD( GetModelAPI() ), *MPD( GetModelInfoWrt() ) ) );   // @todo a hack.
     MPD( GetModelAPI() ).InitProblemModificationPhase(   // For adding the new constraint. @todo a hack.
         MPD( GetModelInfo() ));                          // Ideally Model would notice changes and notify
     ReplaceCurrentObj();                  // After allowing model modification (needed by SCIP.)
+    SetMultiObjectiveOptions(i_current_obj_);
     MPD( AddUnbridgedConstraintsToBackend(
         MPD( GetModelAPI() ), MPD( GetVarNamer() )) );
     MPD( GetModelAPI() ).FinishProblemModificationPhase();            // ModelAPI automatically.

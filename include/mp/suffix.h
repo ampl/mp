@@ -571,6 +571,7 @@ struct SuffixGetterSetter {
   std::function<ArrayRef<double>(const SuffixDef<double>& )> sgd_;
   std::function<void(const SuffixDef<int>& , ArrayRef<int>)> ssi_;
   std::function<void(const SuffixDef<double>& , ArrayRef<double>)> ssd_;
+  std::function <const SuffixSet& (suf::Kind)> ss_;
 };
 
 }  // namespace mp

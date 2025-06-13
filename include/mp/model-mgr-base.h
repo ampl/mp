@@ -46,6 +46,8 @@ public:
   /// Get suffix names
   virtual std::set<std::string> GetSuffixNames() = 0;
 
+  virtual   SuffixSet& GetSuffixes(suf::Kind kind) = 0;
+
   /// Read integer suffix
   virtual ArrayRef<int> ReadSuffix(const SuffixDef<int>& suf) = 0;
   /// Read double suffix
