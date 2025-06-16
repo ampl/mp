@@ -744,8 +744,8 @@ protected:
   }
 
   /// Recompute implicit aux vars
-  /// (those corresponding to expressions.)
-  /// needed for MO emulator and sol checker.
+  /// (those corresponding to expressions).
+  /// Needed for MO emulator and sol checker.
   void RecomputeNLAuxVars(pre::ModelValuesDbl& sol) {
     if (MPCD( IfWantNLOutput() )) {
       auto& xx = sol.GetVarValues()();

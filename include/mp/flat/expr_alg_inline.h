@@ -173,20 +173,25 @@ protected:
     return result;
   }
 
-  /// Whether the alg con/expr body has alg subexpressions
+  /// Whether the alg con/expr body has alg subexpressions.
+  /// We only consider subexpressions whose result var
+  /// has no stronger bounds than those from the expression.
+  /// @todo Possibly we should cache this, as otherwise
+  /// we'd take as expression some linear terms later
+  /// if the expression starts implying tighter result
   bool HasAlgExpr(const LinTerms& lt) {
     for (auto i=lt.size(); i--; ) {
       auto vi = lt.var(i);
       if (auto pLFC = MPCD(
               template GetActiveInitExpressionOfType<
                   LinearFunctionalConstraint>(vi) ))
-        return true;
+        return !MPD( IfVarBoundsStrongerThanInitExpr(vi) );
       if (auto pQFC = MPCD(
               template GetActiveInitExpressionOfType<
                   QuadraticFunctionalConstraint>(vi) )) {
         if (pQFC->GetArguments().GetLinTerms().size()
             || fQuad_)
-          return true;
+          return !MPD( IfVarBoundsStrongerThanInitExpr(vi) );
       }
     }
     return false;
