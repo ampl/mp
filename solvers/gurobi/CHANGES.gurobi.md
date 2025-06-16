@@ -2,9 +2,12 @@ Summary of recent updates to gurobi for AMPL
 ============================================
 
 
-## unreleased
+## 20250616
 - Option mip:opttol renamed as lp:opttol (opttol).
-
+- Changes in MP:
+  - Multi-objective emulator: added support for 
+    objective-specific options via objective suffixes
+    beginning with *option_*
 
 ## 20250515
 - Updated to Gurobi 12.0.2, which includes bugfixes

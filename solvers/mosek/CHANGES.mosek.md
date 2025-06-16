@@ -2,6 +2,13 @@ Summary of recent updates to MOSEK for AMPL
 ===========================================
 
 
+## 20250616
+- Changes in MP:
+  - Multi-objective emulator: added support for 
+    objective-specific options via objective suffixes
+    beginning with *option_*
+
+
 ## 20250429
 - Fix a bug in parsing of quadratic expressions,
   which could wrongly parse products of unequal

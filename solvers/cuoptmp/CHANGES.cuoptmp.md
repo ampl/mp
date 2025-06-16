@@ -1,7 +1,7 @@
-Summary of recent updates to cuoptmp for AMPL
-=============================================
+Summary of recent updates to cuOpt for AMPL
+===========================================
 
 
 ## 20250521
 
--- Initial version
+- Initial version

@@ -2,6 +2,13 @@ Summary of recent updates to Xpress for AMPL
 ============================================
 
 
+## 20250616
+- Changes in MP:
+  - Multi-objective emulator: added support for 
+    objective-specific options via objective suffixes
+    beginning with *option_*
+
+
 ## 20250531
 - Updated to Xpress 45.01.01 (9.6) that includes:
   - Pre root parallel heuristics phase.

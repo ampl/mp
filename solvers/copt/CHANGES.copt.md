@@ -2,9 +2,13 @@ Summary of recent updates to COPT for AMPL
 ==========================================
 
 
-## unreleased
+## 20250616
 - Enable native indicator constraints by default
   (options acc:ind..)
+- Changes in MP:
+  - Multi-objective emulator: added support for 
+    objective-specific options via objective suffixes
+    beginning with *option_*
 
 
 ## 20250429
