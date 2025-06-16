@@ -192,7 +192,8 @@ protected:
 
   };
   std::unordered_map<std::string, SuffixStorer> multiobj_option_values_;
-  std::vector<std::vector<int>> multiobj_option_map_;
+  std::vector<std::pair<int, std::vector<int>>> multiobj_option_map_;
+
   void ReadMultiObjectiveOptions() {
       std::string prefix = "option_";
       auto& sufs = MPD(Suffixes(suf::OBJ));
@@ -227,16 +228,24 @@ protected:
   }
   
   void SetMultiObjectiveOptions(int npass) {
-    auto obj_numbers = multiobj_option_map_[npass];
+    auto obj_numbers = multiobj_option_map_[npass].second;
     int objn;
     for (const auto& [key, suffix_map] : multiobj_option_values_) {
         if (!suffix_map.CheckIfValidPass(obj_numbers))
-            throw std::runtime_error(fmt::format("Inconsistent {} values for pass {}", key, npass+1));
-        objn = multiobj_option_map_[npass][0];
-      if (suffix_map.IsDouble())
-        MPD(GetEnv()).SetDblOption(key.c_str(), suffix_map.GetDoubleValue(objn));
-      else
-        MPD(GetEnv()).SetIntOption(key.c_str(), suffix_map.GetIntValue(objn));
+            throw std::runtime_error(fmt::format("Inconsistent {} values for pass {} "
+                "(objectives with priority {})", key, npass+1, multiobj_option_map_[npass].first));
+        objn = multiobj_option_map_[npass].second[0];
+      
+        if (suffix_map.IsDouble()) {
+            MPD(GetEnv()).SetDblOption(key.c_str(), suffix_map.GetDoubleValue(objn));
+            if (MPD(GetEnv()).verbose_mode())
+                    fmt::print("Setting {} to {}\n", key.c_str(), suffix_map.GetDoubleValue(objn));
+        }
+        else {
+            MPD(GetEnv()).SetIntOption(key.c_str(), suffix_map.GetIntValue(objn));
+            if (MPD(GetEnv()).verbose_mode())
+                fmt::print("Setting {} to {}\n", key.c_str(), suffix_map.GetIntValue(objn));
+        }
     }
   }
 
@@ -270,7 +279,7 @@ protected:
     obj_new_tola_.reserve(pr_map.size());
     obj_new_tolr_.reserve(pr_map.size());
     for (const auto& pr_level: pr_map) {
-      multiobj_option_map_.push_back(pr_level.second);
+      multiobj_option_map_.push_back(std::make_pair(pr_level.first, pr_level.second));
       const auto& i0_vec = pr_level.second;
       const auto& obj_orig_1st = obj_orig.at(i0_vec.front());
       const auto objwgt_1st = objwgt.at(i0_vec.front());

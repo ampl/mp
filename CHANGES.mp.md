@@ -1,6 +1,11 @@
 Summary of recent updates to the AMPL MP Library
 ================================================
 
+## 20250616
+- Multi-objective emulator: added support for 
+  objective-specific options via objective suffixes
+  beginning with *option_*
+
 
 ## 20250429
 - Fix a bug in parsing of quadratic expressions,
