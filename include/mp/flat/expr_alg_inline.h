@@ -150,15 +150,19 @@ protected:
     for (auto i=lt0.size(); i--; ) {
       auto ci = lt0.coef(i);
       auto vi = lt0.var(i);
-      if (auto pLFC = MPCD(
-              template GetActiveInitExpressionOfType<
-                  LinearFunctionalConstraint>(vi) ))
+      const LinearFunctionalConstraint* pLFC;
+      const QuadraticFunctionalConstraint* pQFC;
+      if ((pLFC = MPCD(
+             template GetActiveInitExpressionOfType<
+             LinearFunctionalConstraint>(vi) ))
+          && !MPD( IfVarBoundsStrongerThanInitExpr(vi) )) {
         inline_alg_subexpr(pLFC->GetAffineExpr(), ci, vi);
-      else if (auto pQFC = MPCD(
-              template GetActiveInitExpressionOfType<
-                  QuadraticFunctionalConstraint>(vi) ))
+      } else if ((pQFC = MPCD(
+                    template GetActiveInitExpressionOfType<
+                    QuadraticFunctionalConstraint>(vi) ))
+                 && !MPD( IfVarBoundsStrongerThanInitExpr(vi) )) {
         inline_alg_subexpr(pQFC->GetArguments(), ci, vi);
-      else
+      } else
         ae_untouched.add_term(ci, vi);
     }
 
