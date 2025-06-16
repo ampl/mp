@@ -109,7 +109,7 @@ public:
 /// Objective argument visitor
 inline void VisitArguments(
     const QuadraticObjective& obj, std::function<void (int)> argv) {
-  VisitArgumentsOnce(obj.GetLinTerms(), obj.GetQPTerms(), argv);
+  VisitArguments_PossRepeated(obj.GetLinTerms(), obj.GetQPTerms(), argv);
   if (obj.HasExpr())
     argv(obj.ExprIndex());
 }

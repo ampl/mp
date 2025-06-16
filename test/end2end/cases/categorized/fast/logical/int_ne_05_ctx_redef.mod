@@ -1,7 +1,7 @@
 # int_ne_05_ctx_redef.mod
 #
 # Test that x<=5 is redefined after all
-# its contexts are known
+# its contexts are known #248
 
 var x >=-3 <=11 integer;
 var b binary;

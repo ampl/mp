@@ -388,8 +388,8 @@ protected:
   /// Handle logical expressions in an algebraic con
   /// @return whether to remove the original \a con.
   template <class ConObj>
-  bool HandleLogicalArgs(const ConObj& con, int ) {
-    VisitArguments(con, MarkVarIfLogical_);          // Mark as proper vars
+  bool HandleLogicalArgs(const ConObj& conobj, int ) {
+    VisitArguments(conobj, MarkVarIfLogical_);          // Mark as proper vars
     return false;                                    // don't remove immediately
   }
 

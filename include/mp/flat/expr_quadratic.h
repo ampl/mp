@@ -339,6 +339,10 @@ void VisitArguments_PossRepeated(
 void VisitArguments(const QuadAndLinTerms& lt, std::function<void (int) > argv);
 
 /// Visit lin & quad terms without repetitions
+void VisitArguments_PossRepeated(
+    const LinTerms& lt, const QuadTerms& qt, std::function<void (int) > argv);
+
+/// Visit lin & quad terms without repetitions
 void VisitArgumentsOnce(
     const LinTerms& lt, const QuadTerms& qt, std::function<void (int) > argv);
 
