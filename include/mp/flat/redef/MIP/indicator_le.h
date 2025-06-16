@@ -53,6 +53,7 @@ protected:
         con.GetBody().add_term(body_ub-con.rhs(), b);
         con.set_rhs(body_ub);
       }
+      con.GetBody().sort_terms();
       GetMC().AddConstraint(con);                // Big-M constraint
     }
   }
