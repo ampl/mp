@@ -702,9 +702,9 @@ void HighsBackend::InitCustomOptions() {
     "Restart mode for PDLP solver (default 1).",
     "pdlp_e_restart_method", pdlperestartmethod_values, 1);
 
-  AddSolverOption("alg:pdlpdgaptol pdlpdgaptol pdlp_d_gap_tol",
-    "Duality gap tolerance for PDLP solver (default 1e-4).",
-    "pdlp_d_gap_tol", 1e-12, Infinity());
+  AddSolverOption("alg:pdlpopttol pdlpopttol  pdlp_d_gap_tol pdlp_optimality_tolerance",
+    "PDLP optimality tolerance (default 1e-4).",
+    "pdlp_optimality_tolerance", 1e-12, Infinity());
 
   AddSolverOption("bar:crossover crossover run_crossover",
     "Run crossover after IPM to get a basic solution",

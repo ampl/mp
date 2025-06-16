@@ -3,6 +3,9 @@ Summary of recent updates to HiGHS for AMPL
 
 
 ## 20250616
+- Updated to HiGHS 1.11
+- Renamed *pdlp_d_gap_tol* to *pdlpopttol* for consistency
+  with IMP
 - Changes in MP:
   - Multi-objective emulator: added support for 
     objective-specific options via objective suffixes
