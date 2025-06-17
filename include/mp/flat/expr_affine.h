@@ -207,6 +207,10 @@ public:
     return equals(lt);
   }
 
+  /// operator!=
+  bool operator!=(const LinTerms& lt) const
+  { return !(*this==lt); }
+
 
 private:
   SmallVec<double, 6> coefs_;

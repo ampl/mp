@@ -26,7 +26,7 @@ public:
 
   /// By default, add mixed context for argument variables
   template <class Constraint>
-  void PropagateResult(Constraint& con, double lb, double ub, Context ctx) {
+  void PropagateResult(const Constraint& con, double lb, double ub, Context ctx) {
     internal::Unused(&con, lb, ub, ctx);
     con.AddContext(ctx);           // merge context
     PropagateResult2Args(con.GetArguments(),     // we don't know the constraint
@@ -96,14 +96,14 @@ public:
 
   /// Propagate root complementarity constraint
   template <class ExprBody>
-  void PropagateResult(ComplementarityConstraint<ExprBody>& con) {
+  void PropagateResult(const ComplementarityConstraint<ExprBody>& con) {
     MPD( PropagateResult(con,
                          MPD(MinusInfty()), MPD(Infty()), Context::CTX_MIX) );
   }
 
   /// Not used?
   template <class ExprBody>
-  void PropagateResult(ComplementarityConstraint<ExprBody>& con,
+  void PropagateResult(const ComplementarityConstraint<ExprBody>& con,
                        double lb, double ub, Context ctx) {
     internal::Unused(ctx);
     MPD( PropagateResult2Args(con.GetExpression().GetBody(),
@@ -115,13 +115,15 @@ public:
     MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
     if (lb==ub) {                         // result fixed
-      if (!lb && ctx.HasNegative()) {       // result==0 && ctx-
+      if (!lb && ctx.HasNegative()) {     // result==0 && ctx-
         MPD( PropagateResultOfInitExpr(con.GetArguments()[0], 1.0, 1.0, -ctx) );
-        MPD( DecrementVarUsage(con.GetResultVar()) );
+        MPD( MarkAsUnused_ThisOnly(       // #201
+               MPCD( GetInitExpression(con.GetResultVar()) ) ) );
         return;
       } else if (lb && ctx.HasPositive()) { // result==1 && ctx+
         MPD( PropagateResultOfInitExpr(con.GetArguments()[0], 0.0, 0.0, -ctx) );
-        MPD( DecrementVarUsage(con.GetResultVar()) );
+        MPD( MarkAsUnused_ThisOnly(       // #201
+               MPCD( GetInitExpression(con.GetResultVar()) ) ) );
         return;
       }
     }
@@ -133,7 +135,8 @@ public:
     con.AddContext(ctx);
     if (lb>0.5 && ctx.HasPositive()) {                  // Remove, arguments are fixed
       MPD( PropagateResult2Vars(con.GetArguments(), lb, 1.0, +ctx) );
-      MPD( DecrementVarUsage(con.GetResultVar()) );    // Or, remove completely?
+      MPD( MarkAsUnused_ThisOnly(       // #201
+             MPCD( GetInitExpression(con.GetResultVar()) ) ) );
     } else
       MPD( PropagateResult2Vars(con.GetArguments(), 0.0, 1.0, +ctx) );  // in any ctx??
   }
@@ -143,7 +146,8 @@ public:
     con.AddContext(ctx);
     if (ub<0.5 && ctx.HasNegative()) {                 // Remove, arguments are fixed
       MPD( PropagateResult2Vars(con.GetArguments(), 0.0, ub, +ctx) );
-      MPD( DecrementVarUsage(con.GetResultVar()) );
+      MPD( MarkAsUnused_ThisOnly(       // #201
+             MPCD( GetInitExpression(con.GetResultVar()) ) ) );
     } else
       MPD( PropagateResult2Vars(con.GetArguments(), 0.0, 1.0, +ctx) );
   }
@@ -312,7 +316,8 @@ public:
     if (lb>0 && ctx.HasPositive()) {              // Is true
       if constexpr (kind*kind<=1) {               // == or <= or >=
         MPD(AddConstraint_AS_ROOT(con.GetConstraint()));
-        MPD( DecrementVarUsage(con.GetResultVar()) );
+        MPD( MarkAsBridged(                       // Remove the original
+               MPCD( GetInitExpression(con.GetResultVar()) ) ) );
       }
     } else {
       MPD( PropagateResult(con.GetConstraint(), ctx) );

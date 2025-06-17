@@ -289,8 +289,7 @@ public:
     auto& objs
         = objs_emulated.size() ? objs_emulated : objs_original;
     for (size_t iobj=0; iobj<objs.size(); ++iobj) {
-      HandleLogicalArgs(objs[iobj].GetLinTerms(), iobj);
-      HandleLogicalArgs(objs[iobj].GetQPTerms(), iobj);
+      HandleLogicalArgs(objs[iobj], iobj);
       Convert1ObjWithExpressions(iobj, objs[iobj]);
     }
   }
@@ -388,9 +387,9 @@ protected:
 
   /// Handle logical expressions in an algebraic con
   /// @return whether to remove the original \a con.
-  template <class Con>
-  bool HandleLogicalArgs(const Con& con, int ) {
-    VisitArguments(con, MarkVarIfLogical_);          // Mark as proper vars
+  template <class ConObj>
+  bool HandleLogicalArgs(const ConObj& conobj, int ) {
+    VisitArguments(conobj, MarkVarIfLogical_);          // Mark as proper vars
     return false;                                    // don't remove immediately
   }
 
@@ -497,6 +496,7 @@ protected:
           }
           need_nlc = true;
         } else {         // single variable, its expression will be explicified
+          MPD( IncrementVarUsage(exprResVar) );  // Because removed from top-level con #201
           MPD( NarrowVarBounds(exprResVar, rng.lb(), rng.ub()) );
           return true;
         }
@@ -527,6 +527,7 @@ protected:
         || (qobj.GetQPTerms().size()
             && (!MPCD(IfPassQuadObj())         // cannot or want not
                 || HasExpressionArgs(qobj.GetQPTerms())))) {
+      MPD( UncountArgRefs(qobj) );
       int exprResVar = -1;
       if (lt_in_expr.is_variable() && qobj.GetQPTerms().empty()) {
         exprResVar = lt_in_expr.get_representing_variable();
@@ -560,6 +561,7 @@ protected:
       qobj.GetLinTerms() = lt_varsonly;
       if (exprResVar>=0)
         qobj.SetExprIndex(exprResVar);
+      MPD( CountArgRefs(qobj) );
     }
   }
 
@@ -739,19 +741,6 @@ protected:
       return true;
     }
     return false;
-  }
-
-  /// Recompute implicit aux vars
-  /// (those corresponding to expressions.)
-  /// needed for MO emulator and sol checker.
-  void RecomputeNLAuxVars(pre::ModelValuesDbl& sol) {
-    if (MPCD( IfWantNLOutput() )) {
-      auto& xx = sol.GetVarValues()();
-      if (xx.size()) {                    // solution available
-        const auto& var_is_proper = MPCD( GetVarProperFlags() );
-        xx = MPD( RecomputeAuxVars(xx, var_is_proper) );
-      }
-    }
   }
 
 private:

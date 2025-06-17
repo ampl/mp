@@ -44,9 +44,6 @@ public:
   ///   to obtain the expression term.
   int ExprIndex() const { assert(HasExpr()); return expr_; }
 
-  /// Throw - should not be used
-  VarArray1 GetArguments() const { MP_RAISE("No marking for NL items"); }
-
   /// Compute violation.
   template <class VarInfo>
   Violation
@@ -72,6 +69,14 @@ private:
   LinConRange lcr_;
   int expr_ {-1};
 };
+
+
+/// Specialize
+inline void VisitArguments(const NLConstraint& nlc,
+                           std::function<void (int) > argv) {
+  VisitArguments(nlc.GetMainCon(), argv);
+  VisitArguments(VarArray1{nlc.ExprIndex()}, argv);
+}
 
 
 /// Export to JSON
@@ -141,6 +146,17 @@ using NLAssignLE = NLBaseAssign<-1>;
 /// Typedef NLAssignGE
 using NLAssignGE = NLBaseAssign<1>;
 
+
+/// Specialize.
+/// Don't mark arguments because it was marked 'used'
+/// when extracting it from NLConstraint
+template <int sense>
+inline void VisitArguments(const NLBaseAssign<sense>& nlba,
+                           std::function<void (int) > argv) {
+  // VisitArguments(VarArray1{nlba.GetVar()}, argv);
+}
+
+
 /// Write a Reification
 template <int sense>
 inline void WriteJSON(JSONW jw,
@@ -202,6 +218,14 @@ private:
   bool value_ {};
 };
 
+
+/// Specialize
+inline void VisitArguments(const NLLogical& ,
+                           std::function<void (int) > ) {
+  // Do nothing because logical expressions are marked as used
+}
+
+
 /// Write an NLLogical
 inline void WriteJSON(JSONW jw,
                       const NLLogical& nll) {
@@ -262,6 +286,17 @@ using NLReifEquiv = NLBaseReif<0>;
 using NLReifImpl = NLBaseReif<-1>;
 /// Typedef NLReifRImpl
 using NLReifRimpl = NLBaseReif<1>;
+
+
+/// Specialize
+template <int sense>
+inline void VisitArguments(const NLBaseReif<sense>& ,
+                           std::function<void (int) > ) {
+  // Again, do nothing
+  // VisitArguments(VarArray1{nlbr.GetBVar()}, argv);
+}
+
+
 
 /// Write a Reification
 template <int sense>

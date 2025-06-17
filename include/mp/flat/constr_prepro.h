@@ -386,7 +386,7 @@ public:
       }
       con.GetArguments() = arg1;
     }
-    if (MPCD( IfPreproNestedAndsOrs() ))
+    if (MPCD( IfPreproUnnest() & 1 ))
       IntegrateNested(con);            // flatten nested
     if (con.GetArguments().empty())
       prepro.narrow_result_bounds(1.0, 1.0);  // empty conjunction
@@ -418,7 +418,7 @@ public:
       }
       con.GetArguments() = arg1;
     }
-    if (MPCD( IfPreproNestedAndsOrs() ))
+    if (MPCD( IfPreproUnnest() & 1 ))
       IntegrateNested(con);            // flatten nested
     if (con.GetArguments().empty())
       prepro.narrow_result_bounds(0.0, 0.0);  // empty disjunction
@@ -454,7 +454,8 @@ public:
         const auto& args2 = pNested->GetArguments();
         args_new.insert(args_new.end(),
                         args2.begin(), args2.end());
-        MPD( DecrementVarUsage(v) );
+        // Not any more #201 #266: now usage++ by FixAsTrue()
+        // MPD( DecrementVarUsage(v) );
       } else {
         args_new.push_back(v);
       }

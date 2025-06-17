@@ -50,6 +50,7 @@ protected:
         con.GetBody().add_term(body_lb-con.rhs(), b);
         con.set_rhs(body_lb);
       }
+      con.GetBody().sort_terms();
       GetMC().AddConstraint(con);                // Big-M constraint
     }
   }

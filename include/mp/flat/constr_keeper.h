@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <functional>
 #include <cmath>
+#include <climits>
 
 #include "mp/common.h"
 #include "mp/format.h"
@@ -63,6 +64,7 @@ public:
   int AddConstraint(int d, Args&&... args)
   {
     cons_.emplace_back( d, std::move(args)... );
+    ++n_bridged_or_unused_;    // initially "unused"
     ExportConstraint(cons_.size()-1, cons_.back());
     // fmt::MemoryWriter wrt;
     // WriteCon2JSON(wrt, cons_.size()-1, cons_.back());
@@ -79,7 +81,7 @@ public:
   { assert(check_index(i)); return cons_[i].GetCon(); }
 
   /// Is item \a i already bridged or abandoned?
-  bool IsRedundant(int i) const {
+  bool IsRedundant(int i) const override {
     return cons_[i].IsRedundant();
   }
 
@@ -237,9 +239,16 @@ public:
   const std::type_info& GetTypeInfo() const override
   { return typeid(ConstraintType); }
 
+  /// Report total number
+  int Size() const {
+    return (int)cons_.size();
+  }
+
   /// Report how many will be added to Backend
   int GetNumberOfAddable() const override {
-    return (int)cons_.size()-n_bridged_or_unused_;
+    assert(Size() >= n_bridged_or_unused_);
+    assert(0 <= n_bridged_or_unused_);
+    return Size()-n_bridged_or_unused_;
   }
 
   /// Group number of this constraint type in the Backend.
@@ -332,6 +341,8 @@ protected:
     bool IsUnused() const { return is_unused_; }
     /// Mark as unused
     void MarkAsUnused() { is_unused_=true; }
+    /// Mark as used
+    void MarkAsUsed() { is_unused_=false; }
 
     /// Has the expression been added to the backend?
     bool IsExprAdded() const { return is_expr_stored_; }
@@ -364,7 +375,7 @@ protected:
     int depth_ = 0;
     Context ctx_redef_;    // Context used for redefinition, if any
     char is_bridged_ = false;
-    char is_unused_ = false;
+    char is_unused_ = true;
     char is_expr_stored_ = false;
   };
 
@@ -480,18 +491,33 @@ protected:
   }
 
   /// Mark item as reformulated
-  void MarkAsBridged(Container& cnt, int ) {
+  void MarkAsBridged(Container& cnt, int i) {
     if (!cnt.IsBridged()) {  // can be called 2x,
       cnt.MarkAsBridged();   // e.g. IfThen: 1st by RedefineVariable(),
+      GetConverter().UncountArgRefs(cnt.GetCon());
       ++n_bridged_or_unused_;  // then in ConvertConstraint()
     }
-	}
+  }
 
   /// Mark item as unused
-  void MarkAsUnused(Container& cnt, int ) {
-    if (!cnt.IsUnused()) {
+  void MarkAsUnused(Container& cnt, int i, bool recurs=true) {
+    assert(!cnt.IsUnused());
+    if (!cnt.IsUnused()) {        // in Release
       cnt.MarkAsUnused();
+      if (recurs)
+        GetConverter().UncountArgRefs(cnt.GetCon());
       ++n_bridged_or_unused_;
+    }
+  }
+
+  /// Mark item as used
+  void MarkAsUsed(Container& cnt, int i) {
+    assert(cnt.IsUnused());
+    if (cnt.IsUnused()) {
+      cnt.MarkAsUsed();
+      GetConverter().CountArgRefs(cnt.GetCon());
+      assert(!cnt.IsBridged());
+      --n_bridged_or_unused_;
     }
   }
 
@@ -560,6 +586,19 @@ public:
     MarkAsUnused(cons_.at(i), i);
   }
 
+  /// Mark cons[\a i] as unused.
+  /// Do not propagate to arguments.
+  /// Use index only.
+  void MarkAsUnused_ThisOnly(int i) override {
+    MarkAsUnused(cons_.at(i), i, false);
+  }
+
+  /// Mark cons[\a i] as used.
+  /// Use index only.
+  void MarkAsUsed(int i) override {
+    MarkAsUsed(cons_.at(i), i);
+  }
+
   /// Is constraint \a i reformulated?
   bool IsBridged(int i) const override {
     return cons_.at(i).IsBridged();
@@ -595,12 +634,20 @@ public:
 
   /// ForEachActive().
   /// Deletes every constraint where fn() returns true.
+  /// @return number of deleted / decreased-usage items.
 	template <class Fn>
-	void ForEachActive(Fn fn) {
-		for (int i=0; i<(int)cons_.size(); ++i)
+  int ForEachActive(
+      Fn fn, int i_start = 0, int i_end = INT_MAX) {
+    int ndel = 0;
+    for (int i=i_start;
+         i<std::min((int)cons_.size(), i_end);
+         ++i)
       if (!cons_[i].IsRedundant())
-        if (fn(cons_[i].GetCon(), i))
+        if (fn(cons_[i].GetCon(), i)) {
           MarkAsBridged(cons_[i], i);
+          ++ndel;
+        }
+    return ndel;
 	}
 
   /// Compute result for constraint \a i

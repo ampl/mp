@@ -33,7 +33,9 @@ public:
 
   /// From Body and const_term
   AlgebraicExpression(Body bt, double ct) noexcept :
-    Body(std::move(bt)), constant_term_(ct) { }
+    Body(std::move(bt)), constant_term_(ct) {
+    Body::sort_terms();
+  }
 
   /// Helper to construct AlgebraicExpression
   /// to represent something special.

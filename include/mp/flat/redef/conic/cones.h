@@ -191,14 +191,15 @@ protected:
   void WarnOnMix() {
     if ( !MC().ModelAPICanMixConicQCAndQC()) {  // cannot mix
       if ((HasAnyCones()                        // exp cones
-           && (MC().NumQC2SOCPAttempted() > MC().NumQC2SOCPSucceeded()
+           && ((MC().NumQC2SOCPAttempted() > MC().NumQC2SOCPSucceeded()
+                && MC().NumQC2SOCPSucceeded())
                || MC().HasQPObjective()))       // and quadratics left in
            && !MC().IfConvertSOCP2QC()          // and not decided to convert
           ) {
         MC().AddWarning("Mix QC+cones",
                         "Not all quadratic constraints could "
                         "be recognized\nas quadratic cones; "
-                        "or, the objective is quadratic;\n"
+                        "or, the objective\nis quadratic and cones are present;\n"
                         "additionally, further conversion back to QC\n"
                         "not desired (option cvt:socp2qc) or other cone types present;\n"
                         "solver might not accept the model.\n"
@@ -472,7 +473,8 @@ protected:
             c = std::sqrt(c);
           result.vars_ = qpterms.vars1();
           result.const_term = args_qdc.constant_term();
-          result.res_vars_to_delete_ = { res_var, arg_pow };
+          // No more: removed with the original con #201
+          // result.res_vars_to_delete_ = { res_var, arg_pow };
           return result;
         }
       }
@@ -490,7 +492,8 @@ protected:
     const auto arg_abs = con_abs.GetArguments()[0];
     result.coefs_ = { 1.0 };
     result.vars_ = { arg_abs };
-    result.res_vars_to_delete_ = { res_var };
+    // No more: removed with the original con #201
+    // result.res_vars_to_delete_ = { res_var };
     result.is_from_abs_ = true;
     return result;
   }
@@ -499,7 +502,7 @@ protected:
   /// xN, xM >= 0.
   ConeArgs CheckSqrtXnXmNonneg(int res_var) {
     ConeArgs result;
-    if (const auto& pConPow = MC().template
+    if (const auto pConPow = MC().template
         GetInitExpressionOfType<PowConstExpConstraint>(res_var)) {
       if (0.5 == pConPow->GetParameters()[0]) {     // sqrt(arg_pow)
         const auto arg_pow = pConPow->GetArguments()[0];
@@ -516,7 +519,8 @@ protected:
                 MC().lb(qpterms.var2(0)) >= 0.0) {
               result.coefs_ = {qpterms.coef(0), 1.0};
               result.vars_ = {qpterms.var1(0), qpterms.var2(0)};
-              result.res_vars_to_delete_ = {res_var, arg_pow};
+              // No more: removed with the original con #201
+              // result.res_vars_to_delete_ = {res_var, arg_pow};
               return result;
             }
           }
@@ -525,7 +529,8 @@ protected:
             result.coefs_ = {1.0};
             result.vars_ = {arg_pow};
             result.coef_extra = 1.0;   // for a new fixed var
-            result.res_vars_to_delete_ = {res_var};
+            // No more: removed with the original con #201
+            // result.res_vars_to_delete_ = {res_var};
             return result;
           }
         }
@@ -600,11 +605,11 @@ protected:
       x.back() = int( MC().MakeFixedVar(1.0) );
       c.back() = coefY_abs * std::sqrt(rhs_args.const_term);
     }
-    for (auto r: rhs_args.res_vars_to_delete_)
-      MC().DecrementVarUsage(r);
     MC().AddConstraint(
           QuadraticConeConstraint(
             std::move(x), std::move(c)));
+    for (auto r: rhs_args.res_vars_to_delete_)   // after adding new con #201
+      MC().DecrementVarUsage(r);
     return true;
   }
 
@@ -786,7 +791,8 @@ protected:
       if (auto pConExp = MC().template
           GetInitExpressionOfType<ExpConstraint>(v)) {
         result.vars_[1] = pConExp->GetArguments()[0];  // the z
-        result.vars2del_ = {v};                        // delete v
+        // Similarly to SOCP, not any more #201
+        // result.vars2del_ = {v};                        // delete v
         result.valid_ = true;
       }
     }
@@ -810,7 +816,8 @@ protected:
           int y0 = pConDiv->GetArguments()[1];
           if (y0==y) {                                   // v2 = z/y
             result.vars_ = {y, z};
-            result.vars2del_ = {v1, v2};                 // delete v1, v2
+            // Similarly to SOCP, not any more #201
+            // result.vars2del_ = {v1, v2};                 // delete v1, v2
             result.valid_ = true;
           } else if (auto pConLin = MC().template
                      GetInitExpressionOfType<LinearFunctionalConstraint>(y0)) {
@@ -821,7 +828,8 @@ protected:
               if (y == body.var(0)) {           // v2 = z / (c1*y)
                 result.coefs_ = {b, b/body.coef(0)};
                 result.vars_ = {y, z};
-                result.vars2del_ = {v1, v2, y0};    // delete
+                // Similarly to SOCP, not any more #201
+                // result.vars2del_ = {v1, v2, y0};    // delete
                 result.valid_ = true;
               }
             }

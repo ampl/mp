@@ -17,6 +17,12 @@ public:
       : QuadraticExpr( {std::move(lt), std::move(qt) }, ct ) { }
   /// Construct from LinTerms
   EExpr(LinTerms lt): QuadraticExpr( {std::move(lt), {} }, 0.0 ) { }
+  /// Construct from QuadraticExpr
+  EExpr(QuadraticExpr qe) : QuadraticExpr(std::move(qe)) { }
+  /// Construct from AffineExpr
+  EExpr(AffineExpr ae)
+    : QuadraticExpr(
+  {std::move(ae.GetLinTerms()), {} }, ae.constant_term() ) { }
   /// Constructor from the Constant helper
   EExpr(Constant c) : QuadraticExpr(c) {}
   /// Construct from the Variable helper

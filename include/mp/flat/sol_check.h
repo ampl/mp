@@ -103,8 +103,9 @@ private:
       auto resvar = pCK->GetResultVar(iexpr.GetIndex());
       assert(resvar == i);
 #endif
-      if (!pCK->IsUnused(iexpr.GetIndex()))
-        return pCK->ComputeValue(iexpr.GetIndex(), x);
+      // Can check them, so not: if (!pCK->IsUnused(iexpr.GetIndex()))
+      auto val = pCK->ComputeValue(iexpr.GetIndex(), x);
+      return val;
     }
     return x.get_x().get_x()[i];  // no recomputation
   };

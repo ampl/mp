@@ -28,6 +28,8 @@ public:
     HandleSolution(solve_result,   // prints if no -AMPL flag
                    GetWarnings() + msg.c_str(),
                    0, 0, 0.0);
+    std::fflush(stdout);
+    std::fflush(stderr);
     if (!ampl_flag())
       std::exit(EXIT_FAILURE);
   }

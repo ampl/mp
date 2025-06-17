@@ -1402,7 +1402,7 @@ private:
                        "by substitution into linear, quadratic, and polynomial "
                        "expressions:\n"
                        "\n.. value-table::\n"
-                             "\nSee also AMPL options linelim and substout.",
+                       "\nSee also cvt:pre:unnest, as well as AMPL options linelim and substout.",
                        dvelim_, values_dvelim);
   }
 

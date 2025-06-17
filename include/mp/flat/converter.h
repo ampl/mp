@@ -18,6 +18,7 @@
 #include "mp/flat/expr_bounds.h"
 #include "mp/flat/constr_prepro.h"
 #include "mp/flat/constr_prop_down.h"
+#include "mp/flat/expr_alg_inline.h"
 #include "mp/flat/converter_multiobj.h"
 #include "mp/flat/constr_2_expr.h"
 #include "mp/flat/sol_check.h"
@@ -43,6 +44,7 @@ class FlatConverter :
                       public BoundComputations<Impl>,
                       public ConstraintPreprocessors<Impl>,
                       public ConstraintPropagatorsDown<Impl>,
+                      public AlgebraicExpressionInliner<Impl>,
                       public MOManager<Impl>,
                       public Constraints2Expr<Impl>,
                       public SolutionChecker<Impl>,
@@ -53,7 +55,13 @@ public:
   static const char* GetTypeName() { return "FlatConverter"; }
 
   /// Construct with Env&
-  FlatConverter(Env& e) : EnvKeeper(e), modelapi_(e) { }
+  FlatConverter(Env& e) : EnvKeeper(e), modelapi_(e) {
+    this->AddConversionAction(
+        [this](BasicFlatConverter& cvt) {
+          MP_ASSERT_ALWAYS(&cvt == this, "Bad ptr");
+          return this->InlineAlgSubexpr();
+        }, 3099);     // 3099: before LinFuncCon/QuadFuncCon
+  }
 
   /// Trying to use 'Var' instead of bare 'int'
   using Var = typename FlatModel::Var;
@@ -78,7 +86,8 @@ public:
   /// Currently this happens for all root-context logical constraints,
   /// i.e., we create an auxiliary variable which is later fixed to 1.
   void FixAsTrue(int resvar) {
-    PropagateResultOfInitExpr(resvar, 1.0, 1.0, +Context());
+    IncrementVarUsage(resvar);
+    PropagateResultOfInitExpr(resvar, 1.0, 1.0, +Context());  // afterwards #201 #266
   }
 
 
@@ -207,10 +216,11 @@ public:
 		auto i = MPD( MapFind(fc) );
     // TODO preprocess, try map again, and use the result.
 		if (i<0)
-      i = int( MPD( AddConstraint(std::move(fc)) ) );
+      i = int( MPD( AddFunctionalConstraint(std::move(fc)) ) );
 		auto& ck = GET_CONSTRAINT_KEEPER( FuncConstraint );
     ConInfo ci{&ck, i};
     ReplaceInitExpression(res_var, ci);
+    MarkAsUsed(ci);          // Now manually #201 #266
     MarkAsBridged(ci_old);
   }
 
@@ -218,29 +228,71 @@ public:
 	/// Variables' reference counting ///////////////////////////////////
 	/// Currently only for defined variables ////////////////////////////
 
-	/// Use "+1" a variable
-	void IncrementVarUsage(int v) {
-		++VarUsageRef(v);
+  /// Use "+1" a variable.
+  /// When changing from 0 to 1,
+  /// mark as "used" if not redefined.
+  void IncrementVarUsage(int v) {
+    if (1==++VarUsageRef(v)) {
+      if (HasInitExpression(v)) {
+        auto& ci = GetInitExpression(v);
+        if (ci.GetCK()->IsUnused(ci.GetIndex())
+            && !ci.GetCK()->IsBridged(ci.GetIndex())) {
+          MarkAsUsed(ci);
+        }
+      }
+    }
+    // Not catching reuse after redef:
+    // @todo check new context in context propagation.
+#ifdef CATCH_REUSE_AFTER_REDEF
     // If unused, no reformulation tried,
     // currently no repetition of reformulation cycle.
+    // @todo could allow if redefined in CTX_MIX.
     MP_ASSERT_ALWAYS(!IsUnused(GetInitExpression(v))
-        || IsBridgingToBeConsidered(GetInitExpression(v)),
+                     || IsBridgingToBeConsidered(GetInitExpression(v)),
                      "An expression's redefinition\n"
                      "could be lost. Please contact\n"
                      "AMPL customer support.");
-	}
+#endif
+  }
 
 	/// Unuse result variable.
   /// Actually this is to 'unuse' the init expression
   /// - might change naming.
-	/// Throw if already not used.
-	void DecrementVarUsage(int v) {
-		assert(VarUsageRef(v)>0);
-		if (! (--VarUsageRef(v))) {
-			if (HasInitExpression(v))
-        MarkAsUnused(GetInitExpression(v));
-		}
-	}
+  /// Throw if already not used.
+  /// When changing from 1 to 0,
+  /// mark "unused" if not already and not redefined
+  void DecrementVarUsage(int v) {
+    assert(VarUsageRef(v)>0);
+    if (VarUsageRef(v)>0)          // in Release build
+      if (! (--VarUsageRef(v))) {
+        if (HasInitExpression(v)) {
+          auto& ci = GetInitExpression(v);
+          if (IsConActive(ci)) { // used && !bridged
+            MarkAsUnused(ci);
+          }
+        }
+      }
+  }
+
+  /// Count argument references.
+  /// @todo currently called manually for objectives
+  template <class ConObj>
+  void CountArgRefs(const ConObj& con) {
+    VisitArguments(con,
+                   [this](int v) {
+      IncrementVarUsage(v);
+    });
+  }
+
+  /// Uncount argument references
+  /// @todo currently called manually for objectives
+  template <class ConObj>
+  void UncountArgRefs(const ConObj& con) {
+    VisitArguments(con,
+                   [this](int v) {
+      DecrementVarUsage(v);
+    });
+  }
 
   /// Mark unused defined vars for elimination.
 	/// Normally should delete them.
@@ -353,6 +405,14 @@ protected:
   /// Can be called from ConvertMaps()
   void ConvertAllConstraints() {
     GetModel().ConvertAllConstraints(*this);
+  }
+
+  /// Inline algebraic subexpr.
+  /// @return true iff anything changed.
+  bool InlineAlgSubexpr() {
+    auto preu = MPCD( IfPreproUnnest() );
+    return MPD(
+        ConsiderInliningAlgExpr(preu & 2, preu & 4) );
   }
 
   /// Default map conversions. Currently empty
@@ -621,16 +681,21 @@ public:
   /// If any conversions are performed, need to have intermediate nodes,
   /// as for constraints
   pre::NodeRange AddObjective(QuadraticObjective&& qo) {
+    CountArgRefs(qo);     // no "used" flag for objectives
     GetModel().AddObjective( std::move(qo) );
     /// Temporarily removing AutoLinking for objectives
     // return AutoLink( GetObjValueNode().Add() );
     return GetObjValueNode().Select(-1);
   }
 
-  /// ADD CUSTOM CONSTRAINT, does not propagate result
+  /// ADD STATIC CONSTRAINT.
+  ///
+  /// Does not propagate result
   /// (use AddConstraint_AS_ROOT() otherwise).
   ///
-  /// This method might be enough
+  /// Counts argument references.
+  ///
+  /// This method is enough
   /// (instead of the _AS_ROOT() version)
   /// if the arguments already have contexts.
   ///
@@ -642,14 +707,18 @@ public:
   /// @return Node reference for the stored constraint
   template <class Constraint>
   pre::NodeRange AddConstraint(Constraint con) {
+    assert(!con.HasResultVar());
     if (MPD( PreprocessStaticConstraint(con) ))
       return {};  // we should not need the presolver nodes
     auto node_range =
         AddConstraintAndTryNoteResultVariable( std::move(con) );
+    auto& ck = GET_CONSTRAINT_KEEPER( Constraint );
+    ConInfo ci{&ck, int(node_range)};
+    MarkAsUsed(ci);      // this also counts arg refs #266
     return AutoLink( node_range );
   }
 
-  /// ADD CUSTOM CONSTRAINT and propagate root-ness
+  /// ADD STATIC CONSTRAINT and propagate root-ness
   /// (use AddConstraint() otherwise).
   ///
   /// Use only for non-mapped constraints. For functional constraints
@@ -658,11 +727,31 @@ public:
   /// @return Node reference for the stored constraint
   template <class Constraint>
   pre::NodeRange AddConstraint_AS_ROOT(Constraint con) {
-    MPD( PropagateResult(con) );
-    return AddConstraint( std::move(con) );
+    auto nr = AddConstraint( std::move(con) );
+    MPD( PropagateResult(             // after AddConstraint() #201 #266
+           GetConstraint<Constraint>(int(nr))) );
+    return nr;
   }
 
-	/// Retrieve constraint of specified type at location \a ci.
+  /// ADD FUNCTIONAL CONSTRAINT.
+  ///
+  /// Do not use directly. For functional constraints
+  /// stored __WITH_MAP, use AssignResult(Var)2Args().
+  /// Takes ownership.
+  ///
+  /// @note Does not propagate result
+  ///   (use PropagateResult()).
+  ///
+  /// @return Node reference for the stored constraint
+  template <class Constraint>
+  pre::NodeRange AddFunctionalConstraint(Constraint con) {
+    assert(con.HasResultVar());
+    auto node_range =
+        AddConstraintAndTryNoteResultVariable( std::move(con) );
+    return AutoLink( node_range );
+  }
+
+  /// Retrieve constraint of specified type at location \a ci.
   template <class Constraint>
 	const Constraint& GetConstraint(const ConInfo& ci) const {
 		assert(MPCD(template IsConInfoType<Constraint>(ci) ));
@@ -673,7 +762,8 @@ public:
 	/// Retrieve constraint of specified type at index \a i.
 	template <class Constraint>
 	const Constraint& GetConstraint(int i) const {
-		return GET_CONST_CONSTRAINT_KEEPER(Constraint).GetConstraint(i);
+    return
+        GET_CONST_CONSTRAINT_KEEPER(Constraint).GetConstraint(i);
 	}
 
   /// Mark constraint as reformulated
@@ -684,6 +774,17 @@ public:
   /// Mark constraint as unused
   void MarkAsUnused(const ConInfo& ci) {
     ci.GetCK()->MarkAsUnused(ci.GetIndex());
+  }
+
+  /// Mark constraint as unused.
+  /// Do not propagate to arguments.
+  void MarkAsUnused_ThisOnly(const ConInfo& ci) {
+    ci.GetCK()->MarkAsUnused_ThisOnly(ci.GetIndex());
+  }
+
+  /// Mark constraint as used
+  void MarkAsUsed(const ConInfo& ci) {
+    ci.GetCK()->MarkAsUsed(ci.GetIndex());
   }
 
   /// Is bridging of constraint \a i
@@ -1070,6 +1171,7 @@ public:
 
   /// Get the init expr
   const ConInfo& GetInitExpression(int var) const {
+    assert(HasInitExpression(var));
 		return var_info_.at(var);
   }
 
@@ -1105,7 +1207,7 @@ public:
   /// Get the init expression pointer.
 	/// @return nullptr if no init expr or not this type
 	template <class ConType>
-	const ConType* GetInitExpressionOfType(int var) {
+  const ConType* GetInitExpressionOfType(int var) const {
 		if (MPCD( HasInitExpression(var) )) {
       const auto& ci0 = MPCD( GetInitExpression(var) );
 			if (IsConInfoType<ConType>(ci0)) {
@@ -1118,7 +1220,25 @@ public:
 		return nullptr;
 	}
 
-	/// Check if the constraint location points to the
+  /// Get the init expression pointer.
+  /// @return nullptr if no init expr,
+  ///   or not this type, or redefined/eliminated.
+  template <class ConType>
+  const ConType* GetActiveInitExpressionOfType(int var) const {
+    if (MPCD( HasInitExpression(var) )) {
+      const auto& ci0 = MPCD( GetInitExpression(var) );
+      if (IsConInfoType<ConType>(ci0)
+              && IsConActive(ci0)) {
+        const auto& con =
+            GetConstraint<ConType>(ci0);
+        assert(&con);
+        return &con;
+      }
+    }
+    return nullptr;
+  }
+
+  /// Check if the constraint location points to the
 	/// constraint keeper used for this ConType.
 	template <class ConType>
 	bool IsConInfoType(const ConInfo& ci) const {
@@ -1126,6 +1246,11 @@ public:
 				(GET_CONST_CONSTRAINT_KEEPER(ConType))
 				== ci.GetCK();
 	}
+
+  /// Check if \a ci points to an active constraint
+  bool IsConActive(const ConInfo& ci) const {
+    return !ci.GetCK()->IsRedundant(ci.GetIndex());
+  }
 
 
   /////////////////////// AUTO LINKING ////////////////////////////
@@ -1266,7 +1391,7 @@ private:
     int preprocessEqualityBvar_ = 1;
     int preprocessInequalityRhs_ = 1;
     int preprocessInequalityResultBounds_ = 1;
-    int preproNestedAndOrs_ = 1;
+    int preproUnnest_ = 7;
 
     int passQuadObj_ = ModelAPIAcceptsQuadObj();
     int passQuadCon_ = 1;
@@ -1398,9 +1523,16 @@ private:
     GetEnv().AddOption("cvt:pre:ineqrhs",
                        "0/1*: Preprocess reified inequality comparison's right-hand sides.",
                        options_.preprocessInequalityRhs_, 0, 1);
-    GetEnv().AddOption("cvt:pre:unnest",
-        "0/1*: Inline nested expressions, currently Ands/Ors.",
-        options_.preproNestedAndOrs_, 0, 1);
+    GetEnv().AddOption("cvt:pre:unnest cvt:unnest cvt:pre:inline cvt:inline",
+        "Inline nested expressions. Bitwise OR of the following values:\n"
+                       "\n"
+                       "|  1 - Ands and Ors\n"
+                       "|  2 - Linear subexpressions\n"
+                       "|  4 - Quadratic subexpressions.\n"
+                       "\n"
+                       "See also option cvt:dvelim concerning only the input model. "
+                       "Default 7.",
+        options_.preproUnnest_, 0, 7);
 
     GetEnv().AddOption("cvt:quadobj passquadobj",
                        ModelAPIAcceptsQuadObj() ?
@@ -1553,8 +1685,8 @@ private:
 public:
   /// Wrapper about a specific preprocess option:
   /// checks whether \a preprocessAnything_ is on.
-  bool CanPreprocess(int f) const {
-    return 0!=options_.preprocessAnything_ && 0!=f;
+  int CanPreprocess(int f) const {
+    return options_.preprocessAnything_ ? f : 0;
   }
 
   /// Whether preprocess equality result bounds
@@ -1573,9 +1705,9 @@ public:
   bool IfPreproIneqRHS() const
   { return MPCD( CanPreprocess(options_.preprocessInequalityRhs_) ); }
 
-  /// Whether inline nested forall, exists
-  bool IfPreproNestedAndsOrs() const
-  { return MPCD( CanPreprocess(options_.preproNestedAndOrs_) ); }
+  /// Whether inline nested forall, exists, lin/quad expr
+  int IfPreproUnnest() const
+  { return MPCD( CanPreprocess(options_.preproUnnest_) ); }
 
 
   /// Whether we pass quad obj terms to the solver without linearization
@@ -1654,6 +1786,20 @@ protected:
     }
   }
 
+  /// Recompute implicit aux vars
+  /// (those corresponding to expressions
+  ///   and/or eliminated functional constraints).
+  /// Needed for MO emulator and sol checker.
+  void RecomputeUnusedAuxVars(pre::ModelValuesDbl& sol) {
+    auto& xx = sol.GetVarValues()();
+    if (xx.size()) {                    // solution available
+      auto var_is_used = MPCD( GetVarElimFlags() );
+      var_is_used.flip();
+      xx = MPD( RecomputeAuxVars(xx, var_is_used) );
+    }
+  }
+
+
 private:
   /// We store ModelApi in the converter for speed.
   /// Should be before constraints
@@ -1678,7 +1824,7 @@ private:
       [this](pre::ModelValuesDbl& sol)  // Solution pre-postsolver
       {
         MPD( CheckNumVars(sol) );       // XPRESS 44.01.04
-        MPD( RecomputeNLAuxVars(sol) );
+        MPD( RecomputeUnusedAuxVars(sol) );
         MPD( ProcessMOIterationUnpostsolvedSolution(sol) );
       }
   };
@@ -1724,19 +1870,21 @@ protected:
   /// NOTE: The reformulation meta-graph should be acyclic #248.
 
   /// Static algebraic cons
-  STORE_CONSTRAINT_TYPE__NO_MAP(LinConRange,
-                                "acc:linrange acc:linrng", 5000)
+  STORE_CONSTRAINT_TYPE__NO_MAP(LinConRange,   // before QuadFuncCon
+                                "acc:linrange acc:linrng", 3091)
   STORE_CONSTRAINT_TYPE__NO_MAP(LinConLE, "acc:linle", 5100)
   STORE_CONSTRAINT_TYPE__NO_MAP(LinConEQ, "acc:lineq", 5200)
   STORE_CONSTRAINT_TYPE__NO_MAP(LinConGE, "acc:linge", 5300)
 
-  STORE_CONSTRAINT_TYPE__NO_MAP(QuadConRange,
-                                "acc:quadrange acc:quadrng", 4000)
+  STORE_CONSTRAINT_TYPE__NO_MAP(QuadConRange,  // Before LinConRange
+                                "acc:quadrange acc:quadrng", 3090)
   STORE_CONSTRAINT_TYPE__NO_MAP(QuadConLE, "acc:quadle", 4100)
   STORE_CONSTRAINT_TYPE__NO_MAP(QuadConEQ, "acc:quadeq", 4200)
   STORE_CONSTRAINT_TYPE__NO_MAP(QuadConGE, "acc:quadge", 4300)
 
-  /// Our own functional constraints: LFC, QFC
+  /// Our own functional constraints: LFC, QFC.
+  /// We'll also add inlining with priority 3099,
+  /// see AddConversionAction() in the constructor #266.
   STORE_CONSTRAINT_TYPE__WITH_MAP(
       LinearFunctionalConstraint, "acc:linfunccon", 3200)
   STORE_CONSTRAINT_TYPE__WITH_MAP(
