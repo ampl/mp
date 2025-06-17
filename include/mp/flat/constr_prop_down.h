@@ -58,7 +58,8 @@ public:
     PropagateResult(con, Context::CTX_ROOT);
   }
 
-  /// Conditional algebraic con
+  /// Static algebraic con.
+  /// But can be the argument of a conditional.
   template <class Body, class RngOrRhs>
   void PropagateResult(const AlgebraicConstraint< Body, RngOrRhs >& con,
                        Context ctx) {
@@ -195,20 +196,26 @@ public:
   /// @todo Propagate CTX+/- into the conditional equalities
   void PropagateResult(NumberofConstConstraint& con, double lb, double ub, Context ctx) {
     MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
+    if ( !(MPCD( IfPropCtxCountNumberof() ) & 2) )
+      ctx = Context::CTX_MIX;                     // #267
     con.AddContext(ctx);
     MPD( PropagateResult2Vars(con.GetArguments(), MPD( MinusInfty() ), MPD( Infty() ),
-                         Context::CTX_MIX) );
+                         ctx) );
   }
 
   void PropagateResult(NumberofVarConstraint& con, double lb, double ub, Context ctx) {
     MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
+    if ( !(MPCD( IfPropCtxCountNumberof() ) & 4) )
+      ctx = Context::CTX_MIX;                     // #267
     con.AddContext(ctx);
     MPD( PropagateResult2Vars(con.GetArguments(), MPD( MinusInfty() ), MPD( Infty() ),
-                         Context::CTX_MIX) );
+                         ctx) );
   }
 
   void PropagateResult(CountConstraint& con, double lb, double ub, Context ctx) {
     MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
+    if ( !(MPCD( IfPropCtxCountNumberof() ) & 1) )
+      ctx = Context::CTX_MIX;                     // #267
     con.AddContext(ctx);
     MPD( PropagateResult2Vars(con.GetArguments(),       // forward same context
                               MPD( MinusInfty() ), MPD( Infty() ), ctx) );
@@ -312,6 +319,8 @@ public:
         AlgebraicConstraint< Body, AlgConRhs<kind> > >& con,
       double lb, double ub, Context ctx) {
     MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
+    if ( !MPCD( IfPropCtxCondIneq() ) )
+      ctx = Context::CTX_MIX;                     // #267
     con.AddContext(ctx);
     if (lb>0 && ctx.HasPositive()) {              // Is true
       if constexpr (kind*kind<=1) {               // == or <= or >=

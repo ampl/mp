@@ -1393,6 +1393,9 @@ private:
     int preprocessInequalityResultBounds_ = 1;
     int preproUnnest_ = 7;
 
+    int propCtxIneq_ = 1;
+    int propCtxCountNumberof_ = 0;
+
     int passQuadObj_ = ModelAPIAcceptsQuadObj();
     int passQuadCon_ = 1;
     int useQP2Pass_ = 1;
@@ -1435,6 +1438,11 @@ public:             // public for CRTP
 
   /// Whether we should relax integrality
   int relax() const { return options_.relax_; }
+
+  /// Propagate context into conditional inequalities?
+  int IfPropCtxCondIneq() const { return options_.propCtxIneq_; }
+  /// Propagate context into count/numberof?
+  int IfPropCtxCountNumberof() const { return options_.propCtxCountNumberof_; }
 
   /// Solution checking options
   int sol_check_mode() const { return options_.solcheckmode_; }
@@ -1533,6 +1541,22 @@ private:
                        "See also option cvt:dvelim concerning only the input model. "
                        "Default 7.",
         options_.preproUnnest_, 0, 7);
+
+    GetEnv().AddOption("cvt:pre:ctxineq ctxineq",
+                       "0/1*: Propagate exact context into conditional inequalities, "
+                       "vs mixed. See #267.",
+                       options_.propCtxIneq_, 0, 1);
+    GetEnv().AddOption("cvt:pre:ctx2count ctx2count",
+                       "Propagate exact context into atleast/atmost/exactly, "
+                       "count and numberof expressions, "
+                       "vs mixed. Bitwise OR of the following values:\n"
+                       "\n"
+                       "|  1 - atleast/atmost/exactly, count\n"
+                       "|  2 - numberof with constant total\n"
+                       "|  4 - numberof with variable total.\n"
+                       "\n"
+                       "Default 0, see #267.",
+                       options_.propCtxCountNumberof_, 0, 7);
 
     GetEnv().AddOption("cvt:quadobj passquadobj",
                        ModelAPIAcceptsQuadObj() ?
