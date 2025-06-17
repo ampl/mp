@@ -1,7 +1,7 @@
 Summary of recent updates to the AMPL MP Library
 ================================================
 
-## unreleased
+## 20250617
 - Option *cvt:unnest*: bits 2 and 4 switch on
   inlining of linear and quadratic subexpressions
   produced during reformulations (by default on).

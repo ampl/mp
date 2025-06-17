@@ -2,6 +2,20 @@ Summary of recent updates to BARONMP for AMPL
 =============================================
 
 
+## 20250617
+- Changes in MP
+  - Multi-objective emulator: added support for
+    objective-specific options via objective suffixes
+    beginning with *option_*
+  - Option *cvt:unnest*: bits 2 and 4 switch on
+    inlining of linear and quadratic subexpressions
+    produced during reformulations (by default on).
+  - Options *cvt:pre:ctxineq*, *cvt:pre:ctx2count*
+    to control context propagation into conditional
+    comparisons #267.
+
+
+
 ## unreleased
 - Changes in MP
   - Option cvt:qp2pass (default even faster parsing
