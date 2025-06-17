@@ -1783,6 +1783,20 @@ protected:
     }
   }
 
+  /// Recompute implicit aux vars
+  /// (those corresponding to expressions
+  ///   and/or eliminated functional constraints).
+  /// Needed for MO emulator and sol checker.
+  void RecomputeUnusedAuxVars(pre::ModelValuesDbl& sol) {
+    auto& xx = sol.GetVarValues()();
+    if (xx.size()) {                    // solution available
+      auto var_is_used = MPCD( GetVarElimFlags() );
+      var_is_used.flip();
+      xx = MPD( RecomputeAuxVars(xx, var_is_used) );
+    }
+  }
+
+
 private:
   /// We store ModelApi in the converter for speed.
   /// Should be before constraints
@@ -1807,7 +1821,7 @@ private:
       [this](pre::ModelValuesDbl& sol)  // Solution pre-postsolver
       {
         MPD( CheckNumVars(sol) );       // XPRESS 44.01.04
-        MPD( RecomputeNLAuxVars(sol) );
+        MPD( RecomputeUnusedAuxVars(sol) );
         MPD( ProcessMOIterationUnpostsolvedSolution(sol) );
       }
   };

@@ -743,19 +743,6 @@ protected:
     return false;
   }
 
-  /// Recompute implicit aux vars
-  /// (those corresponding to expressions).
-  /// Needed for MO emulator and sol checker.
-  void RecomputeNLAuxVars(pre::ModelValuesDbl& sol) {
-    if (MPCD( IfWantNLOutput() )) {
-      auto& xx = sol.GetVarValues()();
-      if (xx.size()) {                    // solution available
-        const auto& var_is_proper = MPCD( GetVarProperFlags() );
-        xx = MPD( RecomputeAuxVars(xx, var_is_proper) );
-      }
-    }
-  }
-
 private:
   /// (Argument) variable visitor: mark var as proper
   std::function<void( int )> MarkVar_ = [this](int v){

@@ -270,6 +270,11 @@ public:
     AutoExpand(var_elim_, v, true);
   }
 
+  /// Get the flags of eliminated variables
+  /// (currenlty they are fixed)
+  const std::vector<bool>& GetVarElimFlags() const
+  { return var_elim_; }
+
 
   ///////////////////////////// OBJECTIVES ////////////////////////////
 public:
