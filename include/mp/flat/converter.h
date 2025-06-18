@@ -1542,7 +1542,7 @@ private:
                        "Default 7.",
         options_.preproUnnest_, 0, 7);
 
-    GetEnv().AddOption("cvt:pre:ctxineq ctxineq",
+    GetEnv().AddOption("cvt:pre:ctx2ineq ctx2ineq",
                        "0/1*: Propagate exact context into conditional inequalities, "
                        "vs mixed. See #267.",
                        options_.propCtxIneq_, 0, 1);

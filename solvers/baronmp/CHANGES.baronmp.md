@@ -10,7 +10,7 @@ Summary of recent updates to BARONMP for AMPL
   - Option *cvt:unnest*: bits 2 and 4 switch on
     inlining of linear and quadratic subexpressions
     produced during reformulations (by default on).
-  - Options *cvt:pre:ctxineq*, *cvt:pre:ctx2count*
+  - Options *cvt:pre:ctx2ineq*, *cvt:pre:ctx2count*
     to control context propagation into conditional
     comparisons #267.
 

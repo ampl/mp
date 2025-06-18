@@ -319,7 +319,8 @@ public:
         AlgebraicConstraint< Body, AlgConRhs<kind> > >& con,
       double lb, double ub, Context ctx) {
     MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
-    if ( !MPCD( IfPropCtxCondIneq() ) )
+    if ( kind!=0                                  // inequality
+         && !MPCD( IfPropCtxCondIneq() ) )
       ctx = Context::CTX_MIX;                     // #267
     con.AddContext(ctx);
     if (lb>0 && ctx.HasPositive()) {              // Is true
