@@ -60,6 +60,55 @@ Suffixes ``.objabstol`` and ``.objreltol`` allow for objective degradation.
 However their exact meaning can vary for a solver's native multi-objective
 mode (``obj:multi=1``), in particular for LPs. Consult the solver documentation.
 
+
+Specifying options for each objective
+********************************************************
+
+When using the ``obj:multi`` option, you can specify options for each objective by creating
+a suffix in AMPL with the name starting with ``option_`` followed by the option name as 
+obtained by the solver ``-=`` output.
+This should then be set using the suffix notation; see the example below
+where we set a time limit and a mip gap for each objective.
+Note that if the suffix value is not set, the default value or the initially specified value
+of the option will be used.
+
+.. code-block:: ampl
+
+		suffix objpriority;
+    suffix option_timelimit;
+    suffix option_mipgap;
+
+
+    option gurobi_options "timelimit=60 mipgap=0.00001";
+
+    minimize total_cost {s in 1..3}:
+       sum {j in FOOD} cost[s,j] * Buy[j] suffix objpriority s;
+    minimize total_number:  sum {j in FOOD} Buy[j];
+
+    # Note an alternative way to set the objective priority
+    let total_number.objpriority := 3;
+
+ 
+    for{s in 1..3} {
+        let total_cost[s].option_timelimit := s*10;
+        let total_cost[s].option_mipgap := s*0.01;
+    }
+    let total_number.option_timelimit := 30;
+
+    # not that objectives total_cost[3] and total_number will be blended,  but there
+    # is no conflict because the timelimit is set to 30 for both, and mipgap is set
+    # only for total_cost[3].
+
+
+
+If multiple objectives have the same priority, they are are blended together.
+When objectives are part of the same blended group, the driver will reject configurations where 
+different option values are specified for these objectives. All objectives within a blended group 
+must share identical option values or at most one should have the value specified.
+
+
+
+
 Examples
 **************************************
 
