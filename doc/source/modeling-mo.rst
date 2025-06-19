@@ -95,7 +95,7 @@ of the option will be used.
     }
     let total_number.option_timelimit := 30;
 
-    # not that objectives total_cost[3] and total_number will be blended,  but there
+    # note that objectives total_cost[3] and total_number will be blended,  but there
     # is no conflict because the timelimit is set to 30 for both, and mipgap is set
     # only for total_cost[3].
 
