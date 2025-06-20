@@ -101,7 +101,7 @@ of the option will be used.
 
 
 
-If multiple objectives have the same priority, they are are blended together.
+If multiple objectives have the same priority, they are blended together.
 When objectives are part of the same blended group, the driver will reject configurations where 
 different option values are specified for these objectives. All objectives within a blended group 
 must share identical option values or at most one should have the value specified.

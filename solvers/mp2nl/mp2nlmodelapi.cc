@@ -1017,7 +1017,10 @@ void MP2NLModelAPI::FeedAlgebraic(
     for (int i=0; i<GetLinSize(e); ++i) {
       if (1.0==GetLinCoef(e, i))
         ew_args0.EPut(GetLinTerm(e, i));
-      else {
+      else if (-1.0==GetLinCoef(e, i)) {
+        auto ew_args1 = ew_args0.OPut1(nl::MINUS);   // Couenne 0.5.8
+        ew_args1.EPut(GetLinTerm(e, i));
+      } else {
         auto ew_args1 = ew_args0.OPut2(nl::MUL);
         ew_args1.NPut(GetLinCoef(e, i));
         ew_args1.EPut(GetLinTerm(e, i));
