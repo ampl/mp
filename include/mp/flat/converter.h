@@ -1578,15 +1578,15 @@ private:
                        "of quadratic terms, then they are linearized.",
                        options_.passQuadCon_, 0, 1);
     GetEnv().AddOption("cvt:qp2passes cvt:qp2pass qp2passes qp2pass",
-                       "Parse sums of QP expressions in 2 passes. "
-                       "Usually faster. Default 1.",
+                       "0/1*: Parse sums of QP expressions in 2 passes. "
+                       "Usually faster.",
                        options_.useQP2Pass_, 0, 1);
     GetEnv().AddOption("cvt:multoutcard multoutcard",
                        "Up to which (estimated) QP matrix cardinality "
                        "should a product of 2 linear expressions "
                        "be multiplied out. Default 1e9.\n"
                        "\n"
-                       "Can speed up model input, but prone to "
+                       "Low value can speed up model input, but prone to "
                        "numerical issues.",
                        options_.QPMultOutCard_, 0.0, 1e20);
 
