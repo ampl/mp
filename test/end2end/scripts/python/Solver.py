@@ -417,7 +417,137 @@ class IPOptSolver(AMPLSolver):
                     return
                 prev = line
         self._stats["outmsg"] = stdout
+
         
+class CouenneSolver(AMPLSolver):
+    def _setTimeLimit(self, seconds):
+        return "max_cpu_time={}".format(seconds)
+
+    def _setNThreads(self, threads):
+        return ""
+
+    def _setLPMethod(self, method : str):
+        return ""
+
+    def _getAMPLOptionsName(self):
+        return "couenne"
+
+    def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
+        stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
+                  ModelTags.linear,
+                  ModelTags.plinear,
+                  ModelTags.quadratic,
+                  ModelTags.quadratic_obj,
+                  ModelTags.quadraticnonconvex,
+
+                  ModelTags.socp,
+                  ModelTags.socp_hard_to_recognize,
+                  ModelTags.nonlinear, ModelTags.log, ModelTags.trigonometric}
+        super().__init__(exeName, timeout, nthreads, otherOptions, stags)
+
+    def _doParseSolution(self, st, stdout=None):
+        if not st:
+            self._stats["outmsg"] = "Solution file empty"
+            self._stats["timelimit"] = False
+            return None
+        self._stats["outmsg"] = st[0]
+        self._stats["timelimit"] = "time limit" in st[0]
+        tag = "objective "
+        if tag in st[0]:
+            n = st[0][st[0].index(tag) + len(tag):]
+            try:
+                self._stats["objective"] = float(n)
+            except:
+                print("No solution, string: {}".format(n))
+                self._stats["objective"] = None
+
+
+class BonminSolver(AMPLSolver):
+    def _setTimeLimit(self, seconds):
+        return "max_cpu_time={}".format(seconds)
+
+    def _setNThreads(self, threads):
+        return ""
+
+    def _setLPMethod(self, method : str):
+        return ""
+
+    def _getAMPLOptionsName(self):
+        return "bonmin"
+
+    def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
+        stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
+                  ModelTags.linear,
+                  ModelTags.plinear,
+                  ModelTags.quadratic,
+                  ModelTags.quadratic_obj,
+                  ModelTags.quadraticnonconvex,
+
+                  ModelTags.socp,
+                  ModelTags.socp_hard_to_recognize,
+                  ModelTags.nonlinear, ModelTags.log, ModelTags.trigonometric}
+        super().__init__(exeName, timeout, nthreads, otherOptions, stags)
+
+    def _doParseSolution(self, st, stdout=None):
+        if not st:
+            self._stats["outmsg"] = "Solution file empty"
+            self._stats["timelimit"] = False
+            return None
+        self._stats["outmsg"] = st[0]
+        self._stats["timelimit"] = "time limit" in st[0]
+        tag = "objective "
+        if tag in st[0]:
+            n = st[0][st[0].index(tag) + len(tag):]
+            try:
+                self._stats["objective"] = float(n)
+            except:
+                print("No solution, string: {}".format(n))
+                self._stats["objective"] = None
+
+
+class LoqoSolver(AMPLSolver):
+    def _setTimeLimit(self, seconds):
+        return "timlim={}".format(seconds)
+
+    def _setNThreads(self, threads):
+        return ""
+
+    def _setLPMethod(self, method : str):
+        return ""
+
+    def _getAMPLOptionsName(self):
+        return "loqo"
+
+    def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
+        stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
+                  ModelTags.linear,
+                  ModelTags.plinear,
+                  ModelTags.quadratic,
+                  ModelTags.quadratic_obj,
+                  ModelTags.quadraticnonconvex,
+
+                  ModelTags.socp,
+                  ModelTags.socp_hard_to_recognize,
+                  ModelTags.nonlinear, ModelTags.log, ModelTags.trigonometric}
+        super().__init__(exeName, timeout, nthreads, otherOptions, stags)
+
+    def _doParseSolution(self, st, stdout=None):
+        if not st:
+            self._stats["outmsg"] = "Solution file empty"
+            self._stats["timelimit"] = False
+            return None
+        self._stats["outmsg"] = st[0]
+        self._stats["timelimit"] = "time limit" in st[0]
+        tag = "objective "
+        if tag in st[0]:
+            n = st[0][st[0].index(tag) + len(tag):]
+            try:
+                self._stats["objective"] = float(n)
+            except:
+                print("No solution, string: {}".format(n))
+                self._stats["objective"] = None
+
+
 class LgoSolver(AMPLSolver):
     def _setTimeLimit(self, seconds):
         return "timelim={}".format(seconds)

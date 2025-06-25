@@ -5,6 +5,7 @@ from runModels import runModels,writeModels
 import Exporter
 import Solver
 import SolverCollection
+import multiprocessing
 
 
 class Tester:

@@ -31,23 +31,31 @@ class SolverCollection:
         return self._solvers.get(self._aliases[nameoralias])
 
 def addStdSolvers(solvers: SolverCollection, binPath=""):
+    ### ASL solvers
     solvers.addSolver(Solver.LindoSolver(path.join(binPath, "lindoglobal")))
     solvers.addSolver(Solver.OcteractSolver(path.join(binPath, "octeract-engine")))
-    solvers.addSolver(Solver.GurobiDirectSolver(path.join(binPath,"gurobi")))
-    solvers.addSolver(Solver.GurobiSolver(path.join(binPath,"gurobiasl")))
-    solvers.addSolver(Solver.CPLEXSolver(path.join(binPath,"cplexasl")))
-    solvers.addSolver(Solver.CPLEXDirectSolver(path.join(binPath,"cplex"))) 
     solvers.addSolver(Solver.BaronSolver(path.join(binPath,"baron")))
-    solvers.addSolver(Solver.BaronMPSolver(path.join(binPath,"baronmp")))
     solvers.addSolver(Solver.ConoptSolver(path.join(binPath,"conopt4")))
     solvers.addSolver(Solver.ConoptSolver(path.join(binPath,"conopt")))
+    solvers.addSolver(Solver.MindoptSolver(path.join(binPath,"mindoptampl")))
+    solvers.addSolver(Solver.KnitroSolver(path.join(binPath,"knitro")))
+    solvers.addSolver(Solver.LgoSolver(path.join(binPath, "lgo")))
+    solvers.addSolver(Solver.IPOptSolver(path.join(binPath, "ipopt")))
+    solvers.addSolver(Solver.CouenneSolver(path.join(binPath, "couenne")))
+    solvers.addSolver(Solver.BonminSolver(path.join(binPath, "bonmin")))
+    solvers.addSolver(Solver.LoqoSolver(path.join(binPath, "loqo")))
+    solvers.addSolver(Solver.XpressSolver(path.join(binPath,"xpressasl")))
+    solvers.addSolver(Solver.GurobiSolver(path.join(binPath,"gurobiasl")))
+    solvers.addSolver(Solver.CPLEXSolver(path.join(binPath,"cplexasl")))
+
+    ### MP solvers
+    solvers.addSolver(Solver.GurobiDirectSolver(path.join(binPath,"gurobi")))
+    solvers.addSolver(Solver.CPLEXDirectSolver(path.join(binPath,"cplex"))) 
+    solvers.addSolver(Solver.BaronMPSolver(path.join(binPath,"baronmp")))
     solvers.addSolver(Solver.COPTSolver(path.join(binPath,"copt")))
     solvers.addSolver(Solver.cuOptSolver(path.join(binPath,"cuoptmp")))
-    solvers.addSolver(Solver.MindoptSolver(path.join(binPath,"mindoptampl")))
     solvers.addSolver(Solver.HighsSolver(path.join(binPath,"highs")), aliases=["highsmp"])
-    solvers.addSolver(Solver.KnitroSolver(path.join(binPath,"knitro")))
     solvers.addSolver(Solver.MP2NLSolver(path.join(binPath,"mp2nl")))
-    solvers.addSolver(Solver.XpressSolver(path.join(binPath,"xpressasl")))
     solvers.addSolver(Solver.XPRESSDirectSolver(path.join(binPath,"xpress")))
     solvers.addSolver(Solver.MosekSolver(path.join(binPath,"mosek")))
     solvers.addSolver(Solver.CbcMPSolver(path.join(binPath, "cbc")), aliases=["cbcmp"])
@@ -55,8 +63,6 @@ def addStdSolvers(solvers: SolverCollection, binPath=""):
     solvers.addSolver(Solver.SCIPSolver(path.join(binPath, "scip")), aliases=["scipmp"])
     solvers.addSolver(Solver.CPLEXODHSolver(path.join(binPath, "cplexodh")))
     solvers.addSolver(Solver.GUROBIODHSolver(path.join(binPath, "gurobiodh")))
-    solvers.addSolver(Solver.LgoSolver(path.join(binPath, "lgo")))
-    solvers.addSolver(Solver.IPOptSolver(path.join(binPath, "ipopt")))
 
 
 # if __name__ == "__main__":
