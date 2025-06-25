@@ -261,7 +261,7 @@ class AMPLSolver(Solver):
              err = ""
              try:
                out, err = proc.communicate(timeout=timeout)
-             except TimeoutExpired:
+             except subprocess.TimeoutExpired:
                print("Timeout expired...")
                procs = proc.children()
                for p in procs:
@@ -301,7 +301,7 @@ class AMPLSolver(Solver):
                   # time.sleep(SLICE_IN_SECONDS)
                   try:    # Don't wait the whole second:
                       out, err = p.communicate(timeout=SLICE_IN_SECONDS)
-                  except TimeoutExpired:
+                  except subprocess.TimeoutExpired:
                       pass
               out, err = p.communicate()
               if logFile is not None:
@@ -1018,10 +1018,13 @@ class MPDirectSolver(AMPLSolver):
             if ModelTags.quadraticnonconvex in stags:
                 stags = stags | {ModelTags.polynomial}
         
-        opts = "timing=1"
+        opts = self._get_timing_options()
         if otherOptions:
             opts  = f"{opts} {otherOptions}"
         super().__init__(exeName, timeout, nthreads, opts, stags)
+
+    def _get_timing_options(self):
+        return "timing=1"
 
     def _doParseSolution(self, st, stdout=None):
         if not st:
@@ -1443,3 +1446,342 @@ class GUROBIODHSolver(MPDirectSolver):
 
                  }
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
+
+
+### ASL+MP2NL solvers (to run with mp2nl=1)
+class GurobiASLMP2NLSolver(MPDirectSolver):
+            def _getAMPLOptionsName(self):
+                return "gurobiasl"
+
+            def _get_timing_options(self):
+                return ""
+
+            def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
+                stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
+                ModelTags.plinear,
+                ModelTags.quadratic,
+                ModelTags.quadratic_obj,
+                ModelTags.quadraticnonconvex,
+
+                ModelTags.socp,      ## MP transforms cones to quadratics
+                ModelTags.socp_hard_to_recognize,
+                ModelTags.expcones,  ## Although might not have the expconic solver
+
+                ModelTags.nonlinear, ModelTags.log, ModelTags.trigonometric,
+
+                ModelTags.unbdd,
+                ModelTags.qcpdual,
+#                ModelTags.return_mipgap,
+                ModelTags.sos, #ModelTags.presosenc,
+                ModelTags.sens,
+                ModelTags.lazy_user_cuts,
+#                ModelTags.funcpieces,
+#                ModelTags.integralityfocus,
+
+                ModelTags.relax, ModelTags.warmstart, ModelTags.mipstart,
+
+                ModelTags.multiobj,
+                ModelTags.obj_priority,
+#                ModelTags.multisol,
+                ModelTags.sstatus,
+#                ModelTags.fixmodel,
+ #               ModelTags.iis, ModelTags.iisforce, ModelTags.feasrelax,
+
+#                ModelTags.writelp, ModelTags.writesol,
+
+                         }
+                super().__init__(exeName, timeout, nthreads, otherOptions, stags)
+
+
+class ConoptMP2NLSolver(MPDirectSolver):
+            def _getAMPLOptionsName(self):
+                return "conopt"
+
+            def _setTimeLimit(self, seconds):
+                return "maxftime={}".format(seconds)
+
+            def _setNThreads(self, threads):
+                return ""
+
+            def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
+                stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
+                ModelTags.plinear,
+                ModelTags.quadratic,
+                ModelTags.quadratic_obj,
+                ModelTags.quadraticnonconvex,
+
+                ModelTags.socp,      ## MP transforms cones to quadratics
+                ModelTags.socp_hard_to_recognize,
+                ModelTags.expcones,  ## Although might not have the expconic solver
+
+                ModelTags.nonlinear, ModelTags.log, ModelTags.trigonometric,
+
+                ModelTags.unbdd,
+                ModelTags.qcpdual,
+#                ModelTags.return_mipgap,
+                ModelTags.sos, #ModelTags.presosenc,
+                ModelTags.sens,
+                ModelTags.lazy_user_cuts,
+#                ModelTags.funcpieces,
+#                ModelTags.integralityfocus,
+
+                ModelTags.relax, ModelTags.warmstart, ModelTags.mipstart,
+
+                ModelTags.multiobj,
+                ModelTags.obj_priority,
+#                ModelTags.multisol,
+                ModelTags.sstatus,
+#                ModelTags.fixmodel,
+ #               ModelTags.iis, ModelTags.iisforce, ModelTags.feasrelax,
+
+#                ModelTags.writelp, ModelTags.writesol,
+
+                         }
+                super().__init__(exeName, timeout, nthreads, otherOptions, stags)
+
+
+class BonminMP2NLSolver(MPDirectSolver):
+            def _getAMPLOptionsName(self):
+                return "bonmin"
+
+            def _setNThreads(self, threads):
+                return ""
+
+            def _get_timing_options(self):
+                return ""
+
+            def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
+                stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
+                ModelTags.plinear,
+                ModelTags.quadratic,
+                ModelTags.quadratic_obj,
+                ModelTags.quadraticnonconvex,
+
+                ModelTags.socp,      ## MP transforms cones to quadratics
+                ModelTags.socp_hard_to_recognize,
+                ModelTags.expcones,  ## Although might not have the expconic solver
+
+                ModelTags.nonlinear, ModelTags.log, ModelTags.trigonometric,
+
+                ModelTags.unbdd,
+                ModelTags.qcpdual,
+#                ModelTags.return_mipgap,
+                ModelTags.sos, #ModelTags.presosenc,
+                ModelTags.sens,
+                ModelTags.lazy_user_cuts,
+#                ModelTags.funcpieces,
+#                ModelTags.integralityfocus,
+
+                ModelTags.relax, ModelTags.warmstart, ModelTags.mipstart,
+
+                ModelTags.multiobj,
+                ModelTags.obj_priority,
+#                ModelTags.multisol,
+                ModelTags.sstatus,
+#                ModelTags.fixmodel,
+ #               ModelTags.iis, ModelTags.iisforce, ModelTags.feasrelax,
+
+#                ModelTags.writelp, ModelTags.writesol,
+
+                         }
+                super().__init__(exeName, timeout, nthreads, otherOptions, stags)
+
+
+class CouenneMP2NLSolver(MPDirectSolver):
+            def _getAMPLOptionsName(self):
+                return "couenne"
+
+            def _setTimeLimit(self, seconds):
+                return "max_cpu_time={}".format(seconds)
+
+            def _setNThreads(self, threads):
+                return ""
+
+            def _get_timing_options(self):
+                return ""
+
+            def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
+                stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
+                ModelTags.plinear,
+                ModelTags.quadratic,
+                ModelTags.quadratic_obj,
+                ModelTags.quadraticnonconvex,
+
+                ModelTags.socp,      ## MP transforms cones to quadratics
+                ModelTags.socp_hard_to_recognize,
+                ModelTags.expcones,  ## Although might not have the expconic solver
+
+                ModelTags.nonlinear, ModelTags.log, ModelTags.trigonometric,
+
+                ModelTags.unbdd,
+                ModelTags.qcpdual,
+#                ModelTags.return_mipgap,
+                ModelTags.sos, #ModelTags.presosenc,
+                ModelTags.sens,
+                ModelTags.lazy_user_cuts,
+#                ModelTags.funcpieces,
+#                ModelTags.integralityfocus,
+
+                ModelTags.relax, ModelTags.warmstart, ModelTags.mipstart,
+
+                ModelTags.multiobj,
+                ModelTags.obj_priority,
+#                ModelTags.multisol,
+                ModelTags.sstatus,
+#                ModelTags.fixmodel,
+ #               ModelTags.iis, ModelTags.iisforce, ModelTags.feasrelax,
+
+#                ModelTags.writelp, ModelTags.writesol,
+
+                         }
+                super().__init__(exeName, timeout, nthreads, otherOptions, stags)
+
+
+class LindoglobalMP2NLSolver(MPDirectSolver):
+            def _getAMPLOptionsName(self):
+                return "lindoglobal"
+
+            def _setTimeLimit(self, seconds):
+                return "maxtime={}".format(seconds)
+
+            def _setNThreads(self, threads):
+                return "threads={}".format(threads)
+
+            def _get_timing_options(self):
+                return ""
+
+            def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
+                stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
+                ModelTags.plinear,
+                ModelTags.quadratic,
+                ModelTags.quadratic_obj,
+                ModelTags.quadraticnonconvex,
+
+                ModelTags.socp,      ## MP transforms cones to quadratics
+                ModelTags.socp_hard_to_recognize,
+                ModelTags.expcones,  ## Although might not have the expconic solver
+
+                ModelTags.nonlinear, ModelTags.log, ModelTags.trigonometric,
+
+                ModelTags.unbdd,
+                ModelTags.qcpdual,
+#                ModelTags.return_mipgap,
+                ModelTags.sos, #ModelTags.presosenc,
+                ModelTags.sens,
+                ModelTags.lazy_user_cuts,
+#                ModelTags.funcpieces,
+#                ModelTags.integralityfocus,
+
+                ModelTags.relax, ModelTags.warmstart, ModelTags.mipstart,
+
+                ModelTags.multiobj,
+                ModelTags.obj_priority,
+#                ModelTags.multisol,
+                ModelTags.sstatus,
+#                ModelTags.fixmodel,
+ #               ModelTags.iis, ModelTags.iisforce, ModelTags.feasrelax,
+
+#                ModelTags.writelp, ModelTags.writesol,
+
+                         }
+                super().__init__(exeName, timeout, nthreads, otherOptions, stags)
+
+
+class BaronMP2NLSolver(MPDirectSolver):
+            def _getAMPLOptionsName(self):
+                return "baron"
+
+            def _setTimeLimit(self, seconds):
+                return "maxtime={}".format(seconds)
+
+            def _setNThreads(self, threads):
+                return "threads={}".format(threads)
+
+            def _get_timing_options(self):
+                return ""
+
+            def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
+                stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
+                ModelTags.plinear,
+                ModelTags.quadratic,
+                ModelTags.quadratic_obj,
+                ModelTags.quadraticnonconvex,
+
+                ModelTags.socp,      ## MP transforms cones to quadratics
+                ModelTags.socp_hard_to_recognize,
+                ModelTags.expcones,  ## Although might not have the expconic solver
+
+                ModelTags.nonlinear, ModelTags.log, ModelTags.trigonometric,
+
+                ModelTags.unbdd,
+                ModelTags.qcpdual,
+#                ModelTags.return_mipgap,
+                ModelTags.sos, #ModelTags.presosenc,
+                ModelTags.sens,
+                ModelTags.lazy_user_cuts,
+#                ModelTags.funcpieces,
+#                ModelTags.integralityfocus,
+
+                ModelTags.relax, ModelTags.warmstart, ModelTags.mipstart,
+
+                ModelTags.multiobj,
+                ModelTags.obj_priority,
+#                ModelTags.multisol,
+                ModelTags.sstatus,
+#                ModelTags.fixmodel,
+ #               ModelTags.iis, ModelTags.iisforce, ModelTags.feasrelax,
+
+#                ModelTags.writelp, ModelTags.writesol,
+
+                         }
+                super().__init__(exeName, timeout, nthreads, otherOptions, stags)
+
+
+class KnitroMP2NLSolver(MPDirectSolver):
+            def _getAMPLOptionsName(self):
+                return "knitro"
+
+            def _setLPMethod(self, method : str):
+                return "act_lpalg={}".format(1 if method == "SIMPLEX" else 3)
+
+            def _setTimeLimit(self, seconds):
+                return f"maxtime_real={seconds} ma_maxtime_real={seconds}"
+
+            def _setNThreads(self, threads):
+                return f"threads={threads}"
+
+            def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
+                stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
+                ModelTags.plinear,
+                ModelTags.quadratic,
+                ModelTags.quadratic_obj,
+                ModelTags.quadraticnonconvex,
+
+                ModelTags.socp,      ## MP transforms cones to quadratics
+                ModelTags.socp_hard_to_recognize,
+                ModelTags.expcones,  ## Although might not have the expconic solver
+
+                ModelTags.nonlinear, ModelTags.log, ModelTags.trigonometric,
+
+                ModelTags.unbdd,
+                ModelTags.qcpdual,
+#                ModelTags.return_mipgap,
+                ModelTags.sos, #ModelTags.presosenc,
+                ModelTags.sens,
+                ModelTags.lazy_user_cuts,
+#                ModelTags.funcpieces,
+#                ModelTags.integralityfocus,
+
+                ModelTags.relax, ModelTags.warmstart, ModelTags.mipstart,
+
+                ModelTags.multiobj,
+                ModelTags.obj_priority,
+#                ModelTags.multisol,
+                ModelTags.sstatus,
+#                ModelTags.fixmodel,
+ #               ModelTags.iis, ModelTags.iisforce, ModelTags.feasrelax,
+
+#                ModelTags.writelp, ModelTags.writesol,
+
+                         }
+                super().__init__(exeName, timeout, nthreads, otherOptions, stags)

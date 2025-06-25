@@ -32,21 +32,32 @@ class SolverCollection:
 
 def addStdSolvers(solvers: SolverCollection, binPath=""):
     ### ASL solvers
-    solvers.addSolver(Solver.LindoSolver(path.join(binPath, "lindoglobal")))
-    solvers.addSolver(Solver.OcteractSolver(path.join(binPath, "octeract-engine")))
-    solvers.addSolver(Solver.BaronSolver(path.join(binPath,"baron")))
+    solvers.addSolver(Solver.BaronSolver(path.join(binPath,"baronasl")))
+    solvers.addSolver(Solver.LindoSolver(path.join(binPath, "lindoglobalasl")))
+    solvers.addSolver(Solver.KnitroSolver(path.join(binPath,"knitroasl")))
+    solvers.addSolver(Solver.CouenneSolver(path.join(binPath, "couenneasl")))
+    solvers.addSolver(Solver.BonminSolver(path.join(binPath, "bonminasl")))
+    solvers.addSolver(Solver.ConoptSolver(path.join(binPath,"conoptasl")))
     solvers.addSolver(Solver.ConoptSolver(path.join(binPath,"conopt4")))
-    solvers.addSolver(Solver.ConoptSolver(path.join(binPath,"conopt")))
+    solvers.addSolver(Solver.OcteractSolver(path.join(binPath, "octeract-engine")))
     solvers.addSolver(Solver.MindoptSolver(path.join(binPath,"mindoptampl")))
-    solvers.addSolver(Solver.KnitroSolver(path.join(binPath,"knitro")))
     solvers.addSolver(Solver.LgoSolver(path.join(binPath, "lgo")))
     solvers.addSolver(Solver.IPOptSolver(path.join(binPath, "ipopt")))
-    solvers.addSolver(Solver.CouenneSolver(path.join(binPath, "couenne")))
-    solvers.addSolver(Solver.BonminSolver(path.join(binPath, "bonmin")))
     solvers.addSolver(Solver.LoqoSolver(path.join(binPath, "loqo")))
     solvers.addSolver(Solver.XpressSolver(path.join(binPath,"xpressasl")))
     solvers.addSolver(Solver.GurobiSolver(path.join(binPath,"gurobiasl")))
     solvers.addSolver(Solver.CPLEXSolver(path.join(binPath,"cplexasl")))
+
+
+    ### ASL+MP2NL solvers (run with mp2nl=1 until becomes default)
+    solvers.addSolver(Solver.BaronMP2NLSolver(path.join(binPath,"baron")))
+    solvers.addSolver(Solver.LindoglobalMP2NLSolver(path.join(binPath, "lindoglobal")))
+    solvers.addSolver(Solver.KnitroMP2NLSolver(path.join(binPath,"knitro")))
+    solvers.addSolver(Solver.CouenneMP2NLSolver(path.join(binPath, "couenne")))
+    solvers.addSolver(Solver.BonminMP2NLSolver(path.join(binPath, "bonmin")))
+    solvers.addSolver(Solver.ConoptMP2NLSolver(path.join(binPath,"conopt")))
+    solvers.addSolver(Solver.GurobiASLMP2NLSolver(path.join(binPath,"gurobiaslmp2nl")))
+
 
     ### MP solvers
     solvers.addSolver(Solver.GurobiDirectSolver(path.join(binPath,"gurobi")))
