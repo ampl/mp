@@ -116,5 +116,5 @@ Examples
 **************************************
 
 See the :ref:`important-features` and
-`Multi-objective AMPL Colab notebooks <https://colab.ampl.com/tags/multiple-objectives.html>`_
+`Multi-objective AMPL Colab notebooks <https://colab.ampl.com/tags/multi-objective.html>`_
 for examples.

@@ -68,7 +68,7 @@ controlling solver behavior and information flow.
   control exploration of alternative solutions
 
 * :ref:`multipleObjectives` (option ``obj:multi``) -
-  controls multiple-objective solving, including hierarchical
+  controls multi-objective solving, including hierarchical
   and blended objectives
 
 
@@ -1027,7 +1027,7 @@ MP can :ref:`emulate the blended and hierarchical mutliple-objective capability 
 Consult the ``obj:multi``
 :ref:`option <solver-options>` documentation
 for the functionalities available in your solver
-and `Multi-objective AMPL Colab notebooks <https://colab.ampl.com/tags/multiple-objectives.html>`_
+and `Multi-objective AMPL Colab notebooks <https://colab.ampl.com/tags/multi-objective.html>`_
 for examples.
 
 .. list-table::
