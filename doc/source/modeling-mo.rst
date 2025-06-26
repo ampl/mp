@@ -49,7 +49,7 @@ as described in the ``obj:multi`` option description.
 
 .. code-block:: ampl
 
-		suffix objpriority;
+    suffix objpriority;
 
     maximize ReverseSeniority {e in 1..2, i in I: E[i]==e}:
       sum {t in V[i]: Pr[i, t]==0}
@@ -61,20 +61,23 @@ However their exact meaning can vary for a solver's native multi-objective
 mode (``obj:multi=1``), in particular for LPs. Consult the solver documentation.
 
 
-Specifying options for each objective
+Options for each objective
 ********************************************************
 
-When using the ``obj:multi`` option, you can specify options for each objective by creating
-a suffix in AMPL with the name starting with ``option_`` followed by the option name as 
-obtained by the solver ``-=`` output.
-This should then be set using the suffix notation; see the example below
+When using the
+:ref:`multi-objective emulator <multipleObjectives>`
+(option ``obj:multi=2``),
+you can specify options for each objective by creating
+a suffix in AMPL with the name starting with ``option_``
+followed by an :ref:`option name <ampl-solver-options>`.
+This should be set using the suffix notation; see the example below
 where we set a time limit and a mip gap for each objective.
 Note that if the suffix value is not set, the default value or the initially specified value
 of the option will be used.
 
 .. code-block:: ampl
 
-		suffix objpriority;
+    suffix objpriority;
     suffix option_timelimit;
     suffix option_mipgap;
 
@@ -89,7 +92,7 @@ of the option will be used.
     let total_number.objpriority := 3;
 
  
-    for{s in 1..3} {
+    for {s in 1..3} {
         let total_cost[s].option_timelimit := s*10;
         let total_cost[s].option_mipgap := s*0.01;
     }
