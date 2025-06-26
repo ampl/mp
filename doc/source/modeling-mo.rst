@@ -58,7 +58,9 @@ as described in the ``obj:multi`` option description.
 
 Suffixes ``.objabstol`` and ``.objreltol`` allow for objective degradation.
 However their exact meaning can vary for a solver's native multi-objective
-mode (``obj:multi=1``), in particular for LPs. Consult the solver documentation.
+mode (``obj:multi=1``), in particular for LPs. Consult the solver documentation
+and `AMPL Colab notebooks with lexicographical objectives
+<https://colab.ampl.com/tags/lexicographic-objectives.html>`_.
 
 
 Options for each objective
@@ -109,7 +111,8 @@ When objectives are part of the same blended group, the driver will reject confi
 different option values are specified for these objectives. All objectives within a blended group 
 must share identical option values or at most one should have the value specified.
 
-
+See `AMPL Colab notebooks with multi-objective options
+<https://colab.ampl.com/tags/multi-objective-options.html>`_ for examples.
 
 
 Examples
