@@ -1,6 +1,6 @@
 .. _features-guide:
 
-Features guide for MP-based AMPL solvers
+Feature guide for MP-based AMPL solvers
 ****************************************
 
 .. highlight:: ampl
@@ -8,7 +8,10 @@ Features guide for MP-based AMPL solvers
 The MP framework defines standard *solver features* that solvers might support;
 these are usually characterized by a set of :ref:`solver-options` used to control the feature,
 sometimes suffixes to pass required data and results, and may change the behaviour
-of the solution process. Furthermore, MP offers unified :ref:`solve-result-codes`.
+of the solution process. Below, :ref:`important-features` highlight most commonly used features,
+while :ref:`support-by-solvers` gives more details.
+
+Furthermore, MP offers unified :ref:`solve-result-codes`.
 
 This page presents the semantics of the most common solver features; for a development
 reference see :ref:`howto`.
@@ -69,7 +72,7 @@ controlling solver behavior and information flow.
 
 * :ref:`multipleObjectives` (option ``obj:multi``) -
   controls multi-objective solving, including hierarchical
-  and blended objectives
+  and blended objectives, as well as objective-specific options.
 
 
 .. _solver-options:
@@ -96,7 +99,7 @@ MP parameters, as well as underlying solver's configuration:
     ampl: solve;
 
 Many of them are
-`standardized across AMPL solvers <https://dev.ampl.com/solvers/index.html>`_.
+`standardized across AMPL solvers <https://dev.ampl.com/solvers/index.html>`__.
 
 
 List all available options
@@ -271,6 +274,9 @@ More information is in Chapter 14 of the
 `AMPL Book <https://ampl.com/learn/ampl-book/>`_.
 See also the roll cutting example on `AMPL Colab <https://colab.ampl.com>`_.
 
+
+.. _support-by-solvers:
+
 Support by solvers
 ==================
 
@@ -284,8 +290,9 @@ Support by solvers
    :trim:
 
 This table summarizes the solver driver support for each solver feature; some features, 
-denoted by |e| are supported through emulation (aka they were not available in the original 
-solver but are emulated by MP). 
+denoted by |e| are supported through emulation (aka they are not available in the original
+solver but are emulated by MP). For more solver-specific information, click on the solver name,
+or visit `AMPL Development solver page <https://dev.ampl.com/solvers/index.html>`__.
 
 .. _Copt: https://dev.ampl.com/solvers/copt/
 .. _CPLEX: https://dev.ampl.com/solvers/cplex/

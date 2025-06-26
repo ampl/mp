@@ -58,7 +58,8 @@ as described in the ``obj:multi`` option description.
 
 Suffixes ``.objabstol`` and ``.objreltol`` allow for objective degradation.
 However their exact meaning can vary for a solver's native multi-objective
-mode (``obj:multi=1``), in particular for LPs. Consult the solver documentation
+mode (``obj:multi=1``), in particular for LPs. Consult
+:ref:`Feature support by solvers <support-by-solvers>`
 and
 `AMPL Colab notebooks with lexicographical objectives <https://colab.ampl.com/tags/lexicographic-objectives.html>`__.
 

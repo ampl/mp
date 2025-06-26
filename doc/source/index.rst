@@ -66,7 +66,7 @@ User documentation
    :maxdepth: 2
    
    Modeling guide <model-guide>
-   Features guide <features-guide>
+   Feature guide <features-guide>
    Solver drivers <drivers>
 
 .. _developerDocumentation:
