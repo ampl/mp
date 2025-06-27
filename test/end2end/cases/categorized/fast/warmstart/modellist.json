@@ -2,7 +2,7 @@
   {
     "name": "warmstart_01 warmstart=2",
     "tags": [ "linear", "warmstart"],
-    "options": { "ANYSOLVER_options": "warmstart=2 debug=1" },
+    "options": { "mp_options": "warmstart=2 debug=1" },
     "values": {
       "Buy['BEEF'].test_ini_pri": -10,
       "Buy['MTL'].test_ini_pri": 50,
@@ -12,7 +12,7 @@
  {
     "name": "mipstart_01",
     "tags": [ "linear", "mipstart"],
-    "options": { "ANYSOLVER_options": "warmstart=1 debug=1" },
+    "options": { "mp_options": "warmstart=1 debug=1" },
     "objective": 1,
     "values": {
       "x.test_ini_mip": 1,

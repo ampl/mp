@@ -9,7 +9,7 @@
     "objective" : 2.864,
     "tags" : ["quadratic", "quadraticnonconvex"],
     "options": {
-      "ANYSOLVER_options": "cvt:dvelim=1"
+      "mp_options": "cvt:dvelim=1"
     }
   },
   {

@@ -28,7 +28,7 @@
     "objective" : 74.273820,
     "tags" : ["linear", "continuous", "sstatus"],
     "options": {
-      "ANYSOLVER_options": "debug=1",
+      "mp_options": "debug=1",
       "mp2nl_options": "solver_options='debug=1'"
     },
     "values": {
@@ -44,7 +44,7 @@
     "tags" : ["linear", "continuous", "writelp"],
     "files" : ["diet.mod", "diet.dat"],
     "options": {
-      "ANYSOLVER_options": "writeprob='diet.lp'",
+      "mp_options": "writeprob='diet.lp'",
       "mosek_options": "writeprob='diet.jtask'"
     },
     "comment": "Testing quoted string options"
@@ -109,7 +109,7 @@
     "name" : "dietu_mip mip:basis=1",
     "objective" : 74.273820,
     "tags" : ["linear", "continuous", "fixmodel"],
-    "options": { "ANYSOLVER_options": "mip:basis=1" },
+    "options": { "mp_options": "mip:basis=1" },
     "values": {
       "Buy['BEEF'].sstatus": "low",
       "Buy['MTL'].sstatus":  "bas",
@@ -135,7 +135,7 @@
     "name" : "mipb_int mip:basis=1",
     "objective" : 1,
     "tags" : ["linear", "continuous", "fixmodel"],
-    "options": { "ANYSOLVER_options": "mip:basis=1" },
+    "options": { "mp_options": "mip:basis=1" },
     "values": {
       "x.sstatus": "low",
       "y.sstatus": "low",

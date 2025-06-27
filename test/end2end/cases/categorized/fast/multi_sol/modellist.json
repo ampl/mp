@@ -8,7 +8,7 @@
     "name": "multi_sol_01 countsolutions=1, check .nsol",
     "tags": [ "linear", "multisol"],
     "objective": 1,
-    "options": { "ANYSOLVER_options": "countsolutions=1" },
+    "options": { "mp_options": "countsolutions=1" },
     "values": {
       "Initial.nsol": 6
     }
@@ -44,7 +44,7 @@
     "name": "multi_sol_01 sol:count=1, check .npool",
     "tags": [ "linear", "multisol"],
     "objective": 1,
-    "options": { "ANYSOLVER_options": "countsolutions=1" },
+    "options": { "mp_options": "countsolutions=1" },
     "values": {
       "Initial.npool": 6
     }

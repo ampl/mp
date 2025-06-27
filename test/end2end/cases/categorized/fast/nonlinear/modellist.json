@@ -14,7 +14,7 @@
   {
     "name" : "expA_1 check_pl_approx_expA",
     "tags" : ["nonlinear", "check_pl_approx_expA"],
-    "options": { "ANYSOLVER_options": "acc:expa=1" },
+    "options": { "mp_options": "acc:expa=1" },
     "values": {
       "if abs(_obj[1]+0.7977905982)<=0.01 then 1 else 0": 1
     }
@@ -43,7 +43,7 @@
   {
     "name" : "log_1_ccv PLconcave",
     "tags" : ["log"],
-    "options": { "ANYSOLVER_options": "debug=1 acc:log=0 acc:pl=0 acc:sos2=0" },
+    "options": { "mp_options": "debug=1 acc:log=0 acc:pl=0 acc:sos2=0" },
     "comment": "Check concave PL linearization",
     "values": {
       "if abs(_obj[1]-1)<=0.01 then 1 else 0": 1,
@@ -57,7 +57,7 @@
     "tags" : ["continuous", "nonlinear"],
     "options": {
       "gurobi_options": "funcpieces=-2 funcpieceerror=1e-5",
-      "ANYSOLVER_options": "cvt:plapprox:reltol=1e-5"
+      "mp_options": "cvt:plapprox:reltol=1e-5"
     },
     "comment": "Rel error bound 1e-5 for Gurobi's approx, MP plapprox for others"
   },
@@ -66,7 +66,7 @@
     "objective" : 1.6931555,
     "tags" : ["continuous", "nonlinear"],
     "options": {
-      "ANYSOLVER_options": "acc:exp=1 cvt:plapprox:reltol=1e-5 acc:pl=0 acc:sos2=0 debug=1"
+      "mp_options": "acc:exp=1 cvt:plapprox:reltol=1e-5 acc:pl=0 acc:sos2=0 debug=1"
     },
     "values": {
       "Initial.flat1_var_aux_bin": 0,
@@ -79,7 +79,7 @@
     "name" : "exp_01_obj_direct reltol=1e-5 PLconvex",
     "tags" : ["continuous", "nonlinear"],
     "options": {
-      "ANYSOLVER_options": "acc:exp=1 cvt:plapprox:reltol=1e-5 acc:pl=0 acc:sos2=0 debug=1"
+      "mp_options": "acc:exp=1 cvt:plapprox:reltol=1e-5 acc:pl=0 acc:sos2=0 debug=1"
     },
     "values": {
       "if abs(_obj[1]+222.4)<=0.2 then 1 else 0": 1,
@@ -94,7 +94,7 @@
     "objective" : 1.6931555,
     "tags" : ["continuous", "nonlinear", "check_pl_approx_exp"],
     "options": {
-      "ANYSOLVER_options": "acc:exp=1 cvt:plapprox:reltol=1e-5"
+      "mp_options": "acc:exp=1 cvt:plapprox:reltol=1e-5"
     },
     "comment": "MP plapprox for Gurobi"
   },
@@ -110,7 +110,7 @@
   {
     "name" : "exp_02_check_2con check_pl_approx_exp",
     "tags" : ["continuous", "nonlinear", "check_pl_approx_exp"],
-    "options": { "ANYSOLVER_options": "acc:exp=1" },
+    "options": { "mp_options": "acc:exp=1" },
     "comment": "Own plapprox for Gurobi",
     "values": {
       "if abs(y-exp(x))<=1e-2 then 1 else 0": 1
@@ -120,7 +120,7 @@
     "name" : "exp_02_check_2con check: approx, pl, sos2",
     "tags" : ["continuous", "nonlinear", "check_pl_approx_exp",
               "check_pl2sos2", "check_sos2_from_pl"],
-    "options": { "ANYSOLVER_options": "acc:exp=1 acc:pl=1 acc:sos2=1" },
+    "options": { "mp_options": "acc:exp=1 acc:pl=1 acc:sos2=1" },
     "comment": "Own plapprox for Gurobi with PL encoding",
     "values": {
       "if abs(y-exp(x))<=1e-2 then 1 else 0": 1
@@ -138,7 +138,7 @@
   {
     "name" : "log_01_check_obj check_pl_approx_log",
     "tags" : ["continuous", "nonlinear", "check_pl_approx_log"],
-    "options": { "ANYSOLVER_options": "acc:log=1" },
+    "options": { "mp_options": "acc:log=1" },
     "comment": "Own plapprox for Gurobi (log)",
     "values": {
       "if abs(Obj1+0.61371)<=1e-2 then 1 else 0": 1
@@ -156,7 +156,7 @@
   {
     "name" : "log_02_check_2con_noncvx check_pl_approx_log",
     "tags" : ["continuous", "nonlinear", "check_pl_approx_log"],
-    "options": { "ANYSOLVER_options": "acc:log=1" },
+    "options": { "mp_options": "acc:log=1" },
     "comment": "Own plapprox for log, e.g., for Gurobi",
     "values": {
       "if abs(y-log(x))<=1e-2 then 1 else 0": 1
@@ -166,7 +166,7 @@
     "name" : "log_02_check_2con_noncvx check: approx, pl, sos2",
     "tags" : ["continuous", "nonlinear", "check_pl_approx_log",
               "check_pl2sos2", "check_sos2_from_pl"],
-    "options": { "ANYSOLVER_options": "acc:log=1 acc:pl=1 acc:sos2=1" },
+    "options": { "mp_options": "acc:log=1 acc:pl=1 acc:sos2=1" },
     "comment": "Own plapprox for log, followed by pl->sos2->MIP conversion",
     "values": {
       "if abs(y-log(x))<=1e-2 then 1 else 0": 1
@@ -183,7 +183,7 @@
   {
     "name" : "sin_01 check_pl_approx_sin",
     "tags" : ["continuous", "nonlinear", "check_pl_approx_sin"],
-    "options": { "ANYSOLVER_options": "acc:sin=1" },
+    "options": { "mp_options": "acc:sin=1" },
     "values": {
       "if abs(y-sin(x))<=1e-2 then 1 else 0": 1,
       "if abs(_obj[1]+3.141592653589793)<=0.01 then 1 else 0": 1
@@ -200,7 +200,7 @@
   {
     "name" : "sin_02 check_pl_approx_sin",
     "tags" : ["continuous", "nonlinear", "check_pl_approx_sin"],
-    "options": { "ANYSOLVER_options": "acc:sin=1" },
+    "options": { "mp_options": "acc:sin=1" },
     "values": {
       "if abs(y-sin(x))<=1e-2 then 1 else 0": 1,
       "if abs(_obj[1]+5.71238898038469)<=0.01 then 1 else 0": 1
@@ -218,7 +218,7 @@
   {
     "name" : "cos_01 check_pl_approx_cos",
     "tags" : ["continuous", "nonlinear", "check_pl_approx_cos"],
-    "options": { "ANYSOLVER_options": "acc:cos=1" },
+    "options": { "mp_options": "acc:cos=1" },
     "values": {
       "if abs(y-cos(x))<=1e-2 then 1 else 0": 1,
       "if round(x)==194 then 1 else 0": 1,
@@ -265,7 +265,7 @@
   {
     "name" : "tan_01 check_pl_approx_tan",
     "tags" : ["continuous", "nonlinear", "check_pl_approx_tan"],
-    "options": { "ANYSOLVER_options": "acc:tan=1" },
+    "options": { "mp_options": "acc:tan=1" },
     "values": {
       "if abs(y-tan(x))<=1e-1 then 1 else 0": 1,
       "if abs(x+4.0950434673490523)<=1e-1 then 1 else 0": 1,
@@ -282,7 +282,7 @@
   {
     "name" : "pow_01a_pow4_x_neg PLApprox",
     "tags" : ["continuous", "nonlinear", "check_pl_approx_pow"],
-    "options": { "ANYSOLVER_options": "acc:pow=0 cvt:quadcon=0" },
+    "options": { "mp_options": "acc:pow=0 cvt:quadcon=0" },
     "values": {
       "if abs(_obj[1]+1.8359969243864)<=0.1 then 1 else 0": 1
     }
@@ -290,7 +290,7 @@
   {
     "name" : "pow_01a_pow4_x_neg QPApprox",
     "tags" : ["continuous", "nonlinear", "check_qp_approx_pow"],
-    "options": { "ANYSOLVER_options": "acc:pow=0" },
+    "options": { "mp_options": "acc:pow=0" },
     "values": {
       "if abs(_obj[1]+1.8359969243864)<=0.1 then 1 else 0": 1
     }

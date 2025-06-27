@@ -111,7 +111,7 @@
               "check_pl2sos2", "check_sos2_from_pl"],
     "options": {
         "pl_linearize": 0,
-        "ANYSOLVER_options": "acc:pl=1 acc:sos2=1"
+        "mp_options": "acc:pl=1 acc:sos2=1"
     },
     "files" : ["steelpl2.mod", "steelpl2.dat"]
   },
@@ -122,7 +122,7 @@
               "check_pl2sos2", "check_sos2_from_pl"],
     "options": {
         "pl_linearize": 0,
-        "ANYSOLVER_options": "acc:pl=1 acc:sos2=1"
+        "mp_options": "acc:pl=1 acc:sos2=1"
     },
     "files" : ["steelpl3.mod", "steelpl2.dat"]
   },

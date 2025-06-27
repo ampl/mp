@@ -10,7 +10,7 @@
     "files": ["assign1.mod", "assign.dat"],
     "tags" : ["logical"],
     "options": {
-      "ANYSOLVER_options": "acc:_all=0"
+      "mp_options": "acc:_all=0"
     },
     "objective" : 6
   },
@@ -19,7 +19,7 @@
     "files": ["assign1.mod", "assign.dat"],
     "tags" : ["logical"],
     "options": {
-      "ANYSOLVER_options": "acc:_all=2"
+      "mp_options": "acc:_all=2"
     },
     "comment": "We don't hope any solver natively supports all flats... Or, some CP solver?",
     "values": {
@@ -33,7 +33,7 @@
     "objective": 22,
     "comment": "big-M of 1e6 is too big for Gurobi",
     "options": {
-      "ANYSOLVER_options": "cvt:mip:bigM=1e5",
+      "mp_options": "cvt:mip:bigM=1e5",
       "gcg_options": "cvt:mip:bigM=100000 mode=2"
     }
   },
@@ -44,7 +44,7 @@
     "objective": 22,
     "comment": "big-M of 1e6 is too big for Gurobi",
     "options": {
-      "ANYSOLVER_options": "acc:indle=0 acc:indge=0 acc:or=0 cvt:mip:bigM=1e5",
+      "mp_options": "acc:indle=0 acc:indge=0 acc:or=0 cvt:mip:bigM=1e5",
       "gcg_options": "cvt:mip:bigM=100000 mode=2"
     }
   },
@@ -54,7 +54,7 @@
     "tags": [ "logical" ],
     "objective": 22,
     "options": {
-      "ANYSOLVER_options": "cvt:mip:bigM=100000",
+      "mp_options": "cvt:mip:bigM=100000",
       "gcg_options": "cvt:mip:bigM=100000 mode=2"
     }
   },
@@ -102,7 +102,7 @@
     "tags" : ["logical"],
     "options": {
       "solution_round": "6",
-      "ANYSOLVER_options": "cvt:mip:eps=1e-2"
+      "mp_options": "cvt:mip:eps=1e-2"
     },
     "comment_options": "For solution_round, see #200",
     "objective" : 235625
@@ -121,7 +121,7 @@
     "tags" : ["logical"],
     "options": { 
       "solution_round": "6",
-      "ANYSOLVER_options": "cvt:mip:bigM=100000"
+      "mp_options": "cvt:mip:bigM=100000"
     },
     "comment_options": "For solution_round, see #200",
     "objective" : 218125

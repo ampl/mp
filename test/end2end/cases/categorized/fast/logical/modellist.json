@@ -17,7 +17,7 @@
     "objective" : -3,
     "tags" : ["logical"],
     "options": {
-      "ANYSOLVER_options": "cvt:cmp:eps=1e-4",
+      "mp_options": "cvt:cmp:eps=1e-4",
       "mp2nl_options": "solver_options='cvt:cmp:eps=1e-4'"
     },
     "values": {
@@ -34,7 +34,7 @@
     "objective" : -3,
     "tags" : ["logical"],
     "options": {
-      "ANYSOLVER_options": "cvt:cmp:eps=0",
+      "mp_options": "cvt:cmp:eps=0",
       "mp2nl_options": "solver_options='cvt:cmp:eps=0'"
     },
     "values": {
@@ -46,7 +46,7 @@
     "tags" : ["logical"],
     "comment_MP2NL": "fails for MP2NL because of a changed model",
     "options": {
-      "ANYSOLVER_options": "cvt:cmp:eps=0 chk:fail",
+      "mp_options": "cvt:cmp:eps=0 chk:fail",
       "mp2nl_options": "solver_options='cvt:cmp:eps=0 chk:fail'"
 
     },
@@ -60,7 +60,7 @@
     "objective" : -20,
     "tags" : ["logical"],
     "options": {
-      "ANYSOLVER_options": "cvt:cmp:eps=1e-4",
+      "mp_options": "cvt:cmp:eps=1e-4",
       "mp2nl_options": "solver_options='cvt:cmp:eps=1e-4'"
     },
     "values": {
@@ -77,7 +77,7 @@
     "objective" : 2,
     "tags" : ["logical"],
     "options": {
-      "ANYSOLVER_options": "cvt:cmp:eps=0",
+      "mp_options": "cvt:cmp:eps=0",
       "mp2nl_options": "solver_options='cvt:cmp:eps=0'"
     },
     "values": {
@@ -89,7 +89,7 @@
     "tags" : ["logical"],
     "comment_MP2NL": "fails for MP2NL because of a changed model",
     "options": {
-      "ANYSOLVER_options": "cvt:cmp:eps=0 chk:fail",
+      "mp_options": "cvt:cmp:eps=0 chk:fail",
       "mp2nl_options": "solver_options='cvt:cmp:eps=0 chk:fail'"
 
     },
@@ -158,7 +158,7 @@
     "tags" : ["logical"],
     "objective": 9,
     "options": {
-      "ANYSOLVER_options": "cvt:bigM=1e4"
+      "mp_options": "cvt:bigM=1e4"
     },
     "values": {
       "if (forall {s in NS} (VAL_U_F2[s] >= 0.5  ==>  U_F2[s] >= 0.00009  else  U_F2[s] < 1e-6)) then 1": 1
@@ -203,7 +203,7 @@
   {
     "name" : "float_ne_01__vnec cvt:mip:eps",
     "options": {
-      "ANYSOLVER_options": "cvt:mip:eps=0.01",
+      "mp_options": "cvt:mip:eps=0.01",
       "mp2nl_options": "solver_options='cvt:mip:eps=0.01'"
     },
     "objective" : 0.01,
@@ -212,7 +212,7 @@
   {
     "name" : "float_ne_02__vne2c cvt:mip:eps",
     "options": {
-      "ANYSOLVER_options": "cvt:mip:eps=0.01",
+      "mp_options": "cvt:mip:eps=0.01",
       "mp2nl_options": "solver_options='cvt:mip:eps=0.01'"
     },
     "objective" : 0.01,
@@ -221,7 +221,7 @@
   {
     "name" : "booleq_01",
     "options": {
-      "ANYSOLVER_options": "cvt:bigm=1e5"
+      "mp_options": "cvt:bigm=1e5"
     },
     "objective" : 1,
     "tags" : ["logical"]
@@ -229,7 +229,7 @@
   {
     "name" : "booleq_02",
     "options": {
-      "ANYSOLVER_options": "cvt:bigm=1e5"
+      "mp_options": "cvt:bigm=1e5"
     },
     "objective" : 1,
     "tags" : ["logical"]
@@ -237,7 +237,7 @@
   {
     "name" : "x-multmip3_small",
     "options": {
-      "ANYSOLVER_options": "cvt:bigm=1e5"
+      "mp_options": "cvt:bigm=1e5"
     },
     "objective" : 150,
     "tags" : ["logical"]

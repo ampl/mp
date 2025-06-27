@@ -118,7 +118,7 @@
     "name": "infeas_lcon_05 .funcpieces IN",
     "tags": [ "logical", "nonlinear", "funcpieces" ],
     "options": {
-      "ANYSOLVER_options": "debug=1"
+      "mp_options": "debug=1"
     },
     "values": {
       "Initial.test_funcpieces_presolved": 7
@@ -138,7 +138,7 @@
     "name": "infeas_lcon_06 .funcpieces IN",
     "tags": [ "logical", "nonlinear", "funcpieces" ],
     "options": {
-      "ANYSOLVER_options": "debug=1"
+      "mp_options": "debug=1"
     },
     "values": {
       "Initial.test_funcpieces_presolved": -2
@@ -148,7 +148,7 @@
     "name": "infeas_lcon_07 .funcpieces IN",
     "tags": [ "logical", "nonlinear", "funcpieces" ],
     "options": {
-      "ANYSOLVER_options": "debug=1"
+      "mp_options": "debug=1"
     },
     "values": {
       "Initial.test_funcpieces_presolved": 9

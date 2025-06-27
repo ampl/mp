@@ -11,7 +11,7 @@
     "tags" : ["logical"],
     "options": {
       "gurobi_options": "acc:indle=1 acc:indeq=1 acc:indge=1",
-      "ANYSOLVER_options": "cvt:bigm=1e5"
+      "mp_options": "cvt:bigm=1e5"
     },
     "solve_result_num" : 0
   },
