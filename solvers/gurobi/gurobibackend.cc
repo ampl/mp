@@ -384,8 +384,8 @@ SolutionBasis GurobiBackend::GetBasis() {
 void GurobiBackend::SetBasis(SolutionBasis basis) {
   auto mv = GetValuePresolver().PresolveBasis(
         { basis.varstt, basis.constt } );
-  auto varstt = mv.GetVarValues()();
-  auto constt = mv.GetConValues()(CG_Linear);
+  auto& varstt = mv.GetVarValues()();
+  auto& constt = mv.GetConValues()(CG_Linear);
   assert(varstt.size());
   assert(constt.size());
   VarStatii(varstt);
@@ -510,8 +510,8 @@ void GurobiBackend::ConStatii(ArrayRef<int> cst) {
 void GurobiBackend::AddPrimalDualStart(Solution sol0_unpres) {
   auto mv = GetValuePresolver().PresolveSolution(
         { sol0_unpres.primal, sol0_unpres.dual } );
-  auto x0 = mv.GetVarValues()();
-  auto pi0 = mv.GetConValues()(CG_Linear);
+  auto& x0 = mv.GetVarValues()();
+  auto& pi0 = mv.GetConValues()(CG_Linear);
   GrbSetDblAttrArray(GRB_DBL_ATTR_PSTART, x0);
   GrbSetDblAttrArray(GRB_DBL_ATTR_DSTART, pi0);
 }
@@ -521,8 +521,8 @@ void GurobiBackend::AddMIPStart(
   if (Gurobi_mipstart()) {
     auto mv = GetValuePresolver().PresolveSolution( { x0_unpres } );
     auto ms = GetValuePresolver().PresolveGenericInt( { s0_unpres } );
-    auto x0 = mv.GetVarValues()();
-    auto s0 = ms.GetVarValues()();
+    auto& x0 = mv.GetVarValues()();
+    auto& s0 = ms.GetVarValues()();
     std::vector<int> idx;                 // Create sparse vector
     idx.reserve(x0.size());
     std::vector<double> val;
@@ -540,7 +540,7 @@ void GurobiBackend::AddMIPStart(
     case 3:
       if (auto hints0_unpres = ReadIntSuffix(sufHintPri)) {
         auto mv = GetValuePresolver().PresolveGenericInt( { hints0_unpres } );
-        auto hints0 = mv.GetVarValues()();
+        auto& hints0 = mv.GetVarValues()();
         GrbSetDblAttrList(GRB_DBL_ATTR_VARHINTVAL, idx, val);
         GrbSetIntAttrArray(GRB_INT_ATTR_VARHINTPRI, hints0);
       }

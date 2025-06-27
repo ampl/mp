@@ -717,8 +717,8 @@ SolutionBasis MP2NLBackend::GetBasis() {
 void MP2NLBackend::SetBasis(SolutionBasis basis) {
   auto mv = GetValuePresolver().PresolveBasis(
     { basis.varstt, basis.constt });
-  auto varstt = mv.GetVarValues()();
-  auto constt = mv.GetConValues()(CG_Linear);
+  auto& varstt = mv.GetVarValues()();
+  auto& constt = mv.GetConValues()(CG_Linear);
   assert(varstt.size());
   assert(constt.size());
   VarStatii(varstt);
@@ -729,11 +729,11 @@ void MP2NLBackend::AddPrimalDualStart(Solution sol)
 {
   auto mv = GetValuePresolver().PresolveSolution(
         { sol.primal, sol.dual } );
-  auto x0 = mv.GetVarValues()();
+  auto& x0 = mv.GetVarValues()();
   y0_ = mv.GetConValues()(CG_Algebraic);
   auto ms = GetValuePresolver().PresolveGenericInt(
       { sol.spars_primal } );
-  auto s0 = ms.GetVarValues()();
+  auto& s0 = ms.GetVarValues()();
   x0_.clear();
   x0_.reserve(x0.size());
   for (int i=0; i<(int)x0.size(); ++i) {
@@ -747,8 +747,8 @@ void MP2NLBackend::AddMIPStart(
     ArrayRef<double> x0_unpres, ArrayRef<int> s0_unpres) {
   auto mv = GetValuePresolver().PresolveSolution( { x0_unpres } );
   auto ms = GetValuePresolver().PresolveGenericInt( { s0_unpres } );
-  auto x0 = mv.GetVarValues()();
-  auto s0 = ms.GetVarValues()();
+  auto& x0 = mv.GetVarValues()();
+  auto& s0 = ms.GetVarValues()();
   x0_.clear();
   x0_.reserve(x0.size());
   for (int i=0; i<(int)x0.size(); ++i) {

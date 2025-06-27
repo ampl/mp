@@ -327,8 +327,8 @@ namespace mp {
   void CplexBackend::SetBasis(SolutionBasis basis) {
     auto mv = GetValuePresolver().PresolveBasis(
       { basis.varstt, basis.constt });
-    auto varstt = mv.GetVarValues()();
-    auto constt = mv.GetConValues()(CG_Linear);
+    auto& varstt = mv.GetVarValues()();
+    auto& constt = mv.GetConValues()(CG_Linear);
     assert(varstt.size());
     assert(constt.size());
     VarConStatii(varstt, constt);
@@ -337,8 +337,8 @@ namespace mp {
   void CplexBackend::AddPrimalDualStart(Solution sol0_unpres) {
     auto mv = GetValuePresolver().PresolveSolution(
       { sol0_unpres.primal, sol0_unpres.dual });
-    auto x0 = mv.GetVarValues()();
-    auto pi0 = mv.GetConValues()(CG_Linear);
+    auto& x0 = mv.GetVarValues()();
+    auto& pi0 = mv.GetConValues()(CG_Linear);
     CPXcopystart(env(), lp(), nullptr, nullptr, x0.data(), nullptr,
       nullptr, pi0.data());
   }
@@ -348,8 +348,8 @@ namespace mp {
     if (!IsMIP()) return;
     auto mv = GetValuePresolver().PresolveSolution({ x0_unpres });
     auto ms = GetValuePresolver().PresolveGenericInt({ sparsity_unpres });
-    auto x0 = mv.GetVarValues()();
-    auto s0 = ms.GetVarValues()();
+    auto& x0 = mv.GetVarValues()();
+    auto& s0 = ms.GetVarValues()();
     std::vector<int> idx;                 // Create sparse vector
     idx.reserve(x0.size());
     std::vector<double> val;

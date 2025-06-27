@@ -2765,11 +2765,11 @@ void XpressmpBackend::SetBasis(SolutionBasis basis) {
   auto mv = GetValuePresolver().PresolveBasis(
     { basis.varstt, basis.constt });
   auto &varstt = mv.GetVarValues()();
-  auto constt = mv.GetConValues()(CG_Linear);
+  auto &constt = mv.GetConValues()(CG_Linear);
   assert(varstt.size());
   assert(constt.size());
   // Append general constraints. TODO: Check if i need to append all types
-  auto cconstt = mv.GetConValues()(CG_General);
+  auto& cconstt = mv.GetConValues()(CG_General);
   constt.insert(constt.end(), cconstt.begin(), cconstt.end());
 
   auto convertedVarBasis = VarStatii(varstt);
@@ -2848,8 +2848,8 @@ pre::ValueMapInt XpressmpBackend::ConsIIS() {
 void XpressmpBackend::AddPrimalDualStart(Solution sol0_unpres) {
   auto mv = GetValuePresolver().PresolveSolution(
     { sol0_unpres.primal, sol0_unpres.dual });
-  auto x0 = mv.GetVarValues()();
-  auto pi0 = mv.GetConValues()(CG_Linear);
+  auto& x0 = mv.GetVarValues()();
+  auto& pi0 = mv.GetConValues()(CG_Linear);
 
   int status;
   XPRESSMP_CCALL(XPRSloadlpsol(lp(), x0.data(), NULL,
@@ -2862,8 +2862,8 @@ void XpressmpBackend::AddMIPStart(
 		ArrayRef<double> x0_unpres, ArrayRef<int> s0_unpres) {
   auto mv = GetValuePresolver().PresolveSolution({ x0_unpres });
   auto ms = GetValuePresolver().PresolveGenericInt({ s0_unpres });
-  auto x0 = mv.GetVarValues()();
-  auto s0 = ms.GetVarValues()();
+  auto& x0 = mv.GetVarValues()();
+  auto& s0 = ms.GetVarValues()();
   std::vector<int> idx;                 // Create sparse vector
   idx.reserve(x0.size());
   std::vector<double> val;
