@@ -361,15 +361,20 @@ class AMPLRunner(object):
         if model.hasOptions():
             optmap = model.getOptions()
             for name, val in optmap.items():
-                if name.endswith("SOLVER_options"):               # Any-solver option
-                    if not slvname in optmap:                     # When no 'gurobi_options'
-                        name = slvname
-                    else:
-                        continue                                  # Skip as solver-specific given
+                if name.endswith("_options"):               # A solver option
+                    if name.endswith("SOLVER_options"):         # Any-solver option
+                        if not slvname in optmap:               # When no 'gurobi_options'
+                            name = slvname
+                        else:
+                            continue                            # Skip as solver-specific given
+                    val_before = self._ampl.getOption(name)
+                    if val_before is not None:       # E.g., if the tests are run with mp_options='cvt:prod=0',
+                        val += ' '                   # we append the new value.
+                        val += val_before            # Can be useful for MP2NL.
                 if slvname==name:
                     slvval = slvval + ' ' + val                   # Prepend 'default' options like nthreads
                 else:
-                    self._ampl.setOption(name, val)
+                    self._ampl.setOption(name, val)      # After the solve we reset options in _ampl.
         if self._optionsExtra:
             slvval = slvval + ' ' + self._optionsExtra
         if (len(slvval)>0):
