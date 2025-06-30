@@ -337,7 +337,7 @@ class AMPLSolver(Solver):
 
 class LindoSolver(AMPLSolver):
     def _setTimeLimit(self, seconds):
-        return "maxtime={}".format(seconds)
+        return "maxtime={}".format(int(seconds))
 
     def _setNThreads(self, threads):
         return "threads={}".format(threads)
@@ -1642,7 +1642,7 @@ class LindoglobalMP2NLSolver(MPDirectSolver):
                 return "lindoglobal"
 
             def _setTimeLimit(self, seconds):
-                return "maxtime={}".format(seconds)
+                return "maxtime={}".format(int(seconds))
 
             def _setNThreads(self, threads):
                 return "threads={}".format(threads)
