@@ -413,10 +413,13 @@ public:
   double bigMDefault() const { return options_.bigM_default_; }
   double PLApproxRelTol() const { return options_.PLApproxRelTol_; }
   double PLApproxDomain() const { return options_.PLApproxDomain_; }
+  /// How to convert commplementarity
+  int ComplementarityCvt() const { return options_.complCvt_; }
 
 private:
   struct Options {
     double cmpEps_ { 1e-4 };
+    int complCvt_ = 0;
     double bigM_default_ { -1 };
     double PLApproxRelTol_ { 1e-2 };
     double PLApproxDomain_ { 1e6 };
@@ -424,6 +427,12 @@ private:
     int NoUEncNegCtxMax_ { 1 };
   };
   Options options_;
+
+  static constexpr mp::OptionValueInfo values_complcvt_[3] = {
+      {     "0", "As disjunction", 0 },
+      {     "1", "As product", 1 },
+      {     "2", "Using Phi function, see Ferris, Dirkse, Meeraus '92", 2}
+  };
 
   void InitOwnOptions() {
     this->GetEnv().AddOption("cvt:mip:eps cvt:cmp:eps cmp:eps",
@@ -438,6 +447,10 @@ private:
                        "Not used by default. Use with care (prefer tight bounds). "
                        "Should be smaller than (1.0 / [integrality tolerance])",
                        options_.bigM_default_, -1.0, 1e100);
+    this->GetEnv().AddStoredOption("cvt:compl cvt:complementarity",
+                             "Complementarity conversion method "
+                             "(if not accepted natively, see acc:compl):",
+                             options_.complCvt_, values_complcvt_);
     this->GetEnv().AddOption("cvt:plapprox:reltol plapprox:reltol plapproxreltol",
                        "Relative tolerance for piecewise-linear approximation. Default 0.01.",
                        options_.PLApproxRelTol_, 0.0, 1e100);

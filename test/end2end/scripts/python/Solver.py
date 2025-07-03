@@ -397,6 +397,8 @@ class IPOptSolver(AMPLSolver):
                  ModelTags.quadratic_obj,
                  ModelTags.quadraticnonconvex,
 
+                 # ModelTags.complementarity,  -- not supported without MP2NL.
+
                  ModelTags.socp,      
                  ModelTags.socp_hard_to_recognize,
                  ModelTags.nonlinear, ModelTags.log, ModelTags.trigonometric}

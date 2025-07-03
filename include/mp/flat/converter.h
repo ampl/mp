@@ -142,7 +142,7 @@ public:
 
   /// From an affine expression:
   /// Adds a result variable r and constraint r == expr
-  int Convert2Var(AffineExpr&& ee) {
+  int Convert2Var(AffineExpr ee) {
     if (ee.is_variable())
       return ee.get_representing_variable();
     if (ee.is_constant())
@@ -155,7 +155,7 @@ public:
 
   /// From a quadratic expression:
   /// Adds a result variable r and constraint r == expr
-  int Convert2Var(QuadraticExpr&& ee) {
+  int Convert2Var(QuadraticExpr ee) {
     if (ee.is_variable())
       return ee.get_representing_variable();
     if (ee.is_constant())
