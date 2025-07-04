@@ -163,13 +163,13 @@ protected:
       // ue >= expr, ue >= 0
       int ue = (int)GetMC().AddVar(0.0, GetMC().Infty());
       GetMC().AddConstraint(LinConGE{{ {1.0, -1.0}, {ue, expr_var} }, 0.0});
-      // (v-lb)*le = 0
-      GetMC().AddConstraint(QuadConEQ{ { {{-var_lb}, {le}},
-                                       {{1.0}, {compl_var}, {le} }},
-                                      0.0 });
-      // (v-ub)*ue = 0
-      GetMC().AddConstraint(QuadConEQ{ { {{-var_ub}, {ue}},
+      // (v-lb)*ue = 0
+      GetMC().AddConstraint(QuadConEQ{ { {{-var_lb}, {ue}},
                                        {{1.0}, {compl_var}, {ue} }},
+                                      0.0 });
+      // (v-ub)*le = 0
+      GetMC().AddConstraint(QuadConEQ{ { {{-var_ub}, {le}},
+                                       {{1.0}, {compl_var}, {le} }},
                                       0.0 });
     }
     return Context::CTX_ROOT;
