@@ -427,7 +427,7 @@ MP2NLModelAPI::GetLinPart(const ItemInfo &info) {
   }
   case StaticItemTypeID::ID_NLComplementarity: {
     return GetLPRoS(                 // Do we need the \a compl_var?
-        ((const NLComplementarity*)(pitem))->GetExpression().GetBody() );
+        ((const NLComplementarity*)(pitem))->GetLinearPart().GetBody() );
   }
   default:
     MP_RAISE("Unknown objective or algebraic constraint type");
@@ -770,8 +770,8 @@ void MP2NLModelAPI::FeedConBounds(ConBoundsWriter& cbw) {
     case StaticItemTypeID::ID_NLComplementarity: {
       const auto& lcon = *((NLComplementarity*)(alg_con_info_[i].GetPItem()));
       AlgConRange bnd;
-      auto j = lcon.GetVariable();
-      auto ct = lcon.GetExpression().constant_term(); // @todo NLExpression?
+      auto j = lcon.GetCVar();
+      auto ct = lcon.GetLinearPart().constant_term(); // @todo NLExpression?
       bnd.L = MinusInfinity();
       bnd.U = Infinity();
       bnd.k = 0;
@@ -858,12 +858,10 @@ void MP2NLModelAPI::FeedAlgConExpression(
     break;
   case StaticItemTypeID::ID_NLComplementarity: {
     const auto& cc = *((NLComplementarity*)(pitem));
-    auto j = cc.GetVariable();
-    if (var_lbs_[j]<=MinusInfinity()   // @todo proper expressions
-        || var_ubs_[j]>=Infinity())
-      ew.NPut(0.0);
+    if (cc.HasExpr())
+      FeedExpr(GetExpression(cc), ew);
     else
-      ew.NPut(cc.GetExpression().constant_term());
+      ew.NPut(0.0);
   } break;
   default:
     ew.NPut(0.0);                     // must be linear constr

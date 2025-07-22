@@ -174,9 +174,91 @@ inline void WriteModelItem(Writer& wrt,
 }
 
 
-/// NLComplementarity
-/// TODO extra class, to enable ACCEPT_CONSTRAINT
-using NLComplementarity = ComplementarityConstraint<AffineExpr>;
+/// NLComplementarity.
+/// Complementarity constraint where the expression
+/// has a linear and a non-linear part
+class NLComplementarity
+    : public BasicConstraint, public NumericFunctionalConstraintTraits {
+public:
+  /// Constraint type name
+  static const char* GetTypeName() {
+    return "NLComplementarity";
+  }
+
+  /// Constructor.
+  /// @param expr_lin: linear part
+  /// @param expr_nonlin_var: result variable of the expression part
+  /// @param cvar: complementing variable
+  NLComplementarity(AffineExpr expr_lin, int expr_nonlin_var, int cvar) :
+      ccl_{std::move(expr_lin), cvar}, expr_(expr_nonlin_var) { }
+
+  /// Get the affine part of the expression
+  /// @todo Should the constant here be 0?
+  const AffineExpr& GetLinearPart() const
+  { return ccl_.GetExpression(); }
+
+  /// Has expression term?
+  bool HasExpr() const { return expr_>=0; }
+
+  /// Expression index.
+  /// @note ModelAPI should call self.HasExpression()
+  ///   and self.GetExpression()
+  ///   to obtain the expression term.
+  int ExprIndex() const { assert(HasExpr()); return expr_; }
+
+  /// the complementing variable
+  int GetCVar() const { return ccl_.GetVariable(); }
+
+  /// Compute violation
+  template <class VarInfo>
+  Violation ComputeViolation(const VarInfo& x) const {
+    auto ve = GetLinearPart().ComputeValue(x);
+    if (HasExpr())
+      ve += x[ExprIndex()];   // Add expr value. Assume it's precomputed
+    if (x.is_at_lb(GetCVar()))
+      return {-ve, 0.0};
+    else if (x.is_at_ub(GetCVar()))
+      return {ve, 0.0};
+    return {std::fabs(ve), 0.0};
+  }
+
+
+private:
+  ComplementarityLinear ccl_;
+  int expr_ {-1};
+};
+
+
+/// Specialize
+inline void VisitArguments(const NLComplementarity& nlcc,
+                           std::function<void (int) > argv) {
+  VisitArguments(nlcc.GetLinearPart(), argv);
+  if (nlcc.HasExpr())
+    VisitArguments(VarArray1{nlcc.ExprIndex()}, argv);
+  VisitArguments(VarArray1{nlcc.GetCVar()}, argv);
+}
+
+
+/// Export to JSON
+inline void WriteJSON(JSONW jw,
+                      const NLComplementarity& nlcc) {
+  WriteJSON(jw["lin_part"], nlcc.GetLinearPart());
+  if (nlcc.HasExpr())
+    WriteJSON(jw["expr_index"], nlcc.ExprIndex());
+  WriteJSON(jw["cvar"], nlcc.GetCVar());
+}
+
+/// Write RhsCon without name.
+template <class Writer, class Names>
+inline void WriteModelItem(Writer& wrt,
+                           const NLComplementarity& nlcc,
+                           Names& vnam) {
+  if (nlcc.HasExpr())
+    wrt << "NLCCExprIndex: " << vnam.at(nlcc.ExprIndex()) << " IN: ";
+  WriteModelItem(wrt, nlcc.GetLinearPart(), vnam);
+  wrt << "NLCCVar: " << vnam.at(nlcc.GetCVar());
+}
+
 
 
 /// NL logical constraint:

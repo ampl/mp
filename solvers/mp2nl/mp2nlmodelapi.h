@@ -1125,6 +1125,9 @@ protected:
   /// Mark NLAssign
   void MarkRangeOrEqn(const NLAssignGE& lc) { }
 
+  /// Mark NLComplementarity
+  void MarkRangeOrEqn(const NLComplementarity& ) { }
+
   /// Add to col sizes
   void Add2ColSizes(ArrayRef<int> vars);
 
