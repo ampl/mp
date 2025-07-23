@@ -1,0 +1,143 @@
+{"COMMENT": "Initial model information. Can be updated later with new bounds, names, etc."}
+{"VAR_index": 0, "name": "_svar1_", "printed": "var _svar1_ >=2 <=10", "bounds": [2, 10], "type": 0, "is_from_nl": 1}
+{"VAR_index": 1, "name": "_svar2_", "printed": "var _svar2_ >=2 <=10", "bounds": [2, 10], "type": 0, "is_from_nl": 1}
+{"VAR_index": 2, "name": "_svar3_", "printed": "var _svar3_ >=2 <=10", "bounds": [2, 10], "type": 0, "is_from_nl": 1}
+{"VAR_index": 3, "name": "_svar4_", "printed": "var _svar4_ >=2 <=10", "bounds": [2, 10], "type": 0, "is_from_nl": 1}
+{"VAR_index": 4, "name": "_svar5_", "printed": "var _svar5_ >=2 <=10", "bounds": [2, 10], "type": 0, "is_from_nl": 1}
+{"VAR_index": 5, "name": "_svar6_", "printed": "var _svar6_ >=2 <=10", "bounds": [2, 10], "type": 0, "is_from_nl": 1}
+{"VAR_index": 6, "name": "_svar7_", "printed": "var _svar7_ >=2 <=10", "bounds": [2, 10], "type": 0, "is_from_nl": 1}
+{"VAR_index": 7, "name": "_svar8_", "printed": "var _svar8_ >=2 <=10", "bounds": [2, 10], "type": 0, "is_from_nl": 1}
+{"NL_OBJECTIVE_index": 0, "name": "_OBJ1_", "sense": 0, "printed": "minimize _OBJ1_: -3.19 * _x[1] + -2.59 * _x[2] + -2.29 * _x[3] + -2.89 * _x[4] + -1.89 * _x[5] + -1.99 * _x[6] + -1.99 * _x[7] + -2.49 * _x[8] + (0.12575 * _x[1] * _x[1] + 0.0460759 * _x[2] * _x[2] + 0.185159 * _x[3] * _x[3] + 0.19186 * _x[4] * _x[4] + 0.0300879 * _x[5] * _x[5] + 0.14568 * _x[6] * _x[6] + 0.114791 * _x[7] * _x[7] + 0.0599957 * _x[8] * _x[8] + 1000)"}
+{"VAR_index": 8, "name": "_svar9_", "printed": "var _svar9_ = 1000", "bounds": [1000, 1000], "type": 0, "is_from_nl": 0}
+{"OBJECTIVE_index": 0, "sense": 0, "qp_terms": {"coefs": [0.12575, 0.0460759, 0.185159, 0.19186, 0.0300879, 0.14568, 0.114791, 0.0599957], "vars1": [0, 1, 2, 3, 4, 5, 6, 7], "vars2": [0, 1, 2, 3, 4, 5, 6, 7]}, "lin_terms": {"coefs": [-3.19, -2.59, -2.29, -2.89, -1.89, -1.99, -1.99, -2.49, 1], "vars": [0, 1, 2, 3, 4, 5, 6, 7, 8]}}
+{"NL_OBJECTIVE_index": 1, "name": "_OBJ2_", "sense": 0, "printed": "minimize _OBJ2_: -3.09 * _x[1] + -2.79 * _x[2] + -2.29 * _x[3] + -2.59 * _x[4] + -1.59 * _x[5] + -1.99 * _x[6] + -2.09 * _x[7] + -2.3 * _x[8] + (0.0764248 * _x[1] * _x[1] + 0.0873769 * _x[2] * _x[2] + 0.13639 * _x[3] * _x[3] + 0.119403 * _x[4] * _x[4] + 0.188984 * _x[5] * _x[5] + 0.0790697 * _x[6] * _x[6] + 0.0105869 * _x[7] * _x[7] + 0.153564 * _x[8] * _x[8] + 1000)"}
+{"OBJECTIVE_index": 1, "sense": 0, "qp_terms": {"coefs": [0.0764248, 0.0873769, 0.13639, 0.119403, 0.188984, 0.0790697, 0.0105869, 0.153564], "vars1": [0, 1, 2, 3, 4, 5, 6, 7], "vars2": [0, 1, 2, 3, 4, 5, 6, 7]}, "lin_terms": {"coefs": [-3.09, -2.79, -2.29, -2.59, -1.59, -1.99, -2.09, -2.3, 1], "vars": [0, 1, 2, 3, 4, 5, 6, 7, 8]}}
+{"NL_OBJECTIVE_index": 2, "name": "_OBJ3_", "sense": 0, "printed": "minimize _OBJ3_: -2.59 * _x[1] + -2.99 * _x[2] + -2.49 * _x[3] + -2.69 * _x[4] + -1.99 * _x[5] + -2.29 * _x[6] + -2 * _x[7] + -2.69 * _x[8] + (0.0955195 * _x[1] * _x[1] + 0.0423232 * _x[2] * _x[2] + 0.159672 * _x[3] * _x[3] + 0.169184 * _x[4] * _x[4] + 0.122132 * _x[5] * _x[5] + 0.0485876 * _x[6] * _x[6] + 0.0581914 * _x[7] * _x[7] + 0.111144 * _x[8] * _x[8] + 1000)"}
+{"OBJECTIVE_index": 2, "sense": 0, "qp_terms": {"coefs": [0.0955195, 0.0423232, 0.159672, 0.169184, 0.122132, 0.0485876, 0.0581914, 0.111144], "vars1": [0, 1, 2, 3, 4, 5, 6, 7], "vars2": [0, 1, 2, 3, 4, 5, 6, 7]}, "lin_terms": {"coefs": [-2.59, -2.99, -2.49, -2.69, -1.99, -2.29, -2, -2.69, 1], "vars": [0, 1, 2, 3, 4, 5, 6, 7, 8]}}
+{"NL_OBJECTIVE_index": 3, "name": "_OBJ4_", "sense": 0, "printed": "minimize _OBJ4_: _x[1] + _x[2] + _x[3] + _x[4] + _x[5] + _x[6] + _x[7] + _x[8]"}
+{"OBJECTIVE_index": 3, "sense": 0, "qp_terms": {"coefs": [], "vars1": [], "vars2": []}, "lin_terms": {"coefs": [1, 1, 1, 1, 1, 1, 1, 1], "vars": [0, 1, 2, 3, 4, 5, 6, 7]}}
+{"NL_CON_TYPE": "lin", "index": 0, "name": "_CON1_", "printed": "_CON1_: 60 * _x[1] + 8 * _x[2] + 8 * _x[3] + 40 * _x[4] + 15 * _x[5] + 70 * _x[6] + 25 * _x[7] + 60 * _x[8] >= 700"}
+{"CON_TYPE": "_linrange", "index": 0, "depth": 0, "data": {"body": {"coefs": [60, 8, 8, 40, 15, 70, 25, 60], "vars": [0, 1, 2, 3, 4, 5, 6, 7]}, "rhs_or_range": [700, 1.79769e+308]}}
+{"NL_CON_TYPE": "lin", "index": 1, "name": "_CON2_", "printed": "_CON2_: 20 * _x[1] + 10 * _x[3] + 40 * _x[4] + 35 * _x[5] + 30 * _x[6] + 50 * _x[7] + 20 * _x[8] >= 700"}
+{"CON_TYPE": "_linrange", "index": 1, "depth": 0, "data": {"body": {"coefs": [20, 10, 40, 35, 30, 50, 20], "vars": [0, 2, 3, 4, 5, 6, 7]}, "rhs_or_range": [700, 1.79769e+308]}}
+{"NL_CON_TYPE": "lin", "index": 2, "name": "_CON3_", "printed": "_CON3_: 295 * _x[1] + 770 * _x[2] + 440 * _x[3] + 430 * _x[4] + 315 * _x[5] + 400 * _x[6] + 370 * _x[7] + 450 * _x[8] >= 16000"}
+{"CON_TYPE": "_linrange", "index": 2, "depth": 0, "data": {"body": {"coefs": [295, 770, 440, 430, 315, 400, 370, 450], "vars": [0, 1, 2, 3, 4, 5, 6, 7]}, "rhs_or_range": [16000, 1.79769e+308]}}
+{"NL_CON_TYPE": "lin", "index": 3, "name": "_CON4_", "printed": "_CON4_: 938 * _x[1] + 2180 * _x[2] + 945 * _x[3] + 278 * _x[4] + 1182 * _x[5] + 896 * _x[6] + 1329 * _x[7] + 1397 * _x[8] <= 50000"}
+{"CON_TYPE": "_linrange", "index": 3, "depth": 0, "data": {"body": {"coefs": [938, 2180, 945, 278, 1182, 896, 1329, 1397], "vars": [0, 1, 2, 3, 4, 5, 6, 7]}, "rhs_or_range": [-1.79769e+308, 50000]}}
+{"NL_CON_TYPE": "lin", "index": 4, "name": "_CON5_", "printed": "_CON5_: 295 * _x[1] + 770 * _x[2] + 440 * _x[3] + 430 * _x[4] + 315 * _x[5] + 400 * _x[6] + 370 * _x[7] + 450 * _x[8] <= 24000"}
+{"CON_TYPE": "_linrange", "index": 4, "depth": 0, "data": {"body": {"coefs": [295, 770, 440, 430, 315, 400, 370, 450], "vars": [0, 1, 2, 3, 4, 5, 6, 7]}, "rhs_or_range": [-1.79769e+308, 24000]}}
+{"CON_TYPE": "_linge", "index": 0, "depth": 1, "data": {"body": {"coefs": [60, 8, 8, 40, 15, 70, 25, 60], "vars": [0, 1, 2, 3, 4, 5, 6, 7]}, "rhs_or_range": ["GE", 700]}}
+{"CON_TYPE": "_linge", "index": 1, "depth": 1, "data": {"body": {"coefs": [20, 10, 40, 35, 30, 50, 20], "vars": [0, 2, 3, 4, 5, 6, 7]}, "rhs_or_range": ["GE", 700]}}
+{"CON_TYPE": "_linge", "index": 2, "depth": 1, "data": {"body": {"coefs": [295, 770, 440, 430, 315, 400, 370, 450], "vars": [0, 1, 2, 3, 4, 5, 6, 7]}, "rhs_or_range": ["GE", 16000]}}
+{"CON_TYPE": "_linle", "index": 0, "depth": 1, "data": {"body": {"coefs": [938, 2180, 945, 278, 1182, 896, 1329, 1397], "vars": [0, 1, 2, 3, 4, 5, 6, 7]}, "rhs_or_range": ["LE", 50000]}}
+{"CON_TYPE": "_linle", "index": 1, "depth": 1, "data": {"body": {"coefs": [295, 770, 440, 430, 315, 400, 370, 450], "vars": [0, 1, 2, 3, 4, 5, 6, 7]}, "rhs_or_range": ["LE", 24000]}}
+{"COMMENT": "Updated model information."}
+{"VAR_index": 0, "name": "_x[1]____", "printed": "var _x[1]____ >=2 <=10", "bounds": [2, 10], "type": 0, "is_from_nl": 1}
+{"VAR_index": 1, "name": "_x[2]____", "printed": "var _x[2]____ >=2 <=10", "bounds": [2, 10], "type": 0, "is_from_nl": 1}
+{"VAR_index": 2, "name": "_x[3]____", "printed": "var _x[3]____ >=2 <=10", "bounds": [2, 10], "type": 0, "is_from_nl": 1}
+{"VAR_index": 3, "name": "_x[4]____", "printed": "var _x[4]____ >=2 <=10", "bounds": [2, 10], "type": 0, "is_from_nl": 1}
+{"VAR_index": 4, "name": "_x[5]____", "printed": "var _x[5]____ >=2 <=10", "bounds": [2, 10], "type": 0, "is_from_nl": 1}
+{"VAR_index": 5, "name": "_x[6]____", "printed": "var _x[6]____ >=2 <=10", "bounds": [2, 10], "type": 0, "is_from_nl": 1}
+{"VAR_index": 6, "name": "_x[7]____", "printed": "var _x[7]____ >=2 <=10", "bounds": [2, 10], "type": 0, "is_from_nl": 1}
+{"VAR_index": 7, "name": "_x[8]____", "printed": "var _x[8]____ >=2 <=10", "bounds": [2, 10], "type": 0, "is_from_nl": 1}
+{"VAR_index": 8, "name": "_OBJ1___2___", "printed": "var _OBJ1___2___ = 1000", "bounds": [1000, 1000], "type": 0, "is_from_nl": 0}
+{"CON_TYPE": "_linrange", "index": 0, "name": "_CON1___", "printed": "_CON1___: 700 <= 60*_x[1]____ + 8*_x[2]____ + 8*_x[3]____ + 40*_x[4]____ + 15*_x[5]____ + 70*_x[6]____ + 25*_x[7]____ + 60*_x[8]____", "depth": 0, "unused": 0, "bridged": 1, "final": 0}
+{"CON_TYPE": "_linrange", "index": 1, "name": "_CON2___", "printed": "_CON2___: 700 <= 20*_x[1]____ + 10*_x[3]____ + 40*_x[4]____ + 35*_x[5]____ + 30*_x[6]____ + 50*_x[7]____ + 20*_x[8]____", "depth": 0, "unused": 0, "bridged": 1, "final": 0}
+{"CON_TYPE": "_linrange", "index": 2, "name": "_CON3___", "printed": "_CON3___: 16000 <= 295*_x[1]____ + 770*_x[2]____ + 440*_x[3]____ + 430*_x[4]____ + 315*_x[5]____ + 400*_x[6]____ + 370*_x[7]____ + 450*_x[8]____", "depth": 0, "unused": 0, "bridged": 1, "final": 0}
+{"CON_TYPE": "_linrange", "index": 3, "name": "_CON4___", "printed": "_CON4___: 938*_x[1]____ + 2180*_x[2]____ + 945*_x[3]____ + 278*_x[4]____ + 1182*_x[5]____ + 896*_x[6]____ + 1329*_x[7]____ + 1397*_x[8]____ <= 50000", "depth": 0, "unused": 0, "bridged": 1, "final": 0}
+{"CON_TYPE": "_linrange", "index": 4, "name": "_CON5___", "printed": "_CON5___: 295*_x[1]____ + 770*_x[2]____ + 440*_x[3]____ + 430*_x[4]____ + 315*_x[5]____ + 400*_x[6]____ + 370*_x[7]____ + 450*_x[8]____ <= 24000", "depth": 0, "unused": 0, "bridged": 1, "final": 0}
+{"CON_TYPE": "_linle", "index": 0, "name": "_CON4____", "printed": "_CON4____: 938*_x[1]____ + 2180*_x[2]____ + 945*_x[3]____ + 278*_x[4]____ + 1182*_x[5]____ + 896*_x[6]____ + 1329*_x[7]____ + 1397*_x[8]____ <= 50000", "depth": 1, "unused": 0, "bridged": 0, "final": 1}
+{"CON_TYPE": "_linle", "index": 1, "name": "_CON5____", "printed": "_CON5____: 295*_x[1]____ + 770*_x[2]____ + 440*_x[3]____ + 430*_x[4]____ + 315*_x[5]____ + 400*_x[6]____ + 370*_x[7]____ + 450*_x[8]____ <= 24000", "depth": 1, "unused": 0, "bridged": 0, "final": 1}
+{"CON_TYPE": "_linge", "index": 0, "name": "_CON1____", "printed": "_CON1____: 60*_x[1]____ + 8*_x[2]____ + 8*_x[3]____ + 40*_x[4]____ + 15*_x[5]____ + 70*_x[6]____ + 25*_x[7]____ + 60*_x[8]____ >= 700", "depth": 1, "unused": 0, "bridged": 0, "final": 1}
+{"CON_TYPE": "_linge", "index": 1, "name": "_CON2____", "printed": "_CON2____: 20*_x[1]____ + 10*_x[3]____ + 40*_x[4]____ + 35*_x[5]____ + 30*_x[6]____ + 50*_x[7]____ + 20*_x[8]____ >= 700", "depth": 1, "unused": 0, "bridged": 0, "final": 1}
+{"CON_TYPE": "_linge", "index": 2, "name": "_CON3____", "printed": "_CON3____: 295*_x[1]____ + 770*_x[2]____ + 440*_x[3]____ + 430*_x[4]____ + 315*_x[5]____ + 400*_x[6]____ + 370*_x[7]____ + 450*_x[8]____ >= 16000", "depth": 1, "unused": 0, "bridged": 0, "final": 1}
+{"CON_TYPE": "_abs", "CON_GROUP": "General", "CON_GROUP_index": 6}
+{"CON_TYPE": "_alldiff", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_complquad", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_compl", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_count", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_div", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_ifthen", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_impl", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_powconstexp", "CON_GROUP": "General", "CON_GROUP_index": 6}
+{"CON_TYPE": "_pow", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_exp", "CON_GROUP": "General", "CON_GROUP_index": 6}
+{"CON_TYPE": "_expa", "CON_GROUP": "General", "CON_GROUP_index": 6}
+{"CON_TYPE": "_log", "CON_GROUP": "General", "CON_GROUP_index": 6}
+{"CON_TYPE": "_loga", "CON_GROUP": "General", "CON_GROUP_index": 6}
+{"CON_TYPE": "_sin", "CON_GROUP": "General", "CON_GROUP_index": 6}
+{"CON_TYPE": "_cos", "CON_GROUP": "General", "CON_GROUP_index": 6}
+{"CON_TYPE": "_tan", "CON_GROUP": "General", "CON_GROUP_index": 6}
+{"CON_TYPE": "_asin", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_acos", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_atan", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_sinh", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_cosh", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_tanh", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_asinh", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_acosh", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_atanh", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_max", "CON_GROUP": "General", "CON_GROUP_index": 6}
+{"CON_TYPE": "_min", "CON_GROUP": "General", "CON_GROUP_index": 6}
+{"CON_TYPE": "_numberofconst", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_numberofvar", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_pl", "CON_GROUP": "General", "CON_GROUP_index": 6}
+{"CON_TYPE": "_sos1", "CON_GROUP": "SOS", "CON_GROUP_index": 9}
+{"CON_TYPE": "_sos2", "CON_GROUP": "SOS", "CON_GROUP_index": 9}
+{"CON_TYPE": "_uenc", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_condquadeq", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_condlineq", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_condquadle", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_condquadlt", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_condquadge", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_condquadgt", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_condlinle", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_condlinlt", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_condlinge", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_condlingt", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_not", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_equiv", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_and", "CON_GROUP": "General", "CON_GROUP_index": 6}
+{"CON_TYPE": "_or", "CON_GROUP": "General", "CON_GROUP_index": 6}
+{"CON_TYPE": "_indquadeq", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_indquadle", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_indquadge", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_indeq", "CON_GROUP": "General", "CON_GROUP_index": 6}
+{"CON_TYPE": "_indle", "CON_GROUP": "General", "CON_GROUP_index": 6}
+{"CON_TYPE": "_indge", "CON_GROUP": "General", "CON_GROUP_index": 6}
+{"CON_TYPE": "_powercone", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_rotatedquadcone", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_quadcone", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_expcone", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_geomcone", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_quadfunccon", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_linfunccon", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_quadrange", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_quadle", "CON_GROUP": "Quadratic", "CON_GROUP_index": 4}
+{"CON_TYPE": "_quadeq", "CON_GROUP": "Quadratic", "CON_GROUP_index": 4}
+{"CON_TYPE": "_quadge", "CON_GROUP": "Quadratic", "CON_GROUP_index": 4}
+{"CON_TYPE": "_linrange", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_linle", "CON_GROUP": "Linear", "CON_GROUP_index": 3}
+{"CON_TYPE": "_lineq", "CON_GROUP": "Linear", "CON_GROUP_index": 3}
+{"CON_TYPE": "_linge", "CON_GROUP": "Linear", "CON_GROUP_index": 3}
+{"CON_TYPE": "_nlcon", "CON_GROUP": "Algebraic", "CON_GROUP_index": 2}
+{"CON_TYPE": "_nlassigneq", "CON_GROUP": "General", "CON_GROUP_index": 6}
+{"CON_TYPE": "_nlassignle", "CON_GROUP": "General", "CON_GROUP_index": 6}
+{"CON_TYPE": "_nlassignge", "CON_GROUP": "General", "CON_GROUP_index": 6}
+{"CON_TYPE": "_nllogcon", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_nlreifequiv", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_nlreifimpl", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"CON_TYPE": "_nlreifrimpl", "CON_GROUP": "Default", "CON_GROUP_index": 0}
+{"link_index": [0, 0], "link_type": "CopyLink", "src_nodes": [{"src_vars()": [0, 7]}], "dest_nodes": [{"dest_vars()": [0, 7]}]}
+{"link_index": [0, 1], "link_type": "CopyLink", "src_nodes": [{"src_objs()": 0}], "dest_nodes": [{"dest_objs()": 0}]}
+{"link_index": [0, 2], "link_type": "CopyLink", "src_nodes": [{"src_objs()": 0}], "dest_nodes": [{"dest_vars()": 8}]}
+{"link_index": [0, 3], "link_type": "CopyLink", "src_nodes": [{"src_objs()": 1}], "dest_nodes": [{"dest_objs()": 1}]}
+{"link_index": [0, 4], "link_type": "CopyLink", "src_nodes": [{"src_objs()": 1}], "dest_nodes": [{"dest_vars()": 8}]}
+{"link_index": [0, 5], "link_type": "CopyLink", "src_nodes": [{"src_objs()": 2}], "dest_nodes": [{"dest_objs()": 2}]}
+{"link_index": [0, 6], "link_type": "CopyLink", "src_nodes": [{"src_objs()": 2}], "dest_nodes": [{"dest_vars()": 8}]}
+{"link_index": [0, 7], "link_type": "CopyLink", "src_nodes": [{"src_objs()": 3}], "dest_nodes": [{"dest_objs()": 3}]}
+{"link_index": [0, 8], "link_type": "CopyLink", "src_nodes": [{"src_cons()": [0, 4]}], "dest_nodes": [{"_linrange": [0, 4]}]}
+{"link_index": [0, 9], "link_type": "CopyLink", "src_nodes": [{"_linrange": [0, 2]}], "dest_nodes": [{"_linge": [0, 2]}]}
+{"link_index": [0, 10], "link_type": "CopyLink", "src_nodes": [{"_linrange": [3, 4]}], "dest_nodes": [{"_linle": [0, 1]}]}
+{"link_index": [0, 11], "link_type": "CopyLink", "src_nodes": [{"_linle": [0, 1]}], "dest_nodes": [{"dest_cons(3)": [0, 1]}]}
+{"link_index": [0, 12], "link_type": "CopyLink", "src_nodes": [{"_linge": [0, 2]}], "dest_nodes": [{"dest_cons(3)": [2, 4]}]}

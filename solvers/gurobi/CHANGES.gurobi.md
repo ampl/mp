@@ -3,7 +3,7 @@ Summary of recent updates to gurobi for AMPL
 
 
 ## 20250723
-- Updated to Gurobi 12.0.3, which includes bugfixes.
+- Updated to Gurobi 12.0.3, which includes bugfixes 
 
 
 ## 20250617
