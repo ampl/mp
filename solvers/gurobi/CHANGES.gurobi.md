@@ -2,6 +2,10 @@ Summary of recent updates to gurobi for AMPL
 ============================================
 
 
+## 20250723
+- Updated to Gurobi 12.0.3, which includes bugfixes.
+
+
 ## 20250617
 - Option mip:opttol renamed as lp:opttol (opttol).
 - Changes in MP
