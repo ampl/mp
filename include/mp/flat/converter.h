@@ -939,7 +939,9 @@ public:
         + fmi->GetNumberOfConstraints(typeid(LinConLE))
         + mt.n_quad_con
         + fmi->GetNumberOfConstraints(typeid(ComplementarityLinear))
-        + fmi->GetNumberOfConstraints(typeid(ComplementarityQuadratic));
+                   + fmi->GetNumberOfConstraints(typeid(ComplementarityQuadratic))
+                   + fmi->GetNumberOfConstraints(typeid(NLComplementarity))
+        ;
     mt.n_log_con =
         fmi->GetNumberOfConstraints(typeid(AndConstraint))
         + fmi->GetNumberOfConstraints(typeid(OrConstraint))
@@ -1990,6 +1992,8 @@ protected:
       ComplementarityLinear, "acc:compl acc:compllin", 350)
   STORE_CONSTRAINT_TYPE__NO_MAP(
       ComplementarityQuadratic, "acc:complquad", 300)
+  STORE_CONSTRAINT_TYPE__NO_MAP(
+      NLComplementarity, "acc:nlcompl", 360)
   STORE_CONSTRAINT_TYPE__NO_MAP(
       QuadraticConeConstraint, "acc:quadcone", 3002)
   STORE_CONSTRAINT_TYPE__NO_MAP(

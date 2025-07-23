@@ -191,12 +191,9 @@ public:
       const ComplementarityConstraint<Expr>& con,
       int i,
       ConstraintAcceptanceLevel , ExpressionAcceptanceLevel ) {
-    if (1==stage_cvt2expr_)
+    if (1==stage_cvt2expr_) {
       HandleLogicalArgs(con, i);         // explicify logical args
-    if (false                      // TODO check acc for NLCompl
-        && 1==stage_cvt2expr_
-        && !con.GetExpression().is_variable()) {             // already a variable
-      ConvertComplementarityExpr(con, i);
+      ConvertComplementarity(con, i);
       return true;
     }
     return false;
@@ -505,7 +502,7 @@ protected:
     }
     if (0<=exprResVar                                   // either: have expression
         || !MPCD( UserAcceptsAndRecommends(         // or, not accepts source \a con
-            (const AlgebraicConstraint<Body, RhsOrRange>*)nullptr) )
+            &con) )
         || need_nlc) {                                  // or, other reason
       assert( MPCD( UserAcceptsAndRecommends((const NLConstraint*)nullptr) ) );
       NLConstraint nlc{lt, exprResVar, rng, false};     // false: no sort any more
@@ -563,6 +560,64 @@ protected:
         qobj.SetExprIndex(exprResVar);
       MPD( CountArgRefs(qobj) );
     }
+  }
+
+  /// Convert complementarity to a \a NLComplementarity,
+  /// if they are accepted. Otherwise,
+  /// explicify the expression and convert the constraint to
+  /// \a ComplementarityLinear.
+  /// @return true iff the original constraint should be deleted.
+  /// @tparam Expr: body expression type,
+  ///   AffineExpr or QuadraticExpr
+  /// @note Logic highly similar to NLConstraint/NLObjective
+  template <class Expr>
+  bool ConvertComplementarity(
+      const ComplementarityConstraint<Expr>& ccon, int ) {
+    LinTerms lt;
+    /// exprTerm will be a LinearFunctionalConstraint or a Quadratic...
+    auto exprTerm = ExtractLinAndExprArgs(
+        ccon.GetExpression().GetBody(), lt);
+    assert(0.0 == exprTerm.GetArguments().constant_term());
+    auto const_term = ccon.GetExpression().constant_term();
+    /// Store full LFC only if it is not 1.0*var
+    int exprResVar = -1;
+    if (exprTerm.GetArguments().is_variable()) {
+      exprResVar = exprTerm.GetArguments().get_representing_variable();
+    } else if ( !exprTerm.GetArguments().empty() ) {  // has more terms, or coef != 1.0
+      exprTerm.AddContext(Context::CTX_MIX);          // Context is compulsory
+      exprResVar = MPD( AssignResultVar2Args(std::move(exprTerm)) );
+    }
+    bool need_nlcc {false};
+    if (exprResVar >= 0) {                            // Some expressions are there
+      if (!MPCD(VarHasMarking(exprResVar)))             // mark as expr if new
+        MPD( MarkAsExpression(exprResVar) );
+      if ( !MPCD( UserAcceptsAndRecommends((const NLConstraint*)nullptr) ) )
+        MPD( MarkAsResultVar(exprResVar) );
+      /// Exists and marked a variable
+      if (MPCD( IsProperVar(exprResVar) )) {            // Not an expression after all
+        lt.add_term(1.0, exprResVar);        // @todo When exprTerm was originally a var,
+        lt.sort_terms();                     // this would reproduce the original con.
+        if (MPCD( UserAcceptsAndRecommends(       // Accepts LinCon..
+                (const ComplementarityLinear*)nullptr) )) {
+          ComplementarityLinear ccl {{lt, const_term}, ccon.GetVariable()};
+          MPD( AddConstraint( std::move(ccl) ) );
+          return true;
+        }
+        need_nlcc = true;
+        exprResVar = -1;                                // no expression
+      }
+    }
+    if (0<=exprResVar                                   // either: have expression
+        || !MPCD( UserAcceptsAndRecommends(         // or, not accepts source \a ccon
+            &ccon ) )
+        || need_nlcc) {                                  // or, other reason
+      assert( MPCD( UserAcceptsAndRecommends((const NLComplementarity*)nullptr) ) );
+      NLComplementarity nlcc{
+                             {lt, const_term}, exprResVar, ccon.GetVariable()};
+      MPD( AddConstraint( std::move(nlcc) ) );
+      return true;
+    }
+    return false;
   }
 
   /// Extract linear and expression args
@@ -634,26 +689,6 @@ protected:
         ccnew { { std::move(lt), con.GetConstraint().GetRhsOrRange() } };
     MPD( RedefineVariable(con.GetResultVar(), std::move(ccnew)) );  // Use new CondCon
     MPD( PropagateResultOfInitExpr(con.GetResultVar(), con.GetContext()) ); // context
-  }
-
-  /// Convert the expression part of complementarity.
-  /// Similar to the argument of a conditional con.
-  template <class Expr>
-  void ConvertComplementarityExpr(
-      const ComplementarityConstraint<Expr>& con,
-      int i) {
-    auto alscope = MPD( MakeAutoLinker( con, i ) );       // link from \a con
-    /// Create a functional constraint from the LHS
-    auto fc = MakeFunctionalConstraint(con.GetExpression());
-    fc.SetContext(Context::CTX_MIX);                      // need context
-    auto resvar = MPD( AssignResultVar2Args(std::move(fc)) );
-    if ( !MPCD(VarHasMarking(resvar) ))         // mark as expr if new
-      MPD( MarkAsExpression(resvar) );
-    /// resvar can be a proper variable - ModelAPI should flexibly handle this
-    LinTerms lt { {1.0}, {resvar} };
-    ComplementarityConstraint< AlgebraicExpression<LinTerms> >
-        ccnew { AffineExpr{ std::move(lt), 0.0 }, con.GetVariable() };
-    MPD( AddConstraint(std::move(ccnew)) );  // Use new CondCon
   }
 
   /// Consider explicifying an expression
