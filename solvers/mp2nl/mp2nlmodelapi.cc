@@ -427,7 +427,7 @@ MP2NLModelAPI::GetLinPart(const ItemInfo &info) {
   }
   case StaticItemTypeID::ID_NLComplementarity: {
     return GetLPRoS(                 // Do we need the \a compl_var?
-        ((const NLComplementarity*)(pitem))->GetLinearPart().GetBody() );
+        ((const NLComplementarity*)(pitem))->GetLinTerms() );
   }
   default:
     MP_RAISE("Unknown objective or algebraic constraint type");
@@ -771,7 +771,7 @@ void MP2NLModelAPI::FeedConBounds(ConBoundsWriter& cbw) {
       const auto& lcon = *((NLComplementarity*)(alg_con_info_[i].GetPItem()));
       AlgConRange bnd;
       auto j = lcon.GetCVar();
-      auto ct = lcon.GetLinearPart().constant_term(); // @todo NLExpression?
+      auto ct = 0.0;
       bnd.L = MinusInfinity();
       bnd.U = Infinity();
       bnd.k = 0;

@@ -232,7 +232,7 @@ public:
     return false;
   }
 
-  /// NLConstraint: just produced.
+  /// NLConstraint: just produced, dummy method.
   bool ConvertWithExpressions(
       const NLConstraint& , int ,
       ConstraintAcceptanceLevel , ExpressionAcceptanceLevel ) {
@@ -253,6 +253,12 @@ public:
   /// NLAssignGE: just produced.
   bool ConvertWithExpressions(
       const NLAssignGE& , int ,
+      ConstraintAcceptanceLevel , ExpressionAcceptanceLevel ) {
+    return false;
+  }
+  /// NLComplementarity: just produced, dummy method.
+  bool ConvertWithExpressions(
+      const NLComplementarity& , int ,
       ConstraintAcceptanceLevel , ExpressionAcceptanceLevel ) {
     return false;
   }
@@ -579,19 +585,22 @@ protected:
         ccon.GetExpression().GetBody(), lt);
     assert(0.0 == exprTerm.GetArguments().constant_term());
     auto const_term = ccon.GetExpression().constant_term();
+    /// Move constant to the expression
+    exprTerm.add_to_constant(const_term);
     /// Store full LFC only if it is not 1.0*var
     int exprResVar = -1;
     if (exprTerm.GetArguments().is_variable()) {
       exprResVar = exprTerm.GetArguments().get_representing_variable();
-    } else if ( !exprTerm.GetArguments().empty() ) {  // has more terms, or coef != 1.0
-      exprTerm.AddContext(Context::CTX_MIX);          // Context is compulsory
-      exprResVar = MPD( AssignResultVar2Args(std::move(exprTerm)) );
-    }
+    } else                  // has more terms, or coef != 1.0, or const_term != 0
+      if ( !exprTerm.GetArguments().empty() ) {
+        exprTerm.AddContext(Context::CTX_MIX);          // Context is compulsory
+        exprResVar = MPD( AssignResultVar2Args(std::move(exprTerm)) );
+      }
     bool need_nlcc {false};
     if (exprResVar >= 0) {                            // Some expressions are there
       if (!MPCD(VarHasMarking(exprResVar)))             // mark as expr if new
         MPD( MarkAsExpression(exprResVar) );
-      if ( !MPCD( UserAcceptsAndRecommends((const NLConstraint*)nullptr) ) )
+      if ( !MPCD( UserAcceptsAndRecommends((const NLComplementarity*)nullptr) ) )
         MPD( MarkAsResultVar(exprResVar) );
       /// Exists and marked a variable
       if (MPCD( IsProperVar(exprResVar) )) {            // Not an expression after all
@@ -599,7 +608,7 @@ protected:
         lt.sort_terms();                     // this would reproduce the original con.
         if (MPCD( UserAcceptsAndRecommends(       // Accepts LinCon..
                 (const ComplementarityLinear*)nullptr) )) {
-          ComplementarityLinear ccl {{lt, const_term}, ccon.GetVariable()};
+          ComplementarityLinear ccl {{lt, 0.0}, ccon.GetVariable()};
           MPD( AddConstraint( std::move(ccl) ) );
           return true;
         }
@@ -613,7 +622,7 @@ protected:
         || need_nlcc) {                                  // or, other reason
       assert( MPCD( UserAcceptsAndRecommends((const NLComplementarity*)nullptr) ) );
       NLComplementarity nlcc{
-                             {lt, const_term}, exprResVar, ccon.GetVariable()};
+                             lt, exprResVar, ccon.GetVariable()};
       MPD( AddConstraint( std::move(nlcc) ) );
       return true;
     }
