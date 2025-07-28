@@ -33,7 +33,7 @@ public:
   /// Skip conversion?
   bool IfDelayConversion(const ItemType& , int ) {
     return
-        GetMC().IfPassQuadCon()
+        GetMC().IfPassQuadCon()          // Use enforces
         || GetMC().IfWantNLOutput();     // Assume QuadExpr accepted
   }
 

@@ -262,7 +262,7 @@ public:
   void AddConstraint(const NLAssignGE& nle);
 
   /// @todo
-  ACCEPT_CONSTRAINT(NLComplementarity, NotAccepted, CG_Algebraic)
+  ACCEPT_CONSTRAINT(NLComplementarity, Recommended, CG_Algebraic)
   void AddConstraint(const NLComplementarity& cc);
 
 

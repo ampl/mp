@@ -112,6 +112,8 @@ public:
 
 /// In the ModelConverter: to use a specific item_cvt_type<>
 /// Assumes Impl is the final ModelConverter type
+/// @note IfNeedsConversion, IfDelayConversion are delegated
+///   to the item_cvt_type<>.
 #define INSTALL_ITEM_CONVERTER(item_cvt_type) \
   item_cvt_type<Impl> item_cvt__ ## item_cvt_type ## _ \
    { *static_cast<Impl*>(this) }; \

@@ -426,7 +426,7 @@ MP2NLModelAPI::GetLinPart(const ItemInfo &info) {
     return GetLPRoS( *((NLAssignGE*)(pitem)) );
   }
   case StaticItemTypeID::ID_NLComplementarity: {
-    return GetLPRoS(                 // Do we need the \a compl_var?
+    return GetLPRoS(
         ((const NLComplementarity*)(pitem))->GetLinTerms() );
   }
   default:
@@ -769,23 +769,13 @@ void MP2NLModelAPI::FeedConBounds(ConBoundsWriter& cbw) {
     } break;
     case StaticItemTypeID::ID_NLComplementarity: {
       const auto& lcon = *((NLComplementarity*)(alg_con_info_[i].GetPItem()));
-      AlgConRange bnd;
+      AlgConRange bnd {0, 0};
       auto j = lcon.GetCVar();
-      auto ct = 0.0;
-      bnd.L = MinusInfinity();
-      bnd.U = Infinity();
-      bnd.k = 0;
       if (var_lbs_[j] > MinusInfinity()) {
         bnd.k = 1;
-        bnd.L = -ct;         // empty expr then
       }
       if (var_ubs_[j] < Infinity()) {
         bnd.k |= 2;
-        bnd.U = -ct;
-      }
-      if (3==bnd.k) {
-        bnd.L = MinusInfinity();
-        bnd.U = Infinity();  // expr should be ct.
       }
       assert(bnd.k);
       bnd.cvar = GetNewVarIndex(j);

@@ -597,11 +597,11 @@ protected:
         exprResVar = MPD( AssignResultVar2Args(std::move(exprTerm)) );
       }
     bool need_nlcc {false};
-    if (exprResVar >= 0) {                            // Some expressions are there
+    if (exprResVar >= 0) {                              // Some expressions are there
       if (!MPCD(VarHasMarking(exprResVar)))             // mark as expr if new
         MPD( MarkAsExpression(exprResVar) );
       if ( !MPCD( UserAcceptsAndRecommends((const NLComplementarity*)nullptr) ) )
-        MPD( MarkAsResultVar(exprResVar) );
+        MPD( MarkAsResultVar(exprResVar) );             // acc:nlcompl=0
       /// Exists and marked a variable
       if (MPCD( IsProperVar(exprResVar) )) {            // Not an expression after all
         lt.add_term(1.0, exprResVar);        // @todo When exprTerm was originally a var,
@@ -611,7 +611,7 @@ protected:
           ComplementarityLinear ccl {{lt, 0.0}, ccon.GetVariable()};
           MPD( AddConstraint( std::move(ccl) ) );
           return true;
-        }
+        }                      // @todo else, if this is ComplQuad and accepted, leave?
         need_nlcc = true;
         exprResVar = -1;                                // no expression
       }
