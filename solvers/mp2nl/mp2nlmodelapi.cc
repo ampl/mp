@@ -570,10 +570,10 @@ NLHeader MP2NLModelAPI::DoMakeHeader() {
   /** Total number of nonlinear constraints. */
   hdr.num_nl_cons = mark_data_.nnlc_;
   hdr.num_nl_objs = mark_data_.nnlo_;
-  hdr.num_compl_conds = 0;
-  hdr.num_nl_compl_conds = 0;
-  hdr.num_compl_dbl_ineqs = 0;
-  hdr.num_compl_vars_with_nz_lb = 0;
+  hdr.num_compl_conds = mark_data_.nccon_lin_ + mark_data_.nccon_nonlin_;
+  hdr.num_nl_compl_conds = mark_data_.nccon_nonlin_;
+  hdr.num_compl_dbl_ineqs = mark_data_.nccon_range_;
+  hdr.num_compl_vars_with_nz_lb = mark_data_.nccon_nzlb_;
 
   /** Number of nonlinear network constraints. */
   hdr.num_nl_net_cons = 0;

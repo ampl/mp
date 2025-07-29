@@ -482,9 +482,11 @@ protected:
     }
     bool need_nlc {false};
     if (exprResVar >= 0) {                            // Some expressions are there
-      if (!MPCD(VarHasMarking(exprResVar)))             // mark as expr if new
+      if ( !MPCD( VarHasMarking(exprResVar) ) )             // mark as expr if new
         MPD( MarkAsExpression(exprResVar) );
-      if ( !MPCD( UserAcceptsAndRecommends((const NLConstraint*)nullptr) ) )
+      if ( !MPCD( HasInitExpression(exprResVar) )        // e.g., was fixed
+          || !MPCD( UserAcceptsAndRecommends(
+              (const NLConstraint*)nullptr) ) )
         MPD( MarkAsResultVar(exprResVar) );
       /// Exists and marked a variable
       if (MPCD( IsProperVar(exprResVar) )) {            // Not an expression after all
@@ -554,7 +556,8 @@ protected:
       }
       if ( !MPCD(VarHasMarking(exprResVar) ))         // mark as expr if new
         MPD( MarkAsExpression(exprResVar) );
-      if ( !MPCD( GetModelAPI() ).AcceptsNLObj() )    // But as var if NLObj not accepted
+      if ( !MPCD( HasInitExpression(exprResVar) )        // e.g., was fixed
+          || !MPCD( GetModelAPI() ).AcceptsNLObj() )    // or, if NLObj not accepted
         MPD( MarkAsResultVar(exprResVar) );
       if ( MPCD( IsProperVar(exprResVar) ) ) {        // Not an expression after all
         lt_varsonly.add_term(1.0, exprResVar);
@@ -591,16 +594,22 @@ protected:
     int exprResVar = -1;
     if (exprTerm.GetArguments().is_variable()) {
       exprResVar = exprTerm.GetArguments().get_representing_variable();
+      assert( MPCD(HasInitExpression(exprResVar)) );
     } else                  // has more terms, or coef != 1.0, or const_term != 0
       if ( !exprTerm.GetArguments().empty() ) {
         exprTerm.AddContext(Context::CTX_MIX);          // Context is compulsory
         exprResVar = MPD( AssignResultVar2Args(std::move(exprTerm)) );
+        if ( !MPCD( HasInitExpression(exprResVar) ) ) {   // Can be fixed by prepro
+          assert( MPCD( is_fixed(exprResVar) ) );
+        }
       }
     bool need_nlcc {false};
     if (exprResVar >= 0) {                              // Some expressions are there
-      if (!MPCD(VarHasMarking(exprResVar)))             // mark as expr if new
+      if ( !MPCD( VarHasMarking(exprResVar) ) )             // mark as expr if new
         MPD( MarkAsExpression(exprResVar) );
-      if ( !MPCD( UserAcceptsAndRecommends((const NLComplementarity*)nullptr) ) )
+      if ( !MPCD( HasInitExpression(exprResVar) )       // e.g., was fixed
+          || !MPCD( UserAcceptsAndRecommends(
+              (const NLComplementarity*)nullptr) ) )
         MPD( MarkAsResultVar(exprResVar) );             // acc:nlcompl=0
       /// Exists and marked a variable
       if (MPCD( IsProperVar(exprResVar) )) {            // Not an expression after all
