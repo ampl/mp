@@ -29,6 +29,14 @@ public:
   /// Reuse the stored ModelConverter
   using Base::GetMC;
 
+  /// Skip conversion?
+  bool IfDelayConversion(const ItemType& , int ) {
+    return
+        GetMC().IfWantNLOutput()
+        && GetMC().UserAcceptsAndRecommends(
+               (const NLComplementarity*)nullptr);
+  }
+
   /// Convert in any context
   Context Convert(const ItemType& cc, int i) {
     switch (GetMC().ComplementarityCvt()) {
@@ -37,7 +45,8 @@ public:
     case 1:
       return Convert2Prod(cc, i);
     case 2:
-      MP_RAISE("Phi function not implemented");
+      MP_RAISE(
+          "Fischer-Burmeister complementarity function not implemented");
     default:
       MP_RAISE("Wrong value for cvt:compl");
     }
@@ -59,8 +68,8 @@ protected:
 
     /// Using algebraic expression (expr.body + 0.0)
     auto expr_var = GetMC().Convert2Var(
-        AlgebraicExpression<typename ComplCon::ExprType::BodyType>{
-                                                                   expr.GetBody(), 0.0} );
+        AlgebraicExpression<typename ComplCon::ExprType::BodyType>
+        {expr.GetBody(), 0.0} );
     double con_rhs = -expr.constant_term();
 
     if (fin_var_lb && !fin_var_ub) {

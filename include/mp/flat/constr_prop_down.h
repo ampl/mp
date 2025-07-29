@@ -427,6 +427,8 @@ public:
   /// Do nothing
   inline void PropagateResult(NLConstraint& , double , double , Context ) { }
   /// Do nothing
+  inline void PropagateResult(NLComplementarity& , double , double , Context ) { }
+  /// Do nothing
   inline void PropagateResult(NLLogical& , double , double , Context ) { }
   /// Do nothing
   inline void PropagateResult(NLReifEquiv& , double , double , Context ) { }

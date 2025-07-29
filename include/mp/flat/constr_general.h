@@ -309,7 +309,7 @@ public:
   /// Get constraint
   const ExprType& GetExpression() const { return compl_expr_; }
 
-  /// Get variable
+  /// Get the complemented variable
   int GetVariable() const { return compl_var_; }
 
   /// Compute violation

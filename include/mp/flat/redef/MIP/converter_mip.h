@@ -449,7 +449,9 @@ private:
                        options_.bigM_default_, -1.0, 1e100);
     this->GetEnv().AddStoredOption("cvt:compl cvt:complementarity",
                              "Complementarity conversion method "
-                             "(if not accepted natively, see acc:compl):",
+                             "(if not accepted natively, see acc:compl):\n"
+                                   "\n"
+                                   ".. value-table::\n",
                              options_.complCvt_, values_complcvt_);
     this->GetEnv().AddOption("cvt:plapprox:reltol plapprox:reltol plapproxreltol",
                        "Relative tolerance for piecewise-linear approximation. Default 0.01.",

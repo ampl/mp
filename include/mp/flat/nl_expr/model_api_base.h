@@ -193,7 +193,11 @@ public:
 
   /// Get the expression term of an \a NLComplementarity.
   ExprType GetExpression(const NLComplementarity& nlcc) {
-    return MPD( GetZeroExpression() );   // @todo
+    const auto i_expr = nlcc.HasExpr()
+                            ? nlcc.ExprIndex() : -1;
+    if (i_expr<0)
+      return MPD( GetZeroExpression() );
+    return GetInitExpression(i_expr);       // could be explicified
   }
 
   /// GetLinSize(le)

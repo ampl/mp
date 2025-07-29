@@ -426,8 +426,8 @@ MP2NLModelAPI::GetLinPart(const ItemInfo &info) {
     return GetLPRoS( *((NLAssignGE*)(pitem)) );
   }
   case StaticItemTypeID::ID_NLComplementarity: {
-    return GetLPRoS(                 // Do we need the \a compl_var?
-        ((const NLComplementarity*)(pitem))->GetExpression().GetBody() );
+    return GetLPRoS(
+        ((const NLComplementarity*)(pitem))->GetLinTerms() );
   }
   default:
     MP_RAISE("Unknown objective or algebraic constraint type");
@@ -570,10 +570,10 @@ NLHeader MP2NLModelAPI::DoMakeHeader() {
   /** Total number of nonlinear constraints. */
   hdr.num_nl_cons = mark_data_.nnlc_;
   hdr.num_nl_objs = mark_data_.nnlo_;
-  hdr.num_compl_conds = 0;
-  hdr.num_nl_compl_conds = 0;
-  hdr.num_compl_dbl_ineqs = 0;
-  hdr.num_compl_vars_with_nz_lb = 0;
+  hdr.num_compl_conds = mark_data_.nccon_lin_ + mark_data_.nccon_nonlin_;
+  hdr.num_nl_compl_conds = mark_data_.nccon_nonlin_;
+  hdr.num_compl_dbl_ineqs = mark_data_.nccon_range_;
+  hdr.num_compl_vars_with_nz_lb = mark_data_.nccon_nzlb_;
 
   /** Number of nonlinear network constraints. */
   hdr.num_nl_net_cons = 0;
@@ -769,23 +769,13 @@ void MP2NLModelAPI::FeedConBounds(ConBoundsWriter& cbw) {
     } break;
     case StaticItemTypeID::ID_NLComplementarity: {
       const auto& lcon = *((NLComplementarity*)(alg_con_info_[i].GetPItem()));
-      AlgConRange bnd;
-      auto j = lcon.GetVariable();
-      auto ct = lcon.GetExpression().constant_term(); // @todo NLExpression?
-      bnd.L = MinusInfinity();
-      bnd.U = Infinity();
-      bnd.k = 0;
+      AlgConRange bnd {0, 0};
+      auto j = lcon.GetCVar();
       if (var_lbs_[j] > MinusInfinity()) {
         bnd.k = 1;
-        bnd.L = -ct;         // empty expr then
       }
       if (var_ubs_[j] < Infinity()) {
         bnd.k |= 2;
-        bnd.U = -ct;
-      }
-      if (3==bnd.k) {
-        bnd.L = MinusInfinity();
-        bnd.U = Infinity();  // expr should be ct.
       }
       assert(bnd.k);
       bnd.cvar = GetNewVarIndex(j);
@@ -858,12 +848,10 @@ void MP2NLModelAPI::FeedAlgConExpression(
     break;
   case StaticItemTypeID::ID_NLComplementarity: {
     const auto& cc = *((NLComplementarity*)(pitem));
-    auto j = cc.GetVariable();
-    if (var_lbs_[j]<=MinusInfinity()   // @todo proper expressions
-        || var_ubs_[j]>=Infinity())
-      ew.NPut(0.0);
+    if (cc.HasExpr())
+      FeedExpr(GetExpression(cc), ew);
     else
-      ew.NPut(cc.GetExpression().constant_term());
+      ew.NPut(0.0);
   } break;
   default:
     ew.NPut(0.0);                     // must be linear constr
