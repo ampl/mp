@@ -413,13 +413,16 @@ public:
   double bigMDefault() const { return options_.bigM_default_; }
   double PLApproxRelTol() const { return options_.PLApproxRelTol_; }
   double PLApproxDomain() const { return options_.PLApproxDomain_; }
-  /// How to convert commplementarity
+  /// How to convert complementarity
   int ComplementarityCvt() const { return options_.complCvt_; }
+  /// Complementarity smoothing tolerance
+  double ComplementarityCvtTol() const { return options_.complCvtEps_; }
 
 private:
   struct Options {
     double cmpEps_ { 1e-4 };
     int complCvt_ = 0;
+    double complCvtEps_ {1e-6};
     double bigM_default_ { -1 };
     double PLApproxRelTol_ { 1e-2 };
     double PLApproxDomain_ { 1e6 };
@@ -428,10 +431,11 @@ private:
   };
   Options options_;
 
-  static constexpr mp::OptionValueInfo values_complcvt_[3] = {
-      {     "0", "As disjunction", 0 },
-      {     "1", "As product", 1 },
-      {     "2", "Using Phi function, see Ferris, Dirkse, Meeraus '92", 2}
+  static constexpr mp::OptionValueInfo values_complcvt_[4] = {
+      {     "0", "Disjunction: a<=0 || b<=0, a>=0, b>=0", 0 },
+      {     "1", "Product: a*b=cvt:compl:tol", 1 },
+      {     "2", "Fischer-Burmeister function: sqrt(a^2+b^2+2*cvt:compl:tol)=a+b", 2},
+      {     "3", "min(a,b)=0", 3}
   };
 
   void InitOwnOptions() {
@@ -449,10 +453,15 @@ private:
                        options_.bigM_default_, -1.0, 1e100);
     this->GetEnv().AddStoredOption("cvt:compl cvt:complementarity",
                              "Complementarity conversion method "
-                             "(if not accepted natively, see acc:compl):\n"
+                             "(if not accepted natively, see acc:compl and acc:nlcompl):\n"
                                    "\n"
                                    ".. value-table::\n",
                              options_.complCvt_, values_complcvt_);
+    this->GetEnv().AddOption("cvt:compl:tol cvt:compl:eps compl:eps",
+                             "Tolerance parameter for the product "
+                             "and Fischer-Burmeister encodings of complementarity, "
+                             "see cvt:compl. Default 1e-6.",
+                             options_.complCvtEps_, 0.0, 1e100);
     this->GetEnv().AddOption("cvt:plapprox:reltol plapprox:reltol plapproxreltol",
                        "Relative tolerance for piecewise-linear approximation. Default 0.01.",
                        options_.PLApproxRelTol_, 0.0, 1e100);
