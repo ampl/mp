@@ -5,6 +5,8 @@
  * Converter-independent linear approximation routines
  */
 
+#include <functional>
+
 #include "mp/flat/constr_std.h"
 
 namespace mp {
@@ -38,6 +40,8 @@ struct PLApproxParams {
   /// Error upper bound
   /// (relative outside of +-1, absolute inside)
   double ubErr = 1e-5;
+
+  std::function<bool(double, double, const char*, int)> bnd_checker;
 
   /////////// OUTPUT: RESULT OF APPROXIMATION /////////////
   FuncGraphDomain grDomOut;    // can be tighter than grDom

@@ -353,10 +353,12 @@ void BasicPLApproximator<FuncCon>::ConsiderIntegrality() {
 template <class FuncCon>
 bool BasicPLApproximator<FuncCon>::CheckDomainReturnFalseIfTrivial(
     PLPoints& result) {
-  if (lbx() > ubx()+1e-6)
-    MP_INFEAS(fmt::format("PLApprox {}: "
-                          "empty argument domain [{}, {}]",
-                          GetConTypeName(), lbx(), ubx()));
+  if (lbx() > ubx()) {
+    std::string kind = "[PlApprox ";
+    kind += GetConTypeName();
+    kind += "] argument";
+    laPrm_.bnd_checker( lbx(), ubx(), kind.c_str(), -1);
+  }
   /// Domain ~ single point
   if (lbx() > ubx()-1e-6) {
     result = { {(lbx()+ubx())/2.0}, {eval((lbx()+ubx())/2.0)} };
