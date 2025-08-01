@@ -1,6 +1,18 @@
 Summary of recent updates to the AMPL MP Library
 ================================================
 
+
+## 20250801
+- Tolerances set by options pre:feastol,
+  pre:feastolrel both need to be violated
+  to produce a warning on contradicting
+  variable/constraint bounds. Previously
+  the preprocessor failed on any violation,
+  without letting the solver try.
+- Options cvt:compl, cvt:compl:eps control
+  complementarity reformulations.
+
+
 ## 20250617
 - Option *cvt:unnest*: bits 2 and 4 switch on
   inlining of linear and quadratic subexpressions

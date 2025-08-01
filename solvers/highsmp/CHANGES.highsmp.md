@@ -2,6 +2,18 @@ Summary of recent updates to HiGHS for AMPL
 ===========================================
 
 
+## 20250801
+- Changes in MP
+  - Tolerances set by options pre:feastol,
+    pre:feastolrel both need to be violated
+    to produce a warning on contradicting
+    variable/constraint bounds. Previously
+    the preprocessor failed on any violation,
+    without letting the solver try.
+  - Options cvt:compl, cvt:compl:eps control
+    complementarity reformulations.
+
+
 ## 20250617
 - Updated to HiGHS 1.11
 - Renamed *pdlp_d_gap_tol* to *pdlpopttol* for consistency
