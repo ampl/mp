@@ -1106,7 +1106,7 @@ public:
   /// Check var/con domain
   bool CheckVarConDomain(
       double lb, double ub, const char* kind, int i) {
-    if (lb && ub
+    if (lb>ub
         && lb-ub > MPCD( model_feas_tol() )
         && lb-ub
                > std::max(std::abs(lb), std::abs(ub))
@@ -1115,7 +1115,7 @@ public:
           std::string(kind) + " bounds",
           fmt::format("Bounds [{:.17}, {:.17}]\nof {}[{}] "
                       "contradict pre:eps and pre:epsrel.\n"
-                      "The model can be infeasible",
+                      "Model can be infeasible",
                       lb, ub, kind, i+1).c_str());
       return true;
     }
