@@ -132,7 +132,7 @@ public:
   //////////////////////////// EXPRESSION TREES ////////////////////////////
   /// Handle expression trees: inherit basic API
   USE_BASE_EXPRESSION_HANDLERS(BaseModelAPI)
-      ACCEPT_EXPRESSION_INTERFACE(Recommended)
+      ACCEPT_EXPRESSION_INTERFACE(NotAccepted)
 
       /// Whether accepts NLObjective
       static int AcceptsNLObj() { return 0; }
