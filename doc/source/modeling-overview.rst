@@ -31,7 +31,7 @@ Currently available MP-based solvers include:
 - `highs <https://github.com/ampl/mp/tree/develop/solvers/highsmp>`_,
   an interface to the open-source `HiGHS solver <https://ampl.com/products/solvers/open-source-solvers/>`_
 
-- `cuoptmp <https://github.com/ampl/mp/tree/develop/solvers/cuoptmp>`_,
+- `cuopt <https://github.com/ampl/mp/tree/develop/solvers/cuoptmp>`_,
   an interface to the open-source `NVIDIA cuOpt solver <https://ampl.com/products/solvers/open-source-solvers/>`_
 
 - `cbc <https://github.com/ampl/mp/tree/develop/solvers/cbcmp>`_,
