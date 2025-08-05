@@ -189,6 +189,7 @@ public:
   }
 
   /// Same, but always return a variable
+  /// (a fixed varible if the result is a constant).
   template <class FuncConstraint>
   typename FCC<Impl, FuncConstraint>::Var
   AssignResultVar2Args(FuncConstraint&& fc) {
@@ -196,6 +197,19 @@ public:
     if (vc.is_const())
       return int( MPD( MakeFixedVar(vc.get_const()) ) );
     return vc.get_var();
+  }
+
+  /// Same, but for constant result, still add the full
+  /// expression.
+  /// This is necessary for complementarity constraints
+  /// in NL expression output where the constant part
+  /// needs to be an actual expression.
+  template <class FuncConstraint>
+  typename FCC<Impl, FuncConstraint>::Var
+  AssignResult2Args__FullExpression(FuncConstraint&& fc) {
+    auto fcc = MakeFuncConstrConverter<Impl, FuncConstraint>(
+        *this, std::forward<FuncConstraint>(fc));
+    return fcc.Convert(true).get_var();
   }
 
 	/// Typedef ConInfo; constraint location

@@ -598,10 +598,10 @@ protected:
     } else                  // has more terms, or coef != 1.0, or const_term != 0
       if ( !exprTerm.GetArguments().empty() ) {
         exprTerm.AddContext(Context::CTX_MIX);          // Context is compulsory
-        exprResVar = MPD( AssignResultVar2Args(std::move(exprTerm)) );
-        if ( !MPCD( HasInitExpression(exprResVar) ) ) {   // Can be fixed by prepro
-          assert( MPCD( is_fixed(exprResVar) ) );
-        }
+        exprResVar
+            = MPD( AssignResult2Args__FullExpression(   // Constant as expression
+                std::move(exprTerm)) );
+        assert( MPCD( HasInitExpression(exprResVar) ) );
       }
     bool need_nlcc {false};
     if (exprResVar >= 0) {                              // Some expressions are there
