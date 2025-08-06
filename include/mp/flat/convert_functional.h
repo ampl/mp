@@ -77,9 +77,10 @@ public:
   /// Convert array of arguments into a result (var or const),
   /// possibly adding extra constraint(s).
   /// @return either a constant or a variable
-  VarOrConst Convert() {
+  /// @param if fVarOnly, always variable
+  VarOrConst Convert(bool fVarOnly=false) {
     MP_DISPATCH( PreprocessArguments() );
-    if (ResultIsConstant())
+    if (!fVarOnly && ResultIsConstant())
       return VarOrConst::MakeConst( lb() );
     if (ResultVarIsKnown())
       return VarOrConst::MakeVar( GetResultVar() );

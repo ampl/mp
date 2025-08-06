@@ -762,6 +762,7 @@ void PrintModelInfo(const FlatModelInfo& fmi,
   int n_lin = 0;
   int n_quad = 0;
   int n_nl = 0;
+  int n_nlcompl = 0;
   int n_cones = 0;
   int n_condlin = 0, n_condquad = 0;
   int n_indlin = 0, n_indquad = 0;
@@ -785,6 +786,8 @@ void PrintModelInfo(const FlatModelInfo& fmi,
       else if (begins_with(val.first, "_nl")) {
         if (val.first == "_nlcon")
           n_nl += val.second.n_;
+        else if (val.first == "_nlcompl")
+          n_nlcompl += val.second.n_;
       }  // else, NL assignment or logical - skip
       else if (begins_with(val.first, "_sos1"))
         n_sos1 += val.second.n_;
@@ -807,11 +810,13 @@ void PrintModelInfo(const FlatModelInfo& fmi,
     if (n)
       fmt::print(fmt::format(" {} {};", n, descr));
   };
-  if (n_lin + n_quad + n_nl + n_cones + n_sos1 + n_sos2) {
+  if (n_lin + n_quad + n_nl + n_nlcompl
+      + n_cones + n_sos1 + n_sos2) {
     fmt::print("Constraints: ");
     PrnType("linear", n_lin);
     PrnType("quadratic", n_quad);
     PrnType("nonlinear", n_nl);
+    PrnType("NLCompl", n_nlcompl);
     if (n_cones) {
       fmt::print(fmt::format(" {} conic (", n_cones));
       int i=0;

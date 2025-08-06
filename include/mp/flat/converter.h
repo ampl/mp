@@ -189,6 +189,7 @@ public:
   }
 
   /// Same, but always return a variable
+  /// (a fixed varible if the result is a constant).
   template <class FuncConstraint>
   typename FCC<Impl, FuncConstraint>::Var
   AssignResultVar2Args(FuncConstraint&& fc) {
@@ -196,6 +197,19 @@ public:
     if (vc.is_const())
       return int( MPD( MakeFixedVar(vc.get_const()) ) );
     return vc.get_var();
+  }
+
+  /// Same, but for constant result, still add the full
+  /// expression.
+  /// This is necessary for complementarity constraints
+  /// in NL expression output where the constant part
+  /// needs to be an actual expression.
+  template <class FuncConstraint>
+  typename FCC<Impl, FuncConstraint>::Var
+  AssignResult2Args__FullExpression(FuncConstraint&& fc) {
+    auto fcc = MakeFuncConstrConverter<Impl, FuncConstraint>(
+        *this, std::forward<FuncConstraint>(fc));
+    return fcc.Convert(true).get_var();
   }
 
 	/// Typedef ConInfo; constraint location
@@ -939,7 +953,9 @@ public:
         + fmi->GetNumberOfConstraints(typeid(LinConLE))
         + mt.n_quad_con
         + fmi->GetNumberOfConstraints(typeid(ComplementarityLinear))
-        + fmi->GetNumberOfConstraints(typeid(ComplementarityQuadratic));
+                   + fmi->GetNumberOfConstraints(typeid(ComplementarityQuadratic))
+                   + fmi->GetNumberOfConstraints(typeid(NLComplementarity))
+        ;
     mt.n_log_con =
         fmi->GetNumberOfConstraints(typeid(AndConstraint))
         + fmi->GetNumberOfConstraints(typeid(OrConstraint))
@@ -1098,7 +1114,26 @@ public:
     m.set_lb(var, std::max(m.lb(var), lb));
     m.set_ub(var, std::min(m.ub(var), ub));
     if (m.lb(var)>m.ub(var))
-      MP_INFEAS("empty variable domain");
+      CheckVarConDomain(m.lb(var), m.ub(var), "_svar", var);
+  }
+
+  /// Check var/con domain
+  bool CheckVarConDomain(
+      double lb, double ub, const char* kind, int i) {
+    if (lb>ub
+        && lb-ub > MPCD( model_feas_tol() )
+        && lb-ub
+               > std::max(std::abs(lb), std::abs(ub))
+                     * MPCD( model_feas_tol_rel() )) {
+      GetEnv().AddWarning(
+          std::string(kind) + " bounds",
+          fmt::format("Bounds [{:.17}, {:.17}]\nof {}[{}] "
+                      "contradict pre:eps and pre:epsrel.\n"
+                      "Model can be infeasible",
+                      lb, ub, kind, i+1).c_str());
+      return true;
+    }
+    return true;
   }
 
   /// var_type()
@@ -1412,6 +1447,9 @@ private:
 
     int relax_ = 0;
 
+    double modelfeastol_ = 1e-6;
+    double modelfeastolrel_ = 1e-6;
+
     int solcheckmode_ = 1+2+512;
     bool solcheckinfeas_ = false;
     bool solcheckfail_ = false;
@@ -1443,6 +1481,10 @@ public:             // public for CRTP
   int IfPropCtxCondIneq() const { return options_.propCtxIneq_; }
   /// Propagate context into count/numberof?
   int IfPropCtxCountNumberof() const { return options_.propCtxCountNumberof_; }
+
+  /// Model checking options
+  double model_feas_tol() const { return options_.modelfeastol_; }
+  double model_feas_tol_rel() const { return options_.modelfeastolrel_; }
 
   /// Solution checking options
   int sol_check_mode() const { return options_.solcheckmode_; }
@@ -1645,6 +1687,21 @@ private:
         "0*/1: Whether to relax integrality of variables.",
         options_.relax_, 0, 1);
 
+    GetEnv().AddOption("pre:feastol pre:eps pre:feastolabs pre:epsabs",
+                       "Absolute tolerance to check variable "
+                       "and constraint bound contraditions. "
+                       "Only triggers if also pre:feastolrel is violated. "
+                       "See also sol:chk:feastol. "
+                       "Default 1e-6.",
+                       options_.modelfeastol_, 0.0, 1e100);
+    GetEnv().AddOption("pre:feastolrel pre:epsrel",
+                       "Relative tolerance to check variable "
+                       "and constraint bound contradictions. "
+                       "Only triggers if also pre:feastol is violated. "
+                       "See also sol:chk:feastol. "
+                       "Default 1e-6.",
+                       options_.modelfeastolrel_, 0.0, 1e100);
+
     GetEnv().AddStoredOption(
           "sol:chk:mode solcheck checkmode chk:mode",
         "Solution checking mode. "
@@ -1669,12 +1726,18 @@ private:
                              "Default: 1+2+512.",
         options_.solcheckmode_, 0, 1023);
     GetEnv().AddOption("sol:chk:feastol sol:chk:eps chk:eps chk:feastol",
-        "Absolute tolerance to check objective values, variable "
-        "and constraint bounds. Default 1e-6.",
+        "Absolute tolerance to check objective values', variable "
+        "and constraint bounds' violations. "
+                       "Only triggers if also sol:chk:feastolrel is violated. "
+                       "See also pre:feastol. "
+                       "Default 1e-6.",
         options_.solfeastol_, 0.0, 1e100);
     GetEnv().AddOption("sol:chk:feastolrel sol:chk:epsrel chk:epsrel chk:feastolrel",
-        "Relative tolerance to check objective values, variable "
-        "and constraint bounds. Default 1e-6.",
+        "Relative tolerance to check objective values', variable "
+        "and constraint bounds' violations. "
+                       "Only triggers if also sol:chk:feastol is violated. "
+                       "See also pre:feastol. "
+                       "Default 1e-6.",
         options_.solfeastolrel_, 0.0, 1e100);
     GetEnv().AddOption("sol:chk:inttol sol:chk:inteps sol:inteps chk:inttol",
         "Solution checking tolerance for variables' integrality. "
@@ -1990,6 +2053,8 @@ protected:
       ComplementarityLinear, "acc:compl acc:compllin", 350)
   STORE_CONSTRAINT_TYPE__NO_MAP(
       ComplementarityQuadratic, "acc:complquad", 300)
+  STORE_CONSTRAINT_TYPE__NO_MAP(
+      NLComplementarity, "acc:nlcompl", 360)
   STORE_CONSTRAINT_TYPE__NO_MAP(
       QuadraticConeConstraint, "acc:quadcone", 3002)
   STORE_CONSTRAINT_TYPE__NO_MAP(

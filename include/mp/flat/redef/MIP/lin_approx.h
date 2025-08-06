@@ -48,6 +48,10 @@ public:
     auto x = con.GetArguments()[0];
     auto y = con.GetResultVar();
     PLApproxParams laPrm;
+    laPrm.bnd_checker
+        = [this](double lb, double ub, const char* kind, int i) {
+            return this->GetMC().CheckVarConDomain(lb, ub, kind, i);
+          };
     laPrm.ubErr = GetMC().PLApproxRelTol();
     auto dm = GetMC().PLApproxDomain();
     /// Narrow graph domain to +-dm

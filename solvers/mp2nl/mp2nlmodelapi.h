@@ -262,7 +262,7 @@ public:
   void AddConstraint(const NLAssignGE& nle);
 
   /// @todo
-  ACCEPT_CONSTRAINT(NLComplementarity, NotAccepted, CG_Algebraic)
+  ACCEPT_CONSTRAINT(NLComplementarity, Recommended, CG_Algebraic)
   void AddConstraint(const NLComplementarity& cc);
 
 
@@ -1062,6 +1062,11 @@ protected:
     int nnlo_ {0};
     int nnlc_ {0};
 
+    int nccon_lin_ {0};
+    int nccon_nonlin_ {0};
+    int nccon_range_ {0};
+    int nccon_nzlb_ {0};
+
     std::vector< std::pair< int, int > > var_prior_;        // new index -> var weight, orig. index
     std::vector<int> var_order_12_;                         // new index -> old index
     std::vector<int> var_order_21_;                         // old index -> new index
@@ -1124,6 +1129,23 @@ protected:
   }
   /// Mark NLAssign
   void MarkRangeOrEqn(const NLAssignGE& lc) { }
+
+  /// Mark NLComplementarity
+  void MarkRangeOrEqn(const NLComplementarity& nlcc) {
+    if (nlcc.HasExpr())
+      ++mark_data_.nccon_nonlin_;
+    else
+      ++mark_data_.nccon_lin_;
+    if (var_lbs_[nlcc.GetCVar()] > MinusInfinity()
+        && var_ubs_[nlcc.GetCVar()] < Infinity())
+      ++mark_data_.nccon_range_;
+    else                           // single bound, non-0
+      if ((var_lbs_[nlcc.GetCVar()] > MinusInfinity()
+           && var_lbs_[nlcc.GetCVar()])
+          || (var_ubs_[nlcc.GetCVar()] < Infinity()
+              && var_ubs_[nlcc.GetCVar()]))
+        ++mark_data_.nccon_nzlb_;
+  }
 
   /// Add to col sizes
   void Add2ColSizes(ArrayRef<int> vars);

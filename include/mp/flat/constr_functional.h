@@ -224,6 +224,8 @@ public:
   const AffineExpr& GetAffineExpr() const { return affine_expr_; }
   /// Get the arguments (affine expr)
   const Arguments& GetArguments() const { return GetAffineExpr(); }
+  /// Modify constant term
+  void add_to_constant(double d) { affine_expr_.add_to_constant(d); }
   /// Produce corresp linear constraint
   LinConEQ to_linear_constraint() const {
     const auto& ae = GetAffineExpr();
@@ -284,6 +286,8 @@ public:
   const QuadraticExpr& GetQuadExpr() const { return quad_expr_; }
   /// GetArguments(): get quad expr
   const Arguments& GetArguments() const { return GetQuadExpr(); }
+  /// Modify constant term
+  void add_to_constant(double d) { quad_expr_.add_to_constant(d); }
 
   /// add respective static constraint to a converter.
   /// Use >=< depending on context.

@@ -125,7 +125,7 @@ MP2NLBackend::ConfigMap MP2NLBackend::config_map_ {
      "acc:condlinle=0 acc:condlineq=0 acc:condlinge=0 "
      "acc:condlinlt=0 acc:condlingt=0 acc:ifthen=0 "
      "acc:and=0 acc:or=0 acc:abs=0 acc:max=0 acc:min=0 "
-     "cvt:compl=1 "
+     "acc:nlcompl=0 cvt:compl=1 "
      "cvt:multoutcard=0 cvt:socp=1 "
      "acc:asin=0 acc:acos=0 acc:atan=0 "
      "acc:asinh=0 acc:acosh=0 acc:atanh=0 "
@@ -147,7 +147,7 @@ MP2NLBackend::ConfigMap MP2NLBackend::config_map_ {
      "acc:condlinle=0 acc:condlineq=0 acc:condlinge=0 "
      "acc:condlinlt=0 acc:condlingt=0 acc:ifthen=0 "
      "acc:and=0 acc:or=0 acc:abs=0 acc:max=0 acc:min=0 "
-     "cvt:compl=1 "
+     "acc:nlcompl=0 cvt:compl=1 "
      "cvt:multoutcard=0 cvt:socp=1 "
      "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },  // @todo compl
     { "conopt4",
@@ -157,7 +157,7 @@ MP2NLBackend::ConfigMap MP2NLBackend::config_map_ {
      "acc:condlinle=0 acc:condlineq=0 acc:condlinge=0 "
      "acc:condlinlt=0 acc:condlingt=0 acc:ifthen=0 "
      "acc:and=0 acc:or=0 acc:abs=0 acc:max=0 acc:min=0 "
-     "cvt:compl=1 "
+     "acc:nlcompl=0 cvt:compl=1 "
      "cvt:multoutcard=0 cvt:socp=1 "
      "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },  // @todo compl
     { "snopt",
@@ -178,7 +178,7 @@ MP2NLBackend::ConfigMap MP2NLBackend::config_map_ {
      "acc:condlinle=0 acc:condlineq=0 acc:condlinge=0 "
      "acc:condlinlt=0 acc:condlingt=0 acc:ifthen=0 "
      "acc:and=0 acc:or=0 acc:abs=0 acc:max=0 acc:min=0 "
-     "cvt:compl=1 "
+     "acc:nlcompl=0 cvt:compl=1 "
      "cvt:multoutcard=0 cvt:socp=1 "
      // minmaxabs: indeed better linearize as Bob said?
      "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },  // @todo compl

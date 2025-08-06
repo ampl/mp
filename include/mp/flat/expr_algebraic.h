@@ -53,11 +53,14 @@ public:
   /// Constructor from helper "variable"
   AlgebraicExpression(Variable i) { Body::add_term(1.0, i.v); }
 
+  /// Is constant 0?
+  bool empty() const { return !constant_term() && is_constant(); }
+
   /// Whether AlgebraicExpression represents a constant
   bool is_constant() const { return Body::empty(); }
   /// true when constant=0 and 1 variable with coef 1.0
   bool is_variable() const {
-    return 0.0==std::fabs(constant_term()) && GetBody().is_variable();
+    return !constant_term() && GetBody().is_variable();
   }
   /// if affine
   bool is_affine() const { return Body::is_linear(); }
