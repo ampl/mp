@@ -2,6 +2,11 @@ Summary of recent updates to Xpress for AMPL
 ============================================
 
 
+## 20250806
+- Updated to Xpress 45.01.02 (9.7), which includes
+  bugfixes.
+
+
 ## 20250617
 - Changes in MP
   - Multi-objective emulator: added support for
