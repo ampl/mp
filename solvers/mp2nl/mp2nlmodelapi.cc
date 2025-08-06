@@ -161,6 +161,8 @@ MP2NL_Expr MP2NLModelAPI::StoreMP2NLExprID(
   expr_info_.push_back(
       MakeItemInfo(expr, eid, IsLogical(expr)));
   expr_counter_.push_back(0);
+  expr_used_in_con_.push_back(false);
+  expr_used_in_obj_.push_back(false);
   expr_sparsity_.push_back( {spars.begin(), spars.end()} );
   return MakeExprID( int(expr_info_.size()-1) );
 }
@@ -179,16 +181,37 @@ void MP2NLModelAPI::MergeSparsityTmp(
   }     // That's it
 }
 
-/// Count expression depending on its kind.
-/// This duplicates the counters in FlatConverter
-///   -- could check equality.
 void MP2NLModelAPI::CountExpressionOccurrences(MP2NL_Expr expr) {
   if (expr.IsExpression()) {
     auto index = expr.GetExprIndex();
     assert(index >=0 && index < (int)expr_counter_.size()
            && index < (int)expr_info_.size());
     ++expr_counter_[index];
-  }   // @todo here also variable usage dep. on top-level item?
+  }
+}
+
+void MP2NLModelAPI::VisitMP2NLExprArguments(MP2NL_Expr e,
+    std::function<void(MP2NL_Expr )> l) {
+  if (e.IsExpression()) {
+    expr_info_.at(e.GetExprIndex())
+    .GetDispatcher().VisitArguments(
+        expr_info_.at(e.GetExprIndex()).GetPItem(), l);
+  }
+}
+
+void MP2NLModelAPI::PropagateExprUsageKind(MP2NL_Expr e, bool in_obj) {
+  if (e.IsExpression()) {
+    auto index = e.GetExprIndex();
+    const auto& usage_flags
+        = in_obj ? expr_used_in_obj_ : expr_used_in_con_;
+    if (!usage_flags.at(index)) {     // Each kind only 1x
+      VisitMP2NLExprArguments(
+          e,
+          [this, in_obj](MP2NL_Expr e1) {
+            PropagateExprUsageKind(e1, in_obj);
+          });
+    }
+  }
 }
 
 
@@ -330,11 +353,12 @@ void MP2NLModelAPI::MapExprTreeFromItemInfo(
   auto mp2nlexpr        // so that AddExpression() is called
       = info.GetDispatcher().GetExpression(info.GetPItem());
   RegisterExpression(mp2nlexpr);     // tree root
-  if (1 != kind) {                   // alg con / obj
+  if (1 != kind) {                   // alg con (0) / obj (2)
     MergeItemSparsity(info, kind, mp2nlexpr);
     UpdateAlgebraicMetaInfo(info, kind);  // nnz, colsizes, n ranges/eqns
+    PropagateExprUsageKind(mp2nlexpr, (kind));
   }
-  MarkNLVars(i_item, mp2nlexpr, kind);            // also for logical cons
+  MarkNLVars(i_item, mp2nlexpr, kind);    // Uses sparsity pattern
 }
 
 void MP2NLModelAPI::ResetObjMetaInfo() {

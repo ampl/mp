@@ -338,16 +338,34 @@ private:
 
 
 protected:
+  /// Custom type trait to check if a type is an instance of ExprWrapper
+  template <typename T>
+  struct is_flat_expr : std::false_type {};
+
+  /// Specialize
+  template <typename U>
+  struct is_flat_expr<ExprWrapper<U>> : std::true_type {};
+
   /// Visit arguments of an item.
   /// @param FlatItem: underlying flat item
   /// @param Lambda: to be called on each argument's Expr
   template <class FlatItem, class Lambda>
   inline void VisitArguments(
-      const FlatItem& expr, Lambda lambda) {
+      const FlatItem& expr, Lambda lambda,
+      typename std::enable_if<is_flat_expr<
+          typename std::decay<FlatItem>::type>::value>::type* = nullptr) {
     mp::VisitArguments(expr.GetFlatConstraint(),
                        [this,lambda](int v) {
                          lambda(GetInitExpression(v));
                        });
+  }
+
+  /// Other types
+  template <class FlatItem, class Lambda>
+  inline void VisitArguments(
+      const FlatItem& expr, Lambda lambda,
+      typename std::enable_if<!is_flat_expr<
+          typename std::decay<FlatItem>::type>::value>::type* = nullptr) {
   }
 
 

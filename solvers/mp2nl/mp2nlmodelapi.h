@@ -2,6 +2,7 @@
 #define MP2NLMODELAPI_H
 
 #include <unordered_set>
+#include <functional>
 
 #include "mp/env.h"
 #include "mp2nlcommon.h"
@@ -1256,6 +1257,10 @@ protected:
     virtual void MarkRangeOrEqn(void* pitem) = 0;
     /// Get expression
     virtual MP2NL_Expr GetExpression(void* pitem) = 0;
+    /// Visit arguments
+    virtual void VisitArguments(
+        void* pitem,
+        std::function<void(MP2NL_Expr )> lambda) = 0;
 
     /// Placeholder for the item category getter:
     /// static item vs expression
@@ -1291,6 +1296,11 @@ protected:
     /// Get expression
     MP2NL_Expr GetExpression(void* pitem) override
     { return GetMAPI().GetExpression(*(const Item*)pitem); }
+
+    /// Visit arguments
+    void VisitArguments(void* pitem,
+        std::function<void(MP2NL_Expr )> lambda) override
+    { GetMAPI().VisitArguments(*(const Item*)pitem, lambda); }
 
     /// Item category getter:
     /// static item vs expression
@@ -1570,6 +1580,7 @@ protected:
 
   /// Map expressions from a single item info
   /// @param kind: 0 - alg con, 1 - log con, 2 - obj
+  /// @note This actually adds expressions
   /// @note needs to be in .h to be instantiated/inlined,
   ///   at least for Clang 16.
   void MapExprTreeFromItemInfo(
@@ -1591,7 +1602,9 @@ protected:
   void UpdateAlgebraicMetaInfo(const ItemInfo& info, int kind);
 
   /// Register NL variables,
-  /// in particular a constraint's nonlinearity
+  /// in particular a constraint's nonlinearity.
+  /// Marks all argument variables (using sparsity pattern)
+  /// as used in con/obj.
   void MarkNLVars(int i_item, MP2NL_Expr expr, int kind);
 
   /// Compute nlvc(i), nlvo(i), nlvb(i) etc
@@ -1617,8 +1630,16 @@ protected:
   /// Just counts them.
   void RegisterExpression(MP2NL_Expr expr);
 
-  /// Count expression depending on its kind.
+  /// Count expression usage.
+  /// This does not include arguments, in contrast to
+  /// PropagateExprUsageKind().
+  /// @todo This duplicates the counters in FlatConverter
+  ///   -- could check equality.
   void CountExpressionOccurrences(MP2NL_Expr expr);
+
+  /// Propagate to the arguments that the expression
+  /// is used in alg con(s) or obj(s).
+  void PropagateExprUsageKind(MP2NL_Expr e, bool in_obj);
 
   /// Single template code to add any expression
   /// where eid is provided
@@ -1649,6 +1670,13 @@ protected:
                ? var_names_[v] : "";
   }
 
+  /// Reuse flat expressions' VisitArguments()
+  using BaseModelAPI::VisitArguments;
+
+  /// Visit arguments of an MP2NL_Expr
+  void VisitMP2NLExprArguments(MP2NL_Expr e,
+                               std::function<void(MP2NL_Expr )> l);
+
   /// Feed extended linear part
   template <class ConLinearExprWriterFactory>
   void FeedExtLinPart(
@@ -1672,6 +1700,7 @@ private:
 
   std::vector<ItemInfo> expr_info_;
   std::vector<int>   expr_counter_;   // usage counter
+  std::vector<bool> expr_used_in_con_, expr_used_in_obj_;
   std::vector<Sparsity4Expr> expr_sparsity_;
 
   /// if a var is nonlinear in obj/con

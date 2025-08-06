@@ -41,7 +41,7 @@ def runModels(directory, ampl: str, solvers: list,
           exporter : Exporter, optional - An exporter object that overrides the default CSV one. In case this is specified, 
                                           the parameter "exportDir" is ignored
           exportFile: str, optional - Override the output file name for the default exporter
-          justNL: bool     - If True, only considers the NL files in the expored directories. Useful when no AMPL license
+          justNL: bool     - If True, only considers the NL files in the explored directories. Useful when no AMPL license
                                    or amplpy is available
           recursive : bool - If True, finds models in the subdirectories also
           preferAMPLModels:bool - If True, executes the AMPL version of a model if both NL and AMPL versions are present.
