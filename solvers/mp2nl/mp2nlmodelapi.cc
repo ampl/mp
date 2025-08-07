@@ -215,18 +215,15 @@ void MP2NLModelAPI::PropagateExprUsageKind(MP2NL_Expr e, bool in_obj) {
   }
 }
 
-bool MP2NLModelAPI::IsExprDefVar(MP2NL_Expr e) const {
-  if (e.IsExpression()) {
-    assert(expr_defvar_index_.size() > e.GetExprIndex());
-    return expr_defvar_index_[e.GetExprIndex()];  // non-0
-  }
-  return false;
+bool MP2NLModelAPI::IsExprDefVar(int eindex) const {
+  assert(expr_defvar_index_.size() > eindex);
+  return expr_defvar_index_[eindex];  // non-0
 }
 
-int MP2NLModelAPI::ExprDefVarIndex(MP2NL_Expr e) const {
-  assert(IsExprDefVar(e));
+int MP2NLModelAPI::ExprDefVarIndex(int eindex) const {
+  assert(IsExprDefVar(eindex));
   return NumVars()
-         + expr_defvar_index_[e.GetExprIndex()]
+         + expr_defvar_index_[eindex]
          - 1;
 }
 
@@ -714,31 +711,31 @@ NLHeader MP2NLModelAPI::DoMakeHeader() {
       Number of common expressions that appear both in constraints
       and objectives.
      */
-  hdr.num_common_exprs_in_both = 0;
+  hdr.num_common_exprs_in_both = mark_data_.ndefvarboth_;
 
   /**
       Number of common expressions that appear in multiple constraints
       and don't appear in objectives.
      */
-  hdr.num_common_exprs_in_cons = 0;
+  hdr.num_common_exprs_in_cons = mark_data_.ndefvarcons_;
 
   /**
       Number of common expressions that appear in multiple objectives
       and don't appear in constraints.
      */
-  hdr.num_common_exprs_in_objs = 0;
+  hdr.num_common_exprs_in_objs = mark_data_.ndefvarobjs_;
 
   /**
       Number of common expressions that only appear in a single constraint
       and don't appear in objectives.
      */
-  hdr.num_common_exprs_in_single_cons = 0;
+  hdr.num_common_exprs_in_single_cons = mark_data_.ndefvar1con_;
 
   /**
       Number of common expressions that only appear in a single objective
       and don't appear in constraints.
      */
-  hdr.num_common_exprs_in_single_objs = 0;
+  hdr.num_common_exprs_in_single_objs = mark_data_.ndefvar1obj_;
 
   hdr.prob_name = "mp2nl_model";
 
@@ -782,6 +779,29 @@ void MP2NLModelAPI::FeedObjExpression(int iobj, ObjExprWriter& ew) {
     MP_RAISE("Unknown objective type");
   }
 }
+
+template <class DefVarWriterFactory>
+void MP2NLModelAPI::FeedDefinedVariables(
+    int i, DefVarWriterFactory& dvw) {
+  if (0==i) {
+    for (int expr_index=0;
+         expr_index!=(int)expr_defvar_index_.size();
+         ++expr_index) {
+      if (IsExprDefVar(expr_index)) {
+        auto dv = dvw.StartDefVar(
+            ExprDefVarIndex(expr_index), 0, "");
+        /////////// Write the linear part:
+        auto linw = dv.GetLinExprWriter();
+        // No linear part
+        /////////// Write the expression tree:
+        auto ew = dv.GetExprWriter();
+        FeedOpcode(MakeExprID(expr_index), ew);
+      }
+    }
+  }
+}
+
+
 
 template <class VarBoundsWriter>
 void MP2NLModelAPI::FeedVarBounds(VarBoundsWriter& vbw) {
@@ -955,9 +975,12 @@ template <class ExprWriter>
 void MP2NLModelAPI::FeedExpr(Expr expr, ExprWriter& ew) {
   if (expr.IsEmptyExpr())
     ew.NPut(0.0);
-  else if (expr.IsVariable()) {       // @todo def vars
+  else if (expr.IsVariable()) {
     ew.VPut( GetNewVarIndex( expr.GetVarIndex() ),
             GetVarName(expr.GetVarIndex()));
+  } else if (IsExprDefVar(expr.GetExprIndex())) {   // defvar
+    ew.VPut( ExprDefVarIndex(expr.GetExprIndex()),
+            "defvar");            // @todo name
   } else
     FeedOpcode(expr, ew);
 }

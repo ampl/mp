@@ -26,7 +26,7 @@ namespace mp {
 class MP2NL_Expr {
 public:
   /// Construct
-  MP2NL_Expr(int e=0) : id_(e) { }
+  explicit MP2NL_Expr(int e=0) : id_(e) { }
 
 	/// Get the expr ID
 	int GetID() const { return id_; }
@@ -54,13 +54,13 @@ private:
 };
 
 /// Make an empty expression.
-inline MP2NL_Expr MakeEmptyExpr() { return {0}; }
+inline MP2NL_Expr MakeEmptyExpr() { return MP2NL_Expr{0}; }
 
 /// Make an expression representing variable \a v.
-inline MP2NL_Expr MakeVarExpr(int v) { return {v+1}; }
+inline MP2NL_Expr MakeVarExpr(int v) { return MP2NL_Expr{v+1}; }
 
 /// Make ID of a normal expression with index \a i.
-inline MP2NL_Expr MakeExprID(int i) { return {-i-1}; }
+inline MP2NL_Expr MakeExprID(int i) { return MP2NL_Expr{-i-1}; }
 
 
 /// MP2NLModelAPI.
@@ -589,7 +589,7 @@ public:
    *      }
      */
   template <class DefVarWriterFactory>
-  void FeedDefinedVariables(int i, DefVarWriterFactory& ) { }
+  void FeedDefinedVariables(int i, DefVarWriterFactory& );
 
 
   ///////////////////// 4. VARIABLE BOUNDS /////////////////////
@@ -1697,11 +1697,11 @@ protected:
       ConLinearExprWriterFactory& svwf);
 
   /// Expression to be used as a defined variable?
-  bool IsExprDefVar(MP2NL_Expr e) const;
+  bool IsExprDefVar(int eindex) const;
 
-  /// DefVar index of \a e.
+  /// DefVar index of expression[\a eindex].
   /// Counting from NumVars()
-  int ExprDefVarIndex(MP2NL_Expr e) const;
+  int ExprDefVarIndex(int eindex) const;
 
 
 private:
