@@ -164,6 +164,7 @@ MP2NL_Expr MP2NLModelAPI::StoreMP2NLExprID(
   expr_used_in_con_.push_back(false);
   expr_used_in_obj_.push_back(false);
   expr_sparsity_.push_back( {spars.begin(), spars.end()} );
+  expr_defvar_index_.push_back(0);
   return MakeExprID( int(expr_info_.size()-1) );
 }
 
@@ -213,6 +214,22 @@ void MP2NLModelAPI::PropagateExprUsageKind(MP2NL_Expr e, bool in_obj) {
     }
   }
 }
+
+bool MP2NLModelAPI::IsExprDefVar(MP2NL_Expr e) const {
+  if (e.IsExpression()) {
+    assert(expr_defvar_index_.size() > e.GetExprIndex());
+    return expr_defvar_index_[e.GetExprIndex()];  // non-0
+  }
+  return false;
+}
+
+int MP2NLModelAPI::ExprDefVarIndex(MP2NL_Expr e) const {
+  assert(IsExprDefVar(e));
+  return NumVars()
+         + expr_defvar_index_[e.GetExprIndex()]
+         - 1;
+}
+
 
 
 MP2NL_Expr MP2NLModelAPI::AddExpression(const NLAffineExpression &expr)
@@ -574,6 +591,26 @@ void MP2NLModelAPI::SortAlgCons() {
     mark_data_.con_order_21_[mark_data_.con_prior_[i].second] = i;
   }
 }
+
+void MP2NLModelAPI::MarkDefVars() {
+  int nDV=0;
+  for (int i=0; i<(int)expr_counter_.size(); ++i) {
+    assert(expr_counter_[i]);
+    assert(!IsExprDefVar(i));
+    if (expr_counter_[i]>1) {
+      ++nDV;
+      expr_defvar_index_[i] = nDV;   // start from 1
+      if (expr_used_in_con_[i]) {
+        if (expr_used_in_obj_[i])
+          ++mark_data_.ndefvarboth_;
+        else
+          ++mark_data_.ndefvarcons_;
+      } else
+        ++mark_data_.ndefvarobjs_;
+    }
+  }
+}
+
 
 void MP2NLModelAPI::Add2ColSizes(ArrayRef<int> vars) {
   for (auto v: vars)

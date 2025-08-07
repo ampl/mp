@@ -1037,6 +1037,10 @@ protected:
   /// Sort alg cons
   void SortAlgCons();
 
+  /// Mark defined variables
+  void MarkDefVars();
+
+  /// Make NL Header
   NLHeader DoMakeHeader();
 
   /// Parameters passed when marking variables in an expression tree
@@ -1067,6 +1071,12 @@ protected:
     int nccon_nonlin_ {0};
     int nccon_range_ {0};
     int nccon_nzlb_ {0};
+
+    int ndefvarboth_{0};
+    int ndefvarcons_{0};
+    int ndefvarobjs_{0};
+    int ndefvar1con_{0};
+    int ndefvar1obj_{0};
 
     std::vector< std::pair< int, int > > var_prior_;        // new index -> var weight, orig. index
     std::vector<int> var_order_12_;                         // new index -> old index
@@ -1626,6 +1636,9 @@ protected:
 
 
 protected:
+  /// Number of variables
+  int NumVars() const { return (int)var_lbs_.size(); }
+
   /// Every new expression when adding.
   /// Just counts them.
   void RegisterExpression(MP2NL_Expr expr);
@@ -1683,6 +1696,13 @@ protected:
       const ItemInfo& item,
       ConLinearExprWriterFactory& svwf);
 
+  /// Expression to be used as a defined variable?
+  bool IsExprDefVar(MP2NL_Expr e) const;
+
+  /// DefVar index of \a e.
+  /// Counting from NumVars()
+  int ExprDefVarIndex(MP2NL_Expr e) const;
+
 
 private:
   /// References to the model data.
@@ -1702,6 +1722,8 @@ private:
   std::vector<int>   expr_counter_;   // usage counter
   std::vector<bool> expr_used_in_con_, expr_used_in_obj_;
   std::vector<Sparsity4Expr> expr_sparsity_;
+
+  std::vector<int> expr_defvar_index_;
 
   /// if a var is nonlinear in obj/con
   std::vector<bool> is_var_nlo_, is_var_nlc_;
