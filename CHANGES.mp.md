@@ -2,6 +2,13 @@ Summary of recent updates to the AMPL MP Library
 ================================================
 
 
+## unreleased
+- Option cvt:pre:boundlogarg (default 0) to bound
+  arguments of logarithms nonnegative. Previously
+  always done, sometimes deteriorating performance
+  of nonlinear solvers.
+
+
 ## 20250801
 - Tolerances set by options pre:feastol,
   pre:feastolrel both need to be violated

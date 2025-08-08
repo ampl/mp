@@ -1427,6 +1427,7 @@ private:
     int preprocessInequalityRhs_ = 1;
     int preprocessInequalityResultBounds_ = 1;
     int preproUnnest_ = 7;
+    int boundLogArg_ = 0;
 
     int propCtxIneq_ = 1;
     int propCtxCountNumberof_ = 0;
@@ -1481,6 +1482,8 @@ public:             // public for CRTP
   int IfPropCtxCondIneq() const { return options_.propCtxIneq_; }
   /// Propagate context into count/numberof?
   int IfPropCtxCountNumberof() const { return options_.propCtxCountNumberof_; }
+  /// Bound argument of logarithm?
+  bool IfBoundLogArg() const { return options_.boundLogArg_; }
 
   /// Model checking options
   double model_feas_tol() const { return options_.modelfeastol_; }
@@ -1600,6 +1603,10 @@ private:
                        "Default 0, see #267.",
                        options_.propCtxCountNumberof_, 0, 7);
 
+    GetEnv().AddOption("cvt:pre:boundlogarg boundlogarg",
+                       "0*/1: Bound logarithm arguments to nonnegative.",
+                       options_.boundLogArg_, 0, 1);
+
     GetEnv().AddOption("cvt:quadobj passquadobj",
                        ModelAPIAcceptsQuadObj() ?
         "0/1*: Pass quadratic objective terms to the solver. "
@@ -1687,14 +1694,14 @@ private:
         "0*/1: Whether to relax integrality of variables.",
         options_.relax_, 0, 1);
 
-    GetEnv().AddOption("pre:feastol pre:eps pre:feastolabs pre:epsabs",
+    GetEnv().AddOption("cvt:pre:feastol pre:feastol pre:eps pre:feastolabs pre:epsabs",
                        "Absolute tolerance to check variable "
                        "and constraint bound contraditions. "
                        "Only triggers if also pre:feastolrel is violated. "
                        "See also sol:chk:feastol. "
                        "Default 1e-6.",
                        options_.modelfeastol_, 0.0, 1e100);
-    GetEnv().AddOption("pre:feastolrel pre:epsrel",
+    GetEnv().AddOption("cvt:pre:feastolrel pre:feastolrel pre:epsrel",
                        "Relative tolerance to check variable "
                        "and constraint bound contradictions. "
                        "Only triggers if also pre:feastol is violated. "
