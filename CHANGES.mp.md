@@ -2,7 +2,10 @@ Summary of recent updates to the AMPL MP Library
 ================================================
 
 
-## unreleased
+## 20250811
+- The legacy fmt::MemoryWriter has double output
+  precision of 17 significant digits
+  (previously 6).
 - Option cvt:pre:boundlogarg (default 0) to bound
   arguments of logarithms nonnegative. Previously
   always done, sometimes deteriorating performance

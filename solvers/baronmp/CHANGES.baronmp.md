@@ -2,6 +2,13 @@ Summary of recent updates to BARONMP for AMPL
 =============================================
 
 
+## 20250811
+- Fixed floating-point output precision for model
+  submission to Baron.
+- Not imposing nonnegativity on the argument
+  of log(), which improves performance.
+
+
 ## 20250806
 - Updated Baron to version 2025.8.5, which includes
   bugfixes.
