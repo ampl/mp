@@ -47,7 +47,7 @@ MP2NLBackend::ConfigMap MP2NLBackend::config_map_ {
      // "acc:log=0 "  // Actually PLApprox performs better
      "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },
     { "baronmp",              // Don't need MP2NL actually
-     "cvt:compl=1 "
+     "acc:nlcompl=0 cvt:compl=1 "  // preconvert
      "cvt:multoutcard=0 " },
     { "cbc", "cvt:multoutcard=0 " },
     { "gurobi", "cvt:multoutcard=0 " },
