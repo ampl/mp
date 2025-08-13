@@ -1697,14 +1697,14 @@ private:
     GetEnv().AddOption("cvt:pre:feastol pre:feastol pre:eps pre:feastolabs pre:epsabs",
                        "Absolute tolerance to check variable "
                        "and constraint bound contraditions. "
-                       "Only triggers if also pre:feastolrel is violated. "
+                       "Only warns if also pre:feastolrel is violated. "
                        "See also sol:chk:feastol. "
                        "Default 1e-6.",
                        options_.modelfeastol_, 0.0, 1e100);
     GetEnv().AddOption("cvt:pre:feastolrel pre:feastolrel pre:epsrel",
                        "Relative tolerance to check variable "
                        "and constraint bound contradictions. "
-                       "Only triggers if also pre:feastol is violated. "
+                       "Only warns if also pre:feastol is violated. "
                        "See also sol:chk:feastol. "
                        "Default 1e-6.",
                        options_.modelfeastolrel_, 0.0, 1e100);

@@ -453,7 +453,8 @@ private:
                        options_.bigM_default_, -1.0, 1e100);
     this->GetEnv().AddStoredOption("cvt:compl cvt:complementarity",
                              "Complementarity conversion method "
-                             "(if not accepted natively, see acc:compl and acc:nlcompl):\n"
+                             "(if not accepted natively, see acc:compl and acc:nlcompl). "
+                                   "Default 0:\n"
                                    "\n"
                                    ".. value-table::\n",
                              options_.complCvt_, values_complcvt_);
