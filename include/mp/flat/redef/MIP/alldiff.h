@@ -50,6 +50,8 @@ public:
       for (size_t ivar = 0; ivar < args.size(); ++ivar) {
         flags[ivar] = GetMC().AssignResultVar2Args(
               CondLinConEQ( { {{1.0}, {args[ivar]}}, double(v) } ) );
+        GetMC().PropagateResultOfInitExpr(
+            flags[ivar], Context::CTX_NEG);         // #267
       }
       GetMC().AddConstraint( LinConLE( {coefs, flags}, {rhs} ) );
     }

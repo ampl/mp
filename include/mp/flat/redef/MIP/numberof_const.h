@@ -30,6 +30,8 @@ public:
     for (size_t ivar = 0; ivar < args.size(); ++ivar) {
       flags[ivar] = GetMC().AssignResultVar2Args(  // flag = (args[i]==k)
             CondLinConEQ( { {{1.0}, {args[ivar]}}, k } ) );
+      GetMC().PropagateResultOfInitExpr(
+          flags[ivar], nocc.GetContext());         // #267
     }
     coefs.back() = -1.0;
     GetMC().AddConstraint( LinConEQ( {coefs, flags}, {0.0} ) );

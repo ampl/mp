@@ -195,8 +195,8 @@ public:
     }
     const auto lb_dbl = this->lb(var);
     const auto ub_dbl = this->ub(var);
-    bool fMight = (lb_dbl>std::numeric_limits<int>::min() &&
-                   ub_dbl<std::numeric_limits<int>::max()) &&
+    bool fMight = (lb_dbl>=std::numeric_limits<int>::min() &&
+                   ub_dbl<=std::numeric_limits<int>::max()) &&
                   (ub_dbl-lb_dbl <= 10000000);
     if (!fMight)
       ExcludeUEncApriori(var);
@@ -310,9 +310,12 @@ protected:
     int nNegCtx = 0;
     for (const auto& el: map) {
       const auto& con = ck.GetConstraint(el.second);
+      assert(con.GetContext().HasPositive()
+             || con.GetContext().HasNegative());
       if (con.GetContext().HasNegative())
         ++nNegCtx;
-    }  // When up to 1 value in negative ctx, allow indicators.
+    }  // When up to (options_.NoUEncNegCtxMax_) values
+    // in negative ctx, allow indicators.
     // Example. x is conditionally equated to a single value 5:
     // x==5 ==> ...
     return nNegCtx <= options_.NoUEncNegCtxMax_;
@@ -471,7 +474,7 @@ private:
                        "are bounded to +-[pladomain]. Default 1e6.",
                        options_.PLApproxDomain_, 0.0, 1e100);
     this->GetEnv().AddOption("cvt:uenc:ratio uenc:ratio",
-                       "Min ratio (ub-lb)/Nvalues to skip unary encoding "
+                       "Max ratio (ub-lb)/Nvalues to skip unary encoding "
                        "for a variable x, where Nvalues is the number of constants "
                        "used in conditional comparisons x==const. Instead, "
                        "indicator constraints (or big-Ms) are used, if "
