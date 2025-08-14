@@ -154,8 +154,10 @@ public:
 
   // GENERAL CONSTRAINTS
   // Helper function for general constraints
-  template <class Args, class Params, class NumOrLogic, class Id> void addGenCon(
-    const CustomFunctionalConstraint<Args, Params, NumOrLogic, Id>& c, int xpressConType);
+  template <class Args, class Params, class NumOrLogic, class Id>
+  void addGenCon(
+    const CustomFunctionalConstraint<Args, Params, NumOrLogic, Id>& c,
+      int xpressConType, bool fMarkVarsBinary = false);
   ACCEPT_CONSTRAINT(AbsConstraint, Recommended, CG_General)
   void AddConstraint(const AbsConstraint& ac);
   ACCEPT_CONSTRAINT(MaxConstraint, Recommended, CG_General)
