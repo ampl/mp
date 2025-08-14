@@ -1665,8 +1665,8 @@ void GurobiBackend::InitCustomOptions() {
 #endif
 
 #ifdef GRB_INT_PAR_SOLUTIONTARGET // Gurobi 11.0
-  AddSolverOption("alg:solutiontarget solutiontarget",
-    "Specifies the solution targetfor linear programs (LP):\n"
+  AddSolverOption("alg:solutiontarget solutiontarget lptarget",
+    "Specifies the solution target for linear programs (LP):\n"
     "\n.. value-table::\n", GRB_INT_PAR_SOLUTIONTARGET, values_solutiontarget, -1);
 #endif
 
