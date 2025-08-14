@@ -17,6 +17,7 @@ namespace {
 
 
 bool InterruptXpressmp(void* prob) {
+  XPRSinterrupt((XPRSprob)prob, XPRS_STOP_CTRLC);
   return true;
 }
 
