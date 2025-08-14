@@ -47,7 +47,7 @@ controlling solver behavior and information flow.
   control whether LP basis information is input/output
 
 * Options
-  :ref:`solutiontarget, mipfocus, numericfocus, intfocus (Gurobi only) <ampl-solver-options>` -
+  :ref:`solutiontarget, mipfocus/mipemphasis, numericfocus/numericalemphasis, intfocus <ampl-solver-options>` -
   control the overall solving strategy and emphasis
 
 * Options :ref:`feastol, inttol <ampl-solver-options>` -
