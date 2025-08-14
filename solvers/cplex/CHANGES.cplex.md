@@ -2,6 +2,18 @@ Summary of recent updates to CPLEX for AMPL
 ==============================================
 
 
+## 20250814
+- Changes in MP
+  - Fixed reformulation of numberof and alldiff.
+    Previously could produce an inefficient
+    reformulation.
+  - Option cvt:pre:boundlogarg (default 0) to bound
+    arguments of logarithms nonnegative. Previously
+    always done, sometimes deteriorating performance
+    of nonlinear solvers.
+- Options alg:numericalemphasis, tech:memoryemphasis.
+
+
 ## 20250801
 - Changes in MP
   - Tolerances set by options pre:feastol,

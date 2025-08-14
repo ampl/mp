@@ -2184,6 +2184,11 @@ void XpressmpBackend::InitCustomOptions() {
                     "\n.. value-table::\n",
                     XPRS_HEUREMPHASIS, values_heuremphasis, -1);
 
+    AddSolverOption("alg:numericalemphasis alg:numericfocus numericfocus numfocus numericemphasis numericalemphasis",
+                    "How much emphasis to place on numerical stability instead of solve speed.\n"
+                    "\n.. value-table::\n",
+                    XPRS_NUMERICALEMPHASIS, values_numericalemphasis, -1);
+
     AddSolverOption("mip:heurforcespecialobj heurforcespecobj heurforcespecialobj" ,
                     "Whether to use special objective heuristics on large problems and even if an incumbant exists:\n"
                     "\n.. value-table::\n",XPRS_HEURFORCESPECIALOBJ, values_01_noyes_0default_, 0);

@@ -203,8 +203,7 @@
   {
     "name" : "float_ne_01__vnec cvt:mip:eps",
     "options": {
-      "mp_options": "cvt:mip:eps=0.01",
-      "mp2nl_options": "solver_options='cvt:mip:eps=0.01'"
+      "mp_options": "cvt:mip:eps=0.01"
     },
     "objective" : 0.01,
     "tags" : ["logical"]
@@ -212,8 +211,7 @@
   {
     "name" : "float_ne_02__vne2c cvt:mip:eps",
     "options": {
-      "mp_options": "cvt:mip:eps=0.01",
-      "mp2nl_options": "solver_options='cvt:mip:eps=0.01'"
+      "mp_options": "cvt:mip:eps=0.01"
     },
     "objective" : 0.01,
     "tags" : ["logical"]

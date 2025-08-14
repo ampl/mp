@@ -167,7 +167,7 @@ public:
   ACCEPT_CONSTRAINT(OrConstraint, Recommended, CG_General)
   void AddConstraint(const OrConstraint& ac);
   /// @todo bug in 9.7.0
-  ACCEPT_CONSTRAINT(AndConstraint, NotAccepted, CG_General)
+  ACCEPT_CONSTRAINT(AndConstraint, AcceptedButNotRecommended, CG_General)
   void AddConstraint(const AndConstraint& ac);
   
   #define GLOBAL_LEVEL Recommended // Since v9.5.0

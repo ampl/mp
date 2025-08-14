@@ -2025,9 +2025,22 @@ void CplexBackend::InitCustomOptions() {
     "\n.. value-table::",
     CPXPARAM_MIP_Strategy_Branch, values_branchdir, 0);
 
-  AddSolverOption("mip:focus mip:emphasis mipemphasis mipfocus",
+  AddSolverOption("mip:emphasis mipemphasis mip:focus mipfocus",
     "MIP solution strategy:\n" "\n.. value-table::\n",
     CPXPARAM_Emphasis_MIP, values_mipemphasis, 0);
+
+  AddSolverOption("tech:memoryemphasis memoryemphasis",
+                  "0*/1: Whether to compress data to reduce the memory used, "
+                  "which may make some information (e.g., basis condition) "
+                  "unavailable.",
+                  CPXPARAM_Emphasis_Memory, 0, 1);
+
+  AddSolverOption(
+      "alg:numericalemphasis numfocus numericemphasis numericalemphasis "
+      "alg:numericfocus numericfocus",
+      "0*/1: Whether to try to improve numerical accuracy (at a "
+      "possible cost of time or memory).",
+      CPXPARAM_Emphasis_Numerical, 0, 1);
 
 
   AddSolverOption("mip:gapabs mipgapabs absmipgap",

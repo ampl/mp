@@ -2,6 +2,19 @@ Summary of recent updates to Xpress for AMPL
 ============================================
 
 
+## 20250814
+- Changes in MP
+  - Fixed reformulation of numberof and alldiff.
+    Previously could produce an inefficient
+    reformulation.
+  - Option cvt:pre:boundlogarg (default 0) to bound
+    arguments of logarithms nonnegative. Previously
+    always done, sometimes deteriorating performance
+    of nonlinear solvers.
+- Option alg:numericalemphasis.
+- Linearizing AND by default (acc:and=0).
+- Handling Ctrl-C correctly.
+
 ## 20250806
 - Updated to Xpress 45.01.02 (9.7), which includes
   bugfixes.

@@ -2,11 +2,21 @@ Summary of recent updates to BARONMP for AMPL
 =============================================
 
 
+## 20250814
+- Changes in MP
+  - Fixed reformulation of numberof and alldiff.
+    Previously could produce an inefficient
+    reformulation.
+
+
 ## 20250811
 - Fixed floating-point output precision for model
   submission to Baron.
-- Not imposing nonnegativity on the argument
-  of log(), which improves performance.
+- Changes in MP
+  - Option cvt:pre:boundlogarg (default 0) to bound
+    arguments of logarithms nonnegative. Previously
+    always done, sometimes deteriorating performance
+    of nonlinear solvers.
 
 
 ## 20250806

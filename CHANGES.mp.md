@@ -2,6 +2,12 @@ Summary of recent updates to the AMPL MP Library
 ================================================
 
 
+## 20250814
+- Fixed reformulation of numberof and alldiff.
+  Previously could produce an inefficient
+  reformulation.
+
+
 ## 20250811
 - The legacy fmt::MemoryWriter has double output
   precision of 17 significant digits
