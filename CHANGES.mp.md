@@ -6,6 +6,15 @@ Summary of recent updates to the AMPL MP Library
 - Fixed reformulation of numberof and alldiff.
   Previously could produce an inefficient
   reformulation.
+- Option cvt:pre:sort:
+  - Sorting and eliminating duplicates
+    in arguments of AND, OR, MIN, MAX.
+    This is necessary for some solvers.
+  - Sorting arguments of COUNT, ATLEAST,
+    EXACTLY, ATMOST, NUMBEROF, ALLDIFF.
+- Option cvt:pre:unnest extended for MIN, MAX
+  (bit 8).
+
 
 
 ## 20250811

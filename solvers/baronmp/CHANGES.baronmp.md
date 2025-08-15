@@ -4,9 +4,9 @@ Summary of recent updates to BARONMP for AMPL
 
 ## 20250814
 - Changes in MP
-  - Fixed reformulation of numberof and alldiff.
-    Previously could produce an inefficient
-    reformulation.
+  - Improved preprocessing of logical
+    and combinatorial expressions
+    (options cvt:pre:unnest, cvt:pre:sort).
 
 
 ## 20250811
@@ -14,7 +14,7 @@ Summary of recent updates to BARONMP for AMPL
   submission to Baron.
 - Changes in MP
   - Option cvt:pre:boundlogarg (default 0) to bound
-    arguments of logarithms nonnegative. Previously
+    arguments of logarithm nonnegative. Previously
     always done, sometimes deteriorating performance
     of nonlinear solvers.
 
