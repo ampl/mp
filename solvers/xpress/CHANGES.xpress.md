@@ -12,7 +12,6 @@ Summary of recent updates to Xpress for AMPL
     always done, sometimes deteriorating performance
     of nonlinear solvers.
 - Option alg:numericalemphasis.
-- Linearizing AND by default (acc:and=0).
 - Handling Ctrl-C correctly.
 
 ## 20250806
