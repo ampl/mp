@@ -84,8 +84,6 @@ protected:
   override {
     std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
 
-
-
     ReadNLFile(nl_filename,
                [this, &filename_no_ext, after_header](){
       MakeProperSolutionHandler(filename_no_ext);
@@ -113,7 +111,7 @@ protected:
       // As we don't use model sizes in this call,
       // we can run this before reading NL.
       // And we do do it because we want to set any additional options
-      // before user-rpovided ones.
+      // before user-provided ones.
       if (mtraits.additional_options && after_header) {
         after_header(*mtraits.additional_options);
         if (mtraits.warn_cb)

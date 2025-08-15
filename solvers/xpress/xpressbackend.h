@@ -155,6 +155,9 @@ protected:
 
   void FinishOptionParsing() override;
 
+  int GetGlobalFlag(const SolverOption& ) const;
+  void SetGlobalFlag(const SolverOption& , int );
+
   double ObjectiveValue() const;
 
   /// Solution values. The vectors are emptied if not available
@@ -206,6 +209,7 @@ protected:
   const std::string& tunename() { return storedOptions_.tunename_; }
 
 private:
+  int global_flag_ {1};
   XPRSprob model_fixed_ = nullptr;
 
   /// These options are stored in the class

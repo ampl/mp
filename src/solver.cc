@@ -1168,7 +1168,9 @@ void WarnOnDifferentCapitalizations(const std::string& target_name) {
     fmt::print("\n");
 }
 
-bool BasicSolver::ParseOptions(char **argv, unsigned flags, const ASLProblem *, char* additional_options) {
+bool BasicSolver::ParseOptions(
+    char **argv, unsigned flags,
+    const ASLProblem *, char* additional_options) {
   has_errors_ = false;
   bool_options_ &= ~SHOW_VERSION;
   option_flag_save_ = flags;

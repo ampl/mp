@@ -191,6 +191,7 @@ public:
 
   ACCEPT_CONSTRAINT(LogConstraint, GLOBAL_LEVEL, CG_General)
   void AddConstraint(const LogConstraint& cc);
+  ACCEPT_CONSTRAINT(LogAConstraint, GLOBAL_LEVEL, CG_General)
   void AddConstraint(const LogAConstraint& cc);
 
   ACCEPT_CONSTRAINT(PowConstExpConstraint, GLOBAL_LEVEL, CG_General)

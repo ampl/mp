@@ -124,6 +124,22 @@ std::string XpressmpBackend::GetSolverVersion() {
   return fmt::format("{} ({})", rbuf, vbuf);
 }
 
+int XpressmpBackend::GetGlobalFlag(const SolverOption& ) const
+{ return global_flag_; }
+
+void XpressmpBackend::SetGlobalFlag(const SolverOption& , int v) {
+  if (!v) {
+    global_flag_ = 0;
+    this->ParseSolverOptions(
+        nullptr, 0, 0,
+        "acc:abs=0 acc:acos=0 acc:acosh=0 acc:asin=0 "
+        "acc:asinh=0 acc:atan=0 acc:atanh=0 acc:cos=0 "
+        "acc:cosh=0 acc:sin=0 acc:sinh=0 acc:tan=0 acc:tanh=0 "
+        "acc:div=0 acc:exp=0 acc:expA=0 "
+        "acc:log=0 acc:logA=0 acc:powconstexp=0 acc:pow=0"        );
+  }
+}
+
 bool XpressmpBackend::IsQCP() const {
   return numQuadCons() > 0;
 }
@@ -1542,6 +1558,11 @@ void XpressmpBackend::InitCustomOptions() {
                     "low memory (affected by maxmemory and maxmemoryhard):\n"
                     "\n.. value-table::\n",
                     XPRS_RESOURCESTRATEGY, values_01_noyes_0default_, 0);
+
+    AddIntOption("alg:global global",
+                 "0/1*: Allow global solving. Passing 0 should linearize "
+                 "all expressions requiring Xpress Global.",
+                 &XpressmpBackend::GetGlobalFlag, &XpressmpBackend::SetGlobalFlag);
 
     //endalg
     // ****************************

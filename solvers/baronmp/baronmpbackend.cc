@@ -112,7 +112,6 @@ bool BaronmpBackend::IsQCP() const {
 ArrayRef<double> BaronmpBackend::PrimalSolution() {
   auto vec = resFileData_.PrimalSolution();
   int num_vars = vec.size();
-  int error;
   std::vector<double> x(num_vars);
   for (int i = 0; i < num_vars; i++)
     x[lp()->baronToAMPLIndices[i]] = vec[i];
@@ -299,8 +298,6 @@ void BaronmpBackend::InitCustomOptions() {
   #define ADDALGOPTION(n) ADDOPTION(n, "alg:"#n " "#n)
   #define ADDTECHOPTION(n) ADDOPTION(n,"tech:"#n " "#n)
   
-  char* name;
-
   ADDALGOPTION(deltaa);
   ADDALGOPTION(deltaterm);
   ADDALGOPTION(deltar);
