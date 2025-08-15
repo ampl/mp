@@ -197,7 +197,6 @@ void XpressmpModelAPI::AddConstraint(const SOS1Constraint& sos) {
 void XpressmpModelAPI::AddConstraint(const SOS2Constraint& sos) {
   char type[] = { '2' };
   const int beg = 0;
-  const int size = sos.size();
   XPRESSMP_CCALL(XPRSaddsets(lp(), 1, sos.size(), type, &beg, (int*)sos.get_vars().data(),
     (double*)sos.get_weights().data()));
 }

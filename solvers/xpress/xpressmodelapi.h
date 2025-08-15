@@ -306,7 +306,7 @@ public:
     NLParams exp;
     exp.addMember(NLParams::func(xpressfunc));
     for (int i = 0; i < n; i++)
-      exp.addMembers(GetArgExpression(expr, 1));
+      exp.addMembers(GetArgExpression(expr, i));
     exp.addMember(XPRS_TOK_RB, 0);
     return exp;
   }
