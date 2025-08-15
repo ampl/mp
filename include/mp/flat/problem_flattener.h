@@ -1379,7 +1379,7 @@ private:
         "piecewise-linear terms, using suffixes .sos and .sosref "
         "provided by AMPL. Currently under rework.",
         options_.sos2_, 0, 1);
-    GetEnv().AddOption("cvt:prod cvt:pre:prod",
+    GetEnv().AddOption("cvt:pre:prod cvt:prod",
                        fmt::format("Product preprocessing flags. "
                        "Sum of a subset of the following bits:\n"
                        "\n"

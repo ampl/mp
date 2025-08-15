@@ -1426,7 +1426,7 @@ private:
     int preprocessEqualityBvar_ = 1;
     int preprocessInequalityRhs_ = 1;
     int preprocessInequalityResultBounds_ = 1;
-    int preproUnnest_ = 7;
+    int preproUnnest_ = 15;
     int preproSortUnify_  = 1;
     int boundLogArg_ = 0;
 
@@ -1582,13 +1582,16 @@ private:
                        "\n"
                        "|  1 - AND/FORALL and OR/EXISTS expressions\n"
                        "|  2 - Linear subexpressions\n"
-                       "|  4 - Quadratic subexpressions.\n"
+                       "|  4 - Quadratic subexpressions\n"
+                       "|  8 - MIN/MAX.\n"
                        "\n"
                        "See also option cvt:dvelim concerning only the input model. "
-                       "Default 7.",
-        options_.preproUnnest_, 0, 7);
+                       "Default 15.",
+        options_.preproUnnest_, 0, 15);
     GetEnv().AddOption("cvt:pre:sort cvt:sort",
-                       "0/1*: Sort and eliminate duplicates in arguments of AND, OR. "
+                       "0/1*: Sort and eliminate duplicates in arguments "
+                       "of AND, OR, MIN, MAX. Sort arguments of "
+                       "COUNT, ATLEAST, EXACTLY, ATMOST, NUMBEROF, ALLDIFF. "
                        "Can be necessary for some solvers.",
                        options_.preproSortUnify_, 0, 1);
 

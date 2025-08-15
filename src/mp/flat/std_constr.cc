@@ -46,7 +46,11 @@ const char* ConGroupName(int cg) {
 
 
 //////////////////////////// SORTING /////////////////////////////
-bool SortAndUnify(std::vector<int>& vec) {
+void Sort(VarArray& vec) {
+  std::sort( vec.begin(), vec.end() );
+}
+
+bool SortAndUnify(VarArray& vec) {
   auto sz0 = vec.size();
   // See also https://stackoverflow.com/a/24477023
   // but we should not have many duplicates.

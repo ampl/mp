@@ -137,6 +137,10 @@ public:
       MinConstraint& c, PreprocessInfo& prepro) {
     auto& m = MP_DISPATCH( GetModel() );
     auto& args = c.GetArguments();
+    if (MPCD( IfPreproUnnest() & 8 ))
+      IntegrateNested(c);
+    if (MPCD( IfPreproSortUnify() ))
+      SortAndUnify(args);
     prepro.narrow_result_bounds( m.lb_array(args),
                           m.ub_min_array(args) );
     prepro.set_result_type( m.common_type(args) );
@@ -148,6 +152,10 @@ public:
       MaxConstraint& c, PreprocessInfo& prepro) {
     auto& m = MP_DISPATCH( GetModel() );
     auto& args = c.GetArguments();
+    if (MPCD( IfPreproUnnest() & 8 ))
+      IntegrateNested(c);
+    if (MPCD( IfPreproSortUnify() ))
+      SortAndUnify(args);
     prepro.narrow_result_bounds( m.lb_max_array(args),
                           m.ub_array(args) );
     prepro.set_result_type( m.common_type(args) );
@@ -449,7 +457,7 @@ public:
   template <class Con>
   void IntegrateNested(Con& con) {
     bool fChanges = false;
-    std::vector<int> args_new;
+    VarArray args_new;
     args_new.reserve(con.GetArguments().size());
     for (auto v: con.GetArguments()) {
       if (auto pNested = MPD( template
@@ -477,7 +485,9 @@ public:
 
   template <class PreprocessInfo>
   void PreprocessConstraint(
-      AllDiffConstraint& , PreprocessInfo& prepro) {
+      AllDiffConstraint& c, PreprocessInfo& prepro) {
+    if (MPCD( IfPreproSortUnify() ))
+      Sort(c.GetArguments());        // @todo warn if duplicates
     prepro.narrow_result_bounds(0.0, 1.0);
     prepro.set_result_type( var::INTEGER );
   }
@@ -485,6 +495,8 @@ public:
   template <class PreprocessInfo>
   void PreprocessConstraint(
       NumberofConstConstraint& con, PreprocessInfo& prepro) {
+    if (MPCD( IfPreproSortUnify() ))
+      Sort(con.GetArguments());
     prepro.narrow_result_bounds(0.0, (double)con.GetArguments().size());
     prepro.set_result_type( var::INTEGER );
   }
@@ -492,6 +504,8 @@ public:
   template <class PreprocessInfo>
   void PreprocessConstraint(
       NumberofVarConstraint& con, PreprocessInfo& prepro) {
+    if (MPCD( IfPreproSortUnify() ))
+      Sort(con.GetArguments());
     prepro.narrow_result_bounds(0.0,     // size()-1: 1st arg is the ref var
                                 (double)con.GetArguments().size()-1);
     prepro.set_result_type( var::INTEGER );
@@ -500,6 +514,8 @@ public:
   template <class PreprocessInfo>
   void PreprocessConstraint(
       CountConstraint& con, PreprocessInfo& prepro) {
+    if (MPCD( IfPreproSortUnify() ))
+      Sort(con.GetArguments());
     prepro.narrow_result_bounds(0.0, (double)con.GetArguments().size());
     prepro.set_result_type( var::INTEGER );
   }
