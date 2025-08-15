@@ -1,5 +1,6 @@
 #include <map>
 #include <unordered_set>
+#include <algorithm>
 #include <cfloat>
 #include <cmath>
 #include <cassert>
@@ -45,6 +46,21 @@ const char* ConGroupName(int cg) {
 
 
 //////////////////////////// SORTING /////////////////////////////
+bool SortAndUnify(std::vector<int>& vec) {
+  auto sz0 = vec.size();
+  // See also https://stackoverflow.com/a/24477023
+  // but we should not have many duplicates.
+  // Alternative with many duplicates:
+  // unordered_set<int> s;
+  // for (int i : vec)
+  //   s.insert(i);
+  // vec.assign( s.begin(), s.end() );
+  // sort( vec.begin(), vec.end() );
+  std::sort( vec.begin(), vec.end() );
+  vec.erase( std::unique( vec.begin(), vec.end() ), vec.end() );
+  return vec.size() < sz0;
+}
+
 
 template <class Vec>
 void LinTerms::fold_into(Vec& vec) {

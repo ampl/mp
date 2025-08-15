@@ -1427,6 +1427,7 @@ private:
     int preprocessInequalityRhs_ = 1;
     int preprocessInequalityResultBounds_ = 1;
     int preproUnnest_ = 7;
+    int preproSortUnify_  = 1;
     int boundLogArg_ = 0;
 
     int propCtxIneq_ = 1;
@@ -1579,13 +1580,17 @@ private:
     GetEnv().AddOption("cvt:pre:unnest cvt:unnest cvt:pre:inline cvt:inline",
         "Inline nested expressions. Bitwise OR of the following values:\n"
                        "\n"
-                       "|  1 - Ands and Ors\n"
+                       "|  1 - AND/FORALL and OR/EXISTS expressions\n"
                        "|  2 - Linear subexpressions\n"
                        "|  4 - Quadratic subexpressions.\n"
                        "\n"
                        "See also option cvt:dvelim concerning only the input model. "
                        "Default 7.",
         options_.preproUnnest_, 0, 7);
+    GetEnv().AddOption("cvt:pre:sort cvt:sort",
+                       "0/1*: Sort and eliminate duplicates in arguments of AND, OR. "
+                       "Can be necessary for some solvers.",
+                       options_.preproSortUnify_, 0, 1);
 
     GetEnv().AddOption("cvt:pre:ctx2ineq ctx2ineq",
                        "0/1*: Propagate exact context into conditional inequalities, "
@@ -1802,6 +1807,10 @@ public:
   /// Whether inline nested forall, exists, lin/quad expr
   int IfPreproUnnest() const
   { return MPCD( CanPreprocess(options_.preproUnnest_) ); }
+
+  /// Whether sort and elim duplicates in argument lists
+  int IfPreproSortUnify() const
+  { return MPCD( CanPreprocess(options_.preproSortUnify_) ); }
 
 
   /// Whether we pass quad obj terms to the solver without linearization

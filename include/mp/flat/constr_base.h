@@ -165,6 +165,11 @@ using DblParamArray3 = ParamArrayN<double, 3>;
 using DblParamArray = std::vector<double>;
 
 
+/// Sort and eliminate duplicates
+/// @return true if reduced
+bool SortAndUnify(std::vector<int>& args);
+
+
 /// Custom constraint data: given arguments
 /// and further info as parameters / ID
 /// @param Args: arguments type

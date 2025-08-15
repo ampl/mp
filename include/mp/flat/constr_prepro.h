@@ -388,6 +388,8 @@ public:
     }
     if (MPCD( IfPreproUnnest() & 1 ))
       IntegrateNested(con);            // flatten nested
+    if (MPCD( IfPreproSortUnify() ))
+      SortAndUnify(con.GetArguments());
     if (con.GetArguments().empty())
       prepro.narrow_result_bounds(1.0, 1.0);  // empty conjunction
     if (1 == con.GetArguments().size())
@@ -420,6 +422,8 @@ public:
     }
     if (MPCD( IfPreproUnnest() & 1 ))
       IntegrateNested(con);            // flatten nested
+    if (MPCD( IfPreproSortUnify() ))
+      SortAndUnify(con.GetArguments());
     if (con.GetArguments().empty())
       prepro.narrow_result_bounds(0.0, 0.0);  // empty disjunction
     if (1 == con.GetArguments().size())
