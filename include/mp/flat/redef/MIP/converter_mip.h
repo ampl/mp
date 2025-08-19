@@ -474,11 +474,20 @@ private:
                        "are bounded to +-[pladomain]. Default 1e6.",
                        options_.PLApproxDomain_, 0.0, 1e100);
     this->GetEnv().AddOption("cvt:uenc:ratio uenc:ratio",
-                       "Max ratio (ub-lb)/Nvalues to skip unary encoding "
+                       "Min ratio (ub-lb+1)/Nvalues to skip unary encoding "
                        "for a variable x, where Nvalues is the number of constants "
                        "used in conditional comparisons x==const. Instead, "
                        "indicator constraints (or big-Ms) are used, if "
-                       "uenc:negctx also applies. Default 0.",
+                       "uenc:negctx also applies. Default 0.\n"
+                             "\n"
+                             "Example:\n"
+                             "\n"
+                             " | var x in 1..9;\n"
+                             " | var y >=1 <=200;\n"
+                             " | \n"
+                             " | s.t. Con: y>3 ==> (x==2 || x==6 || x==5);\n"
+                             "\n"
+                             "With uenc:ratio>3, this should trigger unary encoding for x.",
                        options_.NoUEncPosCtxRatio_, 0.0, 1e100);
     this->GetEnv().AddOption("cvt:uenc:negctx:max uenc:negctx:max uenc:negctx",
                        "If cvt:uenc:ratio applies, max number of constants "

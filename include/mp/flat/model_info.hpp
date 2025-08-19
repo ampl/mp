@@ -77,7 +77,7 @@ public:
   }
 
   /// Obtain constraint types
-  const ConstrMapByName& GetConstraintTypes() const override
+  const ConstrTypeMapByName& GetConstraintTypes() const override
   { return coninfo_map_; }
 
   /// Initialize constraint counting
@@ -87,20 +87,21 @@ public:
   /// Add number of constraints of single type
   void AddNumberOfConstraints(
       const std::type_info& ti, const char* name,
-      int igroup, bool is_logical, int nc) override {
+      int igroup, bool is_logical, int nc, int n) override {
     cg_map_[igroup] += nc;
     ti_map_[ti] += nc;
     auto& ci = coninfo_map_[name];
     ci.name_ = name;
     ci.is_logical_ = is_logical;
     ci.n_ = nc;
+    ci.n_total_ = n;
   }
 
 
 private:
   TypeInfoRefIntMap ti_map_;
   ConstrGroupIntMap cg_map_;
-  ConstrMapByName coninfo_map_;
+  ConstrTypeMapByName coninfo_map_;
 
   int nUnfxIntVars_ = 0;
   VarInfo var_info_ {};

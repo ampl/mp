@@ -1959,7 +1959,7 @@ private:
   /// Model stats
   FlatModelInfo::VarInfo modelinfo_flat0_vars_;
   FlatModelInfo::ObjInfo modelinfo_flat0_objs_;
-  FlatModelInfo::ConstrMapByName modelinfo_flat0_cons_;
+  FlatModelInfo::ConstrTypeMapByName modelinfo_flat0_cons_;
 
 protected:
   /////////////////////// CONSTRAINT KEEPERS /////////////////////////

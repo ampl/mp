@@ -240,7 +240,7 @@ public:
   { return typeid(ConstraintType); }
 
   /// Report total number
-  int Size() const {
+  int Size() const override {
     return (int)cons_.size();
   }
 

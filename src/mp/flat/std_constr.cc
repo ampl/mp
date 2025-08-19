@@ -876,7 +876,7 @@ void PrintModelInfo(const FlatModelInfo& fmi,
 
 void ReportModelInfoSuffixes(const FlatModelInfo& fmi,
     std::string suf_prefix, SuffixGetterSetter sgs) {
-  auto PutIntSuf = [suf_prefix, sgs](const char* name_extra, int val) {
+  auto PutIntSuf = [&suf_prefix, sgs](const char* name_extra, int val) {
     sgs.ssi_( {suf_prefix + name_extra, suf::PROBLEM}, {&val, 1} );
   };
   {
@@ -894,9 +894,13 @@ void ReportModelInfoSuffixes(const FlatModelInfo& fmi,
     PutIntSuf("obj_quad", oi[1]);
     PutIntSuf("obj_nonlin", oi[2]);
   }
-  const auto& coninfo = fmi.GetConstraintTypes();
-  for (const auto& val: coninfo) {
+  const auto& contypeinfo = fmi.GetConstraintTypes();
+  for (const auto& val: contypeinfo) {
     PutIntSuf(val.second.name_, val.second.n_);
+  }
+  suf_prefix += "_A_";      // totals: Initial.flatN__A__linconle etc.
+  for (const auto& val: contypeinfo) {
+    PutIntSuf(val.second.name_, val.second.n_total_);
   }
 }
 

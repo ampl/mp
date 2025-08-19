@@ -53,20 +53,23 @@ public:
   virtual int GetNumberOfConstraints(const std::type_info& nt) const =0;
 
   /// Constraint type info
-  struct ConInfo {
+  struct ConTypeInfo {
     const char* name_ {nullptr};
     bool is_logical_ {0};
     int n_ {0};
-    /// operator==
-    bool operator==(const ConInfo& ci) const
-    { return n_ == ci.n_; }
+    int n_total_ {0};         // total, including unused
+    /// operator==, needed when checking if the model changed
+    bool operator==(const ConTypeInfo& cti) const {
+      assert(name_==cti.name_);
+      return n_==cti.n_ && n_total_==cti.n_total_;
+    }
   };
 
   /// Map by constraint name
-  using ConstrMapByName = std::map<std::string, ConInfo>;
+  using ConstrTypeMapByName = std::map<std::string, ConTypeInfo>;
 
   /// Obtain constraint types
-  virtual const ConstrMapByName& GetConstraintTypes() const = 0;
+  virtual const ConstrTypeMapByName& GetConstraintTypes() const = 0;
 
   /// Initialize constraint counting
   virtual void InitConstraintCount() =0;
@@ -75,7 +78,7 @@ public:
   /// to the counter.
   virtual void AddNumberOfConstraints(
       const std::type_info& ti, const char* name,
-      int igroup, bool is_logical, int nc) = 0;
+      int igroup, bool is_logical, int nc, int n) = 0;
 };
 
 

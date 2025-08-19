@@ -141,7 +141,10 @@ public:
   /// Backend's group number for the constraint type
   virtual int GetConstraintGroup(const BasicFlatModelAPI& ) const = 0;
 
-  /// Report how many will be added to Backend
+  /// Total number of items
+  virtual int Size() const = 0;
+
+  /// Report how many could be added to Backend as of now
   virtual int GetNumberOfAddable() const = 0;
 
   /// This adds all unbridged items to the backend (without conversion)
@@ -452,7 +455,8 @@ public:
           ck.second.GetShortTypeName(),
           ck.second.GetConstraintGroup(mapi),
           ck.second.IsLogical(),
-          ck.second.GetNumberOfAddable());
+          ck.second.GetNumberOfAddable(),
+          ck.second.Size());
     }
   }
 

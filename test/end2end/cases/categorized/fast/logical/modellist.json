@@ -239,5 +239,50 @@
     },
     "objective" : 150,
     "tags" : ["logical"]
+  },
+  {
+    "name" : "uenc_ratio_01",
+    "options": {
+      "mp_options": "version debug=1"
+    },
+    "tags" : ["logical"],
+    "objective" : 2,
+    "comment": "No UEnc by default",
+    "values": {
+      "Initial.flat1__A__uenc": 0
+    }
+  },
+  {
+    "name" : "uenc_ratio_01 ratio=2",
+    "options": {
+      "mp_options": "cvt:uenc:ratio=2 acc:condlineq=1 debug=1"
+    },
+    "tags" : ["logical"],
+    "objective" : 2,
+    "values": {
+      "Initial.flat1__A__uenc": 0
+    }
+  },
+  {
+    "name" : "uenc_ratio_01 ratio=3",
+    "options": {
+      "mp_options": "cvt:uenc:ratio=3 acc:condlineq=1 debug=1"
+    },
+    "tags" : ["logical"],
+    "objective" : 2,
+    "values": {
+      "Initial.flat1__A__uenc": 0
+    }
+  },
+  {
+    "name" : "uenc_ratio_01 ratio=3.5",
+    "options": {
+      "mp_options": "cvt:uenc:ratio=3.5 acc:condlineq=1 debug=1"
+    },
+    "tags" : ["logical"],
+    "objective" : 2,
+    "values": {
+      "Initial.flat1__A__uenc": 1
+    }
   }
 ]
