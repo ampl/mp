@@ -284,5 +284,60 @@
     "values": {
       "Initial.flat1__A__uenc": 1
     }
+  },
+  {
+    "name" : "uenc_negctx_01",
+    "options": {
+      "mp_options": "acc:condlineq=1 debug=1"
+    },
+    "tags" : ["logical"],
+    "objective" : 3,
+    "values": {
+      "Initial.flat1__A__uenc": 0
+    }
+  },
+  {
+    "name" : "uenc_negctx_01 uenc:negctx=0",
+    "options": {
+      "mp_options": "acc:condlineq=1 debug=1 cvt:uenc:negctx=0"
+    },
+    "tags" : ["logical"],
+    "objective" : 3,
+    "values": {
+      "Initial.flat1__A__uenc": 1
+    }
+  },
+  {
+    "name" : "uenc_negctx_02",
+    "options": {
+      "mp_options": "acc:condlineq=1 debug=1"
+    },
+    "tags" : ["logical"],
+    "objective" : 3,
+    "values": {
+      "Initial.flat1__A__uenc": 1
+    }
+  },
+  {
+    "name" : "uenc_negctx_02 uenc:negctx=2",
+    "options": {
+      "mp_options": "acc:condlineq=1 debug=1 cvt:uenc:negctx=2"
+    },
+    "tags" : ["logical"],
+    "objective" : 3,
+    "values": {
+      "Initial.flat1__A__uenc": 0
+    }
+  },
+  {
+    "name" : "uenc_negctx_02 uenc:negctx=3",
+    "options": {
+      "mp_options": "acc:condlineq=1 debug=1 cvt:uenc:negctx=3"
+    },
+    "tags" : ["logical"],
+    "objective" : 3,
+    "values": {
+      "Initial.flat1__A__uenc": 0
+    }
   }
 ]

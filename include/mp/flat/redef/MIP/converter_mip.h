@@ -316,7 +316,8 @@ protected:
         ++nNegCtx;
     }  // When up to (options_.NoUEncNegCtxMax_) values
     // in negative ctx, allow indicators.
-    // Example. x is conditionally equated to a single value 5:
+    // Example.
+    // x is conditionally equated to a single value 5:
     // x==5 ==> ...
     return nNegCtx <= options_.NoUEncNegCtxMax_;
   }
@@ -487,13 +488,22 @@ private:
                              " | \n"
                              " | s.t. Con: y>3 ==> (x==2 || x==6 || x==5);\n"
                              "\n"
-                             "With uenc:ratio>3, this should trigger unary encoding for x.",
+                             "With uenc:ratio>3, this triggers unary encoding for x.",
                        options_.NoUEncPosCtxRatio_, 0.0, 1e100);
-    this->GetEnv().AddOption("cvt:uenc:negctx:max uenc:negctx:max uenc:negctx",
+    this->GetEnv().AddOption("cvt:uenc:negctx:max uenc:negctx:max cvt:uenc:negctx uenc:negctx",
                        "If cvt:uenc:ratio applies, max number of constants "
                        "in comparisons x==const in negative context "
                        "(equivalently, x!=const in positive context) to skip "
-                       "UEnc(x). Default 1.",
+                       "UEnc(x). Default 1.\n"
+                             "\n"
+                             "Example:\n"
+                             "\n"
+                             " | var x in 1..9;\n"
+                             " | var y >=1 <=200;\n"
+                             " | \n"
+                             " | s.t. Con: (x==2 || x==6) ==> y >= 4;\n"
+                             "\n"
+                             "With uenc:negctx<=1, this triggers unary encoding for x.",
                        options_.NoUEncNegCtxMax_, 0, INT_MAX);
   }
 };
