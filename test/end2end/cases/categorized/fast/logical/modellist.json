@@ -399,5 +399,67 @@
       "Initial.flat1__uenc": 0,
       "Initial.flat1__A__uenc": 0
     }
+  },
+  {
+    "name" : "ctx2ineq_01",
+    "options": {
+      "mp_options": "acc:condlinle=1 acc:condlinge=1 debug=1"
+    },
+    "tags" : ["logical"],
+    "objective" : 214,
+    "values": {
+      "Initial.flat1__A__indle": 4,
+      "Initial.flat1__A__indge": 3
+    }
+  },
+  {
+    "name" : "ctx2ineq_01 ctx2count=1",
+    "options": {
+      "mp_options": "acc:condlinle=1 acc:condlinge=1 debug=1 ctx2count=1"
+    },
+    "tags" : ["logical"],
+    "objective" : 214,
+    "values": {
+      "Initial.flat1__A__indle": 3,
+      "Initial.flat1__A__indge": 2
+    }
+  },
+  {
+    "name" : "ctx2ineq_01 ctx2ineq=0",
+    "options": {
+      "mp_options": "acc:condlinle=1 acc:condlinge=1 debug=1 ctx2ineq=0"
+    },
+    "tags" : ["logical"],
+    "objective" : 214,
+    "values": {
+      "Initial.flat1__A__indle": 4,
+      "Initial.flat1__A__indge": 4
+    }
+  },
+  {
+    "name" : "ctx2numberofvar_01",
+    "options": {
+      "mp_options": "acc:condlinle=1 acc:condlinge=1 debug=1"
+    },
+    "tags" : ["logical", "quadraticnonconvex"],
+    "values": {
+      "solve_result": "infeasible",
+      "Initial.flat1__A__indle": 3,
+      "Initial.flat1__A__indeq": 3,
+      "Initial.flat1__A__indge": 3
+    }
+  },
+  {
+    "name" : "ctx2numberofvar_01 ctx2count=4",
+    "options": {
+      "mp_options": "acc:condlinle=1 acc:condlinge=1 debug=1 ctx2count=4"
+    },
+    "tags" : ["logical", "quadraticnonconvex"],
+    "values": {
+      "solve_result": "infeasible",
+      "Initial.flat1__A__indle": 0,
+      "Initial.flat1__A__indeq": 3,
+      "Initial.flat1__A__indge": 0
+    }
   }
 ]
