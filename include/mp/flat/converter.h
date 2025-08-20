@@ -1605,8 +1605,8 @@ private:
                        "vs mixed. Bitwise OR of the following values:\n"
                        "\n"
                        "|  1 - atleast/atmost/exactly, count\n"
-                       "|  2 - numberof with constant total\n"
-                       "|  4 - numberof with variable total.\n"
+                       "|  2 - numberof with constant reference value\n"
+                       "|  4 - numberof with variable reference value.\n"
                        "\n"
                        "Default 0, see #267.",
                        options_.propCtxCountNumberof_, 0, 7);

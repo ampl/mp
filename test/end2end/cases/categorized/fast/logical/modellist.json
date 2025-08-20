@@ -339,5 +339,65 @@
     "values": {
       "Initial.flat1__A__uenc": 0
     }
+  },
+  {
+    "name" : "uenc_count_01",
+    "options": {
+      "mp_options": "acc:condlineq=1 debug=1"
+    },
+    "tags" : ["logical"],
+    "objective" : 0,
+    "values": {
+      "Initial.flat1__uenc": 0,
+      "Initial.flat1__A__uenc": 1
+    }
+  },
+  {
+    "name" : "uenc_count_02",
+    "options": {
+      "mp_options": "acc:condlineq=1 debug=1"
+    },
+    "tags" : ["logical"],
+    "objective" : 202,
+    "values": {
+      "Initial.flat1__uenc": 0,
+      "Initial.flat1__A__uenc": 1
+    }
+  },
+  {
+    "name" : "uenc_count_02 ctx2count=1",
+    "options": {
+      "mp_options": "acc:condlineq=1 debug=1 ctx2count=0 cvt:pre:ctx2count=1"
+    },
+    "tags" : ["logical"],
+    "objective" : 202,
+    "values": {
+      "Initial.flat1__uenc": 0,
+      "Initial.flat1__A__uenc": 0
+    }
+  },
+  {
+    "name" : "uenc_count_numberofconst_01 ctx2count=1",
+    "options": {
+      "mp_options": "acc:condlineq=1 debug=1 ctx2count=1"
+    },
+    "tags" : ["logical"],
+    "objective" : 200,
+    "values": {
+      "Initial.flat1__uenc": 0,
+      "Initial.flat1__A__uenc": 1
+    }
+  },
+  {
+    "name" : "uenc_count_numberofconst_01 ctx2count=3",
+    "options": {
+      "mp_options": "acc:condlineq=1 debug=1 ctx2count=3"
+    },
+    "tags" : ["logical"],
+    "objective" : 200,
+    "values": {
+      "Initial.flat1__uenc": 0,
+      "Initial.flat1__A__uenc": 0
+    }
   }
 ]
