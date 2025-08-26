@@ -20,6 +20,8 @@
  Author: Gleb Belov <Gleb.Belov@monash.edu>
  */
 
+#include <cmath>
+
 #include "gtest/gtest.h"
 
 #include "converter-mip-test.h"
@@ -41,7 +43,7 @@ TEST(RedefsMIPTest, PureMILP__01__seemsPassedToBackendCorrectly) {
       {  I_,   F_,   F_ } },
     {
       { { { 2, 0.0, 4 },
-          { 0, 1,   2 } }, -infty_, 56.4 }
+          { 0, 1,   2 } }, -INFINITY, 56.4 }
     }
   };
   mp::Env e;
