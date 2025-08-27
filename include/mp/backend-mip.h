@@ -539,8 +539,10 @@ protected:
 
     if (IMPL_HAS_STD_FEATURE( BASIS ))
       AddStoredOption("alg:basis basis",
-                      "Whether to use or return a basis:\n "
-                      "\n.. value-table::\n",
+                      "Whether to use and/or return a basis for LP models:\n"
+                      "\n.. value-table::\n"
+                      "\n"
+                      "See also mip:basis and qcp:dual (for some solvers).",
                       GetMIPOptions().basis_, values_basis_);
 
     if (IMPL_HAS_STD_FEATURE( WARMSTART ))

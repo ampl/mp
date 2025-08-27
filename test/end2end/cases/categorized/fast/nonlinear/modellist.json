@@ -2,7 +2,31 @@
   {
     "name" : "div_by_const",
     "tags" : ["linear"],
-    "objective": 11.33333333333333
+    "objective": 11.33333333333333,
+    "options": { "mp_options": "debug=1" },
+    "values": {
+      "Initial.flat1__A__div": 0
+    }
+  },
+  {
+    "name" : "div_divisor_1sign",
+    "tags" : ["nonlinear"],
+    "objective": 25.36179802
+  },
+  {
+    "name" : "div_divisor_1sign",
+    "tags" : ["quadraticnonconvex"],
+    "objective": 25.36179802,
+    "options": { "mp_options": "debug=1 acc:div=0" },
+    "values": {
+      "Initial.flat1__A__indle": 0,
+      "Initial.flat1__A__indeq": 0,
+      "Initial.flat1__A__indge": 0,
+      "Initial.flat1__quadeq": 3,
+      "Initial.flat1__linle": 1,
+      "Initial.flat1__lineq": 2,
+      "Initial.flat1__linge": 3
+    }
   },
   {
     "name" : "expA_1",
