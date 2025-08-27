@@ -461,5 +461,17 @@
       "Initial.flat1__A__indeq": 3,
       "Initial.flat1__A__indge": 0
     }
+  },
+  {
+    "name" : "and_toplevel",
+    "options": {
+      "mp_options": "debug=1"
+    },
+    "tags" : ["logical", "linear"],
+    "objective": 3,
+    "comment": "Test makes sense only for native-AND solvers",
+    "values": {
+      "Initial.flat1__and": 0
+    }
   }
 ]
