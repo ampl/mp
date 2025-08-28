@@ -1672,21 +1672,33 @@ void CplexBackend::FinishOptionParsing() {
     auto nms = CPXgetnummipstarts(env(), lp());
     if (nms == 0)
       AddToSolverMessage("No MIP start is available.\n");
-    CPLEX_CALL(CPXwritemipstarts(env(), lp(), storedOptions_.mipStart_.c_str(), 0, nms - 1));
+    CPLEX_CALL(CPXwritemipstarts(env(), lp(),
+                                 storedOptions_.mipStart_.c_str(), 0, nms - 1));
   }
 
   if (!storedOptions_.cpuMask_.empty())
-    CPLEX_CALL(CPXsetstrparam(env(), CPXPARAM_CPUmask, storedOptions_.cpuMask_.c_str()));
+    CPLEX_CALL(CPXsetstrparam(env(),
+                              CPXPARAM_CPUmask, storedOptions_.cpuMask_.c_str()));
 
   int numcores;
   if (storedOptions_.numcores_) {
     CPLEX_CALL(CPXgetnumcores(env(), &storedOptions_.numcores_));
-    AddToSolverMessage(fmt::format("{} logical cores are available.\n", storedOptions_.numcores_));
+    AddToSolverMessage(
+        fmt::format("{} logical cores are available.\n", storedOptions_.numcores_));
   }
 
   if (!storedOptions_.workDir_.empty())
-    CPLEX_CALL(CPXsetstrparam(env(), CPX_PARAM_WORKDIR, storedOptions_.workDir_.c_str()));
+    CPLEX_CALL(CPXsetstrparam(env(),
+                              CPX_PARAM_WORKDIR, storedOptions_.workDir_.c_str()));
 
+  // Native params
+  if (storedOptions_.paramRead_.size())
+    CPLEX_CALL(
+        CPXreadcopyparam(env(), storedOptions_.paramRead_.c_str() ));
+  // Write native params
+  if (storedOptions_.paramWrite_.size())
+    CPLEX_CALL(
+        CPXwriteparam(env(), storedOptions_.paramWrite_.c_str() ));
 
 }
 void CplexBackend::InitCustomOptions() {
@@ -2029,6 +2041,21 @@ void CplexBackend::InitCustomOptions() {
     "MIP solution strategy:\n" "\n.. value-table::\n",
     CPXPARAM_Emphasis_MIP, values_mipemphasis, 0);
 
+
+  // TECH:
+
+  AddStoredOption("tech:optionnativeread optionnativeread tech:param:read param:read",
+                  "Name of CPLEX parameter file (surrounded by 'single' or "
+                  "\"double\" quotes if the name contains blanks). "
+                  "The easiest approach to use PRM files is to export an initial file "
+                  "with tech:optionnativewrite.",
+                  storedOptions_.paramRead_);
+  AddStoredOption("tech:optionnativewrite optionnativewrite tech:param:write param:write",
+                  "Name of CPLEX parameter file (surrounded by 'single' or \"double\" quotes if the "
+                  "name contains blanks) to be written. Only parameters with non-default "
+                  "values are written.",
+                  storedOptions_.paramWrite_);
+
   AddSolverOption("tech:memoryemphasis memoryemphasis",
                   "0*/1: Whether to compress data to reduce the memory used, "
                   "which may make some information (e.g., basis condition) "
@@ -2281,7 +2308,7 @@ void CplexBackend::InitCustomOptions() {
 
   AddStoredOption("tech:outlev outlev",
     "Whether to write CPLEX log lines (chatter) to stdout,"
-    "for granular control see \"tech:lpdisplay\", \"tech:mipdisplay\", \"tech:bardisplay\"."
+    "for granular control see \"tech:lpdisplay\", \"tech:mipdisplay\", \"tech:bardisplay\". "
     "Values:\n"
     "\n.. value-table::\n",
     storedOptions_.outlev_, outlev_values_);

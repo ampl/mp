@@ -2,6 +2,11 @@ Summary of recent updates to CPLEX for AMPL
 ==============================================
 
 
+## 20250828
+- Options tech:optionnativeread, tech:optionnativewrite
+  to read/write CPLEX PRM files.
+
+
 ## 20250814
 - Changes in MP
   - Improved preprocessing of logical

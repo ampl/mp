@@ -163,7 +163,7 @@ void GurobiBackend::FinishOptionParsing() {
   // Tell the base class our verbosity
   set_verbose_mode(GrbGetIntParam(GRB_INT_PAR_LOGTOCONSOLE));
 
-  // Nartive params
+  // Native params
   if (paramfile_read().size())
     GRB_CALL(
           GRBreadparams(GRBgetenv(model()),
