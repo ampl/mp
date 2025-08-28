@@ -5,6 +5,9 @@ Summary of recent updates to CPLEX for AMPL
 ## 20250828
 - Options tech:optionnativeread, tech:optionnativewrite
   to read/write CPLEX PRM files.
+- Options lim:(lower/upper)(cutoff/obj/objstop) for
+  limiting search in the Simplex and Branch-and-Bound
+  algorithms.
 
 
 ## 20250814

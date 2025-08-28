@@ -2381,8 +2381,55 @@ void CplexBackend::InitCustomOptions() {
     CPXPARAM_MIP_Limits_Solutions , 0, 2000000000);
 
   AddSolverOption("lim:time timelim timelimit time",
-      "limit on solve time (in seconds; default: no limit).",
-      CPXPARAM_TimeLimit, 0.0, DBL_MAX);
+                  "Limit on solve time (in seconds; default: no limit).",
+                  CPXPARAM_TimeLimit, 0.0, DBL_MAX);
+
+  AddSolverOption("lim:upperobj upperobjlim upperobj",
+                  "Sets an upper limit on the value of the objective "
+                  "function in the simplex algorithms. Setting an upper "
+                  "objective function limit causes CPLEX to halt the "
+                  "optimization process when the maximum objective "
+                  "function value limit has been reached. This limit "
+                  "applies only during Phase II of the simplex algorithm "
+                  "in maximization problems. Default: 1e+75.",
+                  CPXPARAM_Simplex_Limits_UpperObj, -DBL_MAX, DBL_MAX);
+
+  AddSolverOption("lim:lowerobj lowerobjlim lowerobj",
+                  "See lim:upperobjlim.",
+                  CPXPARAM_Simplex_Limits_LowerObj, -DBL_MAX, DBL_MAX);
+
+  AddSolverOption("lim:upperobjstop upperobjstop mip:upperobj",
+                  "In a maximization MILP or MIQP, the solver will abort "
+                  "the optimization process as soon it finds a solution "
+                  "of value greater than or equal to the specified value. "
+                  "It is ignored if the problem is multiobjective. "
+                  "Default: 1e+75.",
+                  CPXPARAM_MIP_Limits_UpperObjStop, -DBL_MAX, DBL_MAX);
+
+  AddSolverOption("lim:lowerobjstop lowerobjstop mip:lowerobj",
+                  "See lim:upperobjstop.",
+                  CPXPARAM_MIP_Limits_LowerObjStop, -DBL_MAX, DBL_MAX);
+
+  AddSolverOption("lim:uppercutoff uppercutoff mip:uppercutoff",
+                  "Sets the upper cutoff tolerance. When the problem is "
+                  "a minimization problem, CPLEX cuts off or discards "
+                  "any solutions that are greater than the specified "
+                  "upper cutoff value. If the model has no solution with "
+                  "an objective value less than or equal to the cutoff "
+                  "value, CPLEX declares the model infeasible. In other "
+                  "words, setting an upper cutoff value c for a "
+                  "minimization problem is similar to adding this "
+                  "constraint to the objective function of the model: "
+                  "obj <= c. "
+                  "Default: 1e+75.\n"
+                  "\n"
+                  "Only effective in the branch and bound algorithm, "
+                  "for example, in a mixed integer program (MIP).",
+                  CPXPARAM_MIP_Tolerances_UpperCutoff, -DBL_MAX, DBL_MAX);
+
+  AddSolverOption("lim:lowercutoff lowercutoff mip:lowercutoff",
+                  "See lim:uppercutoff.",
+                  CPXPARAM_MIP_Tolerances_LowerCutoff, -DBL_MAX, DBL_MAX);
 
   AddSolverOption("qp:target optimalitytarget",
     "Type of solution to compute for a (MI)QP (not QCP) problem:"
