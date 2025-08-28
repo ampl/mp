@@ -14,7 +14,7 @@
     "objective": 25.36179802
   },
   {
-    "name" : "div_divisor_1sign",
+    "name" : "div_divisor_1sign acc:div=0",
     "tags" : ["quadraticnonconvex"],
     "objective": 25.36179802,
     "options": { "mp_options": "debug=1 acc:div=0" },

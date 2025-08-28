@@ -898,9 +898,13 @@ void ReportModelInfoSuffixes(const FlatModelInfo& fmi,
   for (const auto& val: contypeinfo) {
     PutIntSuf(val.second.name_, val.second.n_);
   }
-  suf_prefix += "_A_";      // totals: Initial.flatN__A__linconle etc.
+  suf_prefix += "_A_";      // totals: Initial.flatN__A__linle etc.
   for (const auto& val: contypeinfo) {
     PutIntSuf(val.second.name_, val.second.n_total_);
+  }                         // used: Initial.flatN__U__linle etc.
+  suf_prefix[suf_prefix.size()-2] = 'U';
+  for (const auto& val: contypeinfo) {
+    PutIntSuf(val.second.name_, val.second.n_used_);
   }
 }
 

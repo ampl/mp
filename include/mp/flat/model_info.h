@@ -56,12 +56,15 @@ public:
   struct ConTypeInfo {
     const char* name_ {nullptr};
     bool is_logical_ {0};
-    int n_ {0};
+    int n_ {0};               // number of active
+    int n_used_ {0};          // used (active + redefined)
     int n_total_ {0};         // total, including unused
     /// operator==, needed when checking if the model changed
     bool operator==(const ConTypeInfo& cti) const {
       assert(name_==cti.name_);
-      return n_==cti.n_ && n_total_==cti.n_total_;
+      return n_==cti.n_
+             && n_used_==cti.n_used_
+             && n_total_==cti.n_total_;
     }
   };
 
@@ -78,7 +81,7 @@ public:
   /// to the counter.
   virtual void AddNumberOfConstraints(
       const std::type_info& ti, const char* name,
-      int igroup, bool is_logical, int nc, int n) = 0;
+      int igroup, bool is_logical, int nc, int nu, int na) = 0;
 };
 
 

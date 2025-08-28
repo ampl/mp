@@ -87,14 +87,15 @@ public:
   /// Add number of constraints of single type
   void AddNumberOfConstraints(
       const std::type_info& ti, const char* name,
-      int igroup, bool is_logical, int nc, int n) override {
+      int igroup, bool is_logical, int nc, int nu, int na) override {
     cg_map_[igroup] += nc;
     ti_map_[ti] += nc;
     auto& ci = coninfo_map_[name];
     ci.name_ = name;
     ci.is_logical_ = is_logical;
     ci.n_ = nc;
-    ci.n_total_ = n;
+    ci.n_used_ = nu;
+    ci.n_total_ = na;
   }
 
 

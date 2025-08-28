@@ -144,6 +144,10 @@ public:
   /// Total number of items
   virtual int Size() const = 0;
 
+  /// Report how many items are used,
+  /// either addable, or converted
+  virtual int GetNumberOfUsed() const = 0;
+
   /// Report how many could be added to Backend as of now
   virtual int GetNumberOfAddable() const = 0;
 
@@ -456,6 +460,7 @@ public:
           ck.second.GetConstraintGroup(mapi),
           ck.second.IsLogical(),
           ck.second.GetNumberOfAddable(),
+          ck.second.GetNumberOfUsed(),
           ck.second.Size());
     }
   }

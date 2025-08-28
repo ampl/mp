@@ -64,7 +64,7 @@ public:
   int AddConstraint(int d, Args&&... args)
   {
     cons_.emplace_back( d, std::move(args)... );
-    ++n_bridged_or_unused_;    // initially "unused"
+    ++n_unused_;    // initially "unused"
     ExportConstraint(cons_.size()-1, cons_.back());
     // fmt::MemoryWriter wrt;
     // WriteCon2JSON(wrt, cons_.size()-1, cons_.back());
@@ -244,11 +244,21 @@ public:
     return (int)cons_.size();
   }
 
+  /// Report how many items are used,
+  /// either addable, or converted
+  int GetNumberOfUsed() const override {
+    assert(Size() >= n_bridged_ + n_unused_);
+    assert(0 <= n_bridged_);
+    assert(0 <= n_unused_);
+    return Size() - n_unused_;
+  }
+
   /// Report how many will be added to Backend
   int GetNumberOfAddable() const override {
-    assert(Size() >= n_bridged_or_unused_);
-    assert(0 <= n_bridged_or_unused_);
-    return Size()-n_bridged_or_unused_;
+    assert(Size() >= n_bridged_ + n_unused_);
+    assert(0 <= n_bridged_);
+    assert(0 <= n_unused_);
+    return Size() - n_bridged_ - n_unused_;
   }
 
   /// Group number of this constraint type in the Backend.
@@ -495,7 +505,7 @@ protected:
     if (!cnt.IsBridged()) {  // can be called 2x,
       cnt.MarkAsBridged();   // e.g. IfThen: 1st by RedefineVariable(),
       GetConverter().UncountArgRefs(cnt.GetCon());
-      ++n_bridged_or_unused_;  // then in ConvertConstraint()
+      ++n_bridged_;          // then in ConvertConstraint()
     }
   }
 
@@ -506,7 +516,7 @@ protected:
       cnt.MarkAsUnused();
       if (recurs)
         GetConverter().UncountArgRefs(cnt.GetCon());
-      ++n_bridged_or_unused_;
+      ++n_unused_;
     }
   }
 
@@ -517,7 +527,7 @@ protected:
       cnt.MarkAsUsed();
       GetConverter().CountArgRefs(cnt.GetCon());
       assert(!cnt.IsBridged());
-      --n_bridged_or_unused_;
+      --n_unused_;
     }
   }
 
@@ -728,8 +738,10 @@ private:
   Converter& cvt_;
   std::deque<Container> cons_;
   int i_cvt_last_ = -1;               // Last converted constraint.
-  int n_bridged_or_unused_ = 0;       // Number of converted items,
-                                      // they won't go to Backend.
+  int n_bridged_ = 0;       // Number of converted items,
+                            // they won't go to final model.
+  int n_unused_ = 0;        // Number of recycled items (not those converted),
+                            // they won't go to final model.
   int i_2add_next_ = 0;               // Next constraint to consider
                                       // for adding to Backend.
   const std::string desc_ {

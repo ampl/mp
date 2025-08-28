@@ -473,5 +473,41 @@
     "values": {
       "Initial.flat1__and": 0
     }
+  },
+  {
+    "name" : "test_unnest_sort",
+    "options": {
+      "mp_options": "debug=1"
+    },
+    "tags" : ["logical", "linear"],
+    "objective": 114,
+    "values": {
+      "Initial.flat1__U__and": 0,
+      "Initial.flat1__U__or": 1
+    }
+  },
+  {
+    "name" : "test_unnest_sort cvt:pre:unnest=0",
+    "options": {
+      "mp_options": "debug=1 cvt:pre:unnest=0"
+    },
+    "tags" : ["logical", "linear"],
+    "objective": 114,
+    "values": {
+      "if Initial.flat1__U__and>16 then 1": 1,
+      "if Initial.flat1__U__or>3 then 1": 1
+    }
+  },
+  {
+    "name" : "test_unnest_sort cvt:pre:sort=0",
+    "options": {
+      "mp_options": "debug=1 cvt:pre:sort=0"
+    },
+    "tags" : ["logical", "linear"],
+    "objective": 114,
+    "values": {
+      "if Initial.flat1__U__and>1 then 1": 1,
+      "if Initial.flat1__U__or>2 then 1": 1
+    }
   }
 ]
