@@ -350,10 +350,9 @@ driver is sketched in :ref:`configure-automatic-model-conversions`.
 .. [MILPFT] J. P. Vielma. Mixed Integer Linear Programming Formulation Techniques.
    SIAM Review 57 (1), 2015.
 
-.. [CP2MIP] G. Belov, P. J. Stuckey, G. Tack, M. Wallace. Improved Linearization
-   of Constraint Programming Models. In: Rueher, M. (eds) Principles and Practice of
-   Constraint Programming. CP 2016. LNCS, vol 9892.
-   Springer, Cham. *https://doi.org/10.1007/978-3-319-44953-1_4*.
+.. [CP2MIP] S. Brand, G. J. Duck, J. Puchinger, and P. J. Stuckey.
+   Flexible, Rule-Based Constraint Model Linearisation.
+   Practical Aspects of Declarative Languages 68—83, 2008.
 
 .. [CLModernArch] J. J. Dekker. A Modern Architecture for Constraint Modelling Languages.
    PhD thesis. Monash University, 2021.
@@ -365,7 +364,6 @@ driver is sketched in :ref:`configure-automatic-model-conversions`.
 .. [MOI] B. Legat, O. Dowson, J. D. Garcia, M. Lubin.
    MathOptInterface: A Data Structure for Mathematical Optimization Problems.
    INFORMS Journal on Computing 34 (2), 2021.
-   *https://doi.org/10.1287/ijoc.2021.1067*.
 
 
 .. _model-manager:
