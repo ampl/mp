@@ -337,9 +337,18 @@ natively accepts a nonlinear constraint, it is possible to still apply automatic
 reformulation via a solver option, for example *acc:log* for logarithm. Run the driver
 with *-=* or *-c* for a list of natively accepted constraints and options.
 
-An in-depth treatment of some automatic reformulations is given in
+
+.. _mathematical-background:
+
+Mathematical Background
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+An in-depth treatment of some automatic reformulations is given in [MILPFT]_,
 [CLModernArch]_, [SOCTransform]_, [MOI]_, and [CP2MIP]_. Customization for a new solver
 driver is sketched in :ref:`configure-automatic-model-conversions`.
+
+.. [MILPFT] J. P. Vielma. Mixed Integer Linear Programming Formulation Techniques.
+   SIAM Review 57 (1), 2015.
 
 .. [CP2MIP] G. Belov, P. J. Stuckey, G. Tack, M. Wallace. Improved Linearization
    of Constraint Programming Models. In: Rueher, M. (eds) Principles and Practice of
