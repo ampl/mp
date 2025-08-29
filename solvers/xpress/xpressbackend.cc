@@ -620,6 +620,25 @@ std::string XpressmpBackend::DoXpressFixedModel()
             "postsolved.", 2}
   };
 
+  static const mp::OptionValueInfo nlp_solver_values_[] = {
+      { "-1", "If the license allows and there are no user functions "
+             "or multistart jobs, FICO Xpress Global will be called, "
+             "otherwise a local solver (default)", -1},
+      { "1", "The algorithm selected by alg:localsolver will be used to "
+            "find a locally optimal solution", 1},
+      { "2", "FICO Xpress Global will be used to find a globally "
+            "optimal solution.", 2}
+  };
+
+  static const mp::OptionValueInfo nlp_localsolver_values_[] = {
+      { "-1", "Automatic selection, based on model characteristics "
+             "and solver availability (default)", -1 },
+      { "0", "Use Xpress-SLP (always available)", 0},
+      { "1", "Use Knitro if available", 1},
+      { "2", "Use Xpress-Optimizer if possible (convex quadratic "
+            "problems only).", 2}
+  };
+
   static const mp::OptionValueInfo presolveops_values_[] = {
     { "1 = 2^0", "Remove singleton columns", XPRS_PRESOLVEOPS_SINGLETONCOLUMNREMOVAL},
     { "2 = 2^1", "Remove singleton constraints (rows)", XPRS_PRESOLVEOPS_SINGLETONROWREMOVAL},
@@ -1546,7 +1565,7 @@ void XpressmpBackend::InitCustomOptions() {
                     XPRS_REFACTOR, values_autonoyes_, -1);
 
     AddSolverOption("alg:refineops refineops",
-                    "Bit vector: specifies wmhen the solution refiner should be executed to "
+                    "Bit vector: specifies when the solution refiner should be executed to "
                     "reduce solution infeasibilities. "
                     "The refiner will attempt to satisfy the target tolerances for all original linear "
                     "constraints before presolve or scaling has been applied:\n"
@@ -1563,6 +1582,21 @@ void XpressmpBackend::InitCustomOptions() {
                  "0/1*: Allow global solving. Passing 0 should linearize "
                  "all expressions requiring Xpress Global.",
                  &XpressmpBackend::GetGlobalFlag, &XpressmpBackend::SetGlobalFlag);
+
+    AddSolverOption("alg:nlpsolver nlpsolver nlp:solver",
+                    "Controls whether to call FICO Xpress Global or one "
+                    "of the local solvers:\n"
+                    "\n.. value-table::\n",
+                    XPRS_NLPSOLVER, nlp_solver_values_, -1);
+
+    AddSolverOption("alg:localsolver localsolver nlp:localsolver",
+                    "Selects the library to use for local solves:\n"
+                    "\n.. value-table::\n"
+                    "\n"
+                    "When solving problems to global optimality (see alg:nlpsolver), "
+                    "alg:localsolver is used to decide which local solver to call "
+                    "for reoptimizing NLP-infeasible solutions heuristically.",
+                    XPRS_LOCALSOLVER, nlp_localsolver_values_, -1);
 
     //endalg
     // ****************************
