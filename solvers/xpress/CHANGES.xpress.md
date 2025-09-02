@@ -2,7 +2,7 @@ Summary of recent updates to Xpress for AMPL
 ============================================
 
 
-## unreleased
+## 20250902
 - Fix retrieval of feasible solution after
   time limit in Xpress Global.
 - Options alg:nlpsolver, alg:localsolver.
