@@ -15,7 +15,7 @@ double XpressmpCommon::getDblAttr(int attr) const  {
 }
 
 int XpressmpCommon::NumLinCons() const {
-  return getIntAttr(XPRS_ORIGINALROWS);
+  return getIntAttr(XPRS_INPUTROWS);
 }
 
 int XpressmpCommon::NumVars() const {
