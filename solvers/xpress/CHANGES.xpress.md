@@ -2,6 +2,11 @@ Summary of recent updates to Xpress for AMPL
 ============================================
 
 
+## unreleased
+- Fix retrieval of duals after time limit
+  in Xpress Global.
+
+
 ## 20250902
 - Fix retrieval of feasible solution after
   time limit in Xpress Global.
