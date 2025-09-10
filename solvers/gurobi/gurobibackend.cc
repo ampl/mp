@@ -1699,7 +1699,7 @@ void GurobiBackend::InitCustomOptions() {
 
 
   AddSolverOption("bar:corr barcorrectors",
-    "Limit on the number of central corrections done in each barrier iteration"
+    "Limit on the number of central corrections done in each barrier iteration "
     "(default -1 = automatic choice).", GRB_INT_PAR_BARCORRECTORS, -1, GRB_MAXINT);
 
   AddSolverOption("bar:crossover crossover",

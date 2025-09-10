@@ -690,7 +690,7 @@ std::string XpressmpBackend::DoXpressFixedModel()
     { "0",  "Automatic choice (default)", 0},
     { "1", "Heuristics based on magnitudes of matrix entries", 1},
     { "2", "Use pseudoinverse of constraint matrix", 2},
-    { "3", "Unit starting point for homogeneous self - dual "
+    { "3", "Unit starting point for homogeneous self-dual "
           "barrier algorithm.", 3}
   };
 
@@ -851,15 +851,15 @@ std::string XpressmpBackend::DoXpressFixedModel()
   
   static const mp::OptionValueInfo values_cutselect[] = {
     {"32", "clique cuts", 32},
-    {"64", "mixed - integer founding(MIR) cuts", 64},
+    {"64", "mixed-integer rounding (MIR) cuts", 64},
     {"128", "lifted cover cuts", 128},
     {"2048", "flow path cuts", 2048},
     {"4096", "implication cuts", 4096},
-    {"8192", "automatic lift - and -project strategy", 8192},
+    {"8192", "automatic lift-and-project strategy", 8192},
     {"16384", "disable cutting from cut rows", 16384},
     {"32768", "lifted GUB cover cuts", 32768},
-    {"65536", "zero - half cuts", 65536},
-    {"131072", "indicator - constraint cuts", 131072},
+    {"65536", "zero-half cuts", 65536},
+    {"131072", "indicator-constraint cuts", 131072},
     {"-1", "all available cuts(default)", -1}
   };
   static const mp::OptionValueInfo values_cutstrategy[] = {
@@ -1262,19 +1262,19 @@ std::string XpressmpBackend::DoXpressFixedModel()
   };
 
   const mp::OptionValueInfo values_tunermethod[] = {
-      {"- 1", "automatic choice(default)", -1},
+      {"-1", "automatic choice(default)", -1},
       {"0", "default LP tuner", 0},
       {"1", "default MIP tuner", 1},
       {"2", "more elaborate MIP tuner", 2},
-      {"3", "root - focused MIP tuner", 3},
-      {"4", "tree - focused MIP tuner", 4},
+      {"3", "root-focused MIP tuner", 3},
+      {"4", "tree-focused MIP tuner", 4},
       {"5", "simple MIP tuner", 5},
       {"6", "default SLP tuner", 6},
       {"7", "default MISLP tuner", 7},
       {"8", "MIP tuner using primal heuristics", 8}
   };
   const mp::OptionValueInfo values_tunertarget[] = {
-    {"- 1", "automatic choice(default)",-1},
+    {"1", "automatic choice(default)", -1},
     {"0", "solution time, then integrality gap", 0},
       {"1", "solution time, then best bound",1},
        {"2", "solution time, then best integer solution",2},
@@ -1285,17 +1285,17 @@ std::string XpressmpBackend::DoXpressFixedModel()
        {"7", "gap only" , 7},
        {"8", "best bound only" , 8},
        {"9", "best integer solution only" , 9},
-       {"10", "best primal integral - only for individual instances" , 10}
+       {"10", "best primal integral-only for individual instances" , 10}
   }; 
   
   const mp::OptionValueInfo values_varselection[] = {
-    {"- 1", "automatic choice(default)", -1},
-    {"1", "minimum of the 'up' and 'down' pseudo - costs", 1},
-    {"2", "'up' pseudo - cost + 'down' pseudo - cost", 2},
-    {"3", "maximum of the 'up' and 'down' pseudo - costs plus twice their minimum", 3},
-    {"4", "maximum of the 'up' and 'down' pseudo - costs", 4},
-    {"5", "the 'down' pseudo - cost", 5},
-    {"6", "the 'up' pseudo - cost", 6},
+    {"1", "automatic choice(default)", -1},
+    {"1", "minimum of the 'up' and 'down' pseudo-costs", 1},
+    {"2", "'up' pseudo-cost + 'down' pseudo-cost", 2},
+    {"3", "maximum of the 'up' and 'down' pseudo-costs plus twice their minimum", 3},
+    {"4", "maximum of the 'up' and 'down' pseudo-costs", 4},
+    {"5", "the 'down' pseudo-cost", 5},
+    {"6", "the 'up' pseudo-cost", 6},
     {"7", "weighted combination of the 'up' and 'down' pseudo costs", 7},
     {"8", "product of 'up' and 'down' pseudo costs", 8}
   };
@@ -1326,18 +1326,18 @@ void XpressmpBackend::InitCustomOptions() {
     XPRS_CPUTIME, values_cputime, 0);
 
   AddSolverOption("tech:threads threads",
-    "The default number of threads used during optimization.;"
-    "default - 1 ==> automatic choice.",
+    "The default number of threads used during optimization. "
+    "Default -1 ==> automatic choice.",
     XPRS_THREADS, -1, INT_MAX);
 
   AddSolverOption("tech:backgroundthreads backgroundmaxthreads backgroundthreads",
     "Limits the number of threads that Xpress will use for jobs in the background;"
-    "default - 1 ==> automatic choice.",
+    "default -1 ==> automatic choice.",
     XPRS_BACKGROUNDMAXTHREADS, -1, INT_MAX);
 
   AddSolverOption("tech:backgroundselect backgroundselect",
     "Select which tasks to run in background jobs;"
-    "default - 1 ==> automatic choice. Set to 0 to not to run any task in the background or "
+    "default -1 ==> automatic choice. Set to 0 to not to run any task in the background or "
     "to 1 to run the feasibility jump heuristic in the background.",
     XPRS_BACKGROUNDSELECT, -1, 1);
   
@@ -1995,7 +1995,7 @@ void XpressmpBackend::InitCustomOptions() {
     "Barrier method convergence tolerance: stop when "
 		"step size <= barstepstop; default = 1e-10", XPRS_BARSTEPSTOP, 1e-10, DBL_MAX);
 
-  AddSolverOption("bar:threads threads",
+  AddSolverOption("bar:threads barthreads",
     "Number of threads used in the Newton Barrier algorithm; "
     "default = -1 (determined by \"threads\")", XPRS_BARTHREADS, -1, INT_MAX);
   //endbarrier
@@ -2429,7 +2429,7 @@ AddSolverOption("mip:pseudocost pseudocost",
 
 
 AddSolverOption("mip:qcrootalg qcrootalg",
-  "When using miqcpalg = 1 to solve a mixed - integer problem that "
+  "When using miqcpalg = 1 to solve a mixed-integer problem that "
   "has quadratic constraints or second-order cone constraints, "
   "the algorithm for solving the root node:\n"
   "\n.. value-table::\n",
