@@ -37,13 +37,17 @@ public:
   /// Is a logical constraint?
   virtual bool IsLogical() const = 0;
 
+  /// Uses context?
+  /// Currently synonym for being functional
+  virtual bool UsesContext() const = 0;
+
   /// Get context of contraint \a i
   virtual Context GetContext(int i) const = 0;
 
-  /// Add context of contraint \a i
+  /// Add context of constraint \a i
   virtual void AddContext(int i, Context ctx) = 0;
 
-  /// Set context of contraint \a i
+  /// Set context of constraint \a i
   virtual void SetContext(int i, Context ctx) = 0;
 
   /// Propagate expression result of constraint \a i bottom-up
@@ -201,12 +205,13 @@ public:
   /// Add acceptance option(s) "acc:...".
   /// Populate constraint list for -c output.
   /// @note This should be called before using the class.
-  void ConsiderAcceptanceOptions(
+  void ConsiderItemTypeOptions(
       BasicFlatConverter& cvt,
       const BasicFlatModelAPI& ma,
       Env& env) {
     DoAddAcceptanceOptions(cvt, ma, env);
     DoPopulateConstraintList(cvt, ma, env);  // for -c option
+    DoAddContextOptions(cvt, ma, env);
   }
 
   /// Is item \a i already bridged or abandoned?
@@ -268,6 +273,14 @@ protected:
       Env& env);
   /// Low-level user acceptance
   int GetLowLevelAcc() const { return acc_level_item_; }
+  /// Add context propagation options
+  void DoAddContextOptions(
+      BasicFlatConverter& cvt,
+      const BasicFlatModelAPI& ma,
+      Env& env);
+  /// Context propagation option
+  int GetContextPropFlags() const { return ctx_prop_; }
+
 
 private:
   pre::ValueNode value_node_;
@@ -278,6 +291,7 @@ private:
   int acc_level_item_ {-1};               // solver option acc:... value
   int acc_level_default_ {-1};            // default value, if neither item_ nor acc:_all set.
   mutable int acc_level_expr_ {-1};       // expression only
+  int ctx_prop_ {3};
   BasicLogger* exporter_{};
 };
 
@@ -413,12 +427,12 @@ public:
   }
 
   /// This should be called after adding all constraint keepers
-  void ConsiderAcceptanceOptions(
+  void ConsiderItemTypeOptions(
       BasicFlatConverter& cvt,
       const BasicFlatModelAPI& ma,
       Env& env) {
     for (auto& ck: con_keepers_)
-      ck.second.ConsiderAcceptanceOptions(cvt, ma, env);
+      ck.second.ConsiderItemTypeOptions(cvt, ma, env);
   }
 
   /// Convert all constraints (including any new appearing)

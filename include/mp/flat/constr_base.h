@@ -482,13 +482,13 @@ struct CondConId {
   static const char* description() {
     static std::string descr =
       std::string("Conditional wrapper for constraint type ") +
-      typeid(Con).name();
+      Con::GetTypeName();
     return descr.c_str();
   }
   static const char* GetTypeName() {
     static std::string nm =
-      std::string("Conditional< ") +
-      typeid(Con).name() + " >";
+        std::string("Conditional< ") +
+        Con::GetTypeName() + " >";
     return nm.c_str();
   }
 };

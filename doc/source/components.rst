@@ -334,8 +334,10 @@ Then,  the defining constraints of ``t1`` and ``t2`` are either passed to the so
 which accepts them via the :ref:`model API <flat-model-api>`, or become reformulated
 into more simple entities by :ref:`Flat Converter <flat-converters>`. If the solver
 natively accepts a nonlinear constraint, it is possible to still apply automatic
-reformulation via a solver option, for example *acc:log* for logarithm. Run the driver
-with *-=* or *-c* for a list of natively accepted constraints and options.
+reformulation via a :ref:`solver option <ampl-solver-options>`,
+for example *acc:log* for logarithm. Run the driver
+with *-=* for the list of options, or with *-c* for the
+list of supported constraints.
 
 
 .. _mathematical-background:

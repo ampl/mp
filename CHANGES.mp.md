@@ -2,6 +2,11 @@ Summary of recent updates to the AMPL MP Library
 ================================================
 
 
+## unreleased
+- Options cvt:pre:ctx:abs etc. control propagation
+  of expression context.
+
+
 ## 20250814
 - Fixed reformulation of numberof and alldiff.
   Previously could produce an inefficient

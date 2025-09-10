@@ -89,6 +89,11 @@ public:
   int GetConstraintDepth(int i) const
   { assert(check_index(i)); return cons_[i].GetDepth(); }
 
+  /// Uses context?
+  /// Currently synonym for being functional
+  bool UsesContext() const override
+  { return Constraint::UsesContext(); }
+
   /// Get context of constraint \a i
   Context GetContext(int i) const override
   { assert(check_index(i)); return cons_[i].GetCon().GetContext(); }
@@ -116,6 +121,15 @@ public:
                        int i,
                        double lb, double ub, Context ctx) override {
     try {
+      assert(!ctx.IsNone());
+      if (ctx.HasPositive()) {
+        if (!(GetContextPropFlags() & 1))
+          ctx = Context::CTX_MIX;
+      } else {
+        assert(ctx.HasNegative());
+        if (!(GetContextPropFlags() & 2))
+          ctx = Context::CTX_MIX;
+      }
       // Too strong: instead, differentiate context
       // in which the redefinition happened #248.
       // MP_ASSERT_ALWAYS(ctx.IsSubsetOf(GetContext())

@@ -1557,7 +1557,7 @@ private:
 
   void InitOwnOptions() {
     /// Should be called after adding all constraint keepers
-    FlatModel::ConsiderAcceptanceOptions(*this, GetModelAPI(), GetEnv());
+    FlatModel::ConsiderItemTypeOptions(*this, GetModelAPI(), GetEnv());
 
     GetEnv().AddStoredOption("tech:writegraph cvt:writegraph writegraph exportgraph",
         "File to export conversion graph. Format: JSON Lines.",
@@ -1597,18 +1597,22 @@ private:
 
     GetEnv().AddOption("cvt:pre:ctx2ineq ctx2ineq",
                        "0/1*: Propagate exact context into conditional inequalities, "
-                       "vs mixed. See #267.",
+                       "vs always mixed. See #267.\n"
+                       "\n"
+                       "Finer control provided by cvt:pre:ctx:cond...(le/ge) options.",
                        options_.propCtxIneq_, 0, 1);
     GetEnv().AddOption("cvt:pre:ctx2count ctx2count",
                        "Propagate exact context into atleast/atmost/exactly, "
                        "count and numberof expressions, "
-                       "vs mixed. Bitwise OR of the following values:\n"
+                       "vs always mixed. Bitwise OR of the following values:\n"
                        "\n"
                        "|  1 - atleast/atmost/exactly, count\n"
                        "|  2 - numberof with constant reference value\n"
                        "|  4 - numberof with variable reference value.\n"
                        "\n"
-                       "Default 0, see #267.",
+                       "Default 0, see #267.\n"
+                       "\n"
+                       "Finer control provided by cvt:pre:ctx:... options.",
                        options_.propCtxCountNumberof_, 0, 7);
 
     GetEnv().AddOption("cvt:pre:boundlogarg boundlogarg",

@@ -524,6 +524,10 @@ static const mp::OptionValueInfo values_universal_acceptance[] = {
     { "4", "Accepted as expression natively and preferred", 4}
 };
 
+static const mp::OptionValueInfo values_ctx_prop[] = {
+    { "1", "Propagate positive context exactly (otherwise always mixed)", 1},
+    { "2", "Propagate negative context exactly (otherwise always mixed)", 2}
+};
 
 
 void BasicConstraintKeeper::DoAddAcceptanceOptions(
@@ -604,6 +608,34 @@ void BasicConstraintKeeper::DoPopulateConstraintList(
   con_descr += "; ";
   con_descr += GetAcceptanceOptionNames();
   env.AddConstraintDescr(GetConstraintName(), con_descr);
+}
+
+void BasicConstraintKeeper::DoAddContextOptions(
+    BasicFlatConverter& ,
+    const BasicFlatModelAPI& ma,
+    Env& env) {
+  if (typeid(AbsConstraint) == GetTypeInfo()) {
+    env.AddStoredOption("cvt:pre:ctx:abs ctx:abs",
+                        "Controls propagation of context into abs() expressions, "
+                        "which could affect reformulations of abs() and its arguments "
+                        "(see the acc: options). Bitwise OR of the following values:"
+                        "\n\n.. value-table::\n\n"
+                        "Default 3. See "
+                        "mp.ampl.com/components.html#mathematical-background.",
+                        ctx_prop_, values_ctx_prop);
+  } else
+    if (UsesContext()) {
+      auto shortname = GetShortTypeName();
+      if ('_'==*shortname)
+        ++shortname;
+      env.AddStoredOption(
+          fmt::format("cvt:pre:ctx:{0} ctx:{0}", shortname).c_str(),
+          fmt::format(
+              "Context propagation for '{}' expression, "
+              "see cvt:pre:ctx:abs.",
+              GetExprOrConstraintName()).c_str(),
+          ctx_prop_, 0, 3);
+    }
 }
 
 template <class Writer>
