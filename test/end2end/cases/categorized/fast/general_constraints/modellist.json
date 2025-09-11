@@ -1,8 +1,70 @@
 [
-   {
+  {
     "name" : "max1",
     "objective" : 4,
     "tags" : ["logical"]
+  },
+  {
+    "name" : "max1 acc:max=0 acc:indle=0 acc:indge=0",
+    "objective" : 4,
+    "tags" : ["logical"],
+    "options": { "mp_options": "acc:max=0 acc:indle=0 acc:indge=0 debug=1" },
+    "values": {
+      "Initial.flat1_var_aux_bin": 2,
+      "Initial.flat1__lineq + Initial.flat1__linrange": 1,
+      "Initial.flat1__linle": 4,
+      "Initial.flat1__linge": 1
+    }
+  },
+  {
+    "name" : "max3_ctxneg acc:max=0 acc:indle=0 acc:indge=0",
+    "objective" : 4,
+    "tags" : ["logical"],
+    "options": { "mp_options": "acc:max=0 acc:indle=0 acc:indge=0 debug=1" },
+    "comment": "+Initial....linrange for solvers accepting range cons, passed from NL file",
+    "values": {
+      "Initial.flat1_var_aux_bin": 0,
+      "Initial.flat1__lineq": 0,
+      "Initial.flat1__linle": 2,
+      "Initial.flat1__linge + Initial.flat1__linrange": 1
+    }
+  },
+  {
+    "name" : "max3_ctxneg acc:max=0 acc:indle=0 acc:indge=0 ctx:max=1",
+    "objective" : 4,
+    "tags" : ["logical"],
+    "options": { "mp_options": "acc:max=0 acc:indle=0 acc:indge=0 ctx:max=1 debug=1" },
+    "values": {
+      "Initial.flat1_var_aux_bin": 2,
+      "Initial.flat1__lineq": 0,
+      "Initial.flat1__linle": 4,
+      "Initial.flat1__linge + Initial.flat1__linrange": 2
+    }
+  },
+  {
+    "name" : "max4_ctxpos acc:max=0 acc:indle=0 acc:indge=0",
+    "objective" : 9,
+    "tags" : ["logical"],
+    "options": { "mp_options": "acc:max=0 acc:indle=0 acc:indge=0 debug=1" },
+    "comment": "+Initial....linrange for solvers accepting range cons, passed from NL file",
+    "values": {
+      "Initial.flat1_var_aux_bin": 2,
+      "Initial.flat1__lineq": 0,
+      "Initial.flat1__linle + Initial.flat1__linrange": 3,
+      "Initial.flat1__linge": 1
+    }
+  },
+  {
+    "name" : "max4_ctxpos acc:max=0 acc:indle=0 acc:indge=0 ctx:max=2",
+    "objective" : 9,
+    "tags" : ["logical"],
+    "options": { "mp_options": "acc:max=0 acc:indle=0 acc:indge=0 ctx:max=2 debug=1" },
+    "values": {
+      "Initial.flat1_var_aux_bin": 2,
+      "Initial.flat1__lineq": 0,
+      "Initial.flat1__linle + Initial.flat1__linrange": 5,
+      "Initial.flat1__linge": 1
+    }
   },
   {
     "name" : "max2",
@@ -10,9 +72,10 @@
     "tags" : ["logical"]
   },
   {
-    "name" : "maxMinAbsAffine",
+    "name" : "maxMinAbsAffine ctx:abs=0",
     "objective" : 0,
-    "tags" : ["logical"]
+    "tags" : ["logical"],
+    "options": { "mp_options": "ctx:abs=0" }
   },
   {
     "name" : "and_or_max_01",
