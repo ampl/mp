@@ -302,12 +302,14 @@ public:
     auto& algc = cc.GetArguments();
     auto bnt = MPD(
         ComputeBoundsAndType(algc.GetBody()) );
+    PreprocessRoundRHS(algc, bnt);
     auto rhs = algc.rhs();
     if (IfPreprocessDecidable<kind>(prepro, bnt, rhs))
       return;
     if (IfPreprocessNormalize(cc, prepro))
       return;
-    PreprocessRoundRHS(algc, bnt);
+   if (IfPreprocess2BndEq(cc, prepro, bnt))
+      return;
   }
 
   /// (Non)strict inequalities
@@ -380,6 +382,45 @@ public:
     return false;
   }
 
+  /// See if we can reuse "==LB/UB"
+  template <class PreprocessInfo,
+           class Body, int kind,
+           class BndNType>
+  bool IfPreprocess2BndEq(
+      ConditionalConstraint<
+          AlgebraicConstraint< Body, AlgConRhs<kind> > >& cc,
+      PreprocessInfo& prepro, const BndNType& bnt) {
+    auto& algc = cc.GetArguments();
+    if (MPCD( IfPreproIneq2BndEq() )) {
+      auto convert = [&](double rhseq, bool fNegate=false) {
+        auto res = MPD( AssignResultVar2Args(
+            ConditionalConstraint<
+                AlgebraicConstraint<
+                    Body, AlgConRhs<
+                        0 > > > { {         // equality
+                std::move(algc.GetBody()),  // move is ok?
+                rhseq
+            } } ) );
+        if (fNegate)
+          res = MPD( AssignResultVar2Args(
+              NotConstraint( {res} ) ) );
+        prepro.set_result_var( res );
+        return true;             // for convenience
+      };
+      auto rhs = algc.rhs();
+      auto cmpEps = MPCD( ComparisonEps( bnt ) );
+      if (0<kind && rhs>bnt.ub()-cmpEps)   // expr >(=) rhs > ub-eps
+        return convert(rhs);               // replace as expr==rhs
+      if (0>kind && rhs<bnt.lb()+cmpEps)   // expr <(=) rhs < lb+eps
+        return convert(rhs);
+      if (0<kind && rhs<bnt.lb()+cmpEps)   // expr >(=) rhs < lb+eps
+        return convert(rhs, true);         // replace as expr!=rhs
+      if (0>kind && rhs>bnt.ub()-cmpEps)  // expr <(=) rhs > ub-eps
+        return convert(rhs, true);
+    }
+    return false;
+  }
+
 
   /// Dave experiments with logic presolve.
   ///
@@ -393,11 +434,10 @@ public:
 #ifndef NDEBUG
       MPD(AddWarning("empty_cmp",
                      "Empty comparison in a logical constraint\n  of type '"
-                     + std::string(cc.GetTypeName())
-                     + "'.\n  Please contact AMPL support."));
+                     + std::string(cc.GetTypeName()) + "'"));
 #endif
       auto res = ComputeValue(cc, std::vector<double>{});
-      prepro.narrow_result_bounds(res, res);
+      prepro.narrow_result_bounds(res, res);    // here should be ok
       return true;
     }
     return false;

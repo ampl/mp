@@ -152,6 +152,10 @@ public:
   double ComparisonEps(var::Type vartype) const {
     return var::INTEGER==vartype ? 1.0 : cmpEpsContinuous();
   }
+  /// Strict comparison tolerance
+  template <class BndNType>
+  double ComparisonEps(const BndNType& bnt) const
+  { return ComparisonEps(bnt.get_result_type()); }
 
 
   ///////////////////////////////////////////////////////////////////////
