@@ -300,22 +300,46 @@ public:
     prepro.set_result_type( var::INTEGER );
     assert(kind);
     auto& algc = cc.GetArguments();
+    auto bnt = MPD(
+        ComputeBoundsAndType(algc.GetBody()) );
+    auto rhs = algc.rhs();
+    if (IfPreprocessDecidable<kind>(prepro, bnt, rhs))
+      return;
+    if (IfPreprocessNormalize(cc, prepro))
+      return;
+    PreprocessRoundRHS(algc, bnt);
+  }
+
+  /// (Non)strict inequalities
+  /// @return true if was normalized
+  /// @todo If decidable, avoid creating the fixed var?
+  ///   E.g. in prepro, "reuseAssignResult()"?
+  template <class PreprocessInfo, class Body, int kind>
+  bool IfPreprocessNormalize(
+      ConditionalConstraint<
+          AlgebraicConstraint< Body, AlgConRhs<kind> > >& cc,
+      PreprocessInfo& prepro) {
     if (!IsNormalized(cc)) {
-      auto arg1 = algc; // Add the normalized one instead
+      auto arg1 = cc.GetArguments();
       arg1.negate();    // Negate the terms and sense
-      prepro.set_result_var(
+      prepro.set_result_var(   // Add the normalized one instead
             MPD( AssignResultVar2Args(
                    ConditionalConstraint<
                      AlgebraicConstraint< Body, AlgConRhs<
                    -kind> > > { {
                    std::move(arg1.GetBody()), arg1.rhs()
                  } } ) ));
-      return;
+      return true;
     }
-    // See if we need to round the constant term
+    return false;
+  }
+
+  /// See if need to round the RHS
+  template <class Body, int kind, class BndNType>
+  void PreprocessRoundRHS(
+      AlgebraicConstraint< Body, AlgConRhs<kind> >& algc,
+      const BndNType& bnt) {
     auto rhs = algc.rhs();
-    auto bnt = MPD(
-          ComputeBoundsAndType(algc.GetBody()) );
     if (MPCD( IfPreproIneqRHS() )
         && var::INTEGER == bnt.get_result_type()
         && std::floor(rhs) != std::ceil(rhs)) {  // rhs not int
@@ -330,23 +354,32 @@ public:
         algc.set_rhs( std::ceil(rhs) );
       }
     }
-    // Decidable cases
+  }
+
+  /// Decidable inequality?
+  template <int kind, class PreprocessInfo, class BndNType>
+  bool IfPreprocessDecidable(
+      PreprocessInfo& prepro, const BndNType& bnt, double rhs) {
     if (MPCD( IfPreproIneqResBounds() )) {
       if ((1==kind && bnt.lb()>=rhs)
           || (-1==kind && bnt.ub()<=rhs)
           || (2==kind && bnt.lb()>rhs)
           || (-2==kind && bnt.ub()<rhs)) {
-        prepro.narrow_result_bounds(1.0, 1.0);   // TRUE
+        prepro.narrow_result_bounds(1.0, 1.0);   // FIX: TRUE
+        return true;
       } else {
         if ((1==kind && bnt.ub()<rhs)
             || (-1==kind && bnt.lb()>rhs)
             || (2==kind && bnt.ub()<=rhs)
             || (-2==kind && bnt.lb()>=rhs)) {
-          prepro.narrow_result_bounds(0.0, 0.0);   // FALSE
+          prepro.narrow_result_bounds(0.0, 0.0);   // FIX: FALSE
+          return true;
         }
       }
     }
+    return false;
   }
+
 
   /// Dave experiments with logic presolve.
   ///
