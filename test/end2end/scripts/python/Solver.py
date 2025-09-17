@@ -564,7 +564,12 @@ class LgoSolver(AMPLSolver):
         return ""
 
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
-        super().__init__(exeName, timeout, nthreads, otherOptions)
+        stags = {
+                 ModelTags.continuous, #ModelTags.integer, ModelTags.binary,
+                 ModelTags.linear, ModelTags.quadratic,
+                 ModelTags.quadraticnonconvex,
+                 ModelTags.nonlinear, ModelTags.complementarity}
+        super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
     def _doParseSolution(self, st, stdout=None):
         if not st:

@@ -404,6 +404,12 @@ class AMPLRunner(object):
                     "'  is not found in the output"
 
     def _assertAndRecord(self, expval, val, msg):
+        if isinstance(expval, dict):
+            self._assertAndRecordObjectValue(expval, val, msg)
+        else:
+            self._assertAndRecordNonObjectValue(expval, val, msg)
+
+    def _assertAndRecordNonObjectValue(self, expval, val, msg):
         b1 = isinstance(expval, (int, float))
         b2 = isinstance(val, (int, float))
         uneq = not \
@@ -413,6 +419,25 @@ class AMPLRunner(object):
             self.stats["eval_fail_msg"] = msg + \
                 ": value " + str(val) + \
                 ", expected " + str(expval)
+
+    def _assertAndRecordObjectValue(self, expval, val, msg):
+        errmsg = ''
+        for kw, refv in expval.items():
+            if "max"==str(kw):
+                if val>refv:
+                    errmsg = str(val) + " exceeds " + str(refv)
+                    break
+            elif "min"==str(kw):
+                if val<refv:
+                    errmsg = str(val) + " is below " + str(refv)
+                    break
+            else:
+                errmsg = str(val) + \
+                    ": reference object contains an unknown keyword '" + \
+                    str(kw) + "'"
+        if '' != errmsg:
+            self.stats["eval_fail_msg"] = msg + \
+                ": value " + errmsg
 
     def getName(self):
         return "ampl-" + self._solver.getName()

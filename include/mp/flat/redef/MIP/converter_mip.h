@@ -145,6 +145,8 @@ public:
   /// Strict comparison tolerance.
   /// Need a big eps to avoid misinterpretation,
   /// at least the solver's feasibility tolerance
+  /// @todo Also for integers if >1?
+  /// @todo suffixes?
   double ComparisonEps(int var) const {
     return MPCD(is_var_integer(var)) ? 1.0 : cmpEpsContinuous();
   }
@@ -469,7 +471,8 @@ private:
     this->GetEnv().AddOption("cvt:compl:tol cvt:compl:eps compl:eps",
                              "Tolerance parameter for the product "
                              "and Fischer-Burmeister encodings of complementarity, "
-                             "see cvt:compl. Default 1e-6.",
+                             "see cvt:compl. Gives smoothness but increases solution "
+                             "space. Default 1e-6 (reduce for precision).",
                              options_.complCvtEps_, 0.0, 1e100);
     this->GetEnv().AddOption("cvt:plapprox:reltol plapprox:reltol plapproxreltol",
                        "Relative tolerance for piecewise-linear approximation. Default 0.01.",

@@ -7,7 +7,7 @@ Testing
 Ensure the major functionality of your driver is tested by :ref:`running
 end-to-end tests <run_end2end_tests>`. :ref:`Add your own test cases
 <add_new_test_cases>` for essential functions.
-:ref:`Unit tests <unit_tests>` can be used as well.
+:ref:`Unit tests <unit_tests>` should be used as well.
 
 
 End-to-end tests
@@ -25,9 +25,10 @@ Run end-to-end tests
 
   .. code-block:: console
 
-      python3 test/end2end/run.py solver [another_solver [...]]
+      python3 test/end2end/run.py solver [another_solver [...]] [--options 'acc:max=0']
 
-  The ``solver`` and ``ampl`` executables are expected to be on the system path.
+  The ``solver`` and ``ampl`` executables are expected to be on the system path,
+  or use options ``--ampl``, ``--bin_path``.
 
 * Detailed results are saved into a CSV report file, see ``--reportstub``.
 
@@ -84,18 +85,36 @@ following items, where non-compulsory items are italicized:
 
 * *"values": { "X[0].iis": "upp", ... }*. Expected values or expressions,
   in the form AMPL ``display`` command would accept. Only available for AMPL
-  models / scripts.
+  models / scripts. Example:
 
-  * For example, to check *logical expressions*, use if/then:
+  .. code-block:: json
+
+      "values": {
+        "if color['Belgium'] != color['France'] then 1": 1,
+        "if (forall {s in NS} (VAL_U_F2[s] = 1  ==>  U_F2[s] >= 0.0001  else  U_F2[s] = 0)) then 1": 1,
+        "abs(x)": { "max": 1e-3 },
+        "solve_result_num": 0
+      }
+
+  In particular:
+
+  * The *expected value* can be a dictionary of the form `{ "min": ..., "max": ... }`:
 
     .. code-block:: json
 
-        "values": {
-          "if color['Belgium'] != color['France'] then 1": 1,
-          "if (forall {s in NS} (VAL_U_F2[s] = 1  ==>  U_F2[s] >= 0.0001  else  U_F2[s] = 0)) then 1": 1,
-          "if abs(x) < 1e-3 then 1": 1,
-          "solve_result_num": 0
-        }
+        "max{i in 1 .. _nccons} abs(_ccon[i])": { "max": 1e-5 },
+        "min{i in 1 .. _ncons} _con[i].slack": { "min": -1e-5 }
+
+    This checks all complementarity and algebraic constraints.
+
+  * To check *logical expressions*, use if/then:
+
+    .. code-block:: json
+
+        "if forall {i in 1.._nlogcons} _logcon[i] then 1": 1,
+
+    This checks all logical constraints.
+
 
 * *"output": ["Presolved model has 500 variables", "RHS range:  [1e-2, 1e4]"]*.
   Output chunks expected in the solver / AMPL log.
@@ -106,4 +125,5 @@ following items, where non-compulsory items are italicized:
 Unit tests
 ----------
 
-You can employ unit tests as well, see folder :file:`test`.
+Unit tests are in the folder :file:`test`.
+Compulsory are tests `converter-flat-test` and `converter-mip-test`.

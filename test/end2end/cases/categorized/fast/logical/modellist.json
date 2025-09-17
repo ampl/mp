@@ -4,6 +4,7 @@
     "tags" : ["logical"],
     "values": {
       "if color['Belgium'] != color['France'] then 1 else 0": 1,
+      "if forall {i in 1.._nlogcons} _logcon[i] then 1": 1,
       "solve_result_num": 0
     }
   },

@@ -20,7 +20,9 @@
       "Level['P2b']": 200,
       "Level['P3']": 260,
       "Level['P3c']": 1000,
-      "Level['P4']": 240
+      "Level['P4']": 240,
+      "max{i in 1 .. _nccons} abs(_ccon[i])": { "max": 1e-5 },
+      "min{i in 1 .. _ncons} _con[i].slack": { "min": -1e-5 }
     }
   },
   {
@@ -34,7 +36,9 @@
     "objective": 0.417424305,
     "values": {
       "x": 0.791288,
-      "y": -0.3738635434445156
+      "y": -0.3738635434445156,
+      "max{i in 1 .. _nccons} abs(_ccon[i])": { "max": 1e-5 },
+      "min{i in 1 .. _ncons} _con[i].slack": { "min": -1e-5 }
     }
   },
   {
@@ -45,7 +49,9 @@
     },
     "values": {
       "x": 1.0,
-      "y": 1.0
+      "y": 1.0,
+      "max{i in 1 .. _nccons} abs(_ccon[i])": { "max": 1e-5 },
+      "min{i in 1 .. _ncons} _con[i].slack": { "min": -1e-5 }
     }
   },
   {
@@ -57,7 +63,9 @@
     },
     "values": {
       "x": 1.0,
-      "y": 1.0
+      "y": 1.0,
+      "max{i in 1 .. _nccons} abs(_ccon[i])": { "max": 1e-5 },
+      "min{i in 1 .. _ncons} _con[i].slack": { "min": -1e-5 }
     }
   }
 ]
