@@ -432,7 +432,7 @@ private:
   struct Options {
     double cmpEps_ { 1e-4 };
     int complCvt_ = 0;
-    double complCvtEps_ {1e-6};
+    double complCvtEps_ {1e-9};
     double bigM_default_ { -1 };
     double PLApproxRelTol_ { 1e-2 };
     double PLApproxDomain_ { 1e6 };
@@ -472,7 +472,7 @@ private:
                              "Tolerance parameter for the product "
                              "and Fischer-Burmeister encodings of complementarity, "
                              "see cvt:compl. Gives smoothness but increases solution "
-                             "space. Default 1e-6 (reduce for precision).",
+                             "space. Default 1e-9.",
                              options_.complCvtEps_, 0.0, 1e100);
     this->GetEnv().AddOption("cvt:plapprox:reltol plapprox:reltol plapproxreltol",
                        "Relative tolerance for piecewise-linear approximation. Default 0.01.",
