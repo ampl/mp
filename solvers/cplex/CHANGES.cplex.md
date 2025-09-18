@@ -2,6 +2,10 @@ Summary of recent updates to CPLEX for AMPL
 ==============================================
 
 
+## unreleased
+- Option alg:start:advance
+
+
 ## 20250828
 - Options tech:optionnativeread, tech:optionnativewrite
   to read/write CPLEX PRM files.
