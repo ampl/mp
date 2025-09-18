@@ -3,6 +3,9 @@ Summary of recent updates to the AMPL MP Library
 
 
 ## unreleased
+- alg:start=3 default, which passes both the
+  initial guesses and basis for LP
+  (previously basis only).
 - Options cvt:pre:ctx:abs etc. control propagation
   of expression context.
 

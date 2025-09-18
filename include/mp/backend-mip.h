@@ -245,10 +245,11 @@ public:
     sol0.dual = this->InitialDualValues();
     bool haveInis = sol0.primal.size() && sol0.dual.size();
     if (haveInis && (
-          2==warmstart() ||
+          2<=warmstart() ||
           (1==warmstart() && !useBasis))) {
       AddPrimalDualStart(sol0);
-      useBasis = false;
+      if ( 2==warmstart() )  // Why should we submit only the warmstart?
+        useBasis = false;
       if (debug_mode()) {                 // Report received initials
         ReportSuffix(suf_testvarini, sol0.primal); // Should we check that
         ReportSuffix(suf_testconini, sol0.dual);   // Impl uses them?
@@ -402,7 +403,7 @@ private:
   struct Options {
     int lazy_user_cuts_ = 3;
     int basis_=3;
-    int warmstart_=1;
+    int warmstart_=3;
     int importPriorities_=1;
     int rays_=3;
     int exportIIS_=0;
@@ -511,10 +512,11 @@ protected:
     {     "3", "Both (1 + 2 = default)", 3}
   };
 
-  const mp::OptionValueInfo values_warmstart_[3] = {
-    {     "0", "No", 0 },
-    {     "1", "Yes (for LP: if there is no incoming alg:basis) (default)", 1},
-    {     "2", "Yes (for LP: ignoring the incoming alg:basis, if any.)", 2}
+  const mp::OptionValueInfo values_warmstart_[4] = {
+      {     "0", "No", 0 },
+      {     "1", "Yes (for LP: if there is no incoming alg:basis)", 1},
+      {     "2", "Yes (for LP: omitting the incoming alg:basis, if any)", 2},
+      {     "3", "Yes (for LP: together with the incoming alg:basis, if any; default).", 3}
   };
 
   const mp::OptionValueInfo values_rays_[4] = {
@@ -541,6 +543,8 @@ protected:
       AddStoredOption("alg:basis basis",
                       "Whether to use and/or return a basis for LP models:\n"
                       "\n.. value-table::\n"
+                      "\n"
+                      "See alg:start for interaction with the LP warmstart.\n"
                       "\n"
                       "See also mip:basis and qcp:dual (for some solvers).",
                       GetMIPOptions().basis_, values_basis_);
