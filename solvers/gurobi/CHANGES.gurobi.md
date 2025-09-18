@@ -2,6 +2,11 @@ Summary of recent updates to gurobi for AMPL
 ============================================
 
 
+## unreleased
+- Option lp:warmstart controls whether and how
+  to warm start LP optimization.
+
+
 ## 20250814
 - Changes in MP
   - Improved preprocessing of logical

@@ -1615,7 +1615,7 @@ void GurobiBackend::InitCustomOptions() {
                          "either through primal/dual status, or through warmstart, "
                          "then Gurobi LP presolve will be disabled. For models where "
                          "presolve greatly reduces the problem size, "
-                         "this might hurt performance."
+                         "this might hurt performance. See also lp:warmstart."
       "\n\n"
       "For problems with "
       "integer variables or quadratic constraints, "
@@ -1892,6 +1892,13 @@ void GurobiBackend::InitCustomOptions() {
 
   ////////////////////////// LP //////////////////////////
 
+  AddSolverOption("lp:warmstart lpwarmstart",
+                  "Controls whether and how to warm-start LP optimization, "
+                  "see options alg:basis and alg:start:\n"
+                  "\n.. value-table::",
+                  GRB_INT_PAR_LPWARMSTART, values_lpwarmstart_, 1);
+
+
   AddSolverOption("lp:degenmoves degenmoves",
     "Limit on the number of degenerate simplex moves -- for use "
         "when too much time is taken after solving the initial root "
@@ -2128,8 +2135,7 @@ void GurobiBackend::InitCustomOptions() {
     "integer variables:\n"   "\n.. value-table::\n",
     storedOptions_.nMIPStart_, values_mipstart_);
   AddToOptionDescription("alg:start",
-                         "Note that for LP, \"alg:basis\" is usually more efficient.\n"
-                         "For Gurobi, "
+                         "For Gurobi, choices can be refined vie \"lp:warmstart\"; "
                          "MIP-specific options can be tuned via \"mip:start\".");
 
   AddSolverOption("mip:symmetry symmetry",

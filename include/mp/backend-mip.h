@@ -485,6 +485,14 @@ protected:
     {     "1", "Yes (default)", 1}
   };
 
+  const mp::OptionValueInfo values_lpwarmstart_[3] = {
+      {     "0", "Ignore any warm start information (generally)", 0 },
+      {     "1", "Use warm start information to solve the original, unpresolved problem (default)", 1},
+      {     "2", "If presolve is enabled, use warm start to solve the presolved problem. "
+       "Otherwise, setting 2 prioritizes start vectors (primal/dual), while "
+       "setting 1 prioritizes basis statuses.", 2 }
+  };
+
   const mp::OptionValueInfo values_autonoyes_[3] = {
     {     "-1", "Automatic choice (default)", 0 },
     {     "0", "No", 0 },
