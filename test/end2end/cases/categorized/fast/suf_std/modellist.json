@@ -4,7 +4,7 @@
     "objective" : 74.273820,
     "tags" : ["linear", "continuous", "sstatus"],
     "options": {
-      "cplex_options": "netopt=3 netdisplay=1 netfeastol=1e-5 netfind=2 netoptimality=1e-4 netpricing=2 netiterations=500 predual=1 primal primalopt dual dualopt",
+      "cplex_options": "netopt=3 netdisplay=1 netfeastol=1e-5 netfind=2 netoptimality=1e-4 netpricing=2 netiterations=500 predual=1 primal primalopt dual dualopt advind=2",
       "gurobi_options": "lp:warmstart=2"
     },
     "values": {

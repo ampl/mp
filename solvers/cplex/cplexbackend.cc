@@ -1287,6 +1287,12 @@ static const mp::OptionValueInfo values_method[] = {
           "dual and barrier in deterministic mode; 4 is used for MIPQs).", 6}
 };
 
+static const mp::OptionValueInfo values_advance_[] = {
+    { "0", "Do not use advanced start information", 0},
+    { "1", "Use an advanced basis supplied by the user (default)" , 1},
+    { "2", "Crush an advanced basis or starting vector supplied by the user.", 2}
+};
+
 static const mp::OptionValueInfo values_netopt[] = {
     { "0", "(Default) never invoke the network optimizer", 0},
     { "1", "Compatibility value; same as 3", 1},
@@ -1742,6 +1748,16 @@ void CplexBackend::InitCustomOptions() {
                   "Overrides netopt option and "
                   "primalopt/dualopt/barrier/network/sifting flags.",
                   storedOptions_.algMethod_, values_method);
+
+  AddToOptionDescription("alg:start",
+                         "For IBM ILOG CPLEX, choices can be refined via alg:start:advance.");
+
+  AddSolverOption("alg:start:advance alg:start:advanced advance advind",
+                  "If set to 1 or 2, this parameter specifies that CPLEX should use advanced "
+                  "starting information when it initiates optimization. "
+                  "Exact meaning differs by problem type. Here for LP:"
+                  "\n\n.. value-table::",
+                  CPXPARAM_Advance, values_advance_, 1);
 
   AddStoredOption("alg:barrier barrier baropt",
     "Solve (MIP node) LP/QPs by barrier method.",

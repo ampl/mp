@@ -2134,6 +2134,7 @@ void GurobiBackend::InitCustomOptions() {
     "Whether to use initial guesses in problems with "
     "integer variables:\n"   "\n.. value-table::\n",
     storedOptions_.nMIPStart_, values_mipstart_);
+
   AddToOptionDescription("alg:start",
                          "For Gurobi, choices can be refined vie \"lp:warmstart\"; "
                          "MIP-specific options can be tuned via \"mip:start\".");
