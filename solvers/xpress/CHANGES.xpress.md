@@ -3,6 +3,8 @@ Summary of recent updates to Xpress for AMPL
 
 
 ## unreleased
+- Submit initial guess to the local NLP solver
+  as well.
 - Fix retrieval of duals after time limit
   in Xpress Global.
 

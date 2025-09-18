@@ -2827,15 +2827,17 @@ void XpressmpBackend::SetBasis(SolutionBasis basis) {
     { basis.varstt, basis.constt });
   auto &varstt = mv.GetVarValues()();
   auto &constt = mv.GetConValues()(CG_Linear);
-  assert(varstt.size());
-  assert(constt.size());
+//#define XPRESS__ROW_STATS_GENCONS    // Is this valid?
+#ifdef XPRESS__ROW_STATS_GENCONS
   // Append general constraints. TODO: Check if i need to append all types
   auto& cconstt = mv.GetConValues()(CG_General);
   constt.insert(constt.end(), cconstt.begin(), cconstt.end());
-
-  auto convertedVarBasis = VarStatii(varstt);
-  auto convertedConBasis = ConStatii(constt);
-  XPRESSMP_CCALL(XPRSloadbasis(lp(), convertedConBasis.data(), convertedVarBasis.data()));
+#endif  // XPRESS__ROW_STATS_GENCONS
+  if (varstt.size() && constt.size()) {
+    auto convertedVarBasis = VarStatii(varstt);
+    auto convertedConBasis = ConStatii(constt);
+    XPRESSMP_CCALL(XPRSloadbasis(lp(), convertedConBasis.data(), convertedVarBasis.data()));
+  }
 }
 
 
@@ -2935,7 +2937,10 @@ void XpressmpBackend::AddMIPStart(
       val.push_back(x0[i]);
     }
   }
-  XPRESSMP_CCALL(XPRSaddmipsol(lp(), idx.size(), val.data(), idx.data(), nullptr));
+  XPRESSMP_CCALL(
+      XPRSaddmipsol(lp(), idx.size(), val.data(), idx.data(), "AMPL_initial_guess"));
+  XPRESSMP_CCALL(
+      XPRSnlpsetinitval(lp(), idx.size(), idx.data(), val.data()));
 }
 
 void XpressmpBackend::xpdisplay(
