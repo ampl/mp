@@ -549,7 +549,8 @@ protected:
 
     if (IMPL_HAS_STD_FEATURE( BASIS ))
       AddStoredOption("alg:basis basis",
-                      "Whether to use and/or return a basis for LP models:\n"
+                      "Whether to use and/or return a basis for LP models "
+                      "(variable/constraint suffixes .(s)status):\n"
                       "\n.. value-table::\n"
                       "\n"
                       "See alg:start for interaction with the LP warmstart.\n"
