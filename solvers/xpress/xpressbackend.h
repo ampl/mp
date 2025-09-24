@@ -206,6 +206,8 @@ protected:
     const char* ch, int msglvl, int msgnumber);
 
   const std::string& tunebase() { return storedOptions_.tunebase_; }
+  const std::string& tunermethodfileread() { return storedOptions_.tunermethodfileread_; }
+  const std::string& tunermethodfilewrite() { return storedOptions_.tunermethodfilewrite_; }
   const std::string& tunename() { return storedOptions_.tunename_; }
 
 private:
@@ -224,6 +226,8 @@ private:
     bool fDual_ = 0;
     bool fNetwork_ = 0;
     std::string tunebase_;
+    std::string tunermethodfileread_;
+    std::string tunermethodfilewrite_;
     std::string tunename_;
     std::string logFile_;
   };

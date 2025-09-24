@@ -220,6 +220,12 @@ void XpressmpBackend::DoXPRESSTune() {
   SetSolverOption(XPRS_TUNEROUTPUTPATH, tunebase().data());
   if (tunename().size())
     SetSolverOption(XPRS_TUNERSESSIONNAME, tunename().data());
+
+  if (!tunermethodfilewrite().empty())
+      XPRESSMP_CCALL(XPRStunerwritemethod(lp(), tunermethodfilewrite().c_str()));
+
+  if (!tunermethodfileread().empty())
+      XPRESSMP_CCALL(XPRStunerreadmethod(lp(), tunermethodfileread().c_str()));
   XPRESSMP_CCALL(XPRStune(lp(), ""));
 }
 
@@ -2617,7 +2623,15 @@ AddSolverOption("mip:varselection varselection",
     "problem called prob will be located at tuneroutput/prob/",
     storedOptions_.tunebase_);
 
-
+  AddStoredOption("tech:tunermethodread tunermethodread",
+      "Read existing tuner method from the specified .xtm file, "
+      "see \"tunermethodwrite\" to obtaing a template file",
+      storedOptions_.tunermethodfileread_
+  );
+  AddStoredOption("tech:tunermethodwrite tunermethodwrite",
+      "Write existing tuner method from the specified .xtm file",
+      storedOptions_.tunermethodfilewrite_
+  );
   AddStoredOption("tech:tunename tunesessionname",
     "Set problem name within the tuner \"tunebase\" is specified.",
     storedOptions_.tunename_);
