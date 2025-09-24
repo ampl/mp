@@ -1427,6 +1427,7 @@ private:
     int preprocessInequalityRhs_ = 1;
     int preprocessInequalityResultBounds_ = 1;
     int preprocessIneq2BndEq_ = 1;
+    int preprocessIneq2Related_ = 1;
 
     int preproUnnest_ = 15;
     int preproSortUnify_  = 1;
@@ -1580,11 +1581,15 @@ private:
                        "0/1*: Preprocess reified inequality comparison's right-hand sides "
                        "(round for integer expression body).",
                        options_.preprocessInequalityRhs_, 0, 1);
-    GetEnv().AddOption("cvt:pre:ineq2bndeq",
-                       "0/1*: Preprocess reified inequality expr <= c, where "
-                       "c < lb(expr)+cvt:mip:eps, into ==, "
+    GetEnv().AddOption("cvt:pre:ineq2bndeq ineq2bndeq",
+                       "0/1*: Preprocess reified inequality expr <(=) c, where "
+                       "c <)=( lb(expr)+cvt:mip:eps, into expr == lb(expr), "
                        "which works better on some benchmarks/solvers.",
                        options_.preprocessIneq2BndEq_, 0, 1);
+    GetEnv().AddOption("cvt:pre:ineq2related ineq2related ineq2rel",
+                       "0/1*: Unify related reified inequalities: "
+                       "<=c, <c+cvt:mip:eps, >c, >=c+cvt:mip:eps.",
+                       options_.preprocessIneq2Related_, 0, 1);
 
     GetEnv().AddOption("cvt:pre:unnest cvt:unnest cvt:pre:inline cvt:inline",
         "Inline nested expressions. Bitwise OR of the following values:\n"
@@ -1823,6 +1828,10 @@ public:
   /// Whether preprocess inequality into ==LB/UB
   bool IfPreproIneq2BndEq() const
   { return MPCD( CanPreprocess(options_.preprocessIneq2BndEq_) ); }
+
+  /// Whether to unify related inequalities
+  bool IfPreproIneq2Related() const
+  { return MPCD( CanPreprocess(options_.preprocessIneq2Related_) ); }
 
   /// Whether inline nested forall, exists, lin/quad expr
   int IfPreproUnnest() const

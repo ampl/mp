@@ -308,8 +308,9 @@ public:
       return;
     if (IfPreprocessNormalize(cc, prepro))
       return;
-   if (IfPreprocess2BndEq(cc, prepro, bnt))
+    if (IfPreprocess2BndEq(cc, prepro, bnt))
       return;
+    IfPreprocess2Related(cc, prepro, bnt);
   }
 
   /// (Non)strict inequalities
@@ -390,8 +391,8 @@ public:
       ConditionalConstraint<
           AlgebraicConstraint< Body, AlgConRhs<kind> > >& cc,
       PreprocessInfo& prepro, const BndNType& bnt) {
-    auto& algc = cc.GetArguments();
     if (MPCD( IfPreproIneq2BndEq() )) {
+      auto& algc = cc.GetArguments();
       auto convert = [&](double rhseq, bool fNegate=false) {
         auto res = MPD( AssignResultVar2Args(
             ConditionalConstraint<
@@ -407,20 +408,88 @@ public:
         prepro.set_result_var( res );
         return true;             // for convenience
       };
-      auto rhs = algc.rhs();
+      auto rhs = algc.rhs();     // Is this ok for floats?
       auto cmpEps = MPCD( ComparisonEps( bnt ) );
-      if (0<kind && rhs>bnt.ub()-cmpEps)   // expr >(=) rhs > ub-eps
-        return convert(rhs);               // replace as expr==rhs
-      if (0>kind && rhs<bnt.lb()+cmpEps)   // expr <(=) rhs < lb+eps
-        return convert(rhs);
-      if (0<kind && rhs<bnt.lb()+cmpEps)   // expr >(=) rhs < lb+eps
-        return convert(rhs, true);         // replace as expr!=rhs
-      if (0>kind && rhs>bnt.ub()-cmpEps)  // expr <(=) rhs > ub-eps
-        return convert(rhs, true);
+      if (1==kind && rhs>bnt.ub()-cmpEps)  // expr >= rhs > ub-eps
+        return convert(bnt.ub());               // replace as expr==ub
+      if (2==kind && rhs>=bnt.ub()-cmpEps) // expr > rhs >= ub-eps
+        return convert(bnt.ub());               // replace as expr==ub
+      if (-1==kind && rhs<bnt.lb()+cmpEps) // expr <= rhs < lb+eps
+        return convert(bnt.lb());
+      if (-2==kind && rhs<=bnt.lb()+cmpEps)// expr < rhs <= lb+eps
+        return convert(bnt.lb());
+      if (1==kind && rhs<=bnt.lb()+cmpEps) // expr >= rhs <= lb+eps
+        return convert(bnt.lb(), true);         // replace as expr!=lb
+      if (2==kind && rhs<bnt.lb()+cmpEps)  // expr > rhs < lb+eps
+        return convert(bnt.lb(), true);         // replace as expr!=lb
+      if (-1==kind && rhs>=bnt.ub()-cmpEps)// expr <= rhs >= ub-eps
+        return convert(bnt.ub(), true);
+      if (-2==kind && rhs>bnt.ub()-cmpEps) // expr < rhs > ub-eps
+        return convert(bnt.ub(), true);
     }
     return false;
   }
 
+  /// Try & reuse an inequality
+  template <int kind, class PreprocessInfo, class Body>
+  bool ReuseConditional(PreprocessInfo& prepro,
+             const Body& body, double rhs, bool fNegate=false) {
+    ConditionalConstraint<
+        AlgebraicConstraint< Body, AlgConRhs<kind> > > con({body, {rhs}});
+    auto i = MPD( MapFind(con) );
+    if (i>=0) {
+      auto& ck = MPCD( GetConstraintKeeper(&con) );
+      auto resvar = ck.GetConstraint(i).GetResultVar();
+      if (fNegate)
+        resvar = MPD( AssignResultVar2Args(
+            NotConstraint( {resvar} ) ) );
+      prepro.set_result_var(resvar);
+      return true;
+    }
+    return false;
+  }
+
+  /// See if we can reuse a related inequality
+  template <class PreprocessInfo,
+           class Body, int kind,
+           class BndNType>
+  bool IfPreprocess2Related(
+      ConditionalConstraint<
+          AlgebraicConstraint< Body, AlgConRhs<kind> > >& cc,
+      PreprocessInfo& prepro, const BndNType& bnt) {
+    if (MPCD( IfPreproIneq2Related() )) {
+      auto& algc = cc.GetArguments();
+      auto rhs = algc.rhs();
+      auto cmpEps = MPCD( ComparisonEps( bnt ) );
+      auto isGEGT = (kind>0);
+      auto isStrict = (1!=kind*kind);
+      // rhs's for the opposite inequalities:
+      // e.g. for cc being <=c it's <c+eps and vice versa,
+      // for >c it's >=c+eps and vice versa
+      auto rhsLo=rhs, rhsHi=rhs;
+      if (isGEGT == isStrict)
+        rhsHi += cmpEps;
+      else
+        rhsLo -= cmpEps;
+      if (-2!=kind
+          && ReuseConditional<-2>(
+              prepro, algc.GetBody(), rhsHi, kind>0))
+        return true;     // Reuse <rhsHi
+      if (-1!=kind
+          && ReuseConditional<-1>(
+              prepro, algc.GetBody(), rhsLo, kind>0))
+        return true;     // Reuse <=rhsLo
+      if (1!=kind
+          && ReuseConditional<1>(
+              prepro, algc.GetBody(), rhsHi, kind<0))
+        return true;     // Reuse <rhsHi
+      if (2!=kind
+          && ReuseConditional<2>(
+              prepro, algc.GetBody(), rhsLo, kind<0))
+        return true;     // Reuse <rhsHi
+    }
+    return false;
+  }
 
   /// Dave experiments with logic presolve.
   ///

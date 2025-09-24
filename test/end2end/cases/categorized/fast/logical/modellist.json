@@ -61,11 +61,14 @@
     "objective" : -20,
     "tags" : ["logical"],
     "options": {
-      "mp_options": "cvt:cmp:eps=1e-4",
-      "mp2nl_options": "solver_options='cvt:cmp:eps=1e-4'"
+      "mp_options": "cvt:cmp:eps=1e-4 debug=1",
+      "mp2nl_options": "solver_options='cvt:cmp:eps=1e-4 debug=1'"
     },
+    "comment": "Check unification of >5 and <=5",
     "values": {
-      "2*x+3*y": 5.0001
+      "2*x+3*y": 5.0001,
+      "Initial.flat0__condlingt": 1,
+      "Initial.flat0__condlinle": 0
     },
     "comment": [
       "For AMPL to correctly compute obj value, ",
@@ -74,15 +77,17 @@
     ]
   },
   {
-    "name" : "ifthen_var_01 cmp:eps=0",
+    "name" : "ifthen_var_01 cmp:eps=0 ineq2related=0",
     "objective" : 2,
     "tags" : ["logical"],
     "options": {
-      "mp_options": "cvt:cmp:eps=0",
-      "mp2nl_options": "solver_options='cvt:cmp:eps=0'"
+      "mp_options": "cvt:cmp:eps=0 ineq2rel=0 debug=1",
+      "mp2nl_options": "solver_options='cvt:cmp:eps=0 ineq2rel=0 debug=1'"
     },
     "values": {
-      "2*x+3*y": 5
+      "2*x+3*y": 5,
+      "Initial.flat0__condlingt": 1,
+      "Initial.flat0__condlinle": 1
     }
   },
   {
@@ -495,8 +500,8 @@
     "tags" : ["logical", "linear"],
     "objective": 114,
     "values": {
-      "if Initial.flat1__U__and>16 then 1": 1,
-      "if Initial.flat1__U__or>3 then 1": 1
+      "Initial.flat1__U__and": { "min": 17 },
+      "Initial.flat1__U__or": { "min": 4 }
     }
   },
   {
@@ -507,8 +512,42 @@
     "tags" : ["logical", "linear"],
     "objective": 114,
     "values": {
-      "if Initial.flat1__U__and>1 then 1": 1,
-      "if Initial.flat1__U__or>2 then 1": 1
+      "Initial.flat1__U__and": { "min": 2 },
+      "Initial.flat1__U__or": { "min": 3 }
+    }
+  },
+  {
+    "name" : "test_ineq_unify_01",
+    "options": {
+      "mp_options": "debug=1"
+    },
+    "tags" : ["logical", "linear"],
+    "objective": -44,
+    "values": {
+      "Initial.flat0__count": 1,
+      "Initial.flat1__A__uenc": 0,
+      "Initial.flat0__condlinlt": 1,
+      "Initial.flat0__condlinle": 0,
+      "Initial.flat0__condlineq": 3,
+      "Initial.flat0__condlinge": 1,
+      "Initial.flat0__condlingt": 1
+    }
+  },
+  {
+    "name" : "test_ineq_unify_01 ineq2bndeq=0 ineq2related=0",
+    "options": {
+      "mp_options": "debug=1 ineq2bndeq=0 ineq2related=0"
+    },
+    "tags" : ["logical", "linear"],
+    "objective": -44,
+    "values": {
+      "Initial.flat0__count": 2,
+      "Initial.flat1__A__uenc": 0,
+      "Initial.flat0__condlinlt": 4,
+      "Initial.flat0__condlinle": 2,
+      "Initial.flat0__condlineq": 3,
+      "Initial.flat0__condlinge": 2,
+      "Initial.flat0__condlingt": 5
     }
   }
 ]

@@ -503,6 +503,8 @@ protected:
 	/// @param cnt the constraint container -
   ///   actually redundant, as \a i is enough to find it. But for speed.
   /// @param i constraint index, needed for bridging
+  ///
+  /// @note The constraint should be active (!IsRedundant()).
   void ConvertConstraint(Container& cnt, int i) {
     assert(!cnt.IsRedundant());
     assert(cnt.GetRedefContext().IsNone());

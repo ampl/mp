@@ -325,9 +325,10 @@ public:
     con.AddContext(ctx);
     if (lb>0 && ctx.HasPositive()) {              // Is true
       if constexpr (kind*kind<=1) {               // == or <= or >=
-        MPD(AddConstraint_AS_ROOT(con.GetConstraint()));
-        MPD( MarkAsBridged(                       // Remove the original
-               MPCD( GetInitExpression(con.GetResultVar()) ) ) );
+        MPD( AddConstraint_AS_ROOT(con.GetConstraint()) );
+             // #248: not MarkAsBridged()
+             // see test_ineq_unify_01.mod
+        MPD( DecrementVarUsage(con.GetResultVar()) );
       }
     } else {
       MPD( PropagateResult(con.GetConstraint(), ctx) );
