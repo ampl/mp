@@ -2,8 +2,10 @@ Summary of recent updates to CPLEX for AMPL
 ==============================================
 
 
-## unreleased
-- Option alg:start:advance
+## 20250924
+- Option *alg:start:advance*
+- Added options to execute the CPLEX tuner (see *tech:tunebase* 
+  and other tech: options)
 
 
 ## 20250828

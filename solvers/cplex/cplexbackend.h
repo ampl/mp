@@ -151,6 +151,11 @@ public:
 
   /// For "obj:*:method" etc
 public:
+
+    void DoCPLEXTune();
+
+
+
   using ObjNParamKey = std::pair< std::string, std::string >;
   template <class T>
   using ObjNParam = std::pair< ObjNParamKey, T >;
@@ -181,8 +186,6 @@ protected:
   void OpenSolver();
   void CloseSolver();
 
-  
-
   double ObjectiveValue() const;
 
   /// Solution values. The vectors are emptied if not available
@@ -210,6 +213,7 @@ protected:
 
 private:
 
+   
   // returns {objlow, objhigh}
   std::pair<ArrayRef<double>, ArrayRef<double>> Sensobj() const;
 
@@ -281,9 +285,14 @@ private:
     int cutstats_ = 0;
 
     int numcores_ = 0;
-		bool dualprob_ = false;
-		int predual_ = 0;
-		bool primalprob_dummy_ = false;
+	bool dualprob_ = false;
+	int predual_ = 0;
+	bool primalprob_dummy_ = false;
+
+    std::string pretunefileprm, tunefile,
+        tunefileprm;
+
+
 	};
   Options storedOptions_;
   // to store IIS

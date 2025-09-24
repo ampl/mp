@@ -463,6 +463,9 @@ void CplexBackend::RedirectOutput() {
 }
 
 void CplexBackend::Solve() {
+    if (!storedOptions_.tunefileprm.empty())
+        DoCPLEXTune();
+
   if (storedOptions_.noSolve_)
   {
     fmt::print("Not solved because of \"nosolve\"");
@@ -1530,7 +1533,12 @@ static const mp::OptionValueInfo values_mipemphasis[] = {
 
 
 };
-
+static const mp::OptionValueInfo values_tunedisplay_[] = {
+  { "0", "Nothing", 0},
+  { "1", "Minimal printing (default)", 1},
+  { "2", "Show parameters being tried", 2},
+  { "3", "Exhaustive printing", 3}
+};
   
 void CplexBackend::setSolutionMethod() {
   if (storedOptions_.netopt_>0)         // netopt: lowest priority
@@ -1599,7 +1607,7 @@ void CplexBackend::setSolutionMethod() {
 void CplexBackend::FinishOptionParsing() {
   {
     // Set output on screen
-    int lp, mip, bar, mo, netw;
+    int lp, mip, bar;
     GetSolverOption(CPX_PARAM_SIMDISPLAY, lp);
     GetSolverOption(CPX_PARAM_MIPDISPLAY, mip);
     GetSolverOption(CPX_PARAM_BARDISPLAY, bar);
@@ -1686,7 +1694,6 @@ void CplexBackend::FinishOptionParsing() {
     CPLEX_CALL(CPXsetstrparam(env(),
                               CPXPARAM_CPUmask, storedOptions_.cpuMask_.c_str()));
 
-  int numcores;
   if (storedOptions_.numcores_) {
     CPLEX_CALL(CPXgetnumcores(env(), &storedOptions_.numcores_));
     AddToSolverMessage(
@@ -2532,6 +2539,7 @@ void CplexBackend::InitCustomOptions() {
     "\n.. value-table::\n",
     CPXPARAM_Preprocessing_SOS1Reform, values_presosenc, 0);
 
+
   AddSolverOption("pre:sos2enc presos2enc presos2reform",
     "Encoding used for SOS2 reformulation, see pre:sos1enc.",
     CPXPARAM_Preprocessing_SOS2Reform, -1, 1);
@@ -2542,7 +2550,41 @@ void CplexBackend::InitCustomOptions() {
     storedOptions_.noSolve_);
 
 
-  
+    AddStoredOption("tech:pretunefileprm pretunefileprm",
+      "File to which nondefault keyword settings are written " 
+		"in CPLEX PRM format before tuning; written whether or "
+		"not tunefile or tunefileprm is specified.",
+      storedOptions_.pretunefileprm);
+
+
+    AddSolverOption("tech:tunedisplay tunedisplay",
+        "How much to print during tunin:\n"
+        "\n.. value-table::\n",
+        CPXPARAM_Tune_Display, values_tunedisplay_, 1);
+
+
+  AddSolverOption("tech:tunerepeat tunerepeat",
+      "How many times to perturb the problem during tuning (default = 1).",
+      CPXPARAM_Tune_Repeat, 1, 100);
+
+
+
+  AddSolverOption("tech:tunetimelim tunetimelim tunetime",
+      "Limit (in seconds) on tuning time; meaningful if < time (default = 1e75)",
+      CPXPARAM_Tune_TimeLimit, 0.0, DBL_MAX);
+
+  AddSolverOption("tech:tunetimedet tunetimedet",
+      "Limit (in \"ticks\") on tuning time; meaningful if < time (default = 1e75)",
+      CPXPARAM_Tune_DetTimeLimit, 0.0, DBL_MAX);
+
+
+  AddStoredOption("tech:tunebase tunefileprm tunebase",
+      "Name of file for tuning results in CPLEX PRM format. "
+      "If specified, CPLEX will experiment with parameter "
+      "settings as described for \"tech:tunefile\"",
+      storedOptions_.tunefileprm);
+
+
   AddToOptionDescription("tech:writemodel",
     "Cplex-specific file name extensions are \".sav\", \".mps\", "
     "\".lp\", \".rmp\",  \".rew\", \".rlp\"");
@@ -2555,6 +2597,7 @@ void CplexBackend::InitCustomOptions() {
     "The name of a file to which the MIP starting guess(if any) "
     "is written in \".mst\" format.",
     storedOptions_.mipStart_);
+
 
  
 
@@ -2725,8 +2768,19 @@ void CplexBackend::CplexPlayObjNParams() {
   DoPlayCplexObjNParams(objnparam_int_, lp(), env());
   DoPlayCplexObjNParams(objnparam_dbl_, lp(), env());
 }
+void CplexBackend::DoCPLEXTune() {
+    
+    int status;
 
+    if (!storedOptions_.pretunefileprm.empty())
+        CPXwriteparam(env(), storedOptions_.pretunefileprm.c_str());
 
+    int res = CPXtuneparam(env(), lp(), 0, nullptr, nullptr, 0, nullptr, nullptr, 0, nullptr, nullptr, &status);
+
+    if (!storedOptions_.tunefileprm.empty())
+        CPXwriteparam(env(), storedOptions_.tunefileprm.c_str());
+
+}
 
 } // namespace mp
 
