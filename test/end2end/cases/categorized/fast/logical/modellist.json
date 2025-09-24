@@ -319,7 +319,7 @@
       "mp_options": "acc:condlineq=1 debug=1"
     },
     "tags" : ["logical"],
-    "objective" : 3,
+    "objective" : 2,
     "values": {
       "Initial.flat1__A__uenc": 1
     }
@@ -330,7 +330,7 @@
       "mp_options": "acc:condlineq=1 debug=1 cvt:uenc:negctx=2"
     },
     "tags" : ["logical"],
-    "objective" : 3,
+    "objective" : 2,
     "values": {
       "Initial.flat1__A__uenc": 0
     }
@@ -341,7 +341,7 @@
       "mp_options": "acc:condlineq=1 debug=1 cvt:uenc:negctx=3"
     },
     "tags" : ["logical"],
-    "objective" : 3,
+    "objective" : 2,
     "values": {
       "Initial.flat1__A__uenc": 0
     }

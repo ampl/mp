@@ -309,17 +309,21 @@ protected:
     const auto& ck = GET_CONSTRAINT_KEEPER(CondLinConEQ);
     if (!ck.IfConsiderConversion())
       return true;
-    double dom_rng = MPCD(ub(var))-MPCD(lb(var))+1;
+    auto lb = int(std::ceil(MPCD(lb(var))));
+    auto ub = int(std::ceil(MPCD(ub(var))));
+    double dom_rng = ub-lb+1;
     if (options_.NoUEncPosCtxRatio_ * map.size()   // Use UEnc if >
         > dom_rng)
       return false;
     int nNegCtx = 0;
     for (const auto& el: map) {
-      const auto& con = ck.GetConstraint(el.second);
-      assert(con.GetContext().HasPositive()
-             || con.GetContext().HasNegative());
-      if (con.GetContext().HasNegative())
-        ++nNegCtx;
+      if (el.first!=lb && el.first!=ub) {  // except lb/ub
+        const auto& con = ck.GetConstraint(el.second);
+        assert(con.GetContext().HasPositive()
+               || con.GetContext().HasNegative());
+        if (con.GetContext().HasNegative())
+          ++nNegCtx;
+      }
     }  // When up to (options_.NoUEncNegCtxMax_) values
     // in negative ctx, allow indicators.
     // Example.
@@ -501,15 +505,16 @@ private:
     this->GetEnv().AddOption("cvt:uenc:negctx:max uenc:negctx:max cvt:uenc:negctx uenc:negctx",
                        "If cvt:uenc:ratio applies, max number of constants "
                        "in comparisons x==const in negative context "
-                       "(equivalently, x!=const in positive context) to skip "
-                       "UEnc(x). Default 1.\n"
+                       "(equivalently, x!=const in positive context), "
+                             "where const!=lb(x) and const!=ub(x), to skip "
+                       "unary encoding of x. Default 1.\n"
                              "\n"
                              "Example:\n"
                              "\n"
                              " | var x in 1..9;\n"
                              " | var y >=1 <=200;\n"
                              " | \n"
-                             " | s.t. Con: (x==2 || x==6) ==> y >= 4;\n"
+                             " | s.t. Con: (x==9 || x==2 || x==6) ==> y >= 4;\n"
                              "\n"
                              "With uenc:negctx<=1, this triggers unary encoding for x.",
                        options_.NoUEncNegCtxMax_, 0, INT_MAX);

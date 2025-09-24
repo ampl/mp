@@ -7,4 +7,5 @@ s.t. ConCtxPos: y>3 ==> (x==2 || x==6
        || x==5
 );
 
-s.t. ConCtxNeg: x==1 ==> y >= 4;
+## 1 is on boundary
+s.t. ConCtxNeg: (x==1 || x==7) ==> y >= 4;
