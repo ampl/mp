@@ -75,17 +75,31 @@ public:
     assert(!ctx.IsNone());
     auto rv = item.GetResultVar();
     auto bnd00 = item.GetAprioriBounds();
-    if ( ctx.HasNegative() &&
-         GetMC().lb(rv) < bnd00.second ) {  // Need the negative direction
+    auto needNeg = ctx.HasNegative() &&
+                   GetMC().lb(rv) < bnd00.second;
+    auto needPos = ctx.HasPositive() &&
+                   GetMC().ub(rv) > bnd00.first;
+    if (needNeg && needPos) {
+      MPD( ConvertCtxMix(item, i) );
+    }
+    else if (needNeg) {
       MPD( ConvertCtxNeg(item, i) );
     }
-    if ( ctx.HasPositive() &&
-         GetMC().ub(rv) > bnd00.first ) {   // Need the positive direction
+    else if (needPos) {
       MPD( ConvertCtxPos(item, i) );
     }
+    // else, forget
     return ctx;        // We assume the implementation just did that
   }
 
+  /// Convert in mixed context.
+  /// By default just separate neg & pos,
+  /// but implementation might know better.
+  template <class ItemType>
+  void ConvertCtxMix(const ItemType& item, int i) {
+    MPD( ConvertCtxNeg(item, i) );
+    MPD( ConvertCtxPos(item, i) );
+  }
   /// Convert in negative context
   template <class ItemType>
   void ConvertCtxNeg(const ItemType& item, int ) {

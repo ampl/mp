@@ -35,6 +35,12 @@ public:
     : coefs_(c.begin(), c.end()), vars_(v.begin(), v.end())
   { assert(check()); }
 
+  /// Construct from 2 SmallVec's
+  template <unsigned int N>
+  LinTerms(const SmallVec<double, N>& c, const SmallVec<int, N>& v)
+      : coefs_(c.begin(), c.end()), vars_(v.begin(), v.end())
+  { assert(check()); }
+
   /// Validate
   bool check() const {
     return coefs_.size()==vars_.size() &&

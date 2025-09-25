@@ -3,10 +3,16 @@ Summary of recent updates to the AMPL MP Library
 
 
 ## unreleased
-- alg:start=3 default, which passes both the
+- Options *cvt:pre:ineq2bndeq*,
+  *cvt:pre:ineq2related* control unification
+  of conditional equlaities and inequalities.
+- *cvt:compl:eps=1e-9* new default.
+- *alg:start=3* default (new value),
+  which passes both the
   initial guesses and basis for LP
   (previously basis only).
-- Options cvt:pre:ctx:abs etc. control propagation
+- Option *cvt:uenc:negctx:max* disregards lb(x), ub(x).
+- Options *cvt:pre:ctx:abs* etc. control propagation
   of expression context.
 
 
@@ -14,13 +20,13 @@ Summary of recent updates to the AMPL MP Library
 - Fixed reformulation of numberof and alldiff.
   Previously could produce an inefficient
   reformulation.
-- Option cvt:pre:sort:
+- Option *cvt:pre:sort*:
   - Sorting and eliminating duplicates
     in arguments of AND, OR, MIN, MAX.
     This is necessary for some solvers.
   - Sorting arguments of COUNT, ATLEAST,
     EXACTLY, ATMOST, NUMBEROF, ALLDIFF.
-- Option cvt:pre:unnest extended for MIN, MAX
+- Option *cvt:pre:unnest* extended for MIN, MAX
   (bit 8).
 
 
@@ -29,20 +35,20 @@ Summary of recent updates to the AMPL MP Library
 - The legacy fmt::MemoryWriter has double output
   precision of 17 significant digits
   (previously 6).
-- Option cvt:pre:boundlogarg (default 0) to bound
+- Option *cvt:pre:boundlogarg* (default 0) to bound
   arguments of logarithms nonnegative. Previously
   always done, sometimes deteriorating performance
   of nonlinear solvers.
 
 
 ## 20250801
-- Tolerances set by options pre:feastol,
-  pre:feastolrel both need to be violated
+- Tolerances set by options *pre:feastol*,
+  *pre:feastolrel* both need to be violated
   to produce a warning on contradicting
   variable/constraint bounds. Previously
   the preprocessor failed on any violation,
   without letting the solver try.
-- Options cvt:compl, cvt:compl:eps control
+- Options *cvt:compl*, *cvt:compl:eps* control
   complementarity reformulations.
 
 
@@ -58,17 +64,17 @@ Summary of recent updates to the AMPL MP Library
 ## 20250616
 - Multi-objective emulator: added support for 
   objective-specific options via objective suffixes
-  beginning with *option_*
+  beginning with *option_*.
 
 
 ## 20250429
-- Fix a bug in parsing of quadratic expressions,
+- Fixed a bug in parsing of quadratic expressions,
   which could wrongly parse products of unequal
   linear expressions, such as (x-3)*(x-z-5).
 
 
 ## 20250424
-- Option *alg:sens* return synonym suffixes
+- Option *alg:sens* returns synonym suffixes
   `.down/.up/.current` for objective coefficients
   and `.down/.up` for right-hand sides.
 - Improved parsing speed of large sums of quadratic

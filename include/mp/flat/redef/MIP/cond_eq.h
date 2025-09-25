@@ -118,21 +118,32 @@ public:
           return;
         }
       }
-      auto newvars = GetMC().AddVars_returnIds(2, 0.0, 1.0, var::INTEGER);
-      newvars.push_back( res );
-      GetMC().AddConstraint( LinConGE(   // b1+b2+resvar >= 1
-          {{1.0, 1.0, 1.0}, newvars},
-          1.0 ) );
-      {
+      SmallVec<int, 3> disj_vars;
+      disj_vars.push_back(res);   // constructing by {1, res} misbehaved
+      SmallVec<double, 3> disj_coefs;
+      disj_coefs.push_back(1.0);
+      if (bNt.lb() <= con.rhs() - cmpEps) {
+        disj_vars.push_back((int)GetMC().AddVar(0.0, 1.0, var::INTEGER));
+        disj_coefs.push_back(1.0);
         GetMC().AddConstraint(IndicatorConstraint< AlgCon<-1> >(
-            newvars[0], 1,
+            disj_vars.back(), 1,
             { con.GetBody(),
              con.rhs() - cmpEps }));
       }
-      GetMC().AddConstraint(IndicatorConstraint< AlgCon<1> >(
-          newvars[1], 1,
-          { con.GetBody(),
-           con.rhs() + cmpEps }));
+      if (bNt.ub() >= con.rhs() + cmpEps) {
+        disj_vars.push_back((int)GetMC().AddVar(0.0, 1.0, var::INTEGER));
+        disj_coefs.push_back(1.0);
+        GetMC().AddConstraint(IndicatorConstraint< AlgCon<1> >(
+            disj_vars.back(), 1,
+            { con.GetBody(),
+             con.rhs() + cmpEps }));
+      }
+      if (disj_vars.size()>1) {
+        GetMC().AddConstraint( LinConGE(   // (b1+|b2+)resvar >= 1
+            LinTerms{disj_coefs, disj_vars},
+            1.0 ) );
+      } else
+        GetMC().NarrowVarBounds(res, 1.0, 1.0);    // res = True
 #endif  // USE_FLAT_ALGEBRA
     } // else, skip
   }
