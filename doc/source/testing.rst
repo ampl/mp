@@ -77,7 +77,7 @@ them in the local ``modellist.json`` having the following format.
 
 
 Test specification
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In ``modellist.json``, the top JSON
 object is an array of test cases. Each element is a dictionary with the
@@ -144,8 +144,10 @@ Checking reformulations
 
 It is possible to check characteristics of the models received by an MP
 driver from the NL file, as well as of the model submitted to the solver.
-For that, add option ``[tech:]debug=1``. Then, the driver outputs suffixes of the form
-``flat<N>__[<C>__]<itemtype>``, where
+For that, add option ``[tech:]debug=1``. Then, the driver outputs
+problem suffixes of the form
+``flat<N>__[<C>__]<itemtype>`` giving the number of model items
+of various types and statuses. The specifiers:
 
 * ``<N>`` is 0 for the initial flat model obtained from the NL file,
   1 for the reformulated model.
