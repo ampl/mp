@@ -74,7 +74,12 @@ frequently.
 To **add new test cases**, add the model/data/AMPL script/NL files in
 a subfolder of :file:`test/end2end/cases/categorized/` and describe
 them in the local ``modellist.json`` having the following format.
-The top JSON
+
+
+Test specification
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~`
+
+In ``modellist.json``, the top JSON
 object is an array of test cases. Each element is a dictionary with the
 following items, where non-compulsory items are italicized:
 
@@ -94,7 +99,8 @@ following items, where non-compulsory items are italicized:
 
 * *"options": { "ANYSOLVER_options": "iisfind=1", "baron_options": "iisfind=12", "send_statuses": "0" }*.
   Option key ending with ``ANYSOLVER_options`` is for any solver, except when
-  a solver-specific key is present (like ``baron_options``.)
+  a solver-specific key is present (like ``baron_options``).
+  Moreover, ``mp_options`` applies to all MP drivers.
 
 * *"values": { "X[0].iis": "upp", ... }*. Expected values or expressions,
   in the form AMPL ``display`` command would accept. Only available for AMPL
@@ -131,6 +137,26 @@ following items, where non-compulsory items are italicized:
 
 * *"output": ["Presolved model has 500 variables", "RHS range:  [1e-2, 1e4]"]*.
   Output chunks expected in the solver / AMPL log.
+
+
+Checking reformulations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+It is possible to check characteristics of the models received by an MP
+driver from the NL file, as well as of the model submitted to the solver.
+For that, add option ``[tech:]debug=1``. Then, the driver outputs suffixes of the form
+``flat<N>__[<C>__]<itemtype>``, where
+
+* ``<N>`` is 0 for the initial flat model obtained from the NL file,
+  1 for the reformulated model.
+
+* If present, ``<C>`` can be ``A`` for the total number of items,
+  ``U`` for the number of total items still relevant, but possibly reformulated.
+  If not present, it is the number of active items at the end of step ``<N>``.
+
+* ``<itemtype>`` can be a constraint type name, variable type, or objective type.
+
+Run an AMPL session to see all such suffixes, or check existing test cases.
 
 
 .. _unit_tests:
