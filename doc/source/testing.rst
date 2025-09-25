@@ -37,6 +37,19 @@ Run end-to-end tests
   ``--nonrecursive`` options.
 
 
+Compulsory configurations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The following test configurations are compulsory for a release.
+
+* All important/representative solvers. While some tests use `acc:...` options
+  to enforce linearization etc., open-source solvers use it everywhere.
+  If desired, such options can be passed to all test cases using the `--options` switch,
+  e.g., `--options 'acc:indle=0 acc:indge=0 acc:indeq=0 acc:and=0 acc:or=0'`.
+
+* Using solution checker with `--options "chk:fail chk:feastol=1e-2[ chk:mode=1023]"`.
+
+
 Add solver to the test library
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
