@@ -561,6 +561,7 @@ void GurobiBackend::VarPriorities(ArrayRef<int> pri_unpres) {
 }
 
 void GurobiBackend::ObjPriorities(ArrayRef<int> priority) {
+  GrbSetIntAttr(GRB_INT_ATTR_NUMOBJ, priority.size());  // for NumObj==1
   for (int i=0; i<(int)priority.size(); ++i) {
     GrbSetIntParam(GRB_INT_PAR_OBJNUMBER, i);
     GrbSetIntAttr(GRB_INT_ATTR_OBJNPRIORITY, priority[i]);
@@ -568,6 +569,7 @@ void GurobiBackend::ObjPriorities(ArrayRef<int> priority) {
 }
 
 void GurobiBackend::ObjWeights(ArrayRef<double> val) {
+  GrbSetIntAttr(GRB_INT_ATTR_NUMOBJ, val.size());  // for NumObj==1
   for (int i=0; i<(int)val.size(); ++i) {
     GrbSetIntParam(GRB_INT_PAR_OBJNUMBER, i);
     GrbSetDblAttr(GRB_DBL_ATTR_OBJNWEIGHT, val[i]);
@@ -575,6 +577,7 @@ void GurobiBackend::ObjWeights(ArrayRef<double> val) {
 }
 
 void GurobiBackend::ObjAbsTol(ArrayRef<double> val) {
+  GrbSetIntAttr(GRB_INT_ATTR_NUMOBJ, val.size());  // for NumObj==1
   for (int i=0; i<(int)val.size(); ++i) {
     GrbSetIntParam(GRB_INT_PAR_OBJNUMBER, i);
     GrbSetDblAttr(GRB_DBL_ATTR_OBJNABSTOL, val[i]);
@@ -582,6 +585,7 @@ void GurobiBackend::ObjAbsTol(ArrayRef<double> val) {
 }
 
 void GurobiBackend::ObjRelTol(ArrayRef<double> val) {
+  GrbSetIntAttr(GRB_INT_ATTR_NUMOBJ, val.size());  // for NumObj==1
   for (int i=0; i<(int)val.size(); ++i) {
     GrbSetIntParam(GRB_INT_PAR_OBJNUMBER, i);
     GrbSetDblAttr(GRB_DBL_ATTR_OBJNRELTOL, val[i]);

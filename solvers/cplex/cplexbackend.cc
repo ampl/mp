@@ -145,7 +145,10 @@ namespace mp {
   bool CplexBackend::HasSolution() {
     if (hasSolution_ == -1){
       auto status = GetSolveResult().first;
-      hasSolution_ = (status == sol::LIMIT_FEAS) || (status == sol::SOLVED) || (status == sol::UNCERTAIN);
+      hasSolution_
+          = (status == sol::LIMIT_FEAS)
+            || (status == sol::SOLVED)
+            || (status == sol::UNCERTAIN);
     }
     return hasSolution_;
   }
@@ -479,7 +482,8 @@ void CplexBackend::Solve() {
   if (storedOptions_.dropTol_ > 0) {
     CPLEX_CALL(CPXcleanup(env(), lp(), storedOptions_.dropTol_));
   }
-  if (NumObjs() > 1)
+  if (NumObjs() > 1
+      || multiobj())                  // User set multiobj>0
     CPLEX_CALL(CPXmultiobjopt(env(), lp(), NULL));
   else {
     auto type = CPXgetprobtype(env(), lp());
