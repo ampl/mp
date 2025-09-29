@@ -353,5 +353,15 @@
       "Buy['SPG']": 5.25843,
       "Buy['BEEF']": 2
     }
+  },
+  {
+    "name" : "dietu_1obj_suf multiobj=2",
+    "tags" : ["linear", "continuous", "multiobj"],
+    "options": { "mp_options": "multiobj=2" },
+    "objective" : 74.273820,
+    "values": {
+      "Buy['SPG']": 5.25843,
+      "Buy['BEEF']": 2
+    }
   }
 ]
