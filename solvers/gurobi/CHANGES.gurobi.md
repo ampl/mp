@@ -3,7 +3,11 @@ Summary of recent updates to gurobi for AMPL
 
 
 ## unreleased
-- Option lp:warmstart controls whether and how
+- Fixed *multiobj=1/2* for a single objective.
+  Running multiobjective for a single-objective
+  model makes sense with a negative `.objweight`
+  suffix.
+- Option *lp:warmstart* controls whether and how
   to warm start LP optimization.
 
 
@@ -11,8 +15,8 @@ Summary of recent updates to gurobi for AMPL
 - Changes in MP
   - Improved preprocessing of logical
     and combinatorial expressions
-    (options cvt:pre:unnest, cvt:pre:sort).
-  - Option cvt:pre:boundlogarg (default 0) to bound
+    (options *cvt:pre:unnest*, *cvt:pre:sort*).
+  - Option *cvt:pre:boundlogarg* (default 0) to bound
     arguments of logarithm nonnegative. Previously
     always done, sometimes deteriorating performance
     of nonlinear solvers.
@@ -20,13 +24,13 @@ Summary of recent updates to gurobi for AMPL
 
 ## 20250801
 - Changes in MP
-  - Tolerances set by options pre:feastol,
-    pre:feastolrel both need to be violated
+  - Tolerances set by options *cvt:pre:feastol*,
+    *cvt:pre:feastolrel* both need to be violated
     to produce a warning on contradicting
     variable/constraint bounds. Previously
     the preprocessor failed on any violation,
     without letting the solver try.
-  - Options cvt:compl, cvt:compl:eps control
+  - Options *cvt:compl*, *cvt:compl:eps* control
     complementarity reformulations.
 
 
@@ -35,7 +39,7 @@ Summary of recent updates to gurobi for AMPL
 
 
 ## 20250617
-- Option mip:opttol renamed as lp:opttol (opttol).
+- Option *mip:opttol* renamed as *lp:opttol* (*opttol*).
 - Changes in MP
   - Multi-objective emulator: added support for
     objective-specific options via objective suffixes
@@ -63,15 +67,16 @@ Summary of recent updates to gurobi for AMPL
 
 ## 20250424
 - Changes in MP
-  - Option cvt:qp2pass (default even faster parsing
+  - Option *cvt:qp2pass* (default even faster parsing
     of quadratics)
 
 
 ## 20250329
 - Changes in MP:
-  - Option cvt:multoutcard to limit the size of
-    out-multiplied QP expressions. Can improve speed
-    on large models.
+  - Option *cvt:multoutcard* to limit the size of
+    out-multiplied QP expressions. Can improve parsing
+    speed on large models, but slow down solving,
+    so overall benefit depends on the instance.
   - Improved parsing of quadratic expressions.
 
 
@@ -81,7 +86,7 @@ Summary of recent updates to gurobi for AMPL
 
 
 ## 20250308
-- Option alg:kappa_exact
+- Option *alg:kappa_exact*
 
 
 ## 20250204
@@ -115,8 +120,8 @@ Summary of recent updates to gurobi for AMPL
  
 ## 20240724
 - Option *acc:_all*
-	- Useful to disable all reformulations (acc:_all=2),
-		or force linearization (acc:_all=0).
+  - Useful to disable all reformulations (*acc:_all=2*),
+    or force linearization (*acc:_all=0*).
 - Option *cvt:prod*     
   - Controls reformulation of binary products into logical 
     constraints.
@@ -125,9 +130,9 @@ Summary of recent updates to gurobi for AMPL
 
 ## 20240617
 - *Multi-objective emulator*
-	- obj:multi=2 forces emulation, even if MO natively supported.
+  - *obj:multi=2* forces emulation, even if MO natively supported.
 	- Fixed a bug in the objective degradation suffixes
-		.objasbtol, .objreltol.
+    *.objasbtol*, *.objreltol*.
 
 
 ## 20240604
@@ -137,11 +142,11 @@ Summary of recent updates to gurobi for AMPL
 
 ## 20240529
 - *Multi-objective emulator*
-	- All flat MP solvers support multi-objective mode (obj:multi=1),
+  - All flat MP solvers support multi-objective mode (*obj:multi=1*),
 		either natively, or via emulation.
-	- Suffixes .objpriority, .objweight, .objabstol, .objreltol.
-	- [BREAKING] Default intuitive handling of .objweight,
-		see option obj:multi:weight, even when natively supported.
+  - Suffixes *.objpriority*, *.objweight*, *.objabstol*, *.objreltol*.
+  - [BREAKING] Default intuitive handling of *.objweight*,
+    see option *obj:multi:weight*, even when natively supported.
 
 
 ## 20240518

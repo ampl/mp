@@ -3,6 +3,10 @@ Summary of recent updates to the AMPL MP Library
 
 
 ## unreleased
+- Fixed *multiobj=2* for a single objective.
+  Running multiobjective for a single-objective
+  model makes sense with a negative `.objweight`
+  suffix.
 - Options *cvt:pre:ineq2bndeq*,
   *cvt:pre:ineq2related* control unification
   of conditional equlaities and inequalities.
@@ -42,8 +46,8 @@ Summary of recent updates to the AMPL MP Library
 
 
 ## 20250801
-- Tolerances set by options *pre:feastol*,
-  *pre:feastolrel* both need to be violated
+- Tolerances set by options *cvt:pre:feastol*,
+  *cvt:pre:feastolrel* both need to be violated
   to produce a warning on contradicting
   variable/constraint bounds. Previously
   the preprocessor failed on any violation,
@@ -117,7 +121,7 @@ Summary of recent updates to the AMPL MP Library
   (Not, And, Or, Indicator), and new options to control
   some of them: *cvt:pre:ineqresult*, *cvt:pre:ineqrhs*.
 - Fix lower bound calculation of the division result.
-- [BREAKING] Option acc:pow now affects only expressions x^y
+- [BREAKING] Option *acc:pow* now affects only expressions x^y
   with both x, y variable; previous meaning of *acc:pow*
   is now with *acc:powconstexp*.
 - Option *tech:writemodel:index* to choose the iteration
