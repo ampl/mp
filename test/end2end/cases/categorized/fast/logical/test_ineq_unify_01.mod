@@ -1,5 +1,6 @@
 ###########################################
 ## Test unification of inequalities
+## test_ineq_unify_01.mod: on integer expressions
 ###########################################
 
 var b {1..3} binary;

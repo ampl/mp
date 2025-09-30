@@ -549,5 +549,39 @@
       "Initial.flat0__condlinge": 2,
       "Initial.flat0__condlingt": 5
     }
+  },
+  {
+    "name" : "test_ineq_unify_02",
+    "options": {
+      "mp_options": "debug=1"
+    },
+    "tags" : ["logical", "linear"],
+    "objective": -44,
+    "values": {
+      "Initial.flat0__count": 0,
+      "Initial.flat1__A__uenc": 0,
+      "Initial.flat0__condlinlt": 0,
+      "Initial.flat0__condlinle": 0,
+      "Initial.flat0__condlineq": 2,
+      "Initial.flat0__condlinge": 2,
+      "Initial.flat0__condlingt": 0
+    }
+  },
+  {
+    "name" : "test_ineq_unify_02 ineq2bndeq=0 ineq2related=0",
+    "options": {
+      "mp_options": "debug=1 ineq2bndeq=0 ineq2related=0"
+    },
+    "tags" : ["logical", "linear"],
+    "objective": -44,
+    "values": {
+      "Initial.flat0__count": 0,
+      "Initial.flat1__A__uenc": 0,
+      "Initial.flat0__condlinlt": 7,
+      "Initial.flat0__condlinle": 5,
+      "Initial.flat0__condlineq": 2,
+      "Initial.flat0__condlinge": 6,
+      "Initial.flat0__condlingt": 19
+    }
   }
 ]
