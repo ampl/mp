@@ -583,5 +583,21 @@
       "Initial.flat0__condlinge": 6,
       "Initial.flat0__condlingt": 19
     }
+  },
+  {
+    "name" : "impl_neg_fixed_01__issue264",
+    "tags" : ["logical", "linear"],
+    "values": {
+      "p": 0,
+      "if r<19.99995 || r>70.00005 then 1": 1
+    }
+  },
+  {
+    "name" : "impl_neg_fixed_02__issue264",
+    "tags" : ["logical", "linear"],
+    "values": {
+      "p": 0,
+      "if r<19.99995 || r>70.00005 then 1": 1
+    }
   }
 ]
