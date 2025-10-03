@@ -2696,7 +2696,7 @@ double XpressmpBackend::MIPGapAbs() {
 
 ArrayRef<int> XpressmpBackend::VarStatii() {
 
-  std::vector<int> vars(NumVars());
+  std::vector<int> vars(NumVarsOrig());
   int status = XPRSgetbasis(model_fixed_, NULL, vars.data());
   if (status)
     vars.clear();
@@ -2724,7 +2724,7 @@ ArrayRef<int> XpressmpBackend::VarStatii() {
 
 ArrayRef<int> XpressmpBackend::ConStatii() {
 
-  std::vector<int> cons(NumLinCons());
+  std::vector<int> cons(NumLinConsOrig());
   int status = XPRSgetbasis(model_fixed_, cons.data(), NULL);
   if (status)
     cons.clear();

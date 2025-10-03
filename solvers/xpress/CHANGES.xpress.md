@@ -2,14 +2,19 @@ Summary of recent updates to Xpress for AMPL
 ============================================
 
 
+## unreleased
+- Fixed retrieval of basis after time/work
+  limit in Xpress Global.
+
+
 ## 20250924
 - Submit initial guess to the local NLP solver
   as well.
-- Fix retrieval of duals after time limit
+- Fixed retrieval of duals after time limit
   in Xpress Global.
 - Added options *tech:tunermethodread* and 
   *tech:tunermethodwrite* to load and write
-  tuning methods from/to files
+  tuning methods from/to files.
 
 
 ## 20250902

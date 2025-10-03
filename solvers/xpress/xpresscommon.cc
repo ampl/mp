@@ -18,8 +18,16 @@ int XpressmpCommon::NumLinCons() const {
   return getIntAttr(XPRS_INPUTROWS);
 }
 
+int XpressmpCommon::NumLinConsOrig() const {
+  return getIntAttr(XPRS_ORIGINALROWS);
+}
+
 int XpressmpCommon::NumVars() const {
   return getIntAttr(XPRS_INPUTCOLS);  // not ORIGINALCOLS for NLP
+}
+
+int XpressmpCommon::NumVarsOrig() const {
+  return getIntAttr(XPRS_ORIGINALCOLS);
 }
 
 int XpressmpCommon::NumObjs() const {

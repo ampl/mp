@@ -49,7 +49,11 @@ protected:
   double getDblAttr(int attr) const;
   
   int NumLinCons() const;
+  /// N "original" lin cons, relevant for NLP presolve
+  int NumLinConsOrig() const;
   int NumVars() const;
+  /// N "original" vars, relevant for NLP presolve
+  int NumVarsOrig() const;
   int NumObjs() const;
   int NumQPCons() const;
   int NumSOSCons() const;
