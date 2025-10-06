@@ -229,9 +229,14 @@ public:
 		// if necessary.
 		auto i = MPD( MapFind(fc) );
     // TODO preprocess, try map again, and use the result.
-		if (i<0)
+    // assert(i<0);
+    auto& ck = GET_CONSTRAINT_KEEPER( FuncConstraint );
+    if (i<0)
       i = int( MPD( AddFunctionalConstraint(std::move(fc)) ) );
-		auto& ck = GET_CONSTRAINT_KEEPER( FuncConstraint );
+    else {       // #270 see redefvar_02.mod. Just add a new copy
+      i = ck.AddConstraint(constr_depth_, std::move(fc));
+      AutoLink(ck.SelectValueNodeRange(i));
+    }
     ConInfo ci{&ck, i};
     ReplaceInitExpression(res_var, ci);
     MarkAsUsed(ci);          // Now manually #201 #266

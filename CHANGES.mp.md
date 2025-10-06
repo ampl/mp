@@ -3,6 +3,9 @@ Summary of recent updates to the AMPL MP Library
 
 
 ## unreleased
+- Workaround for #270 (redefinition of
+  an expression as an existing expression can
+  lose connection to the original).
 - Fixed *multiobj=2* for a single objective.
   Running multiobjective for a single-objective
   model makes sense with a negative `.objweight`

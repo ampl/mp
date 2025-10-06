@@ -599,5 +599,32 @@
       "p": 0,
       "if r<19.99995 || r>70.00005 then 1": 1
     }
+  },
+  {
+    "name" : "redefvar_01",
+    "tags" : ["logical", "linear"],
+    "values": {
+      "solve_result": "solved",
+      "min {i in 1.._nlogcons} _logcon[i]": 1
+    }
+  },
+  {
+    "name" : "redefvar_02",
+    "tags" : ["logical", "linear"],
+    "objective": 11,
+    "values": {
+      "solve_result": "solved",
+      "min {i in 1.._nlogcons} _logcon[i]": 1
+    }
+  },
+  {
+    "name" : "redefvar_02 acc:linfunccon=0",
+    "tags" : ["logical", "linear"],
+    "options": { "mp_options": "acc:linfunccon=0" },
+    "objective": 11,
+    "values": {
+      "solve_result": "solved",
+      "min {i in 1.._nlogcons} _logcon[i]": 1
+    }
   }
 ]
