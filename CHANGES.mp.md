@@ -3,6 +3,10 @@ Summary of recent updates to the AMPL MP Library
 
 
 ## unreleased
+- Option *cvt:pre:ctx2bndeq* control whether
+  conditional comparison with the upper/lower
+  bound is always reformulated in mixed context
+  (default yes, value 0).
 - Workaround for #270 (redefinition of
   an expression as an existing expression can
   lose connection to the original).

@@ -322,6 +322,16 @@ public:
     if ( kind!=0                                  // inequality
          && !MPCD( IfPropCtxCondIneq() ) )
       ctx = Context::CTX_MIX;                     // #267
+    if ( kind==0                                  // (dis)equality
+        && !MPCD( IfPropCtxCondEqBnd() ) ) {
+      auto bnd = MPCD(  // Can have been preprocessed from <=lb etc.
+          ComputeBoundsAndType( con.GetArguments().GetBody() ) );
+      auto cmpeps = MPCD( ComparisonEps(bnd) );
+      auto rhs = con.GetArguments().rhs();
+      if (std::fabs(rhs - bnd.lb()) < cmpeps
+          || std::fabs(rhs - bnd.ub()) < cmpeps)
+        ctx = Context::CTX_MIX;                     // #267
+    }
     con.AddContext(ctx);
     if (lb>0 && ctx.HasPositive()) {              // Is true
       if constexpr (kind*kind<=1) {               // == or <= or >=

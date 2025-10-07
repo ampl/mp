@@ -1439,6 +1439,7 @@ private:
     int boundLogArg_ = 0;
 
     int propCtxIneq_ = 1;
+    int propCtxBndEq_ = 0;
     int propCtxCountNumberof_ = 0;
 
     int passQuadObj_ = ModelAPIAcceptsQuadObj();
@@ -1489,6 +1490,8 @@ public:             // public for CRTP
 
   /// Propagate context into conditional inequalities?
   int IfPropCtxCondIneq() const { return options_.propCtxIneq_; }
+  /// Propagate context into conditional equalities-to-bound?
+  int IfPropCtxCondEqBnd() const { return options_.propCtxBndEq_; }
   /// Propagate context into count/numberof?
   int IfPropCtxCountNumberof() const { return options_.propCtxCountNumberof_; }
   /// Bound argument of logarithm?
@@ -1620,6 +1623,11 @@ private:
                        "\n"
                        "Finer control provided by cvt:pre:ctx:cond...(le/ge) options.",
                        options_.propCtxIneq_, 0, 1);
+    GetEnv().AddOption("cvt:pre:ctx2bndeq ctx2bndeq",
+                       "0*/1: Propagate exact context into conditional "
+                       "(dis)equalities-to-bound, vs always mixed. "
+                       "Can be affected by cvt:pre:ineq2bndeq. See #267.",
+                       options_.propCtxBndEq_, 0, 1);
     GetEnv().AddOption("cvt:pre:ctx2count ctx2count",
                        "Propagate exact context into atleast/atmost/exactly, "
                        "count and numberof expressions, "
