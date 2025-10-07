@@ -5,7 +5,8 @@ var x {I} in DX;
 var y >=0 <=200;
 
 ## Check that even in positive context,
-## we propagate mixed context (cvt:pre:ctx2count=1 default).
+## we do/not propagate mixed context (cvt:pre:ctx2count=1+2+4 default).
+## Max!
 maximize Obj: y
               + count (x[1]==5, x[2]==3, x[3]==8);
 

@@ -1440,7 +1440,7 @@ private:
 
     int propCtxIneq_ = 1;
     int propCtxBndEq_ = 0;
-    int propCtxCountNumberof_ = 0;
+    int propCtxCountNumberof_ = 7;
 
     int passQuadObj_ = ModelAPIAcceptsQuadObj();
     int passQuadCon_ = 1;
@@ -1629,6 +1629,7 @@ private:
                        "Can be affected by cvt:pre:ineq2bndeq. See #267.",
                        options_.propCtxBndEq_, 0, 1);
     GetEnv().AddOption("cvt:pre:ctx2count ctx2count",
+                       "DEPRECATED. Use ctx2bndeq. NEW DEFAULT.\n\n"
                        "Propagate exact context into atleast/atmost/exactly, "
                        "count and numberof expressions, "
                        "vs always mixed. Bitwise OR of the following values:\n"
@@ -1637,7 +1638,7 @@ private:
                        "|  2 - numberof with constant reference value\n"
                        "|  4 - numberof with variable reference value.\n"
                        "\n"
-                       "Default 0, see #267.\n"
+                       "Default 7, see #267.\n"
                        "\n"
                        "Finer control provided by cvt:pre:ctx:... options.",
                        options_.propCtxCountNumberof_, 0, 7);

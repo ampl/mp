@@ -4,6 +4,7 @@ set DX default 1..9;
 var x {I} in DX;
 var y >=0 <=200;
 
+# Min!
 minimize Obj: y
               + count (x[1]==5, x[2]==3, x[3]==8);
 

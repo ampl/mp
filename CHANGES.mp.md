@@ -3,6 +3,10 @@ Summary of recent updates to the AMPL MP Library
 
 
 ## unreleased
+- Option *cvt:pre:ctx2count* is deprecated,
+  with a new default value 7. Its former behavior
+  is specialized and generalized by the new option
+  *cvt:pre:ctx2bndeq*.
 - Option *cvt:pre:ctx2bndeq* control whether
   conditional comparison with the upper/lower
   bound is always reformulated in mixed context
