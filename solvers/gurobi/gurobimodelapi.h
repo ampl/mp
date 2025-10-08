@@ -258,6 +258,11 @@ public:
   ACCEPT_EXPRESSION(TanExpression, Recommended)
   Expr AddExpression(const TanExpression& );
 
+#ifdef GRB_OPCODE_TANH
+  ACCEPT_EXPRESSION(TanhExpression, Recommended)
+  Expr AddExpression(const TanhExpression& );
+#endif
+
   ACCEPT_EXPRESSION(DivExpression, Recommended)
   Expr AddExpression(const DivExpression& );
 

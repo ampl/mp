@@ -365,6 +365,13 @@ GRB_Expr GurobiModelAPI::AddExpression(const TanExpression &e)
   return CreateFormula(e, GRB_OPCODE_TAN);
 }
 
+#ifdef GRB_OPCODE_TANH
+GRB_Expr GurobiModelAPI::AddExpression(const TanhExpression &e)
+{
+  return CreateFormula(e, GRB_OPCODE_TANH);
+}
+#endif
+
 GRB_Expr GurobiModelAPI::AddExpression(const DivExpression& e) {
   return CreateFormula(e, GRB_OPCODE_DIVIDE);
 }
