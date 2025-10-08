@@ -7,10 +7,10 @@ Summary of recent updates to the AMPL MP Library
   with a new default value 7. Its former behavior
   is specialized and generalized by the new option
   *cvt:pre:ctx2bndeq*.
-- Option *cvt:pre:ctx2bndeq* control whether
-  conditional comparison with the upper/lower
-  bound is always reformulated in mixed context
-  (default yes, value 0).
+- Option *cvt:pre:ctx2bndeq* controls whether
+  conditional comparisons with upper/lower
+  bounds are reformulated in exact context,
+  vs. always mixed. Default yes, value 1.
 - Workaround for #270 (redefinition of
   an expression as an existing expression can
   lose connection to the original).

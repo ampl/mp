@@ -628,10 +628,10 @@
     }
   },
   {
-    "name" : "test_ctx2bndeq_01",
+    "name" : "test_ctx2bndeq_01 ctx2bndeq=0",
     "tags" : ["logical", "linear"],
     "options": {
-      "mp_options": "debug=1 acc:condlineq=0 acc:condlinge=0 acc:condlinle=0 acc:condlinlt=0 acc:condlingt=0" },
+      "mp_options": "ctx2bndeq=0 debug=1 acc:condlineq=0 acc:condlinge=0 acc:condlinle=0 acc:condlinlt=0 acc:condlingt=0" },
     "objective": -18,
     "values": {
       "Initial.flat1__U__indeq": 5,
@@ -641,10 +641,10 @@
     }
   },
   {
-    "name" : "test_ctx2bndeq_01 ctx2bndeq=1",
+    "name" : "test_ctx2bndeq_01",
     "tags" : ["logical", "linear"],
     "options": {
-      "mp_options": "ctx2bndeq=1 debug=1 acc:condlineq=0 acc:condlinge=0 acc:condlinle=0 acc:condlinlt=0 acc:condlingt=0" },
+      "mp_options": "debug=1 acc:condlineq=0 acc:condlinge=0 acc:condlinle=0 acc:condlinlt=0 acc:condlingt=0" },
     "objective": -18,
     "values": {
       "Initial.flat1__U__indeq": 5,

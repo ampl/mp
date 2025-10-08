@@ -1439,7 +1439,7 @@ private:
     int boundLogArg_ = 0;
 
     int propCtxIneq_ = 1;
-    int propCtxBndEq_ = 0;
+    int propCtxBndEq_ = 1;
     int propCtxCountNumberof_ = 7;
 
     int passQuadObj_ = ModelAPIAcceptsQuadObj();
@@ -1624,7 +1624,7 @@ private:
                        "Finer control provided by cvt:pre:ctx:cond...(le/ge) options.",
                        options_.propCtxIneq_, 0, 1);
     GetEnv().AddOption("cvt:pre:ctx2bndeq ctx2bndeq",
-                       "0*/1: Propagate exact context into conditional "
+                       "0/1*: Propagate exact context into conditional "
                        "(dis)equalities-to-bound, vs always mixed. "
                        "Can be affected by cvt:pre:ineq2bndeq. See #267.",
                        options_.propCtxBndEq_, 0, 1);
@@ -1638,9 +1638,7 @@ private:
                        "|  2 - numberof with constant reference value\n"
                        "|  4 - numberof with variable reference value.\n"
                        "\n"
-                       "Default 7, see #267.\n"
-                       "\n"
-                       "Finer control provided by cvt:pre:ctx:... options.",
+                       "Default 7, see #267.",
                        options_.propCtxCountNumberof_, 0, 7);
 
     GetEnv().AddOption("cvt:pre:boundlogarg boundlogarg",
