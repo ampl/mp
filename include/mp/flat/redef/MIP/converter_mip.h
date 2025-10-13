@@ -477,8 +477,7 @@ private:
     this->GetEnv().AddOption("cvt:compl:tol cvt:compl:eps compl:eps",
                              "Tolerance parameter for the product "
                              "and Fischer-Burmeister encodings of complementarity, "
-                             "see cvt:compl. Gives smoothness but increases solution "
-                             "space. Default 1e-9.",
+                             "see cvt:compl. Default 1e-9.",
                              options_.complCvtEps_, 0.0, 1e100);
     this->GetEnv().AddOption("cvt:plapprox:reltol plapprox:reltol plapproxreltol",
                        "Relative tolerance for piecewise-linear approximation. Default 0.01.",
