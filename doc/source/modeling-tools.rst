@@ -182,7 +182,8 @@ Reformulation explorer
 
 MP provides a tool to explore and compare the model
 provided to an MP solver driver in the NL file, and the final model
-sent to the underlying solver.
+sent to the underlying solver. Moreover, intermediate reformulation
+steps can be seen in a tree representation.
 
 .. image:: images/ref_explore.png
   :width: 400
@@ -192,12 +193,13 @@ sent to the underlying solver.
 Tool invocation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To use the reformulation explorer online, go to `Reformulation Explorer <https://ampl.com/streamlit/Reformulation_Explorer>`_.
+To use the reformulation explorer online,
+go to `Reformulation Explorer <https://ampl.com/streamlit/Reformulation_Explorer>`_.
 
 To run locally, download the `MP repository <https://github.com/ampl/mp>`_.
 In subfolder `support/modelexplore`, run the command::
 
-  streamlit run modelexplore.py
+  streamlit run modelexplore.py --server.maxUploadSize=1024
 
 
 Using the explorer
@@ -284,6 +286,17 @@ The following operations are possible:
   displayed (sub)models, use the download buttons.
 
 
+Reformulation tree
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To explore the reformulation tree, select
+*NL model presentation mode: Reformulation tree* on the left panel.
+
+Then, either explore the tree representation in the *NL model* panel,
+or click *Download NL model*. This downloads a (new) JSON file which
+can be vizualized with a JSON viewer.
+
+
 Example
 ~~~~~~~~~~~~~~~~~~~~~
 
@@ -322,6 +335,17 @@ the resulting subset of the Solver model can be as follows:
 
 The constraint types (`_indle`, `_or`, etc.) are as explained
 in :ref:`supported-constraints`.
+
+Selecting *NL model representation model: Reformulation tree*
+and clicking *Download NL model* results in the following JSON
+file (visualized at *https://jsonformatter.org/json-viewer*):
+
+.. image:: images/RefTree.png
+  :width: 500
+  :align: center
+  :alt: Reformulation tree vizualization (partially collapsed)
+
+
 
 
 .. _solution-check:
