@@ -2,7 +2,8 @@ Summary of recent updates to Xpress for AMPL
 ============================================
 
 
-## unreleased
+## 20251015
+- Changes in MP
 - Fixed retrieval of basis after time/work
   limit in Xpress Global.
 

@@ -2,7 +2,8 @@ Summary of recent updates to gurobi for AMPL
 ============================================
 
 
-## unreleased
+## 20251015
+- Changes in MP
 - Fixed *multiobj=1/2* for a single objective.
   Running multiobjective for a single-objective
   model makes sense with a negative `.objweight`

@@ -2,7 +2,7 @@ Summary of recent updates to the AMPL MP Library
 ================================================
 
 
-## unreleased
+## 20251015
 - Option *cvt:pre:ctx2count* is deprecated,
   with a new default value 7. Its former behavior
   is specialized and generalized by the new option
