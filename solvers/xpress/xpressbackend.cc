@@ -1180,8 +1180,8 @@ std::string XpressmpBackend::DoXpressFixedModel()
 
     { "512", "refine MIP solutions such that rounding them keeps the problem "
     "feasible when reoptimized", 512},
-    { "1024", "ttempt to refine MIP solutions such that rounding them keeps the "
-    "problem feasible when reoptimized, but accept integers solutions even if "
+    { "1024", "attempt to refine MIP solutions such that rounding them keeps the "
+    "problem feasible when reoptimized, but accept integer solutions even if "
     "refinement fails", 1024},
   };
 
@@ -2407,7 +2407,7 @@ AddSolverOption("mip:threads mipthreads",
   "MIP code; default -1: alg:threads will determine the number of threads.",
   XPRS_MIPTHREADS, -1, INT_MAX);
 
-AddSolverOption("mip:intfeastol intfeastol",
+AddSolverOption("mip:intfeastol inttol intfeastol",
   "Feasibility tolerance for integer variables (default 5e-06).",
   XPRS_MIPTOL, 0.0, DBL_MAX);
 

@@ -565,11 +565,11 @@ void MosekBackend::InitCustomOptions() {
                   MSK_DPAR_MIO_TOL_ABS_GAP, 0.0, DBL_MAX);
 
   AddSolverOption("mip:feastol feastol",
-                  "MIP feasibility tolerance.",
+                  "MIP feasibility tolerance. Default 1e-6.",
                   MSK_DPAR_MIO_TOL_FEAS, 1e-15, Infinity());
 
-  AddSolverOption("mip:inttol inttol",
-                  "MIP integrality tolerance.",
+  AddSolverOption("mip:inttol inttol intfeastol",
+                  "MIP integrality tolerance. Default 1e-5.",
                   MSK_DPAR_MIO_TOL_ABS_RELAX_INT, 1e-15, Infinity());
 
   AddSolverOption("mip:heurlevel heurlevel",

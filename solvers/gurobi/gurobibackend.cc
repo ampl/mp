@@ -1681,8 +1681,8 @@ void GurobiBackend::InitCustomOptions() {
                   GRB_DBL_PAR_FEASRELAXBIGM, 0.0, DBL_MAX);
 
   AddSolverOption("alg:feastol feastol",
-                  "Primal feasibility tolerance (default 1e-6).",
-                  GRB_DBL_PAR_FEASIBILITYTOL, 0.0, DBL_MAX);
+                  "Primal feasibility tolerance (default 1e-6; should be in [1e-9, 1e-2]).",
+                  GRB_DBL_PAR_FEASIBILITYTOL, 1e-9, 1e-2);
 
   AddSolverOption("alg:numericfocus numericfocus numfocus numericemphasis numericalemphasis",
                   "How much to try detecting and managing numerical issues:\n"
@@ -2040,7 +2040,9 @@ void GurobiBackend::InitCustomOptions() {
     GRB_DBL_PAR_IMPROVESTARTNODES, 0.0, DBL_MAX);
 
   AddSolverOption("mip:inttol inttol intfeastol",
-    "Feasibility tolerance for integer variables (default 1e-05).",
+    "Feasibility tolerance for integer variables "
+                  "(default 1e-05; should be in [1e-9, 1e-1])."
+                  "\n\nConsider mip:intfocus which can have more impact.",
     GRB_DBL_PAR_INTFEASTOL, 0.0, DBL_MAX);
 
 

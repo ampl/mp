@@ -703,7 +703,7 @@ void HighsBackend::InitCustomOptions() {
     "pdlp_e_restart_method", pdlperestartmethod_values, 1);
 
   AddSolverOption("alg:pdlpopttol pdlpopttol  pdlp_d_gap_tol pdlp_optimality_tolerance",
-    "PDLP optimality tolerance (default 1e-4).",
+    "PDLP optimality tolerance (default 1e-7).",
     "pdlp_optimality_tolerance", 1e-12, Infinity());
 
   AddSolverOption("bar:crossover crossover run_crossover",

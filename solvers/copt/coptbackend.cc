@@ -593,7 +593,7 @@ void CoptBackend::InitCustomOptions() {
 
   AddSolverOption("alg:dualfeastol dualfeastol",
     "Tolerance for dual solutions and reduced cost (default 1e-6).",
-    COPT_DBLPARAM_DUALTOL, 1e-6, 1e-4);
+    COPT_DBLPARAM_DUALTOL, 1e-9, 1e-4);
 
   AddSolverOption("alg:matrixtol matrixtol",
     "nput matrix coefficient tolerance (default 1e-10).",
