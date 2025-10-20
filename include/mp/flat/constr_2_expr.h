@@ -71,13 +71,16 @@ public:
   /// For func cons, once not accepted as expressions, consider their args
   /// as variables.
   /// For static cons, always.
+  /// Moreover, for multiply used expressions, too.
   template <class Con>
   void ConsiderMarkingArguments(
       const Con& con, int i, ExpressionAcceptanceLevel eal) {
     bool fMarkArgs = false;
-    if (con.HasResultVar())    // func cons: those not accepted as expr
-      fMarkArgs = (ExpressionAcceptanceLevel::NotAccepted==eal);
-    else
+    if (con.HasResultVar()) {   // func cons: those not accepted as expr
+      fMarkArgs =
+          (ExpressionAcceptanceLevel::NotAccepted==eal)
+          || MPCD( VarUsage(con.GetResultVar()) ) > 1;
+    } else
       fMarkArgs = true;        // static cons: all non-algebraic by default
     if (fMarkArgs)
       MPD( DoMarkArgsAsVars(con, i) );

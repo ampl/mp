@@ -324,6 +324,11 @@ public:
 		}
 	}
 
+  /// Var usage
+  int VarUsage(int i) const {
+    return (i<(int)refcnt_vars_.size())
+               ? refcnt_vars_[i] : 0;
+  }
 
 protected:
 	int& VarUsageRef(int i) {

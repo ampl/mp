@@ -413,6 +413,13 @@ void GurobiModelAPI::Formula::Append(const Formula& frm) {
   int sz_last = size();
   assert(frm.size());
   assert(-1==frm.parent_.front());
+  assert(is_length_ok());
+  if (capacity() < size()+frm.size()) {  // manually 2x size
+    size_t sz_new = std::max(size()*2, size()+frm.size());
+    opcode_.reserve(sz_new);
+    data_.reserve(sz_new);
+    parent_.reserve(sz_new);
+  }
   opcode_.insert(opcode_.end(), frm.opcode_.begin(), frm.opcode_.end());
   data_.insert(data_.end(), frm.data_.begin(), frm.data_.end());
   parent_.insert(parent_.end(), frm.parent_.begin(), frm.parent_.end());

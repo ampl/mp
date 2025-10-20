@@ -20,6 +20,7 @@ data;param initval
 for {point in initpoint}
 {
 	let{i in Rn} q[i] := initval[i,point];
+	# write ("gnash" & point);
 	solve;
 	include compchk
 }

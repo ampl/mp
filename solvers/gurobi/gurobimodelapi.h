@@ -273,6 +273,8 @@ public:
     /// Construct with 1 entry
     Formula(int oc=-1, double d=-1.0, int p=-1)
         : opcode_(1, oc), data_(1, d), parent_(1, p) { }
+    /// Capacity
+    int capacity() const { return opcode_.capacity(); }
     /// Length
     int size() const { assert(is_length_ok()); return opcode_.size(); }
     /// Opcodes
