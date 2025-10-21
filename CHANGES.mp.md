@@ -2,6 +2,12 @@ Summary of recent updates to the AMPL MP Library
 ================================================
 
 
+## 20251021
+- Option *cvt:expr:nlassign* adjusting expression
+  inlining. Improves problem building performance
+  for some nonlinear solvers on large models.
+
+
 ## 20251015
 - Option *cvt:pre:ctx2count* is deprecated,
   with a new default value 7. Its former behavior

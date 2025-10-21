@@ -71,7 +71,9 @@ public:
   /// For func cons, once not accepted as expressions, consider their args
   /// as variables.
   /// For static cons, always.
-  /// Moreover, for multiply used expressions, too.
+  /// Moreover, for multiply used expressions, if desired.
+  /// @todo Track this later when we add new expressions
+  ///   in Convert2NLCon() etc.
   template <class Con>
   void ConsiderMarkingArguments(
       const Con& con, int i, ExpressionAcceptanceLevel eal) {
@@ -79,7 +81,7 @@ public:
     if (con.HasResultVar()) {   // func cons: those not accepted as expr
       fMarkArgs =
           (ExpressionAcceptanceLevel::NotAccepted==eal)
-          || MPCD( VarUsage(con.GetResultVar()) ) > 1;
+          || MPCD( VarUsage(con.GetResultVar()) ) > MPCD( NLAssignLevel() );
     } else
       fMarkArgs = true;        // static cons: all non-algebraic by default
     if (fMarkArgs)

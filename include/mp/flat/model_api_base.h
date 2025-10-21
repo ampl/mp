@@ -172,6 +172,14 @@ public:
   /// Whether accepts NLObjective (relevant in BasicExprModelAPI)
   static int AcceptsNLObj() { return 0; }
 
+  /// Above which reference count,
+  /// a formula node should be assigned to a variable.
+  /// Should normally be INT_MAX for solvers
+  /// using pointers to store expressions (SCIP),
+  /// and (small) positive for solvers
+  /// using strings to represent formulas.
+  /// Note: 0 means all nodes outlined.
+  static int NLAssignLevelDefault() { return 1; }
 
   /// Placeholder for SetQuadraticObjective()
   void SetQuadraticObjective(int , const QuadraticObjective& ) {

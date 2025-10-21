@@ -1475,6 +1475,8 @@ private:
     int sol_round_ = 100;
     int sol_prec_ = 100;
     int solchkoutlev_ = 0;
+
+    int nlassign_lev_ = ModelAPI::NLAssignLevelDefault();
   };
   Options options_;
 
@@ -1517,6 +1519,7 @@ public:             // public for CRTP
   int sol_prec() const { return options_.sol_prec_; }
   int sol_check_outlev() const { return options_.solchkoutlev_; }
 
+  int NLAssignLevel() const { return options_.nlassign_lev_; }
 
 public:
   /// Init FlatConverter options
@@ -1809,6 +1812,13 @@ private:
         "AMPL solution_precision option when checking: "
                        "number of significant digits.",
                        options_.sol_prec_, -1000, 1000);
+
+    GetEnv().AddOption("cvt:expr:nlassign expr:nlassign",
+                       fmt::format("Above which reference count, "
+                       "a formula node should be assigned to a variable "
+                       "(see acc: options). 0 means all nodes outlined. "
+                       "Default {}.", options_.nlassign_lev_).c_str(),
+                       options_.nlassign_lev_, 0, INT_MAX);
 
     ////////////////////// Solve result codes ////////////////////////
     GetEnv().AddSolveResults({

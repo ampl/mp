@@ -1,6 +1,8 @@
 #ifndef SCIPMODELAPI_H
 #define SCIPMODELAPI_H
 
+#include <climits>
+
 #include "mp/env.h"
 #include "scipmpcommon.h"
 #include "mp/flat/nl_expr/model_api_base.h"
@@ -42,6 +44,13 @@ public:
   /// 0 - no, 1 - convex, 2 - nonconvex
   static int AcceptsQuadObj() { return 0; }
   void SetQuadraticObjective(int iobj, const QuadraticObjective& qo);
+
+  /// Above which reference count,
+  /// a formula node should be assigned to a variable.
+  /// Should normally be INT_MAX for solvers
+  /// using pointers to store expressions (SCIP),
+  /// and positive for solvers using strings to represent formulas.
+  static int NLAssignLevelDefault() { return INT_MAX; }
 
   //////////////////////////// GENERAL CONSTRAINTS ////////////////////////////
   /// Handle flat constraints: inherit basic API
