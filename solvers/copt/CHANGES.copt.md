@@ -2,6 +2,13 @@ Summary of recent updates to COPT for AMPL
 ==========================================
 
 
+## 20251021
+- Changes in MP: option *cvt:expr:nlassign*.
+- Upgrade to COPT 7.2.11.
+- Enable NLP (set options
+  *acc:_expr=2 alg:relax=1*).
+
+
 ## 20251015
 - Changes in MP
 
