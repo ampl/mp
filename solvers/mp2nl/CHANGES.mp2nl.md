@@ -2,6 +2,10 @@ Summary of recent updates to MP2NL for AMPL
 ==========================================
 
 
+## 20251021
+- Changes in MP: option *cvt:expr:nlassign*.
+
+
 ## 20250814
 - Changes in MP
   - Improved preprocessing of logical
