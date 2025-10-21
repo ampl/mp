@@ -132,10 +132,10 @@ public:
   //////////////////////////// EXPRESSION TREES ////////////////////////////
   /// Handle expression trees: inherit basic API
   USE_BASE_EXPRESSION_HANDLERS(BaseModelAPI)
-      ACCEPT_EXPRESSION_INTERFACE(NotAccepted)
+  ACCEPT_EXPRESSION_INTERFACE(AcceptedButNotRecommended)
 
-      /// Whether accepts NLObjective
-      static int AcceptsNLObj() { return 0; }
+  /// Whether accepts NLObjective
+  static int AcceptsNLObj() { return 0; }
   /// Make a constant expression.
   static Expr MakeConstantExpr(double v) {
       NLParams p;
