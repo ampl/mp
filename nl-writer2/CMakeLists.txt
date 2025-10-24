@@ -82,7 +82,7 @@ endif()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9)
   target_link_libraries(${NLW2_LIB_NAME} PRIVATE stdc++fs)
-endif
+endif()
 
 
 # C API sources
