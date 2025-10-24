@@ -140,7 +140,7 @@ MP2NLBackend::ConfigMap MP2NLBackend::config_map_ {
      "cvt:compl=1 "
      "cvt:multoutcard=0 cvt:socp=1 "
      "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },  // @todo compl
-    { "conopt",
+    { "conopt3",
      "acc:count=0 "
      "acc:alldiff=0 acc:numberofconst=0 acc:numberofvar=0 "
      "acc:indle=0 acc:indge=0 acc:indeq=0 acc:not=0 "
@@ -150,7 +150,7 @@ MP2NLBackend::ConfigMap MP2NLBackend::config_map_ {
      "acc:nlcompl=0 cvt:compl=1 "
      "cvt:multoutcard=0 cvt:socp=1 "
      "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },  // @todo compl
-    { "conopt4",
+    { "conopt",
      "acc:count=0 "
      "acc:alldiff=0 acc:numberofconst=0 acc:numberofvar=0 "
      "acc:indle=0 acc:indge=0 acc:indeq=0 acc:not=0 "
