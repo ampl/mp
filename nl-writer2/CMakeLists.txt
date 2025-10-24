@@ -80,6 +80,11 @@ if (NLW2_LIB_DMGAY_DTOA)
     ${NLW2_LIB_NAME} PUBLIC NLW2_LIB_DMGAY_DTOA)
 endif()
 
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9)
+  target_link_libraries(${NLW2_LIB_NAME} PRIVATE stdc++fs)
+endif
+
+
 # C API sources
 set(NLW2_C_API_LIB_FILES
 	${NLW2_DIR}/src/nl-model-c.cc
