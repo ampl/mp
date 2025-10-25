@@ -644,3 +644,41 @@ objective value, see a
 detailing
 a more common case and a remedy consisting of an explicit
 variable for the objective value.
+
+
+.. _mp2nl:
+
+Meta-driver MP2NL
+***************************************************************
+
+MP2NL translates MP-compatible syntax and features to any AMPL solver.
+While this might mostly benefit MINLP solvers, such as
+`Knitro <https://dev.ampl.com/solvers/knitro/index.html#knitro>`_
+or `Couenne <https://dev.ampl.com/solvers/couenne/index.html#couenne>`_,
+NLP solvers (such as `Ipopt <https://dev.ampl.com/solvers/ipopt/index.html#ipopt>`_)
+could benefit from automatic reformulation
+of :ref:`complementarity constraints <complementarity>`
+or (convex) :ref:`piecewise-linear expressions <piecewise_linear_modeling>`.
+
+
+Invocation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To use the MP2NL meta-driver, when running
+a `nonlinear AMPL solver <https://dev.ampl.com/solvers/index.html#nonlinear-solvers>`_
+maintained by AMPL
+(currently all except `Ipopt <https://dev.ampl.com/solvers/ipopt/index.html#ipopt>`_),
+add option `mp2nl=1`, for example:
+
+.. code-block:: ampl
+
+    option knitro_options 'outlev=1 mp2nl=1';
+
+For any other AMPL solver, invoke `mp2nl` manually:
+
+.. code-block:: ampl
+
+    option ipopt_options 'max_cpu_time 15';
+    option solver mp2nl;
+    option mp2nl_options 'solver=ipopt cvt:compl=2 cvt:compl:eps=1e-8';
+

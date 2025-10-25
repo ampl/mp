@@ -404,6 +404,8 @@ constraints.
        alldiff {i in I..I+2, j in J..J+2} X[i,j];
 
 
+.. _complementarity:
+
 Complementarity operator
 ***********************************
 

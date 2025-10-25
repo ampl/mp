@@ -9,7 +9,8 @@ suitable for linear and mixed-integer, non-linear, and
 Constraint Programming solvers. 
 
 MP provides supporting tools, such as a
-:ref:`Model reformulation explorer <reformulation-graph>`
+:ref:`Model reformulation explorer <reformulation-graph>`,
+a meta-driver :ref:`MP2NL <mp2nl>`,
 and a :ref:`lightweight NL writer <write-nl-read-sol>`.
 
 MP replaces the previous

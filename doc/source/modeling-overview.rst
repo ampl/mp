@@ -44,6 +44,8 @@ Currently available MP-based solvers include:
 - `gcg <https://github.com/ampl/mp/tree/develop/solvers/gcgmp>`_,
   an interface to the open-source `GCG solver <https://ampl.com/products/solvers/open-source-solvers/>`_
 
+- A meta-solver :ref:`MP2NL <mp2nl>` translating MP to any AMPL solver.
+
 Binaries for these solvers can be downloaded, in distribution
 bundles and individually, through the `AMPL Portal <https://portal.ampl.com>`_.
 Solver options and features are described
