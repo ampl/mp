@@ -664,21 +664,23 @@ or (convex) :ref:`piecewise-linear expressions <piecewise_linear_modeling>`.
 Invocation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To use the MP2NL meta-driver, when running
-a `nonlinear AMPL solver <https://dev.ampl.com/solvers/index.html#nonlinear-solvers>`_
-maintained by AMPL
-(currently all except `Ipopt <https://dev.ampl.com/solvers/ipopt/index.html#ipopt>`_),
-add option `mp2nl=1`, for example:
+Some of the
+ `nonlinear AMPL solvers <https://dev.ampl.com/solvers/index.html#nonlinear-solvers>`_
+(currently `Knitro <https://dev.ampl.com/solvers/knitro/index.html#knitro>`_,
+`Baron <https://dev.ampl.com/solvers/baron/index.html#baron>`_,
+`Conopt <https://dev.ampl.com/solvers/conopt/index.html#conopt>`_)
+support option `mp2nl=1`:
 
 .. code-block:: ampl
 
     option knitro_options 'outlev=1 mp2nl=1';
+    solve;
 
 For any other AMPL solver, invoke `mp2nl` manually:
 
-.. code-block:: ampl
+.. code-block:: python
 
-    option ipopt_options 'max_cpu_time 15';
-    option solver mp2nl;
-    option mp2nl_options 'solver=ipopt cvt:compl=2 cvt:compl:eps=1e-8';
+    ampl.solve(solver='mp2nl',
+               ipopt_options='max_cpu_time 15',
+               mp2nl_options='solver=ipopt cvt:compl=2 cvt:compl:eps=1e-8')
 
