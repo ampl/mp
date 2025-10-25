@@ -8,8 +8,9 @@ new AMPL solver drivers. It provides type-safe and flexible interfaces
 suitable for linear and mixed-integer, non-linear, and
 Constraint Programming solvers. 
 
-MP provides supporting tools, such as a
-:ref:`Model reformulation explorer <reformulation-graph>`,
+MP provides supporting tools, such as
+:ref:`automatic solution checker <solution-check>` (built-in to every MP solver),
+a :ref:`Model reformulation explorer <reformulation-graph>`,
 a meta-driver :ref:`MP2NL <mp2nl>`,
 and a :ref:`lightweight NL writer <write-nl-read-sol>`.
 

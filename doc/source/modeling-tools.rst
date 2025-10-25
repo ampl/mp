@@ -355,8 +355,11 @@ Automatic solution check
 ******************************
 
 Solutions obtained from the solver are automatically checked
-for correctness with given tolerances
-(see :ref:`solver-options` ``sol:chk:...``.)
+for correctness with given tolerances. By default, only
+AMPL-side and solver-side models are checked; to add
+also intermediate reformulated expressions, see
+:ref:`solver options <solver-options>` ``sol:chk:mode``,
+as well as other related options to control tolerances, etc.
 
 There are two checking modes: "realistic" and "idealistic".
 For linear and quadratic models they are equivalent.
