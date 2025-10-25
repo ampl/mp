@@ -668,7 +668,11 @@ Some of the
 `nonlinear AMPL solvers <https://dev.ampl.com/solvers/index.html#nonlinear-solvers>`_
 (currently `Knitro <https://dev.ampl.com/solvers/knitro/index.html#knitro>`_,
 `Baron <https://dev.ampl.com/solvers/baron/index.html#baron>`_,
-`Conopt <https://dev.ampl.com/solvers/conopt/index.html#conopt>`_)
+`Conopt <https://dev.ampl.com/solvers/conopt/index.html#conopt>`_),
+as well as the legacy solvers
+`gurobiasl <https://dev.ampl.com/solvers/gurobi/index.html#gurobi>`_,
+`cplexasl <https://dev.ampl.com/solvers/cplex/index.html#cplex>`_,
+`xpressasl <https://dev.ampl.com/solvers/xpress/index.html#xpress>`_
 support option ``mp2nl=1``:
 
 .. code-block:: ampl
