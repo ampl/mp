@@ -673,8 +673,8 @@ support option `mp2nl=1`:
 
 .. code-block:: ampl
 
-    option knitro_options 'outlev=1 mp2nl=1';
-    solve;
+    ampl: option knitro_options 'outlev=1 mp2nl=1';
+    ampl: solve;
 
 For any other AMPL solver, invoke `mp2nl` manually:
 
