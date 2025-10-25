@@ -665,7 +665,7 @@ Invocation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Some of the
- `nonlinear AMPL solvers <https://dev.ampl.com/solvers/index.html#nonlinear-solvers>`_
+`nonlinear AMPL solvers <https://dev.ampl.com/solvers/index.html#nonlinear-solvers>`_
 (currently `Knitro <https://dev.ampl.com/solvers/knitro/index.html#knitro>`_,
 `Baron <https://dev.ampl.com/solvers/baron/index.html#baron>`_,
 `Conopt <https://dev.ampl.com/solvers/conopt/index.html#conopt>`_)
