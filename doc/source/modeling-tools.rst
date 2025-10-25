@@ -669,7 +669,7 @@ Some of the
 (currently `Knitro <https://dev.ampl.com/solvers/knitro/index.html#knitro>`_,
 `Baron <https://dev.ampl.com/solvers/baron/index.html#baron>`_,
 `Conopt <https://dev.ampl.com/solvers/conopt/index.html#conopt>`_)
-support option `mp2nl=1`:
+support option ``mp2nl=1``:
 
 .. code-block:: ampl
 
