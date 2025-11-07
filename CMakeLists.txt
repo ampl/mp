@@ -517,8 +517,7 @@ if (# (TARGET xpress) OR
   add_executable(parse-xpress-options
     src/parse_xpress_options.cc
     src/wrap_tinyxml2.cc
-    ${PROJECT_SOURCE_DIR}/thirdparty/tinyxml2/tinyxml2.cpp
-    $<TARGET_OBJECTS:format>)
+    ${PROJECT_SOURCE_DIR}/thirdparty/tinyxml2/tinyxml2.cpp)
   target_include_directories(parse-xpress-options PUBLIC
     ${PROJECT_SOURCE_DIR}/thirdparty/tinyxml2)
   message(STATUS "Getting inside")

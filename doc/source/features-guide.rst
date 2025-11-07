@@ -26,7 +26,7 @@ Important features
 This section lists most important solver features,
 controlling solver behavior and information flow.
 
-* Option :ref:`lim:time (timelimit) <ampl-solver-options>` -
+* Option :ref:`lim:time (timelimit), lim:soltimelimit <ampl-solver-options>` -
   sets solver time limit
 
 * Options :ref:`mipgap, mipgapabs, lp:opttol <ampl-solver-options>` -

@@ -14,12 +14,10 @@
 #include <ctime>
 #include <cctype>
 
-#include "mp/format.h"
-
 #include "wrap_xml.h"
 
 #define RAISE(streammsg) do { \
-  std::cerr << streammsg << std::endl; \
+  std::cerr << "ERROR: " << streammsg << std::endl; \
   std::exit(1); \
 } while (0)
 
@@ -70,6 +68,7 @@ class ParamListTranslator {
   std::string filename_, classname_, hdr_, ftr_;
 
   std::map<std::string, Param> params_;
+  std::map<std::string, int> prefixes_;
 public:
   /// Start output
   bool Start(const char* filename, const char* classname) {
@@ -87,13 +86,15 @@ public:
       ofs_ << GetHeader(filename_, classname_);
       WriteControlParams(ofs_);
       ofs_ << GetFooter(classname_);
+      ofs_.close();
+      OutputPrefixes();
     }
   }
 
   /// Add new parameter
   void AddParam(Param prm) {
     if (params_.end() != params_.find(prm.NameMain())) {
-      RAISE( "ERROR: parameter '"
+      RAISE( "parameter '"
             << prm.NameMain() << "' repeated.");
     }
     params_[prm.NameMain()] = std::move(prm);
@@ -163,10 +164,18 @@ protected:
       os << "#ifdef " << prm.NameMain() << "\n";
 
       auto prefix = GetOptionPrefix(prm.topic_);
-      os << "    MPD( AddSolverOption(\"";
-      os << prefix << ':' << MakeOptionName(prm.NameMain());
+      ++prefixes_[prefix];
+      os << "    MPD( AddSolverOption_MergeDuplicates(\"";
+      auto nm1 = MakeOptionName(prm.NameMain());
+      if (0 == nm1.find(prefix)) {
+        nm1 = nm1.substr(prefix.size()         // bar:alg
+                         + (nm1.size()>prefix.size()
+                            && '_'==nm1[prefix.size()])); // xktr_param..
+      }
+      os << prefix << ':' << nm1;
+      os << ' ' << (prm.NameMain());           // no prefix
       if (prm.name2_.size())
-        os << ' ' << prefix << ':' << MakeOptionName(prm.name2_);
+        os << ' ' << (prm.name2_);             // no prefix
       os << "\",\n"
             "      \"" << prm.descr_ << "\"\n";
       if (prm.values_.size()) {
@@ -188,7 +197,7 @@ protected:
       else if ("string" == prm.type_)
       {}
       else
-        RAISE("ERROR: unknown param type " << prm.type_
+        RAISE("unknown param type " << prm.type_
                                            << " for param "
                                            << prm.NameMain());
       os << ") );\n";
@@ -208,10 +217,25 @@ protected:
   }
 
   std::string GetOptionPrefix(const std::string& topic) const {
+    if (std::string::npos != topic.find("Global")) {
+      return "global";
+    }
+    if (std::string::npos != topic.find("nitro")) {
+      return "xktr";
+    }
+    if (std::string::npos != topic.find("euristic")) {
+      return "heur";
+    }
     if (std::string::npos != topic.find("arrier")) {
       return "bar";
     }
     if (std::string::npos != topic.find("resolve")) {
+      return "pre";
+    }
+    if (std::string::npos != topic.find("ropagation")) {
+      return "pre";
+    }
+    if (std::string::npos != topic.find("Root")) {
       return "pre";
     }
     if (std::string::npos != topic.find("unction")) {
@@ -220,14 +244,66 @@ protected:
     if (std::string::npos != topic.find("uadrat")) {
       return "qp";
     }
+    if (std::string::npos != topic.find("erivat")) {
+      return "diff";
+    }
+    if (std::string::npos != topic.find("MISLP")) {
+      return "mislp";
+    }
+    if (std::string::npos != topic.find("Misc")) {
+      return "tech";
+    }
     if (std::string::npos != topic.find("ranch")) {
       return "mip";
+    }
+    if (std::string::npos != topic.find("arallel")) {
+      return "tech";
+    }
+    if (std::string::npos != topic.find("eterminism")) {
+      return "tech";
+    }
+    if (std::string::npos != topic.find("roblem Creation")) {
+      return "prob";
+    }
+    if (std::string::npos != topic.find("File IO")) {
+      return "tech";
+    }
+    if (std::string::npos != topic.find("rocess")) {
+      return "alg";
+    }
+    if (std::string::npos != topic.find("ultistart")) {
+      return "alg";
+    }
+    if (std::string::npos != topic.find("ultiobj")) {
+      return "obj:multi";
+    }
+    if (std::string::npos != topic.find("rimal Dual")) {
+      return "pdhg";
+    }
+    if (std::string::npos != topic.find("allback")) {
+      return "tech";
+    }
+    if (std::string::npos != topic.find("ompute")) {
+      return "tech";
+    }
+    if (std::string::npos != topic.find("Tuner")) {
+      return "tech";
+    }
+    if (std::string::npos != topic.find("emory")) {
+      return "tech";
     }
     auto p1 = topic.find_first_of(", ");
     auto p_end = (std::string::npos!=p1) ? p1 : topic.size();
     if (p_end>3)
       p_end=3;
     return MakeOptionName(topic.substr(0, p_end));
+  }
+
+  /// Print prefixes used
+  void OutputPrefixes() const {
+    std::cout << "Prefixes used:\n";
+    for (const auto& p: prefixes_)
+      std::cout << "  " << p.first << ":\t" << p.second << std::endl;
   }
 };
 
@@ -257,7 +333,7 @@ public:
     if (0 == std::strcmp("type", name)) {
       prm_.value_type_ = value;
     } else {
-      RAISE("ERROR: unknown <paramValues>'s attr: " << name);
+      RAISE("unknown <paramValues>'s attr: " << name);
     }
   }
 
@@ -269,21 +345,26 @@ public:
       if (!vstr)
         RAISE("For param " << prm_.NameMain()
                            << ", a value list entry has no value attr");
+      if ('\0' == *vstr) {
+        std::cerr << "WARNING: For param " << prm_.NameMain()
+                  << ", a value list entry has empty value" << std::endl;
+        return;
+      }
       if (prm_.values_map_.end() != prm_.values_map_.find(vstr))
         std::cerr << "WARNING: For param " << prm_.NameMain()
-                           << ", a value list entry "
-                  << vstr << " is repeated" << std::endl;
+                           << ", value list entry '"
+                  << vstr << "' is repeated" << std::endl;
       auto vtext = GetText(wlk);
       if (vtext.empty()) {
         std::cerr << "WARNING: For param " << prm_.NameMain()
-          << ", a value list entry "
-          << vstr << " has no description"
+          << ", value list entry '"
+          << vstr << "' has no description"
           << std::endl;
       }
       prm_.values_map_[vstr] = vtext;
       prm_.values_.push_back({vstr, vtext});
     } else {
-      RAISE("ERROR: unknown <paramValues>'s subnode: " << name);
+      RAISE("unknown <paramValues>'s subnode: " << name);
     }
   }
 };
@@ -304,7 +385,7 @@ public:
     } else if (0 == std::strcmp("type", name)) {
       SET_ONCE(prm_.NameMain(), prm_.type_, value);
     } else  {
-      RAISE("ERROR: unknown <param>'s attribute: " << name);
+      RAISE("unknown <param>'s attribute: " << name);
     }
   }
 
@@ -325,7 +406,7 @@ public:
     } else if (0 == std::strcmp("paramNote", name)) {
       // skip
     } else {
-      RAISE("ERROR: unknown <param>'s subnode: " << name);
+      RAISE("unknown <param>'s subnode: " << name);
     }
   }
 
@@ -360,7 +441,7 @@ public:
           plt_.AddParam(prmh.MoveOutParam());
       }
     } else {
-      RAISE("ERROR: unknown <paramList>'s subnode: " << name);
+      RAISE("unknown <paramList>'s subnode: " << name);
     }
   }
 };
@@ -374,23 +455,27 @@ int main(int argc, const char** argv) {
           "an output C++ header file,\n"
           "and a mix-in class name." );
 
-  fmt::print("Processing XML parameter database file '{}' ...\n",
-             argv[1]);
+  std::cout << "Processing XML parameter database file '"
+            << argv[1] << "' ..." << std::endl;
 
   auto pwlk = mp::MakeDefaultXMLWalker();
   if (pwlk->ReadFile(argv[1])) {
     if ( std::strcmp("paramList", pwlk->GetName()) )
-      RAISE("ERROR: Unknown top-level entry: " << pwlk->GetName());
+      RAISE("Unknown top-level entry: " << pwlk->GetName());
 
     mp::ParamListTranslator plt;
     if (plt.Start(argv[2], argv[3])) {
-      fmt::print("Writing header file '{}' with mix-in class '{}' ...\n",
-                 argv[2], argv[3]);
 
       mp::ParamListHandler prmlh(plt);  // to handle individual <param>s
       pwlk->Walk(prmlh);
-    }
-  }
 
+      std::cout << "Writing header file '"
+                << argv[2] << "' with mix-in class '"
+                << argv[3] << "' ..." << std::endl;
+    }
+  } else
+    RAISE("Error reading input file");
+
+  std::cout << "Done." << std::endl;
   return 0;
 }
