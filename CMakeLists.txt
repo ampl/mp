@@ -510,6 +510,21 @@ if(MP_GENERATE_EXPR_ONLY)
   return()
 endif()
 
+# Option build_xpress_option_parser
+option(BUILD_XPRESS_OPTION_PARSER "Build Xpress 9.8 XML option parser in any case" OFF)
+if (# (TARGET xpress) OR
+    (BUILD_XPRESS_OPTION_PARSER))
+  add_executable(parse-xpress-options
+    src/parse_xpress_options.cc
+    src/wrap_tinyxml2.cc
+    ${PROJECT_SOURCE_DIR}/thirdparty/tinyxml2/tinyxml2.cpp
+    $<TARGET_OBJECTS:format>)
+  target_include_directories(parse-xpress-options PUBLIC
+    ${PROJECT_SOURCE_DIR}/thirdparty/tinyxml2)
+  message(STATUS "Getting inside")
+endif()
+
+message(STATUS "Getting here")
 
 # Option BUILD_EXAMPLES
 option(BUILD_EXAMPLES "Build examples: nl reader, nl writer" ON)
