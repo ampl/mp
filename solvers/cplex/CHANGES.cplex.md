@@ -2,6 +2,12 @@ Summary of recent updates to CPLEX for AMPL
 ==============================================
 
 
+## unreleased
+- Allow standalone *mipdisplay=..*,
+  *lpdisplay=..*, *bardisplay=..* without
+  *outlev*.
+
+
 ## 20251015
 - Changes in MP
 - Fixed *multiobj=1/2* for a single objective.

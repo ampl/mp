@@ -907,7 +907,7 @@ void CplexBackend::ComputeIIS() {
   int status;
   int cs;
   int nr, nc, nr2, nc2;
-  static char* abort_reason[7] = {
+  static const char* abort_reason[7] = {
   "contradiction", "time limit", "iteration limit", "node limit",
   "objective limit", "memory limit", "user request" };
   
@@ -1617,6 +1617,8 @@ void CplexBackend::FinishOptionParsing() {
     GetSolverOption(CPX_PARAM_BARDISPLAY, bar);
     // GetSolverOption(CPXPARAM_MultiObjective_Display, mo);
     // GetSolverOption(CPX_PARAM_NETDISPLAY, netw);
+    if (storedOptions_.outlev_ < 0)
+      storedOptions_.outlev_ = 0;
     if (storedOptions_.outlev_ > 2)
       storedOptions_.outlev_ = 2;
     int olp[] = { 0, 1, 2 };
@@ -1638,6 +1640,8 @@ void CplexBackend::FinishOptionParsing() {
     if (lp || mip || bar
         // || mo || netw  -- no they are >0
         ) {
+      if (!storedOptions_.outlev_)
+        storedOptions_.outlev_ = 1;      // for setSilenceOutput()
       /* Log messages on screen */
       CPLEX_CALL(CPXsetintparam(env(), CPXPARAM_ScreenOutput, CPX_ON));
       /* Echo changed params before solve */
@@ -2334,7 +2338,7 @@ void CplexBackend::InitCustomOptions() {
     storedOptions_.numcores_, values_01_noyes_0default_);
 
   AddStoredOption("tech:outlev outlev",
-    "Whether to write CPLEX log lines (chatter) to stdout,"
+    "Whether to write CPLEX log lines (chatter) to stdout, "
     "for granular control see \"tech:lpdisplay\", \"tech:mipdisplay\", \"tech:bardisplay\". "
     "Values:\n"
     "\n.. value-table::\n",
