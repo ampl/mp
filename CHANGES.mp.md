@@ -2,6 +2,10 @@ Summary of recent updates to the AMPL MP Library
 ================================================
 
 
+## unreleased
+- Catch duplicated solver options
+
+
 ## 20251021
 - Option *cvt:expr:nlassign* adjusting expression
   inlining. Improves problem building performance

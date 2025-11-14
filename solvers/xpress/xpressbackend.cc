@@ -2031,7 +2031,7 @@ void XpressmpBackend::InitCustomOptions() {
   AddSolverOption("lp:dualgradient dualgradient",
     "dual simplex pricing strategy:\n"
     "\n.. value-table::\n",
-    XPRS_CRASH, values_lpdualgradient, -1);
+    XPRS_DUALGRADIENT, values_lpdualgradient, -1);
 
   AddSolverOption("lp:dualize dualize",
     "Whether to convert the primal problem to its dual and solve "
@@ -2132,7 +2132,7 @@ void XpressmpBackend::InitCustomOptions() {
     AddSolverOption("lp:primalunshift primalunshift",
       "Whether the primal alg. calls the dual to unshift:\n"
       "\n.. value-table::\n",
-      XPRS_PRICINGALG, values_01_noyes_1default_, 0);
+      XPRS_PRIMALUNSHIFT, values_01_noyes_1default_, 0);
 
     AddSolverOption("lp:relpivottol relpivottol",
       "Relative pivot tolerance; default = 1e-6",
@@ -2366,7 +2366,7 @@ AddSolverOption("mip:kappafreq mipkappafreq",
 AddSolverOption("mip:log miplog",
   "Frequency of printing MIP iteration log; default = -100."
   "Values n < 0 display detailed outputs every -n iterations.",
-  XPRS_LPLOG, -INT_MAX, INT_MAX);
+  XPRS_MIPLOG, -INT_MAX, INT_MAX);
 
 AddSolverOption("mip:presolve mippresolve",
   "Type of integer processing to be performed. "

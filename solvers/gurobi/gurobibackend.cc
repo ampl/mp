@@ -1776,7 +1776,7 @@ void GurobiBackend::InitCustomOptions() {
     GRB_INT_PAR_FLOWCOVERCUTS, PrmCutsMin, PrmCutsMax);
   AddSolverOption("cut:flowpath flowpath",
     "Overrides \"cuts\"; choices as for \"cuts\".",
-    GRB_INT_PAR_COVERCUTS, PrmCutsMin, PrmCutsMax);
+    GRB_INT_PAR_FLOWPATHCUTS, PrmCutsMin, PrmCutsMax);
   AddSolverOption("cut:gomory gomory",
     "Maximum number of Gomory cut passes during cut generation "
         "(-1 = default = no limit); overrides \"cuts\".",

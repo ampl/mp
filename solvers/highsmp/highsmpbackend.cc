@@ -672,7 +672,7 @@ void HighsBackend::InitCustomOptions() {
 
   AddSolverOption("alg:infinitebound infinitebound infinite_bound",
     "Limit on |constraint bound|: values larger than this will be treated as infinite (default: 1e20).",
-    "infinite_cost", 1e15, Infinity());
+    "infinite_bound", 1e15, Infinity());
 
   AddSolverOption("alg:infinitecoeff infinitecoeff large_matrix_value",
     "Upper limit on |matrix entries|: values larger than this will be treated as infinite (default: 1e15).",

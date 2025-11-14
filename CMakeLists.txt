@@ -351,6 +351,7 @@ add_prefix(MP_HEADERS include/mp/
   ampls-c-api.h ampls-cpp-api.h arrayref.h basic-expr-visitor.h
   backend-app.h backend-base.h backend-mip.h backend-std.h
   backend-to-model-api.h backend-with-mm.h backend-with-valcvt.h
+  backend-slvoptmap.h
   common.h converter-base.h
   easy-modeler.h
   env.h error.h expr.h expr-visitor.h
@@ -365,7 +366,7 @@ add_prefix(MP_HEADERS include/mp/
   utils-clock.h utils-file.h
   util-json-write.h util-json-write.hpp
   utils-hash.h utils-hash-stream.h
-  utils-string.h utils-math.h utils-matrix.h utils-vec.h)
+  utils-string.h utils-math.h utils-matrix.h utils-vec.h utils-templates.h)
 
 add_prefix(MP_FLAT_HEADERS include/mp/flat/
   backend_flat.h

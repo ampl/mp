@@ -24,8 +24,10 @@
 #include <chrono>
 #include <cmath>
 #include <functional>
+#include <unordered_map>
 
 #include "mp/backend-with-mm.h"
+#include "mp/backend-slvoptmap.h"
 
 /// Issue this if you redefine std feature switches
 #define USING_STD_FEATURES using BaseBackend::STD_FEATURE_QUERY_FN
@@ -738,6 +740,9 @@ private:
   using SlvOptionRecord = std::function<void(void)>;
   std::vector< SlvOptionRecord > slvOptionRecords_;
 
+  /// Solver option maps
+  SolverOptionMapManager solveroptmaps_;
+
 protected:
   // set to true in constructor to disable setting options 
   // while parsing them. They can be set later with ReplaySolverOptions
@@ -749,8 +754,14 @@ protected:
   void RecordSolverOption(SlvOptionRecord sor)
   { slvOptionRecords_.push_back(sor); }
   void ReplaySolverOptions() {
-    for (auto f: slvOptionRecords_)
+    for (auto& f: slvOptionRecords_)
       f();
+  }
+
+  /// Merge solver option
+  template <class Key, class Value>
+  void MergeSolverOption(const char* name0, const char* name1, const char* descr) {
+
   }
 
   /// Solver options accessor, facilitates calling
@@ -805,16 +816,18 @@ protected:
   void AddSolverOption(const char *name_list, const char *description,
                        KeyType k,
                        ValueType , ValueType ) {
+    solveroptmaps_.AddOptionRef<KeyType, ValueType>(k, name_list);
     AddOption(SolverOptionManager::OptionPtr(
-                new ConcreteOptionWrapper<
-                ValueType, KeyType>(
-                  (Impl*)this, name_list, description, k)));
+        new ConcreteOptionWrapper<
+            ValueType, KeyType>(
+            (Impl*)this, name_list, description, k)));
   }
 
   /// String-valued option
   template <class KeyType, class ValueType = std::string>
   void AddSolverOption(const char* name_list, const char* description,
     KeyType k) {
+    solveroptmaps_.AddOptionRef<KeyType, ValueType>(k, name_list);
     AddOption(SolverOptionManager::OptionPtr(
       new ConcreteOptionWrapper<
       ValueType, KeyType>(
@@ -827,6 +840,7 @@ protected:
   void AddSolverOption(const char* name_list, const char* description,
       KeyType k, ValueArrayRef values, ValueType defaultValue) {
     internal::Unused(defaultValue);
+    solveroptmaps_.AddOptionRef<KeyType, ValueType>(k, name_list);
     AddOption(SolverOptionManager::OptionPtr(
       new ConcreteOptionWrapper<
       ValueType, KeyType>(
@@ -840,6 +854,7 @@ protected:
                        KeyType k, ValueArrayRef values,
                        const char* defaultValue) {
     internal::Unused(defaultValue);
+    solveroptmaps_.AddOptionRef<KeyType, std::string>(k, name_list);
     AddOption(SolverOptionManager::OptionPtr(
                 new ConcreteOptionWrapper<
                 std::string, KeyType>(
