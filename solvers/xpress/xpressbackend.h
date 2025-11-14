@@ -22,11 +22,16 @@
 #include "mp/flat/backend_flat.h"
 #include "xpresscommon.h"
 
+#include "optprm.h"
+#include "nlprm.h"
+
 namespace mp {
 
 class XpressmpBackend :
     public FlatBackend< MIPBackend<XpressmpBackend> >,
-    public XpressmpCommon
+    public XpressmpCommon,
+    public CompiledOptimizerOptions<XpressmpBackend>,
+    public CompiledNonlinearOptions<XpressmpBackend>
 {
   using BaseBackend = FlatBackend< MIPBackend<XpressmpBackend> >;
 

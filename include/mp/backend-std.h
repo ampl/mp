@@ -758,12 +758,6 @@ protected:
       f();
   }
 
-  /// Merge solver option
-  template <class Key, class Value>
-  void MergeSolverOption(const char* name0, const char* name1, const char* descr) {
-
-  }
-
   /// Solver options accessor, facilitates calling
   /// backend_.Get/SetSolverOption()
   template <class Value, class Index>
@@ -807,6 +801,42 @@ protected:
     { }
   };
 
+  /// Merge solver option
+  void MergeSolverOption(
+      std::string name0, const char* name_list1, const char* descr) {
+    auto posspace = name0.find(' ');
+    if (std::string::npos != posspace)
+      name0.resize(posspace);
+    AddOptionSynonyms_Inline_Back(name_list1, name0.c_str());
+    ReplaceOptionDescription(name0.c_str(), descr);
+  }
+
+
+public:
+  /// Adding solver options with merging
+  template <class KeyType, class ValueType, class... Args>
+  void AddSolverOption_MergeDuplicates(const char *name_list, const char *description,
+                       KeyType k, ValueType vMin, Args... args) {
+    if (const auto name_list0 = solveroptmaps_.FindOption<KeyType, ValueType>(k)) {
+      MergeSolverOption(name_list0, name_list, description);
+    } else {
+      AddSolverOption(name_list, description, k, vMin, args...);
+    }
+  }
+
+  /// Adding solver options with merging: string
+  template <class KeyType>
+  void AddSolverOption_MergeDuplicates(const char *name_list, const char *description,
+                                       KeyType k) {
+    if (const auto name_list0 = solveroptmaps_.FindOption<KeyType, std::string>(k)) {
+      MergeSolverOption(name_list0, name_list, description);
+    } else {
+      AddSolverOption(name_list, description, k);
+    }
+  }
+
+
+protected:
   /// Adding solver options of types int/double/string/...
   /// The type is deduced from the two last parameters min, max
   /// (currently unused otherwise.)

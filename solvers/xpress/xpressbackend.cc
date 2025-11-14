@@ -1306,7 +1306,15 @@ std::string XpressmpBackend::DoXpressFixedModel()
     {"8", "product of 'up' and 'down' pseudo costs", 8}
   };
 
-  
+/// @note The AddSolverOptions()
+///   are complemented by those from
+///   optprm.h and nlprm.h,
+///   obtained from optimizerparams.xml and nonlinearparams.xml
+///   using parse-xpress-options
+///   (see BUILD_XPRESS_OPTION_PARSER).
+///
+/// @note Option names are synonymized,
+///   descriptions are replaced.
 void XpressmpBackend::InitCustomOptions() {
 
   set_option_header(
@@ -2677,6 +2685,10 @@ AddSolverOption("mip:varselection varselection",
 //  AddSolveResults({
 //                    { sol::NUMERIC, "failure: numeric issue, no feasible solution" }
 //                  });
+
+  // Adding compiled options, see BUILD_XPRESS_OPTION_PARSER
+  this->AddOptimizerOptions();
+  this->AddNonlinearOptions();
 }
 
 

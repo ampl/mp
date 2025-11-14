@@ -133,7 +133,7 @@ protected:
         "'\n/// on " + std::string(std::ctime(&tm_t)) +
         "///\n"
         "template <class Impl>\n"
-        "class " + classname + " {\n";
+        "class Compiled" + classname + "Options {\n";
     return hdr_.c_str();
   }
   /// Output file footer part
@@ -141,8 +141,8 @@ protected:
       const std::string& classname) {
     ftr_ =
         "  }  // Add" + classname + "Options()\n\n"
-                      "};  // class " + classname +
-        "\n\n"
+                      "};  // class Compiled" + classname +
+        "Options\n\n"
         "}  // namespace mp\n";
     return ftr_.c_str();
   }
@@ -189,11 +189,11 @@ protected:
         os << "      \"\\n\\nDefault: " << prm.default_ << "\"";
       os << ",\n"
          << "      ";
-      os << prm.NameMain() << ", ";
+      os << prm.NameMain();
       if ("double" == prm.type_)
-        os << "-DBL_MAX, DBL_MAX";
+        os << ", -DBL_MAX, DBL_MAX";
       else if ("integer" == prm.type_)
-        os << "INT_MIN, INT_MAX";
+        os << ", INT_MIN, INT_MAX";
       else if ("string" == prm.type_)
       {}
       else

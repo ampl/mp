@@ -2,6 +2,10 @@ Summary of recent updates to Xpress for AMPL
 ============================================
 
 
+## unreleased
+- Full list of Xpress options supported.
+
+
 ## 20251021
 - Changes in MP: option *cvt:expr:nlassign*.
 
