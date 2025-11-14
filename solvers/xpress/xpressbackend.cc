@@ -1313,6 +1313,9 @@ std::string XpressmpBackend::DoXpressFixedModel()
 ///   using parse-xpress-options
 ///   (see BUILD_XPRESS_OPTION_PARSER).
 ///
+/// @note Might add prefix XPRS_ to the params of optimizerparams.xml
+///   as the last argument of parse_xpress_options
+///
 /// @note Option names are synonymized,
 ///   descriptions are replaced.
 void XpressmpBackend::InitCustomOptions() {
@@ -1364,12 +1367,12 @@ void XpressmpBackend::InitCustomOptions() {
     "Limit on work units for different heuristics executed in parallel "
     "before the initial LP root relaxation is solved:\n"
     "\n.. value-table::\n",
-    XPRS_PREROOTWORKLIMIT, values_prerootwork,-1);
+    XPRS_PREROOTWORKLIMIT, values_prerootwork, -1.0);
   
-    AddSolverOption("mip:prerooteffort prerooteffort",
+    AddSolverOption("lim:prerooteffort prerooteffort mip:prerooteffort",
       "Dial for the work spent during the Pre-root parallel heuristic phase:\n"
       "\n.. value-table::\n",
-      XPRS_PREROOTEFFORT, values_prerooteffort, -1);
+      XPRS_PREROOTEFFORT, values_prerooteffort, -1.0);
 
   AddSolverOption("lim:work worklim worklimit",
     "Limit on work units, a hardware and platform independent "

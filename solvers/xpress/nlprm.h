@@ -5,12 +5,17 @@
 #include "mp/error.h"
 #include "mp/backend-std.h"
 
+extern "C" {
+  #include "xprs.h"
+  #include "xslp.h"
+}
+
 
 namespace mp {
 
 /// A mix-in class to add Xpress parameters.
 /// Translated from '../mp/solvers/xpress/nlprm.h'
-/// on Fri Nov 14 16:36:46 2025
+/// on Fri Nov 14 22:39:11 2025
 ///
 template <class Impl>
 class CompiledNonlinearOptions {

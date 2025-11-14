@@ -146,6 +146,7 @@ public:  // public for static polymorphism
   // even for -v command line switch, as we need it to get the version number
   void Init(char** argv) override;
 
+  /// See implementation on how to compile full params list
   void InitCustomOptions() override;
   bool IsMIP() const override {
     return BaseBackend::IsMIP()

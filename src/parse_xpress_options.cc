@@ -64,12 +64,17 @@ public:
 
 /// Param list translator
 class ParamListTranslator {
+  std::string key_prefix_;
+
   std::ofstream ofs_;
   std::string filename_, classname_, hdr_, ftr_;
 
   std::map<std::string, Param> params_;
   std::map<std::string, int> prefixes_;
 public:
+  /// Construct
+  ParamListTranslator(const char* prefix)
+      : key_prefix_(prefix ? prefix : "") { }
   /// Start output
   bool Start(const char* filename, const char* classname) {
     classname_ = classname;
@@ -93,11 +98,13 @@ public:
 
   /// Add new parameter
   void AddParam(Param prm) {
-    if (params_.end() != params_.find(prm.NameMain())) {
+    auto name_w_pref = key_prefix_ + prm.NameMain();
+    if (params_.end() != params_.find(name_w_pref)) {
       RAISE( "parameter '"
-            << prm.NameMain() << "' repeated.");
+            << name_w_pref << "' repeated.");
     }
-    params_[prm.NameMain()] = std::move(prm);
+    prm.name_main_ = name_w_pref;
+    params_[name_w_pref] = std::move(prm);
   }
 
 protected:
@@ -121,11 +128,16 @@ protected:
     hdr_ =
         "#include <climits>\n"
         "#include <cfloat>\n"
-        "\n"
+          "\n"
         "#include \"mp/common.h\"\n"
         "#include \"mp/error.h\"\n"
         "#include \"mp/backend-std.h\"\n"
-        "\n\n"
+           "\n"
+        "extern \"C\" {\n"
+        "  #include \"xprs.h\"\n"
+        "  #include \"xslp.h\"\n"
+        "}\n"
+           "\n\n"
         "namespace mp {\n"
         "\n"
         "/// A mix-in class to add Xpress parameters.\n"
@@ -315,6 +327,7 @@ std::string GetText(BasicTreeWalker& wlk) {
   std::replace(txt.begin(), txt.end(), '\n', ' ');
   // Replace all '\r' characters with spaces
   std::replace(txt.begin(), txt.end(), '\r', ' ');
+  std::replace(txt.begin(), txt.end(), '"', '\'');   //  " -> '
   return txt;
 }
 
@@ -453,7 +466,8 @@ int main(int argc, const char** argv) {
   if (argc<4)
     RAISE( "Provide an XML parameter database file,\n"
           "an output C++ header file,\n"
-          "and a mix-in class name." );
+          "a mix-in class name,\n"
+          "and optionally a common key prefix, such as XPRS_." );
 
   std::cout << "Processing XML parameter database file '"
             << argv[1] << "' ..." << std::endl;
@@ -463,7 +477,7 @@ int main(int argc, const char** argv) {
     if ( std::strcmp("paramList", pwlk->GetName()) )
       RAISE("Unknown top-level entry: " << pwlk->GetName());
 
-    mp::ParamListTranslator plt;
+    mp::ParamListTranslator plt(argv[4]);
     if (plt.Start(argv[2], argv[3])) {
 
       mp::ParamListHandler prmlh(plt);  // to handle individual <param>s
@@ -472,6 +486,9 @@ int main(int argc, const char** argv) {
       std::cout << "Writing header file '"
                 << argv[2] << "' with mix-in class '"
                 << argv[3] << "' ..." << std::endl;
+      if (argv[4])
+        std::cout << "   (Key name prefix '" << argv[4]
+                  << "' applied)" << std::endl;
     }
   } else
     RAISE("Error reading input file");
