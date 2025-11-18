@@ -1721,10 +1721,6 @@ void GurobiBackend::InitCustomOptions() {
       "PDHG absolute feasibility tolerance (default 1e-6; should be in [1e-9, 1e-2]).",
       GRB_DBL_PAR_PDHGABSTOL, 1e-9, 1e-2);
 
-  AddSolverOption("alg:pdhgabstol alg:pdhgfeastol pdhgabstol pdhgfeastol",
-      "PDHG absolute feasibility tolerance (default 1e-6; should be in [1e-9, 1e-2]).",
-      GRB_DBL_PAR_PDHGABSTOL, 1e-9, 1e-2);
-
   AddSolverOption("alg:pdhgreltol pdhgreltol",
       "PDHG relative feasibility tolerance (default 1e-6; set it to 0 to use only pdhgabstol).",
       GRB_DBL_PAR_PDHGRELTOL, 0.0, Infinity());
