@@ -1900,7 +1900,7 @@ void GurobiBackend::InitCustomOptions() {
                   "Controls whether and how to warm-start LP optimization, "
                   "see options alg:basis and alg:start:\n"
                   "\n.. value-table::",
-                  GRB_INT_PAR_LPWARMSTART, values_lpwarmstart_, 1);
+                  GRB_INT_PAR_LPWARMSTART, values_lpwarmstart_, -1);
 
 
   AddSolverOption("lp:degenmoves degenmoves",
