@@ -195,8 +195,6 @@ protected:
     }
 
   };
-  std::unordered_map<std::string, SuffixStorer> multiobj_option_values_;
-  std::vector<std::pair<int, std::vector<int>>> multiobj_option_map_;
 
   void ReadMultiObjectiveOptions() {
       std::string prefix = "option_";
@@ -231,15 +229,21 @@ protected:
       }
   }
   
-  void SetMultiObjectiveOptions(int npass) {
-    auto obj_numbers = multiobj_option_map_[npass].second;
-    int objn;
+  void CheckMultiObjectiveOptions(int npass) {
+    const auto& obj_numbers = multiobj_pass_map_[npass].second;
     for (const auto& [key, suffix_map] : multiobj_option_values_) {
-        if (!suffix_map.CheckIfValidPass(obj_numbers))
-            throw std::runtime_error(fmt::format("Inconsistent {} values for pass {} "
-                "(objectives with priority {})", key, npass+1, multiobj_option_map_[npass].first));
-        objn = multiobj_option_map_[npass].second[0];
-      
+      if (!suffix_map.CheckIfValidPass(obj_numbers))
+        throw std::runtime_error(
+            fmt::format("Inconsistent '{}' values for multi-objective pass {} "
+                        "(objectives with priority {})",
+                        key, npass+1, multiobj_pass_map_[npass].first));
+    }
+  }
+
+  void SetMultiObjectiveOptions(int npass) {
+    const auto& obj_numbers = multiobj_pass_map_[npass].second;
+    for (const auto& [key, suffix_map] : multiobj_option_values_) {
+        auto objn = obj_numbers.at(0);
         if (suffix_map.IsDouble()) {
             MPD(GetEnv()).SetDblOption(key.c_str(), suffix_map.GetDoubleValue(objn));
             if (MPD(GetEnv()).verbose_mode())
@@ -283,7 +287,8 @@ protected:
     obj_new_tola_.reserve(pr_map.size());
     obj_new_tolr_.reserve(pr_map.size());
     for (const auto& pr_level: pr_map) {
-      multiobj_option_map_.push_back(std::make_pair(pr_level.first, pr_level.second));
+      multiobj_pass_map_.push_back(std::make_pair(pr_level.first, pr_level.second));
+      CheckMultiObjectiveOptions(multiobj_pass_map_.size()-1);
       const auto& i0_vec = pr_level.second;
       const auto& obj_orig_1st = obj_orig.at(i0_vec.front());
       const auto objwgt_1st = objwgt.at(i0_vec.front());
@@ -452,6 +457,11 @@ private:
   std::vector<QuadraticObjective> obj_new_;     // ranked aggregated objectives
   std::vector<double> obj_new_tola_;
   std::vector<double> obj_new_tolr_;
+  std::unordered_map<std::string, SuffixStorer>
+      multiobj_option_values_;
+  std::vector< std::pair<int, std::vector<int> > >
+      multiobj_pass_map_;
+
   int i_current_obj_ {-1};
   double objval_last_ {};
 };
