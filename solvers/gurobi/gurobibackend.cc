@@ -845,6 +845,10 @@ int GurobiBackend::BarrierIterations() const {
   return GrbGetIntAttr(GRB_INT_ATTR_BARITERCOUNT, &f);
 }
 
+double GurobiBackend::PDHGIterations() const {
+    bool f;
+    return GrbGetDblAttr(GRB_DBL_ATTR_PDHGITERCOUNT, &f);
+}
 
 void GurobiBackend::Swap_0_vs_minus1(std::vector<int>& arr) {
   for (auto& v: arr)
@@ -1105,6 +1109,11 @@ void GurobiBackend::AddGurobiMessage() {
   if (si>0)
     AddToSolverMessage(
       fmt::format("{} barrier iteration{}\n", si, suffix));
+  si = PDHGIterations();
+  suffix = si == 1 ? "" : "s";
+  if (si > 0)
+      AddToSolverMessage(
+          fmt::format("{} PDHG iteration{}\n", si, suffix));
   si = NodeCount();
   suffix = si == 1 ? "" : "s";
   if (si>0)
@@ -1293,10 +1302,14 @@ std::pair<int, std::string> GurobiBackend::GetSolveResult() {
     return { sol::UNKNOWN, "unknown solution status" };
   case GRB_OPTIMAL:
     return { sol::SOLVED, "optimal solution" };
+  case GRB_LOCALLY_OPTIMAL:
+      return { sol::SOLVED+1, "locally optimal solution" };
   case GRB_SUBOPTIMAL:
     return { sol::UNCERTAIN, "suboptimal solution, can be infeasible" };
   case GRB_INFEASIBLE:
     return { sol::INFEASIBLE, "infeasible problem" };
+  case GRB_LOCALLY_INFEASIBLE:
+    return { sol::INFEASIBLE + 5, "locally infeasible problem" };
   case GRB_INF_OR_UNBD:
     return { sol::LIMIT_INF_UNB, "infeasible or unbounded problem. "
                                 "Set dualreductions=0 "
@@ -1429,6 +1442,15 @@ static const mp::OptionValueInfo values_iismethod[] = {
   { "1", "Can find a smaller IIS than method 0", 1},
   { "2", "Ignore the bound constraints.", 2},
 };
+static const mp::OptionValueInfo values_optimalitytarget [] = {
+  {"-1", "Automatic (default)", -1},
+  { "0", "Global optimum", 0},
+  { "1", "Local optimum via nonlinear barrier algorithm (preview). "
+         "Note that this provides no optimality gap and can be applied "
+         "only to models with no discrete variables and no nondifferentiable "
+         "functions", 1},
+};
+
 
 static const mp::OptionValueInfo values_infproofcuts[] = {
   {"-1", "Automatic choice (default)", -1},
@@ -1444,7 +1466,8 @@ static const mp::OptionValueInfo values_method[] = {
   { "2", "Barrier", 2},
   { "3", "Nondeterministic concurrent (several solves in parallel)", 3},
   { "4", "Deterministic concurrent", 4},
-  { "5", "Deterministic concurrent simplex.", 5}
+  { "5", "Deterministic concurrent simplex.", 5},
+ {"6", "PDHG (Primal-Dual Hybrid Gradient)", 6}
 };
 static const mp::OptionValueInfo values_concurrentmethod[] = {
    { "-1", "Automatic (default)", -1},
@@ -1694,6 +1717,32 @@ void GurobiBackend::InitCustomOptions() {
   AddToOptionDescription("alg:rays",
                          "Only applies to LP models.");
 
+  AddSolverOption("alg:pdhgabstol alg:pdhgfeastol pdhgabstol pdhgfeastol",
+      "PDHG absolute feasibility tolerance (default 1e-6; should be in [1e-9, 1e-2]).",
+      GRB_DBL_PAR_PDHGABSTOL, 1e-9, 1e-2);
+
+  AddSolverOption("alg:pdhgabstol alg:pdhgfeastol pdhgabstol pdhgfeastol",
+      "PDHG absolute feasibility tolerance (default 1e-6; should be in [1e-9, 1e-2]).",
+      GRB_DBL_PAR_PDHGABSTOL, 1e-9, 1e-2);
+
+  AddSolverOption("alg:pdhgreltol pdhgreltol",
+      "PDHG relative feasibility tolerance (default 1e-6; set it to 0 to use only pdhgabstol).",
+      GRB_DBL_PAR_PDHGRELTOL, 0.0, Infinity());
+
+  AddSolverOption("alg:pdhgconvtol pdhgconvtol",
+      "PDHG convergence tolerance. PDHG terminates if the relative difference between "
+      "primal and dual objective values is less than this value and if the solution "
+      "respects the feasibility tolerance (see alg:pdhgabstol) (default 1e-6).",
+      GRB_DBL_PAR_PDHGCONVTOL, 0.0, 1.0);
+
+
+
+
+  AddSolverOption("alg:pdhggpu pdhggpu",
+      "Enables PDHG on GPU on compatible systems (preview):\n"
+      "\n.. value-table::\n", GRB_INT_PAR_PDHGGPU, values_autonoyes_, -1);
+
+
   AddOptionSynonyms_OutOfLine("alg:infunbdinfo infunbdinfo InfUnbdInfo", "alg:rays");
 
   AddSolverOption("bar:convtol barconvtol",
@@ -1829,6 +1878,11 @@ void GurobiBackend::InitCustomOptions() {
   AddSolverOption("lim:iter iterlim iterlimit",
     "Iteration limit (default: no limit).",
     GRB_DBL_PAR_ITERATIONLIMIT, 0.0, DBL_MAX);
+
+
+  AddSolverOption("lim:pdhgiter pdhgiter pdhgiterlimit",
+      "Iteration limit (default: no limit).",
+      GRB_DBL_PAR_PDHGITERLIMIT, 0.0, DBL_MAX);
 
   AddSolverOption("lim:minrelnodes minrelnodes",
     "Number of nodes for the Minimum Relaxation heuristic to "
@@ -2010,6 +2064,13 @@ void GurobiBackend::InitCustomOptions() {
     "Fraction of time to spend in MIP heuristics (default 0.05).",
     GRB_DBL_PAR_HEURISTICS, 0.05, 1.0);
 
+
+  AddSolverOption("alg:optimalitytarget optimalitytarget",
+      "Specifies the optimality target for nonlinear continuous problems (NLP):\n"
+      "\n.. value-table::\n",
+      GRB_INT_PAR_OPTIMALITYTARGET, values_optimalitytarget, -1);
+
+
   AddSolverOption("alg:iismethod iismethod",
     "Which method to use when finding an IIS (irreducible infeasible "
     "set of constraints, including variable bounds):\n"
@@ -2083,18 +2144,26 @@ void GurobiBackend::InitCustomOptions() {
     "Algorithm used to solve relaxed MIP node problems:\n"
     "\n.. value-table::\n", GRB_INT_PAR_NODEMETHOD, values_nodemethod, -1);
 
+
+  AddSolverOption("mip:norelheursolutions norelheursolutions",
+      "Limits the number of solutions found by the NoRel heuristic "
+      "(default 0 - no limit)",
+      GRB_INT_PAR_NORELHEURSOLUTIONS, 0, INT_MAX);
+
+
   AddSolverOption("mip:norelheurtime norelheurtime",
     "Limits the amount of time (in seconds) spent in the NoRel heuristic; "
     "see the description of \"norelheurwork\" for details.  This "
     "parameter will introduce nondeterminism; use \"norelheurwork\" "
-    "for deterministic results.  Default 0.",
+    "for deterministic results (default 0 - no limit)",
     GRB_DBL_PAR_NORELHEURTIME, 0.0, DBL_MAX);
 
   AddSolverOption("mip:norelheurwork norelheurwork",
     "Limits the amount of work spent in the NoRel heuristic. "
     "This heuristic searches for high-quality feasible solutions "
     "before solving the root relaxation.  The work metrix is hard "
-    "to define precisely, as it depends on the machine.  Default 0.",
+    "to define precisely, as it depends on the machine (default 0 - "
+    "no limit",
     GRB_DBL_PAR_NORELHEURWORK, 0.0, DBL_MAX);
 
 
@@ -2615,8 +2684,9 @@ void GurobiBackend::InitCustomOptions() {
 
 
   AddSolverOption("tech:threads threads",
-      "How many threads to use when using the barrier algorithm "
-      "or solving MIP problems; default 0 ==> automatic choice.",
+      "How many threads to apply to parallel algorithms (concurrent LP, "
+      "parallel barrier, parallel MIP, etc) Default 0 - automatic (max 32), use "
+      "-1 to use as many threads as detected virtual processor",
       GRB_INT_PAR_THREADS, 0, GRB_MAXINT);
 
   AddStoredOption("tech:tunebase tunebase",
@@ -2710,6 +2780,9 @@ void GurobiBackend::InitCustomOptions() {
   /////////////////////// Gurobi custom solve results /////////////////////////
   /// Don't replace major codes, only custom ones
   AddSolveResults({
+                    { sol::SOLVED + 1, "locally optimal solution"}, // for NL barrier in grb 13
+                    { sol::INFEASIBLE+ 5, "locally infeasible solution"}, // for NL barrier in grb 13
+
                     { sol::LIMIT_FEAS_ITER, "iteration limit, feasible solution" },
                     { sol::LIMIT_NO_FEAS_ITER, "iteration limit, without a feasible soluton" },
                     { sol::LIMIT_FEAS_NODES, "node limit, feasible solution" },
