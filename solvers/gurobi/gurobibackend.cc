@@ -1456,10 +1456,11 @@ static const mp::OptionValueInfo values_optimalitytarget [] = {
   {"-1", "Automatic (default)", -1},
   { "0", "Global optimum", 0},
   { "1", "Local optimum via nonlinear barrier algorithm (preview). "
+          "See nlbar:... options. "
          "Note that this provides no optimality gap and can be applied "
          "only to models with no discrete variables (set alg:relax=1 "
          "if needed) and no nondifferentiable "
-         "functions", 1},
+         "functions.", 1},
 };
 
 
@@ -1471,13 +1472,13 @@ static const mp::OptionValueInfo values_infproofcuts[] = {
 };
 
 static const mp::OptionValueInfo values_method[] = {
-  { "-1", "Automatic (default): 3 for LP, 2 for QP, 1 for MIP", -1},
+  { "-1", "Automatic (default): 3 for LP, 2 for QP, 1/4/5 for MIP", -1},
   { "0", "Primal simplex", 0},
   { "1", "Dual simplex", 1},
   { "2", "Barrier", 2},
   { "3", "Nondeterministic concurrent (several solves in parallel)", 3},
   { "4", "Deterministic concurrent", 4},
-  { "5", "Deterministic concurrent simplex.", 5},
+  { "5", "Deterministic concurrent simplex (deprecated; use concurrentmethod).", 5},
   {"6", "PDHG (Primal-Dual Hybrid Gradient)", 6}
 };
 static const mp::OptionValueInfo values_concurrentmethod[] = {
@@ -1796,10 +1797,12 @@ void GurobiBackend::InitCustomOptions() {
   ////////////////// NLBAR ////////////////////////
   AddSolverOption("nlbar:iterlim nlbariterlim lim:nlbariter",
                   "Limits the number of barrier NL iterations performed "
-                  "(default 1000).", GRB_INT_PAR_NLBARITERLIMIT, 0, INT_MAX);
+                  "(default 1000).",
+                  GRB_INT_PAR_NLBARITERLIMIT, 0, INT_MAX);
 
   AddSolverOption("nlbar:cfeastol nlbarcfeastol",
-                  "For the NL barrier algorithm, the complementarity error must be "
+                  "For the NL barrier algorithm (set alg:optimalitytarget), "
+                  "the complementarity error must be "
                   "smaller in order for a model to be declared locally optimal. "
                   "Due to problem transformations like presolve or internal scaling, "
                   "the returned solution’s residuals may deviate from those "
@@ -1875,7 +1878,7 @@ void GurobiBackend::InitCustomOptions() {
 
   AddSolverOption("cut:masterkp masterkpcuts",
                   "MIPsep cuts: overrides \"cuts\"; choices as for \"cuts\".",
-                  GRB_INT_PAR_MIPSEPCUTS, PrmCutsMin, PrmCutsMax);
+                  GRB_INT_PAR_MASTERKNAPSACKCUTS, PrmCutsMin, PrmCutsMax);
   AddSolverOption("cut:mipsep mipsepcuts",
                   "MIPsep cuts: overrides \"cuts\"; choices as for \"cuts\".",
                   GRB_INT_PAR_MIPSEPCUTS, PrmCutsMin, PrmCutsMax);
@@ -2153,7 +2156,7 @@ void GurobiBackend::InitCustomOptions() {
                   "(default Infinity).",
                   GRB_DBL_PAR_STARTTIMELIMIT, 0.0, DBL_MAX);
 
-  AddSolverOption("mip:starttimelim starttimelim lim:starttime",
+  AddSolverOption("mip:startworklim startworklim lim:startwork",
                   "This parameter limits the total work (in work units) spent on "
                   "completing a partial MIP start "
                   "(default Infinity).",

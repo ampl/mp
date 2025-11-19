@@ -51,14 +51,11 @@ controlling solver behavior and information flow.
   control the overall solving strategy and emphasis
 
 * Options
-  :ref:`numericfocus/numericalemphasis, intfocus, refineops <ampl-solver-options>` -
+  :ref:`presolve, numericfocus/numericalemphasis, scale, intfocus, refineops <ampl-solver-options>` -
   control the numerical emphasis
 
 * Options :ref:`feastol, inttol <ampl-solver-options>` -
   control desired feasibility and integrality tolerances
-
-* Option :ref:`scale <ampl-solver-options>` -
-  controls coefficient scaling for numerical stability
 
 * Option :ref:`cvt:bigM <ampl-solver-options>` -
   sets universal bounds on variables in logical expressions;
