@@ -25,6 +25,7 @@
 
 #include <vector>
 #include <string>
+#include <string_view>
 
 namespace mp {
 
@@ -41,10 +42,10 @@ const char* SkipToMatchingQuote(const char* s);
 std::vector<std::string> split_string(const char* );
 
 /// begins_with
-bool begins_with(std::string const& fullString, std::string const& start);
+bool begins_with(std::string_view fullString, std::string_view start);
 
 /// https://stackoverflow.com/questions/874134/find-out-if-string-ends-with-another-string-in-c
-bool ends_with(std::string const& fullString, std::string const& ending);
+bool ends_with(std::string_view fullString, std::string_view ending);
 
 
 /// Split string

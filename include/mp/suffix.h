@@ -121,11 +121,12 @@ class SuffixBase {
   /// Or's the kind with a given int argument
   void or_kind(int flg) { impl_->kind |= flg; }
 
+  /// Size
   int num_values() const { return impl_->num_values; }
 
-  /// Don't use
+  /// Use for int or double
   template <class T>
-  ArrayRef<T> get_values() const { assert(0); return {}; }
+  ArrayRef<T> get_values() const;
 
   const SuffixTable& table() const { return impl_->table; }
 
@@ -178,6 +179,7 @@ class Suffix : private internal::SuffixBase {
   using SuffixBase::name;
   using SuffixBase::kind;
   using SuffixBase::num_values;
+  using SuffixBase::get_values;
   using SuffixBase::table;
   using SuffixBase::impl;
   using SuffixBase::operator SafeBool;

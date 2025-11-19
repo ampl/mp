@@ -126,142 +126,148 @@ public:
 
 
 protected:
-  class SuffixStorer {
-    std::unordered_map<int, double> values_;
-  public:
-    struct OptValue {
-      int v;
-      double d;
-      bool isdouble;
+  /// A single value of a suffix
+  class SuffixValue {
+    union {
+      int val_int_;
+      double val_dbl_;
     };
-    void Visit(int index, double value)
-    {
-      values_[index] = value;
+    int status_ {0};  // 0: unset, -1: int, 1: double
+  public:
+    /// Stores a value?
+    bool HasValue() const { return status_; }
+    /// Is a double?
+    bool IsDouble() const { return status_>0; }
+    /// Is an int?
+    bool IsInt() const { return status_<0; }
+    /// Get double
+    double GetDouble() const { assert(IsDouble()); return val_dbl_; }
+    /// Get int
+    int GetInt() const { assert(IsInt()); return val_int_; }
+    /// Set as double
+    void SetDouble(double d) {
+      val_dbl_ = d;
+      status_ = 1;
     }
-    OptValue defValue;
-       void SetDefault(int v) {
-      defValue = { v, -1, 0 };
+    /// Set as int
+    void SetInt(int d) {
+      val_int_ = d;
+      status_ = -1;
     }
-    void SetDefault(double v) {
-      defValue = { -1, v, 1 };
-    }
-
-    int GetIntValue(int nobj) const {
-      if (!defValue.isdouble)
-        throw std::runtime_error("Should not happened. Accessing multiobjective double option as integer.");
-      auto it = values_.find(nobj);
-      if (it != values_.end())
-        return static_cast<int>(it->second);
-      else
-        return defValue.v;
-    }
-    double GetDoubleValue(int nobj) const {
-      auto it = values_.find(nobj);
-      if (it != values_.end())
-        return it->second;
-      else
-        return defValue.d;
-    }
-    bool IsDouble() const {
-      return defValue.isdouble;
-    }
-
-    /// Check if the option values are consistent (relevant in case of blended obj).
-    /// If, for a blended objective pass, all option values are the same, or all are non
-    /// set but one, then we are in a consistent state. Otherwise we are not.
-    bool CheckIfValidPass(const std::vector<int>& objs) const {
-        double dvalue = 0.0, cdvalue = 0.0;
-        int ivalue = 0, civalue=0;
-        auto it = objs.begin();
-
-        if (IsDouble())
-            dvalue = GetDoubleValue(*it);
-        else
-            ivalue = GetIntValue(*it);
-        for (++it; it != objs.end(); ++it) {
-            int o = *it;
-            if (IsDouble()) {
-                cdvalue = GetDoubleValue(o);
-                if (cdvalue == defValue.d) continue;
-                if ((dvalue != defValue.d) && (cdvalue != dvalue))
-                    return false;
-                if (dvalue == defValue.d) dvalue = cdvalue;
-            }
-            else {
-                civalue = GetIntValue(o);
-                if (civalue == defValue.v) continue;
-                if ((ivalue != defValue.v) && (civalue != ivalue))
-                    return false;
-                if (ivalue == defValue.v) ivalue = civalue;
-            }
-        }
-        return true;
-    }
-
   };
 
+
+  /// A map to store MO pass options
+  using MOPassOptionMap
+      = std::unordered_map<std::string_view, SuffixValue>;
+
   void ReadMultiObjectiveOptions() {
-      std::string prefix = "option_";
-      auto& sufs = MPD(Suffixes(suf::OBJ));
+    assert(multiobj_pass_map_.size());
+    for (const auto& pr_level: multiobj_pass_map_) {
+      multiobj_pass_list_.push_back(
+          std::pair(pr_level.first, pr_level.second));
+    }
 
-      for (auto s : sufs) {
-          if (!begins_with(s.name(), prefix))
-              continue;
+    const std::string_view prefix { "option_" };
+    const auto& sufs = MPD(Suffixes(suf::OBJ));
 
-          SuffixStorer storer;
-          s.VisitValues(storer); // Get ALL the objectives values
+    for (const auto& s: sufs) {
+      if (!begins_with(s.name(), prefix))
+        continue;
 
-          std::string_view name(s.name());
-          std::string opname = std::string(name.substr(prefix.size()));
-          try {
-              double dv = MPD(GetEnv()).GetDblOption(opname.data());
-              storer.SetDefault(dv);
-              multiobj_option_values_[opname] = std::move(storer);;
-          }
-          catch (...) {
-              try {
-                  int iv = MPD(GetEnv()).GetIntOption(opname.data());
-                  storer.SetDefault(iv);
-                  multiobj_option_values_[opname] = std::move(storer);
-              }
-              catch (...) {
-                  throw std::runtime_error(fmt::format(
-                      "Option not found: {}, check suffix {}\n", opname, s.name()));
-              }
-          }
+      ArrayRef<int> values_int;
+      ArrayRef<double> values_double;
+      if (s.kind() & suf::FLOAT) {
+        values_double = s.template get_values<double>();
+        assert(values_double.size() == MPCD( get_objectives() ).size());
+      } else {
+        values_int = s.template get_values<int>();
+        assert(values_int.size() == MPCD( get_objectives() ).size());
       }
-  }
-  
-  void CheckMultiObjectiveOptions(int npass) {
-    const auto& obj_numbers = multiobj_pass_list_[npass].second;
-    for (const auto& [key, suffix_map] : multiobj_option_values_) {
-      if (!suffix_map.CheckIfValidPass(obj_numbers))
-        throw std::runtime_error(
-            fmt::format("Inconsistent '{}' values for multi-objective pass {} "
-                        "(objectives with priority {})",
-                        key, npass+1, multiobj_pass_list_[npass].first));
+
+      std::string_view name(s.name());
+      std::string_view opname = name.substr(prefix.size());
+      SuffixValue val_default_ {};
+
+      // GetSolverOption() should throw, or we emulate it in SolverOptionAccessor
+      try {
+        val_default_.SetDouble( MPD(GetEnv()).GetDblOption(opname.data()) );
+      }
+      catch (...) {
+        try {
+          val_default_.SetInt( MPD(GetEnv()).GetIntOption(opname.data()) );
+          if (values_double.size())
+            MP_RAISE(fmt::format(
+                "Option is integer: {},\n  but real-valued "
+                "objective suffix {} provided\n", opname.data(), s.name()));
+        }
+        catch (...) {
+          MP_RAISE(fmt::format(
+              "Option not found or not numeric: {},\n"
+              "  check objective suffix {}\n", opname.data(), s.name()));
+        }
+      }
+
+      for (int iPass=0; iPass < (int)multiobj_pass_list_.size(); ++iPass) {
+        const auto& objs = multiobj_pass_list_[iPass].second;
+        assert(objs.size());
+        SuffixValue val_opt {};
+        for (int io: objs) {
+          if (val_default_.IsDouble()) {
+            if (auto val_current =       // AMPL suffix value must be non-0
+                values_double.size() ? values_double[io] : (double)values_int[io]) {
+              if (val_opt.HasValue()
+                  && val_opt.GetDouble() != val_current)
+                MP_RAISE(
+                    fmt::format("Inconsistent '{}' values\n  for multi-objective pass {}\n  "
+                                "(objectives with priority {})",
+                                s.name(), iPass+1, multiobj_pass_list_[iPass].first));
+              val_opt.SetDouble(val_current);
+            }
+          } else {
+            assert(val_default_.IsInt());
+            assert(values_int.size());
+            if (int val_current = values_int[io]) {
+              if (val_opt.HasValue()
+                  && val_opt.GetInt() != val_current)
+                MP_RAISE(
+                    fmt::format("Inconsistent '{}' values\n  for multi-objective pass {}\n  "
+                                "(objectives with priority {})",
+                                s.name(), iPass+1, multiobj_pass_list_[iPass].first));
+              val_opt.SetInt(val_current);
+            }
+          }
+        }
+        if (val_opt.HasValue())
+          pass_opt_maps_[iPass][opname] = val_opt;       // save option value for this pass
+      }
     }
   }
-
+  
   void SetMultiObjectiveOptions(int npass) {
-    const auto& obj_numbers = multiobj_pass_list_[npass].second;
-    for (const auto& [key, suffix_map] : multiobj_option_values_) {
-        auto objn = obj_numbers.at(0);
-        if (suffix_map.IsDouble()) {
-            MPD(GetEnv()).SetDblOption(key.c_str(), suffix_map.GetDoubleValue(objn));
-            if (MPD(GetEnv()).verbose_mode())
-                    fmt::print("Setting {} to {}\n", key.c_str(), suffix_map.GetDoubleValue(objn));
+    if (pass_opt_maps_.end() != pass_opt_maps_.find(npass)) {
+      assert(pass_opt_maps_[npass].size());
+      for (const auto& sufval: pass_opt_maps_[npass]) {
+        if (sufval.second.IsDouble()) {
+          if (MPD(GetEnv()).verbose_mode())
+            fmt::print("  Setting {} to {}\n",
+                       sufval.first.data(), sufval.second.GetDouble());
+          MPD(GetEnv()).SetDblOption(
+              sufval.first.data(), sufval.second.GetDouble());
         }
         else {
-            MPD(GetEnv()).SetIntOption(key.c_str(), suffix_map.GetIntValue(objn));
-            if (MPD(GetEnv()).verbose_mode())
-                fmt::print("Setting {} to {}\n", key.c_str(), suffix_map.GetIntValue(objn));
+          assert(sufval.second.IsInt());
+          if (MPD(GetEnv()).verbose_mode())
+            fmt::print("  Setting {} to {}\n",
+                       sufval.first.data(), sufval.second.GetInt());
+          MPD(GetEnv()).SetIntOption(
+              sufval.first.data(), sufval.second.GetInt());
         }
+      }
     }
   }
 
   void SetupMultiObjectiveOptions() {
-    ReadMultiObjectiveOptions();
     const auto& obj_orig = MPD( get_objectives() );   // no linking
     ///////////////// Read / set default suffixes ///////////////////
     std::vector<int> objpr = MPD( ReadIntSuffix( {"objpriority", suf::OBJ} ) );  // int only
@@ -272,10 +278,7 @@ protected:
     for (int i=0; i<objpr.size(); ++i)
       multiobj_pass_map_[objpr[i]].push_back(i);
 
-    for (const auto& pr_level: multiobj_pass_map_) {
-      multiobj_pass_list_.push_back(std::make_pair(pr_level.first, pr_level.second));
-      CheckMultiObjectiveOptions(multiobj_pass_list_.size()-1);
-    }
+    ReadMultiObjectiveOptions();
   }
 
   void SetupMultiobjEmulation() {
@@ -470,12 +473,11 @@ private:
   std::vector<QuadraticObjective> obj_new_;     // ranked aggregated objectives
   std::vector<double> obj_new_tola_;
   std::vector<double> obj_new_tolr_;
-  std::unordered_map<std::string, SuffixStorer>
-      multiobj_option_values_;
   std::vector< std::pair<int, std::vector<int> > >
       multiobj_pass_list_;
   std::map<int, std::vector<int>, std::greater<int> >
       multiobj_pass_map_;      // Decreasing order
+  std::unordered_map<int, MOPassOptionMap> pass_opt_maps_;
 
   int i_current_obj_ {-1};
   double objval_last_ {};

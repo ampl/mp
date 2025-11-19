@@ -23,6 +23,7 @@
 
 #include <chrono>
 #include <cmath>
+#include <limits>
 #include <functional>
 #include <unordered_map>
 
@@ -770,7 +771,13 @@ protected:
     /// Options setup
     Value get(const SolverOption& , Index i) const {
       Value v;
+      if constexpr (std::numeric_limits<Value>::has_quiet_NaN)
+        v = std::numeric_limits<Value>::quiet_NaN();
       backend_.GetSolverOption(i, v);
+      if constexpr (std::numeric_limits<Value>::has_quiet_NaN)
+        if (std::isnan(v))
+          MP_RAISE(
+              fmt::format("Failed to retrieve solver option {}", i));
       return v;
     }
     void set(const SolverOption& ,
