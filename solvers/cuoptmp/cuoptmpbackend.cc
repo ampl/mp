@@ -279,7 +279,8 @@ static const mp::OptionValueInfo verbosity_values_[] = {
 static const mp::OptionValueInfo values_method[] = {
     { "0", "Concurrent (default)", 0},
     { "1", "Pdlp", 1},
-    { "2", "Dual simplex", 2}
+    { "2", "Dual simplex", 2},
+    { "3", "Barrier", 3}
 };
 
 static const mp::OptionValueInfo values_pdlp_solver_mode[] = {
@@ -305,19 +306,13 @@ void CuoptmpBackend::InitCustomOptions() {
       "\n"
       "  ampl: option cuoptmp_options 'mipgap=1e-6';\n");
 
-  AddSolverOption("lim:timelimit timelimit",
+
+  AddSolverOption("lim:timelim timelim",
     "Time limit in seconds after which the solver will stop and return the current solution",
     CUOPT_TIME_LIMIT, 0.0, DBL_MAX);
 
-  AddSolverOption("timelim timelim",
-    "Time limit in seconds after which the solver will stop and return the current solution",
-    CUOPT_TIME_LIMIT, 0.0, DBL_MAX);
 
-  AddSolverOption("lim:ncputhreads ncputhreads",
-    "Number of CPU threads used in the LP and MIP solvers",
-    CUOPT_NUM_CPU_THREADS, -1, INT_MAX);
-
-  AddSolverOption("threads threads",
+  AddSolverOption("tech:threads threads ncputhreads",
     "Number of CPU threads used in the LP and MIP solvers",
     CUOPT_NUM_CPU_THREADS, -1, INT_MAX);
 
@@ -427,12 +422,8 @@ void CuoptmpBackend::InitCustomOptions() {
 
   // Logging Options
 
-  AddSolverOption("tech:consolelog consolelog",
-    "Log information to the console during a solve",
-    CUOPT_LOG_TO_CONSOLE,
-    values_bool, "true");
 
-  AddSolverOption("tech:outlev outlev",
+  AddSolverOption("tech:outlev outlev tech:consolelog consolelog",
     "Whether to log information to the console",
     CUOPT_LOG_TO_CONSOLE,
     values_bool, "true");

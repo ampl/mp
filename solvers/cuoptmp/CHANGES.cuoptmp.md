@@ -2,6 +2,11 @@ Summary of recent updates to cuOpt for AMPL
 ===========================================
 
 
+## 20251119
+- Updated to cuOpt 25.10.1
+  - Barrier algorithm (see option `alg:method`)
+  
+  
 ## 20251015
 - Changes in MP
 
