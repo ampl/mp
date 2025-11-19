@@ -265,6 +265,7 @@ protected:
     const auto& obj_orig = MPD( get_objectives() );   // no linking
     ///////////////// Read / set default suffixes ///////////////////
     std::vector<int> objpr = MPD( ReadIntSuffix( {"objpriority", suf::OBJ} ) );  // int only
+    objpr.resize(obj_orig.size(), 0);                 // if not supplied, all 0
 
     assert(multiobj_pass_map_.empty());
     assert(multiobj_pass_list_.empty());
@@ -286,8 +287,6 @@ protected:
       // instead of current manual postsolving in ValuePresolver::PostsolveSolution().
     const auto& obj_orig = MPD( get_objectives() );   // no linking
     ///////////////// Read / set default suffixes ///////////////////
-    std::vector<int> objpr = MPD( ReadIntSuffix( {"objpriority", suf::OBJ} ) );  // int only
-    objpr.resize(obj_orig.size(), 0.0);               // blend objectives by default
     std::vector<double> objwgt = MPD( GetMOWeightsLegacy() );
     if (objwgt.empty()) {
       objwgt.resize(obj_orig.size(), 1.0);            // Default "intuitive" weights
