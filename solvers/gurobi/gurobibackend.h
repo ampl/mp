@@ -268,6 +268,7 @@ protected:
   double NodeCount() const;
   double SimplexIterations() const;
   int BarrierIterations() const;
+  int NLBarrierIterations() const;
   double PDHGIterations() const;
 
   void ReportGurobiWork();

@@ -26,6 +26,7 @@ protected:
   };
 
   /// See if we need to emulate multiple objectives.
+  /// At least, setup MO options (can be processed natively).
   /// @note This should be called first.
   void ConsiderEmulatingMultiobj() {
     status_ = MOManagerStatus::NOT_ACTIVE;
@@ -37,7 +38,10 @@ protected:
              && (MPCD(GetEnv()).multiobj_has_native()==false
                  || MPCD(GetEnv()).multiobj()>1))))
       SetupMultiobjEmulation();
-    // Anything todo otherwise?
+    else
+      if (MPCD(num_objs()) >= 1                    // at least 1 obj
+          && MPCD(GetEnv()).multiobj())
+        SetupMultiObjectiveOptions();              // for native processing
   }
 
 
@@ -204,7 +208,6 @@ protected:
           if (!begins_with(s.name(), prefix))
               continue;
 
-          int i = 0;
           SuffixStorer storer;
           s.VisitValues(storer); // Get ALL the objectives values
 
@@ -230,18 +233,18 @@ protected:
   }
   
   void CheckMultiObjectiveOptions(int npass) {
-    const auto& obj_numbers = multiobj_pass_map_[npass].second;
+    const auto& obj_numbers = multiobj_pass_list_[npass].second;
     for (const auto& [key, suffix_map] : multiobj_option_values_) {
       if (!suffix_map.CheckIfValidPass(obj_numbers))
         throw std::runtime_error(
             fmt::format("Inconsistent '{}' values for multi-objective pass {} "
                         "(objectives with priority {})",
-                        key, npass+1, multiobj_pass_map_[npass].first));
+                        key, npass+1, multiobj_pass_list_[npass].first));
     }
   }
 
   void SetMultiObjectiveOptions(int npass) {
-    const auto& obj_numbers = multiobj_pass_map_[npass].second;
+    const auto& obj_numbers = multiobj_pass_list_[npass].second;
     for (const auto& [key, suffix_map] : multiobj_option_values_) {
         auto objn = obj_numbers.at(0);
         if (suffix_map.IsDouble()) {
@@ -257,8 +260,25 @@ protected:
     }
   }
 
-  void SetupMultiobjEmulation() {
+  void SetupMultiObjectiveOptions() {
     ReadMultiObjectiveOptions();
+    const auto& obj_orig = MPD( get_objectives() );   // no linking
+    ///////////////// Read / set default suffixes ///////////////////
+    std::vector<int> objpr = MPD( ReadIntSuffix( {"objpriority", suf::OBJ} ) );  // int only
+
+    assert(multiobj_pass_map_.empty());
+    assert(multiobj_pass_list_.empty());
+    for (int i=0; i<objpr.size(); ++i)
+      multiobj_pass_map_[objpr[i]].push_back(i);
+
+    for (const auto& pr_level: multiobj_pass_map_) {
+      multiobj_pass_list_.push_back(std::make_pair(pr_level.first, pr_level.second));
+      CheckMultiObjectiveOptions(multiobj_pass_list_.size()-1);
+    }
+  }
+
+  void SetupMultiobjEmulation() {
+    SetupMultiObjectiveOptions();
     
     status_ = MOManager::MOManagerStatus::RUNNING;
     MPD(set_skip_pushing_objs());  // could have a cleaner system of linking
@@ -278,17 +298,11 @@ protected:
     std::vector<double> objtolr = MPD( ReadDblSuffix( {"objreltol", suf::OBJ} ) );
     objtolr.resize(obj_orig.size(), 0.0);
 
-    std::map<int, std::vector<int>, std::greater<int> > pr_map;      // Decreasing order
-    for (int i=0; i<objpr.size(); ++i)
-      pr_map[objpr[i]].push_back(i);
-
     obj_new_ = {};         ////////////////// Aggregate new objectives ///////////////////
-    obj_new_.reserve(pr_map.size());
-    obj_new_tola_.reserve(pr_map.size());
-    obj_new_tolr_.reserve(pr_map.size());
-    for (const auto& pr_level: pr_map) {
-      multiobj_pass_map_.push_back(std::make_pair(pr_level.first, pr_level.second));
-      CheckMultiObjectiveOptions(multiobj_pass_map_.size()-1);
+    obj_new_.reserve(multiobj_pass_map_.size());
+    obj_new_tola_.reserve(multiobj_pass_map_.size());
+    obj_new_tolr_.reserve(multiobj_pass_map_.size());
+    for (const auto& pr_level: multiobj_pass_map_) {
       const auto& i0_vec = pr_level.second;
       const auto& obj_orig_1st = obj_orig.at(i0_vec.front());
       const auto objwgt_1st = objwgt.at(i0_vec.front());
@@ -460,7 +474,9 @@ private:
   std::unordered_map<std::string, SuffixStorer>
       multiobj_option_values_;
   std::vector< std::pair<int, std::vector<int> > >
-      multiobj_pass_map_;
+      multiobj_pass_list_;
+  std::map<int, std::vector<int>, std::greater<int> >
+      multiobj_pass_map_;      // Decreasing order
 
   int i_current_obj_ {-1};
   double objval_last_ {};

@@ -845,6 +845,11 @@ int GurobiBackend::BarrierIterations() const {
   return GrbGetIntAttr(GRB_INT_ATTR_BARITERCOUNT, &f);
 }
 
+int GurobiBackend::NLBarrierIterations() const {
+  bool f;
+  return GrbGetIntAttr(GRB_INT_ATTR_NLBARITERCOUNT, &f);
+}
+
 double GurobiBackend::PDHGIterations() const {
     bool f;
     return GrbGetDblAttr(GRB_DBL_ATTR_PDHGITERCOUNT, &f);
@@ -1108,7 +1113,12 @@ void GurobiBackend::AddGurobiMessage() {
   suffix = si == 1 ? "" : "s";
   if (si>0)
     AddToSolverMessage(
-      fmt::format("{} barrier iteration{}\n", si, suffix));
+        fmt::format("{} barrier iteration{}\n", si, suffix));
+  si = NLBarrierIterations();
+  suffix = si == 1 ? "" : "s";
+  if (si>0)
+    AddToSolverMessage(
+        fmt::format("{} nonlinear barrier iteration{}\n", si, suffix));
   si = PDHGIterations();
   suffix = si == 1 ? "" : "s";
   if (si > 0)
@@ -1447,7 +1457,8 @@ static const mp::OptionValueInfo values_optimalitytarget [] = {
   { "0", "Global optimum", 0},
   { "1", "Local optimum via nonlinear barrier algorithm (preview). "
          "Note that this provides no optimality gap and can be applied "
-         "only to models with no discrete variables and no nondifferentiable "
+         "only to models with no discrete variables (set alg:relax=1 "
+         "if needed) and no nondifferentiable "
          "functions", 1},
 };
 
@@ -1767,7 +1778,7 @@ void GurobiBackend::InitCustomOptions() {
     GRB_INT_PAR_BARHOMOGENEOUS, values_barhomogeneous, -1);
 
 
-  AddSolverOption("bar:iterlim bariterlim",
+  AddSolverOption("bar:iterlim bariterlim lim:bariter",
     "Limit on the number of barrier iterations (default 1000).",
     GRB_INT_PAR_BARITERLIMIT, 0, GRB_MAXINT);
 
@@ -1781,6 +1792,29 @@ void GurobiBackend::InitCustomOptions() {
     "and dual objective values for barrier algorithms when solving problems "
     "with quadratic constraints (default 1e-6).", GRB_DBL_PAR_BARQCPCONVTOL,
     0.0, 1.0);
+
+  ////////////////// NLBAR ////////////////////////
+  AddSolverOption("nlbar:iterlim nlbariterlim lim:nlbariter",
+                  "Limits the number of barrier NL iterations performed "
+                  "(default 1000).", GRB_INT_PAR_NLBARITERLIMIT, 0, INT_MAX);
+
+  AddSolverOption("nlbar:cfeastol nlbarcfeastol",
+                  "For the NL barrier algorithm, the complementarity error must be "
+                  "smaller in order for a model to be declared locally optimal. "
+                  "Due to problem transformations like presolve or internal scaling, "
+                  "the returned solution’s residuals may deviate from those "
+                  "observed by the algorithm "
+                  "(default 1e-8).", GRB_DBL_PAR_NLBARCFEASTOL, 1e-12, 0.1);
+
+  AddSolverOption("nlbar:dfeastol nlbardfeastol",
+                  "For the NL barrier algorithm, the dual feasibility error must be "
+                  "smaller in order for a model to be declared locally optimal "
+                  "(default 1e-6).", GRB_DBL_PAR_NLBARDFEASTOL, 1e-12, 0.1);
+
+  AddSolverOption("nlbar:pfeastol nlbarpfeastol",
+                  "For the NL barrier algorithm, the dual feasibility error must be "
+                  "smaller in order for a model to be declared locally optimal "
+                  "(default 1e-6).", GRB_DBL_PAR_NLBARPFEASTOL, 1e-12, 0.1);
 
 
   /////////////////////// CUTS /////////////////////////
@@ -1816,20 +1850,20 @@ void GurobiBackend::InitCustomOptions() {
     "\n.. value-table::\n",
     GRB_INT_PAR_CUTS, values_cuts, -1);
 
-  AddSolverOption("cut:flowcover flowcover",
+  AddSolverOption("cut:flowcover flowcovercuts",
     "Flowcover cuts: overrides \"cuts\"; choices as for \"cuts\".",
     GRB_INT_PAR_FLOWCOVERCUTS, PrmCutsMin, PrmCutsMax);
-  AddSolverOption("cut:flowpath flowpath",
+  AddSolverOption("cut:flowpath flowpathcuts",
     "Overrides \"cuts\"; choices as for \"cuts\".",
     GRB_INT_PAR_FLOWPATHCUTS, PrmCutsMin, PrmCutsMax);
-  AddSolverOption("cut:gomory gomory",
+  AddSolverOption("cut:gomory gomorycuts",
     "Maximum number of Gomory cut passes during cut generation "
         "(-1 = default = no limit); overrides \"cuts\".",
     GRB_INT_PAR_GOMORYPASSES, -1, GRB_MAXINT);
-  AddSolverOption("cut:gubcover gubcover",
+  AddSolverOption("cut:gubcover gubcovercuts",
     "Overrides \"cuts\"; choices as for \"cuts\".",
     GRB_INT_PAR_GUBCOVERCUTS, PrmCutsMin, PrmCutsMax);
-  AddSolverOption("cut:implied implied",
+  AddSolverOption("cut:implied impliedcuts",
     "Implied cuts: overrides \"cuts\"; choices as for \"cuts\".",
     GRB_INT_PAR_IMPLIEDCUTS, PrmCutsMin, PrmCutsMax);
 
@@ -1839,9 +1873,12 @@ void GurobiBackend::InitCustomOptions() {
     "\n.. value-table::\n",
     GRB_INT_PAR_INFPROOFCUTS, values_infproofcuts, -1);
 
-  AddSolverOption("cut:mipsep mipsep",
-    "MIPsep cuts: overrides \"cuts\"; choices as for \"cuts\".",
-    GRB_INT_PAR_MIPSEPCUTS, PrmCutsMin, PrmCutsMax);
+  AddSolverOption("cut:masterkp masterkpcuts",
+                  "MIPsep cuts: overrides \"cuts\"; choices as for \"cuts\".",
+                  GRB_INT_PAR_MIPSEPCUTS, PrmCutsMin, PrmCutsMax);
+  AddSolverOption("cut:mipsep mipsepcuts",
+                  "MIPsep cuts: overrides \"cuts\"; choices as for \"cuts\".",
+                  GRB_INT_PAR_MIPSEPCUTS, PrmCutsMin, PrmCutsMax);
   AddSolverOption("cut:mir mircuts",
     "MIR cuts: overrides \"cuts\"; choices as for \"cuts\".",
     GRB_INT_PAR_MIRCUTS, PrmCutsMin, PrmCutsMax);
@@ -1872,11 +1909,11 @@ void GurobiBackend::InitCustomOptions() {
 
 
   AddSolverOption("lim:iter iterlim iterlimit",
-    "Iteration limit (default: no limit).",
+    "Simplex iteration limit (default: no limit).",
     GRB_DBL_PAR_ITERATIONLIMIT, 0.0, DBL_MAX);
 
 
-  AddSolverOption("lim:pdhgiter pdhgiter pdhgiterlimit",
+  AddSolverOption("lim:pdhgiter pdhgiterlim pdhgiterlimit",
       "Iteration limit (default: no limit).",
       GRB_DBL_PAR_PDHGITERLIMIT, 0.0, DBL_MAX);
 
@@ -2074,27 +2111,55 @@ void GurobiBackend::InitCustomOptions() {
     GRB_INT_PAR_IISMETHOD, values_iismethod, -1);
 
   AddSolverOption("alg:nlpheur nlpheur",
-    "Use NLP heuristic to find feasible solutions to non-convex quadratic models:\n"
-    "\n.. value-table::\n",
-    GRB_INT_PAR_NLPHEUR, values_01_noyes_1default_, 1);
+    "The NLP heuristic uses a non-linear barrier solver to find feasible "
+                  "solutions to nonconvex quadratic and nonlinear models during "
+                  "a global optimization solve. It often helps to find solutions "
+                  "quicker, but in some cases it can consume significant runtime "
+                  "without producing a solution. A value of 0 disables the "
+                  "heuristic completely, while larger values call the heuristic "
+                  "more and more aggressively during the optimization process. "
+                  "The default -1 value chooses automatically.",
+    GRB_INT_PAR_NLPHEUR, -1, 3);
 
-  AddSolverOption("mip:improvegap improvegap",
+  AddSolverOption("mip:improvegap improvegap impstartgap",
     "Optimality gap below which the MIP solver switches from "
         "trying to improve the best bound to trying to find better "
         "feasible solutions (default 0).",
     GRB_DBL_PAR_IMPROVESTARTGAP, 0.0, DBL_MAX);
 
-  AddSolverOption("mip:improvetime improvetime",
-    "Execution seconds after which the MIP solver switches from "
-        "trying to improve the best bound to trying to find better "
-        "feasible solutions (default Infinity).",
-    GRB_DBL_PAR_IMPROVESTARTTIME, 0.0, DBL_MAX);
+  AddSolverOption("mip:improvetime improvetime impstarttime",
+                  "Execution seconds after which the MIP solver switches from "
+                  "trying to improve the best bound to trying to find better "
+                  "feasible solutions (default Infinity).",
+                  GRB_DBL_PAR_IMPROVESTARTTIME, 0.0, DBL_MAX);
 
-  AddSolverOption("mip:impstartnodes impstartnodes",
+  AddSolverOption("mip:improvework improvework impstartwork",
+                  "Execution seconds after which the MIP solver switches from "
+                  "trying to improve the best bound to trying to find better "
+                  "feasible solutions (default Infinity).",
+                  GRB_DBL_PAR_IMPROVESTARTWORK, 0.0, DBL_MAX);
+
+  AddSolverOption("mip:improvenodes improvenodes impstartnodes",
                   "Number of MIP nodes after which the solution strategy "
                       "will change from improving the best bound to finding better "
                       "feasible solutions (default Infinity).",
     GRB_DBL_PAR_IMPROVESTARTNODES, 0.0, DBL_MAX);
+
+  AddSolverOption("mip:starttimelim starttimelim lim:starttime",
+                  "This parameter limits the total time (in seconds) spent on "
+                  "completing a partial MIP start. Note that this parameter will "
+                  "introduce non-determinism - different runs may take different "
+                  "paths. Use the startworklim parameter for deterministic results "
+                  "(default Infinity).",
+                  GRB_DBL_PAR_STARTTIMELIMIT, 0.0, DBL_MAX);
+
+  AddSolverOption("mip:starttimelim starttimelim lim:starttime",
+                  "This parameter limits the total work (in work units) spent on "
+                  "completing a partial MIP start "
+                  "(default Infinity).",
+                  GRB_DBL_PAR_STARTWORKLIMIT, 0.0, DBL_MAX);
+
+
 
   AddSolverOption("mip:inttol inttol intfeastol",
     "Feasibility tolerance for integer variables "
@@ -2141,25 +2206,24 @@ void GurobiBackend::InitCustomOptions() {
     "\n.. value-table::\n", GRB_INT_PAR_NODEMETHOD, values_nodemethod, -1);
 
 
-  AddSolverOption("mip:norelheursolutions norelheursolutions",
+  AddSolverOption("mip:norelheursolutions norelheursolutions norelsol",
       "Limits the number of solutions found by the NoRel heuristic "
-      "(default 0 - no limit)",
+      "(default 0).",
       GRB_INT_PAR_NORELHEURSOLUTIONS, 0, INT_MAX);
 
 
-  AddSolverOption("mip:norelheurtime norelheurtime",
+  AddSolverOption("mip:norelheurtime norelheurtime noreltime",
     "Limits the amount of time (in seconds) spent in the NoRel heuristic; "
     "see the description of \"norelheurwork\" for details.  This "
     "parameter will introduce nondeterminism; use \"norelheurwork\" "
-    "for deterministic results (default 0 - no limit)",
+    "for deterministic results (default 0)",
     GRB_DBL_PAR_NORELHEURTIME, 0.0, DBL_MAX);
 
-  AddSolverOption("mip:norelheurwork norelheurwork",
+  AddSolverOption("mip:norelheurwork norelheurwork norelwork",
     "Limits the amount of work spent in the NoRel heuristic. "
     "This heuristic searches for high-quality feasible solutions "
     "before solving the root relaxation.  The work metrix is hard "
-    "to define precisely, as it depends on the machine (default 0 - "
-    "no limit",
+    "to define precisely, as it depends on the machine (default 0).",
     GRB_DBL_PAR_NORELHEURWORK, 0.0, DBL_MAX);
 
 
@@ -2681,9 +2745,9 @@ void GurobiBackend::InitCustomOptions() {
 
   AddSolverOption("tech:threads threads",
       "How many threads to apply to parallel algorithms (concurrent LP, "
-      "parallel barrier, parallel MIP, etc) Default 0 - automatic (max 32), use "
-      "-1 to use as many threads as detected virtual processor",
-      GRB_INT_PAR_THREADS, 0, GRB_MAXINT);
+      "parallel barrier, parallel MIP, etc). Default 0 - automatic (max 32), set "
+      "-1 to use as many threads as detected virtual processors.",
+      GRB_INT_PAR_THREADS, -1, GRB_MAXINT);
 
   AddStoredOption("tech:tunebase tunebase",
                   "Base name for results of running Gurobi's search for best "

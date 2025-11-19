@@ -47,8 +47,12 @@ controlling solver behavior and information flow.
   control whether LP basis information is input/output
 
 * Options
-  :ref:`solutiontarget, heuremphasis, mipfocus/mipemphasis, numericfocus/numericalemphasis, intfocus <ampl-solver-options>` -
+  :ref:`solutiontarget, optimalitytarget, heuremphasis, mipfocus/mipemphasis, norelwork <ampl-solver-options>` -
   control the overall solving strategy and emphasis
+
+* Options
+  :ref:`numericfocus/numericalemphasis, intfocus, refineops <ampl-solver-options>` -
+  control the numerical emphasis
 
 * Options :ref:`feastol, inttol <ampl-solver-options>` -
   control desired feasibility and integrality tolerances
