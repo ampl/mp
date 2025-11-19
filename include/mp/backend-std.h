@@ -129,6 +129,8 @@ protected:
   /// Placeholder: set objective rel tol
   /// Presolve the values if needed
   virtual void ObjRelTol(ArrayRef<double>) { }
+  /// Set multi-objective options
+  virtual void SetMultiobjOptions(BasicObjOptionSetter* ) { }
 
   /**
    * MULTISOL support.
@@ -320,6 +322,7 @@ protected:
         ObjAbsTol( suf );
       if (auto suf = ReadSuffix(suf_objreltol))
         ObjRelTol( suf );
+      SetMultiobjOptions(GetObjOptionSetter());
     }
     if (feasrelax())
       InputFeasrelaxData();

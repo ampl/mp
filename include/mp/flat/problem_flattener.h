@@ -11,6 +11,7 @@
 #include "mp/converter-base.h"
 #include "mp/flat/problem_flattener_base.h"
 #include "mp/expr-visitor.h"
+#include "mp/obj-option-base.h"
 #include "mp/flat/eexpr.h"
 #include "mp/flat/bucketaccum.h"
 #include "mp/flat/qp2passes.h"
@@ -152,6 +153,10 @@ public:
   ArrayRef<double> GetObjWeightsAdapted() override
   { return GetFlatCvt().GetObjWeightsAdapted(); }
 
+  /// Get obj option setter
+  BasicObjOptionSetter* GetObjOptionSetter() override {
+    return GetFlatCvt().GetObjOptionSetter();
+  }
 
   /// Fill model traits
   void FillModelTraits(AMPLS_ModelTraits& mt) override {

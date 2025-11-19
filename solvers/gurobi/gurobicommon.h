@@ -26,7 +26,8 @@ struct GurobiCommonInfo {
   /// Get env for options: if model present, use its env,
   /// otherwise env()
   GRBenv *model_or_global_env() const {
-    return has_model() ? GRBgetenv(model()) : env();
+    return env_current_ ? env_current_ :
+        has_model() ? GRBgetenv(model()) : env();
   }
   /// If has a model pointer
   bool has_model() const { return model_!=nullptr; }
@@ -36,11 +37,14 @@ struct GurobiCommonInfo {
 protected:
   GRBenv *&env_ref() { return env_; }
   void set_env(GRBenv* e) { env_ = e; }
+  GRBenv* env_current() const { return env_current_; }
+  void set_env_current(GRBenv* e) { env_current_ = e; }
   GRBmodel *&model_ref() { return model_; }
   void set_model(GRBmodel* m) { model_ = m; }
 
 private:
   GRBenv *env_ = nullptr;
+  GRBenv *env_current_ {nullptr};  // used when set
   GRBmodel *model_ = nullptr;
 };
 

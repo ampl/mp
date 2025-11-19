@@ -8,6 +8,7 @@
 #include "mp/common.h"
 #include "mp/valcvt-base.h"
 #include "mp/error.h"
+#include "mp/obj-option-base.h"
 #include "mp/flat/obj_std.h"
 #include "mp/flat/nl_expr/constr_nl.h"
 
@@ -15,7 +16,7 @@ namespace mp {
 
 /// A mix-in base class managing multiobjective emulation
 template <class Impl>
-class MOManager {
+class MOManager : public BasicObjOptionSetter {
 protected:
   /// MOManager status
   enum class MOManagerStatus {
@@ -52,6 +53,11 @@ public:
   /// Retrieve emulated objectives
   std::vector<QuadraticObjective>&
   get_emulated_objectives() { return obj_new_; }
+
+  /// Get obj option setter
+  BasicObjOptionSetter* GetObjOptionSetter() {
+    return this;
+  }
 
   /// Is MOManager active?
   /// This is relevant after initialization via
@@ -247,6 +253,9 @@ protected:
   void SetMultiObjectiveOptions(int npass) {
     if (pass_opt_maps_.end() != pass_opt_maps_.find(npass)) {
       assert(pass_opt_maps_[npass].size());
+      if (MPD(GetEnv()).verbose_mode())
+        fmt::print("Setting options for multi-objective pass {}...\n",
+                   npass+1);
       for (const auto& sufval: pass_opt_maps_[npass]) {
         if (sufval.second.IsDouble()) {
           if (MPD(GetEnv()).verbose_mode())
@@ -281,6 +290,22 @@ protected:
     ReadMultiObjectiveOptions();
   }
 
+  /// Get vector of multi-obj passes with options
+  std::vector<int> GetPassesWithOptions() override {
+    std::vector<int> result;
+    result.reserve(pass_opt_maps_.size());
+    for (const auto& pass: pass_opt_maps_)
+    result.push_back(pass.first);
+    return result;
+  }
+
+  /// Set solver options for given pass
+  virtual void SetOptionsForMultiobjPass(int iPass) override {
+    SetMultiObjectiveOptions(iPass);
+  }
+
+
+  //////////////////////////////////////////////////////////////////////
   void SetupMultiobjEmulation() {
     SetupMultiObjectiveOptions();
     

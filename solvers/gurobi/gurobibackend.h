@@ -66,6 +66,7 @@ public:
   void ObjWeights(ArrayRef<double>) override;
   void ObjAbsTol(ArrayRef<double>) override;
   void ObjRelTol(ArrayRef<double>) override;
+  void SetMultiobjOptions(BasicObjOptionSetter* ) override;
   /**
    * MULTISOL support.
    * No API, use ReportIntermediateSolution()

@@ -592,6 +592,16 @@ void GurobiBackend::ObjRelTol(ArrayRef<double> val) {
   }
 }
 
+void GurobiBackend::SetMultiobjOptions(BasicObjOptionSetter* pSetter) {
+  auto passes = pSetter->GetPassesWithOptions();
+  for (auto pass: passes) {
+    GRBenv *env_pass = GRBgetmultiobjenv(model(), pass);
+    set_env_current(env_pass);
+    SetSolverOption(GRB_INT_PAR_OUTPUTFLAG, 0);   // to avoid 2x output
+    pSetter->SetOptionsForMultiobjPass(pass);
+  }
+  set_env_current(nullptr);
+}
 
 ArrayRef<double> GurobiBackend::Ray() {
   auto uray_pres =

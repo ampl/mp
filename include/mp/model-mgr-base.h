@@ -13,6 +13,7 @@
 #include "mp/arrayref.h"
 #include "mp/solver-base.h"
 #include "mp/suffix.h"
+#include "mp/obj-option-base.h"
 
 namespace mp {
 
@@ -66,6 +67,10 @@ public:
   /// Length of a suffix vector of given kind
   virtual size_t GetSuffixSize(int kind) = 0;
 
+  /// Get obj option setter
+  virtual BasicObjOptionSetter* GetObjOptionSetter() = 0;
+
+  /// Get solution file name
   virtual void SetSolutionFileName(const std::string& fileName) = 0;
 
   /// Report final solution

@@ -167,6 +167,11 @@ public:
     GetMM().ReportSuffix(suf, values);
   }
 
+  /// Get obj option setter
+  BasicObjOptionSetter* GetObjOptionSetter() {
+    return GetMM().GetObjOptionSetter();
+  }
+
   /// Access original (NL) model instance:
   /// integrality flags. Used in solution rounding.
   const std::vector<bool>& IsVarInt() const {

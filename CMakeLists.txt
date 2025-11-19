@@ -359,6 +359,7 @@ add_prefix(MP_HEADERS include/mp/
   model-mgr-with-std-pb.h model-mgr-with-std-pb.hpp
   nl-header-c.h nl-header.h nl.h nl-reader.h
   option.h os.h problem.h problem-builder.h
+  obj-option-base.h
   valcvt-base.h valcvt-node.h valcvt-link.h valcvt.h
   rstparser.h safeint.h sol.h
   solver.h solver-opt.h solver-base.h solver-io.h solver-app-base.h solver-app.h

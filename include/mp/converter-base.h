@@ -3,6 +3,7 @@
 
 #include "mp/env.h"
 #include "mp/ampls-ccallbacks.h"
+#include "mp/obj-option-base.h"
 
 namespace mp {
 
@@ -39,6 +40,9 @@ public:
 
   /// Objective weights
   virtual ArrayRef<double> GetObjWeightsAdapted() = 0;
+
+  /// Get obj option setter
+  virtual BasicObjOptionSetter* GetObjOptionSetter() = 0;
 
   /// Fill model traits
   virtual void FillModelTraits(AMPLS_ModelTraits& ) = 0;

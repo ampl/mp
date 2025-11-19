@@ -321,6 +321,11 @@ protected:
   size_t GetSuffixSize(int kind) override {
     return GetModel().GetSuffixSize((suf::Kind)kind);
   }
+  /// Get obj option setter
+  BasicObjOptionSetter* GetObjOptionSetter() override {
+    return GetCvt().GetObjOptionSetter();
+  }
+
   void SetSolutionFileName(const std::string& fileName) override {
     if (HaveSolH())
       GetSolH().OverrideSolutionFileName(fileName);
