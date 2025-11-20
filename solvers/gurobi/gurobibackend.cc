@@ -1323,13 +1323,13 @@ std::pair<int, std::string> GurobiBackend::GetSolveResult() {
   case GRB_OPTIMAL:
     return { sol::SOLVED, "optimal solution" };
   case GRB_LOCALLY_OPTIMAL:
-      return { sol::OPTIMAL_LOCALLY, "locally optimal solution" };
+    return { sol::OPTIMAL_LOCALLY, "locally optimal solution" };
   case GRB_SUBOPTIMAL:
     return { sol::UNCERTAIN, "suboptimal solution, can be infeasible" };
   case GRB_INFEASIBLE:
     return { sol::INFEASIBLE, "infeasible problem" };
   case GRB_LOCALLY_INFEASIBLE:
-    return { sol::INFEASIBLE_LOCALLY, "locally infeasible problem" };
+    return { sol::LIMIT_NO_FEAS_LOCALLY, "locally infeasible problem" };
   case GRB_INF_OR_UNBD:
     return { sol::LIMIT_INF_UNB, "infeasible or unbounded problem. "
                                 "Set dualreductions=0 "
@@ -2854,7 +2854,7 @@ void GurobiBackend::InitCustomOptions() {
   /// Don't replace major codes, only custom ones
   AddSolveResults({
                     { sol::OPTIMAL_LOCALLY, "locally optimal solution"}, // for NL barrier in grb 13
-                    { sol::INFEASIBLE_LOCALLY, "locally infeasible solution"},
+                    { sol::LIMIT_NO_FEAS_LOCALLY, "locally infeasible solution"},
 
                     { sol::LIMIT_FEAS_ITER, "iteration limit, feasible solution" },
                     { sol::LIMIT_NO_FEAS_ITER, "iteration limit, without a feasible soluton" },
