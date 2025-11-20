@@ -130,7 +130,11 @@ protected:
   /// Presolve the values if needed
   virtual void ObjRelTol(ArrayRef<double>) { }
   /// Set multi-objective options
-  virtual void SetMultiobjOptions(BasicObjOptionSetter* ) { }
+  virtual void SetMultiobjOptions(BasicObjOptionSetter* pS) {
+    if (pS->GetPassesWithOptions().size())
+      AddWarning("MultiobjOptionsNotImplemented",
+                 "See obj:multi:options");
+  }
 
   /**
    * MULTISOL support.

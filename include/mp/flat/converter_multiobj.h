@@ -42,7 +42,7 @@ protected:
     else
       if (MPCD(num_objs()) >= 1                    // at least 1 obj
           && MPCD(GetEnv()).multiobj())
-        SetupMultiObjectiveOptions();              // for native processing
+        SetupMultiObjectiveOptions(true);          // for native processing
   }
 
 
@@ -169,6 +169,7 @@ protected:
 
   void ReadMultiObjectiveOptions() {
     assert(multiobj_pass_map_.size());
+    assert(multiobj_pass_list_.empty());
     for (const auto& pr_level: multiobj_pass_map_) {
       multiobj_pass_list_.push_back(
           std::pair(pr_level.first, pr_level.second));
@@ -205,12 +206,12 @@ protected:
           if (values_double.size())
             MP_RAISE(fmt::format(
                 "Option is integer: {},\n  but real-valued "
-                "objective suffix {} provided\n", opname.data(), s.name()));
+                "objective suffix .{} provided\n", opname.data(), s.name()));
         }
         catch (...) {
           MP_RAISE(fmt::format(
               "Option not found or not numeric: {},\n"
-              "  check objective suffix {}\n", opname.data(), s.name()));
+              "  check objective suffix .{}\n", opname.data(), s.name()));
         }
       }
 
@@ -276,18 +277,22 @@ protected:
     }
   }
 
-  void SetupMultiObjectiveOptions() {
+  void SetupMultiObjectivePassMap() {
     const auto& obj_orig = MPD( get_objectives() );   // no linking
     ///////////////// Read / set default suffixes ///////////////////
     std::vector<int> objpr = MPD( ReadIntSuffix( {"objpriority", suf::OBJ} ) );  // int only
     objpr.resize(obj_orig.size(), 0);                 // if not supplied, all 0
 
     assert(multiobj_pass_map_.empty());
-    assert(multiobj_pass_list_.empty());
     for (int i=0; i<objpr.size(); ++i)
       multiobj_pass_map_[objpr[i]].push_back(i);
+  }
 
-    ReadMultiObjectiveOptions();
+  void SetupMultiObjectiveOptions(bool fOptsOnly=false) {
+    if (!fOptsOnly || MPCD( multiobj_options() ))
+      SetupMultiObjectivePassMap();
+    if (MPCD( multiobj_options() ))
+      ReadMultiObjectiveOptions();
   }
 
   /// Get vector of multi-obj passes with options

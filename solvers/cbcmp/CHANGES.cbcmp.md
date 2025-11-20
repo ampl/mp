@@ -2,6 +2,12 @@ Summary of recent updates to CBCMP for AMPL
 ===========================================
 
 
+## 20251121
+- New option *obj:multi:options* to control
+  whether multi-objective option suffixes
+  are used.
+
+
 ## 20251015
 - Changes in MP
 

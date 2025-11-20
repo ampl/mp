@@ -2,8 +2,13 @@ Summary of recent updates to the AMPL MP Library
 ================================================
 
 
-## unreleased
-- Catch duplicated solver options
+## 20251121
+- Meta-driver MP2NL, see
+  https://mp.ampl.com/modeling-tools.html#mp2nl.
+- New option *obj:multi:options* to control
+  whether multi-objective option suffixes
+  are used.
+- Catch duplicate solver options.
 
 
 ## 20251021

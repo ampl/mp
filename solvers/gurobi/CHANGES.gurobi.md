@@ -1,14 +1,19 @@
 Summary of recent updates to gurobi for AMPL
 ============================================
 
-## TBD
+
+## 20251121
 - Updated to Gurobi 13.0.0:
- - Nonlinear barrier method for finding local optima 
-   in non-convex continuous models, see `alg:optimalitytarget`.
- - Primal-Dual Hybrid Gradient (PDHG) method for large-scale 
-   linear programs (see `alg:method` and options in the `pdhg:` 
-   namespace
- - New control: `mip:norelheursolutions`
+  - Nonlinear barrier method for finding local optima 
+    in non-convex continuous models, see *alg:optimalitytarget*.
+  - Primal-Dual Hybrid Gradient (PDHG) method for large-scale 
+    linear programs (see *alg:method* and options in the *pdhg:* 
+    namespace.
+  - New control: *mip:norelheursolutions* (*norelsol*).
+- Multiobjective options (see *obj:multi:options*)
+  in Gurobi's native
+  multiobjective mode (*obj:multi=1*).
+
 
 ## 20251021
 - Changes in MP: option *cvt:expr:nlassign*.

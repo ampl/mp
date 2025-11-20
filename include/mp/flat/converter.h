@@ -1466,6 +1466,8 @@ private:
     double modelfeastol_ = 1e-6;
     double modelfeastolrel_ = 1e-6;
 
+    int mo_options_ {1};
+
     int solcheckmode_ = 1+2+512;
     bool solcheckinfeas_ = false;
     bool solcheckfail_ = false;
@@ -1507,6 +1509,9 @@ public:             // public for CRTP
   /// Model checking options
   double model_feas_tol() const { return options_.modelfeastol_; }
   double model_feas_tol_rel() const { return options_.modelfeastolrel_; }
+
+  /// Use multiobjective options?
+  int multiobj_options() const { return options_.mo_options_; }
 
   /// Solution checking options
   int sol_check_mode() const { return options_.solcheckmode_; }
@@ -1739,6 +1744,12 @@ private:
     GetEnv().AddOption("alg:relax relax",
         "0*/1: Whether to relax integrality of variables.",
         options_.relax_, 0, 1);
+
+    GetEnv().AddOption("obj:multi:options multiobjoptions",
+                       "0/1*: Regard multiobjective option suffixes "
+                       "which are objective suffixes beginning with option_. "
+                       "Example: suffix option_timelim; let _obj[2].option_timelim:=15;",
+                       options_.mo_options_, 0, 1);
 
     GetEnv().AddOption("cvt:pre:feastol pre:feastol pre:eps pre:feastolabs pre:epsabs",
                        "Absolute tolerance to check variable "

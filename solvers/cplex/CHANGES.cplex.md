@@ -2,7 +2,10 @@ Summary of recent updates to CPLEX for AMPL
 ==============================================
 
 
-## unreleased
+## 20251121
+- New option *obj:multi:options* to control
+  whether multi-objective option suffixes
+  are used.
 - Allow standalone *mipdisplay=..*,
   *lpdisplay=..*, *bardisplay=..* without
   *outlev*.

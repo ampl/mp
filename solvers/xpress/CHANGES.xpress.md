@@ -2,8 +2,11 @@ Summary of recent updates to Xpress for AMPL
 ============================================
 
 
-## unreleased
+## 20251121
 - Full list of Xpress options supported.
+- New option *obj:multi:options* to control
+  whether multi-objective option suffixes
+  are used.
 
 
 ## 20251021

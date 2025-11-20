@@ -307,7 +307,7 @@ void CuoptmpBackend::InitCustomOptions() {
       "  ampl: option cuoptmp_options 'mipgap=1e-6';\n");
 
 
-  AddSolverOption("lim:timelim timelim",
+  AddSolverOption("lim:time timelim timelimit lim:timelim",
     "Time limit in seconds after which the solver will stop and return the current solution",
     CUOPT_TIME_LIMIT, 0.0, DBL_MAX);
 

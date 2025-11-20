@@ -2311,7 +2311,7 @@ void GurobiBackend::InitCustomOptions() {
                            "keywords of the form obj_n_<name>, such as obj_1_method for the "
                            "first objective.");
 
-  AddSolverOption("obj:multiobjmethod multiobjmethod",
+  AddSolverOption("obj:multi:method obj:multiobjmethod multiobjmethod",
     "Choice of optimization algorithm for lower-priority objectives:\n"
     "\n.. value-table::\n"
     "The method keyword determines the algorithm to use for the highest "

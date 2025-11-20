@@ -8,8 +8,8 @@ let total_cost["VONS"].objpriority := 1;
 let total_number.objpriority := 1;
 
 let total_cost["A&P"].option_timelimit := 12;
-let total_cost["JEWEL"].option_timelimit := 3;
-let total_cost["VONS"].option_timelimit := 3;
+let total_cost["JEWEL"].option_timelimit := 0;
+let total_cost["VONS"].option_timelimit := 3.0;
 let total_number.option_timelimit := 3;
 
 
