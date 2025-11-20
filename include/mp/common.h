@@ -172,6 +172,8 @@ enum Status {
       Solution candidate returned but error likely.
       Codes 100-199. */
   UNCERTAIN   = 100,
+  /** Locally optimal solution. */
+  OPTIMAL_LOCALLY = UNCERTAIN + 20,
   /** End of the 'uncertain' range. */
   UNCERTAIN_LAST = 199,
 
@@ -188,6 +190,8 @@ enum Status {
   INFEASIBLE_IIS  = INFEASIBLE + 2,
   /** Problem is infeasible, IIS finder failed. */
   INFEASIBLE_IIS_FAILED  = INFEASIBLE + 3,
+  /** Locally infeasible. */
+  INFEASIBLE_LOCALLY = INFEASIBLE + 20,
   /** End of the 'infeasible' range. */
   INFEASIBLE_LAST = 299,
 
@@ -239,8 +243,6 @@ enum Status {
   LIMIT_FEAS_WORK = LIMIT_FEAS + 9,
   /** Soft memory limit reached, feasible solution. */
   LIMIT_FEAS_SOFTMEM = LIMIT_FEAS + 10,
-  /** Locally optimal solution. */
-  LIMIT_LOCALLY_OPTIMAL = LIMIT_FEAS + 11,
   /** Unrecoverable failure, feasible solution found. */
   LIMIT_FEAS_FAILURE = LIMIT_FEAS + 20,
   /** End of the 'limit_feas' range.  */
@@ -277,8 +279,6 @@ enum Status {
   LIMIT_NO_FEAS_WORK = LIMIT_NO_FEAS + 9,
   /** Soft memory limit reached, no feasible solution. */
   LIMIT_NO_FEAS_SOFTMEM = LIMIT_NO_FEAS + 10,
-  /** Locally infeasible. */
-  LIMIT_NO_FEAS_LOCALLY = LIMIT_NO_FEAS + 11,
   /** End of the 'limit-no-feas' range.  */
   LIMIT_NO_FEAS_LAST  = LIMIT_FEAS + 99,
   /** End of the 'limit' range.  */
