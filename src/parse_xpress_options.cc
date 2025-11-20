@@ -15,6 +15,7 @@
 #include <cctype>
 
 #include "wrap_xml.h"
+#include "mp/utils-string.h"
 
 #define RAISE(streammsg) do { \
   std::cerr << "ERROR: " << streammsg << std::endl; \
@@ -235,6 +236,9 @@ protected:
     if (std::string::npos != topic.find("nitro")) {
       return "xktr";
     }
+    if (std::string::npos != topic.find("Cuts")) {
+      return "cut";
+    }
     if (std::string::npos != topic.find("euristic")) {
       return "heur";
     }
@@ -259,7 +263,7 @@ protected:
     if (std::string::npos != topic.find("erivat")) {
       return "diff";
     }
-    if (std::string::npos != topic.find("MISLP")) {
+    if (begins_with(topic, "MISLP")) {
       return "mislp";
     }
     if (std::string::npos != topic.find("Misc")) {

@@ -1314,7 +1314,11 @@ std::string XpressmpBackend::DoXpressFixedModel()
 ///   (see BUILD_XPRESS_OPTION_PARSER).
 ///
 /// @note Might add prefix XPRS_ to the params of optimizerparams.xml
-///   as the last argument of parse_xpress_options
+///   as the last argument of parse_xpress_options.
+///
+/// @note Run the parser as follows:
+///   bin/parse-xpress-options ../../solver-libraries/xpress/46.01.01/xml/nonlinearparams.xml ../mp/solvers/xpress/nlprm.h Nonlinear
+///   bin/parse-xpress-options ../../solver-libraries/xpress/46.01.01/xml/optimizerparams.xml ../mp/solvers/xpress/optprm.h Optimizer XPRS
 ///
 /// @note Option names are synonymized,
 ///   descriptions are replaced.

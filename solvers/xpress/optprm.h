@@ -15,7 +15,7 @@ namespace mp {
 
 /// A mix-in class to add Xpress parameters.
 /// Translated from '../mp/solvers/xpress/optprm.h'
-/// on Fri Nov 14 22:51:31 2025
+/// on Thu Nov 20 15:22:33 2025
 ///
 template <class Impl>
 class CompiledOptimizerOptions {
@@ -709,7 +709,7 @@ public:
 #endif  // ifdef XPRS_CORESPERCPU
 
 #ifdef XPRS_COVERCUTS
-    MPD( AddSolverOption_MergeDuplicates("pre:xprs_covercuts XPRS_COVERCUTS",
+    MPD( AddSolverOption_MergeDuplicates("cut:xprs_covercuts XPRS_COVERCUTS",
       "Branch and Bound: The number of rounds of lifted cover inequalities at the root node. A lifted cover inequality is an additional constraint that can be particularly effective at reducing the size of the feasible region without removing potential integral solutions. The process of generating these can be carried out a number of times, further reducing the feasible region, albeit incurring a time penalty. There is usually a good payoff from generating these at the root node, since these inequalities then apply to every subsequent node in the tree search."
       "\n\nDefault: -1 — determined automatically.",
       XPRS_COVERCUTS, INT_MIN, INT_MAX) );
@@ -812,14 +812,14 @@ public:
 #endif  // ifdef XPRS_CROSSOVERTHREADS
 
 #ifdef XPRS_CUTDEPTH
-    MPD( AddSolverOption_MergeDuplicates("mip:xprs_cutdepth XPRS_CUTDEPTH",
+    MPD( AddSolverOption_MergeDuplicates("cut:xprs_cutdepth XPRS_CUTDEPTH",
       "Branch and Bound: Sets the maximum depth in the tree search at which cuts will be generated. Generating cuts can take a lot of time, and is often less important at deeper levels of the tree since tighter bounds on the variables have already reduced the feasible region. A value of 0 signifies that no cuts will be generated."
       "\n\nDefault: -1 — determined automatically.",
       XPRS_CUTDEPTH, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_CUTDEPTH
 
 #ifdef XPRS_CUTFACTOR
-    MPD( AddSolverOption_MergeDuplicates("mip:xprs_cutfactor XPRS_CUTFACTOR",
+    MPD( AddSolverOption_MergeDuplicates("cut:xprs_cutfactor XPRS_CUTFACTOR",
       "Limit on the number of cuts and cut coefficients the optimizer is allowed to add to the matrix during tree search. The cuts and cut coefficients are limited by CUTFACTOR times the number of rows and coefficients in the initial matrix."
       "\n\n"
       "Values (default: -1):\n"
@@ -829,14 +829,14 @@ public:
 #endif  // ifdef XPRS_CUTFACTOR
 
 #ifdef XPRS_CUTFREQ
-    MPD( AddSolverOption_MergeDuplicates("mip:xprs_cutfreq XPRS_CUTFREQ",
+    MPD( AddSolverOption_MergeDuplicates("cut:xprs_cutfreq XPRS_CUTFREQ",
       "Branch and Bound: This specifies the frequency at which cuts are generated in the tree search. If the depth of the node modulo CUTFREQ is zero, then cuts will be generated. "
       "\n\nDefault: -1 — determined automatically.",
       XPRS_CUTFREQ, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_CUTFREQ
 
 #ifdef XPRS_CUTSELECT
-    MPD( AddSolverOption_MergeDuplicates("pre:xprs_cutselect XPRS_CUTSELECT",
+    MPD( AddSolverOption_MergeDuplicates("cut:xprs_cutselect XPRS_CUTSELECT",
       "A bit-vector (see Section Bit-vector controls) providing detailed control of the cuts created for the root node of a MIP solve. Use TREECUTSELECT to control cuts during the tree search."
       "\n\n"
       "Values (default: -1):\n"
@@ -857,7 +857,7 @@ public:
 #endif  // ifdef XPRS_CUTSELECT
 
 #ifdef XPRS_CUTSTRATEGY
-    MPD( AddSolverOption_MergeDuplicates("mip:xprs_cutstrategy XPRS_CUTSTRATEGY",
+    MPD( AddSolverOption_MergeDuplicates("cut:xprs_cutstrategy XPRS_CUTSTRATEGY",
       "Branch and Bound: This specifies the cut strategy. A more aggressive cut strategy, generating a greater number of cuts, will result in fewer nodes to be explored, but with an associated time cost in generating the cuts. The fewer cuts generated, the less time taken, but the greater subsequent number of nodes to be explored."
       "\n\n"
       "Values (default: -1):\n"
@@ -1232,7 +1232,7 @@ public:
 #endif  // ifdef XPRS_GLOBALTREENLPCUTS
 
 #ifdef XPRS_GOMCUTS
-    MPD( AddSolverOption_MergeDuplicates("pre:xprs_gomcuts XPRS_GOMCUTS",
+    MPD( AddSolverOption_MergeDuplicates("cut:xprs_gomcuts XPRS_GOMCUTS",
       "Branch and Bound: The number of rounds of Gomory or lift-and-project cuts at the root node."
       "\n\nDefault: -1 — determined automatically.",
       XPRS_GOMCUTS, INT_MIN, INT_MAX) );
@@ -1591,7 +1591,7 @@ public:
 #endif  // ifdef XPRS_L1CACHE
 
 #ifdef XPRS_LNPBEST
-    MPD( AddSolverOption_MergeDuplicates("pre:xprs_lnpbest XPRS_LNPBEST",
+    MPD( AddSolverOption_MergeDuplicates("cut:xprs_lnpbest XPRS_LNPBEST",
       "Number of infeasible MIP entities to create lift-and-project cuts for during each round of Gomory cuts at the root node (see GOMCUTS)."
       "\n\nDefault: 50",
       XPRS_LNPBEST, INT_MIN, INT_MAX) );
@@ -1715,7 +1715,7 @@ public:
 #endif  // ifdef XPRS_MAXCHECKSONMAXTIME
 
 #ifdef XPRS_MAXCUTTIME
-    MPD( AddSolverOption_MergeDuplicates("lim:xprs_maxcuttime XPRS_MAXCUTTIME",
+    MPD( AddSolverOption_MergeDuplicates("cut:xprs_maxcuttime XPRS_MAXCUTTIME",
       "The maximum amount of time allowed for generation of cutting planes and reoptimization. The limit is checked during generation and no further cuts are added once this limit has been exceeded."
       "\n\n"
       "Values (default: 0):\n"
@@ -2746,7 +2746,7 @@ public:
 #endif  // ifdef XPRS_PWLNONCONVEXTRANSFORMATION
 
 #ifdef XPRS_QCCUTS
-    MPD( AddSolverOption_MergeDuplicates("qp:xprs_qccuts XPRS_QCCUTS",
+    MPD( AddSolverOption_MergeDuplicates("cut:xprs_qccuts XPRS_QCCUTS",
       "Branch and Bound: Limit on the number of rounds of  outer approximation cuts generated for the root node, when solving a mixed integer quadratic constrained or mixed integer second order conic problem with outer approximation. "
       "\n\nDefault: -1 — determined automatically.",
       XPRS_QCCUTS, INT_MIN, INT_MAX) );
@@ -2889,7 +2889,7 @@ public:
 #endif  // ifdef XPRS_RESOURCESTRATEGY
 
 #ifdef XPRS_RLTCUTS
-    MPD( AddSolverOption_MergeDuplicates("qp:xprs_rltcuts XPRS_RLTCUTS",
+    MPD( AddSolverOption_MergeDuplicates("cut:xprs_rltcuts XPRS_RLTCUTS",
       "Determines whether RLT cuts should be separated in the Xpress Global Solver."
       "\n\n"
       "Values (default: -1):\n"
@@ -2981,7 +2981,7 @@ public:
 #endif  // ifdef XPRS_SCALING
 
 #ifdef XPRS_SDPCUTSTRATEGY
-    MPD( AddSolverOption_MergeDuplicates("qp:xprs_sdpcutstrategy XPRS_SDPCUTSTRATEGY",
+    MPD( AddSolverOption_MergeDuplicates("cut:xprs_sdpcutstrategy XPRS_SDPCUTSTRATEGY",
       " Level of SDP cutting planes separation: This specifies how aggressively SDP cuts should be separated. "
       "\n\n"
       "Values (default:  -1 ):\n"
@@ -3124,14 +3124,14 @@ public:
 #endif  // ifdef XPRS_TREECOMPRESSION
 
 #ifdef XPRS_TREECOVERCUTS
-    MPD( AddSolverOption_MergeDuplicates("mip:xprs_treecovercuts XPRS_TREECOVERCUTS",
+    MPD( AddSolverOption_MergeDuplicates("cut:xprs_treecovercuts XPRS_TREECOVERCUTS",
       "Branch and Bound: The number of rounds of lifted cover inequalities generated at nodes other than the root node in the tree. Compare with the description for COVERCUTS.  A value of -1 indicates the number of rounds is determined automatically. "
       "\n\nDefault: -1",
       XPRS_TREECOVERCUTS, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_TREECOVERCUTS
 
 #ifdef XPRS_TREECUTSELECT
-    MPD( AddSolverOption_MergeDuplicates("mip:xprs_treecutselect XPRS_TREECUTSELECT",
+    MPD( AddSolverOption_MergeDuplicates("cut:xprs_treecutselect XPRS_TREECUTSELECT",
       "A bit-vector (see Section Bit-vector controls) providing detailed control of the cuts created during the tree search of a MIP solve. Use CUTSELECT to control cuts on the root node."
       "\n\n"
       "Values (default: -1):\n"
@@ -3170,7 +3170,7 @@ public:
 #endif  // ifdef XPRS_TREEFILELOGINTERVAL
 
 #ifdef XPRS_TREEGOMCUTS
-    MPD( AddSolverOption_MergeDuplicates("mip:xprs_treegomcuts XPRS_TREEGOMCUTS",
+    MPD( AddSolverOption_MergeDuplicates("cut:xprs_treegomcuts XPRS_TREEGOMCUTS",
       "Branch and Bound: The number of rounds of Gomory cuts generated at nodes other than the first node in the tree. Compare with the description for GOMCUTS. A value of -1 indicates the number of rounds is determined automatically."
       "\n\nDefault: -1",
       XPRS_TREEGOMCUTS, INT_MIN, INT_MAX) );

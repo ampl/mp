@@ -15,7 +15,7 @@ namespace mp {
 
 /// A mix-in class to add Xpress parameters.
 /// Translated from '../mp/solvers/xpress/nlprm.h'
-/// on Fri Nov 14 22:39:11 2025
+/// on Thu Nov 20 15:22:28 2025
 ///
 template <class Impl>
 class CompiledNonlinearOptions {
@@ -808,7 +808,7 @@ public:
 #endif  // ifdef XSLP_CTOL
 
 #ifdef XSLP_CUTSTRATEGY
-    MPD( AddSolverOption_MergeDuplicates("mislp:xslp_cutstrategy XSLP_CUTSTRATEGY SLPCUTSTRATEGY",
+    MPD( AddSolverOption_MergeDuplicates("cut:xslp_cutstrategy XSLP_CUTSTRATEGY SLPCUTSTRATEGY",
       "Determines whihc cuts to apply in the MISLP search when the default SLP-in-MIP strategy is used."
       "\n\nDefault: 0",
       XSLP_CUTSTRATEGY, INT_MIN, INT_MAX) );
@@ -972,7 +972,7 @@ public:
 #endif  // ifdef XSLP_DERIVATIVES
 
 #ifdef XSLP_DETERMINISTIC
-    MPD( AddSolverOption_MergeDuplicates("mislp:xslp_deterministic XSLP_DETERMINISTIC NLPDETERMINISTIC",
+    MPD( AddSolverOption_MergeDuplicates("tech:xslp_deterministic XSLP_DETERMINISTIC NLPDETERMINISTIC",
       "Determines if the parallel features of SLP should be guaranteed to be deterministic"
       "\n\nDefault: 1",
       XSLP_DETERMINISTIC, INT_MIN, INT_MAX) );

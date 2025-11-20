@@ -519,6 +519,7 @@ if (# (TARGET xpress) OR
   add_executable(parse-xpress-options
     src/parse_xpress_options.cc
     src/wrap_tinyxml2.cc
+    src/utils_string.cc
     ${PROJECT_SOURCE_DIR}/thirdparty/tinyxml2/tinyxml2.cpp)
   target_include_directories(parse-xpress-options PUBLIC
     ${PROJECT_SOURCE_DIR}/thirdparty/tinyxml2)
