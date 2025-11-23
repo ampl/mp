@@ -2,6 +2,10 @@ Summary of recent updates to BARONMP for AMPL
 =============================================
 
 
+## 20251123
+- Updated to Baron 25.11.17, which inlcludes bug fixes and performance improvements.
+
+
 ## 20251121
 - New option *obj:multi:options* to control
   whether multi-objective option suffixes

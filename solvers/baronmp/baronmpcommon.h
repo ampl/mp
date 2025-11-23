@@ -28,13 +28,13 @@ namespace mp {
 
 
 #ifdef _WIN32
-  const std::vector<std::string> cplexlnames = { "cplex2211.dll","cplex2210.dll", "cplex2010.dll", "cplex12100.dll" };
+  const std::vector<std::string> cplexlnames = { "cplex2212.dll", "cplex2211.dll","cplex2210.dll", "cplex2010.dll", "cplex12100.dll" };
   const std::vector<std::string> xpresslnames = { "xprs.dll" };
 #elif defined(__APPLE__)
-  const std::vector<std::string> cplexlnames = { "libcplex2211.dylib", "libcplex2210.dylib", "libcplex2010.dylib","libcplex12100.dylib", "cplex.dylib" };
+  const std::vector<std::string> cplexlnames = { "libcplex2211.dylib","libcplex2211.dylib", "libcplex2210.dylib", "libcplex2010.dylib","libcplex12100.dylib", "cplex.dylib" };
   const std::vector<std::string> xpresslnames = { "libxprs.dylib" };
 #else
-  const std::vector<std::string> cplexlnames = { "libcplex2211.so","libcplex2210.so", "libcplex2010.so","libcplex12100.so", "libcplex.so" };
+  const std::vector<std::string> cplexlnames = { "libcplex2212.so", "libcplex2211.so","libcplex2210.so", "libcplex2010.so","libcplex12100.so", "libcplex.so" };
   const std::vector<std::string> xpresslnames = { "libxprs.so.42", "libxprs.so.41", "libxprs.so.39.01", "libxprs.so.37.01", "libxprs.so.36.01.11","libxprs.so.36.01", "libxprs.so.34.01", "libxprs.so.33.01", "libxprs.so.32.01", "libxprs.so.31.01", "libxprs.so.29.01", "libxprs.so" };
 #endif
 
@@ -321,7 +321,7 @@ public:
   static volatile DWORD pid;
 #endif
   // Define version as follows
-  const int v_day = 5, v_month = 8, v_year = 25;
+  const int v_day =17, v_month = 11, v_year = 25;
   int currentObj = 0;
   static constexpr double Infinity() { return INFINITY;  }
   static constexpr double MinusInfinity() { return -INFINITY; }
