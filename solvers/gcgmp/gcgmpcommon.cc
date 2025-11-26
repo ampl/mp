@@ -30,15 +30,18 @@ namespace mp {
 
 void GcgCommon::OpenSolver() {
   int status = 0;
+  GCG* gcg = NULL;
   SCIP* scip = NULL;
   SCIP_PROBDATA* probdata = NULL;
 
   // initialize SCIP
-  status = SCIPcreate(&scip);
+  status = GCGcreate(&gcg);
+  setGCG(gcg);
+  scip = GCGgetOrigprob(gcg);
   setSCIP(scip); // Assign it
 
   // include default GCG plugins
-  GCG_CCALL( SCIPincludeGcgPlugins(scip) );
+  //GCG_CCALL( GCGincludeGcgPlugins(gcg) );
 
   // initialize empty SCIP problem
   GCG_CCALL( SCIPallocClearMemory(scip, &probdata) );
@@ -52,10 +55,10 @@ void GcgCommon::OpenSolver() {
 }
 
 void GcgCommon::CloseSolver() {
-  SCIP* scip = getSCIP();
+  GCG* gcg = getGCG();
 
-  // free SCIP
-  GCG_CCALL( SCIPfree(&scip) );
+  // free GCG
+  GCG_CCALL( GCGfree(&gcg) );
 }
 
 int GcgCommon::NumLinCons() const {

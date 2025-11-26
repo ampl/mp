@@ -2,6 +2,10 @@ Summary of recent updates to GCG for AMPL
 =========================================
 
 
+## 20251126
+- Updated to GCG 4.0
+
+
 ## 20251015
 - Changes in MP
 

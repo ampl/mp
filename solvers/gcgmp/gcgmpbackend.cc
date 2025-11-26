@@ -152,7 +152,7 @@ void GcgBackend::Solve() {
   if (storedOptions_.presolvings_ != 0)
     GCG_CCALL( SCIPsetSeparating(getSCIP(), (SCIP_PARAMSETTING)storedOptions_.presolvings_, TRUE) );
   
-  GCG_CCALL(GCGsolve(getSCIP()));
+  GCG_CCALL(GCGsolve(getGCG()));
 
   WindupGCGSolve();
 }
@@ -745,7 +745,7 @@ void GcgBackend::InitCustomOptions() {
     "\n"
     "  | 0 - Postprocessing of complete decompositions not enabled\n"
     "  | 1 - Postprocessing of complete decompositions enabled (default).",
-    "detection/enabled", 0, 1);
+    "detection/detectors/postprocess/enabled", 0, 1);
 
   AddSolverOption("det:maxrounds",
     "Maximum number of detection loop rounds (default: 1) ",
@@ -753,7 +753,7 @@ void GcgBackend::InitCustomOptions() {
 
   AddSolverOption("det:maxtime",
     "Maximum detection time in seconds (default: 600) ",
-    "detection/maxrounds", 0, INT_MAX);
+    "detection/maxtime", 0, INT_MAX);
 
   AddSolverOption("det:scoretype scoretype",
     "Score calculation for comparing (partial) decompositions:\n"
@@ -836,7 +836,7 @@ void GcgBackend::InitCustomOptions() {
     "\n"
     "  | 0 - convexification approach should be used in mixed-integer programs\n"
     "  | 1 - discretization approach should be used in mixed-integer programs (default).",
-    "relaxing/gcg/discretization", 0, 1);
+    "relaxing/gcg/mipdiscretization", 0, 1);
 
   AddSolverOption("gcg:mode mode",
     "The decomposition mode that GCG will use:\n"
@@ -846,7 +846,7 @@ void GcgBackend::InitCustomOptions() {
 void GcgBackend::InputDecomposition() {
   bool is_presolved = SCIPgetStage(getSCIP()) >= SCIP_STAGE_PRESOLVED;
   GCG_CCALL( SCIPallocClearMemory(scip, &getPROBDATA()->decomp) );
-  gcg::PARTIALDECOMP* decomp = new gcg::PARTIALDECOMP(getSCIP(), !is_presolved);
+  gcg::PARTIALDECOMP* decomp = new gcg::PARTIALDECOMP(getGCG(), !is_presolved);
   getPROBDATA()->decomp = decomp;
 
   if (auto block0 = ReadModelSuffixInt({"block", suf::Kind::CON_BIT | suf::Kind::VAR_BIT})) {
@@ -903,8 +903,8 @@ void GcgBackend::InputDecomposition() {
       getPROBDATA()->decomp->setUsergiven(gcg::USERGIVEN::COMPLETE);
     else
       getPROBDATA()->decomp->setUsergiven(gcg::USERGIVEN::PARTIAL);
-    GCGconshdlrDecompAddPreexisitingPartialDec(getSCIP(), getPROBDATA()->decomp);
-    GCGpresolve(getSCIP());
+    GCGconshdlrDecompAddPreexisitingPartialDec(getGCG(), getPROBDATA()->decomp);
+    GCGpresolve(getGCG());
   }
 }
 

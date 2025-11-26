@@ -31,6 +31,9 @@ namespace mp {
 /// Information shared by both
 /// `GcgBackend` and `GcgModelAPI`
 struct GcgCommonInfo {
+  GCG* getGCG() const { return gcg_; }
+  void setGCG(GCG* gcg) { gcg_ = gcg; }
+
   SCIP* getSCIP() const { return scip_; }
   void setSCIP(SCIP* scip) { scip_ = scip; }
 
@@ -38,6 +41,7 @@ struct GcgCommonInfo {
   void setPROBDATA(SCIP_PROBDATA* probdata) { probdata_ = probdata; }
 
 private:
+  GCG* gcg_ = NULL;
   SCIP* scip_ = NULL;
   SCIP_PROBDATA* probdata_;
 };
