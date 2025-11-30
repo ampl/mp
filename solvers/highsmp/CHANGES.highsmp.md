@@ -2,8 +2,13 @@ Summary of recent updates to HiGHS for AMPL
 ===========================================
 
 
+## 20251201
+- Change in MP: option *obj:multi:options*: fix integer-valued
+  objective-specific options.
+
+
 ## 20251121
-- New option *obj:multi:options* to control
+- Change in MP: new option *obj:multi:options* to control
   whether multi-objective option suffixes
   are used.
 

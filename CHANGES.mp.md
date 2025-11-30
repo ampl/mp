@@ -2,6 +2,11 @@ Summary of recent updates to the AMPL MP Library
 ================================================
 
 
+## 20251201
+- Option *obj:multi:options*: fix integer-valued
+  options.
+
+
 ## 20251121
 - Meta-driver MP2NL, see
   https://mp.ampl.com/modeling-tools.html#mp2nl.

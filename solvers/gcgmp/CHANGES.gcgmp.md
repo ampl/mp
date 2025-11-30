@@ -2,6 +2,11 @@ Summary of recent updates to GCG for AMPL
 =========================================
 
 
+## 20251201
+- Option *obj:multi:options*: fix integer-valued
+  objective-specific options.
+
+
 ## 20251126
 - Updated to GCG 4.0
 

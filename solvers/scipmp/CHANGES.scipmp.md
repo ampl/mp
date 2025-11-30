@@ -2,6 +2,11 @@ Summary of recent updates to SCIP for AMPL
 ==========================================
 
 
+## 20251201
+- Change in MP: option *obj:multi:options*: fix integer-valued
+  objective-specific options.
+
+
 ## 20251021
 - Changes in MP: option *cvt:expr:nlassign*.
 

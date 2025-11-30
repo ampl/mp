@@ -2,6 +2,11 @@ Summary of recent updates to COPT for AMPL
 ==========================================
 
 
+## 20251201
+- Option *obj:multi:options*: fix integer-valued
+  objective-specific options.
+
+
 ## 20251121
 - New option *obj:multi:options* to control
   whether multi-objective option suffixes

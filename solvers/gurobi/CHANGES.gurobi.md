@@ -2,6 +2,11 @@ Summary of recent updates to gurobi for AMPL
 ============================================
 
 
+## 20251201
+- Change in MP: option *obj:multi:options*: fix integer-valued
+  objective-specific options.
+
+
 ## 20251121
 - Updated to Gurobi 13.0.0:
   - Nonlinear barrier method for finding local optima 

@@ -2,6 +2,11 @@ Summary of recent updates to Xpress for AMPL
 ============================================
 
 
+## 20251201
+- Change in MP: option *obj:multi:options*: fix integer-valued
+  objective-specific options.
+
+
 ## 20251121
 - Full list of Xpress options supported.
 - New option *obj:multi:options* to control
