@@ -203,16 +203,16 @@ protected:
       catch (...) {
         try {
           val_default_.SetInt( MPD(GetEnv()).GetIntOption(opname.data()) );
-          if (values_double.size())
-            MP_RAISE(fmt::format(
-                "Option is integer: {},\n  but real-valued "
-                "objective suffix .{} provided\n", opname.data(), s.name()));
         }
         catch (...) {
           MP_RAISE(fmt::format(
               "Option not found or not numeric: {},\n"
               "  check objective suffix .{}\n", opname.data(), s.name()));
         }
+        if (values_double.size())              // After catch
+          MP_RAISE(fmt::format(
+              "Option is integer: {},\n  but real-valued "
+              "objective suffix .{} provided\n", opname.data(), s.name()));
       }
 
       for (int iPass=0; iPass < (int)multiobj_pass_list_.size(); ++iPass) {

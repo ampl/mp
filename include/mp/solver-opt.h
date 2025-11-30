@@ -233,7 +233,7 @@ public:
 
   /// Sets the option value or throws InvalidOptionValue if the value is invalid.
   virtual void SetValue(fmt::LongLong) {
-    throw internal::OptionTypeError(name_, "int");
+    throw internal::OptionTypeError(name_, "long long");
   }
   virtual void SetValue(double) {
     throw internal::OptionTypeError(name_, "double");
@@ -508,13 +508,13 @@ public:
 
   /// Returns the value of an integer option.
   /// Throws OptionError if there is no such option or it has a different type.
-  fmt::LongLong GetIntOption(const char *name) const {
-    return GetOption(name)->GetValue<fmt::LongLong>();
+  int GetIntOption(const char *name) const {
+    return GetOption(name)->GetValue<int>();
   }
 
   // Sets the value of an integer option.
   // Throws OptionError if there is no such option or it has a different type.
-  void SetIntOption(const char *name, fmt::LongLong value) {
+  void SetIntOption(const char *name, int value) {
     GetOption(name)->SetValue(value);
   }
 
