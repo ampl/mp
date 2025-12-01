@@ -67,21 +67,32 @@ and
 Options for each objective
 ********************************************************
 
-When using the
-:ref:`multi-objective emulator <multipleObjectives>`
-(option ``obj:multi=2``),
-you can specify options for each objective by creating
+You can specify options for each objective by creating
 a suffix in AMPL with the name starting with ``option_``
 followed by an :ref:`option name <ampl-solver-options>`.
 This should be set using the suffix notation; see the example below
 where we set a time limit and a mip gap for each objective.
-Note that if the suffix value is not set, the default value or the initially specified value
-of the option will be used.
+
+Objective-specific options are supported in the
+:ref:`multi-objective emulator <multipleObjectives>`
+(option ``obj:multi=2``), as well as natively in Gurobi
+(option ``obj:multi=1``). Set ``obj:multi:options=0`` to ignore
+objective-specific option suffixes.
+
+Note that if the suffix value is not set, the default value
+or the initially specified value
+of the option will be used. Also note that AMPL suffixes
+have default value 0 which means 'not set'.
+Thus, to set a real-valued objective-specific
+option to 0, use a very small value, such
+``let _obj[1].option_mipgap := 1e-20;``. For integer-valued options
+this is currently not possible.
+
 
 .. code-block:: ampl
 
     suffix objpriority;
-    suffix option_timelimit;
+    suffix option_timelimit;    # Use single-word option alias
     suffix option_mipgap;
 
 
