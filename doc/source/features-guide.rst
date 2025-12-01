@@ -1028,10 +1028,12 @@ unwanted objective deviations from a pre-specified goal.
 
 Alternatively, if some constraints are 'soft', they can be modeled
 by penalties included in the primary or secondary objectives.
+Consult the :ref:`multiobjective modeling guide <multiple-objectives>`.
 
 Many solvers can facilitate the formulation; the available
 functionalities are solver-specific. For all solvers,
-MP can :ref:`emulate the blended and hierarchical mutliple-objective capability <multiple-objectives>`.
+MP can :ref:`emulate the blended and hierarchical mutliple-objective capability <multiple-objectives>`
+and :ref:`objective-specific solver options <objective-specific-options>`.
 Consult the ``obj:multi``
 :ref:`option <solver-options>` documentation
 for the functionalities available in your solver

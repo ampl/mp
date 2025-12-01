@@ -64,6 +64,9 @@ and
 `AMPL Colab notebooks with lexicographical objectives <https://colab.ampl.com/tags/lexicographic-objectives.html>`__.
 
 
+.. _objective-specific-options:
+
+
 Options for each objective
 ********************************************************
 
