@@ -1534,19 +1534,25 @@ void XpressmpBackend::InitCustomOptions() {
     "Default = 0 (use the value of \"alg:feastol\")",
     XPRS_FEASTOLTARGET, 0.0, DBL_MAX);
 
-    AddSolverOption("alg:indlinbigm indlinbigm",
+    AddSolverOption("pre:indlinsmallbigm indlinbigm alg:indlinbigm",
                     "Largest \"big M\" value to use in converting indicator "
                     "constraints to regular constraints, default = 1e5",
                     XPRS_INDLINBIGM, 0.0, DBL_MAX);
 
-    AddSolverOption("alg:lpfolding lpfolding",
+    AddSolverOption("lp:folding lpfolding alg:lpfolding",
                     "Simplex and barrier: whether to fold an LP problem before solving it:"
                     "\n\n.. value-table::\n",
                     XPRS_LPFOLDING, values_autonoyes_, -1);
 
-    AddSolverOption("alg:maxiis maxiis",
+    AddSolverOption("iis:max iismax maxiis",
                     "Maximum number of IIS to find; default=-1 (no limit)",
                     XPRS_MAXIIS, -1, INT_MAX);
+    AddSolverOption("iis:log iislog",
+                    "DESCRIPTION TO BE REPLACED",
+                    XPRS_IISLOG, -1, INT_MAX);
+    AddSolverOption("iis:ops iisops",
+                    "DESCR TO BE REPL",
+                    XPRS_IISOPS, -1, INT_MAX);
 
     AddSolverOption("alg:zerotol matrixtol",
                     "The zero tolerance on matrix elements. If the value of a matrix element is less "
@@ -1663,7 +1669,7 @@ void XpressmpBackend::InitCustomOptions() {
                     "\n.. value-table::\n",
                     XPRS_GENCONSDUALREDUCTIONS, values_01_noyes_1default_, 1);
 
-    AddSolverOption("pre:indlinbigm indprelinbigm",
+    AddSolverOption("pre:indlinbigbigm indprelinbigm pre:indlinbgim",
                     "Largest \"big M\" value to use in converting indicator "
                     "constraints to regular constraints during XPRESS "
                     "presolve; default = 100.0",
