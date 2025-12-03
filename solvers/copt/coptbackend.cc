@@ -599,7 +599,7 @@ void CoptBackend::InitCustomOptions() {
     "nput matrix coefficient tolerance (default 1e-10).",
     COPT_DBLPARAM_MATRIXTOL, 0.0, 1e-7);
 
-  AddSolverOption("alg:iismethod iismethod",
+  AddSolverOption("iis:method iismethod alg:iismethod",
     "Which method to use when finding an IIS (irreducible infeasible "
     "set of constraints, including variable bounds):\n"
     "\n.. value-table::\n",

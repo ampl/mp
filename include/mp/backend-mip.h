@@ -583,7 +583,7 @@ protected:
                       GetMIPOptions().rays_, values_rays_);
 
     if (IMPL_HAS_STD_FEATURE( IIS ))
-      AddStoredOption("alg:iisfind iisfind iis",
+      AddStoredOption("iis:find iisfind iis alg:iisfind",
                       "Whether to find and export an IIS. "
                       "Default = 0 (don't export).",
                       GetMIPOptions().exportIIS_);

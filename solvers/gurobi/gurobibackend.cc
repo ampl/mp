@@ -1682,7 +1682,7 @@ void GurobiBackend::InitCustomOptions() {
                          "alg:sens=0 is assumed quietly.");
 
 
-  AddStoredOption("alg:iisforce iisforce",
+  AddStoredOption("iis:force iisforce alg:iisforce",
                   "0/1*: whether to consider the .iis(lb/ub)force "
                   "suffixes on variables and range "
                   "constraints, as well as "
@@ -2117,7 +2117,7 @@ void GurobiBackend::InitCustomOptions() {
       GRB_INT_PAR_OPTIMALITYTARGET, values_optimalitytarget, -1);
 
 
-  AddSolverOption("alg:iismethod iismethod",
+  AddSolverOption("iis:method iismethod alg:iismethod",
     "Which method to use when finding an IIS (irreducible infeasible "
     "set of constraints, including variable bounds):\n"
     "\n.. value-table::\n",
