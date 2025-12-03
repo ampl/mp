@@ -94,48 +94,54 @@ protected:
   }
 
   FlatExpr CombineOrderedFactors() {
-    FlatExpr result = typename FlatExpr::Constant {1.0};
-    int i=0;
-    double coef00 = 1.0;
+    CombineConstants();
+    CombineBinaryFactors();
+    CombineRemainingFactors();
 
-    for ( ; i<n_terms_const_; ++i) {      // Collect constant factors
+    return result;
+  }
+
+  void CombineConstants() {
+    for ( ; iTerm<n_terms_const_; ++iTerm) {      // Collect constant factors
       // no: can have constant args
       // assert(std::get<1>(terms_flt_[i]).is_constant());
-      auto bnds = std::get<2>(terms_flt_[i]);
+      auto bnds = std::get<2>(terms_flt_[iTerm]);
       assert(bnds.first == bnds.second);
       coef00 *= bnds.first;
     }
+  }
 
+  void CombineBinaryFactors() {
     if ((n_terms_binary_==2 && GetFlt().prepro_products()&2) ||
         (n_terms_binary_>=3 && GetFlt().prepro_products()&4)) {
       AndConstraint::Arguments args_forall;
       args_forall.reserve(n_terms_binary_);   // Logicalize binary product
-      for ( ; i<n_terms_const_+n_terms_binary_; ++i) {
+      for ( ; iTerm<n_terms_const_+n_terms_binary_; ++iTerm) {
         assert(1.0 ==                 // term bounds range 1
-               std::get<2>(terms_flt_[i]).second -
-                   std::get<2>(terms_flt_[i]).first );
-        int binvar = GetFlt().Convert2Var(std::move(std::get<1>(terms_flt_[i])));
-        auto is_lb_minus1 = (-1.0 == std::get<2>(terms_flt_[i]).first);
+               std::get<2>(terms_flt_[iTerm]).second -
+                   std::get<2>(terms_flt_[iTerm]).first );
+        int binvar = GetFlt().Convert2Var(std::move(std::get<1>(terms_flt_[iTerm])));
+        auto is_lb_minus1 = (-1.0 == std::get<2>(terms_flt_[iTerm]).first);
         if (is_lb_minus1) {    // negated binary
           coef00 *= -1;
           binvar = GetFlt().Convert2Var( { {-1.0}, {binvar} } );
         } else {
-          assert(0.0 == std::get<2>(terms_flt_[i]).first); // normal binary
+          assert(0.0 == std::get<2>(terms_flt_[iTerm]).first); // normal binary
         }
         args_forall.push_back( binvar );
       }
       result = GetFlt().AssignResult2Args( AndConstraint{args_forall} );
       // Context should be set when adding the top contraint
     }
+  }
 
+  void CombineRemainingFactors() {
     result *= coef00;
 
-    for ( ; i<(int)terms_flt_.size(); ++i) {
+    for ( ; iTerm<(int)terms_flt_.size(); ++iTerm) {
       result = GetFlt().QuadratizeOrLinearize(
-          result, std::get<1>(terms_flt_[i]));
+          result, std::get<1>(terms_flt_[iTerm]));
     }
-
-    return result;
   }
 
   /// Obtain flattener, const
@@ -153,8 +159,12 @@ private:
       terms_flt_;
   int n_terms_const_ = 0;
   int n_terms_binary_ = 0;
+
+  FlatExpr result = typename FlatExpr::Constant {1.0};
+  int iTerm=0;
+  double coef00 = 1.0;
 };
 
- }  // namespace mp
+}  // namespace mp
 
 #endif // PREPRO_PROD_H
