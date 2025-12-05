@@ -1085,6 +1085,8 @@ class GurobiDirectSolver(MPDirectSolver):
 
                  ModelTags.nonlinear, ModelTags.log, ModelTags.trigonometric,
 
+                 ModelTags.signpow,
+
                  ModelTags.unbdd,
                  ModelTags.qcpdual,
                  ModelTags.return_mipgap,

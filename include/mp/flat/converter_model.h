@@ -344,7 +344,7 @@ public:
 
   template <class Num>
   static bool is_integer_value(Num n)
-  { return std::floor(n)==std::ceil(n); }
+  { return std::floor(n)==n; }
 
   /// Provide variable lower bounds
   const VarBndVec& GetVarLBs() const { return var_lb_; }

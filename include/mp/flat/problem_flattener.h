@@ -761,7 +761,8 @@ public:          // need to be public due to CRTP
   }
 
   EExpr VisitMul(BinaryExpr e) {
-    if (prepro_products()) {
+    if (prepro_products()
+        || recognize_signpow()) {
       PreproProd<Impl> preprod(*(Impl*)this);
       return preprod.FlattenProduct(e);
     }
@@ -1324,6 +1325,8 @@ private:
   int prepro_products_ = 1+4      // also 2 binaries for convex solvers
                          + (GetFlatCvt().
                                 ModelAPIWantsLogicalProd2Bins() ? 2 : 0);
+  int recognize_signpow_ =
+      GetFlatCvt().ModelAPIWantsSignpow() ? 1 : 0;
   int dvelim_ = 2;
 
 
@@ -1331,6 +1334,7 @@ public:
   int sos() const { return options_.sos_; }
   int sos2_ampl_pl() const { return options_.sos2_; }
   int prepro_products() const { return prepro_products_; }
+  int recognize_signpow() const { return recognize_signpow_; }
   int defvarelim() const { return dvelim_; }
 
   /// Distinguish between constraints and objectives.
@@ -1402,6 +1406,13 @@ private:
                        "\n"
                                    "Bits 2 or 4 imply bit 1.", prepro_products_).c_str(),
                        prepro_products_, 0, 1023);
+    GetEnv().AddStoredOption("cvt:pre:signpow cvt:signpow",
+                             recognize_signpow() ?
+                             "0/1*: recognize signpow() functions in the model, "
+                                                   "such as abs(x)*x, see acc:signpow." :
+                             "0*/1: recognize signpow() functions in the model, "
+                                                   "such as abs(x)*x, see acc:signpow.",
+                             recognize_signpow_, 0, 1);
     GetEnv().AddStoredOption("cvt:dvelim dvelim",
                        "Eliminate AMPL defined variables "
                        "by substitution into linear, quadratic, and polynomial "

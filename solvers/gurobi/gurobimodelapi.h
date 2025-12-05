@@ -107,6 +107,10 @@ public:
   static constexpr bool WantLogicalizedProd2Bin()
   { return !AcceptsNonconvexQC(); }
 
+  /// Should we by default recognize signpow() from the input?
+  /// See option cvt:pre:signpow.
+  static constexpr bool WantSignPow() { return true; }
+
   /// Ask if the solver can recognize SOCP corner cases
   /// (non-std representations such as xy>=1, see tests)
   /// from quadratic representations
@@ -251,6 +255,8 @@ public:
   ///   - don't use PowConstExpExpression's methods.
   ACCEPT_EXPRESSION(PowConstExpExpression, Recommended)
   Expr AddExpression(const PowConstExpExpression& );
+  ACCEPT_EXPRESSION(SignpowConstExpExpression, Recommended)
+  Expr AddExpression(const SignpowConstExpExpression& );
   ACCEPT_EXPRESSION(SinExpression, Recommended)
   Expr AddExpression(const SinExpression& );
   ACCEPT_EXPRESSION(CosExpression, Recommended)

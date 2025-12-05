@@ -15,6 +15,7 @@
 
 #include "constr_functional.h"
 #include "constr_general.h"
+#include "mp/utils-math.h"
 
 namespace mp {
 
@@ -190,6 +191,12 @@ double ComputeValue(const PowConstraint& con, const VarVec& x) {
 template <class VarVec>
 double ComputeValue(const PowConstExpConstraint& con, const VarVec& x) {
   return std::pow(
+      x[con.GetArguments()[0]], con.GetParameters()[0]);
+}
+
+template <class VarVec>
+double ComputeValue(const SignpowConstExpConstraint& con, const VarVec& x) {
+  return signpow(
       x[con.GetArguments()[0]], con.GetParameters()[0]);
 }
 

@@ -94,11 +94,18 @@ DEF_NUMERIC_FUNC_CONSTR_WITH_PRM( LogA,
 
 ////////////////////////////////////////////////////////////////////////
 DEF_NUMERIC_FUNC_CONSTR_WITH_PRM( PowConstExp,
-                                 VarArray1, DblParamArray1, "r = v ** a (a is constant)");
+                                 VarArray1, DblParamArray1,
+                                 "r = v ** a (a is constant)");
+
+////////////////////////////////////////////////////////////////////////
+DEF_NUMERIC_FUNC_CONSTR_WITH_PRM( SignpowConstExp,
+                                 VarArray1, DblParamArray1,
+                                 "r = sign(v) * abs(v) ^ a (a is constant)");
 
 ////////////////////////////////////////////////////////////////////////
 DEF_NUMERIC_FUNC_CONSTR_WITH_PRM( Pow,
-                                 VarArray2, ParamArray0, "r = x ** y (both variable)");
+                                 VarArray2, ParamArray0,
+                                 "r = x ** y (both variable)");
 
 ////////////////////////////////////////////////////////////////////////
 DEF_NUMERIC_FUNC_CONSTR( Sin, VarArray1,
@@ -286,6 +293,13 @@ public:
   const QuadraticExpr& GetQuadExpr() const { return quad_expr_; }
   /// GetArguments(): get quad expr
   const Arguments& GetArguments() const { return GetQuadExpr(); }
+
+  /// Get constant
+  double constant_term() const { return quad_expr_.constant_term(); }
+  /// Get linear part
+  const LinTerms& GetLinTerms() const { return quad_expr_.GetLinTerms(); }
+  /// Get linear part
+  const QuadTerms& GetQPTerms() const { return quad_expr_.GetQPTerms(); }
   /// Modify constant term
   void add_to_constant(double d) { quad_expr_.add_to_constant(d); }
 

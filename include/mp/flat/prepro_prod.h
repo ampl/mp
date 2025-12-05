@@ -1,6 +1,7 @@
 #ifndef PREPRO_PROD_H
 #define PREPRO_PROD_H
 
+#include <cmath>
 #include <tuple>
 #include <algorithm>
 #include <cassert>
@@ -68,6 +69,7 @@ public:
 protected:
   /// Quadratize / logicalize (sub)products
   FlatExpr CombineFactors() {
+    isRemoved_.resize(terms_flt_.size());
     SortTerms();
     return CombineOrderedFactors();
   }
@@ -96,6 +98,7 @@ protected:
   FlatExpr CombineOrderedFactors() {
     CombineConstants();
     CombineBinaryFactors();
+    RecognizeSignpows();
     CombineRemainingFactors();
 
     return result;
@@ -135,12 +138,212 @@ protected:
     }
   }
 
+  /// Information on a potential argument x
+  /// of signpow(x, n)
+  struct SignpowArgInfo {
+    std::unordered_map<int, double> abspow_, justpow_;
+    double totalabspow_ {}, totaljustpow_ {};
+    bool invalid_ {};    // if cannot be
+  public:
+    bool IsValid() const { return !invalid_; }
+    void MarkInvalid() { invalid_ = true; }
+    void AddAbsPow(int iTerm, double p) {
+      if (IsValid()) {
+        auto res = abspow_.insert(std::pair{iTerm, p});
+        assert(res.second);
+        totalabspow_ += p;
+      }
+    }
+    void AddJustPow(int iTerm, double p) {
+      if (IsValid()) {
+        auto res = justpow_.insert(std::pair{iTerm, p});
+        assert(res.second);
+        totaljustpow_ += p;
+      }
+    }
+  };
+
+  void RecognizeSignpows() {
+    if (GetFlt().recognize_signpow()) {
+      // Pass 1: recognize abs(), sqrt(x^2k), possibly under pow()
+      isSignpowAbs_.resize(terms_flt_.size());
+      for (auto i1 = iTerm; i1<(int)terms_flt_.size(); ++i1) {
+        if (CheckIfSignpowFactorAbsSqrtPossUnderPow(i1))
+          isSignpowAbs_[i1] = true;
+      }
+      if (sparginfos_.size()) { // Pass 2: fitting simple factors
+        for (auto i1 = iTerm; i1<(int)terms_flt_.size(); ++i1) {
+          if (!isSignpowAbs_[i1])
+            ConsiderSignpowFactorSimple(i1);
+        }
+        FinalizeSignpows();
+      }
+    }
+  }
+
+  bool CheckIfSignpowFactorAbsSqrtPossUnderPow(int iTerm) {
+    const auto& term0 = std::get<1>(terms_flt_[iTerm]);
+    if (term0.is_variable()) {   // Independent var, or a func con
+      auto resvar0 = term0.get_representing_variable();
+      if (const auto pConPow0 =      // pow(...)
+          GetFlt().GetFlatCvt().template
+          GetInitExpressionOfType<PowConstExpConstraint>(resvar0)) {
+        auto pow0 = pConPow0->GetParameters()[0];
+        if (pow0 > 0.0) {
+          auto argvar0 = pConPow0->GetArguments()[0];
+          return
+              CheckIfSingpowArgAbsSqrt(iTerm, argvar0, pow0);
+        }
+      }
+      return         // no pow()
+          CheckIfSingpowArgAbsSqrt(iTerm, resvar0, 1.0);
+    }
+    return false;
+  }
+
+  void ConsiderSignpowFactorSimple(int iTerm) {
+    const auto& term0 = std::get<1>(terms_flt_[iTerm]);
+    if (term0.is_variable()) {   // Independent var, or a func con
+      auto resvar0 = term0.get_representing_variable();
+      if (const auto pConPow0 =      // pow(...)
+          GetFlt().GetFlatCvt().template
+          GetInitExpressionOfType<PowConstExpConstraint>(resvar0)) {
+        auto argvar0 = pConPow0->GetArguments()[0];
+        auto pow0 = pConPow0->GetParameters()[0];
+        if (pow0<0.0
+            || std::round(pow0)!=pow0) {
+          MarkSignpowArgInvalid(iTerm, argvar0);
+        } else {
+          AddSignpowSimpleArg(iTerm, argvar0, pow0);
+        }
+      } else {                   // Indep var, or another func con
+        AddSignpowSimpleArg(iTerm, resvar0, 1.0);
+      }
+    } else {                     // not a variable
+      if (!term0.constant_term()   // simple case: x*x
+          && term0.GetLinTerms().empty()  // can be out-mult'd from x^2
+          && 1==term0.GetQPTerms().size()) {
+        auto x = term0.GetQPTerms().var1(0);
+        if (x == term0.GetQPTerms().var2(0)) {
+          AddSignpowSimpleArg(iTerm, x, 2.0);
+        }
+      }
+      // @todo handle (x+4), (x+4)^2 (would be x*x+8x+16),
+      //   x*y+17 etc.
+      // Find the expression among functional cons, otherwise skip.
+      // Reason: to have a signpow(), we need at least an abs()
+      // or sqrt(expr^2), and then expr would be a func con.
+    }
+  }
+
+  bool CheckIfSingpowArgAbsSqrt(int iTerm, int resvar1, double pow1) {
+    if (const auto pConAbs1 =    // pow(abs(...), pow1)
+        GetFlt().GetFlatCvt().template
+        GetInitExpressionOfType<AbsConstraint>(resvar1)) {
+      auto argvar1 = pConAbs1->GetArguments()[0];
+      AddSignpowAbsPowArg(iTerm, argvar1, pow1);
+      return true;
+    }
+    if (const auto pConSqrt1 =    // pow(sqrt(...), pow1)
+        GetFlt().GetFlatCvt().template
+        GetInitExpressionOfType<PowConstExpConstraint>(resvar1)) {
+      auto resvar2 = pConSqrt1->GetArguments()[0];
+      if (0.5 == pConSqrt1->GetParameters()[0]) { // sqrt = pow(..., 0.5)
+        if (const auto pConQFC2 =          // pow(sqrt(x*x), pow1)
+            GetFlt().GetFlatCvt().template // reason:
+            GetInitExpressionOfType<QuadraticFunctionalConstraint>(
+                resvar2)) {                // x^2 can be outmultiplied
+          if (!pConQFC2->constant_term()   // @todo: (x+4)^2 etc.
+              && pConQFC2->GetLinTerms().empty() // -recognize x^2+8x+16?
+              && 1==pConQFC2->GetQPTerms().size()) {
+            auto x = pConQFC2->GetQPTerms().var1(0);
+            if (x == pConQFC2->GetQPTerms().var2(0)) {
+              AddSignpowAbsPowArg(iTerm, x, pow1);
+              return true;
+            }
+          }
+        }
+        if (const auto pConPow2 =    // pow(sqrt(pow(x, 2k)), pow1)
+            GetFlt().GetFlatCvt().template
+            GetInitExpressionOfType<PowConstExpConstraint>(resvar2)) {
+          auto argvar2 = pConPow2->GetArguments()[0];
+          auto pow3 = pConPow2->GetParameters()[0];
+          auto pow3half = pow3 / 2.0;
+          if (std::round(pow3half) == pow3half) {
+            AddSignpowAbsPowArg(iTerm, argvar2, pow1*pow3half);
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  /// Register a [pow](abs/sqrt(pow^2k)) factor
+  void AddSignpowAbsPowArg(int iTerm, int argvar, double powX) {
+    sparginfos_[argvar].AddAbsPow(iTerm, powX);
+    // @todo hash the argument LFC/QFC of argvar, if exists
+  }
+
+  /// Register a "simple" [pow](x) factor, x variable.
+  /// Only if an abs(x) exists
+  void AddSignpowSimpleArg(int iTerm, int argvar, double powN) {
+    if (sparginfos_.end() != sparginfos_.find(argvar))
+      sparginfos_[argvar].AddJustPow(iTerm, powN);
+  }
+
+  /// Mark invalid variable x for a signpow,
+  /// due to x^2.7 etc.
+  void MarkSignpowArgInvalid(int iTerm, int argvar) {
+    if (sparginfos_.end() != sparginfos_.find(argvar))
+      sparginfos_[argvar].MarkInvalid();
+  }
+
+  void FinalizeSignpows() {
+    assert(sparginfos_.size());
+    for (const auto& [var, info]: sparginfos_) {
+      assert(info.totalabspow_>0);
+      assert(info.abspow_.size());
+      if (info.IsValid()
+          && info.totaljustpow_>0     // justpow is odd positive
+          && 1.0==std::fmod(info.totaljustpow_, 2.0)) {
+        auto term1 = info.abspow_.begin();  // to be replaced
+        assert(info.justpow_.size());
+        for (const auto& [iTerm, pw]: info.abspow_)
+          isRemoved_[iTerm] = true;
+        for (const auto& [iTerm, pw]: info.justpow_)
+          isRemoved_[iTerm] = true;
+        isRemoved_[term1->first] = false;   // keep the 1st term
+        if (std::fmod(info.totalabspow_, 2.0)) { // abspow not even
+          std::get<1>(terms_flt_[term1->first])
+              = typename FlatExpr::Variable {
+                  GetFlt().GetFlatCvt().AssignResultVar2Args(
+                      SignpowConstExpConstraint
+                      { VarArray1{var},
+                       DblParamArray1
+                       {info.totalabspow_ + info.totaljustpow_}})
+              };
+        } else {                            // abspow even
+          std::get<1>(terms_flt_[term1->first])
+              = typename FlatExpr::Variable {
+                  GetFlt().GetFlatCvt().AssignResultVar2Args(
+                      PowConstExpConstraint
+                      { VarArray1{var},
+                       DblParamArray1
+                       {info.totalabspow_ + info.totaljustpow_}})
+              };
+        }
+      }
+    }
+  }
+
+  /// @todo signpow factors - skip
   void CombineRemainingFactors() {
     result *= coef00;
-
     for ( ; iTerm<(int)terms_flt_.size(); ++iTerm) {
-      result = GetFlt().QuadratizeOrLinearize(
-          result, std::get<1>(terms_flt_[iTerm]));
+      if (!isRemoved_.at(iTerm))
+        result = GetFlt().QuadratizeOrLinearize(
+            result, std::get<1>(terms_flt_[iTerm]));
     }
   }
 
@@ -154,7 +357,8 @@ private:
   Flattener& flt_;
   /// tuple: comparator, term, bounds
   SmallVec<
-      std::tuple< TermCmp, FlatExpr, std::pair<double, double> >,
+      std::tuple<
+          TermCmp, FlatExpr, std::pair<double, double> >,
       32 >                 // 32 elements preallocated
       terms_flt_;
   int n_terms_const_ = 0;
@@ -163,6 +367,13 @@ private:
   FlatExpr result = typename FlatExpr::Constant {1.0};
   int iTerm=0;
   double coef00 = 1.0;
+
+  /// Here the key is either an indep. var.,
+  /// or the resvar of an LFC/QFC constraint
+  std::unordered_map<int, SignpowArgInfo> sparginfos_;
+
+  SmallVec<bool, 32> isSignpowAbs_;
+  SmallVec<bool, 32> isRemoved_;
 };
 
 }  // namespace mp

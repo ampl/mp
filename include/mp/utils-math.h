@@ -17,6 +17,12 @@ F round_to_digits(F value, int digits) {
     return std::round(value * factor) / factor;
 }
 
+template <class F>
+F signpow(F arg, F pw) {
+  auto abspow = std::pow(std::fabs(arg), pw);
+  return (arg>=0.0) ? abspow : -abspow;
+}
+
 }  // namespace mp
 
 #endif // MP_UTILS_MATH_H

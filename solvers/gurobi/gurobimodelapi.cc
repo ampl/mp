@@ -354,6 +354,9 @@ GRB_Expr GurobiModelAPI::AddExpression(const LogAExpression& e) {
 GRB_Expr GurobiModelAPI::AddExpression(const PowConstExpExpression& e) {
   return CreateFormula(e, GRB_OPCODE_POW);
 }
+GRB_Expr GurobiModelAPI::AddExpression(const SignpowConstExpExpression& e) {
+  return CreateFormula(e, GRB_OPCODE_SIGNPOW);
+}
 GRB_Expr GurobiModelAPI::AddExpression(const SinExpression& e) {
   return CreateFormula(e, GRB_OPCODE_SIN);
 }

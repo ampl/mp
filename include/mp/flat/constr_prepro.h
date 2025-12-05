@@ -131,6 +131,35 @@ public:
     }
   }
 
+  /// Preprocess SignpowConstExp
+  template <class PreprocessInfo>
+  void PreprocessConstraint(
+      SignpowConstExpConstraint& c, PreprocessInfo& prepro) {
+    auto pwr = c.GetParameters()[0];
+    auto arg = c.GetArguments()[0];
+    if (1.0==pwr) {                         // decidable case
+      prepro.set_result_var(arg);
+      return;
+    }
+    auto& m = MP_DISPATCH( GetModel() );
+    bool lbx_neg = m.lb(arg)<0.0;
+    bool ubx_pos = m.ub(arg)>0.0;
+    bool pow_int = MPD( is_integer_value(pwr) );
+    if ((pwr<0 && lbx_neg)) {       // a<0, lbx<=0
+      // We _COULD_ PL approximate when pwr<0, pow_int, lbx<0.
+      // But we leave it here (don't even narrow result).
+      // Gurobi 13 does not handle a<1 (&& lbx<0).
+    } else {
+      auto lbr = signpow(m.lb(arg), pwr),
+          ubr = signpow(m.ub(arg), pwr);
+      prepro.narrow_result_bounds( lbr, ubr );
+      if (pow_int && pwr>=0.0) {
+        // result integer if x integer, a>=0
+        prepro.set_result_type( m.var_type(arg) );
+      }
+    }
+  }
+
   /// Preprocess Min
   template <class PreprocessInfo>
   void PreprocessConstraint(

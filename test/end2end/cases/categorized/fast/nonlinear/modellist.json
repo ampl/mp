@@ -556,6 +556,16 @@
     }
   },
   {
+    "name" : "signpow_01",
+    "tags" : ["continuous", "nonlinear", "quadraticnonconvex", "signpow"],
+    "objective": 567.8131248,
+    "options": { "mp_options": "debug=1" },
+    "values": {
+      "solve_result": "solved",
+      "Initial.flat0__signpowconstexp": 4
+    }
+  },
+  {
     "name" : "sinrosnb",
     "tags" : ["continuous", "nonlinear", "quadraticnonconvex"],
     "objective": -99901,

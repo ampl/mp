@@ -237,6 +237,10 @@ public:
   /// AcceptsNonconvexQC().
   static constexpr bool WantLogicalizedProd2Bin() { return true; }
 
+  /// Should we by default recognize signpow() from the input?
+  /// See option cvt:pre:signpow.
+  static constexpr bool WantSignPow() { return false; }
+
   /// Specifically, ask if the solver can mix conic quadratic
   /// (entered via dedicated API) and direct quadratic constraints
   static constexpr bool CanMixConicQCAndQC() { return false; }

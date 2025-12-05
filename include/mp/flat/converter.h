@@ -1389,6 +1389,12 @@ public:
     return ModelAPI::WantLogicalizedProd2Bin();
   }
 
+  /// Whether the ModelAPI recommends
+  /// recognizing signpow()
+  static bool ModelAPIWantsSignpow() {
+    return ModelAPI::WantSignPow();
+  }
+
   /// Ask if the solver can recognize SOCP corner cases
   /// (non-std representations such as xy>=1, see tests)
   /// from quadratic representations
@@ -2101,6 +2107,8 @@ protected:
   STORE_CONSTRAINT_TYPE__WITH_MAP(LogConstraint, "acc:log", 1004)
   STORE_CONSTRAINT_TYPE__WITH_MAP(LogAConstraint, "acc:loga acc:logA", 1006)
   STORE_CONSTRAINT_TYPE__WITH_MAP(PowConstExpConstraint, "acc:powconstexp", 900)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(SignpowConstExpConstraint,
+                                  "acc:signpowconstexp", 890)
   STORE_CONSTRAINT_TYPE__WITH_MAP(PowConstraint, "acc:pow", 950) // -> exp, log
   STORE_CONSTRAINT_TYPE__WITH_MAP(SinConstraint, "acc:sin", 1008)
   STORE_CONSTRAINT_TYPE__WITH_MAP(CosConstraint, "acc:cos", 1010)

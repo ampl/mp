@@ -32,6 +32,7 @@ class ModelTags(enum.Enum):
     trigonometric = 100   # subcategories of nonlinear
     htrigonometric = 101
     log = 102
+    signpow = 103
 
     ## Execution mode
     script = 1000
