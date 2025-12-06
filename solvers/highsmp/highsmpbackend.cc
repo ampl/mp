@@ -188,7 +188,7 @@ void HighsBackend::Solve() {
     throw std::runtime_error(fmt::format("  Error {} while solving with HiGHS").c_str());
     // Mask warnings for pdlp
   if((status == kHighsStatusWarning) && (storedOptions_.lpmethod_!="pdlp-gpu"))
-      fmt::print("  Warning code {} while solving with HiGHS\n", status);
+      Print("  Warning code {} while solving with HiGHS\n", status);
   WindupHIGHSSolve();
 }
 
@@ -395,7 +395,7 @@ ArrayRef<double> HighsBackend::Ray() {
   std::vector<double> uray_pres(NumVars());
   auto res = loader().Highs_getPrimalRay(lp(), &has_ray, uray_pres.data());
   if (res)
-    fmt::print("Error while getting primal ray");
+    Print("Error while getting primal ray");
   if (res || (!has_ray))
   {
     uray_pres.clear();
@@ -411,7 +411,7 @@ ArrayRef<double> HighsBackend::DRay() {
   std::vector<double> dray_pres(NumLinCons());
   auto res = loader().Highs_getDualRay(lp(), &has_ray, dray_pres.data());
   if (res)
-    fmt::print("Error while getting dual ray");
+    Print("Error while getting dual ray");
   if (res || (!has_ray))
   {
     dray_pres.clear();

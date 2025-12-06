@@ -149,7 +149,7 @@ void GurobiBackend::FinishOptionParsing() {
         auto msg = fmt::format("Start environment failed with code {}, Gurobi message:\n{}",
           res, GRBgeterrormsg(env()));
         if (diag) {
-          fmt::print("\n{}\n", msg);
+          Print("\n{}\n", msg);
           diag();
         }
         else {

@@ -2957,7 +2957,8 @@ void XpressmpBackend::AddPrimalDualStart(Solution sol0_unpres) {
   XPRESSMP_CCALL(XPRSloadlpsol(lp(), x0.data(), NULL,
     pi0.data(), NULL, &status));
   if (status)
-    fmt::print("warmstart: solution is not loaded because the problem is in presolved status.\n");
+    Print("warmstart: solution is not loaded "
+          "because the problem is in presolved status.\n");
 }
 
 void XpressmpBackend::AddMIPStart(

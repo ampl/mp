@@ -1160,6 +1160,7 @@ void WarnOnDifferentCapitalizations(const std::string& target_name) {
             printed_header = true;
           }
           fmt::print("    {}\n", var_name);
+          std::fflush(stdout);
         }
       }
     }

@@ -5,6 +5,7 @@
 #include <map>
 #include <cmath>
 #include <utility>
+#include <cstdio>
 #include <cassert>
 
 #include "mp/env.h"
@@ -408,6 +409,7 @@ protected:
           else
             fmt::print("AMPL MP did not modify the model.\n\n");
           fmt::print("\n");
+          std::fflush(stdout);
         }
       }
     }
