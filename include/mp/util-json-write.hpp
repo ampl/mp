@@ -23,6 +23,7 @@
 #ifndef UTILJSONWRITE_HPP
 #define UTILJSONWRITE_HPP
 
+#include <string_view>
 #include <cassert>
 
 #include "mp/format.h"

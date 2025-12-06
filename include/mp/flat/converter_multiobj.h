@@ -255,12 +255,12 @@ protected:
     if (pass_opt_maps_.end() != pass_opt_maps_.find(npass)) {
       assert(pass_opt_maps_[npass].size());
       if (MPD(GetEnv()).verbose_mode())
-        fmt::print("Setting options for multi-objective pass {}...\n",
+        MPD(GetEnv()).Print("Setting options for multi-objective pass {}...\n",
                    npass+1);
       for (const auto& sufval: pass_opt_maps_[npass]) {
         if (sufval.second.IsDouble()) {
           if (MPD(GetEnv()).verbose_mode())
-            fmt::print("  Setting {} to {}\n",
+            MPD(GetEnv()).Print("  Setting {} to {}\n",
                        sufval.first.data(), sufval.second.GetDouble());
           MPD(GetEnv()).SetDblOption(
               sufval.first.data(), sufval.second.GetDouble());
@@ -268,7 +268,7 @@ protected:
         else {
           assert(sufval.second.IsInt());
           if (MPD(GetEnv()).verbose_mode())
-            fmt::print("  Setting {} to {}\n",
+            MPD(GetEnv()).Print("  Setting {} to {}\n",
                        sufval.first.data(), sufval.second.GetInt());
           MPD(GetEnv()).SetIntOption(
               sufval.first.data(), sufval.second.GetInt());
@@ -300,7 +300,8 @@ protected:
     std::vector<int> result;
     result.reserve(pass_opt_maps_.size());
     for (const auto& pass: pass_opt_maps_)
-    result.push_back(pass.first);
+      result.push_back(pass.first);
+    std::sort(result.begin(), result.end());   // after unordered_map
     return result;
   }
 
