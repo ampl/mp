@@ -24,6 +24,7 @@
 #include <chrono>
 #include <cmath>
 #include <limits>
+#include <cstdio>
 #include <functional>
 #include <unordered_map>
 
@@ -300,6 +301,8 @@ protected:
       if (++i_solve==storedOptions_.writemodel_index_
           && exportFileMode() > 0)
         ExportModel(export_file_names());
+      std::fflush(stdout);
+      std::fflush(stderr);
       Solve();
     }
   }
