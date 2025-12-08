@@ -566,6 +566,27 @@
     }
   },
   {
+    "name" : "signpow_02_sqrt",
+    "tags" : ["continuous", "nonlinear", "quadraticnonconvex", "signpow"],
+    "objective": 567.8131248,
+    "options": { "mp_options": "debug=1" },
+    "values": {
+      "solve_result": "solved",
+      "Initial.flat0__signpowconstexp": 4
+    }
+  },
+  {
+    "name" : "signpow_03_negtest",
+    "tags" : ["continuous", "nonlinear", "quadraticnonconvex", "signpow"],
+    "options": { "mp_options": "debug=1" },
+    "values": {
+      "solve_result": "limit",
+      "Initial.flat0__signpowconstexp": 0,
+      "Initial.flat1__A__abs": 5,
+      "Initial.flat1__U__powconstexp": 17
+    }
+  },
+  {
     "name" : "sinrosnb",
     "tags" : ["continuous", "nonlinear", "quadraticnonconvex"],
     "objective": -99901,

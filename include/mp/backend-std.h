@@ -302,7 +302,7 @@ protected:
           && exportFileMode() > 0)
         ExportModel(export_file_names());
       std::fflush(stdout);
-      std::fflush(stderr);
+      std::fflush(stderr);     // fmt::print() doesn't
       Solve();
     }
   }

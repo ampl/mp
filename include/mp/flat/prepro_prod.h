@@ -163,6 +163,7 @@ protected:
     }
   };
 
+  /// Tests: nonlinear/signpow_...
   void RecognizeSignpows() {
     if (GetFlt().recognize_signpow()) {
       // Pass 1: recognize abs(), sqrt(x^2k), possibly under pow()
@@ -197,6 +198,16 @@ protected:
       }
       return         // no pow()
           CheckIfSingpowArgAbsSqrt(iTerm, resvar0, 1.0);
+    } else {                     // not a variable
+      if (!term0.constant_term()   // simple case: abs(x)*abs(x)
+          && term0.GetLinTerms().empty()  // can be out-mult'd from
+          && 1==term0.GetQPTerms().size()) {     // abs(x)^2
+        auto x = term0.GetQPTerms().var1(0);
+        if (x == term0.GetQPTerms().var2(0)) {
+          return
+              CheckIfSingpowArgAbsSqrt(iTerm, x, 2.0);
+        }
+      }
     }
     return false;
   }
@@ -237,6 +248,10 @@ protected:
   }
 
   bool CheckIfSingpowArgAbsSqrt(int iTerm, int resvar1, double pow1) {
+    if (0.5 == pow1) { // sqrt = pow(..., 0.5) and we already in
+      if (CheckIfSingpowSqrtArg(iTerm, resvar1, 1.0))
+        return true;
+    }
     if (const auto pConAbs1 =    // pow(abs(...), pow1)
         GetFlt().GetFlatCvt().template
         GetInitExpressionOfType<AbsConstraint>(resvar1)) {
@@ -248,32 +263,39 @@ protected:
         GetFlt().GetFlatCvt().template
         GetInitExpressionOfType<PowConstExpConstraint>(resvar1)) {
       auto resvar2 = pConSqrt1->GetArguments()[0];
-      if (0.5 == pConSqrt1->GetParameters()[0]) { // sqrt = pow(..., 0.5)
-        if (const auto pConQFC2 =          // pow(sqrt(x*x), pow1)
-            GetFlt().GetFlatCvt().template // reason:
-            GetInitExpressionOfType<QuadraticFunctionalConstraint>(
-                resvar2)) {                // x^2 can be outmultiplied
-          if (!pConQFC2->constant_term()   // @todo: (x+4)^2 etc.
-              && pConQFC2->GetLinTerms().empty() // -recognize x^2+8x+16?
-              && 1==pConQFC2->GetQPTerms().size()) {
-            auto x = pConQFC2->GetQPTerms().var1(0);
-            if (x == pConQFC2->GetQPTerms().var2(0)) {
-              AddSignpowAbsPowArg(iTerm, x, pow1);
-              return true;
-            }
-          }
+      if (0.5 == pConSqrt1->GetParameters()[0]) {
+        return CheckIfSingpowSqrtArg(iTerm, resvar2, pow1);
+      }
+    }
+    return false;
+  }
+
+  /// This receives the argument of an sqrt()
+  /// @param pow1 is the pow above sqrt()
+  bool CheckIfSingpowSqrtArg(int iTerm, int resvar2, double pow1) {
+    if (const auto pConQFC2 =          // pow(sqrt(x*x), pow1)
+        GetFlt().GetFlatCvt().template // reason:
+        GetInitExpressionOfType<QuadraticFunctionalConstraint>(
+            resvar2)) {                // x^2 can be outmultiplied
+      if (!pConQFC2->constant_term()   // @todo: (x+4)^2 etc.
+          && pConQFC2->GetLinTerms().empty() // -recognize x^2+8x+16?
+          && 1==pConQFC2->GetQPTerms().size()) {
+        auto x = pConQFC2->GetQPTerms().var1(0);
+        if (x == pConQFC2->GetQPTerms().var2(0)) {
+          AddSignpowAbsPowArg(iTerm, x, pow1);
+          return true;
         }
-        if (const auto pConPow2 =    // pow(sqrt(pow(x, 2k)), pow1)
-            GetFlt().GetFlatCvt().template
-            GetInitExpressionOfType<PowConstExpConstraint>(resvar2)) {
-          auto argvar2 = pConPow2->GetArguments()[0];
-          auto pow3 = pConPow2->GetParameters()[0];
-          auto pow3half = pow3 / 2.0;
-          if (std::round(pow3half) == pow3half) {
-            AddSignpowAbsPowArg(iTerm, argvar2, pow1*pow3half);
-            return true;
-          }
-        }
+      }
+    }
+    if (const auto pConPow2 =    // pow(sqrt(pow(x, 2k)), pow1)
+        GetFlt().GetFlatCvt().template
+        GetInitExpressionOfType<PowConstExpConstraint>(resvar2)) {
+      auto argvar2 = pConPow2->GetArguments()[0];
+      auto pow3 = pConPow2->GetParameters()[0];
+      auto pow3half = pow3 / 2.0;
+      if (std::round(pow3half) == pow3half) {
+        AddSignpowAbsPowArg(iTerm, argvar2, pow1*pow3half);
+        return true;
       }
     }
     return false;
