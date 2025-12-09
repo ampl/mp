@@ -562,7 +562,8 @@
     "options": { "mp_options": "debug=1" },
     "values": {
       "solve_result": "solved",
-      "Initial.flat0__signpowconstexp": 4
+      "Initial.flat0__signpowconstexp": 4,
+      "Initial.flat1__U__powconstexp": 0
     }
   },
   {
@@ -572,7 +573,8 @@
     "options": { "mp_options": "debug=1" },
     "values": {
       "solve_result": "solved",
-      "Initial.flat0__signpowconstexp": 4
+      "Initial.flat0__signpowconstexp": 4,
+      "Initial.flat1__U__powconstexp": 0
     }
   },
   {
@@ -584,6 +586,17 @@
       "Initial.flat0__signpowconstexp": 0,
       "Initial.flat1__A__abs": 5,
       "Initial.flat1__U__powconstexp": 17
+    }
+  },
+  {
+    "name" : "signpow_04_expr",
+    "tags" : ["continuous", "nonlinear", "quadraticnonconvex", "signpow"],
+    "objective": 570.849,
+    "options": { "mp_options": "debug=1" },
+    "values": {
+      "solve_result": "solved",
+      "Initial.flat0__signpowconstexp": 4,
+      "Initial.flat1__U__powconstexp": 0
     }
   },
   {

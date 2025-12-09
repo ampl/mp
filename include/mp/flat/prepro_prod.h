@@ -11,7 +11,44 @@
 #include "mp/flat/constr_std.h"
 
 #include "mp/utils-vec.h"
+#include "mp/utils-hash-stream.h"
 
+
+namespace mp {
+
+/// References an LFC/QFC
+struct EExprRef {
+  double const_term_ {};
+  const LinTerms& lt_;
+  const QuadTerms& qt_;
+  bool operator==(const EExprRef& eer) const {
+    return const_term_ == eer.const_term_
+           && lt_ == eer.lt_ && qt_ == eer.qt_;
+  }
+};
+
+/// Typedef hash map to find the result variable
+/// of a LFC/QFC by reference
+using AlgFuncConMap =
+    std::unordered_map<EExprRef, int>;
+}
+
+namespace std {
+/// Specialize std::hash<> for EExprRef
+template <>
+struct hash< mp::EExprRef >
+{
+  size_t operator()(
+      const mp::EExprRef& eer) const
+  {
+    mp::HashStreamer hs;
+    hs.Add(eer.const_term_);
+    hs.Add(std::hash<mp::LinTerms>{}(eer.lt_));
+    hs.Add(std::hash<mp::QuadTerms>{}(eer.qt_));
+    return hs.FinalizeHashValue();
+  }
+};
+}
 
 namespace mp {
 
@@ -141,6 +178,7 @@ protected:
   /// Information on a potential argument x
   /// of signpow(x, n)
   struct SignpowArgInfo {
+    /// Key: original product factor index
     std::unordered_map<int, double> abspow_, justpow_;
     double totalabspow_ {}, totaljustpow_ {};
     bool invalid_ {};    // if cannot be
@@ -239,17 +277,25 @@ protected:
           AddSignpowSimpleArg(iTerm, x, 2.0);
         }
       }
-      // @todo handle (x+4), (x+4)^2 (would be x*x+8x+16),
-      //   x*y+17 etc.
+      // Handle (x+4), x*y+17 etc.
       // Find the expression among functional cons, otherwise skip.
       // Reason: to have a signpow(), we need at least an abs()
-      // or sqrt(expr^2), and then expr would be a func con.
+      // or sqrt(expr^2), and then expr would be a func con,
+      // but here it can be an EExpr.
+      // @todo handle (x+4)^2 (could be x*x+8x+16)?
+      if (sparginfos_eexpr_.size()) {
+        auto it = sparginfos_eexpr_.find(
+            { term0.constant_term(),
+             term0.GetLinTerms(), term0.GetQPTerms() });
+        if (sparginfos_eexpr_.end() != it)
+          AddSignpowSimpleArg(iTerm, it->second, 1.0);
+      }
     }
   }
 
   bool CheckIfSingpowArgAbsSqrt(int iTerm, int resvar1, double pow1) {
     if (0.5 == pow1) { // sqrt = pow(..., 0.5) and we already in
-      if (CheckIfSingpowSqrtArg(iTerm, resvar1, 1.0))
+      if (CheckIfSignpowSqrtArg(iTerm, resvar1, 1.0))
         return true;
     }
     if (const auto pConAbs1 =    // pow(abs(...), pow1)
@@ -264,7 +310,7 @@ protected:
         GetInitExpressionOfType<PowConstExpConstraint>(resvar1)) {
       auto resvar2 = pConSqrt1->GetArguments()[0];
       if (0.5 == pConSqrt1->GetParameters()[0]) {
-        return CheckIfSingpowSqrtArg(iTerm, resvar2, pow1);
+        return CheckIfSignpowSqrtArg(iTerm, resvar2, pow1);
       }
     }
     return false;
@@ -272,7 +318,7 @@ protected:
 
   /// This receives the argument of an sqrt()
   /// @param pow1 is the pow above sqrt()
-  bool CheckIfSingpowSqrtArg(int iTerm, int resvar2, double pow1) {
+  bool CheckIfSignpowSqrtArg(int iTerm, int resvar2, double pow1) {
     if (const auto pConQFC2 =          // pow(sqrt(x*x), pow1)
         GetFlt().GetFlatCvt().template // reason:
         GetInitExpressionOfType<QuadraticFunctionalConstraint>(
@@ -304,7 +350,25 @@ protected:
   /// Register a [pow](abs/sqrt(pow^2k)) factor
   void AddSignpowAbsPowArg(int iTerm, int argvar, double powX) {
     sparginfos_[argvar].AddAbsPow(iTerm, powX);
-    // @todo hash the argument LFC/QFC of argvar, if exists
+    // Hash the argument LFC/QFC of argvar, if exists
+    if (const auto pLFC =
+        GetFlt().GetFlatCvt().template
+        GetInitExpressionOfType<LinearFunctionalConstraint>(argvar)) {
+      sparginfos_eexpr_[{
+          pLFC->GetArguments().constant_term(),
+          pLFC->GetArguments().GetBody(),
+          qt_empty_
+      }] = argvar;
+    } else
+      if (const auto pQFC =
+          GetFlt().GetFlatCvt().template GetInitExpressionOfType
+                       <QuadraticFunctionalConstraint>(argvar)) {
+        sparginfos_eexpr_[{
+            pQFC->GetArguments().constant_term(),
+            pQFC->GetArguments().GetLinTerms(),
+            pQFC->GetArguments().GetQPTerms()
+        }] = argvar;
+      }
   }
 
   /// Register a "simple" [pow](x) factor, x variable.
@@ -393,6 +457,8 @@ private:
   /// Here the key is either an indep. var.,
   /// or the resvar of an LFC/QFC constraint
   std::unordered_map<int, SignpowArgInfo> sparginfos_;
+  AlgFuncConMap sparginfos_eexpr_;
+  QuadTerms qt_empty_;
 
   SmallVec<bool, 32> isSignpowAbs_;
   SmallVec<bool, 32> isRemoved_;
