@@ -251,9 +251,6 @@ protected:
     if (std::string::npos != topic.find("ropagation")) {
       return "pre";
     }
-    if (std::string::npos != topic.find("Root")) {
-      return "pre";
-    }
     if (std::string::npos != topic.find("unction")) {
       return "func";
     }
@@ -307,6 +304,12 @@ protected:
     }
     if (std::string::npos != topic.find("emory")) {
       return "tech";
+    }
+    if (std::string::npos != topic.find("LP")) {
+      return "lp";
+    }
+    if (std::string::npos != topic.find("Root")) {
+      return "mip";
     }
     auto p1 = topic.find_first_of(", ");
     auto p_end = (std::string::npos!=p1) ? p1 : topic.size();

@@ -15,7 +15,7 @@ namespace mp {
 
 /// A mix-in class to add Xpress parameters.
 /// Translated from '../mp/solvers/xpress/optprm.h'
-/// on Thu Nov 20 15:22:33 2025
+/// on Tue Dec  9 22:45:14 2025
 ///
 template <class Impl>
 class CompiledOptimizerOptions {
@@ -92,7 +92,7 @@ public:
 #endif  // ifdef XPRS_AUTOSCALING
 
 #ifdef XPRS_BACKGROUNDMAXTHREADS
-    MPD( AddSolverOption_MergeDuplicates("pre:xprs_backgroundmaxthreads XPRS_BACKGROUNDMAXTHREADS",
+    MPD( AddSolverOption_MergeDuplicates("tech:xprs_backgroundmaxthreads XPRS_BACKGROUNDMAXTHREADS",
       "     Limit the number of threads to use in background jobs (for example in         parallel to the root cut loop).   "
       "\n\nDefault: -1, let Xpress decide.",
       XPRS_BACKGROUNDMAXTHREADS, INT_MIN, INT_MAX) );
@@ -1616,7 +1616,7 @@ public:
 #endif  // ifdef XPRS_LOCALCHOICE
 
 #ifdef XPRS_LPFLAGS
-    MPD( AddSolverOption_MergeDuplicates("pre:xprs_lpflags XPRS_LPFLAGS",
+    MPD( AddSolverOption_MergeDuplicates("lp:xprs_lpflags XPRS_LPFLAGS",
       "A bit-vector control (see Section Bit-vector controls) which defines the algorithm for solving an LP problem or the initial LP relaxation of a MIP problem."
       "\n\n"
       "Values (default: 0):\n"
@@ -1674,7 +1674,7 @@ public:
 #endif  // ifdef XPRS_LPLOGSTYLE
 
 #ifdef XPRS_LPREFINEITERLIMIT
-    MPD( AddSolverOption_MergeDuplicates("sol:xprs_lprefineiterlimit XPRS_LPREFINEITERLIMIT",
+    MPD( AddSolverOption_MergeDuplicates("lp:xprs_lprefineiterlimit XPRS_LPREFINEITERLIMIT",
       "This specifies the simplex iteration limit the solution refiner can spend in attempting to increase the accuracy of an LP solution."
       "\n\nDefault: -1 — determined automatically.",
       XPRS_LPREFINEITERLIMIT, INT_MIN, INT_MAX) );
@@ -1939,7 +1939,7 @@ public:
 #endif  // ifdef XPRS_MIPDUALREDUCTIONS
 
 #ifdef XPRS_MIPFRACREDUCE
-    MPD( AddSolverOption_MergeDuplicates("pre:xprs_mipfracreduce XPRS_MIPFRACREDUCE",
+    MPD( AddSolverOption_MergeDuplicates("mip:xprs_mipfracreduce XPRS_MIPFRACREDUCE",
       "Branch and Bound: Specifies how often the optimizer should run a heuristic to reduce the number of fractional integer variables in the node LP solutions."
       "\n\n"
       "Values (default: -1):\n"
@@ -2753,7 +2753,7 @@ public:
 #endif  // ifdef XPRS_QCCUTS
 
 #ifdef XPRS_QCROOTALG
-    MPD( AddSolverOption_MergeDuplicates("pre:xprs_qcrootalg XPRS_QCROOTALG",
+    MPD( AddSolverOption_MergeDuplicates("qp:xprs_qcrootalg XPRS_QCROOTALG",
       "This control determines which algorithm is to be used to solve the root of a mixed integer quadratic constrained or mixed integer second order cone problem, when outer approximation is used. "
       "\n\n"
       "Values (default: -1):\n"
@@ -2900,7 +2900,7 @@ public:
 #endif  // ifdef XPRS_RLTCUTS
 
 #ifdef XPRS_ROOTPRESOLVE
-    MPD( AddSolverOption_MergeDuplicates("pre:xprs_rootpresolve XPRS_ROOTPRESOLVE",
+    MPD( AddSolverOption_MergeDuplicates("mip:xprs_rootpresolve XPRS_ROOTPRESOLVE",
       "Determines if presolving should be performed on the problem after the tree search has finished with root cutting and heuristics."
       "\n\n"
       "Values (default: -1):\n"
