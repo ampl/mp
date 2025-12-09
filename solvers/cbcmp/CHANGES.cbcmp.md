@@ -2,7 +2,7 @@ Summary of recent updates to CBCMP for AMPL
 ===========================================
 
 
-## 20251201
+## 20251210
 - Option *obj:multi:options*: fix integer-valued
   objective-specific options.
 

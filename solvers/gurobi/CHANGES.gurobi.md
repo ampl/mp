@@ -2,7 +2,11 @@ Summary of recent updates to gurobi for AMPL
 ============================================
 
 
-## 20251201
+## 20251210
+- Recognize signpow() functions in the model
+  (from expressions such as abs(x)^0.5*x).
+  Gurobi 13 accepts signpow() natively.
+  See option *cvt:pre:signpow*.
 - Change in MP: option *obj:multi:options*: fix integer-valued
   objective-specific options.
 

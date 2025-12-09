@@ -1669,7 +1669,7 @@ void XpressmpBackend::InitCustomOptions() {
                     "\n.. value-table::\n",
                     XPRS_GENCONSDUALREDUCTIONS, values_01_noyes_1default_, 1);
 
-    AddSolverOption("pre:indlinbigbigm indprelinbigm pre:indlinbgim",
+    AddSolverOption("pre:indlinbigbigm indprelinbigm pre:indlinbigm",
                     "Largest \"big M\" value to use in converting indicator "
                     "constraints to regular constraints during XPRESS "
                     "presolve; default = 100.0",

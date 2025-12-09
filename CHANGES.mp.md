@@ -2,7 +2,9 @@ Summary of recent updates to the AMPL MP Library
 ================================================
 
 
-## 20251201
+## 20251210
+- *iis:find* now the main name for option
+  *alg:iisfind* (which is now a synonym).
 - Option *obj:multi:options*: fix integer-valued
   options.
 

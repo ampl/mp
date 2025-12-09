@@ -2,7 +2,11 @@ Summary of recent updates to Xpress for AMPL
 ============================================
 
 
-## 20251201
+## 20251210
+- New option names
+  - In particular, *pre:indlin(big/small)bigm* now stand for
+    the previous *alg:indlinbigm* and *pre:indlinbigm*, resp.
+    (old names kept as synonyms).
 - Change in MP: option *obj:multi:options*: fix integer-valued
   objective-specific options.
 
