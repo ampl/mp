@@ -4,7 +4,7 @@
  NL is a format for representing optimization problems such as linear,
  quadratic, nonlinear, complementarity and constraint programming problems
  in discrete or continuous variables. It is described in the technical report
- "Writing .nl Files" (http://www.cs.sandia.gov/~dmgay/nlwrite.pdf).
+ "Writing .nl Files" (https://ampl.github.io/nlwrite.pdf).
 
  This is a complete reusable C++ implementation of an NL reader.
 
