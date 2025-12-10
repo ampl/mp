@@ -15,7 +15,7 @@ namespace mp {
 
 /// A mix-in class to add Xpress parameters.
 /// Translated from '../mp/solvers/xpress/optprm.h'
-/// on Wed Dec 10 17:06:54 2025
+/// on Tue Dec  9 22:45:14 2025
 ///
 template <class Impl>
 class CompiledOptimizerOptions {
@@ -1002,7 +1002,7 @@ public:
 #endif  // ifdef XPRS_ESCAPENAMES
 
 #ifdef XPRS_ETATOL
-    MPD( AddSolverOption_MergeDuplicates("lp:xprs_etatol XPRS_ETATOL",
+    MPD( AddSolverOption_MergeDuplicates("sim:xprs_etatol XPRS_ETATOL",
       "Tolerance on eta elements. During each iteration, the basis inverse is premultiplied by an elementary matrix, which is the identity except for one column - the eta vector. Elements of eta vectors whose absolute value is smaller than ETATOL are taken to be zero in this step."
       "\n\nDefault: 1.0E-13",
       XPRS_ETATOL, -DBL_MAX, DBL_MAX) );
@@ -1083,7 +1083,7 @@ public:
 #endif  // ifdef XPRS_FEASTOL
 
 #ifdef XPRS_FEASTOLPERTURB
-    MPD( AddSolverOption_MergeDuplicates("lp:xprs_feastolperturb XPRS_FEASTOLPERTURB",
+    MPD( AddSolverOption_MergeDuplicates("sim:xprs_feastolperturb XPRS_FEASTOLPERTURB",
       "   This tolerance determines how much a feasible primal basic solution is   allowed to be perturbed when performing basis changes. The tolerance FEASTOL is always   considered as an upper limit for the perturbations, but in some cases smaller value can be more   desirable. "
       "\n\nDefault: 1.0E-06",
       XPRS_FEASTOLPERTURB, -DBL_MAX, DBL_MAX) );
@@ -1540,14 +1540,14 @@ public:
 #endif  // ifdef XPRS_INPUTTOL
 
 #ifdef XPRS_INVERTFREQ
-    MPD( AddSolverOption_MergeDuplicates("lp:xprs_invertfreq XPRS_INVERTFREQ",
+    MPD( AddSolverOption_MergeDuplicates("sim:xprs_invertfreq XPRS_INVERTFREQ",
       "Simplex: The frequency with which the basis will be inverted. The basis is maintained in a factorized form and on most simplex iterations it is incrementally updated to reflect the step just taken. This is considerably faster than computing the full inverted matrix at each iteration, although after a number of iterations the basis becomes less well-conditioned and it becomes necessary to compute the full inverted matrix. The value of INVERTFREQ specifies the maximum number of iterations between full inversions."
       "\n\nDefault: -1 — the frequency is determined automatically.",
       XPRS_INVERTFREQ, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_INVERTFREQ
 
 #ifdef XPRS_INVERTMIN
-    MPD( AddSolverOption_MergeDuplicates("lp:xprs_invertmin XPRS_INVERTMIN",
+    MPD( AddSolverOption_MergeDuplicates("sim:xprs_invertmin XPRS_INVERTMIN",
       "Simplex: The minimum number of iterations between full inversions of the basis matrix. See the description of INVERTFREQ for details."
       "\n\nDefault: 3",
       XPRS_INVERTMIN, INT_MIN, INT_MAX) );
@@ -2191,7 +2191,7 @@ public:
 #endif  // ifdef XPRS_MUTEXCALLBACKS
 
 #ifdef XPRS_NETSTALLLIMIT
-    MPD( AddSolverOption_MergeDuplicates("lp:xprs_netstalllimit XPRS_NETSTALLLIMIT",
+    MPD( AddSolverOption_MergeDuplicates("sim:xprs_netstalllimit XPRS_NETSTALLLIMIT",
       "Limit the number of degenerate pivots of the network simplex algorithm, before switching to either primal or dual simplex, depending on ALGAFTERNETWORK."
       "\n\n"
       "Values (default: -1):\n"
@@ -2299,14 +2299,14 @@ public:
 #endif  // ifdef XPRS_PENALTY
 
 #ifdef XPRS_PIVOTTOL
-    MPD( AddSolverOption_MergeDuplicates("lp:xprs_pivottol XPRS_PIVOTTOL",
+    MPD( AddSolverOption_MergeDuplicates("sim:xprs_pivottol XPRS_PIVOTTOL",
       "Simplex: The zero tolerance for matrix elements. On each iteration, the simplex method seeks a nonzero matrix element to pivot on. Any element with absolute value less than PIVOTTOL is treated as zero for this purpose."
       "\n\nDefault: 1.0E-09",
       XPRS_PIVOTTOL, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_PIVOTTOL
 
 #ifdef XPRS_PPFACTOR
-    MPD( AddSolverOption_MergeDuplicates("lp:xprs_ppfactor XPRS_PPFACTOR",
+    MPD( AddSolverOption_MergeDuplicates("sim:xprs_ppfactor XPRS_PPFACTOR",
       "The partial pricing candidate list sizing parameter."
       "\n\nDefault: 1.0",
       XPRS_PPFACTOR, -DBL_MAX, DBL_MAX) );
@@ -2843,7 +2843,7 @@ public:
 #endif  // ifdef XPRS_RELAXTREEMEMORYLIMIT
 
 #ifdef XPRS_RELPIVOTTOL
-    MPD( AddSolverOption_MergeDuplicates("lp:xprs_relpivottol XPRS_RELPIVOTTOL",
+    MPD( AddSolverOption_MergeDuplicates("sim:xprs_relpivottol XPRS_RELPIVOTTOL",
       "Simplex: At each iteration a pivot element is chosen within a given column of the matrix. The relative pivot tolerance, RELPIVOTTOL, is the size of the element chosen relative to the largest possible pivot element in the same column."
       "\n\nDefault: 1.0E-06",
       XPRS_RELPIVOTTOL, -DBL_MAX, DBL_MAX) );
