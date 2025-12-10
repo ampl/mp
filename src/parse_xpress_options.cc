@@ -308,6 +308,9 @@ protected:
     if (std::string::npos != topic.find("LP")) {
       return "lp";
     }
+    if (std::string::npos != topic.find("implex")) {
+      return "lp"; // not all simplex options have "Simplex"
+    }
     if (std::string::npos != topic.find("Root")) {
       return "mip";
     }
