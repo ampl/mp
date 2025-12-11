@@ -642,14 +642,15 @@ Functions recognized from the model
 The following function is recognized from the user input
 (and natively supported by Gurobi 13):
 
-- :math:`signpow(x, p) := sign(x) |x|^p`.
+- :math:`signpow(x, p) := sign(x) |x|^p, \quad p>1`.
 
 The following forms are recognized:
 
 .. code-block:: ampl
 
    abs(x+x*y+7)^0.5*(x+x*y+7)     # gives signpow(x+x*y+7, 1.5)
-   sqrt(z^2)^2.3*z                # signpow(z, 3.3). With a single-variable argument only
+   sqrt(z^2)^2.3*z                # signpow(z, 3.3)
+                                  # With a single-variable argument only
 
 Set ``cvt:pre:signpow=0`` to skip recognition of :math:`signpow`.
 
