@@ -25,8 +25,8 @@ representing *numerical expressions* and *constraints:*
 - **constr**
      represents a constraint of the model, which may evaluate to true or false
      depending on the values of variables that it contains. It may be built from the
-     familiar relational operators ``>(=)``, ``<(=)``, and ``=``, but also from other
-     operators such as ``or`` and ``alldiff`` that create constraints.
+     familiar relational operators `>(=)`, `<(=)`, and `=`, but also from other
+     operators such as `or` and `alldiff` that create constraints.
 
 The return value of an operator or function is also one of the above,
 as indicated by *expr-valued* or *constr-valued* at the beginning of each syntax summary.
@@ -426,7 +426,8 @@ a common kind of relationship between two single-inequality constraints, or betw
 Certain nonlinear solvers, notably Knitro, handle complementarity constraints natively.
 For MP-based solvers, the interface converts uses of ``complements`` to equivalent
 constraints using logical operators or certain nonlinear functions,
-see :ref:`solver options <ampl-solver-options>` *cvt:compl*, *cvt:compl:eps*.
+see :ref:`solver options <ampl-solver-options>`
+``cvt:compl``, ``cvt:compl:eps``.
 
 .. code-block:: ampl
 
@@ -622,7 +623,7 @@ Supported functions
     *expr-valued:* *expr1* raised to the *expr2* power.
     For *expr1* and *expr2* both variable, the operator is passed
     to the solver natively if supported, otherwise
-    reformulated as ``exp(expr2 * log(expr1))``.
+    reformulated as `exp(expr2 * log(expr1))`.
     For *expr1* constant positive, the operator is passed to the solver
     natively if supported, otherwise :ref:`nonlinear-pl-approx` is applied.
     For *expr2* constant positive integer, the operator
@@ -630,7 +631,8 @@ Supported functions
     decomposed into quadratic constraints if the solver supports them,
     otherwise approximated by a piecewise-linear function.
     To avoid using native handling
-    of the ^ operator, set options `acc:pow=0`, `acc:expa=0`, or `acc:powconstexp=0`,
+    of the ^ operator, set options ``acc:pow=0``, ``acc:expa=0``,
+    or ``acc:powconstexp=0``,
     respectively.
 
 
@@ -640,20 +642,21 @@ Functions recognized from the model
 The following function is recognized from the user input
 (and natively supported by Gurobi 13):
 
-- `signpow(x, p) := sign(x) * (abs(x)^p)`.
+- :math:`signpow(x, p) := sign(x) |x|^p`.
 
 The following forms are recognized:
 
-.. _code-block:: ampl
+.. code-block:: ampl
 
    abs(x+x*y+7)^0.5*(x+x*y+7)     # gives signpow(x+x*y+7, 1.5)
    sqrt(z^2)^2.3*z                # signpow(z, 3.3). With a single-variable argument only
 
-Set `cvt:pre:signpow=0` to skip recognition of `signpow`.
+Set ``cvt:pre:signpow=0`` to skip recognition of :math:`signpow`.
 
 When using `abs`, note that if `x+x*y+7` has deduced bounds of equal sign,
 `abs` is eliminated and the result is `([-] (x+x*y+7))^0.5 * (x+x*x+7)`.
-`sqrt` is better in this regard - always converted, but less efficient
+Using `sqrt` is better in this regard - it is always converted,
+but less efficient
 for other solvers where it's left as-is.
 
 
