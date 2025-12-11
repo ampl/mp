@@ -425,7 +425,8 @@ a common kind of relationship between two single-inequality constraints, or betw
 
 Certain nonlinear solvers, notably Knitro, handle complementarity constraints natively.
 For MP-based solvers, the interface converts uses of ``complements`` to equivalent
-constraints using logical operators.
+constraints using logical operators or certain nonlinear functions,
+see :ref:`solver options <ampl-solver-options>` *cvt:compl*, *cvt:compl:eps*.
 
 .. code-block:: ampl
 
@@ -632,6 +633,30 @@ Supported functions
     of the ^ operator, set options `acc:pow=0`, `acc:expa=0`, or `acc:powconstexp=0`,
     respectively.
 
+
+Functions recognized from the model
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The following function is recognized from the user input
+(and natively supported by Gurobi 13):
+
+- `signpow(x, p) := sign(x) * (abs(x)^p)`.
+
+The following forms are recognized:
+
+.. _code-block:: ampl
+
+   abs(x+x*y+7)^0.5*(x+x*y+7)     # gives signpow(x+x*y+7, 1.5)
+   sqrt(z^2)^2.3*z                # signpow(z, 3.3). With a single-variable argument only
+
+Set `cvt:pre:signpow=0` to skip recognition of `signpow`.
+
+When using `abs`, note that if `x+x*y+7` has deduced bounds of equal sign,
+`abs` is eliminated and the result is `([-] (x+x*y+7))^0.5 * (x+x*x+7)`.
+`sqrt` is better in this regard - always converted, but less efficient
+for other solvers where it's left as-is.
+
+
 .. _nonlinear-pl-approx:
 
 Piecewise-linear approximation
@@ -651,7 +676,7 @@ Handling in Gurobi
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 For Gurobi, the following univariate nonlinear functions are instead handled natively:
-**exp**, **log**, **^**, **sin**, **cos**, **tan**.
+**exp**, **log**, **^**, **sin**, **cos**, **tan** **tanh**.
 As part of the new MINLP capability, it applies
 `global nonlinear solving <https://www.gurobi.com/>`_ via spatial branching.
 After suitable transformations, MP interface sends Gurobi
@@ -659,7 +684,7 @@ After suitable transformations, MP interface sends Gurobi
 these functions.
 
 Gurobi 12 defaults to proper nonlinear handling of these functions.
-Alternatively it allows their piecewise-linear approximation
+Alternatively (and deprecated in Gurobi 13) it allows their piecewise-linear approximation
 as part of preprocessing. Gurobi :ref:`option <solver-options>` ``alg:global``
 (``pre:funcnonlinear``) can be used to apply piecewise-linear approximation,
 after disabling expression trees:
