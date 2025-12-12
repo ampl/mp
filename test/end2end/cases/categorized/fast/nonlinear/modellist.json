@@ -600,6 +600,17 @@
     }
   },
   {
+    "name" : "logistic_01",
+    "tags" : ["continuous", "nonlinear", "quadraticnonconvex", "logistic"],
+    "objective": -0.7261816448,
+    "options": { "mp_options": "debug=1" },
+    "values": {
+      "solve_result": "solved",
+      "Initial.flat0__logistic": 2,
+      "Initial.flat1__U__exp": 0
+    }
+  },
+  {
     "name" : "sinrosnb",
     "tags" : ["continuous", "nonlinear", "quadraticnonconvex"],
     "objective": -99901,

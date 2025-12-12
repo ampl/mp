@@ -241,6 +241,10 @@ public:
   /// See option cvt:pre:signpow.
   static constexpr bool WantSignPow() { return false; }
 
+  /// Should we by default recognize logistic() from the input?
+  /// See option cvt:pre:logistic.
+  static constexpr bool WantLogistic() { return false; }
+
   /// Specifically, ask if the solver can mix conic quadratic
   /// (entered via dedicated API) and direct quadratic constraints
   static constexpr bool CanMixConicQCAndQC() { return false; }

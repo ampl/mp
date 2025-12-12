@@ -56,6 +56,9 @@ public:
   /// Is constant 0?
   bool empty() const { return !constant_term() && is_constant(); }
 
+  /// booleanize
+  operator bool() const { return !empty(); }
+
   /// Whether AlgebraicExpression represents a constant
   bool is_constant() const { return Body::empty(); }
   /// true when constant=0 and 1 variable with coef 1.0

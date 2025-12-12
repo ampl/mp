@@ -111,6 +111,10 @@ public:
   /// See option cvt:pre:signpow.
   static constexpr bool WantSignPow() { return true; }
 
+  /// Should we by default recognize logistic() from the input?
+  /// See option cvt:pre:logistic.
+  static constexpr bool WantLogistic() { return true; }
+
   /// Ask if the solver can recognize SOCP corner cases
   /// (non-std representations such as xy>=1, see tests)
   /// from quadratic representations
@@ -257,6 +261,8 @@ public:
   Expr AddExpression(const PowConstExpExpression& );
   ACCEPT_EXPRESSION(SignpowConstExpExpression, Recommended)
   Expr AddExpression(const SignpowConstExpExpression& );
+  ACCEPT_EXPRESSION(LogisticExpression, Recommended)
+  Expr AddExpression(const LogisticExpression& );
   ACCEPT_EXPRESSION(SinExpression, Recommended)
   Expr AddExpression(const SinExpression& );
   ACCEPT_EXPRESSION(CosExpression, Recommended)

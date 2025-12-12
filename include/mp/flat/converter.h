@@ -1397,6 +1397,12 @@ public:
     return ModelAPI::WantSignPow();
   }
 
+  /// Whether the ModelAPI recommends
+  /// recognizing logistic()
+  static bool ModelAPIWantsLogistic() {
+    return ModelAPI::WantLogistic();
+  }
+
   /// Ask if the solver can recognize SOCP corner cases
   /// (non-std representations such as xy>=1, see tests)
   /// from quadratic representations
@@ -2111,6 +2117,8 @@ protected:
   STORE_CONSTRAINT_TYPE__WITH_MAP(PowConstExpConstraint, "acc:powconstexp", 900)
   STORE_CONSTRAINT_TYPE__WITH_MAP(SignpowConstExpConstraint,
                                   "acc:signpowconstexp", 890)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(LogisticConstraint,
+                                  "acc:logistic", 880)
   STORE_CONSTRAINT_TYPE__WITH_MAP(PowConstraint, "acc:pow", 950) // -> exp, log
   STORE_CONSTRAINT_TYPE__WITH_MAP(SinConstraint, "acc:sin", 1008)
   STORE_CONSTRAINT_TYPE__WITH_MAP(CosConstraint, "acc:cos", 1010)

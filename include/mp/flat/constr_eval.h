@@ -200,6 +200,12 @@ double ComputeValue(const SignpowConstExpConstraint& con, const VarVec& x) {
       x[con.GetArguments()[0]], con.GetParameters()[0]);
 }
 
+template <class VarVec>
+double ComputeValue(const LogisticConstraint& con, const VarVec& x) {
+  return 1.0 / (1.0 +
+                    std::exp(-x[con.GetArguments()[0]]));
+}
+
 /// Compute result of the sin constraint.
 template <class VarVec>
 double ComputeValue(const SinConstraint& con, const VarVec& x) {

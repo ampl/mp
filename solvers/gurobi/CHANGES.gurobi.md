@@ -2,7 +2,9 @@ Summary of recent updates to gurobi for AMPL
 ============================================
 
 
-## 20251210
+## 20251213
+- Recognize logistic function 1/(1+e^(-x)),
+  option cvt:pre:logistic.
 - Recognize signpow() functions in the model
   (from expressions such as abs(x)^0.5*x).
   Gurobi 13 accepts signpow() natively.

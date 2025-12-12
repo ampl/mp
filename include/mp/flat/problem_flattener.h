@@ -532,8 +532,29 @@ public:
   int Convert2Var(Expr e) {
     return Convert2Var( Convert2EExpr(e) );
   }
+  /// From an EExpr
   int Convert2Var(EExpr&& ee) {
     return GetFlatCvt().Convert2Var(std::move(ee));
+  }
+  /// Extract the initializing EExpr, if any,
+  /// or just put the \a var into the empty EExpr
+  EExpr Var2EExpr(int var) {
+    if (const auto pConLFC =
+        GetFlatCvt().template
+        GetInitExpressionOfType<LinearFunctionalConstraint>(var)) {
+      const auto& ae = pConLFC->GetArguments();
+      return
+          { {ae.GetLinTerms()}, {}, ae.constant_term() };
+    }
+    if (const auto pConQFC =
+        GetFlatCvt().template
+        GetInitExpressionOfType<QuadraticFunctionalConstraint>(var)) {
+      const auto& qe = pConQFC->GetArguments();
+      return
+          { {qe.GetLinTerms()}, {qe.GetQPTerms()},
+              qe.constant_term() };
+    }
+    return EExpr::Variable{ var };
   }
   /// Makes an affine expr representing just one variable
   AffineExpr Convert2VarAsAffineExpr(EExpr&& ee) {
@@ -571,9 +592,40 @@ public:
       dividend *= (1.0 / divisor.constant_term());
       return dividend;
     }
+    if (auto logi
+        = ConsiderLogisticFunction(std::move(dividend), std::move(divisor)))
+      return logi;
     DivConstraint fc
         {{ Convert2Var(std::move(dividend)), Convert2Var(std::move(divisor)) }};
     return AssignResult2Args( std::move(fc) );
+  }
+
+  EExpr ConsiderLogisticFunction(EExpr&& dividend, EExpr&& divisor) {
+    if (recognize_logistic()
+        && 1.0 == divisor.constant_term()
+        && divisor.GetQPTerms().empty()
+        && 1 == divisor.GetLinTerms().size()
+        && 1.0 == divisor.GetLinTerms().coef(0)) {
+      if (const auto pConExp =
+          GetFlatCvt().template
+          GetInitExpressionOfType<ExpConstraint>(
+              divisor.GetLinTerms().var(0))) {
+        EExpr arg = Var2EExpr(pConExp->GetArguments()[0]);
+        arg.negate();
+        int argvar = arg.is_variable() ?
+                         arg.get_representing_variable() :
+                         Convert2Var(std::move(arg));
+        int logi = GetFlatCvt().AssignResultVar2Args(
+            LogisticConstraint{ {argvar} });
+        if (dividend.is_constant())
+          return LinTerms{ {dividend.constant_term()}, {logi} };
+        return QuadraticExpr{ {
+            {},  // linear part
+              { {1.0}, {Convert2Var(std::move(dividend))}, {logi} } },
+                             0.0 };
+      }
+    }
+    return {};
   }
 
   template <class ExprArray>
@@ -1327,6 +1379,8 @@ private:
                                 ModelAPIWantsLogicalProd2Bins() ? 2 : 0);
   int recognize_signpow_ =
       GetFlatCvt().ModelAPIWantsSignpow() ? 1 : 0;
+  int recognize_logistic_ =
+      GetFlatCvt().ModelAPIWantsLogistic() ? 1 : 0;
   int dvelim_ = 2;
 
 
@@ -1335,6 +1389,7 @@ public:
   int sos2_ampl_pl() const { return options_.sos2_; }
   int prepro_products() const { return prepro_products_; }
   int recognize_signpow() const { return recognize_signpow_; }
+  int recognize_logistic() const { return recognize_logistic_; }
   int defvarelim() const { return dvelim_; }
 
   /// Distinguish between constraints and objectives.
@@ -1413,6 +1468,13 @@ private:
                              "0*/1: recognize signpow() functions in the model, "
                                                    "such as abs(x)*x, see acc:signpow.",
                              recognize_signpow_, 0, 1);
+    GetEnv().AddStoredOption("cvt:pre:logistic cvt:logistic",
+                             recognize_logistic() ?
+                                 "0/1*: recognize logistic functions in the model, "
+                                 "see acc:logistic." :
+                                 "0*/1: recognize logistic functions in the model, "
+                                 "see acc:logistic.",
+                             recognize_logistic_, 0, 1);
     GetEnv().AddStoredOption("cvt:dvelim dvelim",
                        "Eliminate AMPL defined variables "
                        "by substitution into linear, quadratic, and polynomial "

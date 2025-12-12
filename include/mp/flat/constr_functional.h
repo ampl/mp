@@ -103,6 +103,11 @@ DEF_NUMERIC_FUNC_CONSTR_WITH_PRM( SignpowConstExp,
                                  "r = sign(v) * abs(v) ^ a (a is constant)");
 
 ////////////////////////////////////////////////////////////////////////
+DEF_NUMERIC_FUNC_CONSTR_WITH_PRM( Logistic,
+                                 VarArray1, ParamArray0,
+                                 "r = logistic_fn(v) := 1 / (1+e^(-v))");
+
+////////////////////////////////////////////////////////////////////////
 DEF_NUMERIC_FUNC_CONSTR_WITH_PRM( Pow,
                                  VarArray2, ParamArray0,
                                  "r = x ** y (both variable)");

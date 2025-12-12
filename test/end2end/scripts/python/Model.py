@@ -33,6 +33,7 @@ class ModelTags(enum.Enum):
     htrigonometric = 101
     log = 102
     signpow = 103
+    logistic = 104
 
     ## Execution mode
     script = 1000

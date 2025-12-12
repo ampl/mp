@@ -160,6 +160,21 @@ public:
     }
   }
 
+  /// Preprocess Logistic
+  template <class PreprocessInfo>
+  void PreprocessConstraint(
+      LogisticConstraint& c, PreprocessInfo& prepro) {
+    auto arg = c.GetArguments()[0];
+    auto& m = MP_DISPATCH( GetModel() );
+    auto lbx = m.lb(arg);
+    auto ubx = m.ub(arg);
+    auto lb = (lbx > -INFINITY) ?
+                  1.0 / (1.0 + std::exp(-lbx)) : 0.0;
+    auto ub = (ubx < INFINITY) ?
+                  1.0 / (1.0 + std::exp(-ubx)) : 1.0;
+    prepro.narrow_result_bounds(lb, ub);
+  }
+
   /// Preprocess Min
   template <class PreprocessInfo>
   void PreprocessConstraint(
