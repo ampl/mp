@@ -53,7 +53,7 @@ namespace mp {
           writeVars(vars_buffer, lower ? "LOWER BOUNDS\{\n" : "UPPER_BOUNDS\{\n");
           headerWritten = true;
         }
-        writeVars(vars_buffer, fmt::format("{}: {};\n", lp()->varNames[i], bounds[i]));
+        writeVars(vars_buffer, fmt::format("{}: {:.{}g};\n", lp()->varNames[i], bounds[i], std::numeric_limits<double>::max_digits10));
       }
     }
     if (headerWritten)
