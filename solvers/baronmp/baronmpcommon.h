@@ -321,7 +321,7 @@ public:
   static volatile DWORD pid;
 #endif
   // Define version as follows
-  const int v_day =17, v_month = 11, v_year = 25;
+  const int v_day =10, v_month = 12, v_year = 25;
   int currentObj = 0;
   static constexpr double Infinity() { return INFINITY;  }
   static constexpr double MinusInfinity() { return -INFINITY; }
