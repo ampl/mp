@@ -2,6 +2,11 @@ Summary of recent updates to BARONMP for AMPL
 =============================================
 
 
+## 20251225
+- Updated to Baron 25.12.10, which inlcludes bug fixes.
+- Fixed issue with numeric precision when writing bounds
+
+
 ## 20251210
 - Option *obj:multi:options*: fix integer-valued
   objective-specific options.
