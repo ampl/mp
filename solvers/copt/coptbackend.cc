@@ -377,6 +377,12 @@ static const mp::OptionValueInfo lp_dualprices_values_[] = {
   { "1", "Using dual steepest-edge pricing algorithm", 1}
 };
 
+static const mp::OptionValueInfo values_loglevel_[] = {
+  { "2", "Print basic optimization logs (default)", 2},
+  { "3", "Print memory usage information in addition "
+          "to basic optimization logs (for MIP problems).", 3}
+};
+
 static const mp::OptionValueInfo lp_barorder_values_[] = {
   { "-1", "Choose automatically (default)", -1},
   { "0", "Approximate Minimum Degree (AMD)", 0},
@@ -395,6 +401,16 @@ static const mp::OptionValueInfo values_crossover[] = {
   {"1", "Yes", 1}
 };
 
+
+static const mp::OptionValueInfo miprepair_values_[] = {
+  {"-1", "Only when time left (default)", -1},
+  {"0", "Off", 0},
+  {"1", "Extend time limit and attempt repair (Fast)", 1},
+  {"2", "Extend time limit and attempt repair (Normal)", 2},
+  {"3", "Extend time limit and attempt repair (Aggressive)", 3}
+};
+
+
 void CoptBackend::InitCustomOptions() {
 
   set_option_header(
@@ -410,6 +426,13 @@ void CoptBackend::InitCustomOptions() {
       "0-1: output logging verbosity. "
       "Default = 0 (no logging).",
     COPT_INTPARAM_LOGGING, 0, 1);
+
+  AddSolverOption("tech:loglevel loglevel",
+    "Controls the level of detail in the optimization logs:\n"
+    "\n.. value-table::\n", COPT_INTPARAM_LOGLEVEL,
+	  values_loglevel_, 2);
+
+  
 
   AddStoredOption("tech:logfile logfile",
     "Log file name.", storedOptions_.logFile_);
@@ -459,6 +482,12 @@ void CoptBackend::InitCustomOptions() {
     "\n.. value-table::\n", COPT_INTPARAM_TREECUTLEVEL,
     alg_values_level, -1);
 
+  AddSolverOption("mip:repair miprepair repair",
+      "Level for repairing the MIP solution in case of "
+      "numerical issues:\n"
+      "\n.. value-table::\n", COPT_INTPARAM_MIPREPAIR,
+      miprepair_values_, -1);
+      
   AddSolverOption("mip:rootcutrounds rootcutrounds",
     "Rounds of cutting-planes generation of root node;\n" 
     "default -1 ==> automatic.",
@@ -473,6 +502,12 @@ void CoptBackend::InitCustomOptions() {
     "Level of heuristics:\n"
     "\n.. value-table::\n", COPT_INTPARAM_HEURLEVEL,
     alg_values_level, -1);
+
+  AddSolverOption("mip:prerootheurlevel prerootheurlevel",
+      "Level of pre-root heuristics:\n"
+      "\n.. value-table::\n", COPT_INTPARAM_PREROOTHEURLEVEL,
+      alg_values_level, -1);
+
 
   AddSolverOption("mip:roundingheurlevel roundingheurlevel",
     "Level of rounding heuristics:\n"
@@ -553,6 +588,15 @@ void CoptBackend::InitCustomOptions() {
     "Number of MIP tasks in parallel;\n"
     "default -1 ==> automatic.",
     COPT_INTPARAM_MIPTASKS, -1, 255);
+
+
+  AddSolverOption("lim:mipnlpiterlimit mipnlpiterlimit",
+      "Iteration limit for solving NLP problem(s) within the MIP solver (default: no limit).",
+      COPT_INTPARAM_MIPNLPITERLIMIT, 0, INT_MAX);
+
+  AddSolverOption("lim:nlpiterlimit nlpiterlimit",
+    "Iteration limit for the nonlinear solver (default: no limit).",
+	  COPT_INTPARAM_NLPITERLIMIT, 0, INT_MAX);
 
   AddSolverOption("lim:time timelim timelimit",
       "limit on solve time (in seconds; default: no limit).",
