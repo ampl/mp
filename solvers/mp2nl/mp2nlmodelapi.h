@@ -1704,6 +1704,18 @@ protected:
   int ExprDefVarIndex(int eindex) const;
 
 
+public:
+  /// Primal solution vector
+  const std::vector<double>& GetPrimals() const { return primals_; }
+  /// Primal solution vector, writable
+  std::vector<double>& GetPrimals() { return primals_; }
+
+  /// Dual solution vector
+  const std::vector<double>& GetDuals() const { return duals_; }
+  /// Dual solution vector, writable
+  std::vector<double>& GetDuals() { return duals_; }
+
+
 private:
   /// References to the model data.
   /// @note we rely on them staying valid.
@@ -1735,6 +1747,11 @@ private:
   NLHeader hdr_;
 
   std::unique_ptr<MP2NLSolverIntf> p_nls_;
+
+  /// Solution, if available.
+  /// Used for initial guesses in iterations
+  /// (e.g., MO Emulator)
+  std::vector<double> primals_, duals_;
 
   /// These options are stored in the class
   struct Options {

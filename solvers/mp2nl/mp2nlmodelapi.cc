@@ -1272,8 +1272,14 @@ void MP2NLModelAPI::FeedColumnSizes(ColSizeWriter& csw) {
    */
 template <class IGWriter>
 void MP2NLModelAPI::FeedInitialGuesses(IGWriter& igw) {
-  auto x0 = GetNLSolver().GetCallbacks()->GetInitialGuesses();
-  if (x0.size()) {
+  if (GetPrimals().size()) {    // Use solution from previous iteration
+    const auto& x0 = GetPrimals();
+    auto ig = igw.MakeVectorWriter(x0.size());
+    for (size_t i=0; i<x0.size(); ++i) {
+      ig.Write(GetNewVarIndex(i), x0[i]);
+    }                           // Might need full solution presolve #272
+  } else                        // Original guess from NL file
+    if (auto x0 = GetNLSolver().GetCallbacks()->GetInitialGuesses()) {
     auto ig = igw.MakeVectorWriter(x0.size());
     for (size_t i=0; i<x0.size(); ++i) {
       ig.Write(GetNewVarIndex(x0[i].first), x0[i].second);
@@ -1284,8 +1290,14 @@ void MP2NLModelAPI::FeedInitialGuesses(IGWriter& igw) {
 /** Initial dual guesses. */
 template <class IDGWriter>
 void MP2NLModelAPI::FeedInitialDualGuesses(IDGWriter& igw) {
-  auto y0 = GetNLSolver().GetCallbacks()->GetInitialDualGuesses();
-  if (y0.size()) {
+  if (GetDuals().size()) {      // Use previous iteration
+    const auto& y0 = GetDuals();
+    auto ig = igw.MakeVectorWriter(y0.size());
+    for (size_t i=0; i<y0.size(); ++i) {
+      ig.Write(GetNewAlgConIndex( i ), y0[i]);
+    }
+  } else
+    if (auto y0 = GetNLSolver().GetCallbacks()->GetInitialDualGuesses()) {
     auto ig = igw.MakeVectorWriter(y0.size());
     for (size_t i=0; i<y0.size(); ++i) {
       ig.Write(GetNewAlgConIndex( i ), y0[i]);
@@ -1470,10 +1482,18 @@ public:
   int GetObjnoUsed() const override { return objno_used_; }
 
   /// Primal solution
-  ArrayRef<double> GetX() const override { return primals_; }
+  ArrayRef<double> GetX() const override { return mapi_.GetPrimals(); }
+  /// Primal solution, writable.
+  /// Storing in ModelAPI to reuse for initial guess
+  /// in a next iteration
+  std::vector<double>& GetX() { return mapi_.GetPrimals(); }
 
   /// Dual solution
-  ArrayRef<double> GetY() const override { return duals_; }
+  ArrayRef<double> GetY() const override { return mapi_.GetDuals(); }
+  /// Dual solution, writable.
+  /// Storing in ModelAPI to reuse for initial guess
+  /// in a next iteration
+  std::vector<double>& GetY() { return mapi_.GetDuals(); }
 
   /// Suffix names
   std::set<std::string> GetSuffixNames() override {
@@ -1543,6 +1563,7 @@ public:
    */
   template <class VecReader>
   void OnDualSolution(VecReader& rd) {
+    auto& duals_ = GetY();
     duals_.clear();
     if (int nac_sol = rd.Size()) {
       auto n_alg_cons = Header().num_algebraic_cons;
@@ -1571,6 +1592,7 @@ public:
    */
   template <class VecReader>
   void OnPrimalSolution(VecReader& rd) {
+    auto& primals_ = GetX();
     primals_.clear();
     if (int nv_sol = rd.Size()) {
       auto n_vars = Header().num_vars;
@@ -1719,8 +1741,6 @@ private:
   std::string solve_message_;
   mutable std::string solve_message_final_;
   int nbs_ {};
-  std::vector<double> duals_,
-      primals_;
   int objno_used_ {-1},
       sresult_ {-1};
 };

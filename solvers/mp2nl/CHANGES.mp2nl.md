@@ -2,6 +2,11 @@ Summary of recent updates to MP2NL for AMPL
 ==========================================
 
 
+## 20260108
+- Reuse solutions between iterations of
+  multi-objective emulator.
+
+
 ## 20251210
 - Change in MP: option *obj:multi:options*: fix integer-valued
   objective-specific options.
