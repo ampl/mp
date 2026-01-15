@@ -668,7 +668,7 @@ for other solvers where it's left as-is.
 Logistic function
 ~~~~~~~~~~~~~~~~~~~~~~
 
-- :math:`logistic(x) := \frac{1}{1 + e^{-x}}`.
+- :math:`logistic(x) := \displaystyle\frac{1}{1 + e^{-x}}`.
 
 The following forms are recognized:
 

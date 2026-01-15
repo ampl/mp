@@ -383,7 +383,7 @@ enum class ValueResolution {
                    // and SetVal() decides what to do
                    // (can max out non-0 values.)
   ValResDefault = ValResAll,
-  ValResLast       // just the last conection is transferred
+  ValResLast       // just the last connection is transferred
 };
 
 /// ValuePresolver interface.
