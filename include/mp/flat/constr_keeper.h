@@ -60,6 +60,9 @@ public:
 
   /// Add a pre-constructed constraint (or just arguments)
   /// @return index of the new constraint
+  /// @param d: tree depth
+  /// @param args: arguments for Constraint,
+  ///   normally an instance of
   template <class... Args>
   int AddConstraint(int d, Args&&... args)
   {

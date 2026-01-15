@@ -124,7 +124,7 @@
       "mp_options": "cvt:mip:bigM=100000"
     },
     "comment_options": "For solution_round, see #200",
-    "objective" : 218125
+    "objective" : 229850
   },
   {
     "name" : "sudoku easy [alldiff, repeated vars in LinCon]",

@@ -120,7 +120,7 @@ public:
 };
 
 
-/// To be used by descendants of BasicConverter
+/// To be used by descendants of BasicItemConverter
 #define GET_CONSTRAINT_VALUE_NODE(con_type) \
   this->GetMC().GetValueNode((con_type*)nullptr)
 
