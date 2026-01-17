@@ -174,11 +174,11 @@ double CoptBackend::ObjectiveValue() const {
     return getDblAttr(COPT_DBLATTR_LPOBJVAL);
 }
 
-double CoptBackend::NodeCount() const {
+int CoptBackend::NodeCount() const {
   return getIntAttr(COPT_INTATTR_NODECNT);
 }
 
-double CoptBackend::SimplexIterations() const {
+int CoptBackend::SimplexIterations() const {
   return getIntAttr(COPT_INTATTR_SIMPLEXITER);
 }
 
@@ -186,6 +186,14 @@ int CoptBackend::BarrierIterations() const {
   return getIntAttr(COPT_INTATTR_BARRIERITER);
 }
 
+std::map<std::string, std::variant<int, double, std::string>>
+CoptBackend::SolutionStats() {
+    std::map<std::string, std::variant<int, double, std::string>> stats;
+    stats["simplex_iterations"] = SimplexIterations();
+    stats["barrier_iterations"] = BarrierIterations();
+    stats["node_count"] = NodeCount();
+    return stats;
+}
 void CoptBackend::DoWriteProblem(const std::string& name) {
     if (ends_with(name, ".lp"))
         COPT_CCALL(COPT_WriteLp(lp(), name.c_str()));

@@ -390,7 +390,10 @@ class AMPLRunner(object):
             for name, ev in model.getExpectedValues().items():
                 self.stats["eval_done"] = True
                 try:
-                    val = self._ampl.getValue(name)
+                    if name.startswith("option "):
+                        val = self._ampl.option[name[7:]]
+                    else:
+                        val = self._ampl.getValue(name)
                     self._assertAndRecord(ev, val,
                         "value of entity '{}'".format(name))
                 except:
@@ -410,6 +413,9 @@ class AMPLRunner(object):
             self._assertAndRecordNonObjectValue(expval, val, msg)
 
     def _assertAndRecordNonObjectValue(self, expval, val, msg):
+        if isinstance(expval, str):
+            if expval == "_anyvalue":
+                return
         b1 = isinstance(expval, (int, float))
         b2 = isinstance(val, (int, float))
         uneq = not \
@@ -431,6 +437,16 @@ class AMPLRunner(object):
                 if val<refv:
                     errmsg = str(val) + " is below " + str(refv)
                     break
+            elif "contains"==str(kw):
+                if not isinstance(val, str):
+                    errormsg = str(val) + " should be a string"
+                    break
+                if not isinstance(refv, list):
+                    refv=[refv]
+                    for rv in refv:
+                        if str(rv) not in val:
+                            errmsg = str(val) + " does not contain " + str(rv)
+                            break
             else:
                 errmsg = str(val) + \
                     ": reference object contains an unknown keyword '" + \

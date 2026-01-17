@@ -109,6 +109,13 @@ bool BaronmpBackend::IsQCP() const {
   return false;
 }
 
+std::map<std::string, std::variant<int, double, std::string>>
+BaronmpBackend::SolutionStats() {
+    std::map<std::string, std::variant<int, double, std::string>> stats;
+    stats["barrier_iterations"] = timFileData_.itera;
+    return stats;
+}
+
 ArrayRef<double> BaronmpBackend::PrimalSolution() {
   auto vec = resFileData_.PrimalSolution();
   int num_vars = vec.size();

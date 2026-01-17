@@ -127,6 +127,9 @@ public:
   /// (e.g., the solver might consider if it has PL expressions.)
   bool IsMIP() const override;
   bool IsQCP() const override;
+
+  std::map<std::string, std::variant<int, double, std::string>>
+	  SolutionStats() override;
   
   //////////////////////////// SOLVING ///////////////////////////////
 

@@ -156,10 +156,12 @@ protected:
   double getPoolObjective(int i);
 
   /// Solution attributes
-  double NodeCount() const;
-  double SimplexIterations() const;
+  int NodeCount() const;
+  int SimplexIterations() const;
   int BarrierIterations() const;
 
+  std::map<std::string, std::variant<int, double, std::string> >
+	  SolutionStats() override;
   std::pair<int, std::string> GetSolveResult() override;
   void AddCOPTMessages();
 

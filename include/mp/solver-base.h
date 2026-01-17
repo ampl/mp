@@ -234,6 +234,13 @@ public:
     timing_= value;
   }
 
+  int GetSolutionStats(const SolverOption&) const { return solution_stats_; }
+  void SetSolutionStats(const SolverOption& opt, int value) {
+      if ((value < 0) || (value > 3))
+          throw InvalidOptionValue(opt, value);
+      solution_stats_ = value;
+  }
+
   /// Returns the solver name.
   /// This is used to extract solver options from
   /// the env variable (solver_name)_options.
@@ -340,6 +347,11 @@ public:
 
   /// >0 if the timing is enabled
   int timing() const { return timing_; }
+
+  /// >0 if solution stats output is enabled. It will output the suffixes
+  /// for all solution attributes (e.g. nodes explored, simplex iterations, etc).
+  /// and the suffix stats with the JSON representation of the statistics.
+  int solution_stats() const { return solution_stats_; }
 
   /// Return error handler
   ErrorHandler *error_handler() { return error_handler_; }
@@ -630,6 +642,7 @@ private:
   bool report_uncertain_sol_ {true};
 
   int timing_ {0};
+  int solution_stats_{0};
   Stats stats_;
 
   std::function<std::pair<const char*, const char*>(const char*)> warn_cb_;

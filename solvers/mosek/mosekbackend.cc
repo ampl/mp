@@ -180,16 +180,25 @@ double MosekBackend::ObjectiveValue() const {
   return v;
 }
 
-double MosekBackend::NodeCount() const {
+int MosekBackend::NodeCount() const {
   return getIntAttr(MSK_IINF_MIO_NUM_ACTIVE_NODES); // TODO check
 }
 
-double MosekBackend::SimplexIterations() const {
+int MosekBackend::SimplexIterations() const {
   return getIntAttr(MSK_IINF_SIM_PRIMAL_ITER);
 }
 
 int MosekBackend::BarrierIterations() const {
   return getIntAttr(MSK_IINF_INTPNT_ITER);
+}
+
+std::map<std::string, std::variant<int, double, std::string>>
+MosekBackend::SolutionStats() {
+    std::map<std::string, std::variant<int, double, std::string>> stats;
+    stats["simplex_iterations"] = SimplexIterations();
+    stats["barrier_iterations"] = BarrierIterations();
+    stats["node_count"] = NodeCount();
+    return stats;
 }
 
 void MosekBackend::DoWriteProblem(const std::string &file) {

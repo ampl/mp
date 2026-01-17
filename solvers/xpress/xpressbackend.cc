@@ -40,6 +40,7 @@ std::unique_ptr<BasicModelManager>
 CreateXpressmpModelMgr(XpressmpCommon&, Env&, pre::BasicValuePresolver*&);
 
 
+
 XpressmpBackend::XpressmpBackend() : msp_(NULL), mse_(NULL) {
   pre::BasicValuePresolver* pPre;
   auto data = CreateXpressmpModelMgr(*this, *this, pPre);
@@ -182,16 +183,25 @@ double XpressmpBackend::ObjectiveValue() const {
   return getDblAttr(XPRS_OBJVAL);
 }
 
-double XpressmpBackend::NodeCount() const {
+int XpressmpBackend::NodeCount() const {
   return getIntAttr(XPRS_NODES);
 }
 
-double XpressmpBackend::SimplexIterations() const {
+int XpressmpBackend::SimplexIterations() const {
   return getIntAttr(XPRS_SIMPLEXITER);
 }
 
 int XpressmpBackend::BarrierIterations() const {
   return getIntAttr(XPRS_BARITER);
+}
+
+std::map<std::string, std::variant<int, double, std::string>>
+XpressmpBackend::SolutionStats() {
+    std::map<std::string, std::variant<int, double, std::string>> stats;
+    stats["simplex_iterations"] = SimplexIterations();
+    stats["barrier_iterations"] = BarrierIterations();
+    stats["node_count"] = NodeCount();
+    return stats;
 }
 
 void XpressmpBackend::DoWriteProblem(const std::string& name) {

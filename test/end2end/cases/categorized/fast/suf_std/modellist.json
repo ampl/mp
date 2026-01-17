@@ -1,49 +1,49 @@
 [
   {
-    "name" : "dietu_stt sstatus CPLEX netopt GUROBI lp:warmstart",
-    "objective" : 74.273820,
-    "tags" : ["linear", "continuous", "sstatus"],
+    "name": "dietu_stt sstatus CPLEX netopt GUROBI lp:warmstart",
+    "objective": 74.273820,
+    "tags": [ "linear", "continuous", "sstatus" ],
     "options": {
       "cplex_options": "netopt=3 netdisplay=1 netfeastol=1e-5 netfind=2 netoptimality=1e-4 netpricing=2 netiterations=500 predual=1 primal primalopt dual dualopt advind=2",
       "gurobi_options": "lp:warmstart=2"
     },
     "values": {
       "Buy['BEEF'].sstatus": "low",
-      "Buy['MTL'].sstatus":  "bas",
-      "Buy['CHK'].sstatus":  "upp",
+      "Buy['MTL'].sstatus": "bas",
+      "Buy['CHK'].sstatus": "upp",
       "Diet_Min['A'].sstatus": "bas"
     }
   },
   {
-    "name" : "wine_2solve",
-    "files" : ["wine_2solve.run"],
-    "objective" : 17,
-    "tags" : ["linear", "continuous", "sstatus"],
+    "name": "wine_2solve",
+    "files": [ "wine_2solve.run" ],
+    "objective": 17,
+    "tags": [ "linear", "continuous", "sstatus" ],
     "values": {
       "mulled_wine.sstatus": "bas",
-      "sugar_constraint.sstatus":  "upp"
+      "sugar_constraint.sstatus": "upp"
     }
   },
   {
-    "name" : "dietu_stt test sstatus IN",
-    "objective" : 74.273820,
-    "tags" : ["linear", "continuous", "sstatus"],
+    "name": "dietu_stt test sstatus IN",
+    "objective": 74.273820,
+    "tags": [ "linear", "continuous", "sstatus" ],
     "options": {
       "mp_options": "debug=1",
       "mp2nl_options": "solver_options='debug=1'"
     },
     "values": {
       "Buy['BEEF'].test_sstatus": 1,
-      "Buy['MTL'].test_sstatus":  4,
-      "Buy['CHK'].sstatus":  "upp",
+      "Buy['MTL'].test_sstatus": 4,
+      "Buy['CHK'].sstatus": "upp",
       "Diet_Min['A'].test_sstatus": 1
     }
   },
   {
-    "name" : "diet writeprob='diet.lp' (quoted)",
-    "objective" : 88.2,
-    "tags" : ["linear", "continuous", "writelp"],
-    "files" : ["diet.mod", "diet.dat"],
+    "name": "diet writeprob='diet.lp' (quoted)",
+    "objective": 88.2,
+    "tags": [ "linear", "continuous", "writelp" ],
+    "files": [ "diet.mod", "diet.dat" ],
     "options": {
       "mp_options": "writeprob='diet.lp'",
       "mosek_options": "writeprob='diet.jtask'"
@@ -51,70 +51,70 @@
     "comment": "Testing quoted string options"
   },
   {
-    "name" : "diet writesol=diet.sol",
-    "objective" : 88.2,
-    "tags" : ["linear", "continuous", "writesol"],
-    "files" : ["diet.mod", "diet.dat"],
+    "name": "diet writesol=diet.sol",
+    "objective": 88.2,
+    "tags": [ "linear", "continuous", "writesol" ],
+    "files": [ "diet.mod", "diet.dat" ],
     "options": {
       "ANYSOLVER_options": "writesol=diet.sol"
     }
   },
   {
-    "name" : "diet writeprob=diet.sol",
-    "objective" : 88.2,
-    "tags" : ["linear", "continuous", "writelp", "writesol"],
-    "files" : ["diet.mod", "diet.dat"],
+    "name": "diet writeprob=diet.sol",
+    "objective": 88.2,
+    "tags": [ "linear", "continuous", "writelp", "writesol" ],
+    "files": [ "diet.mod", "diet.dat" ],
     "options": {
       "ANYSOLVER_options": "writeprob=diet.sol"
     },
     "comment": "Test that writing of .sol is delayed #218"
   },
   {
-    "name" : "diet duals; var/con sstatus",
-    "objective" : 88.2,
-    "tags" : ["linear", "continuous", "sstatus"],
-    "files" : ["diet.mod", "diet.dat"],
+    "name": "diet duals; var/con sstatus",
+    "objective": 88.2,
+    "tags": [ "linear", "continuous", "sstatus" ],
+    "files": [ "diet.mod", "diet.dat" ],
     "values": {
       "Buy['BEEF'].sstatus": "low",
-      "Buy['MCH'].sstatus":  "bas",
-      "Buy['CHK'].sstatus":  "low",
+      "Buy['MCH'].sstatus": "bas",
+      "Buy['CHK'].sstatus": "low",
       "sum {i in NUTR} Diet[i]*(if 'upp'==Diet[i].sstatus then n_max[i] else if 'low'==Diet[i].sstatus then n_min[i])": 88.2
     }
   },
   {
-    "name" : "diet ini guesses",
-    "objective" : 88.2,
-    "tags" : ["linear", "continuous", "sstatus"],
-    "files" : ["diet.mod", "diet.dat", "diet_default.dat"],
+    "name": "diet ini guesses",
+    "objective": 88.2,
+    "tags": [ "linear", "continuous", "sstatus" ],
+    "files": [ "diet.mod", "diet.dat", "diet_default.dat" ],
     "comment": "Check that the initial guesses are passed, including by mp2nl",
     "values": {
       "Buy['BEEF'].sstatus": "low",
-      "Buy['MCH'].sstatus":  "bas",
-      "Buy['CHK'].sstatus":  "low",
+      "Buy['MCH'].sstatus": "bas",
+      "Buy['CHK'].sstatus": "low",
       "sum {i in NUTR} Diet[i]*(if 'upp'==Diet[i].sstatus then n_max[i] else if 'low'==Diet[i].sstatus then n_min[i])": 88.2
     }
   },
   {
-    "name" : "diet_statuses preset incomplete",
-    "objective" : 88.2,
-    "tags" : ["linear", "continuous", "sstatus"],
+    "name": "diet_statuses preset incomplete",
+    "objective": 88.2,
+    "tags": [ "linear", "continuous", "sstatus" ],
     "values": {
       "Buy['BEEF'].sstatus": "low",
-      "Buy['MCH'].sstatus":  "bas",
-      "Buy['CHK'].sstatus":  "low",
+      "Buy['MCH'].sstatus": "bas",
+      "Buy['CHK'].sstatus": "low",
       "Diet['B2'].sstatus": "low",
       "sum {i in NUTR} Diet[i]*(if 'upp'==Diet[i].sstatus then n_max[i] else if 'low'==Diet[i].sstatus then n_min[i])": 88.2
     }
   },
   {
-    "name" : "dietu_mip mip:basis=1",
-    "objective" : 74.273820,
-    "tags" : ["linear", "continuous", "fixmodel"],
+    "name": "dietu_mip mip:basis=1",
+    "objective": 74.273820,
+    "tags": [ "linear", "continuous", "fixmodel" ],
     "options": { "mp_options": "mip:basis=1" },
     "values": {
       "Buy['BEEF'].sstatus": "low",
-      "Buy['MTL'].sstatus":  "bas",
-      "Buy['CHK'].sstatus":  "upp",
+      "Buy['MTL'].sstatus": "bas",
+      "Buy['CHK'].sstatus": "upp",
       "Diet_Min['A']": 0.0,
       "Diet_Min['C']": 0.006707865168539329,
       "Diet_Min['CAL']": 0.00447191011235955,
@@ -122,20 +122,20 @@
     }
   },
   {
-    "name" : "dietu_mip mip:basis=0 (default for x-gurobi)",
-    "objective" : 74.273820,
-    "tags" : ["linear", "continuous", "fixmodel"],
+    "name": "dietu_mip mip:basis=0 (default for x-gurobi)",
+    "objective": 74.273820,
+    "tags": [ "linear", "continuous", "fixmodel" ],
     "values": {
       "Buy['BEEF'].sstatus": "bas",
-      "Buy['MTL'].sstatus":  "upp",
+      "Buy['MTL'].sstatus": "upp",
       "Diet_Min['C']": 0,
       "Diet_Min['CAL']": 0
     }
   },
   {
-    "name" : "mipb_int mip:basis=1",
-    "objective" : 1,
-    "tags" : ["linear", "continuous", "fixmodel"],
+    "name": "mipb_int mip:basis=1",
+    "objective": 1,
+    "tags": [ "linear", "continuous", "fixmodel" ],
     "options": { "mp_options": "mip:basis=1" },
     "values": {
       "x.sstatus": "low",
@@ -143,6 +143,42 @@
       "z.sstatus": "low",
       "C1": 0,
       "C1.sstatus": "bas"
+    }
+  },
+  {
+    "name": "mipb_int tech:stats=1",
+    "objective": 1,
+    "tags": [ "linear", "integer" ],
+    "options": { "mp_options": "tech:stats=1" },
+    "values": {
+      "Initial.node_count": "_anyvalue",
+      "Initial.barrier_iterations": "_anyvalue",
+      "Initial.simplex_iterations": "_anyvalue"
+    }
+  },
+  {
+    "name": "mipb_int tech:stats=2",
+    "objective": 1,
+    "tags": [ "linear", "integer" ],
+    "options": { "mp_options": "tech:stats=2" },
+    "values": {
+      "option stats_table": {
+        "contains": [ "node_count", "barrier_iterations", "simplex_iterations" ]
+      }
+    }
+  },
+  {
+    "name": "mipb_int tech:stats=3",
+    "objective": 1,
+    "tags": [ "linear", "integer" ],
+    "options": { "mp_options": "tech:stats=3" },
+    "values": {
+      "Initial.node_count": "_anyvalue",
+      "Initial.barrier_iterations": "_anyvalue",
+      "Initial.simplex_iterations": "_anyvalue",
+      "option stats_table": {
+        "contains": [ "node_count", "barrier_iterations", "simplex_iterations" ]
+      }
     }
   }
 ]

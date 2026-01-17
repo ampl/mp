@@ -272,6 +272,9 @@ protected:
   int NLBarrierIterations() const;
   double PDHGIterations() const;
 
+  std::map<std::string, std::variant<int, double, std::string>>
+      SolutionStats() override;
+
   void ReportGurobiWork();
 
 protected:  //  ///////////////// Utilities ///////////////////

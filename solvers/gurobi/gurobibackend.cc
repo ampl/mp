@@ -865,6 +865,17 @@ double GurobiBackend::PDHGIterations() const {
     return GrbGetDblAttr(GRB_DBL_ATTR_PDHGITERCOUNT, &f);
 }
 
+std::map<std::string, std::variant<int, double, std::string>>
+GurobiBackend::SolutionStats() {
+    std::map<std::string, std::variant<int, double, std::string>> stats;
+    stats["simplex_iterations"] = SimplexIterations();
+    stats["barrier_iterations"] = BarrierIterations();
+    stats["node_count"] = NodeCount();
+	stats["nl_barrier_iterations"] = NLBarrierIterations();
+	stats["pdhg_iterations"] = PDHGIterations();
+    return stats;
+}
+
 void GurobiBackend::Swap_0_vs_minus1(std::vector<int>& arr) {
   for (auto& v: arr)
     switch (v) {

@@ -403,11 +403,11 @@ double CplexBackend::ObjectiveValue() const {
   return objval;
 }
 
-double CplexBackend::NodeCount() const {
+int CplexBackend::NodeCount() const {
   return  IsMIP() ? CPXgetnodecnt(env(), lp()) : 0;
 }
 
-double CplexBackend::SimplexIterations() const {
+int CplexBackend::SimplexIterations() const {
   return IsMIP() ? CPXgetmipitcnt(env(), lp()) : CPXgetitcnt(env(), lp());
 }
 
@@ -417,7 +417,14 @@ int CplexBackend::BarrierIterations() const {
   else
     return 0;
 }
-
+std::map<std::string, std::variant<int, double, std::string>>
+CplexBackend::SolutionStats() {
+    std::map<std::string, std::variant<int, double, std::string>> stats;
+    stats["simplex_iterations"] = SimplexIterations();
+    stats["barrier_iterations"] = BarrierIterations();
+    stats["node_count"] = NodeCount();
+    return stats;
+}
 void CplexBackend::DoWriteProblem(const std::string &file) {
   CPLEX_CALL( CPXwriteprob (env(), lp(), file.c_str(), NULL) );
 }

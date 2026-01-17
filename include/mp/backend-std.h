@@ -26,6 +26,7 @@
 #include <limits>
 #include <cstdio>
 #include <functional>
+#include <variant>
 #include <unordered_map>
 
 #include "mp/backend-with-mm.h"
@@ -349,6 +350,64 @@ protected:
   /// Placeholder for interrupt notifier in Impl
   virtual void SetInterrupter(mp::Interrupter*) = 0;
 
+
+  /// Return all solution stats as name-value pairs
+  virtual std::map<std::string,
+      std::variant<int, double, std::string>> 
+  		SolutionStats() { return {}; }
+
+
+  virtual void ReportSolutionStats() {
+        fmt::MemoryWriter wrt;
+        MiniJSONWriter jw(wrt);
+        {
+            auto jsonstats = jw["stats"];
+            int dummyint[]{ 0 };
+            double dummydbl[]{ 0.0 };
+            for (const auto& [key, val] : SolutionStats()) {
+                if (std::holds_alternative<int>(val)) {
+                    dummyint[0] = std::get<int>(val);
+                    if (solution_stats() & 2) 
+                        jsonstats[key.c_str()] = dummyint[0];
+                    if (solution_stats() & 1) {
+                      SuffixDef<int> intsuf = { key.c_str(), suf::PROBLEM | suf::OUTONLY };
+                      ReportSuffix(intsuf, dummyint);
+					}
+                }
+                else if (std::holds_alternative<double>(val)) {
+                    dummydbl[0] = std::get<double>(val);
+					if (solution_stats() & 2)
+                        jsonstats[key.c_str()] = dummydbl[0];
+                    if (solution_stats() & 1) {
+                        SuffixDef<double> dblsuf = { key.c_str(), suf::PROBLEM | suf::OUTONLY };
+                        ReportSuffix(dblsuf, dummydbl);
+                    }
+                }
+                else {
+                    if (solution_stats() & 2)
+                        jsonstats[key.c_str()] = std::get<std::string>(val);
+                }
+            }
+        }
+        if (timing()>0 && (solution_stats() & 2))
+        {
+            auto times = jw["times"];
+			times["time_solver"] = stats().solution_time;
+			times["time_setup"] = stats().setup_time;
+            times["time"] = stats().solution_time + stats().setup_time + stats().output_time;
+            if (timing() > 1) {
+                times["time_read"] = stats().read_time;
+                times["time_conversion"] = stats().conversion_time;
+                times["time_output"] = stats().output_time;
+            }
+        }
+        jw.Close(); 
+        if (solution_stats() & 2) {
+            SuffixDef<int> sufStats = { "stats", suf::PROBLEM | suf::OUTONLY, wrt.str() };
+            int dummy[]{ 0 };
+            ReportSuffix(sufStats, dummy);
+        }
+  }
   virtual void ReportTimes() {
     // First of all record solution output time
     RecordOutputTime();
@@ -432,12 +491,17 @@ protected:
 
   /// Report standard suffixes
   virtual void ReportStandardSuffixes() {
-    if (IsProblemSolved() && exportKappa())
-    { ReportKappa(); }
-    if (IsProblemSolved() && exportKappaExact())
-    { ReportKappaExact(); }
+    if (IsProblemSolved() && exportKappa()) { 
+    	ReportKappa(); 
+    }
+    if (IsProblemSolved() && exportKappaExact()) { 
+    	ReportKappaExact(); 
+	}
     if (timing()) {
-      ReportTimes();
+      	ReportTimes();
+    }
+    if (solution_stats()) {
+        ReportSolutionStats();
     }
   }
 
