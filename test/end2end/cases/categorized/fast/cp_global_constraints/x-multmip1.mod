@@ -33,3 +33,6 @@ subject to Supply {i in ORIG, p in PROD}:
 
 subject to Demand {j in DEST, p in PROD}:
    sum {i in ORIG} Trans[i,j,p] = demand[j,p];
+
+subject to Limit {i in ORIG, j in DEST}:
+   Ship[i,j] <= limit[i,j];

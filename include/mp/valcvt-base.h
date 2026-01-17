@@ -326,12 +326,12 @@ public:
   const std::string& MakeCurrentName() const
   { return s_; }
 
-  /// Produce name s + '_<counter>_'.
+  /// Produce name s + '_<counter>_' if n_>0.
   /// Post-increment counter.
   std::string MakeCountedName() const {
     return
         n_++==0
-        ? s_ + '_'
+        ? s_
         : s_ + '_' + std::to_string(n_) + '_';
   }
   /// Use MakeCountedName().
@@ -383,7 +383,7 @@ enum class ValueResolution {
                    // and SetVal() decides what to do
                    // (can max out non-0 values.)
   ValResDefault = ValResAll,
-  ValResLast       // just the last conection is transferred
+  ValResLast       // just the last connection is transferred
 };
 
 /// ValuePresolver interface.

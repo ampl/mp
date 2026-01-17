@@ -639,8 +639,12 @@ Supported functions
 Functions recognized from the model
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The following function is recognized from the user input
+The following functions are recognized from the user input
 (and natively supported by Gurobi 13):
+
+
+Signpow function
+~~~~~~~~~~~~~~~~~~~~~
 
 - :math:`signpow(x, p) := sign(x) |x|^p, \quad p>1`.
 
@@ -659,6 +663,20 @@ When using `abs`, note that if `x+x*y+7` has deduced bounds of equal sign,
 Using `sqrt` is better in this regard - it is always converted,
 but less efficient
 for other solvers where it's left as-is.
+
+
+Logistic function
+~~~~~~~~~~~~~~~~~~~~~~
+
+- :math:`logistic(x) := \displaystyle\frac{1}{1 + e^{-x}}`.
+
+The following forms are recognized:
+
+.. code-block:: ampl
+
+   0.9 / (1.0 + exp(-2*x - 1.5*y))     # gives 0.9*logistic(2*x + 1.5*y)
+
+Set ``cvt:pre:logistic=0`` to skip recognition of :math:`logistic`.
 
 
 .. _nonlinear-pl-approx:
