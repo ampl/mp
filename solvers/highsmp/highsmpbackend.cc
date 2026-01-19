@@ -154,11 +154,11 @@ double HighsBackend::ObjectiveValue() const {
   return loader().Highs_getObjectiveValue(lp());
 }
 
-double HighsBackend::NodeCount() const {
+int HighsBackend::NodeCount() const {
   return getInt64Attr("mip_node_count");
 }
 
-double HighsBackend::SimplexIterations() const {
+int HighsBackend::SimplexIterations() const {
   return getIntAttr("simplex_iteration_count");
 }
 
@@ -436,7 +436,7 @@ void HighsBackend::AddHIGHSMessages() {
   auto ni = SimplexIterations();
   if (true)
     AddToSolverMessage(
-          fmt::format("{} simplex iterations\n", std::max(0.0, ni)));
+          fmt::format("{} simplex iterations\n", std::max(0, ni)));
   auto nbi = BarrierIterations();
   if (nbi > -1)
     AddToSolverMessage(
@@ -445,6 +445,17 @@ void HighsBackend::AddHIGHSMessages() {
   if (nnd > -1)
     AddToSolverMessage(
           fmt::format("{} branching nodes\n", nnd));
+}
+
+
+std::map<std::string, std::variant<int, double, std::string>>
+HighsBackend::SolutionStats() {
+    std::map<std::string, std::variant<int, double, std::string>> stats;
+    stats["simplex_iterations"] = SimplexIterations();
+    stats["barrier_iterations"] = BarrierIterations();
+    stats["node_count"] = NodeCount();
+    stats["pdlp_iterations"] = PdlpIterations();
+    return stats;
 }
 
 std::pair<int, std::string> HighsBackend::GetSolveResult() {

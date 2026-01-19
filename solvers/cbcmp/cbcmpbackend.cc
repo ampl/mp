@@ -102,11 +102,11 @@ double CbcmpBackend::ObjectiveValue() const {
   return Cbc_getObjValue(lp());
 }
 
-double CbcmpBackend::NodeCount() const {
+int CbcmpBackend::NodeCount() const {
     return Cbc_getNodeCount(lp());
 }
 
-double CbcmpBackend::SimplexIterations() const {
+int CbcmpBackend::SimplexIterations() const {
   // TODO which one is it?
   return Cbc_getIterationCount(lp());
 }
@@ -175,6 +175,14 @@ void CbcmpBackend::ReportCBCMPPool() {
         {}, { getPoolObjective(iPoolSolution) } });
   }
   */
+}
+std::map<std::string, std::variant<int, double, std::string>>
+CbcmpBackend::SolutionStats() {
+    std::map<std::string, std::variant<int, double, std::string>> stats;
+    stats["simplex_iterations"] = SimplexIterations();
+    stats["barrier_iterations"] = BarrierIterations();
+    stats["node_count"] = NodeCount();
+    return stats;
 }
 
 

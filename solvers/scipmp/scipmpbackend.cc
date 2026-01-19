@@ -118,16 +118,24 @@ double ScipBackend::ObjectiveValue() const {
   return SCIPgetPrimalbound(getSCIP());
 }
 
-double ScipBackend::NodeCount() const {
+int ScipBackend::NodeCount() const {
   return SCIPgetNNodes(getSCIP());
 }
 
-double ScipBackend::SimplexIterations() const {
+int ScipBackend::SimplexIterations() const {
   return SCIPgetNPrimalLPIterations(getSCIP()) + SCIPgetNDualLPIterations(getSCIP());
 }
 
 int ScipBackend::BarrierIterations() const {
   return SCIPgetNBarrierLPIterations(getSCIP());
+}
+std::map<std::string, std::variant<int, double, std::string>>
+ScipBackend::SolutionStats() {
+    std::map<std::string, std::variant<int, double, std::string>> stats;
+    stats["simplex_iterations"] = SimplexIterations();
+    stats["barrier_iterations"] = BarrierIterations();
+    stats["node_count"] = NodeCount();
+    return stats;
 }
 
 void ScipBackend::ExportModel(const std::string &file) {

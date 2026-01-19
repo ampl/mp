@@ -113,17 +113,27 @@ double GcgBackend::ObjectiveValue() const {
   return SCIPgetPrimalbound(getSCIP());
 }
 
-double GcgBackend::NodeCount() const {
+int GcgBackend::NodeCount() const {
   return SCIPgetNNodes(getSCIP());
 }
 
-double GcgBackend::SimplexIterations() const {
+int GcgBackend::SimplexIterations() const {
   return SCIPgetNPrimalLPIterations(getSCIP()) + SCIPgetNDualLPIterations(getSCIP());
 }
 
 int GcgBackend::BarrierIterations() const {
   return SCIPgetNBarrierLPIterations(getSCIP());
 }
+
+std::map<std::string, std::variant<int, double, std::string>>
+GcgBackend::SolutionStats() {
+    std::map<std::string, std::variant<int, double, std::string>> stats;
+    stats["simplex_iterations"] = SimplexIterations();
+    stats["barrier_iterations"] = BarrierIterations();
+    stats["node_count"] = NodeCount();
+    return stats;
+}
+
 
 void GcgBackend::ExportModel(const std::string &file) {
   GCG_CCALL( SCIPwriteOrigProblem(getSCIP(), file.data(), NULL, FALSE) );
