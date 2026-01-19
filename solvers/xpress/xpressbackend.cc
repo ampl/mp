@@ -775,7 +775,7 @@ std::string XpressmpBackend::DoXpressFixedModel()
   static const mp::OptionValueInfo values_barregularize[] = {
     {"1", "use \"standard\" regularization", 1},
     {"2", "use \"reduced\" regularization: less perturbation than \"standard\" regularization", 2},
-    {"4", "keep dependent rows in the KKT system",4},
+    {"4", "keep dependent rows in the KKT system", 4},
     {"8", "keep degenerate rows in the KKT system", 8}
  };
   static const mp::OptionValueInfo values_bigmmethod[] = {
@@ -1405,7 +1405,7 @@ void XpressmpBackend::InitCustomOptions() {
     "\n.. value-table::\n",
     XPRS_SLEEPONTHREADWAIT, values_sleeponthreadwait,  -1);
 
-    AddSolverOption("lim:iter lpiterlimit iterlim",
+  AddSolverOption("lim:iter lpiterlimit iterlim",
         "The maximum number of iterations that will be performed "
         "by primal simplex or dual simplex before the optimization "
         "process terminates. For MIP problems, this is the maximum "
@@ -1934,8 +1934,6 @@ void XpressmpBackend::InitCustomOptions() {
     "Barrier method convergence tolerance on "
     "dual infeasibilities; default = 0 (automatic choice)",
     XPRS_BARDUALSTOP, 0.0, DBL_MAX);
-
-
 
   AddSolverOption("bar:hgextrapolate barhgextrapolate",
     "Extrapolation parameter for the hybrid gradient algorithm; default = 0.99",
@@ -2878,13 +2876,16 @@ void XpressmpBackend::SetBasis(SolutionBasis basis) {
   auto &constt = mv.GetConValues()(CG_Linear);
 //#define XPRESS__ROW_STATS_GENCONS    // Is this valid?
 #ifdef XPRESS__ROW_STATS_GENCONS
-  // Append general constraints. TODO: Check if i need to append all types
+  // Append general constraints. TODO
   auto& cconstt = mv.GetConValues()(CG_General);
   constt.insert(constt.end(), cconstt.begin(), cconstt.end());
 #endif  // XPRESS__ROW_STATS_GENCONS
   if (varstt.size() && constt.size()) {
     auto convertedVarBasis = VarStatii(varstt);
     auto convertedConBasis = ConStatii(constt);
+    // Xpress needs to have all constraints, append them as basic
+    convertedConBasis.resize(getIntAttr(XPRS_ROWS), XPRS_BASISSTATUS_BASIC);     
+    
     XPRESSMP_CCALL(XPRSloadbasis(lp(), convertedConBasis.data(), convertedVarBasis.data()));
   }
 }
