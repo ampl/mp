@@ -873,6 +873,9 @@ GurobiBackend::SolutionStats() {
     stats["node_count"] = NodeCount();
 	stats["nl_barrier_iterations"] = NLBarrierIterations();
 	stats["pdhg_iterations"] = PDHGIterations();
+    stats["work"] = GrbGetDblAttr(GRB_DBL_ATTR_WORK);
+    stats["memory_used"] = GrbGetDblAttr(GRB_DBL_ATTR_MEMUSED);
+    stats["max_memory_used"] = GrbGetDblAttr(GRB_DBL_ATTR_MAXMEMUSED);
     return stats;
 }
 
