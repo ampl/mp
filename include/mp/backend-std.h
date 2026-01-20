@@ -367,43 +367,47 @@ protected:
             for (const auto& [key, val] : SolutionStats()) {
                 if (std::holds_alternative<int>(val)) {
                     dummyint[0] = std::get<int>(val);
-                    if (solution_stats() & 2) 
+                    if (solution_stats() & 1) 
                         jsonstats[key.c_str()] = dummyint[0];
-                    if (solution_stats() & 1) {
+                    if (solution_stats() & 2) {
                       SuffixDef<int> intsuf = { key.c_str(), suf::PROBLEM | suf::OUTONLY };
                       ReportSuffix(intsuf, dummyint);
 					}
                 }
                 else if (std::holds_alternative<double>(val)) {
                     dummydbl[0] = std::get<double>(val);
-					if (solution_stats() & 2)
+					if (solution_stats() & 1)
                         jsonstats[key.c_str()] = dummydbl[0];
-                    if (solution_stats() & 1) {
+                    if (solution_stats() & 2) {
                         SuffixDef<double> dblsuf = { key.c_str(), suf::PROBLEM | suf::OUTONLY };
                         ReportSuffix(dblsuf, dummydbl);
                     }
                 }
                 else {
-                    if (solution_stats() & 2)
+                    if (solution_stats() & 1)
                         jsonstats[key.c_str()] = std::get<std::string>(val);
                 }
             }
         }
-        if (timing()>0 && (solution_stats() & 2))
+        if (timing()>0 && (solution_stats() & 1))
         {
             auto times = jw["times"];
-			times["time_solver"] = stats().solution_time;
-			times["time_setup"] = stats().setup_time;
-            times["time"] = stats().solution_time + stats().setup_time + stats().output_time;
+			times["solver"] = stats().solution_time;
+			times["setup"] = stats().setup_time;
+            times["total"] = stats().solution_time + stats().setup_time + stats().output_time;
             if (timing() > 1) {
-                times["time_read"] = stats().read_time;
-                times["time_conversion"] = stats().conversion_time;
-                times["time_output"] = stats().output_time;
+                times["read"] = stats().read_time;
+                times["conversion"] = stats().conversion_time;
+                times["output"] = stats().output_time;
             }
         }
         jw.Close(); 
-        if (solution_stats() & 2) {
-            SuffixDef<int> sufStats = { "stats", suf::PROBLEM | suf::OUTONLY, wrt.str() };
+        if (solution_stats() & 1) {
+            // Return 0 JSON object stripped of spaces
+			std::string toret = wrt.str();
+            toret.erase(std::remove(toret.begin(), toret.end(), ' '), toret.end());
+            toret = "0 " + toret;
+            SuffixDef<int> sufStats = { "stats", suf::PROBLEM | suf::OUTONLY, toret };
             int dummy[]{ 0 };
             ReportSuffix(sufStats, dummy);
         }

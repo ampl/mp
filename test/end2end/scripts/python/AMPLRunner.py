@@ -443,10 +443,10 @@ class AMPLRunner(object):
                     break
                 if not isinstance(refv, list):
                     refv=[refv]
-                    for rv in refv:
-                        if str(rv) not in val:
-                            errmsg = str(val) + " does not contain " + str(rv)
-                            break
+                for rv in refv:
+                    if str(rv) not in val:
+                        errmsg = str(val) + " does not contain " + str(rv)
+                        break
             else:
                 errmsg = str(val) + \
                     ": reference object contains an unknown keyword '" + \

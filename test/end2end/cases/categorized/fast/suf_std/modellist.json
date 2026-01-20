@@ -146,10 +146,10 @@
     }
   },
   {
-    "name": "mipb_int tech:stats=1",
+    "name": "mipb_int tech:stats=2",
     "objective": 1,
     "tags": [ "linear", "integer" ],
-    "options": { "mp_options": "tech:stats=1" },
+    "options": { "mp_options": "tech:stats=2" },
     "values": {
       "Initial.node_count": "_anyvalue",
       "Initial.barrier_iterations": "_anyvalue",
@@ -157,10 +157,10 @@
     }
   },
   {
-    "name": "mipb_int tech:stats=2",
+    "name": "mipb_int tech:stats=1",
     "objective": 1,
     "tags": [ "linear", "integer" ],
-    "options": { "mp_options": "tech:stats=2" },
+    "options": { "mp_options": "tech:stats=1" },
     "values": {
       "option stats_table": {
         "contains": [ "node_count", "barrier_iterations", "simplex_iterations" ]
@@ -168,16 +168,21 @@
     }
   },
   {
-    "name": "mipb_int tech:stats=3",
+    "name": "mipb_int tech:stats=3 tech:timing=2",
     "objective": 1,
     "tags": [ "linear", "integer" ],
-    "options": { "mp_options": "tech:stats=3" },
+    "options": { "mp_options": "tech:stats=3 tech:timing=2" },
     "values": {
       "Initial.node_count": "_anyvalue",
       "Initial.barrier_iterations": "_anyvalue",
       "Initial.simplex_iterations": "_anyvalue",
       "option stats_table": {
-        "contains": [ "node_count", "barrier_iterations", "simplex_iterations" ]
+        "contains": [
+          "node_count",
+          "barrier_iterations",
+          "simplex_iterations",
+          "setup"
+        ]
       }
     }
   }
