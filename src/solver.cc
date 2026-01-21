@@ -747,16 +747,17 @@ void BasicSolver::InitMetaInfoAndOptions(
         multiobj_weight_, values_multiobjweight_);
   }
 
-  AddIntOption("tech:stats stats tech:report_stats solution_stats",
-      "0*/1/2/3: Whether to return solution statistics timings for the run. The information will be "
+  AddIntOption("tech:stats stats tech:report_stats solve_stats",
+      "0*/1/2/3: Whether to return solve statistics and timings for the run. The information will be "
       "stored in the problem suffixes: 'simplex_iterations', 'barrier_iterations', 'nodes' and possibly "
       "other solver-dependent suffixes. A JSON representation of the information above is returned in "
-      "the suffix table `stats`. Note that timing information will also be included in the JSON "
-      "representation if tech:timing >0. Values:\n"
-        "0    Do not report solution statistics (default)\n"
-        "1    Report solution statistics in JSON format in suffix 'stats'\n"
-        "2    Report solution statistics in suffixes\n"
-        "3    Report solution statistics both in suffixes and JSON suffix 'stats'",
+      "the suffix table `stats` (accessible as value of the option `stats_table`). "
+      "Note that timing information will also be included in the JSON "
+      "representation if tech:timing>0. Values:\n\n"
+        "- 0    Do not report statistics (default)\n"
+        "- 1    Report statistics in JSON format in 'stats_table'\n"
+        "- 2    Report statistics in suffixes\n"
+        "- 3    Report statistics both in suffixes and 'stats_table'",
       &Solver::GetSolutionStats, &Solver::SetSolutionStats);
 
 
