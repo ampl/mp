@@ -345,6 +345,11 @@ public:
   VCString operator+(const T& arg) const
   { return {s_ + arg}; }
 
+  /// Append
+  template <class T>
+  VCString& operator+=(const T& arg)
+  { s_ += arg; return *this; }
+
   /// empty?
   bool empty() const { return s_.empty(); }
 

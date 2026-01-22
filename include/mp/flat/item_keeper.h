@@ -7,6 +7,7 @@
 
 #include "mp/flat/preprocess.h"
 #include "mp/flat/model_api_base.h"
+#include "mp/valcvt-node.h"
 #include "mp/utils-file.h"
 
 namespace mp {
@@ -182,6 +183,14 @@ public:
   /// Create ValueNode range pointer: select n elements at certain pos
   pre::NodeRange SelectValueNodeRange(int pos, int n=1)
   { return GetValueNode().Select(pos, n); }
+
+  /// Reset local item counter.
+  /// It counts children of a redefinition node
+  void ResetLocalCounter() { value_node_.ResetLocalCounter(); }
+
+  /// Set value node name chunk
+  void SetValueNodeNameChunk(pre::NameChunk nc)
+  { value_node_.SetNameChunk(nc); }
 
   /// Constraint type name, e.g., 'AbsConstraint'
   const char* GetConstraintName() const { return constr_name_; }
@@ -477,6 +486,19 @@ public:
           ck.second.GetNumberOfUsed(),
           ck.second.Size());
     }
+  }
+
+  /// Reset local item counters
+  void ResetLocalCounters() {
+    for (const auto& ck: con_keepers_)
+      ck.second.ResetLocalCounter();
+  }
+
+  /// Set ValueNode name chunks as short type names
+  void SetValueNodeNameChunksAsShortTypeNames() {
+    for (const auto& ck: con_keepers_)
+      ck.second.SetValueNodeNameChunk(
+          ck.second.GetShortTypeName());
   }
 
   /// Copy names from ValueNodes

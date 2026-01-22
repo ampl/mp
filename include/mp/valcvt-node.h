@@ -85,6 +85,15 @@ private:
 };
 
 
+/// NameChunk, added to con/var name during redefinitions.
+/// Should be default-constructible
+using NameChunk = const char*;
+
+/// Is NameChunk an empty string?
+inline
+bool IsEmptyString(NameChunk nc) { return !nc || !*nc; }
+
+
 /// Value node, a node of the conversion graph.
 /// Stores arrays of int's, double's, and VCString's
 /// corresponding to variables, or a constraint type, or objectives.
@@ -97,7 +106,8 @@ public:
   /// Constructor.
   /// Need ValuePresolver to register itself.
   ValueNode(BasicValuePresolver& pre, std::string nm={}) :
-    pre_(pre), name_(nm) { RegisterMe(); }
+      pre_(pre), name_(std::move(nm)), nc_default_(name_.c_str())
+  { RegisterMe(); }
 
   /// Move constructor
   ValueNode(ValueNode&& vn) : pre_(vn.pre_) {
@@ -133,11 +143,23 @@ public:
   /// Declared size (what is being used by links)
   size_t Size() const { return sz_; }
 
+  /// Reset local counter.
+  /// Usually this starts a group of new items
+  /// created by another redefinition
+  void ResetLocalCounter() { localcounter_ = 0; }
+
+  /// Set default name chunk.
+  /// Name chunks are chained up during name presolve.
+  void SetNameChunk(NameChunk nc) { nc_default_ = nc; }
+
   /// Create entry (range) pointer: add n elements
   NodeRange Add(int n=1) {
     NodeRange nr;
     nr.Assign(this, {(int)sz_, (int)sz_+n});
     sz_ += n;
+    for (int i=n; i--; )
+      localcounts_.insert(localcounts_.end(), ++localcounter_);
+    namechunks_.insert(namechunks_.end(), n, nc_default_);
     return nr;
   }
 
@@ -145,12 +167,12 @@ public:
   /// pos=-1 means last
   NodeRange Select(int pos, int n=1) {
     NodeRange nr;
-    if (pos<0)              // pos=-1 =>
+    if (pos < 0)            // pos=-1 =>
       pos = sz_+pos;        // pos = last
-    assert(pos>=0);
+    assert(pos >= 0);
     nr.Assign(this, {pos, pos+n});
-    if ((int)sz_<pos+n)
-      sz_ = pos+n;
+    if ((int)sz_ < pos+n)
+      Add(pos + n - sz_);   // old: sz_ = pos+n;
     return nr;
   }
 
@@ -259,6 +281,22 @@ public:
     assert(i<Size());   // index into the originally declared suffix size
     if (vStr_.size()<=i)  // can happen after CopySrcDest / CopyDestSrc
       vStr_.resize(Size());
+    assert(localcounts_.size() == Size());
+    assert(localcounts_[i]);
+    assert(namechunks_.size() == Size());
+    if (!IsEmptyString(namechunks_[i])) {   // Add "_exp1" etc.
+      v += '_';
+      v += namechunks_[i];
+      if (i<Size()-1) {      // not the last item
+        if (localcounts_[i] != localcounts_[i+1]) {
+          v += std::to_string(localcounts_[i]);
+        } else {
+          assert(1 == localcounts_[i]);
+          assert(1 == localcounts_[i+1]);
+        }
+      } else if (localcounts_[i]>1)         // not the 1st element
+        v += std::to_string(localcounts_[i]);
+    }
     vStr_[i] = std::move(v);
   }
 
@@ -332,7 +370,16 @@ private:
   std::vector<double> vd_;
   std::vector<VCString> vStr_;
   size_t sz_=0;
+  /// Can be used as name chunk
   std::string name_ = "default_value_node";
+  /// Probably don't need to copy:
+  /// \brief Current local item counter (for subnodes of a parent)
+  int localcounter_=0;
+  std::vector<int> localcounts_;  // counter value for each entry
+  /// Default name chunk, applied to new entries.
+  /// Initialized to ShortTypeName in the main constructor.
+  NameChunk nc_default_ {"nc_not_init"};
+  std::vector<NameChunk> namechunks_;
 };
 
 

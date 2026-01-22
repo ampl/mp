@@ -130,17 +130,50 @@ public:
 public:
   /// Convert the whole model, e.g., after reading from NL
   void ConvertModel() override {
-    GetFlatCvt().SetSuffixManip({
-        [this](const SuffixDef<int>& sd) { return GetModel().ReadIntSuffix(sd); },
-        [this](const SuffixDef<double>& sd) { return GetModel().ReadDblSuffix(sd); },
-        [this](const SuffixDef<int>& sd, ArrayRef<int> data) { GetModel().ReportSuffix(sd, data); },
-        [this](const SuffixDef<double>& sd, ArrayRef<double> data) { GetModel().ReportSuffix(sd, data); },
-        [this](suf::Kind kind) -> const SuffixSet& { return GetModel().suffixes(kind); }
-      });
+    PrepareModelConversion();
 
     GetFlatCvt().StartModelInput();
     MP_DISPATCH( ConvertStandardItems() );
     GetFlatCvt().FinishModelInput();      // Chance to flush to the Backend
+  }
+
+  /// Prepare model conversion
+  void PrepareModelConversion() {
+    SetSuffixCallbacks();
+    InitNameChunks();
+  }
+
+  /// Set suffix callbacks
+  void SetSuffixCallbacks() {
+    GetFlatCvt().SetSuffixManip({
+              [this](const SuffixDef<int>& sd) { return GetModel().ReadIntSuffix(sd); },
+              [this](const SuffixDef<double>& sd) { return GetModel().ReadDblSuffix(sd); },
+              [this](const SuffixDef<int>& sd, ArrayRef<int> data) { GetModel().ReportSuffix(sd, data); },
+              [this](const SuffixDef<double>& sd, ArrayRef<double> data) { GetModel().ReportSuffix(sd, data); },
+              [this](suf::Kind kind) -> const SuffixSet& { return GetModel().suffixes(kind); }
+    });
+  }
+
+  /// Init value node name chunks.
+  /// This empties chunks for top-level algebraic cons,
+  /// so their names are not modified.
+  /// @todo Do modify if any expressions are outlined?
+  void InitNameChunks() {
+    auto EmptyNC = [this](auto* pCon) {
+      this->GetFlatCvt().GetConstraintKeeper(pCon).
+          SetValueNodeNameChunk("");
+    };
+
+    EmptyNC((LinConRange*)nullptr);
+    EmptyNC((LinConLE*)nullptr);
+    EmptyNC((LinConEQ*)nullptr);
+    EmptyNC((LinConGE*)nullptr);
+    EmptyNC((QuadConRange*)nullptr);
+    EmptyNC((QuadConLE*)nullptr);
+    EmptyNC((QuadConEQ*)nullptr);
+    EmptyNC((QuadConGE*)nullptr);
+
+    GetFlatCvt().GetVarValueNode().SetNameChunk("");
   }
 
   /// Need and successfully prepared the next solve iteration?
@@ -212,8 +245,8 @@ protected:
         MP_DISPATCH( ConvertLogicalCon( i ) );
       }
 
-    // We could have produced variable names
-    // when exporting NL model info
+    // We could have input variable names
+    // from .col, .row files (option auxfiles rc;)
     CopyItemNames();
 
     // Shrink temp storage
@@ -328,6 +361,9 @@ protected:
           GetValuePresolver().GetSourceNodes().GetVarValues().MakeSingleKey().
                              Add(lbs.size()),
           vnr });
+    // Append "_auxvarNN" for any other variables,
+    // in particular the new variables during flattening
+    GetFlatCvt().GetVarValueNode().SetNameChunk("auxvar");
   }
 
   /// Convert a common expr
@@ -511,6 +547,9 @@ protected:
     GetFlatCvt().AddVarNames(GetModel().var_names());
     GetFlatCvt().AddConNames(GetModel().con_names());
     GetFlatCvt().AddObjNames(GetModel().obj_names());
+
+    /// Reset name presolve chunks
+    GetFlatCvt().SetValueNodeNameChunksAsShortTypeNames();
   }
 
   void Shrink() {

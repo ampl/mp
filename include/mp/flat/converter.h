@@ -909,6 +909,12 @@ public:
     } );
   }
 
+  /// Reset local item counters, for redefinitions
+  void ResetLocalCounters() {
+    ConstraintManager::ResetLocalCounters();
+    GetVarValueNode().ResetLocalCounter();
+  }
+
   /// Presolve item names
   void PresolveNames() {
     if (var_names_.size()) {

@@ -532,6 +532,7 @@ public:
     assert(src.IsSingleIndex());
     cvt_.SetAutoLinkSource(src);
     assert(cvt_.GetAutoLinkTargets().empty());
+    cvt_.ResetLocalCounters();              // For auxiliary items
   }
 
   /// Destructor
