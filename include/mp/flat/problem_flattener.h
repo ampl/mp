@@ -363,7 +363,7 @@ protected:
           vnr });
     // Append "_auxvarNN" for any other variables,
     // in particular the new variables during flattening
-    GetFlatCvt().GetVarValueNode().SetNameChunk("auxvar");
+    GetFlatCvt().GetVarValueNode().SetNameChunk("auxv");
   }
 
   /// Convert a common expr

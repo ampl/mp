@@ -618,9 +618,9 @@
     }
   },
   {
-    "name" : "redefvar_02 acc:linfunccon=0",
+    "name" : "redefvar_02 acc:linfn=0",
     "tags" : ["logical", "linear"],
-    "options": { "mp_options": "acc:linfunccon=0" },
+    "options": { "mp_options": "acc:linfn=0" },
     "objective": 11,
     "values": {
       "solve_result": "solved",

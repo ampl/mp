@@ -290,12 +290,15 @@ public:
       if (i<Size()-1) {      // not the last item
         if (localcounts_[i] != localcounts_[i+1]) {
           v += std::to_string(localcounts_[i]);
+          v += '_';
         } else {
           assert(1 == localcounts_[i]);
           assert(1 == localcounts_[i+1]);
         }
-      } else if (localcounts_[i]>1)         // not the 1st element
+      } else if (localcounts_[i]>1) {       // not the 1st element
         v += std::to_string(localcounts_[i]);
+        v += '_';
+      }
     }
     vStr_[i] = std::move(v);
   }

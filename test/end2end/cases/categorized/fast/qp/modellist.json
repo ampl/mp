@@ -196,7 +196,7 @@
       "mp_options": "debug=1"
     },
     "values": {
-      "Initial.flat0__quadfunccon": 1
+      "Initial.flat0__quadfn": 1
     }
   }
 ]

@@ -2076,9 +2076,9 @@ protected:
   /// We'll also add inlining with priority 3099,
   /// see AddConversionAction() in the constructor #266.
   STORE_CONSTRAINT_TYPE__WITH_MAP(
-      LinearFunctionalConstraint, "acc:linfunccon", 3200)
+      LinearFunctionalConstraint, "acc:linfn acc:linfunccon", 3200)
   STORE_CONSTRAINT_TYPE__WITH_MAP(
-      QuadraticFunctionalConstraint, "acc:quadfunccon", 3100)
+      QuadraticFunctionalConstraint, "acc:quadfn acc:quadfunccon", 3100)
 
   /// Flattened NL expressions
   STORE_CONSTRAINT_TYPE__WITH_MAP(MaxConstraint, "acc:max", 1100)
@@ -2120,11 +2120,11 @@ protected:
   STORE_CONSTRAINT_TYPE__WITH_MAP(ExpAConstraint, "acc:expa acc:expA", 1002)
   STORE_CONSTRAINT_TYPE__WITH_MAP(LogConstraint, "acc:log", 1004)
   STORE_CONSTRAINT_TYPE__WITH_MAP(LogAConstraint, "acc:loga acc:logA", 1006)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(PowConstExpConstraint, "acc:powconstexp", 900)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(PowConstExpConstraint, "acc:powc acc:powconstexp", 900)
   STORE_CONSTRAINT_TYPE__WITH_MAP(SignpowConstExpConstraint,
-                                  "acc:signpowconstexp", 890)
+                                  "acc:signpowc acc:signpowconstexp", 890)
   STORE_CONSTRAINT_TYPE__WITH_MAP(LogisticConstraint,
-                                  "acc:logistic", 880)
+                                  "acc:logi acc:logistic", 880)
   STORE_CONSTRAINT_TYPE__WITH_MAP(PowConstraint, "acc:pow", 950) // -> exp, log
   STORE_CONSTRAINT_TYPE__WITH_MAP(SinConstraint, "acc:sin", 1008)
   STORE_CONSTRAINT_TYPE__WITH_MAP(CosConstraint, "acc:cos", 1010)

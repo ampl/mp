@@ -329,10 +329,10 @@ public:
   /// Produce name s + '_<counter>_' if n_>0.
   /// Post-increment counter.
   std::string MakeCountedName() const {
-    return
+    return s_; /*
         n_++==0
         ? s_
-        : s_ + '_' + std::to_string(n_) + '_';
+        : s_ + '_' + std::to_string(n_) + '_'; */
   }
   /// Use MakeCountedName().
   operator std::string() const

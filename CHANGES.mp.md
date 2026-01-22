@@ -2,6 +2,13 @@ Summary of recent updates to the AMPL MP Library
 ================================================
 
 
+## unreleased
+- Auxiliary variables and constraints receive names
+  describing the redefinition path. Such names are
+  only given if AMPL option (solver_)auxfiles rc is
+  set, or solver option cvt:names=2,3 provided.
+
+
 ## 20260109
 - Remove excessive '_' symbols in output 
   model constraint and variable names.
