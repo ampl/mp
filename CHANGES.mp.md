@@ -3,10 +3,13 @@ Summary of recent updates to the AMPL MP Library
 
 
 ## unreleased
+- Additional case where the signpow function
+  is recognized: abs(C*x)*x
+  (C constant, x variable).
 - Auxiliary variables and constraints receive names
   describing the redefinition path. Such names are
   only given if AMPL option (solver_)auxfiles rc is
-  set, or solver option cvt:names=2,3 provided.
+  set, or solver option *cvt:names=2,3* provided.
 
 
 ## 20260109
@@ -15,8 +18,11 @@ Summary of recent updates to the AMPL MP Library
 
 
 ## 20251213
-- Recognize logistic function 1/(1+e^(-x)),
-  option cvt:pre:logistic.
+- Recognize the logistic function 1/(1+e^(-x)),
+  option *cvt:pre:logistic*.
+- Recognize the signpow function sign(x)*x^k
+  from several kinds of algebra, such as abs(x)*x^k.
+  Option *cvt:pre:signpow*.
 - *iis:find* now the main name for option
   *alg:iisfind* (which is now a synonym).
 - Option *obj:multi:options*: fix integer-valued

@@ -600,6 +600,18 @@
     }
   },
   {
+    "name" : "signpow_05",
+    "tags" : ["continuous", "nonlinear", "quadraticnonconvex", "signpow"],
+    "objective": 4.215736535,
+    "options": { "mp_options": "debug=1" },
+    "values": {
+      "solve_result": "solved",
+      "Initial.flat0__signpowc": 2,
+      "Initial.flat1__U__powc": 0,
+      "Initial.flat1__U__exp": 1
+    }
+  },
+  {
     "name" : "logistic_01",
     "tags" : ["continuous", "nonlinear", "quadraticnonconvex", "logistic"],
     "objective": -0.7261816448,

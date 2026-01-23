@@ -57,7 +57,8 @@ namespace mp {
 /// Scheme:
 /// 1. Collect an array of terms (flattened.)
 /// 2. Group binary terms into a FORALL. If desired.
-/// 3. Quadratize remaining terms.
+/// 3. Recognize signpow() functions.
+/// 4. Quadratize remaining terms.
 template <class Flattener>
 class PreproProd
     : public ExprConverter<PreproProd<Flattener>, void> {
@@ -180,8 +181,9 @@ protected:
   struct SignpowArgInfo {
     /// Key: original product factor index
     std::unordered_map<int, double> abspow_, justpow_;
-    double totalabspow_ {}, totaljustpow_ {};
-    bool invalid_ {};    // if cannot be
+    long double totalabspow_ {}, totaljustpow_ {};
+    long double C_ {1.0};     // extra factor, if applied
+    bool invalid_ {};         // if cannot be a singpow()
   public:
     bool IsValid() const { return !invalid_; }
     void MarkInvalid() { invalid_ = true; }
@@ -199,6 +201,7 @@ protected:
         totaljustpow_ += p;
       }
     }
+    void MultiplyBy(double f) { C_ *= f; }
   };
 
   /// Tests: nonlinear/signpow_...
@@ -231,11 +234,11 @@ protected:
         if (pow0 > 0.0) {
           auto argvar0 = pConPow0->GetArguments()[0];
           return
-              CheckIfSingpowArgAbsSqrt(iTerm, argvar0, pow0);
+              CheckIfSignpowArgAbsSqrt(iTerm, argvar0, pow0);
         }
       }
       return         // no pow()
-          CheckIfSingpowArgAbsSqrt(iTerm, resvar0, 1.0);
+          CheckIfSignpowArgAbsSqrt(iTerm, resvar0, 1.0);
     } else {                     // not a variable
       if (!term0.constant_term()   // simple case: abs(x)*abs(x)
           && term0.GetLinTerms().empty()  // can be out-mult'd from
@@ -243,7 +246,7 @@ protected:
         auto x = term0.GetQPTerms().var1(0);
         if (x == term0.GetQPTerms().var2(0)) {
           return
-              CheckIfSingpowArgAbsSqrt(iTerm, x, 2.0);
+              CheckIfSignpowArgAbsSqrt(iTerm, x, 2.0);
         }
       }
     }
@@ -263,10 +266,10 @@ protected:
             || std::round(pow0)!=pow0) {
           MarkSignpowArgInvalid(iTerm, argvar0);
         } else {
-          AddSignpowSimpleArg(iTerm, argvar0, pow0);
+          ConsiderSignpowSimpleArg(iTerm, argvar0, pow0);
         }
       } else {                   // Indep var, or another func con
-        AddSignpowSimpleArg(iTerm, resvar0, 1.0);
+        ConsiderSignpowSimpleArg(iTerm, resvar0, 1.0);
       }
     } else {                     // not a variable
       if (!term0.constant_term()   // simple case: x*x
@@ -274,7 +277,7 @@ protected:
           && 1==term0.GetQPTerms().size()) {
         auto x = term0.GetQPTerms().var1(0);
         if (x == term0.GetQPTerms().var2(0)) {
-          AddSignpowSimpleArg(iTerm, x, 2.0);
+          ConsiderSignpowSimpleArg(iTerm, x, 2.0);
         }
       }
       // Handle (x+4), x*y+17 etc.
@@ -283,17 +286,18 @@ protected:
       // or sqrt(expr^2), and then expr would be a func con,
       // but here it can be an EExpr.
       // @todo handle (x+4)^2 (could be x*x+8x+16)?
+      // @todo handle abs(5(x+2)) * (x+2) by normalizing saved EExpr's?
       if (sparginfos_eexpr_.size()) {
         auto it = sparginfos_eexpr_.find(
             { term0.constant_term(),
              term0.GetLinTerms(), term0.GetQPTerms() });
         if (sparginfos_eexpr_.end() != it)
-          AddSignpowSimpleArg(iTerm, it->second, 1.0);
+          ConsiderSignpowSimpleArg(iTerm, it->second, 1.0);
       }
     }
   }
 
-  bool CheckIfSingpowArgAbsSqrt(int iTerm, int resvar1, double pow1) {
+  bool CheckIfSignpowArgAbsSqrt(int iTerm, int resvar1, double pow1) {
     if (0.5 == pow1) { // sqrt = pow(..., 0.5) and we already in
       if (CheckIfSignpowSqrtArg(iTerm, resvar1, 1.0))
         return true;
@@ -347,33 +351,46 @@ protected:
     return false;
   }
 
-  /// Register a [pow](abs/sqrt(pow^2k)) factor
+  /// Register a (abs/sqrt(argvar^2k))^powX factor
   void AddSignpowAbsPowArg(int iTerm, int argvar, double powX) {
-    sparginfos_[argvar].AddAbsPow(iTerm, powX);
     // Hash the argument LFC/QFC of argvar, if exists
     if (const auto pLFC =
         GetFlt().GetFlatCvt().template
         GetInitExpressionOfType<LinearFunctionalConstraint>(argvar)) {
-      sparginfos_eexpr_[{
-          pLFC->GetArguments().constant_term(),
-          pLFC->GetArguments().GetBody(),
-          qt_empty_
-      }] = argvar;
+      if (!pLFC->GetArguments().constant_term() &&
+          1 == pLFC->GetArguments().size()) {     // C*x
+        auto x = pLFC->GetArguments().var(0);
+        sparginfos_[x].AddAbsPow(iTerm, powX);
+        sparginfos_[x].MultiplyBy(
+            std::pow(
+                std::fabs(pLFC->GetArguments().coef(0)), powX));
+      } else {
+        sparginfos_[argvar].AddAbsPow(iTerm, powX);
+        sparginfos_eexpr_[{
+               pLFC->GetArguments().constant_term(),
+               pLFC->GetArguments().GetBody(),
+               qt_empty_
+        }] = argvar;
+      }
     } else
       if (const auto pQFC =
           GetFlt().GetFlatCvt().template GetInitExpressionOfType
                        <QuadraticFunctionalConstraint>(argvar)) {
+        sparginfos_[argvar].AddAbsPow(iTerm, powX);
         sparginfos_eexpr_[{
             pQFC->GetArguments().constant_term(),
             pQFC->GetArguments().GetLinTerms(),
             pQFC->GetArguments().GetQPTerms()
         }] = argvar;
-      }
+    } else {
+      sparginfos_[argvar].AddAbsPow(iTerm, powX);
+    }
   }
 
-  /// Register a "simple" [pow](x) factor, x variable.
+  /// Register a "simple" (x)^powN factor, x (a result) variable.
   /// Only if an abs(x) exists
-  void AddSignpowSimpleArg(int iTerm, int argvar, double powN) {
+  void ConsiderSignpowSimpleArg(
+      int iTerm, int argvar, double powN) {
     if (sparginfos_.end() != sparginfos_.find(argvar))
       sparginfos_[argvar].AddJustPow(iTerm, powN);
   }
@@ -393,6 +410,7 @@ protected:
       if (info.IsValid()
           && info.totaljustpow_>0     // justpow is odd positive
           && 1.0==std::fmod(info.totaljustpow_, 2.0)) {
+        result *= info.C_;            // Invoke the extra factors
         auto term1 = info.abspow_.begin();  // to be replaced
         assert(info.justpow_.size());
         for (const auto& [iTerm, pw]: info.abspow_)
@@ -407,7 +425,7 @@ protected:
                       SignpowConstExpConstraint
                       { VarArray1{var},
                        DblParamArray1
-                       {info.totalabspow_ + info.totaljustpow_}})
+                       {double(info.totalabspow_ + info.totaljustpow_)}})
               };
         } else {                            // abspow even
           std::get<1>(terms_flt_[term1->first])
@@ -416,7 +434,7 @@ protected:
                       PowConstExpConstraint
                       { VarArray1{var},
                        DblParamArray1
-                       {info.totalabspow_ + info.totaljustpow_}})
+                       {double(info.totalabspow_ + info.totaljustpow_)}})
               };
         }
       }
