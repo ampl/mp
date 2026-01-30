@@ -2,6 +2,10 @@ Summary of recent updates to gurobi for AMPL
 ============================================
 
 
+## 20260130
+- Updated to Gurobi 13.0.1, which includes bugfixes.
+
+
 ## 20260109
 - Changes in MP
   - Remove excessive '_' symbols in output 
