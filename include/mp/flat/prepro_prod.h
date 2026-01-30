@@ -9,6 +9,7 @@
 #include "mp/common.h"
 #include "mp/expr-visitor.h"
 #include "mp/flat/constr_std.h"
+#include "mp/flat/constr_hash.h"
 
 #include "mp/utils-vec.h"
 #include "mp/utils-hash-stream.h"

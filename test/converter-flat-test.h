@@ -7,7 +7,7 @@
 
 #include "mp/flat/model_api_base.h"
 #include "mp/flat/problem_flattener.h"
-#include "mp/flat/converter.h"
+#include "mp/flat/redef/MIP/converter_mip.h"
 #include "mp/flat/constr_algebraic.h"
 
 using namespace mp;
@@ -109,7 +109,7 @@ namespace {
 template <class Constraint>
 class InterfaceTesterWithBackendAcceptingConstraints : public ::testing::Test {
   using Interface = InterfaceWithBackendAcceptingConstraints<
-      mp::FlatConverter, Constraint>;
+      mp::MIPFlatConverter, Constraint>;
   using Backend = TestBackendAcceptingConstraints<Constraint>;
   Interface interface_;
   mp::Env env_;
