@@ -1232,6 +1232,9 @@ class MP2NLSolver(MPDirectSolver):
 
                 ModelTags.nonlinear, ModelTags.log, ModelTags.trigonometric,
 
+                ModelTags.signpow,
+                ModelTags.logistic,
+
                 ModelTags.unbdd,
                 ModelTags.qcpdual,
 #                ModelTags.return_mipgap,
