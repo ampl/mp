@@ -2566,9 +2566,8 @@ void CplexBackend::InitCustomOptions() {
 
 
     AddStoredOption("tech:pretunefileprm pretunefileprm",
-      "File to which nondefault keyword settings are written " 
-		"in CPLEX PRM format before tuning; written whether or "
-		"not tunefile or tunefileprm is specified.",
+      "File to which nondefault keyword settings are written "
+    "in CPLEX PRM format before tuning.",
       storedOptions_.pretunefileprm);
 
 
@@ -2593,10 +2592,13 @@ void CplexBackend::InitCustomOptions() {
       CPXPARAM_Tune_DetTimeLimit, 0.0, DBL_MAX);
 
 
-  AddStoredOption("tech:tunebase tunefileprm tunebase",
+  AddStoredOption("tech:tunefile tunefile tunefileprm tech:tunebase tunebase",
       "Name of file for tuning results in CPLEX PRM format. "
       "If specified, CPLEX will experiment with parameter "
-      "settings as described for \"tech:tunefile\"",
+      "settings  that would make solving faster.  This can "
+      "significantly increase execution time of the current "
+      "invocation, but the settings it finds might save time "
+                  "in future runs.",
       storedOptions_.tunefileprm);
 
 
