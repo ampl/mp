@@ -80,7 +80,8 @@ void Convert(const NLHeader &h, Edaginfo &info) {
   if (h.arith_kind != arith::UNKNOWN) {
     arith::Kind arith_kind = arith::GetKind();
     if (arith_kind != h.arith_kind &&
-        arith::IsIEEE(arith_kind) && arith::IsIEEE(h.arith_kind)) {
+				arith::IsIEEE(arith_kind) &&
+				arith::IsIEEE((arith::Kind)h.arith_kind)) {
       info.binary_nl_ = h.arith_kind << 1;
       info.iadjfcn = info.dadjfcn = bswap_ASL;
     }
@@ -344,9 +345,9 @@ void ASLBuilder::InitASL(const NLHeader &h) {
   Convert(h, asl_->i);
 }
 
-void ASLBuilder::SetInfo(const ProblemInfo &pi) {
+void ASLBuilder::SetInfo(const NLProblemInfo &pi) {
   NLHeader header = NLHeader();
-  ProblemInfo &header_pi = header;
+	NLProblemInfo &header_pi = header;
   header_pi = pi;
   InitASL(header);
 

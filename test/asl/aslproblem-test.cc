@@ -35,7 +35,7 @@ using mp::var::CONTINUOUS;
 using mp::var::INTEGER;
 using mp::ASLProblem;
 using mp::ProblemChanges;
-using mp::Solution;
+using Solution = mp::ASLSolution;
 
 namespace obj = mp::obj;
 namespace suf = mp::suf;
@@ -49,7 +49,7 @@ namespace suf = mp::suf;
 #endif
 
 TEST(SolutionTest, DefaultCtor) {
-  Solution s;
+	Solution s;
   EXPECT_EQ(mp::sol::UNKNOWN, s.status());
   EXPECT_EQ(-1, s.solve_code());
   EXPECT_EQ(0, s.num_vars());
@@ -463,14 +463,14 @@ TEST(ProblemTest, AddVar) {
 
 class TestASLBuilder : public asl::internal::ASLBuilder {
  private:
-  static mp::ProblemInfo MakeProblemInfo() {
-    mp::ProblemInfo info = mp::ProblemInfo();
+	static mp::NLProblemInfo MakeProblemInfo() {
+		mp::NLProblemInfo info = mp::NLProblemInfo();
     info.num_vars = info.num_objs = 1;
     return info;
   }
 
  public:
-  explicit TestASLBuilder(mp::ProblemInfo info = MakeProblemInfo()) {
+	explicit TestASLBuilder(mp::NLProblemInfo info = MakeProblemInfo()) {
     set_flags(asl::internal::ASL_STANDARD_OPCODES);
     SetInfo(info);
   }
@@ -518,7 +518,7 @@ TEST(ProblemTest, ReadFunctionWithoutLibrary) {
 }
 
 TEST(ProblemTest, Proxy) {
-  mp::ProblemInfo info = mp::ProblemInfo();
+	mp::NLProblemInfo info = mp::NLProblemInfo();
   info.num_vars = 42;
   info.num_objs = 1;
   TestASLBuilder builder(info);
@@ -577,7 +577,7 @@ struct MockValueVisitor {
 };
 
 TEST_P(SuffixTest, VisitValues) {
-  mp::ProblemInfo info = mp::ProblemInfo();
+	mp::NLProblemInfo info = mp::NLProblemInfo();
   info.num_vars = info.num_objs = info.num_algebraic_cons = 3;
   TestASLBuilder builder(info);
   builder.set_flags(ASL_keep_all_suffixes);

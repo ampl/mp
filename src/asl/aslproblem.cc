@@ -48,15 +48,15 @@ extern "C" int mkstemps(char *pattern, int suffix_len);
 
 namespace mp {
 
-Solution::Solution()
+ASLSolution::ASLSolution()
 : solve_code_(-1), num_vars_(0), num_cons_(0), values_(0), dual_values_(0) {}
 
-Solution::~Solution() {
+ASLSolution::~ASLSolution() {
   std::free(values_);
   std::free(dual_values_);
 }
 
-void Solution::Swap(Solution &other) {
+void ASLSolution::Swap(ASLSolution &other) {
   std::swap(solve_code_, other.solve_code_);
   std::swap(num_vars_, other.num_vars_);
   std::swap(num_cons_, other.num_cons_);
@@ -64,7 +64,7 @@ void Solution::Swap(Solution &other) {
   std::swap(dual_values_, other.dual_values_);
 }
 
-void Solution::Read(fmt::CStringRef stub, int num_vars, int num_cons) {
+void ASLSolution::Read(fmt::CStringRef stub, int num_vars, int num_cons) {
   // Allocate filename large enough to hold stub, ".sol" and terminating zero.
   std::size_t stub_len = std::strlen(stub.c_str());
   std::vector<char> filename(stub_len + 5);
@@ -75,7 +75,7 @@ void Solution::Read(fmt::CStringRef stub, int num_vars, int num_cons) {
   asl.i.ASLtype = 1;
   asl.i.filename_ = &filename[0];
   asl.i.stub_end_ = asl.i.filename_ + stub_len;
-  Solution sol;
+	ASLSolution sol;
   sol.num_vars_ = num_vars;
   sol.num_cons_ = num_cons;
   char *message = read_sol_ASL(&asl, &sol.values_, &sol.dual_values_);
@@ -279,7 +279,7 @@ void ASLProblem::WriteNL(
 }
 
 void ASLProblem::Solve(fmt::StringRef solver_name,
-    Solution &sol, ProblemChanges *pc, unsigned flags) {
+		ASLSolution &sol, ProblemChanges *pc, unsigned flags) {
   TempFiles temp;
   WriteNL(temp.stub(), pc, flags);
   // Run the solver and read the solution file.

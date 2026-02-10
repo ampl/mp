@@ -41,7 +41,7 @@ class ASLBuilder;
 }
 
 // A solution of an optimization problem.
-class Solution {
+class ASLSolution {
  private:
   int solve_code_;
   int num_vars_;
@@ -49,17 +49,17 @@ class Solution {
   double *values_;
   double *dual_values_;
 
-  FMT_DISALLOW_COPY_AND_ASSIGN(Solution);
+	FMT_DISALLOW_COPY_AND_ASSIGN(ASLSolution);
 
  public:
   // Constructs a solution with zero variables and constraints and the
   // solve code -1.
-  Solution();
+	ASLSolution();
 
-  ~Solution();
+	~ASLSolution();
 
   // Swaps this solution with other.
-  void Swap(Solution &other);
+	void Swap(ASLSolution &other);
 
   // Returns the solution status.
   sol::Status status() const {
@@ -698,7 +698,7 @@ class ASLProblem {
   enum { IGNORE_FUNCTIONS = 1 };
 
   // Solves the current problem.
-  void Solve(fmt::StringRef solver_name, Solution &sol,
+	void Solve(fmt::StringRef solver_name, ASLSolution &sol,
       ProblemChanges *pc = 0, unsigned flags = 0);
 };
 

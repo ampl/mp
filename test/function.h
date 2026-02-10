@@ -282,7 +282,7 @@ class Library {
   Library(const Library &);
   Library &operator=(const Library &);
 
-  std::auto_ptr<LibraryImpl> impl_;
+	std::unique_ptr<LibraryImpl> impl_;
 
  public:
   explicit Library(fmt::CStringRef name);

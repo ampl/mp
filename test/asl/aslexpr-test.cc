@@ -218,7 +218,7 @@ class ExprTest : public ::testing::Test {
 
 public:
   ExprTest() {
-    mp::ProblemInfo info = mp::ProblemInfo();
+		mp::NLProblemInfo info = mp::NLProblemInfo();
     info.num_vars = NUM_VARS;
     info.num_objs = 1;
     info.num_funcs = 2;

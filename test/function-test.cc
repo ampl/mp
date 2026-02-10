@@ -30,7 +30,8 @@
 #include "util.h"
 #include "asl.h"
 
-using std::ptr_fun;
+template <class Fn>
+using ptr_fun = std::function<Fn>;
 using std::sqrt;
 using std::vector;
 
@@ -49,6 +50,8 @@ using fun::MakeVariant;
 using fun::Tuple;
 using fun::Variant;
 using fun::Table;
+
+using namespace std::placeholders;  // for _1, _2, _3...
 
 namespace {
 
@@ -551,7 +554,7 @@ TEST(FunctionTest, Differentiator) {
   EXPECT_NEAR(1, diff(GetDoubleFun(std::sin), 0, &error), 1e-7);
   EXPECT_NEAR(0, error, 1e-10);
   EXPECT_NEAR(0.25, diff(GetDoubleFun(sqrt), 4), 1e-7);
-  EXPECT_NEAR(0, diff(std::bind2nd(ptr_fun(Hypot), -5), 0), 1e-7);
+	EXPECT_NEAR(0, diff(std::bind(ptr_fun(Hypot), _1, -5), 0), 1e-7);
 }
 
 TEST(FunctionTest, DifferentiatorPropagatesNaN) {
@@ -562,8 +565,8 @@ TEST(FunctionTest, DifferentiatorPropagatesNaN) {
 
 TEST(FunctionTest, DifferentiatorDetectsNaN) {
   Differentiator diff;
-  EXPECT_EQ(0, std::bind2nd(ptr_fun(Hypot), 0)(0));
-  EXPECT_NE(0, isnan(diff(std::bind2nd(ptr_fun(Hypot), 0), 0)));
+	EXPECT_EQ(0, std::bind(ptr_fun(Hypot), _1, 0)(0));
+	EXPECT_NE(0, isnan(diff(std::bind(ptr_fun(Hypot), _1, 0), 0)));
   EXPECT_EQ(-INFINITY, std::log(0.0));
   EXPECT_NE(0, isnan(diff(GetDoubleFun(std::log), 0)));
 }

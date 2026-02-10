@@ -288,7 +288,7 @@ class LibraryImpl : public AmplExports, public TMInfo {
  public:
   explicit LibraryImpl(const char *name);
   ~LibraryImpl() {
-    std::for_each(tempmem_.begin(), tempmem_.end(), std::ptr_fun(free));
+		std::for_each(tempmem_.begin(), tempmem_.end(), std::function(free));
   }
 
   void Load() {

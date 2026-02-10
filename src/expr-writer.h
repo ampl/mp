@@ -419,9 +419,9 @@ void WriteExpr(fmt::Writer &w, LogicalExpr expr, VN vnam={}) {
 }
 
 /// Write algebraic constraint.
-template <class ExprTypes, class AlgCon, class VN>
+template <class ExprTypes, class AlgCon, class VN=GenericVarNamer>
 void WriteAlgCon(fmt::Writer &w,
-                 const AlgCon &con, VN vnam) {
+								 const AlgCon &con, VN vnam) {
   double inf = INFINITY;
   double lb = con.lb(), ub = con.ub();
   if (lb != ub && lb != -inf && ub != inf)
@@ -462,14 +462,14 @@ void Write(fmt::Writer &w, const Problem &p) {
     typename Problem::Objective obj = p.obj(i);
     w << (obj.type() == mp::obj::MIN ? "minimize" : "maximize") << " o: ";
     WriteExpr<typename Problem::ExprTypes>(
-          w, obj.linear_expr(), obj.nonlinear_expr());
+				w, obj.linear_expr(), obj.nonlinear_expr(), {});
     w << ";\n";
   }
 
   // Write algebraic constraints.
   for (int i = 0, n = p.num_algebraic_cons(); i < n; ++i) {
     w << "s.t. c" << (i + 1) << ": ";
-    WriteAlgCon<typename Problem::ExprTypes>(w, p.algebraic_con(i));
+		WriteAlgCon<typename Problem::ExprTypes>(w, p.algebraic_con(i), {});
     w << ";\n";
   }
 }

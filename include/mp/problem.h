@@ -35,6 +35,9 @@
 #include "mp/suffix.h"
 #include "mp/utils-vec.h"
 
+/// From asl e.g., when BUILD=asl,smpswriter
+#undef obj_name
+
 /// Maximum index of a variable, objective or constraint.
 #ifndef MP_MAX_PROBLEM_ITEMS
 # define MP_MAX_PROBLEM_ITEMS \

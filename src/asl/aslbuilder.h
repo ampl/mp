@@ -315,7 +315,11 @@ class ASLBuilder {
 
   // Sets problem information.
   // Throws ASLError on error.
-  void SetInfo(const ProblemInfo &pi);
+	void SetInfo(const NLProblemInfo &pi);
+
+	/// Receive info on the objective numbers
+	/// and multiobj/objno selection
+	void NotifyObjChoice(int , bool , int ) { }
 
   // Ends building the ASL object.
   void EndBuild();
