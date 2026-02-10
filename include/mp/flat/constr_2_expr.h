@@ -102,8 +102,9 @@ public:
       int i,
       ConstraintAcceptanceLevel cal, ExpressionAcceptanceLevel ) {
     assert(stage_cvt2expr_>0);
-    /// Replace \a con by a NLConstraint,
-    /// if either the ModelAPI does not accept it,
+    /// Replace \a con by a NLConstraint
+    /// or something else (see ConvertToNLCon()),
+    /// if either the ModelAPI does not accept NLConstraint,
     /// or the linear/quadratic terms have expressions
     /// (and then they are non-flat.)
     if (1==stage_cvt2expr_
@@ -784,18 +785,22 @@ protected:
   /// @return whether the \a con should be deleted
   template <class AlgFuncCon>
   bool ConsiderExplicifyingAlgebraic(const AlgFuncCon& con, int i) {
-    if (MPCD( IsProperVar(con.GetResultVar()) )) {
+    if (MPCD( IsProperVar(con.GetResultVar()) )) {  // Have to explicify
+      /// e.g., TargetCon is quadeq for AFC=quadfn
       using TargetCon = AlgebraicConstraint<
           std::decay_t<decltype(con.GetArguments().GetBody())>,
           AlgConRhs<0> >;  // @todo can be ,=, >=
       if (!MPCD( template ModelAPIOk< TargetCon >() )
-          || HasExpressionArgs(con.GetArguments())) {
+          // This is because with expression args,
+          // we should use NLAssign(EQ/LE/GE)
+          || HasExpressionArgs(con.GetArguments())
+          ) {
         DoExplicify(con, i);          // as other explicified expressions
         return false;
       }
       auto& ck = GET_CONSTRAINT_KEEPER(AlgFuncCon);
       const auto& ie = MPD( GetInitExpression(con.GetResultVar()) );
-      ck.ConvertConstraint(ie.GetIndex());
+      ck.ConvertConstraint(ie.GetIndex());  // -> TargetCon
       return true;
     }
     return false;

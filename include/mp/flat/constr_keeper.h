@@ -460,7 +460,8 @@ protected:
     if (ExpressionAcceptanceLevel::NotAccepted!=eal) {    // accepted
       for (int i=0; i< (int)cons_.size(); ++i) {
         const auto& cnt = cons_[i];
-        if (!cnt.IsRedundant()) {
+        // Always. Can be restored. See nlmodels/gold.mod, as of 7e82717
+        if (true  /*!cnt.IsRedundant()*/) {
           const auto& con = cnt.GetCon();
           // Delegate actual logic to Converter
           GetConverter().ConsiderMarkingResultVar(con, i, eal);
@@ -474,8 +475,9 @@ protected:
         = GetChosenAcceptanceLevelEXPR();
     for (int i=0; i< (int)cons_.size(); ++i) {
       const auto& cnt = cons_[i];
-      if (!cnt.IsRedundant()) {      // Delegate actual logic to Converter
+      if (!cnt.IsRedundant()) {     // Here we only take active ones
         const auto& con = cnt.GetCon();
+        // Delegate actual logic to Converter
         GetConverter().ConsiderMarkingArguments(con, i, eal);
       }
     }

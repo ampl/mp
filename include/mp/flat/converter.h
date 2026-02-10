@@ -633,10 +633,12 @@ public: // for ConstraintKeeper
            GetConstraintAcceptance_DEFAULT(pcon);
   }
 
-  /// Check whether ModelAPI and user accept and recommend the expression
-  template <class Expression>
-  bool ModelAPIOkEXPR() const {
-    return ModelAPIAcceptsAndRecommendsEXPR((const Expression*)0);
+  /// Check whether ModelAPI (and user!) accept and recommend
+  /// the expression corresponding to constraint
+  template <class Constraint>
+  bool ModelAPIAcceptsExprForCon() const {
+    return UserAcceptsAndRecommendsEXPR((
+        const ExprWrapper<Constraint>*)0);
   }
 
   /// Check whether ModelAPI and user accept and recommend the expression

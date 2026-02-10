@@ -332,7 +332,7 @@ public:
   /// or as a flat functional constraint var <=/==/>= expr
   /// (in this case, with variables as arguments).
   /// The equality/inequality type of the flat constraint is
-  /// determied by GetContext().
+  /// determined by GetContext().
   ///
   /// @note Use accessor: GetArgExpression(ee, 0)
   /// - don't use ...Expression's methods.

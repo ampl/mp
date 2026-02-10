@@ -464,8 +464,6 @@ public:
   ACCEPT_EXPRESSION(DivExpression, Recommended)
   Expr AddExpression(const DivExpression& );
 
-  // TODO Div; PowVarVar;
-
 
 public:
   ///////////////////////////////////////////////////////////////////
