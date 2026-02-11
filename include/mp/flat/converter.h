@@ -511,41 +511,6 @@ public: // for ConstraintKeeper
     return MP_DISPATCH(Convert(con, i));
   }
 
-  /// Query if a constraint type
-  /// is natively accepted by the solver (and user setting).
-  /// The parameter is only needed for type.
-  template <class Con>
-  ConstraintAcceptanceLevel GetConstraintAcceptance_USER(Con* ) const {
-    return GET_CONST_CONSTRAINT_KEEPER(Con).GetChosenAcceptanceLevel();
-  }
-
-  /// Query if an expression type
-  /// is natively accepted by the solver (and user setting).
-  /// The parameter is only needed for type.
-  template <class Con>
-  ExpressionAcceptanceLevel GetConstraintAcceptanceEXPR_USER(
-      const ExprWrapper< Con >* ) const {
-    return GET_CONST_CONSTRAINT_KEEPER(Con).GetChosenAcceptanceLevelEXPR();
-  }
-
-  /// Query if a constraint type
-  /// is natively accepted by the solver.
-  /// The parameter is only needed for type.
-  template <class Con>
-  ConstraintAcceptanceLevel GetConstraintAcceptance_DEFAULT(Con* ) const {
-    return GET_CONST_CONSTRAINT_KEEPER(Con).GetModelAPIAcceptance();
-  }
-
-  /// Query if an expression type
-  /// is natively accepted by the solver.
-  /// The parameter is only needed for type.
-  template <class Con>
-  ExpressionAcceptanceLevel GetConstraintAcceptanceEXPR_DEFAULT(
-      const ExprWrapper< Con >* ) const {
-    return GET_CONST_CONSTRAINT_KEEPER(Con).GetModelAPIAcceptanceEXPR();
-  }
-
-
   /// Query the number of addable constraints of type.
   template <class Con>
   int GetNumberOfAddable(Con* ) const {
@@ -613,11 +578,25 @@ public: // for ConstraintKeeper
     return false;
   }
 
-  /// Check whether ModelAPI and user accept and recommend the constraint
+
+  ////////////////// Constraint/expression accpetance ////////////////
+
+  /// Check whether ModelAPI (not user) accept and recommend the constraint
   template <class Constraint>
   bool ModelAPIOk() const {
     return ModelAPIAcceptsAndRecommends((const Constraint*)0);
   }
+
+  /// Whether user (ONLY) recommends either the constraint or corr. expr,
+  /// for the expression also check if expression output is desired
+  template <class Constraint>
+  bool UserAcceptsConOrExpr() const {
+    return
+        MPCD( UserAcceptsAndRecommends((const Constraint*)0) )
+           || (MPCD( IfWantNLOutput() )
+               && MPCD( template UserAcceptsExprForCon<Constraint>()));
+  }
+
 
   /// Check whether ModelAPI and user accept and recommend the constraint
   template <class Constraint>
@@ -633,10 +612,10 @@ public: // for ConstraintKeeper
            GetConstraintAcceptance_DEFAULT(pcon);
   }
 
-  /// Check whether ModelAPI (and user!) accept and recommend
+  /// Check whether user accepts and recommends
   /// the expression corresponding to constraint
   template <class Constraint>
-  bool ModelAPIAcceptsExprForCon() const {
+  bool UserAcceptsExprForCon() const {
     return UserAcceptsAndRecommendsEXPR((
         const ExprWrapper<Constraint>*)0);
   }
@@ -654,6 +633,41 @@ public: // for ConstraintKeeper
     return ExpressionAcceptanceLevel::Recommended ==
            GetConstraintAcceptanceEXPR_DEFAULT(pcon);
   }
+
+  /// Query if a constraint type
+  /// is natively accepted by the solver (and user setting).
+  /// The parameter is only needed for type.
+  template <class Con>
+  ConstraintAcceptanceLevel GetConstraintAcceptance_USER(Con* ) const {
+    return GET_CONST_CONSTRAINT_KEEPER(Con).GetChosenAcceptanceLevel();
+  }
+
+  /// Query if an expression type
+  /// is natively accepted by the solver (and user setting).
+  /// The parameter is only needed for type.
+  template <class Con>
+  ExpressionAcceptanceLevel GetConstraintAcceptanceEXPR_USER(
+      const ExprWrapper< Con >* ) const {
+    return GET_CONST_CONSTRAINT_KEEPER(Con).GetChosenAcceptanceLevelEXPR();
+  }
+
+  /// Query if a constraint type
+  /// is natively accepted by the solver.
+  /// The parameter is only needed for type.
+  template <class Con>
+  ConstraintAcceptanceLevel GetConstraintAcceptance_DEFAULT(Con* ) const {
+    return GET_CONST_CONSTRAINT_KEEPER(Con).GetModelAPIAcceptance();
+  }
+
+  /// Query if an expression type
+  /// is natively accepted by the solver.
+  /// The parameter is only needed for type.
+  template <class Con>
+  ExpressionAcceptanceLevel GetConstraintAcceptanceEXPR_DEFAULT(
+      const ExprWrapper< Con >* ) const {
+    return GET_CONST_CONSTRAINT_KEEPER(Con).GetModelAPIAcceptanceEXPR();
+  }
+
 
   /// Generic adapter for old non-bridged Convert() methods
   ///
@@ -1479,9 +1493,9 @@ private:
 
     int accAll_ = -1;
     int accExpr_ = static_cast<
-        std::underlying_type_t<ExpressionAcceptanceLevel> >
+                       std::underlying_type_t<ExpressionAcceptanceLevel> >
                    (ModelAPI::ExpressionInterfaceAcceptanceLevel())
-        -1;               // If available, 0 or 1
+                   -1;               // If available, 0 or 1
 
     int relax_ = 0;
 

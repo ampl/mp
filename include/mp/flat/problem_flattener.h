@@ -1044,23 +1044,23 @@ public:          // need to be public due to CRTP
   ////////////////////////////////////////////////////
   EExpr VisitPowConstExp(BinaryExpr e) {
     auto c = Cast<NumericConstant>(e.rhs()).value();
-    if (2.0==c && IfQuadratizePow2()) {
-      auto el = Convert2EExpr(e.lhs());
+    auto el = Convert2EExpr(e.lhs());
+    if (2.0==c && IfQuadratizePow2(el)) {
       return QuadratizeOrLinearize(el, el);
     }
     return AssignResult2Args( PowConstExpConstraint(
-      PowConstExpConstraint::Arguments{ Convert2Var(e.lhs()) },
-      PowConstExpConstraint::Parameters{ c } ) );
+        PowConstExpConstraint::Arguments{ Convert2Var(std::move(el)) },
+        PowConstExpConstraint::Parameters{ c } ) );
   }
 
   EExpr VisitPow2(UnaryExpr e) {
-    if (IfQuadratizePow2()) {
-      auto el = Convert2EExpr(e.arg());
+    auto el = Convert2EExpr(e.arg());
+    if (IfQuadratizePow2(el)) {
       return QuadratizeOrLinearize(el, el);
     }
     return AssignResult2Args( PowConstExpConstraint(
-      PowConstExpConstraint::Arguments{ Convert2Var(e.arg()) },
-      PowConstExpConstraint::Parameters{ 2.0 } ) );
+        PowConstExpConstraint::Arguments{ Convert2Var(std::move(el)) },
+        PowConstExpConstraint::Parameters{ 2.0 } ) );
   }
 
   EExpr VisitPow(BinaryExpr e) {
@@ -1068,7 +1068,7 @@ public:          // need to be public due to CRTP
     auto er = Convert2EExpr(e.rhs());
     if (er.is_constant()) {
       if (2.0==er.constant_term() &&
-          IfQuadratizePow2()) {
+          IfQuadratizePow2(el)) {
         return QuadratizeOrLinearize(el, el);
       }
       return AssignResult2Args(
@@ -1249,7 +1249,7 @@ public:         // More utilities
       el = Convert2AffineExpr(std::move(el));      // will convert to a new var now
     if (!er.is_affine() && !el.is_constant())
       er = Convert2AffineExpr(std::move(er));
-    if (!IfQuadratizePow2() &&
+    if (!IfQuadratizePow2(el) &&
         !er.is_constant() && !el.is_constant() &&
         er.GetLinTerms().size() == el.GetLinTerms().size()) {
       const auto& ellt = el.GetLinTerms();
@@ -1445,9 +1445,24 @@ public:
   bool IfMultOutQPTerms(const LinTerms& lt1, const LinTerms& lt2) const
   { return (double(lt1.size()))*lt2.size() <= GetFlatCvt().QPMultOutCard(); }
 
-  /// Quadratize Pow2 exactly when we pass QP terms
-  bool IfQuadratizePow2() const override final
-  { return IfMultOutQPTerms(); }
+  /// Quadratize Pow2 exactly when we pass QP terms.
+  /// Changing to only do this when powconstexp not accepted,
+  /// or the argument is linear.
+  bool IfQuadratizePow2(const EExpr& ee) const override final {
+    // pow() not desired
+    if ( !GetFlatCvt().template UserAcceptsConOrExpr<PowConstExpConstraint>() )
+      return true;
+    if ( !ee.is_affine() )
+      return false;
+    // Leave ^2 if any subexpressions
+    // (@todo even when flattened?)
+    /// @note Subexpr cannot be linfn (they are inlined when visiting)
+    for (auto arg: ee.GetLinTerms().vars()) {
+      if ( GetFlatCvt().HasInitExpression(arg) )
+        return false;
+    }
+    return true;
+  }
 
 
 public:

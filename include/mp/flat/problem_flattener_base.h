@@ -21,7 +21,7 @@ public:
   virtual double var_orig_ub(int i) const = 0;
 
   /// Quadratize ^2?
-  virtual bool IfQuadratizePow2() const = 0;
+  virtual bool IfQuadratizePow2(const EExpr& ) const = 0;
 
   /// Mutliply-out cardinality
   virtual double MultOutCard() const = 0;

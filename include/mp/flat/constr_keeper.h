@@ -460,7 +460,8 @@ protected:
     if (ExpressionAcceptanceLevel::NotAccepted!=eal) {    // accepted
       for (int i=0; i< (int)cons_.size(); ++i) {
         const auto& cnt = cons_[i];
-        // Always. Can be restored. See nlmodels/gold.mod, as of 7e82717
+        // Always. Can be restored (IncrementVarUsage()...).
+        // See nlmodels/gold.mod, as of 7e82717
         if (true  /*!cnt.IsRedundant()*/) {
           const auto& con = cnt.GetCon();
           // Delegate actual logic to Converter

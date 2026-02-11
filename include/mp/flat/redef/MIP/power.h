@@ -33,7 +33,7 @@ public:
   /// But we did this even for all integer powers >=2
   /// to avoid PL approximation in Gurobi.
   /// Cancelled in Gurobi 11.
-  /// Note that ^2 has been quadratized in ProblemFlattener.
+  /// Note that ^2 might be quadratized in ProblemFlattener.
   bool IfNeedsConversion(const ItemType& , int ) {
     return false;
   }

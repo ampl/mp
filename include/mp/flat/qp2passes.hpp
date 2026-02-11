@@ -462,7 +462,7 @@ QP2PassNodeResult QP2PassVisitor::VisitMul(
 QP2PassNodeResult QP2PassVisitor::VisitPowConstExp(
     BinaryExpr expr) {
   auto c = Cast<NumericConstant>(expr.rhs()).value();
-  if (2.0==c && GetFlattener().IfQuadratizePow2()) {
+  if (2.0==c /*&& GetFlattener().IfQuadratizePow2() #276 */) {
     return DoVisitPow2(expr.lhs());
   }
   return 1000;
@@ -470,7 +470,7 @@ QP2PassNodeResult QP2PassVisitor::VisitPowConstExp(
 
 QP2PassNodeResult QP2PassVisitor::VisitPow2(
     UnaryExpr expr) {
-  if (GetFlattener().IfQuadratizePow2()) {
+  if (true /* GetFlattener().IfQuadratizePow2() #276 */) {
     return DoVisitPow2(expr.arg());
   }
   return 1000;
@@ -480,8 +480,8 @@ QP2PassNodeResult QP2PassVisitor::VisitPow(
     BinaryExpr expr) {
   auto iscR = IsConst(expr.rhs());
   if (iscR.first) {
-    if (2.0==iscR.second &&
-        GetFlattener().IfQuadratizePow2()) {
+    if (2.0==iscR.second /* &&
+        GetFlattener().IfQuadratizePow2() #276 */) {
       return DoVisitPow2(expr.lhs());
     }
   }

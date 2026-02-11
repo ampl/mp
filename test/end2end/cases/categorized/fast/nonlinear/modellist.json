@@ -585,7 +585,7 @@
       "solve_result": "limit",
       "Initial.flat0__signpowc": 0,
       "Initial.flat1__A__abs": 5,
-      "Initial.flat1__U__powc": 17
+      "Initial.flat1__U__powc": 19
     }
   },
   {
@@ -628,6 +628,15 @@
     "objective": -99901,
     "values": {
       "solve_result": "solved"
+    }
+  },
+  {
+    "name" : "regr_nonlin_palmer8e",
+    "tags" : ["continuous", "nonlinear", "quadraticnonconvex"],
+    "options": { "mp_options": "debug=1" },
+    "values": {
+      "Initial.flat1__U__powc": 11,
+      "Initial.flat1__U__exp": 11
     }
   }
 ]
