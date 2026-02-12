@@ -1503,7 +1503,8 @@ static const mp::OptionValueInfo values_method[] = {
   { "3", "Nondeterministic concurrent (several solves in parallel)", 3},
   { "4", "Deterministic concurrent", 4},
   { "5", "Deterministic concurrent simplex (deprecated; use alg:concurrentmethod).", 5},
-  {"6", "PDHG (Primal-Dual Hybrid Gradient)", 6}
+  {"6", "PDHG (Primal-Dual Hybrid Gradient). "
+           "For PDHG on GPU, see alg:pdhggpu.", 6}
 };
 static const mp::OptionValueInfo values_concurrentmethod[] = {
    { "-1", "Automatic (default)", -1},
