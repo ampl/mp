@@ -1480,9 +1480,9 @@ static const mp::OptionValueInfo values_optimalitytarget [] = {
   {"-1", "Automatic (default)", -1},
   { "0", "Global optimum", 0},
   { "1", "Local optimum via nonlinear barrier algorithm (preview). "
-          "See nlbar:... options. "
          "Note that this provides no optimality gap and can be applied "
-         "only to models with no discrete variables (set alg:relax=1 "
+         "only to models with no discrete variables (set AMPL option "
+                "relax_integrality to 1 or Gurobi option alg:relax=1 "
          "if needed) and no nondifferentiable "
          "functions.", 1},
 };
@@ -2130,7 +2130,9 @@ void GurobiBackend::InitCustomOptions() {
 
   AddSolverOption("alg:optimalitytarget optimalitytarget opttarget",
       "Specifies the optimality target for nonlinear continuous problems (NLP):\n"
-      "\n.. value-table::\n",
+      "\n.. value-table::\n"
+                  "\n"
+                  "See also nlbar:... options. ",
       GRB_INT_PAR_OPTIMALITYTARGET, values_optimalitytarget, -1);
 
 
