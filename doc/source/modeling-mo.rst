@@ -29,7 +29,7 @@ Otherwise, only the 1st objective is considered
 
     minimize total_number:  sum {j in FOOD} Buy[j];
 
-Objectives can be blended, or hierarchical (Lexicographical).
+Objectives can be blended, or hierarchical (lexicographical).
 
 
 Blended objectives
@@ -37,8 +37,14 @@ Blended objectives
 
 By default, all objectives are blended together
 (summed up with the corresponding signs.)
-Suffixes ``.objweight`` can be used to change the individual weights
-and objective senses, according to the option ``obj:multi:weight``.
+`Suffixes <https://dev.ampl.com/ampl/reference/suffixes.html>`__ ``.objweight`` can be used to change the individual weights
+and objective senses, according to the option ``obj:multi:weight``. Example:
+
+.. code-block:: ampl
+
+    suffix objweight IN;                       # Declare the suffix
+    let {s in STORE} total_cost.objweight := TCFactor[s];
+    let total_number.objweight := 1;
 
 
 Lexicographical objectives
@@ -47,9 +53,13 @@ Lexicographical objectives
 To apply hierarchical optimization, use suffix ``.objpriority``,
 as described in the ``obj:multi`` option description.
 
+First, declare the suffixes:
+
 .. code-block:: ampl
 
-    suffix objpriority;
+    suffix objpriority IN, integer;
+    suffix objabstol;
+    suffix objreltol;
 
     maximize ReverseSeniority {e in 1..2, i in I: E[i]==e}:
       sum {t in V[i]: Pr[i, t]==0}
@@ -87,14 +97,14 @@ or the initially specified value
 of the option will be used. Also note that AMPL suffixes
 have default value 0 which means 'not set'.
 Thus, to set a real-valued objective-specific
-option to 0, use a very small value, such
+option to 0, use a very small value, such as
 ``let _obj[1].option_mipgap := 1e-20;``. For integer-valued options
 this is currently not possible.
 
 
 .. code-block:: ampl
 
-    suffix objpriority;
+    suffix objpriority integer; # Declare the suffixes
     suffix option_timelimit;    # Use single-word option alias
     suffix option_mipgap;
 
