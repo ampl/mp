@@ -189,6 +189,8 @@ enum Status {
   INFEASIBLE_IIS  = INFEASIBLE + 2,
   /** Problem is infeasible, IIS finder failed. */
   INFEASIBLE_IIS_FAILED  = INFEASIBLE + 3,
+  /** Locally infeasible. */
+  INFEASIBLE_LOCALLY = INFEASIBLE + 20,
   /** End of the 'infeasible' range. */
   INFEASIBLE_LAST = 299,
 
@@ -276,8 +278,6 @@ enum Status {
   LIMIT_NO_FEAS_WORK = LIMIT_NO_FEAS + 9,
   /** Soft memory limit reached, no feasible solution. */
   LIMIT_NO_FEAS_SOFTMEM = LIMIT_NO_FEAS + 10,
-  /** Locally infeasible. */
-  LIMIT_NO_FEAS_LOCALLY = LIMIT_NO_FEAS + 11,
   /** End of the 'limit-no-feas' range.  */
   LIMIT_NO_FEAS_LAST  = LIMIT_FEAS + 99,
   /** End of the 'limit' range.  */
