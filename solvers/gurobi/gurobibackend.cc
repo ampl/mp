@@ -1502,7 +1502,7 @@ static const mp::OptionValueInfo values_method[] = {
   { "2", "Barrier", 2},
   { "3", "Nondeterministic concurrent (several solves in parallel)", 3},
   { "4", "Deterministic concurrent", 4},
-  { "5", "Deterministic concurrent simplex (deprecated; use concurrentmethod).", 5},
+  { "5", "Deterministic concurrent simplex (deprecated; use alg:concurrentmethod).", 5},
   {"6", "PDHG (Primal-Dual Hybrid Gradient)", 6}
 };
 static const mp::OptionValueInfo values_concurrentmethod[] = {
@@ -1713,8 +1713,11 @@ void GurobiBackend::InitCustomOptions() {
 
 
   AddSolverOption("alg:method method lpmethod simplex",
-    "Which algorithm to use for non-MIP problems or for the root node of MIP problems:\n"
-    "\n.. value-table::\n", GRB_INT_PAR_METHOD, values_method, -1);
+    "Algorithm for non-MIP problems or the root node of MIP problems:\n"
+    "\n.. value-table::\n"
+                  "\n"
+                  "Note: for NLP barrier method, see alg:optimalitytarget.",
+                  GRB_INT_PAR_METHOD, values_method, -1);
 
 #ifdef GRB_INT_PAR_CONCURRENTMETHOD // Gurobi 11.0
   AddSolverOption("alg:concurrentmethod concurrentmethod",
@@ -2125,7 +2128,7 @@ void GurobiBackend::InitCustomOptions() {
     GRB_DBL_PAR_HEURISTICS, 0.05, 1.0);
 
 
-  AddSolverOption("alg:optimalitytarget optimalitytarget",
+  AddSolverOption("alg:optimalitytarget optimalitytarget opttarget",
       "Specifies the optimality target for nonlinear continuous problems (NLP):\n"
       "\n.. value-table::\n",
       GRB_INT_PAR_OPTIMALITYTARGET, values_optimalitytarget, -1);

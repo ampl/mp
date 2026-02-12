@@ -58,8 +58,8 @@ First, declare the suffixes:
 .. code-block:: ampl
 
     suffix objpriority IN, integer;
-    suffix objabstol;
-    suffix objreltol;
+    suffix objabstol IN;
+    suffix objreltol IN;
 
     maximize ReverseSeniority {e in 1..2, i in I: E[i]==e}:
       sum {t in V[i]: Pr[i, t]==0}
