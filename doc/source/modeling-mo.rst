@@ -109,7 +109,7 @@ this is currently not possible.
     suffix option_mipgap;
 
 
-    option gurobi_options "timelimit=60 mipgap=0.00001";
+    option gurobi_options "obj:multi=2 timelimit=60 mipgap=0.00001";
 
     minimize total_cost {s in 1..3}:
        sum {j in FOOD} cost[s,j] * Buy[j] suffix objpriority s;
