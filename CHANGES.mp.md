@@ -10,6 +10,8 @@ Summary of recent updates to the AMPL MP Library
   describing the redefinition path. Such names are
   only given if AMPL option (solver_)auxfiles rc is
   set, or solver option *cvt:names=2,3* provided.
+- Added option *tech:stats* to return solution 
+  statistics via problem suffixes
 
 
 ## 20260109

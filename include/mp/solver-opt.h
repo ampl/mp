@@ -679,9 +679,10 @@ public:
   template <typename Handler, typename Int>
   void AddIntOption(const char *name,
                     const char *description, Int (Handler::*get)(const SolverOption &) const,
-                    void (Handler::*set)(const SolverOption &, Int)) {
+                    void (Handler::*set)(const SolverOption &, Int),
+                    ValueArrayRef values = ValueArrayRef()) {
     AddOption(OptionPtr(new ConcreteOption<Handler, fmt::LongLong, Int>(
-                          name, description, this, get, set)));
+                          name, description, this, get, set, values)));
   }
 
   /// Adds an integer option with additional information.
