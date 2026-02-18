@@ -89,17 +89,24 @@ where we set a time limit and a mip gap for each objective.
 Objective-specific options are supported in the
 :ref:`multi-objective emulator <multipleObjectives>`
 (option ``obj:multi=2``), as well as natively in Gurobi
-(option ``obj:multi=1``). Set ``obj:multi:options=0`` to ignore
+(option ``obj:multi=1``, since AMPL/Gurobi 20251211).
+Set ``obj:multi:options=0`` to ignore
 objective-specific option suffixes.
 
-Note that if the suffix value is not set, the default value
-or the initially specified value
-of the option will be used. Also note that AMPL suffixes
-have default value 0 which means 'not set'.
-Thus, to set a real-valued objective-specific
-option to 0, use a very small value, such as
-``let _obj[1].option_mipgap := 1e-20;``. For integer-valued options
-this is currently not possible.
+.. note::
+   Gurobi options `obj:N:priority` do not currently work
+   with objective options; use suffixes `.objpriority` as in the
+   example below.
+
+.. note::
+   If the suffix value is not set, the default value
+   or the initially specified value
+   of the option will be used. Also note that AMPL suffixes
+   have default value 0 which means 'not set'.
+   Thus, to set a real-valued objective-specific
+   option to 0, use a very small value, such as
+   ``let _obj[1].option_mipgap := 1e-20;``. For integer-valued options
+   this is currently not possible.
 
 
 .. code-block:: ampl

@@ -2356,7 +2356,10 @@ void GurobiBackend::InitCustomOptions() {
   AddIntOption("obj:*:method obj_*_method", "Method for objective with index *",
             &GurobiBackend::GrbGetObjIntParam,
             &GurobiBackend::GrbSetObjIntParam);
-  AddIntOption("obj:*:priority obj_*_priority", "Priority for objective with index *",
+  AddIntOption("obj:*:priority obj_*_priority", "Priority for objective with index *.\n"
+               "\n"
+               "Note that to use multi-objective options (see obj:multi:options), "
+               "suffixes .objpriority should be used currently.",
             &GurobiBackend::GrbGetObjIntParam,
             &GurobiBackend::GrbSetObjIntParam);
   AddDblOption("obj:*:weight obj_*_weight", "Weight for objective with index *",
