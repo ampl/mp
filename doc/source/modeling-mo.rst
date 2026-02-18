@@ -37,8 +37,10 @@ Blended objectives
 
 By default, all objectives are blended together
 (summed up with the corresponding signs.)
-`Suffixes <https://dev.ampl.com/ampl/reference/suffixes.html>`__ ``.objweight`` can be used to change the individual weights
-and objective senses, according to the option ``obj:multi:weight``. Example:
+`Suffixes <https://dev.ampl.com/ampl/reference/suffixes.html>`__
+``.objweight`` can be used to change the individual weights
+and objective senses, according to the option ``obj:multi:weight``.
+Example:
 
 .. code-block:: ampl
 
@@ -132,16 +134,17 @@ objective-specific option suffixes.
     }
     let total_number.option_timelimit := 30;
 
-    # note that objectives total_cost[3] and total_number will be blended,  but there
-    # is no conflict because the timelimit is set to 30 for both, and mipgap is set
-    # only for total_cost[3].
+    # Note that objectives total_cost[3] and total_number will be blended
+    # (since they have the same priority),  but there is no conflict
+    # because the timelimit is set to 30 for both, and mipgap is set
+    # only for total_cost[3], see below for explanation.
 
 
 
 If multiple objectives have the same priority, they are blended together.
 When objectives are part of the same blended group, the driver will reject configurations where 
 different option values are specified for these objectives. All objectives within a blended group 
-must share identical option values or at most one should have the value specified.
+must share identical option values (or not be set).
 
 See
 `AMPL Colab notebooks with multi-objective options <https://colab.ampl.com/tags/multi-objective-options.html>`__
