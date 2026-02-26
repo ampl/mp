@@ -229,7 +229,7 @@ Piecewise-linear expressions
     *expr-valued:* Equals the largest value among the *expr* operands.
 - max ( expr-list )
     *expr-valued:* Equals the largest value among all of the operands in the *expr-list*.
-- << *slope-list*; *breakpoint-list* >> var
+- << *breakpoint-list*; *slope-list* >> var
     *expr-valued:* Computes a piecewise-linear function of a single variable; see
     `Chapter 17. Piecewise-Linear Programs <https://ampl.com/BOOK/CHAPTERS/20-piecewise.pdf>`_ in
     the `AMPL book <https://ampl.com/resources/the-ampl-book/>`_ for a complete description of the
@@ -262,7 +262,7 @@ General piecewise-linear expressions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 A piecewise-linear expression
-<< *slope-list*; *breakpoint-list* >> *var*
+<< *breakpoint-list*; *slope-list* >> *var*
 is defined by a list of ``n`` *breakpoints* and ``n+1``
 *slopes*. The *var* must be a reference to a single variable.
 
@@ -279,7 +279,7 @@ continuous and binary variables.
 
 When a piecewise-linear function is linearized (rather than being handled natively by the solver),
 numerical accuracy becomes a concern. To promote numerical stability, it is recommended that
-the argument and result variables be explicitly bounded within at most [-1e+4,+1e-4]. See more in the section
+the argument and result variables be explicitly bounded within at most [-1e+4,+1e+4]. See more in the section
 on :ref:`numerical_accuracy`.
 
 
@@ -288,7 +288,7 @@ on :ref:`numerical_accuracy`.
     maximize Total_Profit:
        sum {p in PROD, t in 1..T} (revenue[p,t]*Sell[p,t] -
           prodcost[p]*Make[p,t] - <<0; -backcost[p],invcost[p]>> Inv[p,t]) -
-       sum {t in 1..T} <<avail_min[t]; 0,time_penalty[t]>> Use[t]
+       sum {t in 1..T} <<avail_min[t]; 0,time_penalty[t]>> Use[t] -
        sum {p in PROD, t in 1..T}
           <<commit[p,t]; -100000,0>> (Sell[p,t],commit[p,t]);
 
@@ -410,7 +410,7 @@ Complementarity operator
 ***********************************
 
 - *constr1* complements *constr2*
-    *constr-valued:* Satisfied when both *const1* and *constr2* are satisfied,
+    *constr-valued:* Satisfied when both *constr1* and *constr2* are satisfied,
     and at least one of them holds with equality. Each of *constr1* and *constr2*
     must have the form *expr1 <= expr2* or *expr1 >= expr2* (and the trivial special case *expr1 = expr2* is also recognized).
 - *expr* complements *constr*,  *constr* complements *expr*
