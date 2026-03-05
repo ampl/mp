@@ -11,9 +11,10 @@ lead to better solver performance than another. Here we collect some examples
 that are relevant to the current MP implementation.
 Future versions may automate some of these reformulations.
 
-A general treatment of this topic is provided in *E. Klotz and A.M. Newman.
+A general treatment of this topic is provided in
+*E. Klotz and A.M. Newman (2013).
 Practical guidelines for solving difficult mixed integer linear programs.
-Surveys in Operations Research and Management Science 18(1-2) 18-32*
+Surveys in Operations Research and Management Science 18(1-2) 18-32*,
 and related literature.
 
 
