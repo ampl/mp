@@ -5,7 +5,7 @@ Troubleshooting
 ---------------------------
 
 Solving efficiency
-*****************************8
+*********************
 
 Always look for a more efficient model.
 Bounds could be tightened; coefficients' magnitude can be reduced
