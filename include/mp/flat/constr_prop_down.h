@@ -40,8 +40,10 @@ public:
                        Context ctx) {
     MPD( NarrowVarBestBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
-    PropagateResult2LinTerms(con.GetAffineExpr(),   // @todo better in special cases
-                             MPD( MinusInfty() ), MPD( Infty() ), +ctx);
+    const auto& ae = con.GetAffineExpr();
+    const auto ct = ae.constant_term();
+    PropagateResult2LinTerms(ae.GetLinTerms(),  // bounds: useful for
+                             lb-ct, ub-ct, +ctx);  // fixed redefined Not
   }
 
   void PropagateResult(QuadraticFunctionalConstraint& con, double lb, double ub,
