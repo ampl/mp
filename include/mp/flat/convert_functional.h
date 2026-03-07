@@ -94,7 +94,13 @@ public:
     GetConverter().PreprocessConstraint(GetConstraint(), prepro_);
   }
   void AddResultVariable() {
-    auto r = int( GetConverter().AddVar(lb(), ub(), type()) );
+    auto r = int( GetConverter().AddVar(
+        GetConverter().MinusInfty(), GetConverter().Infty(),  // free var
+        type()) );
+    if (GetConstraint().IsLogical())
+      GetConverter().NarrowVarBounds(r, lb(), ub());  // for logical, hard bounds
+    else
+      GetConverter().NarrowVarBestBounds(r, lb(), ub());  // unless boundsbest=1
     SetResultVar( r );
     GetConstraint().SetResultVar( r );
 	}

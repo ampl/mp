@@ -12,6 +12,8 @@
  * 3. Narrow domain of the result variable,
  *    so that reformulations can be tight
  *    (variable bounds, integrality.)
+ *    HOWEVER this now happens only for logical expressions
+ *    since nonlinear solvers prefer unbounded result.
  *
  * Possible design for future:
  * A. Standardize fail procedure for infeasibility
@@ -784,9 +786,11 @@ public:
   template <class PreprocessInfo>
   void PreprocessConstraint(
       LogConstraint& c, PreprocessInfo& ) {
+    auto x = c.GetArguments()[0];  // if no positive lb,
     if (MPCD( IfBoundLogArg() )) {
-      auto x = c.GetArguments()[0];  // if no positive lb,
       MPD( NarrowVarBounds(x, 0.0, MPD( Infty() )) );
+    } else {
+      MPD( NarrowVarBestBounds(x, 0.0, MPD( Infty() )) );
     }
   }
 
@@ -795,6 +799,9 @@ public:
       LogAConstraint& c, PreprocessInfo& ) {
     if (MPCD( IfBoundLogArg() ))
       MPD( NarrowVarBounds(
+          c.GetArguments()[0], 0.0, MPD( Infty() )) );
+    else
+      MPD( NarrowVarBestBounds(
           c.GetArguments()[0], 0.0, MPD( Infty() )) );
   }
 

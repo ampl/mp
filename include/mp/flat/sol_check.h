@@ -121,8 +121,8 @@ public:
       {x, recomp_fn, is_final},
       {},              // no raw values
       MPCD( GetModel() ).var_type_vec(),
-          MPCD( GetModel() ).var_lb_vec(),
-          MPCD( GetModel() ).var_ub_vec(),
+          MPCD( GetModel() ).var_lb_best_vec(),
+          MPCD( GetModel() ).var_ub_best_vec(),
           MPCD( sol_round() ), MPCD( sol_prec() )
     };
     vir.get_x().set_p_var_info(&vir);
@@ -148,8 +148,8 @@ protected:
       bool if_recomp_vals) {
     SolCheck chk(x, duals, obj, x_raw,
                  MPCD( GetModel() ).var_type_vec(),
-                 MPCD( GetModel() ).var_lb_vec(),
-                 MPCD( GetModel() ).var_ub_vec(),
+                 MPCD( GetModel() ).var_lb_best_vec(),
+                 MPCD( GetModel() ).var_ub_best_vec(),
                  MPCD( sol_feas_tol() ),
                  MPCD( sol_feas_tol_rel() ),
                  MPCD( sol_round() ),

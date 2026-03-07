@@ -47,6 +47,8 @@ public:
     assert(check_vars());
     var_lb_.push_back(lb);
     var_ub_.push_back(ub);
+    var_lb_best_.push_back(lb);
+    var_ub_best_.push_back(ub);
     var_type_.push_back(type);
     ExportVars(var_type_.size()-1, {lb}, {ub}, {type});
     return var_type_.size()-1;
@@ -59,6 +61,8 @@ public:
     assert(check_vars());
     var_lb_.insert(var_lb_.end(), lbs.begin(), lbs.end());
     var_ub_.insert(var_ub_.end(), ubs.begin(), ubs.end());
+    var_lb_best_.insert(var_lb_best_.end(), lbs.begin(), lbs.end());
+    var_ub_best_.insert(var_ub_best_.end(), ubs.begin(), ubs.end());
     var_type_.insert(var_type_.end(), types.begin(), types.end());
     assert(check_vars());
     assert(!num_vars_orig_);
@@ -128,12 +132,24 @@ public:
   bool is_var_original(int i) const
   { return i<num_vars_orig_; }
 
+  /// Actually, lb_best
   double lb(Var v) const {
+    assert(0<=v && v<num_vars());
+    return var_lb_best_[v];
+  }
+
+  /// Actually, ub_best
+  double ub(Var v) const {
+    assert(0<=v && v<num_vars());
+    return var_ub_best_[v];
+  }
+
+  double lb_hard(Var v) const {
     assert(0<=v && v<num_vars());
     return var_lb_[v];
   }
 
-  double ub(Var v) const {
+  double ub_hard(Var v) const {
     assert(0<=v && v<num_vars());
     return var_ub_[v];
   }
@@ -147,9 +163,14 @@ public:
   { return var_lb_; }
   const std::vector<double>& var_ub_vec() const
   { return var_ub_; }
+  const std::vector<double>& var_lb_best_vec() const
+  { return var_lb_best_; }
+  const std::vector<double>& var_ub_best_vec() const
+  { return var_ub_best_; }
   const std::vector<var::Type>& var_type_vec() const
   { return var_type_; }
 
+  /// Best-known bounds
   template <class VarArray>
   double lb_array(const VarArray& va) const {
     double result = Inf();
@@ -186,13 +207,14 @@ public:
     return result;
   }
 
+  /// Uses best-known bounds
   bool is_fixed(int v) const {
     return lb(v)==ub(v);
   }
 
   double fixed_value(int v) const {
     assert(is_fixed(v));
-    return lb(v);
+    return 0.5*((long double)lb(v) + ub(v));
   }
 
   bool is_integer_var(int v) const {
@@ -202,7 +224,8 @@ public:
   /// Returns true also when fixed
   bool is_binary_var(int v) const {
     return
-        (0.0==lb(v) && 1.0==ub(v) && is_integer_var(v))
+        (0.0==lb(v) && 1.0==ub(v)    // best bounds
+            && is_integer_var(v))
         || (is_fixed(v)
             && (0.0==fixed_value(v) || 1.0==fixed_value(v)));
   }
@@ -220,14 +243,34 @@ public:
     return type;
   }
 
+  /// Improve lb, incl. best-known
   void set_lb(int v, double l) {
     assert(0<=v && v<num_vars());
-    var_lb_[v] = l;
+    if (var_lb_[v]<l)
+      var_lb_[v] = l;
+    set_best_lb(v, l);
   }
 
+  /// Improve ub, incl. best-known
   void set_ub(int v, double u) {
     assert(0<=v && v<num_vars());
-    var_ub_[v] = u;
+    if (var_ub_[v]>u)
+      var_ub_[v] = u;
+    set_best_ub(v, u);
+  }
+
+  /// Improve best-known lb
+  void set_best_lb(int v, double l) {
+    assert(0<=v && v<num_vars());
+    if (var_lb_best_[v]<l)
+      var_lb_best_[v] = l;
+  }
+
+  /// Improve best-known ub
+  void set_best_ub(int v, double u) {
+    assert(0<=v && v<num_vars());
+    if (var_ub_best_[v]>u)
+      var_ub_best_[v] = u;
   }
 
   /// To be called first
@@ -290,6 +333,10 @@ public:
   bool if_skip_pushing_objs() const { return if_skip_push_objs_bjs_; }
   /// Set skip pushing objs
   void set_skip_pushing_objs(bool v=true) { if_skip_push_objs_bjs_=v; }
+  /// Submit best-known bounds?
+  int if_submit_best_known_bounds() const { return if_submit_best_bounds_; }
+  /// Submit best-known bounds?
+  int& if_submit_best_known_bounds() { return if_submit_best_bounds_; }
   /// Get obj [i]
   const QuadraticObjective& get_obj(int i) const
   { return get_objectives().at(i); }
@@ -412,9 +459,14 @@ protected:
   template <class Backend>
   void PushVariablesTo(Backend& backend) const {
     assert(check_vars());
+    if (if_submit_best_known_bounds()) {
+      var_lb_subm_ = var_lb_best_;
+      var_ub_subm_ = var_ub_best_;
+    } else {
+      var_lb_subm_ = var_lb_;
+      var_ub_subm_ = var_ub_;
+    }
     // Fix 'eliminated' variables - no proper deletion
-    var_lb_subm_ = var_lb_;
-    var_ub_subm_ = var_ub_;
     for (auto i=std::min(var_elim_.size(), var_lb_subm_.size()); i--; ) {
       if (var_elim_[i]) {
         if (var_lb_subm_[i] > -1e20)
@@ -425,10 +477,16 @@ protected:
           var_lb_subm_[i] = var_ub_subm_[i] = 0.0;
       }
     }
+    // Fix variables with deduced equal (or lb>ub) bounds.
     // Make fixed vars continuous
-    for (auto i=var_lb_subm_.size(); i--; )
-      if (var_lb_subm_[i] == var_ub_subm_[i])
+    for (auto i=var_lb_subm_.size(); i--; ) {
+      if (var_lb_best_[i] >= var_ub_best_[i]) {
+        var_lb_subm_[i] = var_lb_best_[i];
+        var_ub_subm_[i] = var_ub_best_[i];
+      }
+      if (var_lb_subm_[i] >= var_ub_subm_[i])
         var_type_[i] = var::CONTINUOUS;        // avoid MIP classification
+    }
     // Push variables
     if (var_names_storage_.size() > 0) {
       // Convert names to c-str if needed
@@ -486,8 +544,15 @@ public:
   ItemNamer& GetVarNamer() const { return var_namer_; }
 
 private:
-  /// Variables' bounds
+  /// Variables' "hard" bounds
+  /// - solver should know them to have correct solution
   VarBndVec var_lb_, var_ub_;
+  /// Variables' best-known bounds, see cvt:pre:boundsbest.
+  /// By default, we don't submit such bounds e.g. for aux result vars,
+  /// so solvers can eliminate them.
+  VarBndVec var_lb_best_, var_ub_best_;
+  /// Which bounds to submit
+  int if_submit_best_bounds_ {0};
   /// Variables' submitted bounds - what goes to the solver
   mutable VarBndVec var_lb_subm_, var_ub_subm_;
   /// Variables' types
@@ -520,7 +585,9 @@ public:
   /// Check var arrays
   bool check_vars() const {
     return var_lb_.size() == var_ub_.size() &&
-        var_type_.size() == var_ub_.size();
+           var_lb_best_.size() == var_ub_.size() &&
+           var_ub_best_.size() == var_ub_.size() &&
+           var_type_.size() == var_ub_.size();
   }
 
   void RelaxIntegrality() {

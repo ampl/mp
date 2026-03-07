@@ -50,18 +50,27 @@ public:
   }
 
   /// Consider marking the result variables as
-  /// possible expressions
+  /// possible expressions.
+  /// E.g., for multiply used expressions, if desired.
+  /// @todo Track this (multiply used ones) later
+  ///   when we add new expressions
+  ///   in Convert2NLCon() etc.
   template <class Con>
   void ConsiderMarkingResultVar(
       const Con& con, int i, ExpressionAcceptanceLevel eal) {
     assert(ExpressionAcceptanceLevel::NotAccepted!=eal);
-    if (con.HasResultVar()) {         // A functional constraint
-      assert(                     // Check: the result var has \a con as the init expr
+    if (con.HasResultVar()) {  // A functional constraint
+      assert(                  // Check: the result var has \a con as the init expr
           MPD( template GetInitExpressionOfType<Con>(con.GetResultVar()) )
           == &con);
-      if (con.IsLogical()         // Fixed logical results handled differently
-          || !MPD( IfVarBoundsStrongerThanInitExpr(con.GetResultVar()) ) )
+      if (con.IsLogical())     // Fixed logical results handled differently later
         MPD( MarkAsExpression(con.GetResultVar()) );   // can be changed later
+      else if ( !MPCD(is_fixed(con.GetResultVar())) ) {
+        bool fHighUse =
+            MPCD( VarUsage(con.GetResultVar()) ) > MPCD( NLAssignLevel() );
+        if ( !fHighUse )
+          MPD( MarkAsExpression(con.GetResultVar()) );   // can be changed later
+      }
     }
   }
 
@@ -71,17 +80,13 @@ public:
   /// For func cons, once not accepted as expressions, consider their args
   /// as variables.
   /// For static cons, always.
-  /// Moreover, for multiply used expressions, if desired.
-  /// @todo Track this later when we add new expressions
-  ///   in Convert2NLCon() etc.
   template <class Con>
   void ConsiderMarkingArguments(
       const Con& con, int i, ExpressionAcceptanceLevel eal) {
     bool fMarkArgs = false;
     if (con.HasResultVar()) {   // func cons: those not accepted as expr
       fMarkArgs =
-          (ExpressionAcceptanceLevel::NotAccepted==eal)
-          || MPCD( VarUsage(con.GetResultVar()) ) > MPCD( NLAssignLevel() );
+          (ExpressionAcceptanceLevel::NotAccepted==eal);
     } else
       fMarkArgs = true;        // static cons: all non-algebraic by default
     if (fMarkArgs)

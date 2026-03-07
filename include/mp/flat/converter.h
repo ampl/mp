@@ -105,7 +105,7 @@ public:
     lb = std::max(lb, MPCD(lb(var)));
     ub = std::min(ub, MPCD(ub(var)));
     if (tighterBounds)
-      NarrowVarBounds(var, lb, ub);
+      NarrowVarBestBounds(var, lb, ub);       // cvt:pre:boundsbest
     if (HasInitExpression(var)) {
       const auto& ckid = GetInitExpression(var);
       const auto ctx_old = ckid.GetCK()->GetContext(ckid.GetIndex());
@@ -1096,7 +1096,12 @@ public:
   double lb(int var) const { return this->GetModel().lb(var); }
   /// Shortcut ub(var)
   double ub(int var) const { return this->GetModel().ub(var); }
-  /// lb_array()
+  /// Shortcut lb(var)
+  double lb_hard(int var) const { return this->GetModel().lb_hard(var); }
+  /// Shortcut ub(var)
+  double ub_hard(int var) const { return this->GetModel().ub_hard(var); }
+  /// lb_array().
+  /// @todo best-known bounds currently. ?
   template <class VarArray>
   double lb_array(const VarArray& va) const
   { return this->GetModel().lb_array(va); }
@@ -1104,10 +1109,13 @@ public:
   template <class VarArray>
   double ub_array(const VarArray& va) const
   { return this->GetModel().ub_array(va); }
-  /// Does the variable imply stronger bounds than its init expression?
+  /// Does the variable have stronger hard bounds than its init expression?
   /// We might extend this to automatically recompute bounds from bottom up.
   /// @note this was done when creating the functional constraint,
-  /// but we might obtain stronger implied bounds.
+  ///   but we might obtain stronger new bounds,
+  ///   such as in redefinition of complementarity.
+  /// @note Using stronger "best=known" bounds
+  ///   whcih are also used for fixing.
   bool IfVarBoundsStrongerThanInitExpr(int res_var) {
     if (MPCD( HasInitExpression(res_var) )) {
       if (lb(res_var)>MPCD( MinusInfty() )
@@ -1127,15 +1135,31 @@ public:
   void set_var_ub(int var, double ub) { this->GetModel().set_ub(var, ub); }
   /// Set lb(var), propagate context if functional result
   void set_var_lb_context(int var, double lb, Context ctx) {
+    set_var_lb(var, lb);   // Because PropResult() only hint bounds
     PropagateResultOfInitExpr(var, lb, ub(var), ctx);
   }
   /// Set ub(var), propagate context
   void set_var_ub_context(int var, double ub, Context ctx) {
+    set_var_ub(var, ub);   // Because PropResult() only hint bounds
     PropagateResultOfInitExpr(var, lb(var), ub, ctx);
   }
   /// Set bounds(var), propagate context
   void set_var_bounds_context(int var, double lb, double ub, Context ctx) {
+    NarrowVarBounds(var, lb, ub);       // Because PropResult() only hint bounds
     PropagateResultOfInitExpr(var, lb, ub, ctx);
+  }
+
+  /// Narrow "best-known" variable domain range
+  /// @todo we could automatically decrement var usage
+  ///   in appropriate context when the variable is fixed
+  ///   at one of the original/upwards-implied bounds.
+  /// Then remove manual DecrementVarUsage()'s
+  void NarrowVarBestBounds(int var, double lb, double ub) {
+    auto& m = GetModel();
+    m.set_best_lb(var, lb);
+    m.set_best_ub(var, ub);
+    if (m.lb(var)>m.ub(var))
+      CheckVarConDomain(m.lb(var), m.ub(var), "_svar", var, true);
   }
 
   /// Narrow variable domain range
@@ -1145,22 +1169,22 @@ public:
   /// Then remove manual DecrementVarUsage()'s
   void NarrowVarBounds(int var, double lb, double ub) {
     auto& m = GetModel();
-    m.set_lb(var, std::max(m.lb(var), lb));
-    m.set_ub(var, std::min(m.ub(var), ub));
+    m.set_lb(var, lb);
+    m.set_ub(var, ub);
     if (m.lb(var)>m.ub(var))
       CheckVarConDomain(m.lb(var), m.ub(var), "_svar", var);
   }
 
   /// Check var/con domain
   bool CheckVarConDomain(
-      double lb, double ub, const char* kind, int i) {
+      double lb, double ub, const char* kind, int i, bool bestb=false) {
     if (lb>ub
         && lb-ub > MPCD( model_feas_tol() )
         && lb-ub
                > std::max(std::abs(lb), std::abs(ub))
                      * MPCD( model_feas_tol_rel() )) {
       GetEnv().AddWarning(
-          std::string(kind) + " bounds",
+          std::string(kind) + (bestb ? " best-known" : "") + " bounds",
           fmt::format("Bounds [{:.17}, {:.17}]\nof {}[{}] "
                       "contradict pre:eps and pre:epsrel.\n"
                       "Model can be infeasible",
@@ -1180,11 +1204,13 @@ public:
 
   /// MakeComplementVar()
   int MakeComplementVar(int bvar) {
-    if ( !(lb(bvar)==0.0 && ub(bvar)==1.0) ) {
-      MP_ASSERT_ALWAYS( (!ub(bvar) || 1.0==lb(bvar)),
+    if ( !(lb_hard(bvar)==0.0 && ub_hard(bvar)==1.0) ) {
+      // Should be hard-fixed at 0 or 1
+      MP_ASSERT_ALWAYS( ((!lb_hard(bvar) && !ub_hard(bvar))
+                        || (1.0==lb_hard(bvar) && 1.0==ub_hard(bvar))),
                 "Asked to complement variable with bounds "
-                    + std::to_string(lb(bvar))
-                    + ".." + std::to_string(ub(bvar)));
+                    + std::to_string(lb_hard(bvar))
+                    + ".." + std::to_string(ub_hard(bvar)));
     }
     /// Algebraic way: AffineExpr ae({{-1.0}, {bvar}}, 1.0);
     /// return MP_DISPATCH( Convert2Var(std::move(ae)) );
@@ -1689,6 +1715,14 @@ private:
                        "\n"
                        "Default 7, see #267.",
                        options_.propCtxCountNumberof_, 0, 7);
+
+    GetEnv().AddOption("cvt:pre:boundsbest boundsbest",
+                       "0*/1: Submit best-known variable bounds to the solver. "
+                       "Can inhibit its presolve.\n"
+                       "\n"
+                       "Note: when a variable can be fixed, the stronger bounds "
+                       "are submitted.",
+                       GetModel().if_submit_best_known_bounds(), 0, 1);
 
     GetEnv().AddOption("cvt:pre:boundlogarg boundlogarg",
                        "0*/1: Bound logarithm arguments to nonnegative.",
