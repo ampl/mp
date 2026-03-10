@@ -2469,6 +2469,22 @@ void CplexBackend::InitCustomOptions() {
                   "See lim:uppercutoff.",
                   CPXPARAM_MIP_Tolerances_LowerCutoff, -DBL_MAX, DBL_MAX);
 
+  AddSolverOption("mip:objdiff objdiff objdif",
+      "Used to update the cutoff each time a solution is found. "
+      "This absolute value is subtracted from (added to) the newly "
+      "found integer objective value when minimizing (maximizing). "
+      "This forces the mixed integer optimization to ignore integer "
+      "solutions that are not at least this amount better than the "
+      "best one found so far. Positive values may speed "
+      "the search -- and may cause the optimal solution "
+      "to be missed.", CPXPARAM_MIP_Tolerances_ObjDifference,
+      0.0, DBL_MAX);
+
+  AddSolverOption("mip:relobjdiff relobjdiff relobjdif",
+      "If objdiff parameter is 0, relobjdiff times the absolute "
+      "value is used as a cutoff (see objdiff)", 
+      CPXPARAM_MIP_Tolerances_RelObjDifference, 0.0, DBL_MAX);
+
   AddSolverOption("qp:target optimalitytarget",
     "Type of solution to compute for a (MI)QP (not QCP) problem:"
                   "\n\n.. value-table::\n",

@@ -2,6 +2,10 @@ Summary of recent updates to CPLEX for AMPL
 ==============================================
 
 
+## 20260310
+- Added options `mip:objdiff` and `mip:relobjdiff`
+
+
 ## 20251210
 - Option *obj:multi:options*: fix integer-valued
   objective-specific options.
