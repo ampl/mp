@@ -140,7 +140,7 @@ public:
     if (ExpressionAcceptanceLevel::NotAccepted != eal) {
       if (1==stage_cvt2expr_) {
         HandleLogicalArgs(con, i);         // expicify logical args
-        if (!con.GetConstraint().GetBody().is_variable()) {  // already a variable
+        if (!con.GetConstraint().GetBody().is_variable()) {  // not a variable
           ConvertConditionalConLHS(con, i);
           return true;
         }
@@ -182,7 +182,7 @@ public:
     return false;
   }
 
-  /// Special handling for LinearFunctionalConstraint
+  /// Special handling for QuadraticFunctionalConstraint
   bool ConvertWithExpressions(
       const QuadraticFunctionalConstraint& con, int i,
       ConstraintAcceptanceLevel , ExpressionAcceptanceLevel eal) {
@@ -511,7 +511,7 @@ protected:
             return true;
           }
           need_nlc = true;
-        } else {         // single variable, its expression will be explicified
+        } else {   // exprResVar (just added), its expression will be explicified
           MPD( IncrementVarUsage(exprResVar) );  // Because removed from top-level con #201
           MPD( NarrowVarBounds(exprResVar, rng.lb(), rng.ub()) );
           return true;
@@ -554,11 +554,11 @@ protected:
         pre::AutoLinkScope<Impl> auto_link_scope{ *(Impl*)this, obj_src };
         if (qobj.GetQPTerms().empty())
           exprResVar = MPD( AssignResultVar2Args(
-              LinearFunctionalConstraint{ {lt_in_expr, 0.0} } ) );
+              LinearFunctionalConstraint{ {std::move(lt_in_expr), 0.0} } ) );
         else {                       // Move QP terms into the expr
           exprResVar = MPD( AssignResultVar2Args(
               QuadraticFunctionalConstraint
-              { {{lt_in_expr, std::move(qobj.GetQPTerms())}, 0.0} } ) );
+              { {{std::move(lt_in_expr), std::move(qobj.GetQPTerms())}, 0.0} } ) );
           qobj.GetQPTerms().clear();           // std::move() does not clear
         }
         MPD( AddInitExprContext(exprResVar,             // Context is compulsory
@@ -575,7 +575,7 @@ protected:
         exprResVar = -1;                              // no expression
         lt_varsonly.sort_terms();
       }
-      qobj.GetLinTerms() = lt_varsonly;
+      qobj.GetLinTerms() = std::move(lt_varsonly);
       if (exprResVar>=0)
         qobj.SetExprIndex(exprResVar);
       MPD( CountArgRefs(qobj) );
@@ -628,7 +628,8 @@ protected:
         lt.sort_terms();                     // this would reproduce the original con.
         if (MPCD( UserAcceptsAndRecommends(       // Accepts LinCon..
                 (const ComplementarityLinear*)nullptr) )) {
-          ComplementarityLinear ccl {{lt, 0.0}, ccon.GetVariable()};
+          ComplementarityLinear ccl
+              {{std::move(lt), 0.0}, ccon.GetVariable()};
           MPD( AddConstraint( std::move(ccl) ) );
           return true;
         }                      // @todo else, if this is ComplQuad and accepted, leave?
@@ -641,8 +642,8 @@ protected:
             &ccon ) )
         || need_nlcc) {                                  // or, other reason
       assert( MPCD( UserAcceptsAndRecommends((const NLComplementarity*)nullptr) ) );
-      NLComplementarity nlcc{
-                             lt, exprResVar, ccon.GetVariable()};
+      NLComplementarity nlcc
+          {std::move(lt), exprResVar, ccon.GetVariable()};
       MPD( AddConstraint( std::move(nlcc) ) );
       return true;
     }
@@ -705,6 +706,7 @@ protected:
   void ConvertConditionalConLHS(
       const ConditionalConstraint< AlgebraicConstraint<Body, RhsOrRange> >& con,
       int i) {
+    assert(!con.GetArguments().GetBody().is_variable());                 // ensured by caller
     auto alscope = MPD( MakeAutoLinker( con, i ) );       // link from \a con
     /// Create a functional constraint from the LHS
     auto fc = MakeFunctionalConstraint(

@@ -115,9 +115,11 @@
     "tags" : ["nonlinear"]
   }, {
     "name" : "nltrans",
-    "objective" : -1,
     "tags" : ["nonlinear", "continuous"],
-    "files" : ["nltrans.mod", "nltrans.dat"]
+    "files" : ["nltrans.mod", "nltrans.dat"],
+    "values": {
+      "if _obj[1] < -1 then 1": 1
+    }
   }, {
     "name" : "nltransb",
     "objective" : 1212117,
