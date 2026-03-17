@@ -241,7 +241,7 @@ protected:
     return {lb!=ub, lb>GetMC().MinusInfty(), ub<GetMC().Infty()};
   }
   void ConvertRange(const ItemType& item, int i) {
-    GetMC().TurnOffAutoLinking();     // for range only
+    GetMC().TurnOffAutoLinking(false);     // for range only
     auto slk = int( GetMC().AddVar(0.0, item.ub()-item.lb()) );
     auto body = item.GetBody();
     body.add_term(1.0, slk);

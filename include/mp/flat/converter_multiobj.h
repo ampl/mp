@@ -427,6 +427,8 @@ protected:
     auto diff = std::max(                 // Apply degradation tolerance
         obj_new_tola_[i_current_obj_-1], std::fabs(lim) * obj_new_tolr_[i_current_obj_-1]);
     lim += diff * (obj::MAX==obj_last.obj_sense() ? -1.0 : 1.0);
+    auto emptylinker = MPD( MakeEmptyLinker(
+        MPD( GetObjValueNode() ).Select(0)) );     // dummy. Could use prev orig obj
     if (obj_last.HasExpr()) {
       assert(obj_last.GetQPTerms().empty());   // not mixing QP and expression term
       if (obj::MAX == obj_last.obj_sense())

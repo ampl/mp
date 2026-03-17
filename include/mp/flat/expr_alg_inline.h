@@ -65,12 +65,15 @@ protected:
 
   /// @todo just once?
   void WalkObjectives() {
-    for (auto& obj: MPD( get_objectives() )) {
+    auto& objectives = MPD( get_objectives() );
+    for (size_t iobj=0; iobj < objectives.size(); ++iobj) {
+      auto& obj = objectives[iobj];
       if (HasAlgExpr(obj.GetLinTerms())) {
         auto qexpr
             = CollectAlgSubExpr(obj.GetLinTerms(), obj.GetQPTerms());
-        // @todo some linking for this...
-        // but we modify in-place
+        auto obj_src = MPD( GetObjValueNode() ).Select(iobj);
+        pre::AutoLinkScope auto_link_scope
+            { *(Impl*)this, obj_src };
         MPD( UncountArgRefs(obj) );
         obj.GetLinTerms() = std::move(qexpr.GetBody().GetLinTerms());
         obj.GetQPTerms() = std::move(qexpr.GetBody().GetQPTerms());

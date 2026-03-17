@@ -1363,6 +1363,19 @@ public:
     };
   }
 
+  /// Make an empty autolinker.
+  /// We'd link manually but at least we care.
+  pre::AutoLinkScope<Impl> MakeEmptyLinker(
+      pre::NodeRange src) {
+    pre::AutoLinkScope<Impl> result
+        {
+                  *(Impl*)this,   // 1-index source allowed only
+                  {src.GetValueNode(), src.GetIndexRange().beg_}
+        };
+    TurnOffAutoLinking(false);
+    return result;
+  }
+
   /// Auto link node range \a nr.
   /// The nodes of \a nr will be autolinked with \a auto_link_src_item_.
   /// Means, a link is created automatically, without the
@@ -1374,6 +1387,12 @@ public:
       if (auto_link_targ_items_.empty() ||
           !auto_link_targ_items_.back().TryExtendBy(nr))
         auto_link_targ_items_.push_back(nr);
+    } else {
+      // If not proper autolinking,
+      // check that we have called MakeEmptyLinker
+      // (hoping we care to link manually)
+      // or called TurnAutoLinkingOff(false)
+      assert(is_autolinking_requested_);
     }
     return nr;
   }
@@ -1382,10 +1401,19 @@ public:
   bool DoingAutoLinking() const
   { return auto_link_src_item_.IsValid(); }
 
-  /// Turn off auto-linking for current conversion
-  void TurnOffAutoLinking() {
+  /// Turn off auto-linking for current conversion.
+  /// @param f_full: if it's full stop,
+  ///   otherwise we continue conversions but
+  ///   add manual links.
+  ///   This mechanism is necessary to check
+  ///   that we always care about linking.
+  ///
+  ///   So when switching to manual linking,
+  ///   call with \a f_full=false.
+  void TurnOffAutoLinking(bool f_full=true) {
     auto_link_src_item_.Invalidate();
     auto_link_targ_items_.clear();
+    is_autolinking_requested_ = !f_full;
   }
 
   /// Get autolink source node range
@@ -2072,6 +2100,10 @@ private:
   pre::One2ManyLink one2many_link_ { GetValuePresolver() }; // the 1-to-many links
   pre::NodeRange auto_link_src_item_;   // the source item for autolinking
   std::vector<pre::NodeRange> auto_link_targ_items_;
+  /// This is to check that we always care
+  /// to set up autolinking,
+  /// or declare it empty
+  bool is_autolinking_requested_ {false};
 
   pre::Many2OneLink many2one_link_ { GetValuePresolver() }; // the many-to-one links
 

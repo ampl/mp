@@ -203,6 +203,7 @@ public:
       int i,
       ConstraintAcceptanceLevel , ExpressionAcceptanceLevel ) {
     if (1==stage_cvt2expr_) {
+      auto scope = MPD( MakeAutoLinker(con, i) );
       HandleLogicalArgs(con, i);         // explicify logical args
       ConvertComplementarity(con, i);
       return true;
@@ -744,6 +745,7 @@ protected:
           } else {
             if ((val && con.GetContext().HasPositive())
                 || (!val && con.GetContext().HasNegative())) {
+              auto scope = MPD( MakeAutoLinker(con, i) );
               MPD( AddConstraint(NLLogical(resvar, val)) );  // static con
             }  // else, skip
           }

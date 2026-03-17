@@ -356,11 +356,12 @@ protected:
       types[i] = mpvar.type();
     }
 
+    auto src_rng =
+        GetValuePresolver().GetSourceNodes().GetVarValues().MakeSingleKey().
+                   Add(lbs.size());
+    auto emptylinker = GetFlatCvt().MakeEmptyLinker(src_rng);
     auto vnr = GetFlatCvt().AddVars(lbs, ubs, types);
-    GetCopyLink().AddEntry({
-          GetValuePresolver().GetSourceNodes().GetVarValues().MakeSingleKey().
-                             Add(lbs.size()),
-          vnr });
+    GetCopyLink().AddEntry({ src_rng, vnr });
     // Append "_auxvarNN" for any other variables,
     // in particular the new variables during flattening
     GetFlatCvt().GetVarValueNode().SetNameChunk("auxv");
@@ -1218,6 +1219,8 @@ public:         // More utilities
           weights.push_back(wv.first);
           vars.push_back(wv.second);
         }
+        auto emptylinker = GetFlatCvt().MakeEmptyLinker(
+            GetFlatCvt().GetVarValueNode().Select(0));     // dummy
         if (group.first<0 || fAllSOS2)
           AddConstraint(
                 SOS2Constraint(vars, weights,

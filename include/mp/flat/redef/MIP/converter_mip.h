@@ -359,12 +359,18 @@ protected:
   /// A benefit would be if some solver later supports them natively
   /// (IloDistribute?), now they are always converted below.
   void CreateUnaryEncoding(int var, const SingleVarEqConstMap& map) {
-    // Create links from CondLinEQ's into the dummy UEnc
-    auto valnode = MPD( AddConstraint( UnaryEncodingConstraint{{var}} ) );
-    auto& ck = GET_CONSTRAINT_KEEPER(CondLinConEQ);
-    for (const auto& veq : map) {
-      MPD( GetMany2OneLink().AddEntry(
-        { ck.SelectValueNodeRange(veq.second), valnode } ));
+    pre::NodeRange valnode;
+    {
+      auto& ck = GET_CONSTRAINT_KEEPER(CondLinConEQ);
+      auto emptylinker =
+          MPD( MakeEmptyLinker(ck.SelectValueNodeRange(map.begin()->second)) );
+      // Create links from CondLinEQ's into the dummy UEnc
+      // @todo We could extend AutoLinkScope to handle many-to-1
+      valnode = MPD( AddConstraint( UnaryEncodingConstraint{{var}} ) );
+      for (const auto& veq : map) {
+        MPD( GetMany2OneLink().AddEntry(
+            { ck.SelectValueNodeRange(veq.second), valnode } ));
+      }
     }
     // Start AutoLinking from the dummy UEnc into its reformulation
     pre::AutoLinkScope<Impl> auto_link_scope{

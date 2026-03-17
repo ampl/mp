@@ -402,7 +402,6 @@ std::string XpressmpBackend::DoXpressFixedModel()
   }
 
   std::pair<int, std::string> XpressmpBackend::GetSolveResult() {
-
     namespace sol = mp::sol;
     auto solvestatus = getIntAttr(XPRS_SOLVESTATUS);
     auto solstatus = getIntAttr(XPRS_SOLSTATUS);
