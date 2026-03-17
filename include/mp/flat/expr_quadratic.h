@@ -205,6 +205,9 @@ QuadTerms Merge(const QuadTerms& , const QuadTerms& );
 /// then produce sorted result.
 QuadTerms MultiplyOut(const LinTerms& e1, const LinTerms& e2);
 
+void WriteModelItem(fmt::MemoryWriter& wrt, const QuadTerms& qt,
+                    ItemNamer& vnam);
+
 /// Specialize
 template <>
 void WriteJSON(JSONW jw, const QuadTerms& qt);
@@ -324,6 +327,9 @@ public:
   bool operator!=(const QuadAndLinTerms& qlc) const
   { return !equals(qlc); }
 };
+
+void WriteModelItem(fmt::MemoryWriter& wrt, const QuadAndLinTerms& qlt,
+                    ItemNamer& vnam);
 
 /// Specialize
 template <>

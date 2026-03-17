@@ -239,15 +239,6 @@ using QuadConGE = QuadConRhs< 1>;
 using QuadConGT = QuadConRhs< 2>;
 
 
-void WriteModelItem(fmt::MemoryWriter& wrt, const LinTerms& lt,
-                    ItemNamer& vnam);
-
-void WriteModelItem(fmt::MemoryWriter& wrt, const QuadTerms& qt,
-                    ItemNamer& vnam);
-
-void WriteModelItem(fmt::MemoryWriter& wrt, const QuadAndLinTerms& qlt,
-                    ItemNamer& vnam);
-
 /// Write RangeCon without name.
 template <class Writer, class Body>
 inline void WriteModelItem(Writer& wrt,

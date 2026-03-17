@@ -3,6 +3,9 @@ Summary of recent updates to the AMPL MP Library
 
 
 ## unreleased
+- Option *cvt:pre:boundsbest* defaults to making
+  auxiliary subexpression result variables free,
+  unless the result is constant.
 - Additional case where the signpow function
   is recognized: abs(C*x)*x
   (C constant, x variable).

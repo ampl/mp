@@ -384,7 +384,7 @@ add_prefix(MP_FLAT_HEADERS include/mp/flat/
   expr_affine.h expr_quadratic.h
   bucketaccum.h bucketaccum.hpp
   expr_bounds.h
-  item_keeper.h
+  item_keeper.h item_namer.h
   model_api_base.h model_api_connect.h
   model_info.h model_info.hpp
   obj_std.h preprocess.h prepro_prod.h

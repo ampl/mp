@@ -226,6 +226,9 @@ private:
 /// Merge 2 sorted LinTerms
 LinTerms Merge(const LinTerms& , const LinTerms& );
 
+void WriteModelItem(fmt::MemoryWriter& wrt, const LinTerms& lt,
+                    ItemNamer& vnam);
+
 /// Specialize
 template <>
 void WriteJSON(JSONW jw, const LinTerms& qt);

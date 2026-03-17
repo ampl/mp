@@ -11,6 +11,7 @@
 
 #include "mp/util-json-write.hpp"
 #include "mp/arrayref.h"
+#include "mp/flat/item_namer.h"
 
 namespace mp {
 
