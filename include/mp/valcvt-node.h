@@ -2,6 +2,7 @@
 #define VALUE_PRESOLVE_NODE_H
 
 #include <cmath>
+#include <unordered_set>
 
 #include "valcvt-base.h"
 
@@ -106,8 +107,11 @@ public:
   /// Constructor.
   /// Need ValuePresolver to register itself.
   ValueNode(BasicValuePresolver& pre, std::string nm={}) :
-      pre_(pre), name_(std::move(nm)), nc_default_(name_.c_str())
-  { RegisterMe(); }
+      pre_(pre), name_(std::move(nm))
+  {
+    SetNameChunk(name_);
+    RegisterMe();
+  }
 
   /// Move constructor
   ValueNode(ValueNode&& vn) : pre_(vn.pre_) {
@@ -116,6 +120,7 @@ public:
     vStr_ = std::move(vn.vStr_);
     sz_ = std::move(vn.sz_);
     name_ = std::move(vn.name_);
+    nc_default_ = vn.nc_default_;
     RegisterMe();
   }
 
@@ -126,6 +131,7 @@ public:
     vStr_ = (vn.vStr_);
     sz_ = (vn.sz_);
     name_ = (vn.name_);
+    nc_default_ = vn.nc_default_;
     RegisterMe();
   }
 
@@ -150,7 +156,10 @@ public:
 
   /// Set default name chunk.
   /// Name chunks are chained up during name presolve.
-  void SetNameChunk(NameChunk nc) { nc_default_ = nc; }
+  void SetNameChunk(const std::string& nc) {
+    auto it = nc_dfl_set_.insert(nc).first;
+    nc_default_ = it->c_str();
+  }
 
   /// Create entry (range) pointer: add n elements
   NodeRange Add(int n=1) {
@@ -379,6 +388,10 @@ private:
   /// \brief Current local item counter (for subnodes of a parent)
   int localcounter_=0;
   std::vector<int> localcounts_;  // counter value for each entry
+
+  /// Collection of default name chunks.
+  /// We remember old ones because we use them as pointers
+  std::unordered_set<std::string> nc_dfl_set_;
   /// Default name chunk, applied to new entries.
   /// Initialized to ShortTypeName in the main constructor.
   NameChunk nc_default_ {"nc_not_init"};

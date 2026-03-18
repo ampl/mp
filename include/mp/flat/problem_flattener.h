@@ -159,6 +159,9 @@ public:
   /// so their names are not modified.
   /// @todo Do modify if any expressions are outlined?
   void InitNameChunks() {
+    /// Reset name presolve chunks
+    GetFlatCvt().SetValueNodeNameChunksAsShortTypeNames();
+
     auto EmptyNC = [this](auto* pCon) {
       this->GetFlatCvt().GetConstraintKeeper(pCon).
           SetValueNodeNameChunk("");
@@ -362,7 +365,7 @@ protected:
     auto emptylinker = GetFlatCvt().MakeEmptyLinker(src_rng);
     auto vnr = GetFlatCvt().AddVars(lbs, ubs, types);
     GetCopyLink().AddEntry({ src_rng, vnr });
-    // Append "_auxvarNN" for any other variables,
+    // Append "_auxvNN" for any other variables,
     // in particular the new variables during flattening
     GetFlatCvt().GetVarValueNode().SetNameChunk("auxv");
   }
