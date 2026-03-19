@@ -155,9 +155,11 @@ public:
   }
 
   /// Init value node name chunks.
-  /// This empties chunks for top-level algebraic cons,
+  /// This empties chunks for top-level algebraic cons
+  /// and original variables,
   /// so their names are not modified.
-  /// @todo Do modify if any expressions are outlined?
+  /// But for objectives and alg cons with outlined
+  /// arguments we add "_flat_".
   void InitNameChunks() {
     /// Reset name presolve chunks
     GetFlatCvt().SetValueNodeNameChunksAsShortTypeNames();
@@ -365,9 +367,9 @@ protected:
     auto emptylinker = GetFlatCvt().MakeEmptyLinker(src_rng);
     auto vnr = GetFlatCvt().AddVars(lbs, ubs, types);
     GetCopyLink().AddEntry({ src_rng, vnr });
-    // Append "_auxvNN" for any other variables,
+    // Append "_flatvNN" for any other variables,
     // in particular the new variables during flattening
-    GetFlatCvt().GetVarValueNode().SetNameChunk("auxv");
+    GetFlatCvt().GetVarValueNode().SetNameChunk("flatv");
   }
 
   /// Convert a common expr
@@ -381,10 +383,11 @@ protected:
       typename ProblemType::MutObjective obj = GetModel().obj(i_obj);
       auto obj_src =              // source value node for this obj
           GetValuePresolver().GetSourceNodes().GetObjValues()().Add();
+      auto& obj_trg_nodes = GetValuePresolver().GetTargetNodes().GetObjValues()();
       GetCopyLink().AddEntry(
           {
            obj_src,
-           GetValuePresolver().GetTargetNodes().GetObjValues()().Add() });
+           obj_trg_nodes.Add() });
       /// After the CopyLink, add One2ManyLink for converted expressions.
       /// When postsolving, CopyLink is executed last and copies obj values.
       /// This should resolve the issue of the "max-out"
@@ -418,6 +421,9 @@ protected:
         eexpr.GetQPTerms().clear();                // explicitly remove obj qp terms
         le.add_term(1.0, qpres);
       }
+      if (GetFlatCvt().HasInitExpression(le)       // Add "_flat_" if expr args
+          || GetFlatCvt().HasInitExpression(eexpr.GetQPTerms()))
+        obj_trg_nodes.ReplaceNameChunk(-1, "flat");
       /// Add linear / quadratic obj
       LinearObjective lo { obj.type(),
                          std::move(le.coefs()), std::move(le.vars()) };
@@ -488,6 +494,8 @@ protected:
     pre_result.lt.sort_terms();
     pre_result.qt = std::move(ee.GetQPTerms());        // quadratic terms, if any
     pre_result.qt.sort_terms();
+    GetFlatCvt().SetNameChunk(     // Append _flat_ if nonlinear
+        con.nonlinear_expr() ? "flat" : nullptr);
     return pre_result;
   }
 
@@ -497,11 +505,24 @@ protected:
       if (pr.compl_var<0)
         AddConstraint_AS_ROOT( LinConRange{ std::move(pr.lt),
                             { pr.lb, pr.ub }} );
-      else
+      else {
+        // Add "_flat_" if expr args, similar to quadratics below.
+        GetFlatCvt().SetNameChunk(
+            (GetFlatCvt().HasInitExpression(pr.lt))
+                ? "flat" : nullptr);
         AddConstraint_AS_ROOT(
               ComplementarityLinear{
                 AffineExpr(std::move(pr.lt), pr.const_term), pr.compl_var } );
+      }
     } else {
+      // Add "_flat_" if expr args.
+      // For quadratics, we check arguments;
+      // for the linear case above, we rely on PrepareAlgCon
+      // setting chunk "flat" based on the nonlinear expression
+      GetFlatCvt().SetNameChunk(
+          (GetFlatCvt().HasInitExpression(pr.lt)
+           || GetFlatCvt().HasInitExpression(pr.qt))
+              ? "flat" : nullptr);
       if (pr.compl_var<0)
         AddConstraint_AS_ROOT( QuadConRange{
                               { std::move(pr.lt), std::move(pr.qt) },
@@ -513,6 +534,7 @@ protected:
                 { { std::move(pr.lt), std::move(pr.qt) }, pr.const_term },
                 pr.compl_var } );
     }
+    GetFlatCvt().SetNameChunk(nullptr);             // reset name chunk
   }
 
   /// Convert a logical constraint
@@ -554,6 +576,9 @@ protected:
 
     /// Reset name presolve chunks
     GetFlatCvt().SetValueNodeNameChunksAsShortTypeNames();
+    // Append "_auxvNN" for any other variables,
+    // in particular the new variables during flattening
+    GetFlatCvt().GetVarValueNode().SetNameChunk("auxv");
   }
 
   void Shrink() {

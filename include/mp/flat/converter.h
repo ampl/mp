@@ -854,7 +854,12 @@ protected:
   pre::NodeRange AddConstraintAndTryNoteResultVariable(Constraint&& con) {
     const auto resvar = con.GetResultVar();
     auto& ck = GET_CONSTRAINT_KEEPER( Constraint );
+    pre::NameChunk old_nc {};
+    if (name_chunk_)
+      old_nc = ck.GetValueNode().SetNameChunk(name_chunk_);
     auto i = ck.AddConstraint(constr_depth_, std::move(con));
+    if (name_chunk_)
+      ck.GetValueNode().SetNameChunk(old_nc);
     ConInfo ci{&ck, i};
     if (resvar>=0)
       AddInitExpression(resvar, ci);
@@ -1236,6 +1241,14 @@ public:
 private:
   std::vector<ConInfo> var_info_;
 
+  /// If non-0, use this chunk when adding cons
+  const char* name_chunk_ {nullptr};
+
+
+public:
+  /// Pass 0 to use default for constraints
+  void SetNameChunk(const char* nc) { name_chunk_ = nc; }
+
 
 protected:
   /// Add variable. Type: var::CONTINUOUS by default
@@ -1277,6 +1290,23 @@ public:
       return false;
     const auto& ie = GetInitExpression(var);
     return ie.GetCK()->IsLogical();
+  }
+
+  /// Do the LinTerms have an arg with init expr?
+  bool HasInitExpression(const LinTerms& lt) {
+    for (auto v: lt.vars())
+      if (HasInitExpression(v))
+        return true;
+    return false;
+  }
+
+  /// Do the QuadTerms have an arg with init expr?
+  bool HasInitExpression(const QuadTerms& qt) {
+    for (auto e: qt.get_folded())
+      if (HasInitExpression(e.first.first)
+          || HasInitExpression(e.first.second))
+        return true;
+    return false;
   }
 
   /// Get func con context.

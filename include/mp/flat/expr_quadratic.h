@@ -32,7 +32,8 @@ public:
   /// Capacity
   size_t capacity() const { return folded_.capacity(); }
 
-  /// Folded vector reference
+  /// Folded vector reference.
+  /// This should be used by default.
   ArrayRef<TupleType> get_folded() const
   { return {folded_.data(), folded_.size()}; }
 

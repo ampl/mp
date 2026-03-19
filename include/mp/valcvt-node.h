@@ -120,7 +120,7 @@ public:
     vStr_ = std::move(vn.vStr_);
     sz_ = std::move(vn.sz_);
     name_ = std::move(vn.name_);
-    nc_default_ = vn.nc_default_;
+    SetNameChunk( vn.nc_default_ );
     RegisterMe();
   }
 
@@ -131,7 +131,7 @@ public:
     vStr_ = (vn.vStr_);
     sz_ = (vn.sz_);
     name_ = (vn.name_);
-    nc_default_ = vn.nc_default_;
+    SetNameChunk( vn.nc_default_ );
     RegisterMe();
   }
 
@@ -156,9 +156,26 @@ public:
 
   /// Set default name chunk.
   /// Name chunks are chained up during name presolve.
-  void SetNameChunk(const std::string& nc) {
+  /// @return old one.
+  /// @note "name" means var/con/obj name being presolved
+  ///   along this node.
+  NameChunk SetNameChunk(const std::string& nc) {
     auto it = nc_dfl_set_.insert(nc).first;
+    auto old = nc_default_;
     nc_default_ = it->c_str();
+    return old;
+  }
+
+  /// Assign name chunk to an existing entry
+  NameChunk ReplaceNameChunk(int pos, const std::string& nc) {
+    if (pos < 0)            // pos=-1 =>
+      pos = sz_+pos;        // pos = last
+    auto old = namechunks_[pos];
+    auto it = nc_dfl_set_.insert(nc).first;
+    namechunks_[pos] = it->c_str();
+    printf("VN '%s': replace name chunk [%d] by '%s', old name '%s'\n",
+           GetName().c_str(), pos, namechunks_[pos], old);
+    return old;
   }
 
   /// Create entry (range) pointer: add n elements
