@@ -201,6 +201,8 @@ void CoptBackend::DoWriteProblem(const std::string& name) {
         COPT_CCALL(COPT_WriteMps(lp(), name.c_str()));
     else if (ends_with(name, "nl"))
         COPT_CCALL(COPT_WriteNL(lp(), name.c_str()));
+    if (ends_with(name, ".cbf"))
+        COPT_CCALL(COPT_WriteCbf(lp(), name.c_str()));
   else
     throw std::runtime_error("Can only export '.lp' or '.mps' files.");
 }
@@ -364,12 +366,19 @@ static const mp::OptionValueInfo lp_values_method[] = {
   { "6", "First-order method (PDLP)"}
 };
 
+static const mp::OptionValueInfo concurrentlpmode_values[] = {
+    {"-1", "Choose automatically (default)", -1 },
+    { "0","CPU only(simplex + barrier).", 0},
+    { "1" ,"CPU(simplex + barrier) + GPU/PDLP (on GPU device 0)", 1},
+    {"2","CPU(simplex + barrier) + GPU/barrier (on GPU device 0)", 2},
+    {"3", "CPU(simplex + barrier) + GPU/PDLP + GPU/barrier (on GPU device 0 and GPU device 1)", 3}
+};
+
 static const mp::OptionValueInfo lp_values_gpu[] = {
   {"-1", "Automatic (default)", -1},
   {"0", "Force the use of CPU mode", 0},
   {"1", "Utilize NVIDA GPU", 1}
 };
-
 
 static const mp::OptionValueInfo alg_values_level[] = {
   { "-1", "Automatic (default)", -1},
@@ -597,7 +606,7 @@ void CoptBackend::InitCustomOptions() {
     "default -1 ==> automatic.",
     COPT_INTPARAM_MIPTASKS, -1, 255);
 
-
+  
   AddSolverOption("lim:mipnlpiterlimit mipnlpiterlimit",
       "Iteration limit for solving NLP problem(s) within the MIP solver (default: no limit).",
       COPT_INTPARAM_MIPNLPITERLIMIT, 0, INT_MAX);
@@ -623,6 +632,12 @@ void CoptBackend::InitCustomOptions() {
     "Which algorithm to use for non-MIP problems:\n"
     "\n.. value-table::\n", COPT_INTPARAM_LPMETHOD, 
     lp_values_method, -1);
+
+  AddSolverOption("lp:concurrentlpmode concurrentlpmode",
+      "The LP concurrent solving mode, only effective when lp:method = 4. "
+      "The parameters lp:pdlpgpumode and lp:pdlpgpudevice are ignored, and GPU usage and "
+      "device selection are fully controlled by this parameter.", COPT_INTPARAM_CONCURRENTLPMODE,
+      concurrentlpmode_values, 0);
 
   AddSolverOption("lp:pdlpgpumode pdlpgpumode gpumode",
     "Wether to use GPU or CPU for PDLP method. Note that CUDA "

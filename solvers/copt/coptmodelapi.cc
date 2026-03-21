@@ -138,6 +138,94 @@ void CoptModelAPI::AddConstraint(const SOS2Constraint& sos) {
 }
 
 
+void CoptModelAPI::AddGenericCone(int conetype,
+    const int* vars,
+    const double* coeffs,
+    int dim,
+    const char* name) {
+
+    if (conetype ==COPT_EXPCONE_PRIMAL)
+    {
+        if (dim != 3)
+            throw std::runtime_error(
+                "ExponentialConeConstraint must have exactly 3 entries");
+    }
+
+    int coneType[1] = { conetype };
+    int coneBeg[1] = { 0 };
+    int coneCnt[1] = { dim };
+
+    if (std::all_of(coeffs, coeffs+dim, [](double x) { // check if all are 1.0
+        return std::abs(x - 1.0) <= 1e-12;
+        })) {
+
+		// If all coefficients are one, use the shortcut functions:
+        switch(conetype) {
+            case COPT_CONE_QUAD: // quadratic cone
+                COPT_CCALL(COPT_AddCones(lp(), 1, coneType, coneBeg, coneCnt, vars));
+                break;
+            case COPT_CONE_RQUAD: 
+                COPT_CCALL(COPT_AddCones(lp(), 1, coneType, coneBeg, coneCnt, vars));
+                break;
+            case COPT_EXPCONE_PRIMAL:
+                COPT_CCALL(COPT_AddExpCones(lp(), 1, coneType, vars));
+                break;
+            default:
+                throw std::runtime_error("Unsupported cone type");
+		}
+    }
+    // Otherwise use affine cones
+    // General affine case.
+    std::vector<int> rowMatBeg(dim);
+    std::vector<int> rowMatCount(dim, 1);
+    std::vector<double> rowMatConst(dim, 0.0);
+
+    for (int i = 0; i < dim; i++)
+        rowMatBeg[i] = i;
+
+    int ret = COPT_AddAffineCone(lp(), conetype,
+        dim,  // dimension
+        0, NULL, // unused
+        NULL, NULL, NULL, NULL, // PSD data
+        rowMatBeg.data(),
+        rowMatCount.data(),
+        vars, coeffs,
+        rowMatConst.data(),
+        name);
+    if (ret != 0) throw std::runtime_error("COPT_AddAffineCone failed");
+
+
+
+}
+
+void CoptModelAPI::AddConstraint(
+    const QuadraticConeConstraint& qc) {
+    const auto& vars = qc.GetArguments();
+    const auto& coeffs = qc.GetParameters();
+    AddGenericCone(COPT_CONE_QUAD, vars.data(), coeffs.data(),
+        static_cast<int>(vars.size()), qc.GetName());
+}
+
+
+void CoptModelAPI::AddConstraint(
+    const RotatedQuadraticConeConstraint& qc) {
+    const auto& vars = qc.GetArguments();
+    const auto& coeffs = qc.GetParameters();
+    AddGenericCone(COPT_CONE_RQUAD, vars.data(), coeffs.data(),
+        static_cast<int>(vars.size()), qc.GetName());
+}
+
+
+void CoptModelAPI::AddConstraint(const ExponentialConeConstraint& ec) {
+        const auto& vars = ec.GetArguments();
+        const auto& coeffs = ec.GetParameters();
+        AddGenericCone(COPT_EXPCONE_PRIMAL, vars.data(), coeffs.data(),
+            static_cast<int>(vars.size()), ec.GetName());
+}
+
+
+
+
 void CoptModelAPI::FinishProblemModificationPhase() {
 }
 

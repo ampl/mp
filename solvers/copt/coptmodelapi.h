@@ -122,12 +122,21 @@ public:
   ACCEPT_CONSTRAINT(IndicatorConstraintLinEQ, Recommended, CG_General)
   void AddConstraint(const IndicatorConstraintLinEQ& mc);
   ACCEPT_CONSTRAINT(IndicatorConstraintLinGE, Recommended, CG_General)
-  void AddConstraint(const IndicatorConstraintLinGE& mc);
+  void AddConstraint(const IndicatorConstraintLinGE& mc); 
 
   ACCEPT_CONSTRAINT(SOS1Constraint, Recommended, CG_SOS)
   void AddConstraint(const SOS1Constraint& cc);
   ACCEPT_CONSTRAINT(SOS2Constraint, Recommended, CG_SOS)
   void AddConstraint(const SOS2Constraint& cc);
+
+  // Cones
+  ACCEPT_CONSTRAINT(ExponentialConeConstraint, Recommended, CG_Conic)
+  void AddConstraint(const ExponentialConeConstraint& ec);
+  ACCEPT_CONSTRAINT(QuadraticConeConstraint, Recommended, CG_Conic)
+  void AddConstraint(const QuadraticConeConstraint& qc);
+  ACCEPT_CONSTRAINT(RotatedQuadraticConeConstraint, Recommended, CG_Conic)
+  void AddConstraint(const RotatedQuadraticConeConstraint& qc);
+
 
   //////////////////////////// EXPRESSION TREES ////////////////////////////
   /// Handle expression trees: inherit basic API
@@ -181,6 +190,9 @@ public:
   template <class MPExpr> void
       AppendLinAndConstTerms(Expr& ff, const MPExpr& nla);
 
+
+  void AddGenericCone(int coneType, const int* vars,
+      const double* coeffs, int dim, const char* name);
   
   void AddGlobalConstraint(const NLParams& params, char type);
   /// Create an expression with one argument (e.g. sin(exp(x)))
