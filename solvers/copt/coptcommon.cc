@@ -14,6 +14,13 @@ double CoptCommon::getDblAttr(const char* name) const  {
   return value;
 }
 
+void CoptCommon::setIntAttr(const char* name, int value)  {
+    COPT_CCALL(COPT_SetIntParam(lp(), name, value));
+}
+void CoptCommon::setDblAttr(const char* name, double value)  {
+    COPT_CCALL(COPT_SetDblParam(lp(), name, value));
+}
+
 std::vector<double>  CoptCommon::getVarInfo(const char* name) {
   std::vector<double> ret(NumVars());
   COPT_CCALL(COPT_GetColInfo(lp(), name, NumVars(), NULL, ret.data()));
@@ -34,7 +41,7 @@ int CoptCommon::NumVars() const {
 }
 
 int CoptCommon::NumObjs() const {
-  return 1;
+    return getIntAttr(COPT_INTATTR_MULTIOBJS);
 }
 
 int CoptCommon::NumQPCons() const {
@@ -54,7 +61,10 @@ void CoptCommon::GetSolverOption(const char* key, int &value) const {
 }
 
 void CoptCommon::SetSolverOption(const char* key, int value) {
-  COPT_CCALL(COPT_SetIntParam(lp(), key, value));
+  if (current_objective_options() == -1)
+    COPT_CCALL(COPT_SetIntParam(lp(), key, value));
+  else
+     COPT_CCALL(COPT_MultiObjSetIntParam(lp(), current_objective_options(), key, value));
 }
 
 void CoptCommon::GetSolverOption(const char* key, double &value) const {
@@ -62,7 +72,10 @@ void CoptCommon::GetSolverOption(const char* key, double &value) const {
 }
 
 void CoptCommon::SetSolverOption(const char* key, double value) {
-  COPT_CCALL(COPT_SetDblParam(lp(), key, value) );
+    if (current_objective_options() == -1)
+        COPT_CCALL(COPT_SetDblParam(lp(), key, value));
+    else
+        COPT_CCALL(COPT_MultiObjSetDblParam(lp(), current_objective_options(), key, value));
 }
 
 void CoptCommon::GetSolverOption(const char* key, std::string &value) const {

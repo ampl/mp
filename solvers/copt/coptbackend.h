@@ -43,10 +43,22 @@ public:
 
   ALLOW_STD_FEATURE(WRITE_PROBLEM, true)
   void DoWriteProblem(const std::string& name) override;
+
   /**
- * MULTISOL support
- * No API, use ReportIntermediateSolution()
-**/
+   * MULTIOBJ
+  **/
+  ALLOW_STD_FEATURE(MULTIOBJ, true)
+  ArrayRef<double> GetObjectiveValues() override;
+  void ObjPriorities(ArrayRef<int>) override;
+  void ObjWeights(ArrayRef<double>) override;
+  void ObjAbsTol(ArrayRef<double>) override;
+  void ObjRelTol(ArrayRef<double>) override;
+  void SetMultiobjOptions(BasicObjOptionSetter*) override;
+  
+  /**
+  * MULTISOL support
+  * No API, use ReportIntermediateSolution()
+  **/
   ALLOW_STD_FEATURE(MULTISOL, true)
 
   /**
@@ -122,8 +134,7 @@ public:
   /// This can modify the model
   void InputExtras() override;
 
-  ArrayRef<double> GetObjectiveValues() override
-  { return std::vector<double>{ObjectiveValue()}; }
+
 
 
   //////////////////// [[ Implementation details ]] //////////////////////

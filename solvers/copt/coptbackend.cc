@@ -114,6 +114,51 @@ void CoptBackend::InputCOPTExtras() {
     SetSolverOption(COPT_INTPARAM_REQFARKASRAY, 1);
 }
 
+ArrayRef<double> CoptBackend::GetObjectiveValues() {
+
+    int nobjs = NumObjs();
+
+    if (isMultiObj) // Using mo simulator copt returns 0 for some reason
+        nobjs = std::max(1, nobjs);
+
+	std::vector<double> v(nobjs);
+    for (int i = 0; i < v.size(); ++i)
+    {
+        if (IsMIP())
+            COPT_MultiObjGetDblAttr(lp(), i, COPT_DBLATTR_BESTOBJ, &v[i]);
+        else
+            COPT_MultiObjGetDblAttr(lp(), i, COPT_DBLATTR_LPOBJVAL, &v[i]);
+    }
+    return v;
+}
+
+void CoptBackend::ObjPriorities(ArrayRef<int> values) {
+    for (int i = 0; i < values.size(); ++i)
+        COPT_CCALL(COPT_MultiObjSetObjParam(lp(), i, COPT_MULTIOBJ_PRIORITY, static_cast<double>(values[i])));
+}
+
+void CoptBackend::ObjWeights(ArrayRef<double> values) {
+    for (int i = 0; i < values.size(); ++i)
+        COPT_CCALL(COPT_MultiObjSetObjParam(lp(), i, COPT_MULTIOBJ_WEIGHT, static_cast<double>(values[i])));
+}
+
+void CoptBackend::ObjAbsTol(ArrayRef<double> values) {
+    for (int i = 0; i < values.size(); ++i)
+        COPT_CCALL(COPT_MultiObjSetObjParam(lp(), i, COPT_MULTIOBJ_ABSTOL, static_cast<double>(values[i])));
+}
+
+void CoptBackend::ObjRelTol(ArrayRef<double> values) {
+    for (int i = 0; i < values.size(); ++i)
+        COPT_CCALL(COPT_MultiObjSetObjParam(lp(), i, COPT_MULTIOBJ_RELTOL, static_cast<double>(values[i])));
+}
+
+void CoptBackend::SetMultiobjOptions(BasicObjOptionSetter* setter) {
+    auto passes = setter->GetPassesWithOptions();
+    for (auto pass : passes) {
+        set_current_objective_options(pass);
+        setter->SetOptionsForMultiobjPass(pass);
+    }
+}
 
 void CoptBackend::DoCOPTFeasRelax() {
   int copttype;
@@ -174,6 +219,8 @@ double CoptBackend::ObjectiveValue() const {
     return getDblAttr(COPT_DBLATTR_LPOBJVAL);
 }
 
+
+
 int CoptBackend::NodeCount() const {
   return getIntAttr(COPT_INTATTR_NODECNT);
 }
@@ -201,7 +248,7 @@ void CoptBackend::DoWriteProblem(const std::string& name) {
         COPT_CCALL(COPT_WriteMps(lp(), name.c_str()));
     else if (ends_with(name, "nl"))
         COPT_CCALL(COPT_WriteNL(lp(), name.c_str()));
-    if (ends_with(name, ".cbf"))
+    else if (ends_with(name, ".cbf"))
         COPT_CCALL(COPT_WriteCbf(lp(), name.c_str()));
   else
     throw std::runtime_error("Can only export '.lp' or '.mps' files.");

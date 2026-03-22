@@ -2,7 +2,9 @@
 
 namespace mp {
 
-void CoptModelAPI::InitProblemModificationPhase(const FlatModelInfo*) { }
+void CoptModelAPI::InitProblemModificationPhase(const FlatModelInfo* fi) {
+    isMultiObj = fi->GetObjInfo()[0] > 1;
+}
 
 void CoptModelAPI::AddVariables(const VarArrayDef& v) {
   std::vector<char> vtypes(v.size());
@@ -14,16 +16,22 @@ void CoptModelAPI::AddVariables(const VarArrayDef& v) {
 }
 
 void CoptModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
-  if (iobj<1) {
-    COPT_CCALL(COPT_SetObjSense(lp(), 
-                    obj::Type::MAX==lo.obj_sense() ? COPT_MAXIMIZE : COPT_MINIMIZE) );
+    int sense = obj::Type::MAX == lo.obj_sense() ? COPT_MAXIMIZE : COPT_MINIMIZE;
+    senses()[iobj] = sense;
+
+  if ((iobj<1) && (!isMultiObj)) {
+    COPT_CCALL(COPT_SetObjSense(lp(), sense ));
     double zero_out = 0.0;
     for (int i=NumVars(); i--; )
       COPT_CCALL(COPT_SetColObj(lp(), 1, &i, &zero_out));
     COPT_CCALL(COPT_SetColObj(lp(), lo.num_terms(),
                            lo.vars().data(), lo.coefs().data()) );
+    
   } else {
-//    TODO
+      COPT_CCALL(COPT_MultiObjSetColObj(lp(), iobj, lo.num_terms(),
+		    lo.vars().data(), lo.coefs().data()));
+	  COPT_CCALL(COPT_MultiObjSetObjSense(lp(), iobj, senses()[0]));
+
   }
 }
 
@@ -297,6 +305,12 @@ NLParams CoptModelAPI::AddExpression(const NLQuadExpression& qe) {
     }
     return quad;
 }
+
+NLParams CoptModelAPI::AddExpression(const AbsExpression& e) {
+    return CreateExpressionOneArg(e, COPT_NL_ABS);
+}
+
+
 NLParams CoptModelAPI::AddExpression(const SinExpression& e) {
     return CreateExpressionOneArg(e, COPT_NL_SIN);
 }
@@ -306,6 +320,52 @@ NLParams CoptModelAPI::AddExpression(const CosExpression& e) {
 NLParams CoptModelAPI::AddExpression(const TanExpression& e) {
     return CreateExpressionOneArg(e, COPT_NL_TAN);
 }
+
+
+NLParams CoptModelAPI::AddExpression(const AsinExpression& e) {
+    return CreateExpressionOneArg(e, COPT_NL_ASIN);
+}
+NLParams CoptModelAPI::AddExpression(const AcosExpression& e) {
+    return CreateExpressionOneArg(e, COPT_NL_ACOS);
+}
+NLParams CoptModelAPI::AddExpression(const AtanExpression& e) {
+    return CreateExpressionOneArg(e, COPT_NL_ATAN);
+}
+
+NLParams CoptModelAPI::AddExpression(const SinhExpression& e) {
+    return CreateExpressionOneArg(e, COPT_NL_SINH);
+}
+NLParams CoptModelAPI::AddExpression(const CoshExpression& e) {
+    return CreateExpressionOneArg(e, COPT_NL_COSH);
+}
+NLParams CoptModelAPI::AddExpression(const TanhExpression& e) {
+    return CreateExpressionOneArg(e, COPT_NL_TANH);
+}
+NLParams CoptModelAPI::AddExpression(const AsinhExpression& e) {
+    return CreateExpressionOneArg(e, COPT_NL_ASINH);
+}
+NLParams CoptModelAPI::AddExpression(const AcoshExpression& e) {
+    return CreateExpressionOneArg(e, COPT_NL_ACOSH);
+}
+NLParams CoptModelAPI::AddExpression(const AtanhExpression& e) {
+    return CreateExpressionOneArg(e, COPT_NL_ATANH);
+}
+
+
+void CoptModelAPI::SetNLObjective(int i, const NLObjective& nlo) {
+    const auto& exp = GetExpression(nlo);
+    if (i == 0)
+    {
+        COPT_CCALL(COPT_SetObjSense(lp(),
+            obj::Type::MAX == nlo.obj_sense() ? COPT_MAXIMIZE : COPT_MINIMIZE));
+        COPT_CCALL(COPT_SetNLObj(lp(), exp.nTokens(), exp.nTokenElements(), exp.tokens(), exp.tokenElements()));
+    }
+    else {
+        MP_RAISE("Multiple non-linear objectives not supported natively. Use multi-objective emulator by setting obj:multi=2");
+    }
+}
+
+
 
 
 void CoptModelAPI::AddConstraint(const NLConstraint& nl) {

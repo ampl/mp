@@ -2,6 +2,7 @@
 #define COPTCOMMON_H
 
 #include <string>
+#include <map>
 
 extern "C" {
   #include "copt.h"
@@ -25,9 +26,23 @@ struct CoptCommonInfo {
   void set_lp(copt_prob* lp) { lp_ = lp; }
 
 
+
+  bool isMultiObj;
+  std::map<int, int>& senses() {
+      return _senses;
+  }
+  void set_current_objective_options(int options) {
+      _current_objective_options = options;
+  }
+  int current_objective_options() const {
+	  return _current_objective_options;
+  }
+  
 private:
   copt_env*      env_ = NULL;
   copt_prob*      lp_ = NULL;
+  std::map<int, int> _senses;
+  int _current_objective_options = -1;
 };
 
 
@@ -49,6 +64,9 @@ public:
 protected:
   int getIntAttr(const char* name) const;
   double getDblAttr(const char* name) const;
+  void setIntAttr(const char* name, int value);
+  void setDblAttr(const char* name, double value);
+
   std::vector<double> getVarInfo(const char* name);
   std::vector<double> getConInfo(const char* name);
 

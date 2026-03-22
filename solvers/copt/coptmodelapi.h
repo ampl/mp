@@ -76,6 +76,8 @@ class CoptModelAPI :
     using BaseModelAPI = BasicExprModelAPI<CoptModelAPI, NLParams >;
 
 public:
+
+
   /// Construct
   CoptModelAPI(Env& e) : EnvKeeper(e) { }
 
@@ -93,6 +95,7 @@ public:
   /// 0 - no, 1 - convex, 2 - nonconvex
   static int AcceptsQuadObj() { return 1; }
   void SetQuadraticObjective(int iobj, const QuadraticObjective& qo);
+
 
   //////////////////////////// GENERAL CONSTRAINTS ////////////////////////////
   USE_BASE_CONSTRAINT_HANDLERS(BaseModelAPI)
@@ -141,10 +144,14 @@ public:
   //////////////////////////// EXPRESSION TREES ////////////////////////////
   /// Handle expression trees: inherit basic API
   USE_BASE_EXPRESSION_HANDLERS(BaseModelAPI)
-  ACCEPT_EXPRESSION_INTERFACE(AcceptedButNotRecommended)
+  ACCEPT_EXPRESSION_INTERFACE(Recommended)
+
+
 
   /// Whether accepts NLObjective
-  static int AcceptsNLObj() { return 0; }
+  static int AcceptsNLObj() { return 1; }
+  void SetNLObjective(int, const NLObjective&);
+
   /// Make a constant expression.
   static Expr MakeConstantExpr(double v) {
       NLParams p;
@@ -265,6 +272,31 @@ public:
       Expr AddExpression(const CosExpression&);
   ACCEPT_EXPRESSION(TanExpression, Recommended)
       Expr AddExpression(const TanExpression&);
+
+  ACCEPT_EXPRESSION(AsinExpression, Recommended)
+      Expr AddExpression(const AsinExpression&);
+  ACCEPT_EXPRESSION(AcosExpression, Recommended)
+      Expr AddExpression(const AcosExpression&);
+  ACCEPT_EXPRESSION(AtanExpression, Recommended)
+      Expr AddExpression(const AtanExpression&);
+
+  ACCEPT_EXPRESSION(AbsExpression, Recommended)
+      Expr AddExpression(const AbsExpression&);
+
+  ACCEPT_EXPRESSION(SinhExpression, Recommended)
+      Expr AddExpression(const SinhExpression&);
+  ACCEPT_EXPRESSION(CoshExpression, Recommended)
+      Expr AddExpression(const CoshExpression&);
+  ACCEPT_EXPRESSION(TanhExpression, Recommended)
+      Expr AddExpression(const TanhExpression&);
+
+  ACCEPT_EXPRESSION(AsinhExpression, Recommended)
+      Expr AddExpression(const AsinhExpression&);
+  ACCEPT_EXPRESSION(AcoshExpression, Recommended)
+      Expr AddExpression(const AcoshExpression&);
+  ACCEPT_EXPRESSION(AtanhExpression, Recommended)
+      Expr AddExpression(const AtanhExpression&);
+
 
 };
 

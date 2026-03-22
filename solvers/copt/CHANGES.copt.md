@@ -1,6 +1,13 @@
 Summary of recent updates to COPT for AMPL
 ==========================================
 
+## 20260322
+  - Updated to COPT 8.0.3, with performance improvements and bug fixes
+  - Added option *lp:concurrentlpmode*
+  - Added support for conic constraints 
+  - Added support for many non-linear expressions
+  - Added native multi-objective optimization
+
 
 ## 20260108
 - Updated to COPT 8.0.2, that introduces a global 
