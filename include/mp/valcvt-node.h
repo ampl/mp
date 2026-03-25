@@ -173,8 +173,6 @@ public:
     auto old = namechunks_[pos];
     auto it = nc_dfl_set_.insert(nc).first;
     namechunks_[pos] = it->c_str();
-    printf("VN '%s': replace name chunk [%d] by '%s', old name '%s'\n",
-           GetName().c_str(), pos, namechunks_[pos], old);
     return old;
   }
 

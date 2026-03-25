@@ -854,12 +854,7 @@ protected:
   pre::NodeRange AddConstraintAndTryNoteResultVariable(Constraint&& con) {
     const auto resvar = con.GetResultVar();
     auto& ck = GET_CONSTRAINT_KEEPER( Constraint );
-    pre::NameChunk old_nc {};
-    if (name_chunk_)
-      old_nc = ck.GetValueNode().SetNameChunk(name_chunk_);
     auto i = ck.AddConstraint(constr_depth_, std::move(con));
-    if (name_chunk_)
-      ck.GetValueNode().SetNameChunk(old_nc);
     ConInfo ci{&ck, i};
     if (resvar>=0)
       AddInitExpression(resvar, ci);
@@ -869,7 +864,13 @@ protected:
                          MPD(template GetConstraint<Constraint>(i)), i ) ))
       MP_RAISE("Trying to MapInsert() duplicated constraint: " +
                              ck.GetDescription());
-    return ck.SelectValueNodeRange(i);
+    pre::NameChunk old_nc {};
+    if (name_chunk_)
+      old_nc = ck.GetValueNode().SetNameChunk(name_chunk_);
+    auto result = ck.SelectValueNodeRange(i);
+    if (name_chunk_)
+      ck.GetValueNode().SetNameChunk(old_nc);
+    return result;
   }
 
 
