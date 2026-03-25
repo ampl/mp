@@ -406,11 +406,11 @@ void CoptBackend::FinishOptionParsing() {
 static const mp::OptionValueInfo lp_values_method[] = {
   { "-1", "Automatic (default)", -1},
   { "1", "Dual simplex", 1},
-  { "2", "Barrier", 2},
+  { "2", "Barrier. See also alg:gpumode.", 2},
   { "3", "Crossover", 3},
   { "4", "Concurrent (simplex and barrier simultaneously)", 4},
   { "5", "Choose between simplex and barrier automatically", 5},
-  { "6", "First-order method (PDLP)"}
+  { "6", "First-order method (PDLP). See also alg:gpumode."}
 };
 
 static const mp::OptionValueInfo concurrentlpmode_values[] = {
@@ -422,9 +422,14 @@ static const mp::OptionValueInfo concurrentlpmode_values[] = {
 };
 
 static const mp::OptionValueInfo lp_values_gpu[] = {
-  {"-1", "Automatic (default)", -1},
-  {"0", "Force the use of CPU mode", 0},
-  {"1", "Utilize NVIDA GPU", 1}
+  {"-1", "Automatic (default). The first-order method (PDLP) will attempt to use the GPU, "
+                   "while the barrier method will use the CPU", -1},
+  {"0", "Force CPU mode", 0},
+  {"1", "Attempt to use the standard GPU mode", 1},
+            {"2", "For the barrier method, attempt to use the high-performance GPU mode "
+                  "when solving LP problems, which may lead to higher memory usage. "
+                  "For the first-order method (PDLP), this is equivalent to gpumode=1 "
+                  "(standard GPU mode)", 2}
 };
 
 static const mp::OptionValueInfo alg_values_level[] = {
@@ -686,13 +691,13 @@ void CoptBackend::InitCustomOptions() {
       "device selection are fully controlled by this parameter.", COPT_INTPARAM_CONCURRENTLPMODE,
       concurrentlpmode_values, 0);
 
-  AddSolverOption("lp:pdlpgpumode pdlpgpumode gpumode",
-    "Wether to use GPU or CPU for PDLP method. Note that CUDA "
+  AddSolverOption("alg:gpumode gpumode lp:pdlpgpumode pdlpgpumode bar:gpumode",
+    "Whether to use GPU or CPU for barrier and PDLP methods. Note that CUDA "
     "GPU mode is only supported on Windows and Linux:\n"
     "\n.. value-table::\n", COPT_INTPARAM_GPUMODE,
     lp_values_gpu, -1);
 
-  AddSolverOption("lp:pdlpgpudevice pdlpgpudevice gpudevide",
+  AddSolverOption("alg:gpudevice gpudevice lp:pdlpgpudevice pdlpgpudevice bar:gpudevice",
     "Specify devide ID of GPU to use in case of multiple GPUs "
     "(default -1, choose automatically)",
     COPT_INTPARAM_GPUDEVICE, -1, INT_MAX);
