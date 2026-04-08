@@ -402,72 +402,67 @@ std::string XpressmpBackend::DoXpressFixedModel()
   }
 
   std::pair<int, std::string> XpressmpBackend::GetSolveResult() {
+    auto opttype = getIntAttr(XPRS_OPTIMIZETYPEUSED);
+
+    // Catch some specific codes
+    switch (opttype) {
+    case XPRS_OPTIMIZETYPE_NONE:
+      return GetSolveResult_General();
+    case XPRS_OPTIMIZETYPE_LP:
+      return GetSolveResult_LP();
+    case XPRS_OPTIMIZETYPE_MIP:
+      return GetSolveResult_MIP();
+    case XPRS_OPTIMIZETYPE_LOCAL:
+    case XPRS_OPTIMIZETYPE_GLOBAL:
+      return GetSolveResult_NLP();    // Same codes?
+    default:
+      return { sol::FAILURE, "failure, unknown OPTIMIZETYPE code" };
+    }
+
+    return { sol::UNKNOWN, "not solved" };
+  }
+
+  std::pair<int, std::string> XpressmpBackend::GetSolveResult_LP() {
     namespace sol = mp::sol;
-    auto solvestatus = getIntAttr(XPRS_SOLVESTATUS);
     auto solstatus = getIntAttr(XPRS_SOLSTATUS);
-    auto stopstatus = getIntAttr(XPRS_STOPSTATUS);
     bool fFeasible = (XPRS_SOLSTATUS_FEASIBLE==solstatus);
 
-    if (true) {  // Assume we used XPRSoptimize() but should generally work
-      switch (solstatus) {
-      case XPRS_SOLSTATUS_OPTIMAL:
+    {
+      auto status = getIntAttr(XPRS_LPSTATUS);
+      switch (status) {
+      case XPRS_LP_OPTIMAL:
         return { sol::SOLVED, "optimal solution" };
-      case XPRS_SOLSTATUS_FEASIBLE:
-        switch (stopstatus) {
-          case XPRS_STOP_TIMELIMIT:
-            return { sol::LIMIT_FEAS_TIME, "time limit, feasible solution" };
-          case XPRS_STOP_WORKLIMIT:
-            return { sol::LIMIT_FEAS_WORK, "work limit, feasible solution" };
-          case XPRS_STOP_CTRLC:
-          case XPRS_STOP_USER:
-            return { sol::LIMIT_FEAS_INTERRUPT, "interrupted, feasible solution" };
-          case XPRS_STOP_NODELIMIT:
-            return { sol::LIMIT_FEAS_NODES, "node limit, feasible solution" };
-          case XPRS_STOP_ITERLIMIT:
-            return{ sol::LIMIT_FEAS_ITER, "iteration limit, feasible solution" };
-          case XPRS_STOP_MIPGAP:
-            return{ sol::LIMIT_FEAS_GAP, "MIP gap reached, feasible solution" };
-          case XPRS_STOP_SOLLIMIT:
-            return { sol::LIMIT_FEAS_NUMSOLS, "solution limit" };
-          case XPRS_STOP_MEMORYERROR:
-            return { sol::LIMIT_FEAS_SOFTMEM, "memory limit, feasible solution" };
-          case XPRS_STOP_NUMERICALERROR:
-            return { sol::UNCERTAIN, "numerical error, solution candidate returned" };
-          default:
-            return { sol::LIMIT_FEAS, "limit, feasible solution" };
-        }
-      case XPRS_SOLSTATUS_INFEASIBLE:
+      case XPRS_LP_INFEAS:
         return { sol::INFEASIBLE, "infeasible problem" };
-      case XPRS_SOLSTATUS_UNBOUNDED:
+      case XPRS_LP_UNBOUNDED:
         if (fFeasible)
           return { sol::UNBOUNDED_FEAS,
-                "unbounded problem, feasible solution returned" };
+                  "unbounded problem, feasible solution returned" };
         return { sol::UNBOUNDED_NO_FEAS,
-              "unbounded problem, no solution returned" };
-      case XPRS_SOLSTATUS_NOTFOUND:
-        if (XPRS_SOLVESTATUS_FAILED==solvestatus)
-          return { sol::FAILURE, "failure, no solution" };
-        switch (stopstatus) {
-          case XPRS_STOP_TIMELIMIT:
-            return { sol::LIMIT_NO_FEAS_TIME, "time limit, without a feasible solution" };
-          case XPRS_STOP_WORKLIMIT:
-            return { sol::LIMIT_NO_FEAS_WORK, "work limit, without a feasible solution" };
-          case XPRS_STOP_CTRLC:
-          case XPRS_STOP_USER:
-            return { sol::LIMIT_NO_FEAS_INTERRUPT, "interrupted, without a feasible solution" };
-          case XPRS_STOP_NODELIMIT:
-            return { sol::LIMIT_NO_FEAS_NODES, "node limit, without a feasible solution" };
-          case XPRS_STOP_ITERLIMIT:
-            return{ sol::LIMIT_NO_FEAS_ITER, "iteration limit, without a feasible solution" };
-          case XPRS_STOP_MEMORYERROR:
-            return { sol::LIMIT_NO_FEAS_SOFTMEM, "memory limit, without a feasible solution" };
-          case XPRS_STOP_NUMERICALERROR:
-            return { sol::UNCERTAIN, "numerical error" };
-          default:
-            return { sol::LIMIT_NO_FEAS, "limit, without a feasible solution" };
-          }
+                "unbounded problem, no solution returned" };
+      case XPRS_LP_CUTOFF:
+        return { sol::UNCERTAIN, "objective cutoff" };
+      case XPRS_LP_CUTOFF_IN_DUAL:
+        return { sol::UNCERTAIN, "objective cutoff in dual" };
+      case XPRS_LP_UNSOLVED:
+        return { sol::NUMERIC, "numerical issues" };
+      case XPRS_LP_UNSTARTED:
+        return { sol::UNKNOWN, "LP unstarted" };
+      case XPRS_LP_NONCONVEX:
+        return { sol::FAILURE, "problem is nonconvex, consider using FICO Xpress Global" };
+      case XPRS_LP_UNFINISHED:
+      default:
+        return GetSolveResult_General();
       }
-    } else if (IsMIP())    // After XPRSmipoptimize().
+    }
+    return { sol::UNKNOWN, "unknown LP status" };
+  }
+
+  std::pair<int, std::string> XpressmpBackend::GetSolveResult_MIP() {
+    namespace sol = mp::sol;
+    auto solstatus = getIntAttr(XPRS_SOLSTATUS);
+    bool fFeasible = (XPRS_SOLSTATUS_FEASIBLE==solstatus);
+
     {
       auto status = getIntAttr(XPRS_MIPSTATUS);
       switch (status) {
@@ -480,48 +475,127 @@ std::string XpressmpBackend::DoXpressFixedModel()
       case XPRS_MIP_UNBOUNDED:
         if (fFeasible)
           return { sol::UNBOUNDED_FEAS,
-                "unbounded problem, feasible solution returned" };
+                  "unbounded problem, feasible solution returned" };
         return { sol::UNBOUNDED_NO_FEAS,
-              "unbounded problem, no solution returned" };
+                "unbounded problem, no solution returned" };
       case XPRS_MIP_LP_NOT_OPTIMAL:
       case XPRS_MIP_NO_SOL_FOUND:
       case XPRS_MIP_LP_OPTIMAL:
-        return { sol::LIMIT_NO_FEAS, "interrupted, no solution" };
+      default:
+        return GetSolveResult_General();
       }
     }
-    else {                 // After XPRSlpoptimize().  also XPRS_NLPSTATUS?
-      auto status = getIntAttr(XPRS_LPSTATUS);
+    return { sol::UNKNOWN, "unknown MIP status" };
+  }
+
+  std::pair<int, std::string> XpressmpBackend::GetSolveResult_NLP() {
+    namespace sol = mp::sol;
+    auto solstatus = getIntAttr(XPRS_SOLSTATUS);
+    bool fFeasible = (XPRS_SOLSTATUS_FEASIBLE==solstatus);
+
+    {
+      auto status = getIntAttr(XPRS_NLPSTATUS);
+      auto solstatus = getIntAttr(XPRS_NLPSOLSTATUS);
+      std::string msg_duals =
+          (XPRS_NLPSOLSTATUS_SOLUTION_NODUALS==solstatus ||
+                        XPRS_NLPSOLSTATUS_GLOBALLYOPTIMAL_NODUALS==solstatus)
+                                  ? ", no duals" : ", with duals";
+
       switch (status) {
-      case XPRS_LP_OPTIMAL:
-        return { sol::SOLVED, "optimal solution" };
-      case XPRS_LP_INFEAS:
+      case XPRS_NLPSTATUS_LOCALLY_OPTIMAL:
+        return { sol::OPTIMAL_LOCALLY,
+                "locally optimal solution" + msg_duals };
+      case XPRS_NLPSTATUS_OPTIMAL:
+        return { sol::SOLVED, "optimal solution" + msg_duals };
+      case XPRS_NLPSTATUS_LOCALLY_INFEASIBLE:
+        return { sol::INFEASIBLE_LOCALLY, "locally infeasible" };
+      case XPRS_NLPSTATUS_INFEASIBLE:
         return { sol::INFEASIBLE, "infeasible problem" };
-      case XPRS_LP_UNBOUNDED:
+      case XPRS_NLPSTATUS_UNBOUNDED:
         if (fFeasible)
           return { sol::UNBOUNDED_FEAS,
-                "unbounded problem, feasible solution returned" };
+              "unbounded problem, feasible solution returned" +
+                  msg_duals
+          };
         return { sol::UNBOUNDED_NO_FEAS,
-              "unbounded problem, no solution returned" };
-      case XPRS_LP_CUTOFF:
-        return { sol::UNCERTAIN, "objective cutoff" };
-      case XPRS_LP_CUTOFF_IN_DUAL:
-        return { sol::UNCERTAIN, "objective cutoff in dual" };
-      case XPRS_LP_UNFINISHED:
-        if (fFeasible)
-          return { sol::LIMIT_FEAS, "unfinished, feasible solution" };
-        return { sol::LIMIT_NO_FEAS, "unfinished, no solution" };
-      case XPRS_LP_UNSOLVED:
-        return { sol::NUMERIC, "numerical issues" };
-      case XPRS_LP_UNSTARTED:
-        return { sol::UNKNOWN, "unstarted" };
-      case XPRS_LP_NONCONVEX:
-        return { sol::FAILURE, "problem is nonconvex, consider using FICO Xpress Global" };
+                "unbounded problem, no solution returned" };
+      case XPRS_NLPSTATUS_UNFINISHED:
+      case XSLP_NLPSTATUS_UNSOLVED:
       default:
-        return { sol::UNKNOWN, "unknown" };
+        return GetSolveResult_General();
       }
     }
-    return { sol::UNKNOWN, "not solved" };
+    return GetSolveResult_General();
   }
+
+  std::pair<int, std::string> XpressmpBackend::GetSolveResult_General() {
+    namespace sol = mp::sol;
+    auto solvestatus = getIntAttr(XPRS_SOLVESTATUS);
+    auto solstatus = getIntAttr(XPRS_SOLSTATUS);
+    auto stopstatus = getIntAttr(XPRS_STOPSTATUS);
+    bool fFeasible = (XPRS_SOLSTATUS_FEASIBLE==solstatus);
+
+    switch (solstatus) {
+    case XPRS_SOLSTATUS_OPTIMAL:
+      return { sol::SOLVED, "optimal solution" };
+    case XPRS_SOLSTATUS_FEASIBLE:
+      switch (stopstatus) {
+      case XPRS_STOP_TIMELIMIT:
+        return { sol::LIMIT_FEAS_TIME, "time limit, feasible solution" };
+      case XPRS_STOP_WORKLIMIT:
+        return { sol::LIMIT_FEAS_WORK, "work limit, feasible solution" };
+      case XPRS_STOP_CTRLC:
+      case XPRS_STOP_USER:
+        return { sol::LIMIT_FEAS_INTERRUPT, "interrupted, feasible solution" };
+      case XPRS_STOP_NODELIMIT:
+        return { sol::LIMIT_FEAS_NODES, "node limit, feasible solution" };
+      case XPRS_STOP_ITERLIMIT:
+        return{ sol::LIMIT_FEAS_ITER, "iteration limit, feasible solution" };
+      case XPRS_STOP_MIPGAP:
+        return{ sol::LIMIT_FEAS_GAP, "MIP gap reached, feasible solution" };
+      case XPRS_STOP_SOLLIMIT:
+        return { sol::LIMIT_FEAS_NUMSOLS, "solution limit" };
+      case XPRS_STOP_MEMORYERROR:
+        return { sol::LIMIT_FEAS_SOFTMEM, "memory limit, feasible solution" };
+      case XPRS_STOP_NUMERICALERROR:
+        return { sol::UNCERTAIN, "numerical error, solution candidate returned" };
+      default:
+        return { sol::LIMIT_FEAS, "limit, feasible solution" };
+      }
+    case XPRS_SOLSTATUS_INFEASIBLE:
+      return { sol::INFEASIBLE, "infeasible problem" };
+    case XPRS_SOLSTATUS_UNBOUNDED:
+      if (fFeasible)
+        return { sol::UNBOUNDED_FEAS,
+                "unbounded problem, feasible solution returned" };
+      return { sol::UNBOUNDED_NO_FEAS,
+              "unbounded problem, no solution returned" };
+    case XPRS_SOLSTATUS_NOTFOUND:
+      if (XPRS_SOLVESTATUS_FAILED==solvestatus)
+        return { sol::FAILURE, "failure, no solution" };
+      switch (stopstatus) {
+      case XPRS_STOP_TIMELIMIT:
+        return { sol::LIMIT_NO_FEAS_TIME, "time limit, without a feasible solution" };
+      case XPRS_STOP_WORKLIMIT:
+        return { sol::LIMIT_NO_FEAS_WORK, "work limit, without a feasible solution" };
+      case XPRS_STOP_CTRLC:
+      case XPRS_STOP_USER:
+        return { sol::LIMIT_NO_FEAS_INTERRUPT, "interrupted, without a feasible solution" };
+      case XPRS_STOP_NODELIMIT:
+        return { sol::LIMIT_NO_FEAS_NODES, "node limit, without a feasible solution" };
+      case XPRS_STOP_ITERLIMIT:
+        return{ sol::LIMIT_NO_FEAS_ITER, "iteration limit, without a feasible solution" };
+      case XPRS_STOP_MEMORYERROR:
+        return { sol::LIMIT_NO_FEAS_SOFTMEM, "memory limit, without a feasible solution" };
+      case XPRS_STOP_NUMERICALERROR:
+        return { sol::UNCERTAIN, "numerical error" };
+      default:
+        return { sol::LIMIT_NO_FEAS, "limit, without a feasible solution" };
+      }
+    }
+    return { sol::UNKNOWN, "unknown status" };
+  }
+
 
   void XpressmpBackend::CreateSolutionPoolEnvironment() {
     // Solution pool must be created in all cases we specify a stub

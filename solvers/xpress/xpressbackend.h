@@ -198,6 +198,11 @@ protected:
       SolutionStats() override;
 
   std::pair<int, std::string> GetSolveResult() override;
+  std::pair<int, std::string> GetSolveResult_LP();
+  std::pair<int, std::string> GetSolveResult_MIP();
+  std::pair<int, std::string> GetSolveResult_NLP();
+  std::pair<int, std::string> GetSolveResult_General();
+
   void AddXPRESSMPMessages();
 
   ArrayRef<int> VarStatii();
