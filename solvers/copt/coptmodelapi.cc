@@ -3,7 +3,7 @@
 namespace mp {
 
 void CoptModelAPI::InitProblemModificationPhase(const FlatModelInfo* fi) {
-    isMultiObj = fi->GetObjInfo()[0] > 1;
+  num_lin_obj_ = fi->GetObjInfo()[0];
 }
 
 void CoptModelAPI::AddVariables(const VarArrayDef& v) {
@@ -16,21 +16,21 @@ void CoptModelAPI::AddVariables(const VarArrayDef& v) {
 }
 
 void CoptModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
-    int sense = obj::Type::MAX == lo.obj_sense() ? COPT_MAXIMIZE : COPT_MINIMIZE;
-    senses()[iobj] = sense;
+  int sense = obj::Type::MAX == lo.obj_sense() ? COPT_MAXIMIZE : COPT_MINIMIZE;
+  senses()[iobj] = sense;
 
-  if ((iobj<1) && (!isMultiObj)) {
+  if ((iobj<1) && (num_lin_obj_ <= 1)) {
     COPT_CCALL(COPT_SetObjSense(lp(), sense ));
     double zero_out = 0.0;
     for (int i=NumVars(); i--; )
       COPT_CCALL(COPT_SetColObj(lp(), 1, &i, &zero_out));
     COPT_CCALL(COPT_SetColObj(lp(), lo.num_terms(),
-                           lo.vars().data(), lo.coefs().data()) );
+                              lo.vars().data(), lo.coefs().data()) );
     
   } else {
-      COPT_CCALL(COPT_MultiObjSetColObj(lp(), iobj, lo.num_terms(),
-		    lo.vars().data(), lo.coefs().data()));
-	  COPT_CCALL(COPT_MultiObjSetObjSense(lp(), iobj, senses()[0]));
+    COPT_CCALL(COPT_MultiObjSetColObj(lp(), iobj, lo.num_terms(),
+                                      lo.vars().data(), lo.coefs().data()));
+    COPT_CCALL(COPT_MultiObjSetObjSense(lp(), iobj, senses()[0]));
 
   }
 }

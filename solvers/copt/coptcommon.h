@@ -27,7 +27,7 @@ struct CoptCommonInfo {
 
 
 
-  bool isMultiObj;
+  int num_lin_obj_ {0};          // 8.0.3 does not return
   std::map<int, int>& senses() {
       return _senses;
   }
