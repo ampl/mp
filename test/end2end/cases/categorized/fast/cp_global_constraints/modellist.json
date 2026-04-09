@@ -44,7 +44,7 @@
     "objective": 22,
     "comment": "big-M of 1e6 is too big for Gurobi",
     "options": {
-      "mp_options": "acc:indle=0 acc:indge=0 acc:or=0 cvt:mip:bigM=1e5",
+      "mp_options": "acc:indle=0 acc:indge=0 acc:or=0 cvt:mip:bigM=1e5 ctg_fixed=0",
       "gcg_options": "cvt:mip:bigM=100000 mode=2"
     }
   },

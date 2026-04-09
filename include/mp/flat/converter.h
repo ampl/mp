@@ -895,6 +895,7 @@ public:
     EliminateUnusedDefinedVars();       // Until we have proper var deletion
     CheckLinearCons();
     PresolveNames();
+    GetModel().PrepareVariables();      // Should this be Converter's task?
     MPD( OutputModelInfo("AMPL MP final model", 1, "flat1_"); );
     GetModel().PushModelTo(GetModelAPI());
     MPD( CloseGraphExporter() );
@@ -1782,6 +1783,11 @@ private:
                        "Note: when a variable can be fixed, the stronger bounds "
                        "are submitted.",
                        GetModel().if_submit_best_known_bounds(), 0, 1);
+
+    GetEnv().AddOption("cvt:pre:continuous_fixed_vars continuous_fixed_vars ctg_fixed",
+                       "0/1*: Make fixed variables continuous, "
+                       "to avoid fake MIPs.",
+                       GetModel().if_make_fixed_vars_continuous(), 0, 1);
 
     GetEnv().AddOption("cvt:pre:boundlogarg boundlogarg",
                        "0*/1: Bound logarithm arguments to nonnegative.",

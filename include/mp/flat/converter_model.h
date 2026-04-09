@@ -337,6 +337,10 @@ public:
   int if_submit_best_known_bounds() const { return if_submit_best_bounds_; }
   /// Submit best-known bounds?
   int& if_submit_best_known_bounds() { return if_submit_best_bounds_; }
+  /// Make fixed vars continuous?
+  int if_make_fixed_vars_continuous() const { return if_make_fixed_vars_continuous_; }
+  /// Make fixed vars continuous?
+  int& if_make_fixed_vars_continuous() { return if_make_fixed_vars_continuous_; }
   /// Get obj [i]
   const QuadraticObjective& get_obj(int i) const
   { return get_objectives().at(i); }
@@ -404,7 +408,7 @@ public:
   /// Pushing the whole instance to the mapi.
   template <class ModelAPI>
   void PushModelTo(ModelAPI& mapi) const {
-    CreateFlatModelInfo(mapi);
+    // CreateFlatModelInfo(mapi);     -- why was it here?
     mapi.PassFlatModelInfo(GetModelInfo());
 
     mapi.InitProblemModificationPhase(GetModelInfo());
@@ -425,14 +429,18 @@ protected:
   void FillVarStats(FlatModelInfo* pfmi) const {
     int n=0;
     FlatModelInfo::VarInfo vi{0,0,0,0,0,0};
+    const auto& vlb = var_lb_subm_.size() ?  // when computed
+                          var_lb_subm_ : var_lb_;
+    const auto& vub = var_ub_subm_.size() ?
+                          var_ub_subm_ : var_ub_;
     for (auto i=var_lb_.size(); i--; ) {
       bool is_int = var::Type::CONTINUOUS != var_type(i);
-      if (var_lb_[i] < var_ub_[i] && is_int)
+      if (vlb[i] < vub[i] && is_int)
         ++n;
       int index_add = 3*(!is_var_original(i));
       ++vi[index_add];
       if (is_int) {
-        bool is_bin = !var_lb_[i] && 1.0==var_ub_[i];
+        bool is_bin = !vlb[i] && 1.0==vub[i];
         ++vi[index_add + 1 + is_bin];
       }
     }
@@ -456,8 +464,8 @@ protected:
     pfmi->SetObjInfo(oi);
   }
 
-  template <class Backend>
-  void PushVariablesTo(Backend& backend) const {
+public:
+  void PrepareVariables() const {
     assert(check_vars());
     if (if_submit_best_known_bounds()) {
       var_lb_subm_ = var_lb_best_;
@@ -467,7 +475,8 @@ protected:
       var_ub_subm_ = var_ub_;
     }
     // Fix 'eliminated' variables - no proper deletion
-    for (auto i=std::min(var_elim_.size(), var_lb_subm_.size()); i--; ) {
+    for (auto i=std::min(var_elim_.size(), var_lb_subm_.size());
+         i--; ) {
       if (var_elim_[i]) {
         if (var_lb_subm_[i] > -1e20)
           var_ub_subm_[i] = var_lb_subm_[i];
@@ -478,16 +487,26 @@ protected:
       }
     }
     // Fix variables with deduced equal (or lb>ub) bounds.
-    // Make fixed vars continuous
     for (auto i=var_lb_subm_.size(); i--; ) {
       if (var_lb_best_[i] >= var_ub_best_[i]) {
         var_lb_subm_[i] = var_lb_best_[i];
         var_ub_subm_[i] = var_ub_best_[i];
       }
-      if (var_lb_subm_[i] >= var_ub_subm_[i])
-        var_type_[i] = var::CONTINUOUS;        // avoid MIP classification
     }
-    // Push variables
+    // Make fixed vars continuous
+    if (if_make_fixed_vars_continuous())
+      for (auto i=var_lb_subm_.size(); i--; ) {
+        if (var_lb_subm_[i] >= var_ub_subm_[i])
+          var_type_[i] = var::CONTINUOUS;        // avoid MIP classification
+      }
+  }
+
+protected:
+  template <class Backend>
+  void PushVariablesTo(Backend& backend) const {
+    assert(var_lb_subm_.size() == var_lb_.size()
+           && var_ub_subm_.size() == var_ub_.size()
+           && var_lb_.size() == var_ub_.size());
     if (var_names_storage_.size() > 0) {
       // Convert names to c-str if needed
       var_names_.reserve(var_names_storage_.size());
@@ -553,6 +572,7 @@ private:
   VarBndVec var_lb_best_, var_ub_best_;
   /// Which bounds to submit
   int if_submit_best_bounds_ {0};
+  int if_make_fixed_vars_continuous_ {1};
   /// Variables' submitted bounds - what goes to the solver
   mutable VarBndVec var_lb_subm_, var_ub_subm_;
   /// Variables' types
