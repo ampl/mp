@@ -3,7 +3,9 @@ Summary of recent updates to the AMPL MP Library
 
 
 ## unreleased
-- Fixed an issue with auxiliary names
+- Fixed an issue with reporting objective value
+  in the solve message for nonlinear objectives.
+- Fixed an issue with auxiliary names.
 - Option *cvt:pre:boundsbest* defaults to making
   auxiliary subexpression result variables free,
   unless the result is constant.
@@ -15,7 +17,7 @@ Summary of recent updates to the AMPL MP Library
   only given if AMPL option (solver_)auxfiles rc is
   set, or solver option *cvt:names=2,3* provided.
 - Added option *tech:stats* to return solution 
-  statistics via problem suffixes
+  statistics via problem suffixes.
 
 
 ## 20260109

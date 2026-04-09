@@ -71,7 +71,7 @@ protected:
       if (HasAlgExpr(obj.GetLinTerms())) {
         auto qexpr
             = CollectAlgSubExpr(obj.GetLinTerms(), obj.GetQPTerms());
-        auto obj_src = MPD( GetObjValueNode() ).Select(iobj);
+        auto obj_src = MPD( GetObjValueSourceNode() ).Select(iobj);
         pre::AutoLinkScope auto_link_scope
             { *(Impl*)this, obj_src };
         MPD( UncountArgRefs(obj) );

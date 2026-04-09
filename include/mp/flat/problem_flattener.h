@@ -393,6 +393,8 @@ protected:
       /// This should resolve the issue of the "max-out"
       /// value conflict resolution.
       /// Tested by suf_common/funcpieces_01_01_obj.mod.
+      ///
+      /// @note Do not link from obj_trg.
       pre::AutoLinkScope<FlatConverterType> auto_link_scope{
           GetFlatCvt(), obj_src
       };

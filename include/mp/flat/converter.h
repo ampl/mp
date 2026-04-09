@@ -1088,6 +1088,10 @@ public:
   pre::ValueNode& GetValueNode(Constraint*)
   { return GET_CONSTRAINT_KEEPER(Constraint).GetValueNode(); }
 
+  /// Reuse ValuePresolver's source nodes for all objectives
+  pre::ValueNode& GetObjValueSourceNode()
+  { return GetValuePresolver().GetSourceNodes().GetObjValues().MakeSingleKey(); }
+
   /// Reuse ValuePresolver's target nodes for all objectives
   pre::ValueNode& GetObjValueNode()
   { return GetValuePresolver().GetTargetNodes().GetObjValues().MakeSingleKey(); }
