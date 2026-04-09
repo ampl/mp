@@ -223,8 +223,11 @@ pre::ValueMapDbl CoptBackend::DualSolution() {
 ArrayRef<double> CoptBackend::DualSolution_LP() {
   int num_cons = NumLinCons();
   std::vector<double> pi(num_cons);
-  int error = COPT_GetLpSolution(lp(), NULL, NULL, pi.data(), NULL);
-  if (error)
+  if (!IsMIP()) {
+    int error = COPT_GetLpSolution(lp(), NULL, NULL, pi.data(), NULL);
+    if (error)
+      pi.clear();
+  } else
     pi.clear();
   return pi;
 }
@@ -259,14 +262,14 @@ CoptBackend::SolutionStats() {
     return stats;
 }
 void CoptBackend::DoWriteProblem(const std::string& name) {
-    if (ends_with(name, ".lp"))
-        COPT_CCALL(COPT_WriteLp(lp(), name.c_str()));
-    else if (ends_with(name, ".mps"))
-        COPT_CCALL(COPT_WriteMps(lp(), name.c_str()));
-    else if (ends_with(name, "nl"))
-        COPT_CCALL(COPT_WriteNL(lp(), name.c_str()));
-    else if (ends_with(name, ".cbf"))
-        COPT_CCALL(COPT_WriteCbf(lp(), name.c_str()));
+  if (ends_with(name, ".lp"))
+    COPT_CCALL(COPT_WriteLp(lp(), name.c_str()));
+  else if (ends_with(name, ".mps"))
+    COPT_CCALL(COPT_WriteMps(lp(), name.c_str()));
+  else if (ends_with(name, ".nl"))
+    COPT_CCALL(COPT_WriteNL(lp(), name.c_str()));
+  else if (ends_with(name, ".cbf"))
+    COPT_CCALL(COPT_WriteCbf(lp(), name.c_str()));
   else
     throw std::runtime_error("Can only export '.lp' or '.mps' files.");
 }
