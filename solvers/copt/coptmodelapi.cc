@@ -31,7 +31,7 @@ void CoptModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
     COPT_CCALL(COPT_MultiObjSetColObj(lp(), iobj, lo.num_terms(),
                                       lo.vars().data(), lo.coefs().data()));
     COPT_CCALL(COPT_MultiObjSetObjSense(lp(), iobj, senses()[0]));
-
+    COPT_CCALL(COPT_MultiObjSetObjConst(lp(), iobj, 0.0)); // Seems necessary for MultiObjParam in 8.0.3.
   }
 }
 

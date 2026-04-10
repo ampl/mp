@@ -27,7 +27,8 @@ struct CoptCommonInfo {
 
 
 
-  int num_lin_obj_ {0};          // 8.0.3 does not return
+  int num_lin_obj_ {0};          // @note this is not accessible in Backend
+                                 // unless via get_other()
   std::map<int, int>& senses() {
       return _senses;
   }

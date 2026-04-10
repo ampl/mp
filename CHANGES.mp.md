@@ -3,8 +3,6 @@ Summary of recent updates to the AMPL MP Library
 
 
 ## unreleased
-- Fixed an issue with reporting objective value
-  in the solve message for nonlinear objectives.
 - Fixed an issue with auxiliary names.
 - Option *cvt:pre:boundsbest* defaults to making
   auxiliary subexpression result variables free,

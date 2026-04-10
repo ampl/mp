@@ -52,12 +52,9 @@ public:
   }
   /// Add an EExpr
   void Add(const EExpr& ee) {
-    printf("      ... add %ld LTerms...\n", ee.GetLinTerms().size());
     SetConstant(GetConstant() + ee.constant_term());
     Add(ee.GetLinTerms());
-    printf("      ... add %d QTerms...\n", ee.GetQPTerms().size());
     Add(ee.GetQPTerms());
-    printf("      ... done.\n");
   }
   /// Produce EExpr.
   /// @note no sorting but unique.

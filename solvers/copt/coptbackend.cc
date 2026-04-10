@@ -115,13 +115,8 @@ void CoptBackend::InputCOPTExtras() {
 }
 
 ArrayRef<double> CoptBackend::GetObjectiveValues() {
-
-  int nobjs = NumObjs();      // does not work in 8.0.3
-
-  if (num_lin_obj_ > 1) { // Using mo simulator copt returns 0 for some reason
-    nobjs = num_lin_obj_;  // std::max(1, nobjs);
-    // This all fails in 8.0.3
-    // but AMPL correctly recomputes the objectives
+  int nobjs = NumObjs();
+  if (nobjs > 1) {
     std::vector<double> v(nobjs);
     for (int i = 0; i < v.size(); ++i)
     {

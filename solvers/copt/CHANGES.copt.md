@@ -2,7 +2,8 @@ Summary of recent updates to COPT for AMPL
 ==========================================
 
 ## unreleased
-- Fixed objective value output
+- Fixed objective value output.
+- Fixed objective suffixes (.objpriority etc, see option *obj:multi*).
 
 
 ## 20260322

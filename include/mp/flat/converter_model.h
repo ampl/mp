@@ -408,7 +408,8 @@ public:
   /// Pushing the whole instance to the mapi.
   template <class ModelAPI>
   void PushModelTo(ModelAPI& mapi) const {
-    // CreateFlatModelInfo(mapi);     -- why was it here?
+    CreateFlatModelInfo(mapi);     // If no previous
+                                   // stats output, create in any case
     mapi.PassFlatModelInfo(GetModelInfo());
 
     mapi.InitProblemModificationPhase(GetModelInfo());
