@@ -91,7 +91,9 @@ std::string CoptBackend::GetSolverVersion() {
 
 
 bool CoptBackend::IsMIP() const {
-  return getIntAttr(COPT_INTATTR_ISMIP);
+  // return getIntAttr(COPT_INTATTR_ISMIP);  -- fails in 8.0.3 with nonconvex=2
+    return COPT_MIPSTATUS_UNSTARTED != getIntAttr(COPT_INTATTR_MIPSTATUS);
+  // @todo Is this needed before solving?
 }
 
 bool CoptBackend::IsQCP() const {
@@ -447,6 +449,13 @@ static const mp::OptionValueInfo lp_values_gpu[] = {
                   "(standard GPU mode)", 2}
 };
 
+static const mp::OptionValueInfo mip_start_values_[] = {
+    { "-1", "Automatic (default)", -1},
+    { "0", "Off", 0},
+    { "1", "Only load full and feasible MIP starts", 1},
+    { "2", " Only load feasible ones (complete partial solutions by solving subMIPs).", 2}
+};
+
 static const mp::OptionValueInfo alg_values_level[] = {
   { "-1", "Automatic (default)", -1},
   { "0", "Off", 0},
@@ -471,6 +480,13 @@ static const mp::OptionValueInfo lp_barorder_values_[] = {
   { "-1", "Choose automatically (default)", -1},
   { "0", "Approximate Minimum Degree (AMD)", 0},
   { "1", "Nested Dissection (ND)", 1}
+};
+
+static const mp::OptionValueInfo values_nonconvex[] = {
+    { "-1", "Default choice (as of COPT 8, same as 1)", -1},
+    { "0", "Report nonconvexity and terminate", 0},
+    { "1", "Search for a locally optimal solution", 1},
+    { "2", "Search for a globally optimal solution.", 2}
 };
 
 static const mp::OptionValueInfo values_iismethod[] = {
@@ -603,6 +619,11 @@ void CoptBackend::InitCustomOptions() {
     "\n.. value-table::\n", COPT_INTPARAM_DIVINGHEURLEVEL,
     alg_values_level, -1);
 
+  AddSolverOption("mip:startmode mipstartmode",
+                  "Mode of MIP starts:\n"
+                  "\n.. value-table::\n", COPT_INTPARAM_MIPSTARTMODE,
+                  mip_start_values_, -1);
+
   AddSolverOption("mip:submipheurlevel submipheurlevel",
     "Level of Sub-MIP heuristics:\n"
     "\n.. value-table::\n", COPT_INTPARAM_SUBMIPHEURLEVEL,
@@ -720,6 +741,11 @@ void CoptBackend::InitCustomOptions() {
   AddSolverOption("lp:pdlptol pdlptol",
     "Convergence tolerance for PDLP (default 1e-6)",
     COPT_DBLPARAM_PDLPTOL, 1e-6, 1e-4);
+
+  AddSolverOption("alg:nonconvex nonconvex",
+                  "Strategy for continuous nonconvex models (default -1):\n"
+                  "\n.. value-table::\n",
+                  COPT_INTPARAM_NONCONVEX, values_nonconvex, -1);
 
   AddSolverOption("alg:feastol feastol",
     "Primal feasibility tolerance (default 1e-6).",

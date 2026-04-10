@@ -12,7 +12,7 @@ let total_cost["A&P"].option_timelimit := 12;
 let total_cost["JEWEL"].option_timelimit := 0;
 let total_cost["VONS"].option_timelimit := 3.0;
 let total_number.option_timelimit := 3;
-let total_number.option_outlev := 1;
+let total_number.option_feastol := 1;
 
 
 let total_cost["JEWEL"].option_mipgap := 3;

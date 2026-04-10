@@ -93,7 +93,7 @@ public:
   void SetLinearObjective( int iobj, const LinearObjective& lo );
   /// Whether accepting quadratic objectives:
   /// 0 - no, 1 - convex, 2 - nonconvex
-  static int AcceptsQuadObj() { return 1; }
+  static int AcceptsQuadObj() { return 2; }
   void SetQuadraticObjective(int iobj, const QuadraticObjective& qo);
 
 
