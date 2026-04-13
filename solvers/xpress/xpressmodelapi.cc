@@ -68,20 +68,25 @@ void XpressmpModelAPI::AddVariables(const VarArrayDef& v) {
 
 void XpressmpModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
   if (iobj<1) {
-    XPRESSMP_CCALL(XPRSchgobjsense(lp(), lo.obj_sense() == obj::Type::MAX ? XPRS_OBJ_MAXIMIZE : XPRS_OBJ_MINIMIZE));
+    XPRESSMP_CCALL(XPRSchgobjsense(lp(),
+                                   lo.obj_sense() == obj::Type::MAX ?
+                                       XPRS_OBJ_MAXIMIZE : XPRS_OBJ_MINIMIZE));
     if (obj_ind_save_.size()) {
       std::vector<double> obj_coef_0(obj_ind_save_.size(), 0.0);
       XPRESSMP_CCALL(XPRSchgobj(lp(), obj_ind_save_.size(),
                                 obj_ind_save_.data(), obj_coef_0.data()));
     }
-    XPRESSMP_CCALL(XPRSchgobj(lp(), lo.num_terms(), lo.vars().data(), lo.coefs().data()));
+    XPRESSMP_CCALL(XPRSchgobj(
+        lp(), lo.num_terms(), lo.vars().data(), lo.coefs().data()));
     obj_ind_save_ = lo.vars();
   } else {
     // All objectives must have the same sense, so we will have to automatically 
     // set a conflicting objective's weight to -1 
-    obj::Type mainObjSense = getDblAttr(XPRS_OBJSENSE) == -1.0 ? obj::Type::MAX : obj::Type::MIN;
+    obj::Type mainObjSense =
+        getDblAttr(XPRS_OBJSENSE) == -1.0 ? obj::Type::MAX : obj::Type::MIN;
     double weight = lo.obj_sense() == mainObjSense ? 1.0 : -1.0; 
-    XPRESSMP_CCALL(XPRSaddobj(lp(), lo.num_terms(), lo.vars().data(), lo.coefs().data(), 0, weight));
+    XPRESSMP_CCALL(XPRSaddobj(
+        lp(), lo.num_terms(), lo.vars().data(), lo.coefs().data(), 0, weight));
   }
 }
 

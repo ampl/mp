@@ -140,9 +140,10 @@ ArrayRef<double> CoptBackend::GetObjectiveValues() {
 
 void CoptBackend::ObjPriorities(ArrayRef<int> values) {
   // SetSolverOption(COPT_INTPARAM_MULTIOBJPARAMMODE, 1);
-  for (int i = 0; i < values.size(); ++i)
+  for (int i = 0; i < values.size(); ++i) {
     COPT_CCALL(COPT_MultiObjSetObjParam(
         lp(), i, COPT_MULTIOBJ_PRIORITY, static_cast<double>(values[i])));
+  }
 }
 
 void CoptBackend::ObjWeights(ArrayRef<double> values) {
@@ -154,16 +155,18 @@ void CoptBackend::ObjWeights(ArrayRef<double> values) {
 
 void CoptBackend::ObjAbsTol(ArrayRef<double> values) {
   // SetSolverOption(COPT_INTPARAM_MULTIOBJPARAMMODE, 1);
-  for (int i = 0; i < values.size(); ++i)
+  for (int i = 0; i < values.size(); ++i) {
     COPT_CCALL(COPT_MultiObjSetObjParam(
         lp(), i, COPT_MULTIOBJ_ABSTOL, static_cast<double>(values[i])));
+  }
 }
 
 void CoptBackend::ObjRelTol(ArrayRef<double> values) {
   // SetSolverOption(COPT_INTPARAM_MULTIOBJPARAMMODE, 1);
-  for (int i = 0; i < values.size(); ++i)
+  for (int i = 0; i < values.size(); ++i) {
     COPT_CCALL(COPT_MultiObjSetObjParam(
         lp(), i, COPT_MULTIOBJ_RELTOL, static_cast<double>(values[i])));
+  }
 }
 
 void CoptBackend::SetMultiobjOptions(BasicObjOptionSetter* setter) {

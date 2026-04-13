@@ -17,7 +17,8 @@ void CoptModelAPI::AddVariables(const VarArrayDef& v) {
 
 void CoptModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
   int sense = obj::Type::MAX == lo.obj_sense() ? COPT_MAXIMIZE : COPT_MINIMIZE;
-  senses()[iobj] = sense;
+  if (!iobj)
+    obj_sense0_ampl_ = lo.obj_sense();
 
   if ((iobj<1) && (num_lin_obj_ <= 1)) {
     COPT_CCALL(COPT_SetObjSense(lp(), sense ));
@@ -30,8 +31,18 @@ void CoptModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
   } else {
     COPT_CCALL(COPT_MultiObjSetColObj(lp(), iobj, lo.num_terms(),
                                       lo.vars().data(), lo.coefs().data()));
-    COPT_CCALL(COPT_MultiObjSetObjSense(lp(), iobj, senses()[0]));
-    COPT_CCALL(COPT_MultiObjSetObjConst(lp(), iobj, 0.0)); // Seems necessary for MultiObjParam in 8.0.3.
+    // Always set the sense equal to that of the 1st objective,
+    // but modify weight, see #240.
+    assert(obj_sense0_ampl_ >= 0);
+    COPT_CCALL(COPT_MultiObjSetObjSense(lp(), iobj,
+                                        obj_sense0_ampl_ == obj::Type::MAX ?
+                                            COPT_MAXIMIZE : COPT_MINIMIZE));
+    // Weight: can be modified in Backend
+    COPT_CCALL(COPT_MultiObjSetObjParam(lp(), iobj, COPT_MULTIOBJ_WEIGHT,
+                                        obj_sense0_ampl_ == lo.obj_sense() ?
+                                            1.0 : -1.0));
+    // Seems necessary for MultiObjParam in 8.0.3.
+    COPT_CCALL(COPT_MultiObjSetObjConst(lp(), iobj, 0.0));
   }
 }
 

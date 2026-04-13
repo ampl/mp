@@ -29,9 +29,7 @@ struct CoptCommonInfo {
 
   int num_lin_obj_ {0};          // @note this is not accessible in Backend
                                  // unless via get_other()
-  std::map<int, int>& senses() {
-      return _senses;
-  }
+  int obj_sense0_ampl_ {-1};     // 0: min, 1: max
   void set_current_objective_options(int options) {
       _current_objective_options = options;
   }
@@ -42,7 +40,6 @@ struct CoptCommonInfo {
 private:
   copt_env*      env_ = NULL;
   copt_prob*      lp_ = NULL;
-  std::map<int, int> _senses;
   int _current_objective_options = -1;
 };
 

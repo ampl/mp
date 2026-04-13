@@ -184,7 +184,10 @@ void VisitorModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) 
     VISITOR_CCALL(VISITOR_SetColObj(lp(), lo.num_terms(),
                            lo.vars().data(), lo.coefs().data()) ); */
   } else {
-//    TODO If we support mutiple objectives, pass them to the solver
+//    TODO If we support mutiple objectives, pass them to the solver.
+    // Regard #240: all objectives should have the sense like in the 1st objective
+    // but weight -1 if necessary (we assume all MO APIs support weights).
+    // Weights can be changed later in the Backend.
     fmt::print("Setting {}-th linear objective\n");
     PrintLinearObjective(name, GetVarName, lo.num_terms(), lo.vars().data(), lo.coefs().data(),
       lo.obj_sense() == mp::obj::MAX);
