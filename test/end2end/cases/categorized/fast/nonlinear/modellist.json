@@ -11,6 +11,9 @@
   {
     "name" : "div_divisor_1sign",
     "tags" : ["nonlinear"],
+    "options": {
+      "copt_options": "nonconvex=2"
+    },
     "objective": 25.36179802
   },
   {
@@ -375,6 +378,9 @@
   {
     "name" : "pow_07_varvar",
     "tags" : ["continuous", "nonlinear", "quadraticnonconvex"],
+    "options": {
+      "copt_options": "nonconvex=2"
+    },
     "objective":  4.769378236,
     "values": {
       "x": 2.49268,
@@ -535,7 +541,8 @@
     "options": {
       "mp_options": "lim:time=2",
       "xpress_options": "lim:time=2",
-      "scip_options": "lim:time=2"
+      "scip_options": "lim:time=2",
+      "copt_options": "lim:time=2 nonconvex=2"
     }
   },
   {

@@ -2,8 +2,9 @@ Summary of recent updates to the AMPL MP Library
 ================================================
 
 
-## unreleased
-- Fixed an issue with auxiliary names.
+## 20260414
+- Option *cvt:pre:continuous_fixed_vars* to declare
+  fixed variables continuous. Default 1.
 - Option *cvt:pre:boundsbest* defaults to making
   auxiliary subexpression result variables free,
   unless the result is constant.

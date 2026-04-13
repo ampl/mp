@@ -120,7 +120,10 @@
     "name" : "dietQobj_1000 multiobj=2 obj_pr_2",
     "tags" : ["quadraticnonconvex", "quadratic_obj", "multiobj"],
     "files" : ["dietqobj_1000.mod", "dietobj.dat", "dietobj_pr_2.inc"],
-    "options": { "mp_options": "multiobj=2" },
+    "options": {
+      "mp_options": "multiobj=2",
+      "copt_options": "multiobj=2 nonconvex=2"
+    },
     "values": {
       "total_cost[\"A&P\"]": 936.6309187422044,
       "total_cost[\"JEWEL\"]": 959.3824742719657,

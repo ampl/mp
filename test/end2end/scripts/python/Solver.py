@@ -1364,6 +1364,7 @@ class COPTSolver(MPDirectSolver):
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
         stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
                  ModelTags.quadratic, ModelTags.quadratic_obj,
+                 ModelTags.quadraticnonconvex,
 
                  ModelTags.socp,      ## MP transforms cones to quadratics
                  ModelTags.socp_hard_to_recognize,

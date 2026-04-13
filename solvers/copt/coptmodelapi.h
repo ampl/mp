@@ -96,6 +96,9 @@ public:
   static int AcceptsQuadObj() { return 2; }
   void SetQuadraticObjective(int iobj, const QuadraticObjective& qo);
 
+  /// Specifically, ask if the solver accepts non-convex quadratic constraints
+  static constexpr bool AcceptsNonconvexQC() { return true; }
+
 
   //////////////////////////// GENERAL CONSTRAINTS ////////////////////////////
   USE_BASE_CONSTRAINT_HANDLERS(BaseModelAPI)

@@ -13,7 +13,10 @@
     "name" : "defvar_01 acc:_expr=0",
     "objective" : 2.864,
     "tags" : ["quadratic", "quadraticnonconvex"],
-    "options": { "mp_options": "debug=1 acc:_expr=0",  "mp2nl_options": "debug=1 acc:_expr=1" },
+    "options": {
+      "mp_options": "debug=1 acc:_expr=0",
+      "mp2nl_options": "debug=1 acc:_expr=1"
+    },
     "values": {
       "Initial.flat1_obj_quad + Initial.flat1_obj_nonlin": 1,
       "Initial.flat1__linge + Initial.flat1__linrange": 1
@@ -33,7 +36,10 @@
     "name" : "defvar_01 dvelim=0",
     "objective" : 2.864,
     "tags" : ["quadratic", "quadraticnonconvex"],
-    "options": { "mp_options": "debug=1 dvelim=0" },
+    "options": {
+      "mp_options": "debug=1 dvelim=0",
+      "copt_options": "debug=1 dvelim=0 nonconvex=2"
+    },
     "comment": "For Gurobi no NL objectives, so this test is ok",
     "values": {
       "Initial.flat1_obj_lin + Initial.flat1_obj_nonlin": 1,
@@ -44,7 +50,10 @@
     "name" : "defvar_01 dvelim=0 acc:_expr=0",
     "objective" : 2.864,
     "tags" : ["quadratic", "quadraticnonconvex"],
-    "options": { "mp_options": "debug=1 dvelim=0 acc:_expr=0",  "mp2nl_options": "debug=1 dvelim=0 acc:_expr=1" },
+    "options": {
+      "mp_options": "debug=1 dvelim=0 acc:_expr=0",
+      "mp2nl_options": "debug=1 dvelim=0 acc:_expr=1"
+    },
     "values": {
       "Initial.flat1_obj_quad + Initial.flat1_obj_nonlin": 1,
       "Initial.flat1__linge + Initial.flat1__linrange": 1

@@ -4,7 +4,7 @@
     "objective" : 43559.71572,
     "tags" : ["quadraticnonconvex"],
     "options": {
-      "gurobi_options": "nonconvex=2"
+      "copt_options": "nonconvex=2"
     }
   },
   {
@@ -13,7 +13,7 @@
     "tags" : ["quadraticnonconvex"],
     "comment_tags": "mp can reduce this example to quadratics",
     "options": {
-      "gurobi_options": "nonconvex=2 global=1"
+      "copt_options": "nonconvex=2"
     }
   }
 ]
