@@ -18,16 +18,18 @@ void CuoptmpModelAPI::AddVariables(const VarArrayDef& v) {
   for (auto i = 0; i<v.size();  i++) {
     lp_->lower_bounds[i] = v.plb()[i];
     lp_->upper_bounds[i] = v.pub()[i];
-    lp_->variable_types[i] = v.ptype()[i] == var::Type::CONTINUOUS ? CUOPT_CONTINUOUS : CUOPT_INTEGER;
+    lp_->variable_types[i] =
+        v.ptype()[i] == var::Type::CONTINUOUS ? CUOPT_CONTINUOUS : CUOPT_INTEGER;
   }
 }
 
 
 void CuoptmpModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
-  lp_->objective_sense = lo.obj_sense() == mp::obj::MAX ? CUOPT_MAXIMIZE : CUOPT_MINIMIZE;
-  lp_->objective_coefficients.clear();
+  lp_->objective_sense =
+      lo.obj_sense() == mp::obj::MAX ? CUOPT_MAXIMIZE : CUOPT_MINIMIZE;
+  lp_->objective_coefficients.clear();          // zero out linear objective
   lp_->objective_coefficients.resize(lp_->variable_types.size());
-
+  // @todo clear nonlinear terms
   for (auto k = 0; k < lo.num_terms(); k++) {
     lp_->objective_coefficients[lo.vars()[k]] = lo.coefs()[k];
   }

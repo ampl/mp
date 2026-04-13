@@ -39,10 +39,11 @@ void GurobiModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
     GrbSetIntAttr( GRB_INT_ATTR_MODELSENSE,
                   obj::Type::MAX==lo.obj_sense() ? GRB_MAXIMIZE : GRB_MINIMIZE);
     NoteGurobiMainObjSense(lo.obj_sense());
-    if (obj_ind_save_.size()) {
+    if (obj_ind_save_.size()) {             // zero out previous linear part
       std::vector<double> obj_coef_0(obj_ind_save_.size(), 0.0);
       GrbSetDblAttrList( GRB_DBL_ATTR_OBJ, obj_ind_save_, obj_coef_0 );
     }
+    GRB_CALL( GRBdelq(model()) );           // zero out previous QP part
     GrbSetDblAttrList( GRB_DBL_ATTR_OBJ, lo.vars(), lo.coefs() );
     obj_ind_save_ = lo.vars();
   } else {

@@ -33,11 +33,12 @@ void CplexModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
     CPLEX_CALL( CPXchgobjsen (env(), lp(),
                     obj::Type::MAX==lo.obj_sense() ? CPX_MAX : CPX_MIN) );
     NoteCPLEXMainObjSense(lo.obj_sense());
-    if (obj_ind_save_.size()) {
+    if (obj_ind_save_.size()) {          // zero out linear part
       std::vector<double> obj_coef_0(obj_ind_save_.size(), 0.0);
       CPLEX_CALL( CPXchgobj (env(), lp(), obj_ind_save_.size(),
                            obj_ind_save_.data(), obj_coef_0.data()) );
     }
+    CPLEX_CALL( CPXchgprobtype(env(), lp(), CPXPROB_LP) );  // zero out QP
     CPLEX_CALL( CPXchgobj (env(), lp(), lo.num_terms(),
                            lo.vars().data(), lo.coefs().data()) );
     obj_ind_save_ = lo.vars();

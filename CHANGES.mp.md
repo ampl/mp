@@ -3,6 +3,9 @@ Summary of recent updates to the AMPL MP Library
 
 
 ## 20260414
+- Fixed a bug in the multi-objective emulator
+  (see option *obj:multi*) when nonlinear terms
+  were not reset for consecutive objectives.
 - Option *cvt:pre:continuous_fixed_vars* to declare
   fixed variables continuous. Default 1.
 - Option *cvt:pre:boundsbest* defaults to making

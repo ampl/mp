@@ -2,13 +2,14 @@ Summary of recent updates to COPT for AMPL
 ==========================================
 
 ## 20260414
+- Option *alg:nonconvex*, *mip:startmode*.
 - Fixed objective value output.
 - Fixed objective suffixes (.objpriority etc, see option *obj:multi*).
 
 
 ## 20260322
 - Updated to COPT 8.0.3, with performance improvements and bug fixes
-- Added option *lp:concurrentlpmode*
+- Added option *lp:concurrentmode*
 - Added support for conic constraints 
 - Added support for many non-linear expressions
 - Added native multi-objective optimization

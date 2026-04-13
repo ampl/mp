@@ -62,8 +62,9 @@ void MosekModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
   if (iobj < 1) {
     MOSEK_CCALL(MSK_putobjsense(lp(),
       obj::Type::MAX == lo.obj_sense() ? MSK_OBJECTIVE_SENSE_MAXIMIZE : MSK_OBJECTIVE_SENSE_MINIMIZE));
-    for (auto i=NumVars(); i--; )
+    for (auto i=NumVars(); i--; )           // Zero out linear part
       MOSEK_CCALL(MSK_putcj(lp(), i, 0.0));
+    MOSEK_CCALL( MSK_putqobj(lp(), 0, NULL, NULL, NULL) );  // and QP part
     for (int i = 0; i < lo.num_terms(); i++) {
       MOSEK_CCALL(MSK_putcj(lp(), lo.vars()[i], lo.coefs()[i]));
     }

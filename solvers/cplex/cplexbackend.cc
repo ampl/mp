@@ -490,7 +490,7 @@ void CplexBackend::Solve() {
     CPLEX_CALL(CPXcleanup(env(), lp(), storedOptions_.dropTol_));
   }
   if (NumObjs() > 1
-      || multiobj())                  // User set multiobj>0
+      || multiobj()==1)                  // User set multiobj=1
     CPLEX_CALL(CPXmultiobjopt(env(), lp(), NULL));
   else {
     auto type = CPXgetprobtype(env(), lp());

@@ -50,6 +50,7 @@ void ScipModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
     for (int i = 0; i < getPROBDATA()->nvars; i++) {
       SCIP_CCALL( SCIPchgVarObj(getSCIP(), vars[i], 0.0) );          // zero out
     }
+    // @todo If becomes relevant: zero out QP/nonlinear obj terms
     for (int i = 0; i < lo.num_terms(); i++) {
       SCIP_CCALL( SCIPchgVarObj(getSCIP(), vars[lo.vars()[i]], lo.coefs()[i]) );
     }

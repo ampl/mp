@@ -23,8 +23,10 @@ void CoptModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
   if ((iobj<1) && (num_lin_obj_ <= 1)) {
     COPT_CCALL(COPT_SetObjSense(lp(), sense ));
     double zero_out = 0.0;
-    for (int i=NumVars(); i--; )
+    for (int i=NumVars(); i--; )         // Zero out linear part
       COPT_CCALL(COPT_SetColObj(lp(), 1, &i, &zero_out));
+    COPT_CCALL( COPT_DelQuadObj(lp()) );
+    COPT_CCALL( COPT_DelNLObj(lp()) );
     COPT_CCALL(COPT_SetColObj(lp(), lo.num_terms(),
                               lo.vars().data(), lo.coefs().data()) );
     

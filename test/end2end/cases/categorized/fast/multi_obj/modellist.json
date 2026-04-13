@@ -416,5 +416,15 @@
       "Buy['SPG']": 5.25843,
       "Buy['BEEF']": 2
     }
+  },
+  {
+    "name" : "multiobj_QP_01 multiobj=2",
+    "tags" : ["quadratic", "continuous", "multiobj"],
+    "options": { "mp_options": "multiobj=2" },
+    "objective" : 1.2222222,
+    "values": {
+      "x": 1.5864656920647173,
+      "y": -0.24060292377693776
+    }
   }
 ]

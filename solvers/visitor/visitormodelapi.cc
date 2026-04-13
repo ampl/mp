@@ -181,6 +181,9 @@ void VisitorModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) 
                     obj::Type::MAX==lo.obj_sense() ? VISITOR_MAXIMIZE : VISITOR_MINIMIZE) );
     // This should set the objective exactly as given,
     // even when changing from a previous objective.
+    // This means, any QP/nonlinear terms should be cleared.
+    VISITOR_CCALL(VISITOR_delq(lp()));
+    VISITOR_CCALL(VISITOR_delnlobj(lp()));
     VISITOR_CCALL(VISITOR_SetColObj(lp(), lo.num_terms(),
                            lo.vars().data(), lo.coefs().data()) ); */
   } else {
@@ -208,7 +211,8 @@ void VisitorModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective& 
       q.size(), q.pvars1(), q.pvars2(), q.pcoefs());
 
     // Typical implementation
-    //VISITOR_CCALL(VISITOR_SetQuadObj(lp(), qt.size(),
+    // 1. SetLinearObjective(iobj, qo);  // This clears previous QP/nonlinear terms
+    // 2. VISITOR_CCALL(VISITOR_SetQuadObj(lp(), qt.size(),
     //  (int*)qt.pvars1(), (int*)qt.pvars2(),
     //  (double*)qt.pcoefs()));
   }
