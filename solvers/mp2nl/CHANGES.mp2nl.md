@@ -2,6 +2,14 @@ Summary of recent updates to MP2NL for AMPL
 ==========================================
 
 
+## 20260414
+- Changes in MP, in particular:
+  - Option *cvt:pre:boundsbest* defaults to making
+    auxiliary subexpression result variables free,
+    unless the result is constant. This allows
+    stronger nonlinear presolve.
+
+
 ## 20260108
 - Reuse solutions between iterations of
   multi-objective emulator.

@@ -402,13 +402,25 @@ public:
   /// Provide variable upper bounds
   const VarBndVec& GetVarUBs() const { return var_ub_; }
 
+  /// Model state
+  struct ModelState {
+    /// If we emulate MO
+    bool ifMOEmulator_ {false};
+    /// If !=0, current MOE objective
+    const QuadraticObjective* pObj_{nullptr};
+  };
+
+  /// Create default model state
+  static ModelState MakeDefaultModelState()
+  { return {}; }
 
   /////////////// EXPORT THE INSTANCE TO A ModelAPI //////////////
   ///
   /// Pushing the whole instance to the mapi.
   template <class ModelAPI>
   void PushModelTo(ModelAPI& mapi) const {
-    CreateFlatModelInfo(mapi);     // If no previous
+    ModelState model_state {if_skip_pushing_objs()};
+    CreateFlatModelInfo(mapi, model_state);     // If no previous
                                    // stats output, create in any case
     mapi.PassFlatModelInfo(GetModelInfo());
 
@@ -421,9 +433,11 @@ public:
   }
 
 protected:  
-  void CreateFlatModelInfo(const BasicFlatModelAPI& mapi) const {
+  void CreateFlatModelInfo(
+      const BasicFlatModelAPI& mapi,
+      const ModelState& model_state = {}) const {
     FillVarStats(GetModelInfoWrt());
-    FillObjStats(GetModelInfoWrt());
+    FillObjStats(GetModelInfoWrt(), model_state);
     FillConstraintCounters(mapi, *GetModelInfoWrt());
   }
 
@@ -449,17 +463,27 @@ protected:
     pfmi->SetVarInfo(vi);
   }
 
-  void FillObjStats(FlatModelInfo* pfmi) const {
+public:
+  void FillObjStats(
+      FlatModelInfo* pfmi, const ModelState& model_state = {}) const {
     FlatModelInfo::ObjInfo oi{0,0,0};
+    auto IncrObjCount = [&oi](const QuadraticObjective& obj) {
+      if (obj.HasExpr()) {
+        ++ oi[2];
+      } else if (obj.GetQPTerms().size())
+        ++ oi[1];
+      else
+        ++ oi[0];
+    };
+    if (model_state.ifMOEmulator_) {
+      if (auto* pObj = model_state.pObj_) {
+        IncrObjCount(*pObj);
+      }  // else, leave all 0
+    } else   // Count all normally
     if (int n_objs = num_objs()) {
       for (int i = 0; i < n_objs; ++i) {
         const auto& obj = get_obj(i);
-        if (obj.HasExpr()) {
-          ++ oi[2];
-        } else if (obj.GetQPTerms().size())
-          ++ oi[1];
-        else
-          ++ oi[0];
+        IncrObjCount(obj);
       }
     }
     pfmi->SetObjInfo(oi);

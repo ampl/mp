@@ -2,6 +2,11 @@ Summary of recent updates to GCG for AMPL
 =========================================
 
 
+## 20260414
+- Changes in MP, in particular new naming
+  for auxiliaries.
+
+
 ## 20251210
 - Option *obj:multi:options*: fix integer-valued
   objective-specific options.

@@ -2,6 +2,14 @@ Summary of recent updates to SCIP for AMPL
 ==========================================
 
 
+## 20260414
+- Changes in MP, in particular:
+  - Option *cvt:pre:boundsbest* defaults to making
+    auxiliary subexpression result variables free,
+    unless the result is constant. This allows
+    stronger nonlinear presolve.
+
+
 ## 20251210
 - Change in MP: option *obj:multi:options*: fix integer-valued
   objective-specific options.

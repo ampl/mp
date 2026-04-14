@@ -2,6 +2,10 @@ Summary of recent updates to MOSEK for AMPL
 ===========================================
 
 
+## 20260414
+- Changes in MP, see MP changelog.
+
+
 ## 20251210
 - Change in MP: option *obj:multi:options*: fix integer-valued
   objective-specific options.

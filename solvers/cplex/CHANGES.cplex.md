@@ -2,6 +2,10 @@ Summary of recent updates to CPLEX for AMPL
 ==============================================
 
 
+## 20260414
+- Changes in MP, see MP changelog.
+
+
 ## 20260310
 - Added options `mip:objdiff` and `mip:relobjdiff`
 

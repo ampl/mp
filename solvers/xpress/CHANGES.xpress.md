@@ -2,10 +2,16 @@ Summary of recent updates to Xpress for AMPL
 ============================================
 
 
-## unreleased
+## 20260414
+- Fixed solve result reporting for (MI)NLP.
 - Mark result/argument variables of logical
   constraints as binary, unless fixed. This proves
   necessary for some models.
+- Changes in MP, in particular:
+  - Option *cvt:pre:boundsbest* defaults to making
+    auxiliary subexpression result variables free,
+    unless the result is constant. This allows
+    stronger nonlinear presolve.
 
 
 ## 20251210

@@ -12,6 +12,7 @@
 #include "mp/flat/obj_std.h"
 #include "mp/flat/nl_expr/constr_nl.h"
 
+
 namespace mp {
 
 /// A mix-in base class managing multiobjective emulation
@@ -409,7 +410,13 @@ protected:
       RestrictLastObjVal();
     }
     
-    MPD( FillConstraintCounters( MPD( GetModelAPI() ), *MPD( GetModelInfoWrt() ) ) );   // @todo a hack.
+    MPD( FillConstraintCounters(
+        MPD( GetModelAPI() ), *MPD( GetModelInfoWrt() ) ) );   // @todo a hack.
+    auto model_state = MPDS( MakeDefaultModelState() );
+    model_state.ifMOEmulator_ = true;                // Recount objectives
+    model_state.pObj_ = &obj_new_.at(i_current_obj_);
+    MPD( FillObjStats(
+        MPD( GetModelInfoWrt() ), model_state ) );   // @todo a hack.
     MPD( GetModelAPI() ).InitProblemModificationPhase(   // For adding the new constraint. @todo a hack.
         MPD( GetModelInfo() ));                          // Ideally Model would notice changes and notify
     ReplaceCurrentObj();                  // After allowing model modification (needed by SCIP.)

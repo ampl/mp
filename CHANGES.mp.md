@@ -10,7 +10,8 @@ Summary of recent updates to the AMPL MP Library
   fixed variables continuous. Default 1.
 - Option *cvt:pre:boundsbest* defaults to making
   auxiliary subexpression result variables free,
-  unless the result is constant.
+  unless the result is constant.  This allows
+  stronger nonlinear presolve.
 - Additional case where the signpow function
   is recognized: abs(C*x)*x
   (C constant, x variable).

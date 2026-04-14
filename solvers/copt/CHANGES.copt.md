@@ -5,6 +5,11 @@ Summary of recent updates to COPT for AMPL
 - Option *alg:nonconvex*, *mip:startmode*.
 - Fixed objective value output.
 - Fixed objective suffixes (.objpriority etc, see option *obj:multi*).
+- Changes in MP, in particular:
+  - Option *cvt:pre:boundsbest* defaults to making
+    auxiliary subexpression result variables free,
+    unless the result is constant. This allows
+    stronger nonlinear presolve.
 
 
 ## 20260322
