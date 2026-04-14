@@ -2,6 +2,12 @@ Summary of recent updates to Xpress for AMPL
 ============================================
 
 
+## unreleased
+- Mark result/argument variables of logical
+  constraints as binary, unless fixed. This proves
+  necessary for some models.
+
+
 ## 20251210
 - New option names
   - In particular, *pre:indlin(big/small)bigm* now stand for

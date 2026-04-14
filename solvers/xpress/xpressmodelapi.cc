@@ -208,13 +208,18 @@ void XpressmpModelAPI::addGenCon(
   const auto& args = c.GetArguments();
   auto colindices = args.data();
   if (fMarkArgsBinary) {
-    // std::vector<char> types_bin (args.size(), 'B');
-    // Wrong results with 9.7.0 on PSCCP
-    // but could be needed later.
-    // XPRESSMP_CCALL(XPRSchgcoltype(lp(), 1,
-    //                               resultant, types_bin.data()));
-    // XPRESSMP_CCALL(XPRSchgcoltype(lp(), args.size(),
-    //                               args.data(), types_bin.data()));
+    auto MarkBinaryIfNotFixed = [&,this](int var) {
+      double lb, ub;
+      auto marker {'B'};
+      XPRESSMP_CCALL( XPRSgetlb(this->lp(), &lb, var, var) );
+      XPRESSMP_CCALL( XPRSgetub(this->lp(), &ub, var, var) );
+      if (lb<=0.0 && ub>=1.0)
+        XPRESSMP_CCALL(XPRSchgcoltype(lp(), 1,
+                                      &var, &marker));
+    };
+    MarkBinaryIfNotFixed(c.GetResultVar());
+    for (int var: args)
+      MarkBinaryIfNotFixed(var);
   }
   XPRESSMP_CCALL(XPRSaddgencons(lp(), 1, (int)args.size(),
     0, type, resultant, colstart, colindices, NULL, NULL));

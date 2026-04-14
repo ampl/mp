@@ -3,7 +3,7 @@
 ## test redefinitions of auxiliary variables.
 ## As of v4.0.4, it seems to work,
 ## because MakeComplementVar() uses Not()
-## andLinearFuncCon's are inlined.
+## and LinearFuncCon's are inlined.
 ######################################################
 
 var x >=0 <=10;
