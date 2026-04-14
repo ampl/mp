@@ -387,6 +387,8 @@ ArrayRef<double> CplexBackend::DualSolution_LP() {
   {
     int num_cons = NumLinCons();
     std::vector<double> pi(num_cons);
+    /* Avoid most error messages on screen */
+    CPLEX_CALL(CPXsetintparam(env(), CPXPARAM_ScreenOutput, CPX_OFF));
     int error = CPXgetpi(env(), lp(), pi.data(), 0, num_cons - 1);
     if (error)
       pi.clear();

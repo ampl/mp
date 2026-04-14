@@ -38,7 +38,13 @@ void CplexModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
       CPLEX_CALL( CPXchgobj (env(), lp(), obj_ind_save_.size(),
                            obj_ind_save_.data(), obj_coef_0.data()) );
     }
-    CPLEX_CALL( CPXchgprobtype(env(), lp(), CPXPROB_LP) );  // zero out QP
+    if (qmatval_.size()) {                     // zero out QP
+      std::fill(qmatval_.begin(), qmatval_.end(), 0.0);
+      CPLEX_CALL((CPXcopyquad(env(), lp(),
+                              qmatbeg_.data(), qmatcnt_.data(),
+                              qmatind_.data(), qmatval_.data())));
+      qmatval_.clear();
+    }
     CPLEX_CALL( CPXchgobj (env(), lp(), lo.num_terms(),
                            lo.vars().data(), lo.coefs().data()) );
     obj_ind_save_ = lo.vars();
@@ -63,10 +69,11 @@ void CplexModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective& qo
     SetLinearObjective(iobj, qo);
     
     const auto& qt = qo.GetQPTerms();
-    std::vector<int> qmatbeg(NumVars() + 1), qmatcnt(NumVars());
+    qmatbeg_.resize(NumVars() + 1);
+    qmatcnt_.resize(NumVars());
     int nnondiagonal = 0;
     std::vector<std::map<int, double>> acc(NumVars());
-    for (int i = 0; i < qt.size(); i++) {
+    for (int i = 0; i < (int)qt.size(); i++) {
       if(qt.var1(i)==qt.var2(i))
         acc[qt.var1(i)][qt.var2(i)] = qt.coef(i)*2;
       else {
@@ -76,26 +83,28 @@ void CplexModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective& qo
       }
     }
 
-    std::vector<int> qmatind(qt.size()+nnondiagonal);
-    std::vector<double> qmatval(qt.size() + nnondiagonal);
+    qmatind_.resize(qt.size()+nnondiagonal);
+    qmatval_.resize(qt.size() + nnondiagonal);
     int currentbeg = 0;
     for (int i = 0; i < NumVars(); i++)
     {
-      qmatbeg[i] = currentbeg;
-      qmatcnt[i] = acc[i].size();
+      qmatbeg_[i] = currentbeg;
+      qmatcnt_[i] = acc[i].size();
       for (auto c : acc[i])
       {
-        qmatind[currentbeg] = c.first;
-        qmatval[currentbeg] = c.second;
+        qmatind_[currentbeg] = c.first;
+        qmatval_[currentbeg] = c.second;
         currentbeg++;
       }
     }
-    qmatbeg[NumVars()] = currentbeg;
+    qmatbeg_[NumVars()] = currentbeg;
     CPLEX_CALL((CPXcopyquad(env(), lp(),
-      qmatbeg.data(), qmatcnt.data(), qmatind.data(), qmatval.data())));
+      qmatbeg_.data(), qmatcnt_.data(),
+                            qmatind_.data(), qmatval_.data())));
   }
   else {
-    throw std::runtime_error("Multiple quadratic objectives not supported");
+    throw std::runtime_error(
+        "Multiple quadratic objectives not supported");
   }
 }
 

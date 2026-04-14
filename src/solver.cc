@@ -949,8 +949,9 @@ bool BasicSolver::ShowVersion() {
   Print(", MP({})\n", MP_DATE);
   if (!license_info_.empty())
     Print("{}\n", license_info_);
-  if (!this->set_external_libs().empty())
-    Print("External libraries:\n{}", this->set_external_libs());
+  auto sel = this->set_external_libs();
+  if (sel.size())
+    Print("External libraries:\n{}\n", sel);
   return false;
 }
 #else

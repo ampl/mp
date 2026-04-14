@@ -83,8 +83,11 @@ public:
 private:
   obj::Type main_obj_sense_;
   std::vector<int> obj_ind_save_;                   // to zero out last objective
+  std::vector<int> qmatbeg_, qmatcnt_;
+  std::vector<int> qmatind_;
+  std::vector<double> qmatval_;
 
-  protected:
+protected:
   /// First objective's sense
   void NoteCPLEXMainObjSense(obj::Type s);
   obj::Type GetCPLEXMainObjSense() const;
