@@ -2,6 +2,11 @@ Summary of recent updates to Xpress for AMPL
 ============================================
 
 
+## unreleased
+- Solve result LIMIT_INF_UNB is returned in some cases
+  (previously used UNBOUNDED).
+
+
 ## 20260414
 - Fixed solve result reporting for (MI)NLP.
 - Mark result/argument variables of logical
