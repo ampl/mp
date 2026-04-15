@@ -438,8 +438,9 @@ std::string XpressmpBackend::DoXpressFixedModel()
         if (fFeasible)
           return { sol::UNBOUNDED_FEAS,
                   "unbounded problem, feasible solution returned" };
-        return { sol::UNBOUNDED_NO_FEAS,
-                "unbounded problem, no solution returned" };
+        return { sol::LIMIT_INF_UNB,
+                "unbounded or infeasible, "
+                "switch off dual presolve or run IIS Finder" };
       case XPRS_LP_CUTOFF:
         return { sol::UNCERTAIN, "objective cutoff" };
       case XPRS_LP_CUTOFF_IN_DUAL:
@@ -476,8 +477,9 @@ std::string XpressmpBackend::DoXpressFixedModel()
         if (fFeasible)
           return { sol::UNBOUNDED_FEAS,
                   "unbounded problem, feasible solution returned" };
-        return { sol::UNBOUNDED_NO_FEAS,
-                "unbounded problem, no solution returned" };
+        return { sol::LIMIT_INF_UNB,
+                "unbounded or infeasible, "
+                "switch off dual presolve or run IIS Finder" };
       case XPRS_MIP_LP_NOT_OPTIMAL:
       case XPRS_MIP_NO_SOL_FOUND:
       case XPRS_MIP_LP_OPTIMAL:
@@ -517,8 +519,9 @@ std::string XpressmpBackend::DoXpressFixedModel()
               "unbounded problem, feasible solution returned" +
                   msg_duals
           };
-        return { sol::UNBOUNDED_NO_FEAS,
-                "unbounded problem, no solution returned" };
+        return { sol::LIMIT_INF_UNB,
+                "unbounded or infeasible, "
+                "switch off dual presolve or run IIS Finder" };
       case XPRS_NLPSTATUS_UNFINISHED:
       case XSLP_NLPSTATUS_UNSOLVED:
       default:
@@ -568,8 +571,9 @@ std::string XpressmpBackend::DoXpressFixedModel()
       if (fFeasible)
         return { sol::UNBOUNDED_FEAS,
                 "unbounded problem, feasible solution returned" };
-      return { sol::UNBOUNDED_NO_FEAS,
-              "unbounded problem, no solution returned" };
+      return { sol::LIMIT_INF_UNB,
+              "unbounded or infeasible, "
+              "switch off dual presolve or run IIS Finder" };
     case XPRS_SOLSTATUS_NOTFOUND:
       if (XPRS_SOLVESTATUS_FAILED==solvestatus)
         return { sol::FAILURE, "failure, no solution" };
