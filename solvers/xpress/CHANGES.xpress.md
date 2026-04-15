@@ -3,8 +3,8 @@ Summary of recent updates to Xpress for AMPL
 
 
 ## unreleased
-- Solve result LIMIT_INF_UNB is returned in some cases
-  (previously used UNBOUNDED).
+- Solve result LIMIT_INF_UNB, 450 is returned in some cases
+  (previously used UNBOUNDED_NO_FEAS, 350).
 
 
 ## 20260414
