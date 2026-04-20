@@ -652,5 +652,38 @@
       "Initial.flat1__U__indge": 0,
       "min {i in 1.._nlogcons} _logcon[i]": 1
     }
+  },
+  {
+    "name" : "inline_01",
+    "tags" : ["logical", "linear"],
+    "options": {
+      "mp_options": "debug=1 acc:condlineq=0 acc:condlinge=0 acc:condlinle=0 acc:condlinlt=0 acc:condlingt=0 acc:indle=0 acc:indge=0 acc:indeq=0"
+    },
+    "objective": -5,
+    "values": {
+      "Initial.flat1__U__indeq": 6,
+      "Initial.flat1__U__indle": 0,
+      "Initial.flat1__U__indge": 0,
+      "Initial.flat1__A__lineq": 1,
+      "Initial.flat1__linle": 14,
+      "Initial.flat1__linge": 1,
+      "Initial.flat1__linfn": 0
+    }
+  },
+  {
+    "name" : "inline_01 boundsbest=1",
+    "tags" : ["logical", "linear"],
+    "options": {
+      "mp_options": "debug=1 acc:condlineq=0 acc:condlinge=0 acc:condlinle=0 acc:condlinlt=0 acc:condlingt=0 acc:indle=0 acc:indge=0 acc:indeq=0 cvt:pre:boundsbest=1"
+    },
+    "objective": -5,
+    "values": {
+      "Initial.flat1__U__indeq": 6,
+      "Initial.flat1__U__indle": 0,
+      "Initial.flat1__U__indge": 0,
+      "Initial.flat1__lineq": 3,
+      "Initial.flat1__linle": 14,
+      "Initial.flat1__linge": 1
+    }
   }
 ]

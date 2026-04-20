@@ -1120,22 +1120,24 @@ public:
   template <class VarArray>
   double ub_array(const VarArray& va) const
   { return this->GetModel().ub_array(va); }
-  /// Does the variable have stronger hard bounds than its init expression?
+  /// Does the variable have stronger solver-submitted bounds
+  /// than its init expression?
   /// We might extend this to automatically recompute bounds from bottom up.
   /// @note this was done when creating the functional constraint,
   ///   but we might obtain stronger new bounds,
   ///   such as in redefinition of complementarity.
-  /// @note Using stronger "best=known" bounds
-  ///   whcih are also used for fixing.
-  bool IfVarBoundsStrongerThanInitExpr(int res_var) {
+  /// @note Considers option *cvt:pre:boundsbest*.
+  bool IfSubmittedVarBoundsStrongerThanInitExpr(int res_var) {
     if (MPCD( HasInitExpression(res_var) )) {
       if (lb(res_var)>MPCD( MinusInfty() )
           || ub(res_var)<MPCD( Infty() )) {
         const auto& cloc = MPD( GetInitExpression(res_var) );
         PreprocessInfoStd preinfo;
         cloc.GetCK()->PreprocessConstraint(cloc.GetIndex(), preinfo);
-        return lb(res_var) > preinfo.lb()
-               || ub(res_var) < preinfo.ub();
+        return (lb(res_var) > preinfo.lb()    // If some bound better:
+                || ub(res_var) < preinfo.ub()) ?
+            (GetModel().if_submit_best_known_bounds()) :
+                   is_fixed(res_var);         // Only if fixed by default
       }
     }
     return false;
@@ -1207,7 +1209,7 @@ public:
 
   /// var_type()
   var::Type var_type(int var) const { return this->GetModel().var_type(var); }
-  /// is_fixed()
+  /// is_fixed(), uses best-known bounds
   bool is_fixed(int var) const { return this->GetModel().is_fixed(var); }
   /// fixed_value()
   double fixed_value(int var) const
@@ -1785,7 +1787,7 @@ private:
                        "Can inhibit its presolve.\n"
                        "\n"
                        "Note: when a variable can be fixed, the stronger bounds "
-                       "are submitted.",
+                       "are always submitted.",
                        GetModel().if_submit_best_known_bounds(), 0, 1);
 
     GetEnv().AddOption("cvt:pre:continuous_fixed_vars continuous_fixed_vars ctg_fixed",
@@ -1813,7 +1815,7 @@ private:
                        "Convenience option. "
                        "Set to 0 to disable quadratic constraints. "
                        "Synonym for acc:quad..=0. "
-                       "Currently this disables out-multiplication "
+                       "Setting to 0 disables out-multiplication "
                        "of quadratic terms, then they are linearized.",
                        options_.passQuadCon_, 0, 1);
     GetEnv().AddOption("cvt:qp2passes cvt:qp2pass qp2passes qp2pass",
@@ -2305,6 +2307,11 @@ protected:
   bool IfHasCvt_impl(const UnaryEncodingConstraint* ) {
     return true;
   }
+
+  // Here conversion action with priority 3090:
+  // Inline algebraic subexpressions in algebraic
+  // constraints and objectives.
+  // This includes algebralized indicators.
 
   ////////////////////// NL constraints & expressions ///////////////////////
   STORE_CONSTRAINT_TYPE__NO_MAP(

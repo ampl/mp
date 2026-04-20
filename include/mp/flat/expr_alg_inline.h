@@ -88,6 +88,8 @@ protected:
     }
   }
 
+  /// Inline algebraic subexpressions
+  /// into an algebraic constraint.
   /// @return true iff made this one redundant
   template <class Body, class RangeOrRHS>
   bool InlineAlgExpr(
@@ -126,9 +128,11 @@ protected:
     return CollectAlgSubExpr(body.GetLinTerms(), {});
   }
 
-  /// @return recursively collect linear and/or quadratic
+  /// Recursively collect linear and/or quadratic
   /// subexpressions
+  /// @return The result
   /// @todo Consider \a fQuad_
+  /// @todo Join with HasAlgExpr()
   EExpr CollectAlgSubExpr(
       const LinTerms& lt0, const QuadTerms& qt0) {
     BucketAccumulator<EExpr> buckets;
@@ -156,14 +160,14 @@ protected:
       const LinearFunctionalConstraint* pLFC;
       const QuadraticFunctionalConstraint* pQFC;
       if ((pLFC = MPCD(
-             template GetActiveInitExpressionOfType<
-             LinearFunctionalConstraint>(vi) ))
-          && !MPD( IfVarBoundsStrongerThanInitExpr(vi) )) {
+               template GetActiveInitExpressionOfType<
+                   LinearFunctionalConstraint>(vi) ))
+          && !MPD( IfSubmittedVarBoundsStrongerThanInitExpr(vi) )) {
         inline_alg_subexpr(pLFC->GetAffineExpr(), ci, vi);
       } else if ((pQFC = MPCD(
-                    template GetActiveInitExpressionOfType<
-                    QuadraticFunctionalConstraint>(vi) ))
-                 && !MPD( IfVarBoundsStrongerThanInitExpr(vi) )) {
+                      template GetActiveInitExpressionOfType<
+                          QuadraticFunctionalConstraint>(vi) ))
+                 && !MPD( IfSubmittedVarBoundsStrongerThanInitExpr(vi) )) {
         inline_alg_subexpr(pQFC->GetArguments(), ci, vi);
       } else
         ae_untouched.add_term(ci, vi);
@@ -182,7 +186,8 @@ protected:
 
   /// Whether the alg con/expr body has alg subexpressions.
   /// We only consider subexpressions whose result var
-  /// has no stronger bounds than those from the expression.
+  /// has no stronger submitted bounds
+  /// than those from the subexpression.
   /// @todo Possibly we should cache this, as otherwise
   /// we'd take as expression some linear terms later
   /// if the expression starts implying tighter result
@@ -192,13 +197,15 @@ protected:
       if (auto pLFC = MPCD(
               template GetActiveInitExpressionOfType<
                   LinearFunctionalConstraint>(vi) ))
-        return !MPD( IfVarBoundsStrongerThanInitExpr(vi) );
+        if (!MPD( IfSubmittedVarBoundsStrongerThanInitExpr(vi) ))
+          return true;
       if (auto pQFC = MPCD(
               template GetActiveInitExpressionOfType<
                   QuadraticFunctionalConstraint>(vi) )) {
         if (pQFC->GetArguments().GetLinTerms().size()
             || fQuad_)
-          return !MPD( IfVarBoundsStrongerThanInitExpr(vi) );
+          if (!MPD( IfSubmittedVarBoundsStrongerThanInitExpr(vi) ))
+            return true;
       }
     }
     return false;
