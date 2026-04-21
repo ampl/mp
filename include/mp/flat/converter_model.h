@@ -144,11 +144,17 @@ public:
     return var_ub_best_[v];
   }
 
+  /// Hard LB.
+  /// We should not inline the init expression when this
+  /// bound on the result variable is significant #237 #266.
   double lb_hard(Var v) const {
     assert(0<=v && v<num_vars());
     return var_lb_[v];
   }
 
+  /// Hard UB.
+  /// We should not inline the init expression when this
+  /// bound on the result variable is significant.
   double ub_hard(Var v) const {
     assert(0<=v && v<num_vars());
     return var_ub_[v];

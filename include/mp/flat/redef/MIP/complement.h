@@ -5,6 +5,7 @@
 
 #include "mp/flat/redef/redef_base.h"
 #include "mp/flat/constr_std.h"
+#include "mp/flat/nl_expr/constr_nl.h"
 
 namespace mp {
 

@@ -1107,9 +1107,9 @@ public:
   double lb(int var) const { return this->GetModel().lb(var); }
   /// Shortcut ub(var)
   double ub(int var) const { return this->GetModel().ub(var); }
-  /// Shortcut lb(var)
+  /// Shortcut lb_hard(var)
   double lb_hard(int var) const { return this->GetModel().lb_hard(var); }
-  /// Shortcut ub(var)
+  /// Shortcut ub_hard(var)
   double ub_hard(int var) const { return this->GetModel().ub_hard(var); }
   /// lb_array().
   /// @todo best-known bounds currently. ?
@@ -1134,7 +1134,10 @@ public:
         const auto& cloc = MPD( GetInitExpression(res_var) );
         PreprocessInfoStd preinfo;
         cloc.GetCK()->PreprocessConstraint(cloc.GetIndex(), preinfo);
-        return (lb(res_var) > preinfo.lb()    // If some bound better:
+        if (lb_hard(res_var) > preinfo.lb()     // If some hard bound better:
+            || ub_hard(res_var) < preinfo.ub())
+          return true;
+        return (lb(res_var) > preinfo.lb() // If some best-known bound better:
                 || ub(res_var) < preinfo.ub()) ?
             (GetModel().if_submit_best_known_bounds()) :
                    is_fixed(res_var);         // Only if fixed by default
