@@ -1968,9 +1968,10 @@ private:
                        "number of significant digits.",
                        options_.sol_prec_, -1000, 1000);
 
-    GetEnv().AddOption("cvt:expr:nlassign expr:nlassign",
+    GetEnv().AddOption("cvt:expr:refcountmax expr:refcountmax cvt:expr:nlassign expr:nlassign",
                        fmt::format("Above which reference count, "
-                       "a formula node should be assigned to a variable "
+                       "a formula node should be assigned to a (defined, "
+                                   "if supported) variable "
                        "(see acc: options). 0 means all nodes outlined. "
                        "Default {}.", options_.nlassign_lev_).c_str(),
                        options_.nlassign_lev_, 0, INT_MAX);

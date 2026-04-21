@@ -648,5 +648,29 @@
       "Initial.flat1__U__powc": 11,
       "Initial.flat1__U__exp": 11
     }
+  },
+  {
+    "name" : "inline_nl_01",
+    "tags" : ["continuous", "nonlinear", "quadraticnonconvex"],
+    "options": { "mp_options": "debug=1" },
+    "objective": -3.54947979411954
+  },
+  {
+    "name" : "inline_nl_01 refcountmax=2",
+    "tags" : ["continuous", "nonlinear", "quadraticnonconvex"],
+    "options": { "mp_options": "debug=1 cvt:expr:refcountmax=2" },
+    "objective": -3.54947979411954
+  },
+  {
+    "name" : "inline_nl_01 boundlogarg=1",
+    "tags" : ["continuous", "nonlinear", "quadraticnonconvex"],
+    "options": { "mp_options": "debug=1 boundlogarg=1" },
+    "objective": -3.54947979411954
+  },
+  {
+    "name" : "inline_nl_01 boundsbest=1",
+    "tags" : ["continuous", "nonlinear", "quadraticnonconvex"],
+    "options": { "mp_options": "debug=1 cvt:pre:boundsbest=1" },
+    "objective": -3.54947979411954
   }
 ]
