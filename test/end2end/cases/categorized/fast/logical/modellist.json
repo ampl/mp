@@ -657,7 +657,7 @@
     "name" : "inline_01",
     "tags" : ["logical", "linear"],
     "options": {
-      "mp_options": "debug=1 acc:condlineq=0 acc:condlinge=0 acc:condlinle=0 acc:condlinlt=0 acc:condlingt=0 acc:indle=0 acc:indge=0 acc:indeq=0"
+      "mp_options": "debug=1 acc:condlineq=0 acc:condlinge=0 acc:condlinle=0 acc:condlinlt=0 acc:condlingt=0 acc:indle=0 acc:indge=0 acc:indeq=0 acc:linrange=0"
     },
     "objective": -5,
     "values": {
@@ -674,7 +674,7 @@
     "name" : "inline_01 boundsbest=1",
     "tags" : ["logical", "linear"],
     "options": {
-      "mp_options": "debug=1 acc:condlineq=0 acc:condlinge=0 acc:condlinle=0 acc:condlinlt=0 acc:condlingt=0 acc:indle=0 acc:indge=0 acc:indeq=0 cvt:pre:boundsbest=1"
+      "mp_options": "debug=1 acc:condlineq=0 acc:condlinge=0 acc:condlinle=0 acc:condlinlt=0 acc:condlingt=0 acc:indle=0 acc:indge=0 acc:indeq=0 acc:linrange=0 cvt:pre:boundsbest=1"
     },
     "objective": -5,
     "values": {

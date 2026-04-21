@@ -2,6 +2,13 @@ Summary of recent updates to the AMPL MP Library
 ================================================
 
 
+## unreleased
+- Fixed inlining of algebraic subexpressions
+  resulting from redefinitions. In particular
+  with *cvt:pre:boundsbest=1*, subexpressions
+  with stronger result bounds are not inlined.  
+
+
 ## 20260414
 - Fixed a bug in the multi-objective emulator
   (see option *obj:multi*) when nonlinear terms
