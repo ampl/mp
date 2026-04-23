@@ -202,6 +202,8 @@ if (build_cplex)
   add_subdirectory(cplex)
 endif ()
 
+
+
 # Excludes targets from the default build.
 function(exclude_from_build)
   foreach (target ${ARGN})
@@ -244,10 +246,16 @@ function(add_ampl_backend name)
     endif()
 endfunction()
 
+
+
 add_ampl_backend(visitor DLL_RUNTIME)
 
 add_ampl_backend(mosek DLL_RUNTIME MODULE MOSEK 
   LIBRARIES ${MOSEK_LIBS} ${CMAKE_DL_LIBS})
+
+  add_ampl_backend(knitromp DLL_RUNTIME MODULE KNITRO
+    KIBRARIES ${KNITRO_LIBS} ${CMAKE_DL_LIBS})
+
 add_ampl_backend(copt DLL_RUNTIME SHARED_LIB MODULE COPT 
   LIBRARIES ${COPT_LIBS} ${CMAKE_DL_LIBS})
 
