@@ -1140,7 +1140,7 @@ public:
           return true;
         return (lb(res_var) > preinfo.lb() // If some best-known bound better:
                 || ub(res_var) < preinfo.ub()) ?
-            (GetModel().if_submit_best_known_bounds()) :
+                   (GetModel().if_submit_best_known_bounds() || is_fixed(res_var)) :
                    is_fixed(res_var);         // Only if fixed by default
       }
     }

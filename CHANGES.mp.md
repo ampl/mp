@@ -3,6 +3,10 @@ Summary of recent updates to the AMPL MP Library
 
 
 ## unreleased
+- Similar to inlining, nonlinear expressions with nontrivial
+  external bounds are explicified into an auxiliary variable,
+  depending on options *cvt:pre:boundsbest* and
+  *cvt:pre:boundlogarg*.
 - Fixed a debugging feature on Windows.
 - Fixed inlining of algebraic subexpressions
   resulting from redefinitions. In particular

@@ -203,6 +203,30 @@ public:
   static int AcceptsNLObj() { return 1; }
   void SetNLObjective(int, const NLObjective&);
 
+  /// Above which reference count,
+  /// a formula node should be assigned to a variable,
+  /// or a defined variable
+  /// (if supported, see IfOk2LeaveMultiplyUsedAlgebraicExpr()).
+  /// Should normally be INT_MAX for solvers
+  /// using pointers to store expressions (SCIP),
+  /// and (small) positive for solvers
+  /// using strings to represent formulas.
+  /// Note: 0 means all nodes outlined.
+  static int NLAssignLevelDefault() { return 1; }
+
+  /// Whether ModelAPI is happy to have multiply-used
+  /// algebraic expressions as such,
+  /// vs explicifying them as variables via NLAssign..
+  /// This can be defined variables (MP2NL)
+  /// or pointer-based expressions (SCIP).
+  /// @note explicit variables can cause numerical trouble
+  ///   via feasibility tolerances; some solvers
+  ///   can presolve them out, but then usually they should
+  ///   be free variables (which we partly control
+  ///   via *cvt:pre:boundsbest*).
+  static bool IfOk2LeaveMultiplyUsedAlgebraicExpr()
+  { return false; }
+
   /// Top level general NL constraint
   /// lhs <= f(x) <= rhs
   ACCEPT_CONSTRAINT(NLConstraint, Recommended, CG_Algebraic)

@@ -64,13 +64,15 @@ public:
           MPD( template GetInitExpressionOfType<Con>(con.GetResultVar()) )
           == &con);
       if (con.IsLogical())     // Fixed logical results handled differently later
-        MPD( MarkAsExpression(con.GetResultVar()) );   // can be changed later
-      else if ( !MPCD(is_fixed(con.GetResultVar())) ) {
-        bool fHighUse =
-            MPCD( VarUsage(con.GetResultVar()) ) > MPCD( NLAssignLevel() );
-        if ( !fHighUse )
-          MPD( MarkAsExpression(con.GetResultVar()) );   // can be changed later
-      }
+        MPD( MarkAsExpression(con.GetResultVar()) );   // @todo can be changed later?
+      else
+        if ( !MPD(IfSubmittedVarBoundsStrongerThanInitExpr(con.GetResultVar())) ) {
+          if ( MPD(GetModelAPI()).IfOk2LeaveMultiplyUsedAlgebraicExpr()
+            || MPCD( VarUsage(con.GetResultVar()) ) <= MPCD( NLAssignLevel() ) ) {
+              MPD( MarkAsExpression(con.GetResultVar()) ); // can be changed later?
+          } // ModelAPI handles them as expressions
+        }
+        // Else: if submitted bounds stronger, e.g., result fixed, leave as variable
     }
   }
 
@@ -763,6 +765,7 @@ protected:
     auto alscope = MPD( MakeAutoLinker( con, i ) );       // link from \a con
     assert(!con.GetContext().IsNone());
     auto resvar = con.GetResultVar();
+    assert( MPCD(IsProperVar(resvar)) );
     if (con.GetContext().IsMixed())
       MPD( AddConstraint(NLAssignEQ(resvar)) );
     else if (con.GetContext().HasPositive())
@@ -781,6 +784,7 @@ protected:
   void DoExplicify(const FuncCon& con, int i) {
     auto alscope = MPD( MakeAutoLinker( con, i ) );       // link from \a con
     auto resvar = con.GetResultVar();
+    assert( MPCD(IsProperVar(resvar)) );
     assert(!con.GetContext().IsNone());
     if (con.GetContext().IsMixed())
       MPD( AddConstraint(NLReifEquiv(resvar)) );
