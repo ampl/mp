@@ -3,6 +3,7 @@ Summary of recent updates to the AMPL MP Library
 
 
 ## unreleased
+- Fixed a debugging feature on Windows.
 - Fixed inlining of algebraic subexpressions
   resulting from redefinitions. In particular
   with *cvt:pre:boundsbest=1*, subexpressions

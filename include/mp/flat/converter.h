@@ -28,6 +28,7 @@
 #include "mp/flat/redef/conic/cones.h"
 #include "mp/flat/redef/conic/qcones2qc.h"
 #include "mp/ampls-ccallbacks.h"
+#include "mp/utils-misc.h"
 
 namespace mp {
 
@@ -1408,6 +1409,8 @@ public:
   /// We'd link manually but at least we care.
   pre::AutoLinkScope<Impl> MakeEmptyLinker(
       pre::NodeRange src) {
+    // Need on Windows (VS Code 17.11) because no RVO
+    RAIIValueSetter valset{ is_autolinking_requested_, true };
     pre::AutoLinkScope<Impl> result
         {
                   *(Impl*)this,   // 1-index source allowed only
@@ -1450,7 +1453,8 @@ public:
   ///   that we always care about linking.
   ///
   ///   So when switching to manual linking,
-  ///   call with \a f_full=false.
+  ///   call with \a f_full=false,
+  ///   e.g., from MakeEmptyLinker().
   void TurnOffAutoLinking(bool f_full=true) {
     auto_link_src_item_.Invalidate();
     auto_link_targ_items_.clear();
@@ -1538,8 +1542,10 @@ public:
   int ModelAPIAcceptsQuadraticCones() const {
 		return
         0 != std::max(
-          (int)GetConstraintAcceptance_DEFAULT((QuadraticConeConstraint*)nullptr),
-          (int)GetConstraintAcceptance_DEFAULT((RotatedQuadraticConeConstraint*)nullptr));
+          (int)GetConstraintAcceptance_DEFAULT(
+            (QuadraticConeConstraint*)nullptr),
+          (int)GetConstraintAcceptance_DEFAULT(
+            (RotatedQuadraticConeConstraint*)nullptr));
 	}
 
   /// Number of QC -> SOCP conversions
@@ -1555,7 +1561,8 @@ public:
 	/// Whether the ModelAPI accepts exp cones
 	int ModelAPIAcceptsExponentialCones() {
 		return
-        (int)ModelAPIAcceptsAndRecommends((ExponentialConeConstraint*)nullptr);
+        (int)ModelAPIAcceptsAndRecommends(
+          (ExponentialConeConstraint*)nullptr);
 	}
 
 
