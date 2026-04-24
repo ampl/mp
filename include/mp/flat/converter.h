@@ -1409,8 +1409,6 @@ public:
   /// We'd link manually but at least we care.
   pre::AutoLinkScope<Impl> MakeEmptyLinker(
       pre::NodeRange src) {
-    // Need on Windows (VS Code 17.11) because no RVO
-    RAIIValueSetter valset{ is_autolinking_requested_, true };
     pre::AutoLinkScope<Impl> result
         {
                   *(Impl*)this,   // 1-index source allowed only

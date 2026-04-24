@@ -537,26 +537,43 @@ public:
 
   /// Destructor
   ~AutoLinkScope() {
-    const auto& targets = cvt_.GetAutoLinkTargets();
-    if (auto sz = targets.size()) {
-      assert(cvt_.DoingAutoLinking());
-      if (1==sz && targets.front().IsSingleIndex()) {
-        cvt_.GetCopyLink().AddEntry(   // use CopyLink for 1:1
-              { cvt_.GetAutoLinkSource(), targets.front() } );
-      } else {
-        for (const auto& t: targets) {
-          assert(t.IsValid());
-          cvt_.GetOne2ManyLink().AddEntry(   // use One2ManyLink
-                { cvt_.GetAutoLinkSource(), t } );
+    if (is_current_object_) {
+      const auto& targets = cvt_.GetAutoLinkTargets();
+      if (auto sz = targets.size()) {
+        assert(cvt_.DoingAutoLinking());
+        if (1 == sz && targets.front().IsSingleIndex()) {
+          cvt_.GetCopyLink().AddEntry(   // use CopyLink for 1:1
+            { cvt_.GetAutoLinkSource(), targets.front() });
         }
-        cvt_.GetOne2ManyLink().MarkLastEntryAsLastInGroup();
+        else {
+          for (const auto& t : targets) {
+            assert(t.IsValid());
+            cvt_.GetOne2ManyLink().AddEntry(   // use One2ManyLink
+              { cvt_.GetAutoLinkSource(), t });
+          }
+          cvt_.GetOne2ManyLink().MarkLastEntryAsLastInGroup();
+        }
       }
+      cvt_.TurnOffAutoLinking();
     }
-    cvt_.TurnOffAutoLinking();
   }
+
+  /// No copy-construct
+  AutoLinkScope(const AutoLinkScope& ) = delete;
+  /// No assign
+  void operator=(const AutoLinkScope&) = delete;
+  /// Move-construct
+  AutoLinkScope(AutoLinkScope&& als)
+  : cvt_(als.cvt_) {
+    assert(cvt_.GetAutoLinkTargets().empty());  // no move during linking
+    als.is_current_object_ = false;
+  }
+  /// No move-assign
+  void operator=(AutoLinkScope&& als) = delete;
 
 private:
   ModelConverter& cvt_;
+  bool is_current_object_{ true };   // only one can be current
 };
 
 } // namespace pre
