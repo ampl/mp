@@ -413,7 +413,6 @@ protected:
       /// in Gurobi where we just set 'obj attributes'
       /// to variables.
       /// Context is propagated after adding all objectives.
-      le.sort_terms();
       eexpr.GetQPTerms().sort_terms();
       if (!GetFlatCvt().IfPassQuadObj()            // SCIP 10
           && eexpr.GetQPTerms().size()) {
@@ -423,6 +422,7 @@ protected:
         eexpr.GetQPTerms().clear();                // explicitly remove obj qp terms
         le.add_term(1.0, qpres);
       }
+      le.sort_terms();                             // in the end
       if (GetFlatCvt().HasInitExpression(le)       // Add "_flat_" if expr args
           || GetFlatCvt().HasInitExpression(eexpr.GetQPTerms()))
         obj_trg_nodes.ReplaceNameChunk(-1, "flat");
