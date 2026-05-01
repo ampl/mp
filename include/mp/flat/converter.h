@@ -12,6 +12,7 @@
 #include "mp/format.h"
 #include "mp/solver-base.h"
 #include "mp/suffix.h"
+#include "mp/flat/converter_info.h"
 #include "mp/flat/converter_model.h"
 #include "mp/flat/convert_functional.h"
 #include "mp/flat/constr_keeper.h"
@@ -41,6 +42,7 @@ namespace mp {
 template <class Impl, class ModelAPI,
           class FlatModel = FlatModel< > >
 class FlatConverter :
+                      public ConverterInfo,
                       public BasicFlatConverter,
                       public FlatModel,
                       public BoundComputations<Impl>,
@@ -64,6 +66,10 @@ public:
           return this->InlineAlgSubexpr();
         }, 3099);     // 3099: before LinFuncCon/QuadFuncCon
   }
+
+  /// Converter info
+  const ConverterInfo* GetConverterInfo() const override
+  { return this; }
 
   /// Trying to use 'Var' instead of bare 'int'
   using Var = typename FlatModel::Var;
@@ -1615,6 +1621,7 @@ private:
     int solchkoutlev_ = 0;
 
     int nlassign_lev_ = ModelAPI::NLAssignLevelDefault();
+    int nlreif_lev_ = ModelAPI::NLReifLevelDefault();
   };
   Options options_;
 
@@ -1660,12 +1667,18 @@ public:             // public for CRTP
   int sol_prec() const { return options_.sol_prec_; }
   int sol_check_outlev() const { return options_.solchkoutlev_; }
 
+  /// Option *cvt:expr:nlassign*
   int NLAssignLevel() const { return options_.nlassign_lev_; }
+  /// Option *cvt:expr:nlreif*
+  int NLReifLevel() const { return options_.nlreif_lev_; }
+  /// Implement for ConverterInfo
+  int RefCountMaxAlgebraic() const override { return NLAssignLevel(); }
 
 public:
   /// Init FlatConverter options
   void InitOptions() {
     InitOwnOptions();
+    GetModelAPI().InitStandardOptions();
     GetModelAPI().InitCustomOptions();
   }
 
@@ -1973,13 +1986,20 @@ private:
                        "number of significant digits.",
                        options_.sol_prec_, -1000, 1000);
 
-    GetEnv().AddOption("cvt:expr:refcountmax expr:refcountmax cvt:expr:nlassign expr:nlassign",
+    GetEnv().AddOption("cvt:expr:nlassign expr:nlassign",
                        fmt::format("Above which reference count, "
-                       "a formula node should be assigned to a (defined, "
-                                   "if supported) variable "
-                       "(see acc: options). 0 means all nodes outlined. "
-                       "Default {}.", options_.nlassign_lev_).c_str(),
+                                   "an algebraic formula node should be assigned to a variable "
+                                   "(see acc: options). 0 means all nodes assigned. "
+                                   "Default {}.", options_.nlassign_lev_).c_str(),
                        options_.nlassign_lev_, 0, INT_MAX);
+
+    GetEnv().AddOption("cvt:expr:nlreif expr:nlreif expr:nlreify",
+                       fmt::format("Above which reference count, "
+                                   "a logical formula node should be assigned (reified) "
+                                   " to a variable "
+                                   "(see acc: options). 0 means all nodes reified. "
+                                   "Default {}.", options_.nlreif_lev_).c_str(),
+                       options_.nlreif_lev_, 0, INT_MAX);
 
     ////////////////////// Solve result codes ////////////////////////
     GetEnv().AddSolveResults({

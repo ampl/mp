@@ -82,11 +82,16 @@ public:
   virtual void AddNumberOfConstraints(
       const std::type_info& ti, const char* name,
       int igroup, bool is_logical, int nc, int nu, int na) = 0;
+
+  /// Value of option cvt:expr:nlassign
+  virtual int RefCountMaxAlgebraic() const = 0;
 };
 
+class ConverterInfo;
 
 /// FlatModelInfo factory
-std::unique_ptr<FlatModelInfo> CreateFlatModelInfo();
+std::unique_ptr<FlatModelInfo>
+CreateFlatModelInfo(const ConverterInfo* pci);
 
 /// Print on screen
 void PrintModelInfo(const FlatModelInfo& fmi,

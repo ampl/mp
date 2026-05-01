@@ -281,6 +281,11 @@ public:
     return cc.GetFlatConstraint().GetConstraint().rhs();
   }
 
+  /// Init standard options
+  void InitStandardOptions() {
+    BasicFlatModelAPI::InitStandardOptions();
+  }
+
   /// Placeholder for InitCustomOptions()
   void InitCustomOptions() { }
 

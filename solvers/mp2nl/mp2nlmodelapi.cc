@@ -20,6 +20,14 @@ void MP2NLModelAPI::InitCustomOptions() {
                            "0*/1: add comments to the text-format NL file.",
                            storedOptions_.nl_comments_);
 
+  GetEnv().AddToOptionDescription("cvt:expr:nlassign", "See also *nl:assign:defvar*.");
+
+  GetEnv().AddStoredOption("nl:assign:defvar nldefvar",
+                           "Above which reference count, an algebraic expression "
+                           "is converted into a defined variable. Default 1.\n"
+                           "\n"
+                           "This option is applied after *cvt:expr:nlassign*.",
+                           storedOptions_.nl_assign_defvar_);
 }
 
 void MP2NLModelAPI::InitProblemModificationPhase(const FlatModelInfo* flat_model_info) {
@@ -338,6 +346,7 @@ void MP2NLModelAPI::PrepareModel() {
   SortVars();
   MarkAlgCons();
   SortAlgCons();
+  MarkDefVars();
 }
 
 void MP2NLModelAPI::MapExpressions() {
@@ -594,7 +603,9 @@ void MP2NLModelAPI::MarkDefVars() {
   for (int i=0; i<(int)expr_counter_.size(); ++i) {
     assert(expr_counter_[i]);
     assert(!IsExprDefVar(i));
-    if (expr_counter_[i]>1) {
+    if (!expr_info_[i].IsLogical() &&   // NL format: no logical DV
+        expr_counter_[i] >
+        storedOptions_.nl_assign_defvar_) {
       ++nDV;
       expr_defvar_index_[i] = nDV;   // start from 1
       if (expr_used_in_con_[i]) {
@@ -792,7 +803,7 @@ void MP2NLModelAPI::FeedDefinedVariables(
             ExprDefVarIndex(expr_index), 0, "");
         /////////// Write the linear part:
         auto linw = dv.GetLinExprWriter();
-        // No linear part
+        // No linear part @todo
         /////////// Write the expression tree:
         auto ew = dv.GetExprWriter();
         FeedOpcode(MakeExprID(expr_index), ew);

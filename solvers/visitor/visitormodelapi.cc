@@ -5,6 +5,7 @@ namespace mp {
 
 void VisitorModelAPI::InitProblemModificationPhase(
     const FlatModelInfo*) {
+  // The argument always available via GetFlatModelInfo().
   auto varname = std::bind(&Solver::SolverModel::var_name, this->lp(),
     std::placeholders::_1);
   GetVarName = varname;

@@ -656,9 +656,9 @@
     "objective": -3.54947979411954
   },
   {
-    "name" : "inline_nl_01 refcountmax=2",
+    "name" : "inline_nl_01 expr:nlassign=2",
     "tags" : ["continuous", "nonlinear", "quadraticnonconvex"],
-    "options": { "mp_options": "debug=1 cvt:expr:refcountmax=2" },
+    "options": { "mp_options": "debug=1 cvt:expr:nlassign=2" },
     "objective": -3.54947979411954
   },
   {

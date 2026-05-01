@@ -24,7 +24,7 @@ struct DefaultFlatModelParams {
   static constexpr Var VoidVar() { return -1; }
 };
 
-/// Class BasicFlatModel stores vars, objs, custom constraints
+/// Class FlatModel stores vars, objs, custom constraints
 /// to be used internally in a FlatConverter
 template <class ModelParams = DefaultFlatModelParams>
 class FlatModel
@@ -39,6 +39,12 @@ public:
   using VarNameVec = std::vector<const char*>;
 
   using ConstraintManager::GetFileAppender;
+
+  /// Destruct
+  virtual ~FlatModel() { }
+
+  /// Converter info
+  virtual const ConverterInfo* GetConverterInfo() const = 0;
 
   ///////////////////////////// VARIABLES ////////////////////////////////
   /// Add variable, return its index
@@ -424,7 +430,7 @@ public:
   ///
   /// Pushing the whole instance to the mapi.
   template <class ModelAPI>
-  void PushModelTo(ModelAPI& mapi) const {
+  void PushModelTo(ModelAPI& mapi) {
     ModelState model_state {if_skip_pushing_objs()};
     CreateFlatModelInfo(mapi, model_state);     // If no previous
                                    // stats output, create in any case
@@ -441,7 +447,9 @@ public:
 protected:  
   void CreateFlatModelInfo(
       const BasicFlatModelAPI& mapi,
-      const ModelState& model_state = {}) const {
+      const ModelState& model_state = {}) {
+    if (!pfmi_)       // Create after construction of the Converter
+      pfmi_ = mp::CreateFlatModelInfo(GetConverterInfo());
     FillVarStats(GetModelInfoWrt());
     FillObjStats(GetModelInfoWrt(), model_state);
     FillConstraintCounters(mapi, *GetModelInfoWrt());
@@ -629,8 +637,7 @@ private:
   bool if_skip_push_objs_bjs_ {false};
 
   /// Flat model info
-  std::unique_ptr<FlatModelInfo>
-      pfmi_ {mp::CreateFlatModelInfo()};
+  std::unique_ptr<FlatModelInfo> pfmi_;
 
 public:
   /// Check var arrays

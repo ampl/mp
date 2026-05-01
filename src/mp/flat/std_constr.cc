@@ -761,18 +761,21 @@ void VisitArguments_PossRepeated(
   }
 }
 
-void VisitArguments(const QuadAndLinTerms& qlt, std::function<void (int)> argv) {
+void VisitArguments(
+    const QuadAndLinTerms& qlt, std::function<void (int)> argv) {
   VisitArguments_PossRepeated(qlt.GetLinTerms(), qlt.GetQPTerms(), argv);
 }
 
 void VisitArguments_PossRepeated(
-    const LinTerms& lt, const QuadTerms& qt, std::function<void (int)> argv) {
+    const LinTerms& lt, const QuadTerms& qt,
+    std::function<void (int)> argv) {
   VisitArguments(lt, argv);
   VisitArguments_PossRepeated(qt, argv);
 }
 
 void VisitArgumentsOnce(
-    const LinTerms& lt, const QuadTerms& qt, std::function<void (int) > argv) {
+    const LinTerms& lt, const QuadTerms& qt,
+    std::function<void (int) > argv) {
   // @todo could use time stamping for speed
   std::unordered_set<int> args;
   auto collect = [&args](int v) { args.insert(v); };
@@ -782,8 +785,11 @@ void VisitArgumentsOnce(
     argv(v);
 }
 
-std::unique_ptr<FlatModelInfo> CreateFlatModelInfo() {
-  return std::unique_ptr<FlatModelInfo>{new FlatModelInfoImpl()};
+std::unique_ptr<FlatModelInfo>
+CreateFlatModelInfo(const ConverterInfo* pci) {
+  return
+      std::unique_ptr<FlatModelInfo>
+      {new FlatModelInfoImpl(pci)};
 }
 
 void PrintModelInfo(const FlatModelInfo& fmi,

@@ -39,6 +39,7 @@ public:
 
   /// Called before problem modification.
   /// @param fmi: current problem information.
+  ///   Always available via GetFlatModelInfo().
   /// @note this is called before each phase of model modification
   ///   which can happen during iterative solving.
   void InitProblemModificationPhase(const FlatModelInfo* fmi);
@@ -204,28 +205,18 @@ public:
   void SetNLObjective(int, const NLObjective&);
 
   /// Above which reference count,
-  /// a formula node should be assigned to a variable,
-  /// or a defined variable
-  /// (if supported, see IfOk2LeaveMultiplyUsedAlgebraicExpr()).
+  /// an algebraic formula node should be assigned to a variable.
   /// Should normally be INT_MAX for solvers
-  /// using pointers to store expressions (SCIP),
-  /// and (small) positive for solvers
+  /// using pointers to store expressions (SCIP)
+  /// or introducing defined variables (MP2NL).
+  /// Should be small for solvers
   /// using strings to represent formulas.
   /// Note: 0 means all nodes outlined.
   static int NLAssignLevelDefault() { return 1; }
 
-  /// Whether ModelAPI is happy to have multiply-used
-  /// algebraic expressions as such,
-  /// vs explicifying them as variables via NLAssign..
-  /// This can be defined variables (MP2NL)
-  /// or pointer-based expressions (SCIP).
-  /// @note explicit variables can cause numerical trouble
-  ///   via feasibility tolerances; some solvers
-  ///   can presolve them out, but then usually they should
-  ///   be free variables (which we partly control
-  ///   via *cvt:pre:boundsbest*).
-  static bool IfOk2LeaveMultiplyUsedAlgebraicExpr()
-  { return false; }
+  /// Same for logical expressions.
+  static int NLReifLevelDefault() { return 1; }
+
 
   /// Top level general NL constraint
   /// lhs <= f(x) <= rhs

@@ -8,8 +8,9 @@ Summary of recent updates to the AMPL MP Library
   depending on options *cvt:pre:boundsbest* and
   *cvt:pre:boundlogarg*.
 - Fixed a debugging feature on Windows.
-- Fixed inlining of algebraic subexpressions
-  resulting from redefinitions. In particular
+- Fixed a bug in the inlining of algebraic subexpressions
+  resulting from redefinitions, option *cvt:pre:unnest*.
+  In particular
   with *cvt:pre:boundsbest=1*, subexpressions
   with stronger result bounds are not inlined.  
 

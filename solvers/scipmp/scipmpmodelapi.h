@@ -46,11 +46,18 @@ public:
   void SetQuadraticObjective(int iobj, const QuadraticObjective& qo);
 
   /// Above which reference count,
-  /// a formula node should be assigned to a variable.
+  /// an algebraic formula node should be assigned to a variable.
   /// Should normally be INT_MAX for solvers
-  /// using pointers to store expressions (SCIP),
-  /// and positive for solvers using strings to represent formulas.
+  /// using pointers to store expressions (SCIP)
+  /// or introducing defined variables (MP2NL).
+  /// Should be small for solvers
+  /// using strings to represent formulas.
+  /// Note: 0 means all nodes outlined.
   static int NLAssignLevelDefault() { return INT_MAX; }
+
+  /// Same for logical expressions, when they appear.
+  static int NLReifLevelDefault() { return INT_MAX; }
+
 
   //////////////////////////// GENERAL CONSTRAINTS ////////////////////////////
   /// Handle flat constraints: inherit basic API

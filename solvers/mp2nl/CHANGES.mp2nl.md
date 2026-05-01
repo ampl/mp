@@ -2,6 +2,13 @@ Summary of recent updates to MP2NL for AMPL
 ==========================================
 
 
+## unreleased
+- Produce defined variables for algebraic expressions
+  with reference count above *nl:assign:defvar*.
+- Changes in MP, in particular:
+  - Option *cvt:expr:nlreif*: above which reference count,
+    logical expressions are reified.
+
 ## 20260414
 - Changes in MP, in particular:
   - Option *cvt:pre:boundsbest* defaults to making

@@ -10,12 +10,15 @@
 #include <functional>
 
 #include "mp/flat/model_info.h"
+#include "mp/flat/converter_info.h"
 
 namespace mp {
 
 /// Implementation of flat model info
 class FlatModelInfoImpl : public FlatModelInfo {
 public:
+  FlatModelInfoImpl(const ConverterInfo* pci) : cvti_(*pci) { }
+
   /// Num unfixed int vars
   int NumUnfixedIntVars() const override { return nUnfxIntVars_; }
 
@@ -98,8 +101,14 @@ public:
     ci.n_total_ = na;
   }
 
+  /// Value of option cvt:expr:refcountmax
+  int RefCountMaxAlgebraic() const override
+  { return cvti_.RefCountMaxAlgebraic(); }
+
 
 private:
+  const ConverterInfo& cvti_;
+
   TypeInfoRefIntMap ti_map_;
   ConstrGroupIntMap cg_map_;
   ConstrTypeMapByName coninfo_map_;

@@ -63,16 +63,15 @@ public:
       assert(                  // Check: the result var has \a con as the init expr
           MPD( template GetInitExpressionOfType<Con>(con.GetResultVar()) )
           == &con);
-      if (con.IsLogical())     // Fixed logical results handled differently later
-        MPD( MarkAsExpression(con.GetResultVar()) );   // @todo can be changed later?
-      else
-        if ( !MPD(IfSubmittedVarBoundsStrongerThanInitExpr(con.GetResultVar())) ) {
-          if ( MPD(GetModelAPI()).IfOk2LeaveMultiplyUsedAlgebraicExpr()
-            || MPCD( VarUsage(con.GetResultVar()) ) <= MPCD( NLAssignLevel() ) ) {
-              MPD( MarkAsExpression(con.GetResultVar()) ); // can be changed later?
-          } // ModelAPI handles them as expressions
-        }
-        // Else: if submitted bounds stronger, e.g., result fixed, leave as variable
+      if ( !MPD(IfSubmittedVarBoundsStrongerThanInitExpr(con.GetResultVar())) ) {
+        auto refcountmax = con.IsLogical() ?    // Ok to leave as expression:
+                               MPD(NLReifLevel()) :
+                               MPD(NLAssignLevel());
+        if (MPCD( VarUsage(con.GetResultVar()) ) <= refcountmax ) {
+          MPD( MarkAsExpression(con.GetResultVar()) ); // can be changed later?
+        } // ModelAPI handles them as expressions
+      }
+      // Else: if submitted bounds stronger, e.g., result fixed, leave as variable
     }
   }
 
@@ -428,7 +427,7 @@ protected:
   /// @todo atleast, atmost, exactly
   template <class RhsOrRange>
   bool HandleLogicalArgs_SpecialCases(
-      const AlgebraicConstraint<LinTerms, RhsOrRange>& con, int ) {
+      const AlgebraicConstraint<LinTerms, RhsOrRange>& , int ) {
     /*
     const auto& body = con.GetBody();
     if (!con.lb() && !con.ub()          // == 0.0

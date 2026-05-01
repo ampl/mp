@@ -22,7 +22,8 @@ namespace mp {
 /// @note To create MP2NL_Expr, use MakeMP2NL_... below.
 ///
 /// @note We have no 'constant non-zero' expression
-///   because FlatConverter should not produce them
+///   because FlatConverter should not produce them,
+///   using constant variables instead.
 class MP2NL_Expr {
 public:
   /// Construct
@@ -107,6 +108,21 @@ public:
   /// Whether accepts NLObjective.
   static int AcceptsNLObj() { return 1; }
   void SetNLObjective(int iobj, const NLObjective& nlo);
+
+  /// Above which reference count,
+  /// an algebraic formula node should be assigned to a variable.
+  /// Should normally be INT_MAX for solvers
+  /// using pointers to store expressions (SCIP)
+  /// or introducing defined variables (MP2NL).
+  /// Should be small for solvers
+  /// using strings to represent formulas.
+  /// Note: 0 means all nodes outlined.
+  static int NLAssignLevelDefault() { return INT_MAX; }
+
+  /// Same for logical expressions.
+  /// Request explicification because NL format
+  /// does not support logical defined variables.
+  static int NLReifLevelDefault() { return 1; }
 
 
   //////////////////////////// GENERAL CONSTRAINTS ////////////////////////////
@@ -262,12 +278,12 @@ public:
   ACCEPT_CONSTRAINT(NLAssignGE, Recommended, CG_Algebraic)
   void AddConstraint(const NLAssignGE& nle);
 
-  /// @todo
+  /// NL Complementarity
   ACCEPT_CONSTRAINT(NLComplementarity, Recommended, CG_Algebraic)
   void AddConstraint(const NLComplementarity& cc);
 
 
-  /// NL logical constraint: expression = true.
+  /// NL logical constraint: expression == true.
   ///
   /// @note Should be 'Recommended'
   ///   whenever logical expressions are accepted.
@@ -311,7 +327,7 @@ public:
   ///   As long as the target solver accepts.
   /// @todo But if ever there appears a solver that only accepts
   ///   Cond(Lin/Quad)..., we should produce them instead.
-  /// Mosek???
+  ///   Mosek???
   ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, NotAccepted, CG_Logical)
   void AddConstraint(const IndicatorConstraintLinLE& mc);
   ACCEPT_CONSTRAINT(IndicatorConstraintLinEQ, NotAccepted, CG_Logical)
@@ -352,24 +368,26 @@ public:
   Expr AddExpression(const NLQuadExpression& le);
 
   /// Each expression can be accepted as a proper expression,
-  /// or as a flat functional constraint var <=/==/>= expr
+  /// e.g., ExpExpression,
+  /// or as a flat functional constraint var <=/==/>= expr,
+  /// e.g., ExpConstraint
   /// (in this case, with variables as arguments).
-  /// The uequality/inqeuality type of the flat constraint is
+  /// The equality/inequality type of the flat constraint is
   /// determied by GetContext().
   ///
-  /// @note For each expression,
+  /// @note For each supported expression,
   /// say ACCEPT_EXPRESSION(Recommended)
   /// and/or ACCEPT_EXPRESSION(AcceptedButNotRecommended).
   /// This can be user-configured via solver options 'acc:exp' etc.
   ///
   /// @note Use accessor: GetArgExpression(ee, 0)
-  /// - don't ExpExpression's methods.
+  /// - don't use ExpExpression's methods.
   ///
   /// Similar for other expression types.
   ACCEPT_EXPRESSION(AbsExpression, Recommended)
   Expr AddExpression(const AbsExpression& absc);
 
-  /// For each flat constraint type,
+  /// For each supported flat constraint type,
   /// say ACCEPT_CONSTRAINT(Recommended)
   /// and/or ACCEPT_CONSTRAINT(AcceptedButNotRecommended).
   /// This can be user-configured via solver options 'acc:exp' etc.
@@ -716,15 +734,17 @@ public:
   template <class ConExprWriter>
   void FeedConExpression(int , ConExprWriter& ew);
 
-  /// Feed alg con expr
+protected:
+  /// MP2NL: feed alg con expr
   template <class ConExprWriter>
   void FeedAlgConExpression(int , ConExprWriter& ew);
 
-  /// Feed logical con expr
+  /// MP2NL: feed logical con expr
   template <class ConExprWriter>
   void FeedLogicalConExpression(int , ConExprWriter& ew);
 
 
+public:
   ///////////////////// 7. EXPRESSIONS /////////////////////
   /** Feed native expression.
      *  This method is recursively called from NLWriter,
@@ -737,6 +757,7 @@ public:
   template <class ExprWriter>
   void FeedExpr(Expr e, ExprWriter& );
 
+protected:
   /// Write opcode(s)
   template <class ExprWriter>
   void FeedOpcode(Expr e, ExprWriter& );
@@ -792,6 +813,7 @@ public:
   void FeedLogicalExpression(MP2NL_Expr mp2nle, ArgWriter& aw);
 
 
+public:
   ///////////////////// 8. PL-SOS CONSTRAINTS ////////////
   /**
      *  The below feature is for AMPL's internal
@@ -903,6 +925,7 @@ public:
   template <class SuffixWriterFactory>
   void FeedSuffixes(SuffixWriterFactory& );
 
+protected:
   /// Prepare SOS suffixes
   /// @todo Also PLSOS if we globalize them
   void PrepareSOSSuffixes();
@@ -922,6 +945,7 @@ public:
       const MP2NLModelSuffix& , SuffixWriterFactory& );
 
 
+public:
   //////////////////// 14. ROW/COLUMN NAMES ETC /////////////////////
   /** FeedRowAndObjNames:
    *  Provide constraint, then objective names.
@@ -1001,7 +1025,7 @@ public:
   const char* GetItemName(const Item& item) const
   { return item.name(); }
 
-  /// Item name
+  /// Expression name
   template <class FuncCon>
   const char* GetItemName(const ExprWrapper<FuncCon>& item) const
   { return item.GetFlatConstraint().name(); }
@@ -1009,6 +1033,7 @@ public:
   /// NL/SOL file stub
   const std::string& GetFileStub() const
   { return storedOptions_.stub_; }
+
 
 protected:
   /// For writing NL
@@ -1756,6 +1781,8 @@ private:
     std::string stub_;
     int nl_comments_ {};
     int nl_format_text_ {};
+
+    int nl_assign_defvar_ {1};
   };
   Options storedOptions_;
 };
