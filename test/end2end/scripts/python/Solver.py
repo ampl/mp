@@ -1350,6 +1350,34 @@ class HighsSolver(MPDirectSolver):
                  }
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
+        
+class KnitroMPSolver(MPDirectSolver):
+    def _setLPMethod(self, method : str):
+        mymap = { "SIMPLEX" : 1,
+                  "BARRIER" : 2
+                  }
+        return f"lp:method {mymap[method]}"
+
+    def _getAMPLOptionsName(self):
+        return "knitro"
+
+    def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
+        stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
+                 ModelTags.quadratic, ModelTags.quadratic_obj,
+                 ModelTags.quadraticnonconvex,
+                 ModelTags.nonlinear, ModelTags.log, ModelTags.trigonometric,
+                 ModelTags.quadratic_obj_nonconvex,
+
+                 ModelTags.socp,      ## MP transforms cones to quadratics
+                 ModelTags.socp_hard_to_recognize,
+
+                 ModelTags.writelp,
+
+                 }
+        super().__init__(exeName, timeout, nthreads, otherOptions, stags)
+
+
+
 
 class COPTSolver(MPDirectSolver):
     def _setLPMethod(self, method : str):

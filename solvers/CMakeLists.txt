@@ -231,7 +231,7 @@ endif ()
 
 
 ## Add a solver assuming the Backend/ModelAPI architecture
-function(add_ampl_backend name)
+function(add_ampl_backend name )
     set(SRC ${name}backend.cc ${name}backend.h
             ${name}common.cc ${name}common.h
             ${name}modelapi.cc ${name}modelapi.h
@@ -253,7 +253,7 @@ add_ampl_backend(visitor DLL_RUNTIME)
 add_ampl_backend(mosek DLL_RUNTIME MODULE MOSEK 
   LIBRARIES ${MOSEK_LIBS} ${CMAKE_DL_LIBS})
 
-  add_ampl_backend(knitromp DLL_RUNTIME MODULE KNITRO
+  add_ampl_backend(knitromp knitroutils.h knitroutils.cc DLL_RUNTIME MODULE KNITRO
     KIBRARIES ${KNITRO_LIBS} ${CMAKE_DL_LIBS})
 
 add_ampl_backend(copt DLL_RUNTIME SHARED_LIB MODULE COPT 

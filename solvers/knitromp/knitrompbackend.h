@@ -25,12 +25,12 @@ public:
   ~KnitrompBackend();
 
   /// Prefix used for the <prefix>_options environment variable
-  static const char* GetAMPLSolverName() { return "knitromp"; }
+  static const char* GetAMPLSolverName() { return "knitro"; }
 
   /// AMPL driver name displayed in messages
-  static const char* GetAMPLSolverLongName() { return "AMPL-KNITROMP"; }
+  static const char* GetAMPLSolverLongName() { return "AMPL-KNITRO"; }
   /// Solver name displayed in messages
-  static const char* GetSolverName() { return "x-KNITROMP"; }
+  static const char* GetSolverName() { return "x-KNITRO"; }
   /// Version displayed with -v
   std::string GetSolverVersion();
   /// External libraries displayed with -v
@@ -61,6 +61,11 @@ public:
 
   ALLOW_STD_FEATURE(WARMSTART, true)
   void AddPrimalDualStart(Solution sol0) override;
+
+
+  ALLOW_STD_FEATURE(WRITE_PROBLEM, true)
+  void DoWriteProblem(const std::string& name) override;
+
 
   /////////////////////////// Model attributes /////////////////////////
 
@@ -128,6 +133,10 @@ private:
   struct Options {
     
     int outlev = 1;
+	int threads = 1;
+	int hessian = 0;
+	int jacobian = 1;
+	int printProblem = 0;
   };
   Options storedOptions_;
 

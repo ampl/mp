@@ -12,13 +12,11 @@ double KnitrompCommon::getDblAttr(const char* name) const  {
   return value;
 }
 
-int KnitrompCommon::NumLinCons() const {
-    return 0;
-  //return getIntAttr(Solver::NCONS_TYPE, Solver::ConsType::CONS_LIN);
-  // TODO Get number of linear constraints using solver API
-  // return getIntAttr(KNITROMP_INTATTR_ROWS);
+int KnitrompCommon::NumCons() const {
+    int num_cons;
+	KN_get_number_cons(lp(), &num_cons);
+    return num_cons;
 }
-
 int KnitrompCommon::NumVars() const {
     int num_vars;
     KN_get_number_vars(lp(), &num_vars);
@@ -26,12 +24,6 @@ int KnitrompCommon::NumVars() const {
 }
 int KnitrompCommon::NumObjs() const {
     return 1;
-}
-
-int KnitrompCommon::NumQPCons() const {
-  // TODO Get number of quadratic constraints using solver API
-  // return getIntAttr(KNITROMP_INTATTR_QCONSTRS);
-    return 0;// getIntAttr(Solver::NCONS_TYPE, Solver::ConsType::CONS_QUAD);
 }
 
 void KnitrompCommon::GetSolverOption(int key, int &value) const {

@@ -1,5 +1,6 @@
 #include <vector>
-#include <climits>
+#include <fstream>
+#include <stdexcept>
 #include <cfloat>
 
 #include "mp/env.h"
@@ -53,11 +54,11 @@ int  callbackNewPoint(KN_context_ptr        kc,
     double dObj;
     */
     double dFeasError;
-
+    if (x == nullptr) return 0;
     /** Get the number of variables in the model */
     error = KN_get_number_vars(kc, &n);
 
-    printf(">> New point computed by Knitro: (");
+    printf("\n>> New point computed by Knitro: (");
     for (i = 0; i < (n - 1); i++)
         printf("%20.12e, ", x[i]);
     printf("%20.12e)\n", x[n - 1]);
@@ -106,7 +107,7 @@ void KnitrompBackend::OpenSolver() {
         KNITROMP_CCALL(KN_new(&prob));
         set_lp(prob); // Assign it
     }
-    copy_common_info_to_other();
+    
 }
 
 
@@ -224,6 +225,25 @@ void KnitrompBackend::AddKNITROMPMessages() {
           fmt::format("{} branching nodes\n", nnd));
 }
 
+void KnitrompBackend::DoWriteProblem(const std::string& name) {
+
+    auto* common = get_other();
+    fmt::MemoryWriter w;
+	common->call_format_model(w);
+
+    std::ofstream outfile(name, std::ios::out | std::ios::trunc);
+    if (!outfile.is_open()) {
+        throw std::runtime_error(
+            fmt::format("Cannot open file '{}' for writing", name));
+    }
+    outfile.write(w.data(), w.size());
+    if (!outfile.good()) {
+        throw std::runtime_error(
+            fmt::format("Error writing to file '{}'", name));
+    }
+
+    fmt::print("Model exported to: {}\n", name);
+}
 
 // TODO Populate mp solver msgs
 typedef struct { char* msg; int code, wantsol; } Sol_info;
@@ -326,6 +346,19 @@ void KnitrompBackend::FinishOptionParsing() {
   set_verbose_mode(storedOptions_.outlev >0);
   if(storedOptions_.outlev > 5)
      KNITROMP_CCALL(KN_set_newpt_callback(lp(), callbackNewPoint, NULL));
+
+  useHessian = storedOptions_.hessian == 1;
+  useJacobian = storedOptions_.jacobian == 1;
+  // Override to enable recording of information even when we're writing out
+  if (exportFileMode() > 0)
+      printProblem = -exportFileMode();
+  // Then override to enable actualy printing; writing is taken care of by
+  // the framework, so we don't need to worry about it here.
+  // So we record the model if printProblem < 0 (for writing)
+  // and if ==1 (for printing)
+  if (storedOptions_.printProblem == 1)
+      printProblem = 1;
+  copy_common_info_to_other();
 }
 
 
@@ -373,25 +406,35 @@ void KnitrompBackend::InitCustomOptions() {
       "\n"
       "  ampl: option knitro_options 'mipgap=1e-6';\n");
 
-  // Use AddSolverOption() for proper solver parameters.
-  // Below are examples of options stored in variables for own use.
-
+      AddSolverOption("alg:multistart multistart",
+          "Use multistart (default 0)", 
+          KN_PARAM_MULTISTART, KN_MULTISTART_NO, KN_MULTISTART_YES);
   
+      AddStoredOption("tech:outlev outlev",
+          "Specifies the verbosity of output:\n"
+          "\n.. value-table::\n", storedOptions_.outlev,
+          outlev_values_);
+
+      AddStoredOption("tech:print print printproblem",
+          "Print problem to screen before solving (default 0)",
+          storedOptions_.printProblem);
+
+      AddStoredOption("tech:threads threads",
+          "Specifies the number of threads to use",
+          storedOptions_.threads);
 
 
-  
-  AddSolverOption("alg:multistart multistart",
-      "Use multistart (default 0)", 
-      KN_PARAM_MULTISTART, KN_MULTISTART_NO, KN_MULTISTART_YES);
-  
-  AddStoredOption("tech:outlev outlev",
-      "Specifies the verbosity of output:\n"
-      "\n.. value-table::\n", storedOptions_.outlev,
-      outlev_values_);
+      AddStoredOption("alg:jacobian calculatejacobian jacobian",
+          "Use calculated jacobian/gradient instead of relying on Knitro's (default 0)",
+          storedOptions_.jacobian);
 
-  AddSolverOption("lim:time timelim timelimit",
-      "limit on solve time (in seconds; default: no limit).",
-      KN_PARAM_MAXTIME, 0.0, DBL_MAX);
+      AddStoredOption("alg:hessian calculatehessian hessian",
+          "Use calculated hessian instead of relying on Knitro's (default 0)",
+          storedOptions_.hessian);
+
+      AddSolverOption("lim:time timelim timelimit",
+          "limit on solve time (in seconds; default: no limit).",
+          KN_PARAM_MAXTIME, 0.0, DBL_MAX);
 
   ////////////////// CUSTOM RESULT CODES ///////////////////
 

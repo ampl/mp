@@ -2,6 +2,7 @@
 #define KNITROMPCOMMON_H
 
 #include <string>
+#include <functional>
 
 #include "mp/backend-to-model-api.h"
 
@@ -15,20 +16,32 @@
 
 namespace mp {
 
+class NonlinearConstraintData;
 /// Information shared by both
 /// `KnitrompBackend` and `KnitrompModelAPI`
 struct KnitrompCommonInfo {
 
-  // TODO provide accessors to the solver's in-memory model/environment
-    KN_context_ptr lp() const { return lp_; };
-    KN_context_ptr& lp_ref() { return lp_; }
-  // TODO provide accessors to the solver's in-memory model/environment
-  //void set_env(knitromp_env* e) { env_ = e; }
+  KN_context_ptr lp() const { return lp_; };
+  KN_context_ptr& lp_ref() { return lp_; }
   void set_lp(KN_context_ptr lp) { lp_ = lp; }
 
+  void set_format_model(std::function<void(fmt::MemoryWriter &)> fn) { 
+      formatModelFn = std::move(fn);
+  }
+  void call_format_model(fmt::MemoryWriter &w) {
+      if (formatModelFn) {
+          formatModelFn(w);
+      }
+  }
+  bool useJacobian = false; // If to compute gradient/hessian or let knitro do its
+  bool useHessian = false; // If to compute hessian or let knitro do it
+  int printProblem = 0;
 
+ 
 private:
     KN_context_ptr      lp_ = NULL;
+    // Function to print constraints (set by ModelAPI)
+    std::function<void(fmt::MemoryWriter&)> formatModelFn = nullptr;
 
 };
 
@@ -51,24 +64,12 @@ protected:
   //int getIntAttr(Solver::ATTRIBS name, Solver::ConsType subtype=Solver::ConsType::CONS_LIN) const;
   double getDblAttr(const char* name) const;
 
-  int NumLinCons() const;
   int NumVars() const;
+  int NumCons() const;
   int NumObjs() const;
-  int NumQPCons() const;
-
-
-protected:
-  // TODO if desirable, provide function to create the solver's environment
-  // with own license
-  // int (*createEnv) (solver_env**) = nullptr;
-  
 };
 
 
-/// Convenience macro
-// TODO This macro is useful to automatically throw an error if a function in the 
-// solver API does not return a valid errorcode. In this mock driver, we define it 
-// ourselves, normally this constant would be defined in the solver's API.
 #define KNITROMP_RETCODE_OK 0
 #define KNITROMP_CCALL( call ) do { if (int e = (call) != KNITROMP_RETCODE_OK) \
   throw std::runtime_error( \
