@@ -211,9 +211,10 @@ void MP2NLModelAPI::VisitMP2NLExprArguments(MP2NL_Expr e,
 void MP2NLModelAPI::PropagateExprUsageKind(MP2NL_Expr e, bool in_obj) {
   if (e.IsExpression()) {
     auto index = e.GetExprIndex();
-    const auto& usage_flags
+    auto& usage_flags
         = in_obj ? expr_used_in_obj_ : expr_used_in_con_;
     if (!usage_flags.at(index)) {     // Each kind only 1x
+      usage_flags[index] = true;
       VisitMP2NLExprArguments(
           e,
           [this, in_obj](MP2NL_Expr e1) {

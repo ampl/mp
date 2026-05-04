@@ -1073,6 +1073,8 @@ class GurobiDirectSolver(MPDirectSolver):
     def __init__(self, exeName, timeout=None, nthreads=None,
                  otherOptions=None):
         stags = {
+                 ModelTags.gurobi,
+
                  ModelTags.continuous, ModelTags.integer, ModelTags.binary,
                  ModelTags.plinear,
                  ModelTags.quadratic,
@@ -1220,7 +1222,10 @@ class MP2NLSolver(MPDirectSolver):
                 return ""
 
             def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
-                stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
+                stags = {
+                ModelTags.mp2nl,
+
+                ModelTags.continuous, ModelTags.integer, ModelTags.binary,
                 ModelTags.plinear,
                 ModelTags.quadratic,
                 ModelTags.quadratic_obj,

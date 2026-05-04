@@ -672,5 +672,27 @@
     "tags" : ["continuous", "nonlinear", "quadraticnonconvex"],
     "options": { "mp_options": "debug=1 cvt:pre:boundsbest=1" },
     "objective": -3.54947979411954
+  },
+  {
+    "name" : "defvar_nl_01",
+    "tags" : ["continuous", "nonlinear", "quadraticnonconvex"],
+    "objective": 2.1851756747802034
+  },
+  {
+    "name" : "defvar_nl_01 expr:nlassign=nondefault",
+    "tags" : ["continuous", "nonlinear", "quadraticnonconvex"],
+    "comment": "set nlassign to the solver's nondefault value",
+    "options": {
+      "mp2nl_options": "expr:nlassign=1",
+      "scip_options": "expr:nlassign=1",
+      "mp_options": "expr:nlassign=100000"
+    },
+    "objective": 2.1851268249718
+  },
+  {
+    "name" : "defvar_nl_01 nl:assign:defvar=100000",
+    "tags" : ["continuous", "nonlinear", "quadraticnonconvex", "mp2nl"],
+    "options": { "mp2nl_options": "nl:assign:defvar=100000" },
+    "objective": 2.1851756747802034
   }
 ]

@@ -88,9 +88,12 @@ class ModelTags(enum.Enum):
     option_flag_barrier = 61000
 
     ## Solver-specific
+    gurobi = 99999
     gurobi_cloud = 100000
     gurobi_server= 100001
     gurobi_wls   = 100002
+
+    mp2nl = 101000
 
     @staticmethod
     def fromString(l):
