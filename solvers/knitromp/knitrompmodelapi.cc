@@ -361,8 +361,10 @@ namespace mp {
 
         auto* self = static_cast<KnitrompModelAPI*>(userParams);
         const double* x = evalRequest->x;
+    
 
         if ((evalRequest->type == KN_RC_EVALFC)  || (evalRequest->type == KN_RC_EVALGA) || (evalRequest->type == KN_RC_EVALFCGA)) {
+            size_t jacOffset = 0;
 
             // Evaluate all nonlinear constraints
             for (size_t i = 0; i < self->nlConstraints_.size(); ++i) {
@@ -378,7 +380,7 @@ namespace mp {
                 {
                     std::vector<double> y = nlCon.tape->Forward(0, args);
                     if (std::isnan(y[0]) || std::isinf(y[0])) {
-                        evalResult->c[i] = KN_RC_EVAL_ERR;
+                        return KN_RC_EVAL_ERR;
                     }
                     else {
                         evalResult->c[i] = y[0];
@@ -391,12 +393,13 @@ namespace mp {
                     // Store Jacobian elements
                     for (size_t j = 0; j < jac.size(); ++j) {
                         if (std::isnan(jac[j]) || std::isinf(jac[j])) {
-                            evalResult->jac[j] = KN_RC_EVAL_ERR;
+                            return KN_RC_EVAL_ERR;
                         }
                         else {
-                            evalResult->jac[j] = jac[j];
+                            evalResult->jac[jacOffset + j] = jac[j];
                         }
                     }
+                    jacOffset += jac.size();
                 }
             }
 
@@ -411,7 +414,7 @@ namespace mp {
                 if ((evalRequest->type == KN_RC_EVALFC) || (evalRequest->type == KN_RC_EVALFCGA)) {
                     std::vector<double> y = self->nlObjective_->tape->Forward(0, args);
                     if (std::isnan(y[0]) || std::isinf(y[0])) {
-                        *evalResult->obj = KN_RC_EVAL_ERR;
+                        return KN_RC_EVAL_ERR;
                     }
                     else {
                         *evalResult->obj = y[0];
@@ -425,7 +428,7 @@ namespace mp {
                     // Store Jacobian elements
                     for (size_t j = 0; j < grad.size(); ++j) {
                         if (std::isnan(grad[j]) || std::isinf(grad[j]))
-                            evalResult->objGrad[j] = KN_RC_EVAL_ERR;
+                            return KN_RC_EVAL_ERR;
                         else
                             evalResult->objGrad[j] = grad[j];
                     }
@@ -474,9 +477,10 @@ namespace mp {
                     for (size_t k = 0; k < nlData.hessianSparsity.size(); ++k) {
                         auto [row, col] = nlData.hessianSparsity[k];
 
-                        // Convert local sparsity coordinates to local Hessian array index
-                        // CppAD returns lower triangle in column-major (packed) format
-                        size_t localIdx = row * (row + 1) / 2 + col;
+                        // CppAD::ADFun::Hessian returns dense n*n in row-major order.
+                        // We only read requested lower-triangle entries.
+                        size_t n = nlData.argVars.size();
+                        size_t localIdx = static_cast<size_t>(row) * n + static_cast<size_t>(col);
 
                         // Get global Hessian array index
                         size_t globalIdx = nlData.hessianGlobalIndices[k];
@@ -592,10 +596,11 @@ namespace mp {
                 // Set up gradient structure for all constraints and obj
                 KNITROMP_CCALL(KN_set_cb_grad(
                     lp(), cbContext,
-                    objGradIndexVars.size(), objGradIndexVars.data(), // objective sparse gradient data
+                    static_cast<int>(objGradIndexVars.size()),
+                    objGradIndexVars.empty() ? nullptr : objGradIndexVars.data(), // objective sparse gradient data
                     static_cast<int>(jacIndexVars.size()),
-                    jacIndexCons.data(),
-                    jacIndexVars.data(),
+                    jacIndexCons.empty() ? nullptr : jacIndexCons.data(),
+                    jacIndexVars.empty() ? nullptr : jacIndexVars.data(),
                     evalNonlinearConstraint));
 
             }
@@ -667,11 +672,11 @@ namespace mp {
                     hessIndexRows[idx] = coords.first;
                     hessIndexCols[idx] = coords.second;
                 }
-            KN_set_cb_hess(lp(), cbContext,
-                hessIndexRows.size(),
-                hessIndexRows.data(),
-                hessIndexCols.data(),
-                evalHessian);
+            KNITROMP_CCALL(KN_set_cb_hess(lp(), cbContext,
+                static_cast<int>(hessIndexRows.size()),
+                hessIndexRows.empty() ? nullptr : hessIndexRows.data(),
+                hessIndexCols.empty() ? nullptr : hessIndexCols.data(),
+                evalHessian));
             } // if Use hessian
 
         } // if Has non linear constraints
@@ -706,12 +711,12 @@ namespace mp {
 		KNITROMP_CCALL(KN_get_var_types_all(lp(), varTypes_.data()));
 
         // Get var names
-        std::vector<std::vector<char>> nameBuffers(nv, std::vector<char>(20));
+        std::vector<std::vector<char>> nameBuffers(nv, std::vector<char>(30));
         std::vector<char*> varNames(nv);
         for (int i = 0; i < nv; ++i) {
             varNames[i] = nameBuffers[i].data();
         }   
-        KNITROMP_CCALL(KN_get_var_names_all(lp(), 20, varNames.data()));
+        KNITROMP_CCALL(KN_get_var_names_all(lp(), 30, varNames.data()));
 
         // Create lambda to resolve variable names
         auto getVarName = [&varNames](int idx, fmt::MemoryWriter &w) -> void {
@@ -748,12 +753,12 @@ namespace mp {
         // Constraints
          // Get var names
         auto nc = NumCons();
-        std::vector<std::vector<char>> cnameBuffers(nc, std::vector<char>(20));
+        std::vector<std::vector<char>> cnameBuffers(nc, std::vector<char>(30));
         std::vector<char*> conNames(nc);
         for (int i = 0; i < nc; ++i) {
             conNames[i] = cnameBuffers[i].data();
         }
-        KNITROMP_CCALL(KN_get_con_names_all(lp(), 20, conNames.data()));
+        KNITROMP_CCALL(KN_get_con_names_all(lp(), 30, conNames.data()));
         
         for (size_t i = 0; i < NumCons(); i++){
             if (conNames[i] == nullptr)
@@ -1005,6 +1010,9 @@ namespace mp {
     ExpressionData KnitrompModelAPI::AddExpression(const LogExpression& ex) {
         return AddUnaryExpression(ExpressionData::LOG, ex);
     }
+    ExpressionData KnitrompModelAPI::AddExpression(const AbsExpression& ex) {
+        return AddUnaryExpression(ExpressionData::ABS, ex);
+    }
     ExpressionData KnitrompModelAPI::AddExpression(const LogAExpression& ex) {
         auto log_x = ExpressionData::MakeUnaryExpr(ExpressionData::LOG, GetArgExpression(ex, 0));
         double base = GetParameter(ex, 0);
@@ -1059,6 +1067,8 @@ namespace mp {
             return CppAD::pow(buildAD(*d.left(), varMap), buildAD(*d.right(), varMap));
         case ExpressionData::SQRT:
             return CppAD::sqrt(buildAD(*d.left(), varMap));
+        case ExpressionData::ABS:
+            return CppAD::abs(buildAD(*d.left(), varMap));
         case ExpressionData::ASIN:
             return CppAD::asin(buildAD(*d.left(), varMap));
         case ExpressionData::ACOS:

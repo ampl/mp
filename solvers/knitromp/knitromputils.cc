@@ -33,6 +33,7 @@ namespace mp {
             case ExpressionData::ASINH: return "asinh";
             case ExpressionData::ACOSH: return "acosh";
             case ExpressionData::ATANH: return "atanh";
+            case ExpressionData::ABS: return "abs";
             default: return "UNKNOWN";
             }
             };

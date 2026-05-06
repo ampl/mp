@@ -270,6 +270,9 @@ public:
   ACCEPT_EXPRESSION(PowConstExpExpression, Recommended)
       Expr AddExpression(const PowConstExpExpression&);
 
+  ACCEPT_EXPRESSION(AbsExpression, Recommended)
+	  Expr AddExpression(const AbsExpression&);
+
 
   private:
 

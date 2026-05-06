@@ -120,7 +120,7 @@ void KnitrompBackend::CloseSolver() {
 
 void KnitrompBackend::InitOptionParsing()
 {
-    OpenSolver();
+
 }
 
 
@@ -128,10 +128,9 @@ const char* KnitrompBackend::GetBackendName()
   { return "KnitrompBackend"; }
 
 std::string KnitrompBackend::GetSolverVersion() {
-  // TODO Return version from solver API
-  return "0.0.0";
-  //return fmt::format("{}.{}.{}", KNITROMP_VERSION_MAJOR, 
-  //  KNITROMP_VERSION_MINOR, KNITROMP_VERSION_TECHNICAL);
+    char BUFFER[16];
+    KNITROMP_CCALL(KN_get_release(15, BUFFER));
+    return std::string(BUFFER);
 }
 
 
@@ -396,7 +395,8 @@ static const mp::OptionValueInfo outlev_values_[] = {
 
 
 void KnitrompBackend::InitCustomOptions() {
-
+    OpenSolver();
+    
   set_option_header(
       "KnitroMP Optimizer Options for AMPL\n"
       "--------------------------------------------\n"
@@ -425,11 +425,11 @@ void KnitrompBackend::InitCustomOptions() {
 
 
       AddStoredOption("alg:jacobian calculatejacobian jacobian",
-          "Use calculated jacobian/gradient instead of relying on Knitro's (default 0)",
+          "Use calculated jacobian/gradient instead of relying on Knitro's (default 1)",
           storedOptions_.jacobian);
 
       AddStoredOption("alg:hessian calculatehessian hessian",
-          "Use calculated hessian instead of relying on Knitro's (default 0)",
+          "Use calculated hessian instead of relying on Knitro's (default 1)",
           storedOptions_.hessian);
 
       AddSolverOption("lim:time timelim timelimit",
@@ -437,7 +437,6 @@ void KnitrompBackend::InitCustomOptions() {
           KN_PARAM_MAXTIME, 0.0, DBL_MAX);
 
   ////////////////// CUSTOM RESULT CODES ///////////////////
-
 
 
   AddSolveResults( {
@@ -448,9 +447,82 @@ void KnitrompBackend::InitCustomOptions() {
 
                      
                    } );     // No replacement, make sure they are new
+
+  AddKnitroParams();
+}
+
+std::string MPifyName(const std::string& name) {
+    // if name begins with "mip_" then the string should be:
+    // mip:name name mip_name
+    if (name.compare(0, 4, "bar_") == 0) {
+        return fmt::format("bar:{} {}", name.substr(4), name);
+    }
+    if (name.compare(0, 4, "mip_") == 0) {
+        return fmt::format("mip:{} {}", name.substr(4), name);
+    }
+    if (name.compare(0, 9, "presolve_") == 0) {
+        return fmt::format("pre:{} {}", name.substr(9), name);
+    }
+    if (name.compare(0, 11, "presolveop_") == 0) {
+        return fmt::format("pre:{} {}", name.substr(11), name);
+    }
+    return name;
 }
 
 
+void KnitrompBackend::AddKnitroParams() {
+    
+    #define KN_PARAM_NAME_MAXLEN 150
+    #define KN_PARAM_DESC_MAXLEN 2000
+    bool withDoc = true; // todo set it only when -= is called
+    int paramIx = 0;
+    int paramId, paramType;
+    int status;
+    char NAME[KN_PARAM_NAME_MAXLEN];
+    char DESC[KN_PARAM_DESC_MAXLEN];
+    std::string mpName;
+    std::vector< OptionValueInfo> values;
+    while (1) {
+        status = KN_get_param_id_from_index(lp(), &paramId, paramIx);
+        if (status) {
+            break;
+        }
+        //kn_param_ids[paramIx] = paramId;
+        KN_get_param_name(lp(), paramId, NAME, KN_PARAM_NAME_MAXLEN);
+        mpName = MPifyName(NAME);
+        KN_get_param_type(lp(), paramId, &paramType);
+
+        if (withDoc) {
+            KN_get_param_doc(lp(), paramId, DESC, KN_PARAM_DESC_MAXLEN);
+            int docN = strlen(DESC);
+            int numValues = 0;
+            KN_get_num_param_values(lp(), paramId, &numValues);
+            for (int k = 0; k < numValues; ++k) {
+                docN += snprintf(&DESC[docN], KN_PARAM_DESC_MAXLEN - docN, "%-36s", "");
+                KN_get_param_value_doc_from_index(lp(), paramId, k, &DESC[docN], KN_PARAM_DESC_MAXLEN - docN);
+                docN += strlen(&DESC[docN]);
+                docN += snprintf(&DESC[docN], KN_PARAM_DESC_MAXLEN - docN, "\n");
+            }
+        }
+        try {
+            switch (paramType) {
+
+            case KN_PARAMTYPE_INTEGER:
+                AddSolverOption(mpName.c_str(), DESC, paramId, 0, 0);
+                break;
+            case KN_PARAMTYPE_FLOAT:
+                AddSolverOption(mpName.c_str(), DESC, paramId, 0.0, 0.0);
+                break;
+                /* case KN_PARAMTYPE_STRING:
+                      AddSolverOption(NAME, DESC, paramId, "def", "def");
+                      break;*/
+            }
+        }
+          catch (...) {}
+        ++paramIx;
+    }
+
+}
 
 } // namespace mp
 

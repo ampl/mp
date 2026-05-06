@@ -97,7 +97,8 @@ namespace mp {
             ADD, SUB, POW, MUL, DIV,  // Binary arithmetic
             SIN, COS, TAN, ASIN, ACOS, ATAN,  // Trig
             SINH, COSH, TANH, ASINH, ACOSH, ATANH,  // Hyperbolic
-            LOG, EXP, SQRT  // Other functions
+            LOG, EXP, SQRT, ABS  // Other functions
+
         };
 
 

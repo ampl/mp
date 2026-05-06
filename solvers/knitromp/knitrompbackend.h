@@ -48,7 +48,7 @@ public:
   /// Chance to consider options immediately (open cloud, etc)
   void FinishOptionParsing() override;
 
-
+  void AddKnitroParams();
 
   ////////////////////////////////////////////////////////////
   /////////////// OPTIONAL STANDARD FEATURES /////////////////
@@ -134,11 +134,12 @@ private:
     
     int outlev = 1;
 	int threads = 1;
-	int hessian = 0;
+    int hessian = 0;
 	int jacobian = 1;
 	int printProblem = 0;
   };
   Options storedOptions_;
+  std::vector<std::vector<std::string>> optionValueStrings_;
 
 protected:
   int solstatus_;
