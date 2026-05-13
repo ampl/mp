@@ -1004,6 +1004,9 @@ public:          // need to be public due to CRTP
     return VisitFunctionalExpression<AndConstraint>(e);
   }
 
+  /// @note AMPL presents (e ==> f) as (!e || or).
+  /// We leave it so because seems better with Gurobi 13
+  /// and equally good with Knitro 15.1.0, see #153.
   EExpr VisitOr(BinaryLogicalExpr e) {
     return VisitFunctionalExpression<OrConstraint>({ e.lhs(), e.rhs() });
   }

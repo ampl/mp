@@ -582,10 +582,18 @@ void MP2NLModelAPI::SortVars() {
 }
 
 void MP2NLModelAPI::MarkAlgCons() {
+  // Seed the generator with current time once at the start
+  // std::srand(std::time(0));
+  std::srand(599);
+
   mark_data_.con_prior_.clear();
   mark_data_.con_prior_.resize(alg_con_info_.size());
+  int sz = alg_con_info_.size();
   for (auto i=alg_con_info_.size(); i--; ) {
-    mark_data_.con_prior_[i] = { -(int)is_alg_con_nl_[i], i };
+    // Generate a number between 0 and 99
+    int r = std::rand() % (int)sz;
+    mark_data_.con_prior_[i]
+        = { -(int)is_alg_con_nl_[i]*sz + r, i };
   }
 }
 

@@ -485,7 +485,7 @@ public:
     auto i = MPD( MapFind(con) );
     if (i>=0) {
       auto& ck = MPCD( GetConstraintKeeper(&con) );
-      auto resvar = ck.GetConstraint(i).GetResultVar();
+      auto resvar = ck.GetConstraint(i).GetResultVar();    // @todo dirty?
       if (fNegate)
         resvar = MPD( AssignResultVar2Args(
             NotConstraint( {resvar} ) ) );

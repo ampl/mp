@@ -153,7 +153,7 @@ ArrayRef<double> XpressmpBackend::PrimalSolution() {
     // After XPRSoptimize():
   error = XPRSgetsolution(lp(), &solst, x.data(), 0, num_vars-1);
   if (error
-      || XPRS_SOLSTATUS_NOTFOUND==solst
+      || XPRS_SOLAVAILABLE_NOTFOUND==solst
           //   Infeasible - should return:
           // || XPRS_SOLSTATUS_INFEASIBLE==solst
       )    // @todo keep up2date
@@ -492,12 +492,14 @@ std::string XpressmpBackend::DoXpressFixedModel()
 
   std::pair<int, std::string> XpressmpBackend::GetSolveResult_NLP() {
     namespace sol = mp::sol;
-    auto solstatus = getIntAttr(XPRS_SOLSTATUS);
-    bool fFeasible = (XPRS_SOLSTATUS_FEASIBLE==solstatus);
+    // auto solstatus = getIntAttr(XPRS_SOLSTATUS);
+    // bool fFeasible = (XPRS_SOLSTATUS_FEASIBLE==solstatus);
 
     {
       auto status = getIntAttr(XPRS_NLPSTATUS);
       auto solstatus = getIntAttr(XPRS_NLPSOLSTATUS);
+      // should work for UNBOUNDED (@todo also other problem types):
+      bool fFeasible = (XPRS_NLPSOLSTATUS_NONE!=solstatus);
       std::string msg_duals =
           (XPRS_NLPSOLSTATUS_SOLUTION_NODUALS==solstatus ||
                         XPRS_NLPSOLSTATUS_GLOBALLYOPTIMAL_NODUALS==solstatus)

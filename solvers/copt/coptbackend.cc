@@ -726,7 +726,7 @@ void CoptBackend::InitCustomOptions() {
 
   AddSolverOption("lp:concurrentmode lp:concurrentlpmode concurrentlpmode",
       "The LP concurrent solving mode, only effective when lp:method = 4. "
-      "The parameters lp:pdlpgpumode and lp:pdlpgpudevice are ignored, "
+      "The parameters alg:gpumode and alg:gpudevice are ignored, "
                   "and GPU usage and "
       "device selection are fully controlled by this parameter.",
                   COPT_INTPARAM_CONCURRENTLPMODE,
