@@ -1,6 +1,10 @@
 Summary of recent updates to MOSEK for AMPL
 ===========================================
 
+## 20260515
+- Updated to MOSEK 11.2.0, which includes many bug fixes and 
+  improvements.
+
 
 ## 20260414
 - Changes in MP, see MP changelog.

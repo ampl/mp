@@ -1,6 +1,13 @@
 Summary of recent updates to COPT for AMPL
 ==========================================
 
+## 20260515
+- Updated to Copt 8.0.4 that introduces stability and performance 
+  improvements
+- Added various solution statuses
+- Added option *alg:qmatrixtol*
+
+
 ## 20260414
 - Option *alg:nonconvex*, *mip:startmode*.
 - Fixed objective value output.
