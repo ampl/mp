@@ -339,69 +339,49 @@ void CoptBackend::AddCOPTMessages() {
 
 std::pair<int, std::string> CoptBackend::GetSolveResult() {
   namespace sol = mp::sol;
-  if (IsMIP())
+
+  int solstatus = getIntAttr(COPT_INTATTR_HASSOL);
+
+  switch (getIntAttr(COPT_INTATTR_STATUS))
   {
-    int optstatus = getIntAttr(COPT_INTATTR_MIPSTATUS);
-    int solstatus
-        = getIntAttr(COPT_INTATTR_HASMIPSOL)
-        | getIntAttr(COPT_INTATTR_HASFEASRELAXSOL);
-    switch (optstatus) {
-    case COPT_MIPSTATUS_OPTIMAL:
+    case COPT_STATUS_OPTIMAL:
       return { sol::SOLVED, "optimal solution" };
-    case COPT_MIPSTATUS_INFEASIBLE:
+    case COPT_STATUS_LOCAL_OPTIMAL:
+      return { sol::OPTIMAL_LOCALLY, "locally optimal solution" };
+    case COPT_STATUS_INFEASIBLE:
       return { sol::INFEASIBLE, "infeasible problem" };
-    case COPT_MIPSTATUS_INF_OR_UNB:
-      return { sol::INF_OR_UNB, "infeasible or unbounded problem. "
-                               "Disable dual reductions "
-                               "or run IIS finder for definitive answer." };
-    case COPT_MIPSTATUS_UNBOUNDED:
+    case COPT_STATUS_LOCAL_INFEASIBLE:
+      return { sol::INFEASIBLE_LOCALLY, "locally infeasible problem" };
+    case COPT_STATUS_UNBOUNDED:
       if (solstatus)
         return { sol::UNBOUNDED_FEAS, "unbounded problem, feasible solution" };
       return { sol::UNBOUNDED_NO_FEAS, "unbounded problem, no solution" };
-    case COPT_MIPSTATUS_TIMEOUT:
-    case COPT_MIPSTATUS_NODELIMIT:
-    case COPT_MIPSTATUS_INTERRUPTED:
-    case COPT_MIPSTATUS_UNSTARTED:
+    case COPT_STATUS_INF_OR_UNB:
+      return { sol::LIMIT_INF_UNB, "infeasible or unbounded problem. " };
+    case COPT_STATUS_TIMEOUT:
+    case COPT_STATUS_INTERRUPTED:
       if (solstatus)
-        return { sol::LIMIT_FEAS, "interrupted, feasible solution" };
-      return { sol::LIMIT_NO_FEAS, "interrupted, no solution" };
-    case COPT_MIPSTATUS_UNFINISHED:
-      return { sol::NUMERIC, "failure, numeric issues" };
+        return { sol::LIMIT_FEAS_INTERRUPT, "interrupted, feasible solution" };
+      return { sol::LIMIT_NO_FEAS_INTERRUPT, "interrupted, without a feasible solution" };
+    case COPT_STATUS_NODELIMIT:
+      if (solstatus)
+        return { sol::LIMIT_FEAS_NODES, "node limit, feasible solution" };
+      return { sol::LIMIT_NO_FEAS_NODES, "node limit, without a feasible solution" };
+    case COPT_STATUS_ITERLIMIT:
+      if (solstatus)
+        return { sol::LIMIT_FEAS_ITER, "iteration limit, feasible solution" };
+      return { sol::LIMIT_NO_FEAS_ITER, "iteration limit, without a feasible solution" };
+     case COPT_STATUS_UNFINISHED:
+     case COPT_STATUS_UNSTARTED:
+       return { sol::NUMERIC, "failure, numeric issues" };
+     case COPT_STATUS_IMPRECISE:
+       return { sol::UNCERTAIN, "solution is imprecise" };
+     case COPT_STATUS_NUMERICAL:
+       if (solstatus)
+         return { sol::UNCERTAIN, "solution returned but error likely" };
+       return { sol::NUMERIC, "failure, numeric issues" };
     default:
       return { sol::UNKNOWN, "unknown" };
-    }
-  }
-  else {
-    int optstatus = getIntAttr(COPT_INTATTR_LPSTATUS);
-    int solstatus
-        = getIntAttr(COPT_INTATTR_HASLPSOL)
-        | getIntAttr(COPT_INTATTR_HASFEASRELAXSOL);
-    switch (optstatus) {
-    case COPT_LPSTATUS_OPTIMAL:
-      return { sol::SOLVED, "optimal solution" };
-    case COPT_LPSTATUS_INFEASIBLE:
-      return { sol::INFEASIBLE, "infeasible problem" };
-    case COPT_LPSTATUS_UNBOUNDED:
-      if (solstatus)
-        return { sol::UNBOUNDED_FEAS, "unbounded problem, feasible solution" };
-      return { sol::UNBOUNDED_NO_FEAS, "unbounded problem, no solution" };
-    case COPT_LPSTATUS_TIMEOUT:
-    case COPT_LPSTATUS_INTERRUPTED:
-    case COPT_LPSTATUS_UNSTARTED:
-      if (solstatus)
-        return { sol::LIMIT_FEAS, "interrupted, feasible solution" };
-      return { sol::LIMIT_NO_FEAS, "interrupted, no solution" };
-    case COPT_LPSTATUS_UNFINISHED:
-      return { sol::NUMERIC, "failure, numeric issues" };
-    case COPT_LPSTATUS_IMPRECISE:
-      return { sol::UNCERTAIN, "solution is imprecise" };
-    case COPT_LPSTATUS_NUMERICAL:
-      if (solstatus)
-        return { sol::UNCERTAIN, "solution returned but error likely" };
-      return { sol::NUMERIC, "failure, numeric issues" };
-    default:
-      return { sol::UNKNOWN, "unknown" };
-    }
   }
 }
 
@@ -761,8 +741,11 @@ void CoptBackend::InitCustomOptions() {
     COPT_DBLPARAM_DUALTOL, 1e-9, 1e-4);
 
   AddSolverOption("alg:matrixtol matrixtol",
-    "nput matrix coefficient tolerance (default 1e-10).",
-    COPT_DBLPARAM_MATRIXTOL, 0.0, 1e-7);
+    "input matrix coefficient tolerance (default 1e-10).",
+     COPT_DBLPARAM_MATRIXTOL, 0.0, 1e-7);
+    AddSolverOption("alg:qmatrixtol qmatrixtol",
+        "input Q matrix coefficient tolerance (default 5e-14).",
+    COPT_DBLPARAM_QMATRIXTOL, 0.0, 1e-7);
 
   AddSolverOption("iis:method iismethod alg:iismethod",
     "Which method to use when finding an IIS (irreducible infeasible "
