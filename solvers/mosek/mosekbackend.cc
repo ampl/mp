@@ -371,7 +371,7 @@ std::pair<int, std::string> MosekBackend::GetSolveResult() {
 std::string MosekBackend::ConvertMOSEKTermStatus() {
   switch (termCode_) {
   case MSK_RES_OK:
-    break;
+    return;
   case MSK_RES_TRM_MAX_ITERATIONS:
     return { ", max number of iterations reached" };
   case MSK_RES_TRM_MAX_TIME:
