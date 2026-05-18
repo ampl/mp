@@ -2,7 +2,9 @@ Summary of recent updates to MP2NL for AMPL
 ==========================================
 
 
-## unreleased
+## 20260515
+- Randomly permute algebraic constraints, which
+  seems to help some solvers.
 - Produce defined variables for algebraic expressions
   with reference count above *nl:assign:defvar*.
 - Changes in MP, in particular:
