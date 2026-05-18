@@ -2,9 +2,10 @@ Summary of recent updates to gurobi for AMPL
 ============================================
 
 ## 20260515
-- Updated to Gurobi 13.0.3, which includes bugfixes;
-  the GPU-PDHG algorigth has matured from the beta state
+- Updated to Gurobi 13.0.2, which includes bugfixes;
+  the GPU-PDHG algorithm has matured from the beta state
   and is now fully supported.
+- Changes in MP.
 
 
 ## 20260414

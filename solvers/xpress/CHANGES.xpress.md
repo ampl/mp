@@ -3,8 +3,8 @@ Summary of recent updates to Xpress for AMPL
 
 
 ## 20260515
-- Updated to Xpress 46.01.02, which includes bugfixes 
-- and performance improvements. 
+- Updated to Xpress 46.01.02, which includes bugfixes
+  and performance improvements. 
 - Solve result LIMIT_INF_UNB, 450 is returned in some cases
   (previously used UNBOUNDED_NO_FEAS, 350).
 

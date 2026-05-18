@@ -359,6 +359,9 @@ std::pair<int, std::string> CoptBackend::GetSolveResult() {
     case COPT_STATUS_INF_OR_UNB:
       return { sol::LIMIT_INF_UNB, "infeasible or unbounded problem. " };
     case COPT_STATUS_TIMEOUT:
+      if (solstatus)
+        return { sol::LIMIT_FEAS_TIME, "time limit, feasible solution" };
+      return { sol::LIMIT_NO_FEAS_TIME, "time limit, without a feasible solution" };
     case COPT_STATUS_INTERRUPTED:
       if (solstatus)
         return { sol::LIMIT_FEAS_INTERRUPT, "interrupted, feasible solution" };
@@ -372,8 +375,13 @@ std::pair<int, std::string> CoptBackend::GetSolveResult() {
         return { sol::LIMIT_FEAS_ITER, "iteration limit, feasible solution" };
       return { sol::LIMIT_NO_FEAS_ITER, "iteration limit, without a feasible solution" };
      case COPT_STATUS_UNFINISHED:
+      if (solstatus)
+        return { sol::LIMIT_FEAS_ITER, "unfinished, feasible solution" };
+      return { sol::LIMIT_NO_FEAS_ITER, "unfinished, without a feasible solution" };
      case COPT_STATUS_UNSTARTED:
-       return { sol::NUMERIC, "failure, numeric issues" };
+       if (solstatus)
+         return { sol::UNCERTAIN, "failure, feasible solution" };
+       return { sol::FAILURE, "failure (unstarted)" };
      case COPT_STATUS_IMPRECISE:
        return { sol::UNCERTAIN, "solution is imprecise" };
      case COPT_STATUS_NUMERICAL:

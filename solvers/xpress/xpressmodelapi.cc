@@ -354,6 +354,7 @@ void XpressmpModelAPI::AddGlobalConstraint(const NLParams& params, char type) {
   int formulaStart[] = { 0, params.size() };
   XPRESSMP_CCALL(
       XPRSnlpaddformulas(lp(), 1, &rowindex, formulaStart, true, params.types(), params.values()));
+  // XPRESSMP_CCALL( XPRSslpsetdetrow(lp(), 1, params.resultVar(), &rowindex) );
 }
 
 
@@ -572,7 +573,7 @@ void XpressmpModelAPI::AddConstraint(const NLAssignLE& nle) {
   params.addMember(XPRS_TOK_EOF, 0);
   // Note, the sense is for a constraint of type:
   // -var + expr sense 0, so they have to be inverted
-  AddGlobalConstraint(params, 'G'); 
+  AddGlobalConstraint(params, 'G');
 }
 
 template <class MPExpr> 
