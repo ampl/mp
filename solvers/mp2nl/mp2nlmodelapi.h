@@ -1,6 +1,7 @@
 #ifndef MP2NLMODELAPI_H
 #define MP2NLMODELAPI_H
 
+#include <climits>
 #include <unordered_set>
 #include <functional>
 
