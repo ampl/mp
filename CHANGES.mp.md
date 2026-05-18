@@ -3,6 +3,8 @@ Summary of recent updates to the AMPL MP Library
 
 
 ## 20260515
+- Fixed a bug in solve result name in the Multi-Objective
+  Emulator.
 - Similar to inlining, nonlinear expressions with nontrivial
   external bounds are explicified into an auxiliary variable,
   depending on options *cvt:pre:boundsbest* and
