@@ -352,6 +352,7 @@ void MP2NLModelAPI::PrepareModel() {
 
 void MP2NLModelAPI::MapExpressions() {
   ResetObjMetaInfo();
+  is_alg_con_nl_.clear();
   is_alg_con_nl_.resize(alg_con_info_.size());  // grow flags array
   for (int i=0; i<(int)obj_info_.size(); ++i) {
     MapExprTreeFromItemInfo(i, obj_info_[i], 2);
@@ -386,10 +387,12 @@ void MP2NLModelAPI::MapExprTreeFromItemInfo(
 }
 
 void MP2NLModelAPI::ResetObjMetaInfo() {
-  mark_data_.n_obj_nz_ = 0;
-  mark_data_.nnlo_ = 0;
+  mark_data_ = ItemMarkingData();           // reset all
+  mark_data_.col_sizes_orig_.resize(var_lbs_.size()); 
   is_var_nlo_.clear();
   is_var_nlo_.resize(var_lbs_.size());
+  is_var_nlc_.clear();
+  is_var_nlc_.resize(var_lbs_.size());
 }
 
 void MP2NLModelAPI::MergeItemSparsity(
@@ -609,6 +612,11 @@ void MP2NLModelAPI::SortAlgCons() {
 
 void MP2NLModelAPI::MarkDefVars() {
   int nDV=0;
+  expr_defvar_index_.clear();
+  expr_defvar_index_.resize(expr_counter_.size());
+  mark_data_.ndefvarboth_ = 0;
+  mark_data_.ndefvarcons_ = 0;
+  mark_data_.ndefvarobjs_ = 0;
   for (int i=0; i<(int)expr_counter_.size(); ++i) {
     assert(expr_counter_[i]);
     assert(!IsExprDefVar(i));
