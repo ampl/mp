@@ -341,6 +341,13 @@ std::pair<int, std::string> CoptBackend::GetSolveResult() {
   namespace sol = mp::sol;
 
   int solstatus = getIntAttr(COPT_INTATTR_HASSOL);
+#ifdef COPT_INTATTR_HASLPSOL
+  int sollpstatus = getIntAttr(COPT_INTATTR_HASLPSOL);
+  int solmipstatus = getIntAttr(COPT_INTATTR_HASMIPSOL);
+  if (solstatus != (sollpstatus || solmipstatus))
+    AddWarning("COPT HASSOL", "COPT HASSOL attribute not agrees with HAS(LP/MIP)SOL");
+  solstatus = (sollpstatus || solmipstatus);
+#endif
 
   switch (getIntAttr(COPT_INTATTR_STATUS))
   {
