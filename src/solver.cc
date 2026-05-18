@@ -263,7 +263,11 @@ const char* GetStatusName(sol::Status stt) {
       { INFEASIBLE, "infeasible" },
       { UNBOUNDED, "unbounded" },
       { LIMIT, "limit" },
-      { FAILURE, "failure" }
+      { FAILURE, "failure" },
+      { NUMERIC, "numeric" },
+      { SPECIFIC, "failure" },
+      { FAILURE_LAST, "failure" },
+      { INT_MAX, "unspecified failure" }
   };
   auto it = stt_map.lower_bound(stt);
   assert(stt_map.end() != it);
