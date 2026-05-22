@@ -326,6 +326,9 @@ MP2NL_Expr MP2NLModelAPI::AddExpression(const AtanhExpression &expr)
 MP2NL_Expr MP2NLModelAPI::AddExpression(const DivExpression &expr)
 { return AddExpression(expr, ExpressionTypeID::ID_Div); }
 
+MP2NL_Expr MP2NLModelAPI::AddExpression(const CallExpression &expr)
+{ return AddExpression(expr, ExpressionTypeID::ID_Call); }
+
 
 void MP2NLModelAPI::FinishProblemModificationPhase() { }
 
@@ -692,7 +695,7 @@ NLHeader MP2NLModelAPI::DoMakeHeader() {
   hdr.num_linear_net_vars = 0;
 
   /** Number of functions. */
-  hdr.num_funcs = 0;
+  hdr.num_funcs = GetNumFuncs();
 
   // Information about discrete variables
   // ------------------------------------
@@ -1104,6 +1107,10 @@ void MP2NLModelAPI::FeedOpcode(Expr expr, ExprWriter& ew) {
 
     HANDLE_OPCODE_CASE_2_ARG(Div, DIV, FdArgs)
 
+  case ExpressionTypeID::ID_Call:
+    FeedCall(*(const CallExpression*)pitem, ew);
+    break;
+
   default:
     MP_RAISE("MP2NL: unknown expression type");
   }
@@ -1281,10 +1288,22 @@ void MP2NLModelAPI::FeedLogicalExpression(
   }
 }
 
+template <class ExprWriter>
+void MP2NLModelAPI::FeedCall(
+    const CallExpression& ce, ExprWriter& ew) {
+  int index = GetParameter(ce, 0);
+  int nargs = GetNumArguments(ce);
+  auto argw = ew.FuncPut(
+      index, nargs, GetFuncDef(index).Name());
+  for (int i=0; i<nargs; ++i) {
+    argw.EPut(GetArgExpression(ce, i));
+  }
+}
+
 template <class ColSizeWriter>
 void MP2NLModelAPI::FeedColumnSizes(ColSizeWriter& csw) {
   if (WantColumnSizes())
-    for (int i=0; i < var_lbs_.size()-1; ++i)        // use old ordering
+    for (int i=0; i < (int)var_lbs_.size()-1; ++i)  // use old ordering
       csw.Write(mark_data_.col_sizes_orig_[ GetOldVarIndex( i ) ]);
 }
 

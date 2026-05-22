@@ -880,6 +880,11 @@ public:
       PLConstraint& , PreprocessInfo& ) {
   }
 
+  template <class PreprocessInfo>
+  void PreprocessConstraint(
+      CallConstraint& , PreprocessInfo& ) {
+  }
+
 
   /// Static constraints.
   /// @return true iff the constraints has been presolved

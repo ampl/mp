@@ -2293,6 +2293,8 @@ protected:
   STORE_CONSTRAINT_TYPE__WITH_MAP(AcoshConstraint, "acc:acosh", 1028)
   STORE_CONSTRAINT_TYPE__WITH_MAP(AtanhConstraint, "acc:atanh", 1030)
 
+  STORE_CONSTRAINT_TYPE__WITH_MAP(CallConstraint, "acc:call", 1040)
+
   /// No maps for static constraints
   STORE_CONSTRAINT_TYPE__NO_MAP(
       IndicatorConstraintLinLE, "acc:indle acc:indlinle", 2460)

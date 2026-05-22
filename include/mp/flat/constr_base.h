@@ -132,6 +132,7 @@ template <class Num, size_t N>
   using ParamArrayN = std::array<Num, N>;
 /// Empty parameter array
 using ParamArray0 = ParamArrayN<int, 0>;
+
 /// Fixed parameter array of 1 double
 using DblParamArray1 = ParamArrayN<double, 1>;
 /// Fixed parameter array of 2 double
@@ -140,6 +141,15 @@ using DblParamArray2 = ParamArrayN<double, 2>;
 using DblParamArray3 = ParamArrayN<double, 3>;
 /// Variable-length parameter array
 using DblParamArray = std::vector<double>;
+
+/// Fixed parameter array of 1 int
+using IntParamArray1 = ParamArrayN<int, 1>;
+/// Fixed parameter array of 2 int
+using IntParamArray2 = ParamArrayN<int, 2>;
+/// Fixed parameter array of 3 int
+using IntParamArray3 = ParamArrayN<int, 3>;
+/// Variable-length parameter array
+using IntParamArray = std::vector<int>;
 
 
 /// Sort

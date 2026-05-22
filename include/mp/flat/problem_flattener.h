@@ -213,6 +213,9 @@ protected:
     ////////////////////////// Variables
     ConvertVars();
 
+    ////////////////////////// function defs
+    ConvertFuncDefs();
+
     ////////////////////// SOS constraints //////////////////////////
     /// SOS2 come before algebraic constraints, so we can omit
     /// AMPL's linearization of SOS2 (in case we use them).
@@ -370,6 +373,17 @@ protected:
     // Append "_flatvNN" for any other variables,
     // in particular the new variables during flattening
     GetFlatCvt().GetVarValueNode().SetNameChunk("flatv");
+  }
+
+  /// Convert Function Definitions
+  void ConvertFuncDefs() {
+    std::vector<FuncDef> funcs;
+    funcs.reserve(GetModel().num_functions());
+    for (int i=0; i<GetModel().num_functions(); ++i) {
+      auto fn = GetModel().function(i);
+      funcs.push_back({fn.name(), fn.num_args()});
+    }
+    GetFlatCvt().AddFuncDefs(std::move(funcs));
   }
 
   /// Convert a common expr
@@ -1193,6 +1207,13 @@ public:          // need to be public due to CRTP
 
   EExpr VisitAtanh(UnaryExpr e) {
     return VisitFunctionalExpression<AtanhConstraint>({ e.arg() });
+  }
+
+  EExpr VisitCall(CallExpr ce) {
+    CallConstraint cc;  // @todo Modify VisitFunctionalExpr <- params
+    cc.GetParameters()[0] = ce.function().index();
+    Exprs2Vars(ce, cc.GetArguments());
+    return AssignResult2Args( std::move(cc) );
   }
 
 

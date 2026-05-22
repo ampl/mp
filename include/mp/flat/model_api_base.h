@@ -163,6 +163,18 @@ public:
 
   ////////////////// Some standard items /////////////////
 
+  /// Add function definitions
+  void AddFuncDefs(const std::vector<FuncDef>& funcs)
+  { pfuncs_ = &funcs; }
+
+  /// Get N functions
+  int GetNumFuncs() const
+  { assert(pfuncs_); return (int)pfuncs_->size(); }
+
+  /// Retrieve function definition
+  const FuncDef& GetFuncDef(int i) const
+  { assert(pfuncs_); return (*pfuncs_).at(i); }
+
   /// Placeholder for SetLinearObjective()
   void SetLinearObjective(int , const LinearObjective& ) {
     MP_UNSUPPORTED("FlatModelAPI::SetLinearObjective()");
@@ -267,6 +279,9 @@ public:
 
 private:
   const FlatModelInfo* pfmi_ { nullptr };
+
+  /// FuncDef defs
+  const std::vector<FuncDef>* pfuncs_ { nullptr };
 
   // struct Options {
   //   // int nl_assign_ = Impl::NLAssignLevelDefault();

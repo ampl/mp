@@ -2,6 +2,11 @@ Summary of recent updates to MP2NL for AMPL
 ==========================================
 
 
+## 20260525
+- Forward AMPL imported function calls to the subsolver,
+  such as gsl_ran_gaussian_pdf().
+
+
 ## 20260515
 - Randomly permute algebraic constraints, which
   seems to help some solvers.

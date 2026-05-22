@@ -160,6 +160,10 @@ DEF_NUMERIC_FUNC_CONSTR( Acosh, VarArray1,
 DEF_NUMERIC_FUNC_CONSTR( Atanh, VarArray1,
                                    "r = atanh(v)");
 
+////////////////////////////////////////////////////////////////////////
+DEF_NUMERIC_FUNC_CONSTR_WITH_PRM( Call, VarArray, IntParamArray1,
+                        "r = call[function[i]](args)");
+
 
 /// Not using: var1 != var2.
 /// Represented by Not { Eq0Constraint... }
@@ -334,6 +338,24 @@ public:
 /// Typedef NLQuadExpression.
 /// Like QuadExpr, but arguments are expressions.
 using NLQuadExpression = ExprWrapper<QuadraticFunctionalConstraint>;
+
+
+/// Function definition
+class FuncDef {
+public:
+  /// Construct
+  FuncDef(std::string_view nm, int na) : name_(nm), n_args_(na) { }
+  /// Name
+  const char* Name() const { return name_.c_str(); }
+  /// N args
+  int NumArgs() const { return n_args_; }
+  /// Type: always numeric
+  int Type() const { return 0; }
+private:
+  std::string name_;
+  int n_args_;
+};
+
 
 /// Shortcut to make an LFC from linear body and constant
 inline LinearFunctionalConstraint

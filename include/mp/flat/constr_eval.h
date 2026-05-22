@@ -395,6 +395,16 @@ double ComputeValue(const PLConstraint& con, const VarVec& x) {
         * (x0-plp.x_[i0-1]) / (plp.x_[i0]-plp.x_[i0-1]));
 }
 
+/// Compute result of a function call.
+template <class VarVec>
+double ComputeValue(const CallConstraint& , const VarVec& ) {
+  double result = std::numeric_limits<double>::has_quiet_NaN ?
+      std::numeric_limits<double>::quiet_NaN() : -INFINITY;
+  // @todo
+  return result;
+}
+
+
 /// Should be here,
 /// after ComputeViolation() is specialized
 /// for some constraints.

@@ -483,6 +483,9 @@ public:
   ACCEPT_EXPRESSION(DivExpression, Recommended)
   Expr AddExpression(const DivExpression& );
 
+  ACCEPT_EXPRESSION(CallExpression, Recommended)
+  Expr AddExpression(const CallExpression& );
+
 
 public:
   ///////////////////////////////////////////////////////////////////
@@ -532,7 +535,7 @@ public:
    *    (\a i in 0..num_objs-1).
    *  With WantNLComments()==true, this is
      *  written to text-format NL as a comment. */
-  const char* ObjDescription(int i) { return ""; }
+  const char* ObjDescription(int ) { return ""; }
 
   /** Provide type of objective \a i.
      *  - 0 - minimization;
@@ -813,6 +816,10 @@ protected:
   template <class ArgWriter>
   void FeedLogicalExpression(MP2NL_Expr mp2nle, ArgWriter& aw);
 
+  /// Feed CallExpression
+  template <class ExprWriter>
+  void FeedCall(const CallExpression& ce, ExprWriter& ew);
+
 
 public:
   ///////////////////// 8. PL-SOS CONSTRAINTS ////////////
@@ -854,11 +861,10 @@ public:
 
   ///////////////////// 9. FUNCTIONS /////////////////////
   /** Function definition. */
-  using BaseNLFeeder::FuncDef;
 
   /** Provide definition
    *  of function \a i, i=0..num_funcs-1. */
-  FuncDef Function(int i) { return {}; }
+  const mp::FuncDef& Function(int i) { return GetFuncDef(i); }
 
 
   ///////////////////// 10. RANDOM VARIABLES /////////////////////
@@ -1268,7 +1274,9 @@ protected:
     ID_Acosh,
     ID_Atanh,
 
-    ID_Div
+    ID_Div,
+
+    ID_Call         // Function call
   };
 
 
@@ -1467,6 +1475,8 @@ protected:
   CREATE_EXPRESSION_DISPATCHER(Atanh)
 
   CREATE_EXPRESSION_DISPATCHER(Div)
+
+  CREATE_EXPRESSION_DISPATCHER(Call)
 
 
 public:

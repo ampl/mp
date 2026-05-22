@@ -331,6 +331,10 @@ public:
   { return var_elim_; }
 
 
+  /// Add function definitions
+  void AddFuncDefs(std::vector<FuncDef> funcs)
+  { funcs_ = std::move(funcs); }
+
   ///////////////////////////// OBJECTIVES ////////////////////////////
 public:
   /// List of objectives
@@ -342,9 +346,9 @@ public:
   /// N obj
   int num_objs() const { return (int)objs_.size(); }
   /// Skip pushing objectives?
-  bool if_skip_pushing_objs() const { return if_skip_push_objs_bjs_; }
+  bool if_skip_pushing_objs() const { return if_skip_push_objs_; }
   /// Set skip pushing objs
-  void set_skip_pushing_objs(bool v=true) { if_skip_push_objs_bjs_=v; }
+  void set_skip_pushing_objs(bool v=true) { if_skip_push_objs_=v; }
   /// Submit best-known bounds?
   int if_submit_best_known_bounds() const { return if_submit_best_bounds_; }
   /// Submit best-known bounds?
@@ -437,6 +441,7 @@ public:
     mapi.PassFlatModelInfo(GetModelInfo());
 
     mapi.InitProblemModificationPhase(GetModelInfo());
+    mapi.AddFuncDefs(funcs_);
     PushVariablesTo(mapi);
     PushCustomConstraintsTo(mapi);
     if (!if_skip_pushing_objs())
@@ -630,11 +635,13 @@ private:
   mutable ItemNamer var_namer_ {var_names_storage_, "_svar"};
   /// Number of original NL variables
   int num_vars_orig_ {0};
+  /// FuncDef defs
+  std::vector<FuncDef> funcs_;
   /// Objectives
   ObjList objs_;
   /// Whether to skip pushing objectives
   /// (can be set by the MOManager.)
-  bool if_skip_push_objs_bjs_ {false};
+  bool if_skip_push_objs_ {false};
 
   /// Flat model info
   std::unique_ptr<FlatModelInfo> pfmi_;
