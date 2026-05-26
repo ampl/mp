@@ -1049,6 +1049,22 @@ void CoptBackend::AddPrimalDualStart(Solution sol0_unpres) {
   std::vector<double> nv(x0.size());
   std::vector<double> ne(pi0.size());
   COPT_CCALL(COPT_SetLpSolution(lp(), x0.data(), nv.data(), pi0.data(), ne.data()));
+
+  // @todo Only do this if we have expressions
+  // @todo Unify with AddMIPStart()
+  auto ms = GetValuePresolver().PresolveGenericInt({ sol0_unpres.spars_primal });
+  auto s0 = ms.GetVarValues()();
+  std::vector<int> idx;                 // Create sparse vector
+  idx.reserve(x0.size());
+  std::vector<double> val;
+  val.reserve(x0.size());
+  for (int i = 0; i < (int)x0.size(); ++i) {
+    if (s0[i]) {
+      idx.push_back(i);
+      val.push_back(x0[i]);
+    }
+  }
+  COPT_CCALL(COPT_SetNLPrimalStart(lp(), idx.size(), idx.data(), val.data()));
 }
 
 void CoptBackend::AddMIPStart(
