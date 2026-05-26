@@ -2,6 +2,10 @@ Summary of recent updates to SCIP for AMPL
 ==========================================
 
 
+## 20260526
+- Updated to SCIP 10.0.2
+
+
 ## 20260414
 - Changes in MP, in particular:
   - Option *cvt:pre:boundsbest* defaults to making
