@@ -2,6 +2,9 @@ Summary of recent updates to CPLEX for AMPL
 ==============================================
 
 
+## 20260527
+- Updated CPLEX libraries to 22.2.0, which include some bug fixes.
+
 ## 20260414
 - Changes in MP, see MP changelog.
 

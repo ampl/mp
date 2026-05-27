@@ -2,6 +2,10 @@ Summary of recent updates to ilogcp for AMPL
 ============================================
 
 
+## 20260527
+- *Linked with CPLEX and CP optimizer 22.2.0*
+
+
 ## 20250422
 - *Linked with CPLEX and CP optimizer 22.01.02*
 
