@@ -404,11 +404,13 @@ controlled by the option `writeprob`::
 The format is solver-dependent and determined by the file extension
 ('.lp' in the example).
 
-To pass variable, constraint and objective names to the solver,
-set `AMPL option <https://dev.ampl.com/ampl/reference/options.html>`_
-`<solver>_auxfiles rc` before the `solve` command, or option `auxfiles rc`
-before `write`, see
-`model export example <https://mp.ampl.com/modeling-troublesh.html#exporting-the-solver-model>`_.
+.. admonition:: Exporting with names
+
+   To pass variable, constraint and objective names to the solver,
+   set `AMPL option <https://dev.ampl.com/ampl/reference/options.html>`_
+   `<solver>_auxfiles rc` before the `solve` command, or option `auxfiles rc`
+   before `write`, see
+   `model export example <https://mp.ampl.com/modeling-troublesh.html#exporting-the-solver-model>`_.
 
 
 .. list-table::
@@ -423,11 +425,13 @@ before `write`, see
 
        * **filename** - Filename for the exported model
 
-If you only want to explore the expanded constraint list in AMPL,
-use command `expand [ConName] [>redirect_file.txt];`.
-Use `solexpand;` to see the AMPL presolved model as sent to
-the driver (set `option presolve 0;` to disable
-`AMPL presolve <https://dev.ampl.com/ampl/reference/options.html#presolve-options>`_).
+.. admonition:: Explore model in AMPL
+
+   If you only want to explore the expanded constraint list in AMPL,
+   use command `expand [ConName] [>redirect_file.txt];`.
+   Use `solexpand;` to see the AMPL presolved model as sent to
+   the driver (set `option presolve 0;` to disable
+   `AMPL presolve <https://dev.ampl.com/ampl/reference/options.html#presolve-options>`_).
 
 
 .. _report-times:
@@ -525,11 +529,12 @@ a warmstart.
    * - **Output**
      - None
    * - **Values**
-     - Sum of:
 
-       * **0** - No (default)
-       * **1** - Yes (for LP: if there is no incoming alg:basis) (default)
+       * **0** - No
+       * **1** - Yes (for LP: if there is no incoming alg:basis)
        * **2** - Yes (for LP: ignoring the incoming alg:basis, if any)
+       * **3** - Yes (for LP: together with the incoming alg:basis, if any;
+       default).
    * - **Example**
      - Use :ref:`this model <nQueensModel>`
 
@@ -589,12 +594,11 @@ This option controls whether to use or return a basis.
 
        * ``status`` on variables and constraints
    * - **Values**
-     - Sum of:
 
        * **0** - No
        * **1** - Use incoming basis (if provided)
        * **2** - Return final basis
-       * **3** - Both (1 + 2, default)
+       * **3** - Both (1 + 2, default).
 
    * - **Example**
      - Use :ref:`this model <multiObjectiveDiet>`
@@ -605,13 +609,13 @@ This option controls whether to use or return a basis.
          display Buy.status, Diet.status;   # display basis statuses
 
          option send_statuses 1;            # do send, already the default
-         solve; # second solve with take much less although a solution is not provided
+         solve; # second solve should take much less although a solution is not provided
 
        In the solver logs, we can see the expected behaviour:
 
        .. code-block:: shell
 
-          x-Gurobi 9.5.2: optimal solution; objective 74.27382022
+          Gurobi 13.0.2: optimal solution; objective 74.27382022
           3 simplex iterations
           Objective = total_cost['A&P']
           ampl: display Buy.status, Diet.status;;
