@@ -529,12 +529,12 @@ a warmstart.
    * - **Output**
      - None
    * - **Values**
+     - Values:
 
        * **0** - No
        * **1** - Yes (for LP: if there is no incoming alg:basis)
        * **2** - Yes (for LP: ignoring the incoming alg:basis, if any)
        * **3** - Yes (for LP: together with the incoming alg:basis, if any; default).
-
    * - **Example**
      - Use :ref:`this model <nQueensModel>`
 
@@ -594,12 +594,12 @@ This option controls whether to use or return a basis.
 
        * ``status`` on variables and constraints
    * - **Values**
+     - Values:
 
        * **0** - No
        * **1** - Use incoming basis (if provided)
        * **2** - Return final basis
        * **3** - Both (1 + 2, default).
-
    * - **Example**
      - Use :ref:`this model <multiObjectiveDiet>`
 
