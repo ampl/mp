@@ -7,7 +7,9 @@ Feature guide for MP-based AMPL solvers
 
 The MP framework defines standard *solver features* that solvers might support;
 these are usually characterized by a set of :ref:`solver-options` used to control the feature,
-sometimes suffixes to pass required data and results, and may change the behaviour
+`AMPL options <https://dev.ampl.com/ampl/reference/options.html>`_ and
+sometimes `AMPL suffixes <https://dev.ampl.com/ampl/reference/suffixes.html>`_
+to pass required data and results, and may change the behaviour
 of the solution process. Below, :ref:`important-features` highlight most commonly used features,
 while :ref:`support-by-solvers` gives more details.
 
