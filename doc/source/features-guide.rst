@@ -533,8 +533,8 @@ a warmstart.
        * **0** - No
        * **1** - Yes (for LP: if there is no incoming alg:basis)
        * **2** - Yes (for LP: ignoring the incoming alg:basis, if any)
-       * **3** - Yes (for LP: together with the incoming alg:basis, if any;
-       default).
+       * **3** - Yes (for LP: together with the incoming alg:basis, if any; default).
+
    * - **Example**
      - Use :ref:`this model <nQueensModel>`
 
