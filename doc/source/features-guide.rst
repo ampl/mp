@@ -46,7 +46,7 @@ controlling solver behavior and information flow.
   Turning it off can save significant runtime
 
 * Options :ref:`alg:basis, mip:basis <ampl-solver-options>` -
-  control whether LP basis information is input/output
+  control whether :ref:`LP basis information <basisio>` is input/output
 
 * Options
   :ref:`solutiontarget, optimalitytarget, heuremphasis, mipfocus/mipemphasis, norelwork <ampl-solver-options>` -
