@@ -2304,7 +2304,7 @@ void GurobiBackend::InitCustomOptions() {
     storedOptions_.nMIPStart_, values_mipstart_);
 
   AddToOptionDescription("alg:start",
-                         "For Gurobi, choices can be refined vie \"lp:warmstart\"; "
+                         "For Gurobi, choices can be refined via \"lp:warmstart\"; "
                          "MIP-specific options can be tuned via \"mip:start\".");
 
   AddSolverOption("mip:symmetry symmetry",

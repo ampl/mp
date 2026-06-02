@@ -396,13 +396,19 @@ Model export
 ------------
 
 Most solvers can export the model before solving. This is usually
-controlled by the option ``writeprob``::
+controlled by the option `writeprob`::
 
     option <solver>_options 'writeprob=/tmp/diet.lp';
 
 
 The format is solver-dependent and determined by the file extension
 ('.lp' in the example).
+
+To pass variable, constraint and objective names to the solver,
+set `AMPL option <https://dev.ampl.com/ampl/reference/options.html>`_
+`<solver>_auxfiles rc` before the `solve` command, or option `auxfiles rc`
+before `write`, see
+`model export example <https://mp.ampl.com/modeling-troublesh.html#exporting-the-solver-model>`_.
 
 
 .. list-table::
@@ -416,6 +422,12 @@ The format is solver-dependent and determined by the file extension
      - Values:
 
        * **filename** - Filename for the exported model
+
+If you only want to explore the expanded constraint list in AMPL,
+use command `expand [ConName] [>redirect_file.txt];`.
+Use `solexpand;` to see the AMPL presolved model as sent to
+the driver (set `option presolve 0;` to disable
+`AMPL presolve <https://dev.ampl.com/ampl/reference/options.html#presolve-options>`_).
 
 
 .. _report-times:
@@ -530,7 +542,8 @@ a warmstart.
          printf "Solution without warm start took %fs\n", _solve_time;
 
          # Now an optimal solution is already present, we pass it to the solver
-         # which would use to start the solution process
+         # which would use it to start the solution process
+         option reset_initial_guesses 0;    # Do not reset (the default)
          solve;
          printf "Solution with warm start took %fs\n", _solve_time;
 
@@ -570,11 +583,11 @@ This option controls whether to use or return a basis.
    * - **Input**
      - Suffixes:
 
-       * ``sstatus`` on variables and constraints
+       * ``status`` on variables and constraints
    * - **Output**
      - Suffixes:
 
-       * ``sstatus`` on variables and constraints
+       * ``status`` on variables and constraints
    * - **Values**
      - Sum of:
 
@@ -588,11 +601,10 @@ This option controls whether to use or return a basis.
 
        Execute::
 
-         option gurobi_options "alg:start=0 outlev=1"; # disable passing the solution
-
          solve;
-         display Buy.sstatus; # display basis status
+         display Buy.status, Diet.status;   # display basis statuses
 
+         option send_statuses 1;            # do send, already the default
          solve; # second solve with take much less although a solution is not provided
 
        In the solver logs, we can see the expected behaviour:
@@ -602,16 +614,21 @@ This option controls whether to use or return a basis.
           x-Gurobi 9.5.2: optimal solution; objective 74.27382022
           3 simplex iterations
           Objective = total_cost['A&P']
-          ampl: display Buy.sstatus;
-          Buy.sstatus [*] :=
-          BEEF  low
-          CHK  upp
-          FISH  low
-          HAM  low
-          MCH  low
-          MTL  bas
-          SPG  bas
-          TUR  low;
+          ampl: display Buy.status, Diet.status;;
+          :    Buy.status Diet.status    :=
+          A          .      bas
+          B1         .      bas
+          B2         .      low
+          BEEF   low            .
+          C          .      bas
+          CHK    low            .
+          FISH   low            .
+          HAM    low            .
+          MCH    bas            .
+          MTL    low            .
+          SPG    low            .
+          TUR    low            .
+          ;
 
           ... # second solve:          
 
