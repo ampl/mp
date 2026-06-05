@@ -162,7 +162,15 @@ DEF_NUMERIC_FUNC_CONSTR( Atanh, VarArray1,
 
 ////////////////////////////////////////////////////////////////////////
 DEF_NUMERIC_FUNC_CONSTR_WITH_PRM( Call, VarArray, IntParamArray1,
-                        "r = call[function[i]](args)");
+                                 "r = call[function[i]](args)");
+
+////////////////////////////////////////////////////////////////////////
+DEF_NUMERIC_FUNC_CONSTR_WITH_PRM( SDPDotProd, VarArray0, IntParamArray,
+                                 "r = sum {i} SDPDotProduct(A[p[i*2]], X[p[i*2+1]]), "
+                                 "with A[p[i*2]] coef matrix and "
+                                 "X[p[i*2+1]] SDP variable. The parameter vector p "
+                                 "has consecutive pairs of indexes "
+                                 "of A's and X's.");
 
 
 /// Not using: var1 != var2.

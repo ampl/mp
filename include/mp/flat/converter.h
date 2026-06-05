@@ -28,6 +28,7 @@
 #include "mp/flat/redef/std/range_con.h"
 #include "mp/flat/redef/conic/cones.h"
 #include "mp/flat/redef/conic/qcones2qc.h"
+#include "mp/flat/redef/SDP/sdp.h"
 #include "mp/ampls-ccallbacks.h"
 #include "mp/utils-misc.h"
 
@@ -372,7 +373,8 @@ protected:
   void ConvertItems() {
     try {
       MPD( OutputModelInfo("AMPL MP initial flat model", 0, "flat0_"); );
-			MPD( Convert2Cones(); );                 // sweep before other conversions
+      MPD( Convert2SDP(); );                   // Scan SDP before cones?
+      MPD( Convert2Cones(); );                 // sweep before other conversions
       MP_DISPATCH( ConvertAllConstraints() );
       // MP_DISPATCH( PreprocessIntermediate() );     // preprocess after each level
       constr_depth_ = 1;  // Workaround. TODO have maps as special constraints
@@ -430,10 +432,15 @@ protected:
     }
   }
 
-	/// Offload the conic logic to a functor
-	void Convert2Cones() {
-		conic_cvt_.Run();
-	}
+  /// Offload the SDP logic to a functor
+  void Convert2SDP() {
+    sdp_cvt_.Run();
+  }
+
+  /// Offload the conic logic to a functor
+  void Convert2Cones() {
+    conic_cvt_.Run();
+  }
 
   /// Can be called from ConvertMaps()
   void ConvertAllConstraints() {
@@ -2185,6 +2192,8 @@ private:
   int nExpConesRecognized_ = 0;
   bool ifCvtSOCP2QC_ = 0;
 
+  SDPConverter<Impl> sdp_cvt_ { *static_cast<Impl*>(this) };
+
 	std::vector<int> refcnt_vars_;
   int constr_depth_ = 0;    // tree depth of new constraints
 
@@ -2294,6 +2303,8 @@ protected:
   STORE_CONSTRAINT_TYPE__WITH_MAP(AtanhConstraint, "acc:atanh", 1030)
 
   STORE_CONSTRAINT_TYPE__WITH_MAP(CallConstraint, "acc:call", 1040)
+
+  STORE_CONSTRAINT_TYPE__WITH_MAP(SDPDotProdConstraint, "acc:sdpdotprod acc:sdpdot", 1045)
 
   /// No maps for static constraints
   STORE_CONSTRAINT_TYPE__NO_MAP(

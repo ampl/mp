@@ -229,6 +229,13 @@ public:
     return 0.5*((long double)lb(v) + ub(v));
   }
 
+  /// Uses hard bounds
+  bool is_free(int v) const {
+    return
+        lb_hard(v) <= MinusInf()
+           && ub_hard(v) >= Inf();
+  }
+
   bool is_integer_var(int v) const {
     return var::Type::INTEGER==var_type(v);
   }
@@ -335,6 +342,17 @@ public:
   void AddFuncDefs(std::vector<FuncDef> funcs)
   { funcs_ = std::move(funcs); }
 
+public:
+  /// N functions
+  int GetNumFuncs() const {
+    return (int) funcs_.size();
+  }
+
+  /// Get function \a i
+  const FuncDef& GetFunction(int i) const {
+    return funcs_.at(i);
+  }
+
   ///////////////////////////// OBJECTIVES ////////////////////////////
 public:
   /// List of objectives
@@ -417,6 +435,40 @@ public:
   const VarBndVec& GetVarLBs() const { return var_lb_; }
   /// Provide variable upper bounds
   const VarBndVec& GetVarUBs() const { return var_ub_; }
+
+  /// Get dimension of SDP var \a sdpi
+  int GetSDPVarDim(int sdpi) const
+  { return SDP_var_dims_.at(sdpi); }
+
+  /// Add an SDP variable of dimension \a n
+  /// @return its index
+  int AddSDPVar(int dim) {
+    SDP_var_dims_.push_back(dim);
+    return (int) SDP_var_dims_.size()-1;
+  }
+
+  /// Describes to which SDP var a usual var belongs
+  struct SDPVarElementInfo   {
+    int sdp_var_index_ {-1};
+    int sdp_var_row_ {-1};
+    int sdp_var_col_ {-1};
+  };
+
+  /// Get SDP var info for scalar variable \a i
+  const SDPVarElementInfo& GetSDPVarInfo(int i) const {
+    assert(i>=0);
+    if (i>=(int)var_SDP_var_info_.size())
+      return sdp_var_elem_dummy_;
+    return var_SDP_var_info_[i];
+  }
+
+  /// Set SDP var info for scalar variable \a i
+  void SetSDPVarInfo(int i, SDPVarElementInfo vei) {
+    if (var_SDP_var_info_.size() < var_lb_.size())
+      var_SDP_var_info_.resize(var_lb_.size());
+    assert(i>=0 && i<(int)var_lb_.size());
+    var_SDP_var_info_[i] = vei;
+  }
 
   /// Model state
   struct ModelState {
@@ -635,6 +687,15 @@ private:
   mutable ItemNamer var_namer_ {var_names_storage_, "_svar"};
   /// Number of original NL variables
   int num_vars_orig_ {0};
+
+  /// SDP variable dimensions
+  std::vector<int> SDP_var_dims_;
+
+  /// SDP var info for usual variables
+  std::vector<SDPVarElementInfo> var_SDP_var_info_;
+  /// dummy
+  SDPVarElementInfo sdp_var_elem_dummy_ {};
+
   /// FuncDef defs
   std::vector<FuncDef> funcs_;
   /// Objectives

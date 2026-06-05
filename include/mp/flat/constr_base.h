@@ -113,6 +113,8 @@ public:
 
 /// Possible argument arrays for CustomFunctionalConstraint
 
+/// Fixed argument array of 0 elements
+using VarArray0 = std::array<int, 0>;
 /// Fixed argument array of 1 element
 using VarArray1 = std::array<int, 1>;
 /// Fixed argument array of 2 elements

@@ -36,28 +36,6 @@ class Convert1QC;
 template <class MCType>
 class Convert1ExpC;
 
-/** A class to store a ref to ModelConverter.
- *
- *  @param ModelConverter the converter type.
- */
-template <class ModelConverter>
-class MCKeeper {
-public:
-  /// Typedef MCType
-  using MCType = ModelConverter;
-
-  /// Constructor
-  MCKeeper(MCType& mc) : mc_(mc) { }
-
-protected:
-  /// Retrieve the MC
-  const MCType& MC() const { return mc_; }
-  MCType& MC() { return mc_; }
-
-private:
-  MCType& mc_;
-};
-
 
 /**
  * Functor to convert various constraints to cones.

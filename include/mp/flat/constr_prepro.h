@@ -885,6 +885,11 @@ public:
       CallConstraint& , PreprocessInfo& ) {
   }
 
+  template <class PreprocessInfo>
+  void PreprocessConstraint(
+      SDPDotProdConstraint& , PreprocessInfo& ) {
+  }
+
 
   /// Static constraints.
   /// @return true iff the constraints has been presolved

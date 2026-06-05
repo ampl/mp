@@ -401,8 +401,11 @@ add_prefix(MP_FLAT_REDEF_HEADERS include/mp/flat/redef/
 add_prefix(MP_FLAT_REDEF_STD_HEADERS include/mp/flat/redef/std/
   range_con.h)
 
-add_prefix(MP_FLAT_REDEF_STD_HEADERS include/mp/flat/redef/conic/
+add_prefix(MP_FLAT_REDEF_CONIC_HEADERS include/mp/flat/redef/conic/
   cones.h qcones2qc.h)
+
+add_prefix(MP_FLAT_REDEF_SDP_HEADERS include/mp/flat/redef/SDP/
+  sdp.h)
 
 add_prefix(MP_FLAT_REDEF_MIP_HEADERS include/mp/flat/redef/MIP/
   converter_mip.h redefs_mip_std.h abs.h alldiff.h
@@ -424,6 +427,7 @@ add_prefix(MP_FLAT_NL_EXPR_HEADERS include/mp/flat/nl_expr/
 set(MP_ALL_HEADERS ${MP_HEADERS} ${MP_FLAT_HEADERS}
   ${MP_FLAT_REDEF_HEADERS}
   ${MP_FLAT_REDEF_STD_HEADERS} ${MP_FLAT_REDEF_MIP_HEADERS}
+  ${MP_FLAT_REDEF_CONIC_HEADERS} ${MP_FLAT_REDEF_SDP_HEADERS}
   ${MP_FLAT_NL_EXPR_HEADERS}
 )
 
