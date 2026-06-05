@@ -2,12 +2,11 @@ Summary of recent updates to COPT for AMPL
 ==========================================
 
 
-## unreleased
+## 20260605
 - Use initial guess in NLP.
-- SKIP: Updated to Copt 8.0.4 that introduces stability and performance 
-  improvements.
 - Added various solution statuses.
 - Added option *alg:qmatrixtol*.
+- Updated to COPT 8.0.5, with performance improvements and bug fixes.
 
 
 ## 20260414
