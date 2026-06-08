@@ -676,6 +676,9 @@
   {
     "name" : "defvar_nl_01",
     "tags" : ["continuous", "nonlinear", "quadraticnonconvex"],
+    "options": {
+      "copt_options": "acc:_expr=1"
+    },
     "objective": 2.1851756747802034
   },
   {
@@ -685,6 +688,7 @@
     "options": {
       "mp2nl_options": "expr:nlassign=1",
       "scip_options": "expr:nlassign=1",
+      "copt_options": "acc:_expr=1",
       "mp_options": "expr:nlassign=100000"
     },
     "objective": 2.1851268249718
