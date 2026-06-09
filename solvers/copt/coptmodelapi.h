@@ -9,66 +9,55 @@
 
 
 namespace mp {
-    /// Simple class to store expressions in the format Copt expects them
-      /// Note that, for the expression based API, as we visit the expression tree, 
-      /// we accumulate nodes reversed in respect to what Copt needs.
-      /// For that, the function "reverse" is provided
-    class NLParams {
-        std::vector<int> typesOrVars_;
-        std::vector<double> values_;
-        std::vector<int> linearIndices_;
-        std::vector<double> linearCoeffs_;
-       
-        int resultVar_;
-    public:
-        /// No result variable (for generic expressions)
-        NLParams() : resultVar_(-1) {}
-        /// resvar = expression
-        NLParams(int resultVar) : resultVar_(resultVar) {}
+/// Simple class to store expressions in the format Copt expects them
+/// Note that, for the expression based API, as we visit the expression tree,
+/// we accumulate nodes reversed in respect to what Copt needs.
+/// For that, the function "reverse" is provided
+class NLParams {
+  std::vector<int> typesOrVars_;
+  std::vector<double> values_;
 
-        const int* resultVar() const { return &resultVar_; }
-        
-        void reserveLinear(int size) {
-            linearCoeffs_.reserve(size);
-            linearIndices_.reserve(size);
-        }
-        void addLinear(int index, double coeff) {
-            linearCoeffs_.push_back(coeff);
-            linearIndices_.push_back(index);
-        }
-        void addMembers(const NLParams& p) {
-            typesOrVars_.insert(typesOrVars_.end(), p.typesOrVars_.begin(), p.typesOrVars_.end());
-            values_.insert(values_.end(), p.values_.begin(), p.values_.end());
-        }
-        void addConstant(double v) {
-            typesOrVars_.push_back(COPT_NL_GET);
-            values_.push_back(v);
-        }
-        void addVar(int index) {
-            assert(index >= 0);
-            typesOrVars_.push_back(index);
-        }
-        void addVar(const NLParams& exp) {
-            typesOrVars_.push_back(exp.typesOrVars_[0]);
-        }
-        void addOp(int op) {
-            assert(op < 0);
-            typesOrVars_.push_back(op);
-        }
-    
-        int index() const { return linearIndices_[0]; }
-        const int* linearIndices() const { return linearIndices_.data(); }
-        const double* linearCoeffs() const { return linearCoeffs_.data(); }
-        const int nLinear() const { return linearIndices_.size(); }
-        const int* tokens() const { return typesOrVars_.data(); }
-        const double* tokenElements() const { return values_.data(); }
-        int nTokens() const { return static_cast<int>(typesOrVars_.size()); }
-        int nTokenElements() const { return static_cast<int>(values_.size());}
-        void reverse() {
-            std::reverse(typesOrVars_.begin(), typesOrVars_.end());
-            std::reverse(values_.begin(), values_.end());
-        }
-    };
+  int resultVar_;
+public:
+  /// No result variable (for generic expressions)
+  NLParams() : resultVar_(-1) {}
+  /// resvar = expression
+  NLParams(int resultVar) : resultVar_(resultVar) {}
+
+  const int* resultVar() const { return &resultVar_; }
+
+  void addMembers(const NLParams& p) {
+    typesOrVars_.insert(typesOrVars_.end(), p.typesOrVars_.begin(), p.typesOrVars_.end());
+    values_.insert(values_.end(), p.values_.begin(), p.values_.end());
+  }
+  void addConstant(double v) {
+    typesOrVars_.push_back(COPT_NL_GET);
+    values_.push_back(v);
+  }
+  void addVar(int index) {
+    assert(index >= 0);
+    typesOrVars_.push_back(index);
+  }
+  void addVar(const NLParams& exp) {
+    typesOrVars_.push_back(exp.typesOrVars_[0]);
+  }
+  void addOp(int op) {
+    assert(op < 0);
+    typesOrVars_.push_back(op);
+  }
+
+  const int* tokens() const { return typesOrVars_.data(); }
+  const double* tokenElements() const { return values_.data(); }
+  int nTokens() const { return static_cast<int>(typesOrVars_.size()); }
+  int nTokenElements() const { return static_cast<int>(values_.size());}
+  void reverse() {
+    std::reverse(typesOrVars_.begin(), typesOrVars_.end());
+    std::reverse(values_.begin(), values_.end());
+  }
+};
+
+
+/// Implement CoptModelAPI
 class CoptModelAPI :
     public CoptCommon, public EnvKeeper,
     public BasicExprModelAPI<CoptModelAPI, NLParams >
@@ -207,7 +196,8 @@ public:
   void AddGenericCone(int coneType, const int* vars,
       const double* coeffs, int dim, const char* name);
   
-  void AddGlobalConstraint(const NLParams& params, char type);
+  void AddNLAssign(
+      const NLParams& exp, int var, char sense, const char* name);
   /// Create an expression with one argument (e.g. sin(exp(x)))
   template <class MPExpr> NLParams CreateExpressionOneArg(MPExpr expr, 
         int coptop) {

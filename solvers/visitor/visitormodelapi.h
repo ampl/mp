@@ -218,14 +218,19 @@ public:
   static int NLReifLevelDefault() { return 1; }
 
 
-  /// Top level general NL constraint
-  /// lhs <= f(x) <= rhs
+  /// Top level general NL constraint:
+  /// lhs <= f(x) <= rhs.
+  ///
+  /// @note Use only the following accessors:
+  /// - GetLinSize(), GetLinCoef/s(), GetLinVar/s(),
+  /// - GetExpression(),
+  /// - GetLower(), GetUpper().
   ACCEPT_CONSTRAINT(NLConstraint, Recommended, CG_Algebraic)
   void AddConstraint(const NLConstraint& nlc);
   
   
 
-  // TODO: Mandatory:
+  // TODO: Mandatory constraints for expression-based APIs:
   /// NLAssignEQ: algebraic expression expicifier.
   /// Meaning: var == expr.
   /// @note Accessors: GetName(), GetExpression(nle), GetVariable(nle).
@@ -288,9 +293,18 @@ public:
   ACCEPT_EXPRESSION(NLAffineExpression, Recommended);
   Expr AddExpression(const NLAffineExpression& le);
 
+  /// @brief Accept NLQuadExpr.
+  /// @note Use accessors, not methods:
+  /// - GetQuad(Size/Coef/Term1/2)();
+  /// - GetLinSize(le), GetLinCoef(le, i), GetLinTerm(le, i);
+  /// - GetConstTerm(le).
   ACCEPT_EXPRESSION(NLQuadExpression, Recommended);
   Expr AddExpression(const NLQuadExpression& le);
 
+  /// Accept DivExpression.
+  /// @note Use accessors, no methods:
+  /// - GetNumArguments(), GetArgExpression(),
+  /// - GetNumParameters(), GetParameter().
   ACCEPT_EXPRESSION(DivExpression, Recommended)
   Expr AddExpression(const DivExpression&);
 

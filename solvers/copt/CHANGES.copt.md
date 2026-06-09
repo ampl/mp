@@ -2,11 +2,16 @@ Summary of recent updates to COPT for AMPL
 ==========================================
 
 
-## 20260605
+## 20260609
+- Fixed a bug in the interface for the local solver
+  where parts of expressions and objective function
+  could be lost.
 - Use initial guess in NLP.
-- Added various solution statuses.
+- Added various solution statuses, in particular
+  locally optimal and locally infeasible for NLP.
 - Added option *alg:qmatrixtol*.
-- Updated to COPT 8.0.5, with performance improvements and bug fixes.
+- Updated to COPT 8.0.5, with performance improvements
+  and bug fixes.
 
 
 ## 20260414

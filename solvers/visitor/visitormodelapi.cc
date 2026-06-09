@@ -618,6 +618,8 @@ Solver::VExpr VisitorModelAPI::AddExpression(const NLQuadExpression& nlq) {
 
 void VisitorModelAPI::SetNLObjective(int i, const NLObjective& nlo) {
   const auto& exp = GetExpression(nlo);
+  // TODO Reuse Lin+QP parts:
+  //   lp()->AddObjective(i, (const QuadraticObjective&));
   lp()->AddNLObjective(nlo.name(), exp, nlo.obj_sense() == mp::obj::MAX);
 }
 

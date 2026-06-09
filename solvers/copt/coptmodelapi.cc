@@ -250,61 +250,50 @@ void CoptModelAPI::AddConstraint(const ExponentialConeConstraint& ec) {
 void CoptModelAPI::FinishProblemModificationPhase() {
 }
 
+/// @warning Does not insert the NL_SUM operator
 template <class MPExpr>
 void CoptModelAPI::AppendLinAndConstTerms(Expr& exp, const MPExpr& ae) {
-    double ct = GetConstTerm(ae);
-    int size = GetLinSize(ae);
-    if (ct)
-    {
-        // TODO - what about a constant?
-        throw std::runtime_error("Constants are not supported yet");
+  double ct = GetConstTerm(ae);
+  int size = GetLinSize(ae);
+
+  if (ct)
+    exp.addConstant(ct);
+  for (int i = 0; i < size; ++i) {
+    auto linterm = GetLinTerm(ae, i);
+    auto coeff = GetLinCoef(ae, i);
+    if (coeff != 1.0) {
+      exp.addOp(COPT_NL_MULT);
+      exp.addConstant(coeff);
     }
-    
-    for (int i = 0; i < size; ++i) {
-        auto index = GetLinTerm(ae, i).tokens()[0];
-        auto coeff = GetLinCoef(ae, i);
-        exp.addLinear(index, coeff);
-    }
-   
+    exp.addMembers(linterm);
+  }
 }
 
 NLParams CoptModelAPI::AddExpression(const NLAffineExpression& ae) {
-    NLParams exp;
+  NLParams exp;
+  int size =
+      bool(GetConstTerm(ae)) + GetLinSize(ae);
 
-
-    double ct = GetConstTerm(ae);
-    bool hasConst = ct != 0;
-    int size = GetLinSize(ae);
-  
-    if (size > 1 || hasConst)
-    {
-        exp.addOp(COPT_NL_SUM);
-        exp.addVar(size + hasConst);
-    }
-    for (int i = 0; i < size; ++i) {
-        auto index = GetLinTerm(ae, i);
-        auto coeff = GetLinCoef(ae, i);
-        if (coeff != 1.0) {
-            exp.addOp(COPT_NL_MULT);
-            exp.addConstant(coeff);
-        }
-        exp.addMembers(index);
-    }
-    if (hasConst)
-        exp.addConstant(ct);
-    return exp;
+  if (size > 1)
+  {
+    exp.addOp(COPT_NL_SUM);
+    exp.addVar(size);
+  }
+  AppendLinAndConstTerms(exp, ae);
+  return exp;
 }
 
 NLParams CoptModelAPI::AddExpression(const NLQuadExpression& qe) {
     NLParams quad;
-    AppendLinAndConstTerms(quad, qe);
-    int size = GetQuadSize(qe);
+    int size =
+        bool(GetConstTerm(qe)) + GetLinSize(qe) + GetQuadSize(qe);
   
     if (size > 1)
     {
         quad.addOp(COPT_NL_SUM);
         quad.addVar(size);
     }
+    AppendLinAndConstTerms(quad, qe);
     for (int i = 0; i < GetQuadSize(qe); ++i) {
         if (double coef = GetQuadCoef(qe, i)) {
             if (1.0 != coef) {
@@ -366,16 +355,20 @@ NLParams CoptModelAPI::AddExpression(const AtanhExpression& e) {
 
 
 void CoptModelAPI::SetNLObjective(int i, const NLObjective& nlo) {
-    const auto& exp = GetExpression(nlo);
-    if (i == 0)
-    {
-        COPT_CCALL(COPT_SetObjSense(lp(),
-            obj::Type::MAX == nlo.obj_sense() ? COPT_MAXIMIZE : COPT_MINIMIZE));
-        COPT_CCALL(COPT_SetNLObj(lp(), exp.nTokens(), exp.nTokenElements(), exp.tokens(), exp.tokenElements()));
-    }
-    else {
-        MP_RAISE("Multiple non-linear objectives not supported natively. Use multi-objective emulator by setting obj:multi=2");
-    }
+  const auto exp = GetExpression(nlo);
+  if (i == 0)
+  {
+    COPT_CCALL(
+        COPT_SetObjSense(lp(),
+                         obj::Type::MAX == nlo.obj_sense() ?
+                             COPT_MAXIMIZE : COPT_MINIMIZE));
+    SetQuadraticObjective(i, (const QuadraticObjective&)nlo);  // Reuse Lin+QP part
+    COPT_CCALL(COPT_SetNLObj(lp(), exp.nTokens(), exp.nTokenElements(),
+                             exp.tokens(), exp.tokenElements()));
+  }
+  else {
+    MP_RAISE("Multiple non-linear objectives not supported natively. Use multi-objective emulator by setting obj:multi=2");
+  }
 }
 
 
@@ -391,18 +384,11 @@ void CoptModelAPI::AddConstraint(const NLConstraint& nl) {
     lhs = lhs < -COPT_INFINITY ? -COPT_INFINITY : lhs;
     rhs = rhs > COPT_INFINITY ? COPT_INFINITY : rhs;
 
-    if (GetLinSize(nl) > 0) {
-        exp.reserveLinear(GetLinSize(nl));
-        for (int i = 0; i < GetLinSize(nl); ++i)
-        {
-            exp.addLinear(GetLinVar(nl, i), GetLinCoef(nl, i));
-            // coeff*var
-
-        }
-    }
-    COPT_CCALL(COPT_AddNLConstr(lp(), exp.nTokens(), exp.nTokenElements(),
-        exp.tokens(), exp.tokenElements(), exp.nLinear(), exp.linearIndices(),
-        exp.linearCoeffs(), 0, lhs, rhs, 0));
+    COPT_CCALL(COPT_AddNLConstr(lp(),
+        exp.nTokens(), exp.nTokenElements(),
+        exp.tokens(), exp.tokenElements(),
+        GetLinSize(nl), GetLinVars(nl), GetLinCoefs(nl),
+                                0, lhs, rhs, 0));
 }
 /*
 * sin2 is
@@ -411,46 +397,34 @@ c1: -inf <= ((-1 * x2) + sin(((2 * x1)))) <= 0
 c2: x3 >= sin(x1)
 o0: maximize x1+x2
 */
-void CoptModelAPI::AddGlobalConstraint(const NLParams& exp, char sense) {
+void CoptModelAPI::AddNLAssign(
+    const NLParams& exp, int var, char sense, const char* name) {
+  double c {-1.0};
     COPT_CCALL(COPT_AddNLConstr(lp(), exp.nTokens(), exp.nTokenElements(),
-        exp.tokens(), exp.tokenElements(), exp.nLinear(), exp.linearIndices(),
-        exp.linearCoeffs(), sense, 0, 0, "name"));
+        exp.tokens(), exp.tokenElements(), 1, &var, &c,
+        sense, 0, 0, name));
    
 
 }
 void CoptModelAPI::AddConstraint(const NLAssignEQ& neq) {
-
     NLParams params;
-    params.addOp(COPT_NL_SUM);
-    params.addVar(2); // number of items 
-    params.addOp(COPT_NL_NEG);
-    params.addVar(GetVariable(neq));
     params.addMembers(GetExpression(neq));
 
-    AddGlobalConstraint(params, COPT_EQUAL);
-
+    AddNLAssign(params, GetVariable(neq), COPT_EQUAL, GetName(neq));
 }
 void CoptModelAPI::AddConstraint(const NLAssignGE& nge) {
     NLParams params;
-    params.addOp(COPT_NL_SUM);
-    params.addVar(2); // number of items 
-    params.addOp(COPT_NL_NEG);
-    params.addVar(GetVariable(nge));
     params.addMembers(GetExpression(nge));
 
-    AddGlobalConstraint(params, COPT_LESS_EQUAL);
-
+    AddNLAssign(params, GetVariable(nge), COPT_LESS_EQUAL, GetName(nge));
 }
 void CoptModelAPI::AddConstraint(const NLAssignLE& nle) {
     NLParams params;
-    params.addOp(COPT_NL_SUM);
-    params.addVar(2); // number of items 
-    params.addOp(COPT_NL_NEG);
-    params.addVar(GetVariable(nle));
     params.addMembers(GetExpression(nle));
 
-    AddGlobalConstraint(params, COPT_GREATER_EQUAL);
+    AddNLAssign(params, GetVariable(nle), COPT_GREATER_EQUAL, GetName(nle));
 }
+
 NLParams CoptModelAPI::AddExpression(const DivExpression& e) {
     NLParams exp;
     exp.addOp(COPT_NL_DIV);

@@ -646,7 +646,7 @@ public:
   void SetObjectiveTo(
       Backend& backend, int i, const QuadraticObjective& obj) const {
     if (obj.HasExpr()) {
-      assert(obj.GetQPTerms().empty());     // not mixing qudratics and expr
+      assert(obj.GetQPTerms().empty());     // not mixing quadratics and expr
       backend.SetNLObjective(i, obj);
     } else if (obj.GetQPTerms().size())
       backend.SetQuadraticObjective(i, obj);

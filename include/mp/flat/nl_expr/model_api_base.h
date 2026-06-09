@@ -91,11 +91,19 @@ public:
     return nlc.GetMainCon().coef(i);
   }
 
+  /// Get pointer to linear part's coef array
+  const double* GetLinCoefs(const NLConstraint& nlc) const
+  { return nlc.GetMainCon().pcoefs(); }
+
   /// Get linear part var \a i.
   int GetLinVar(const NLConstraint& nlc, int i) const {
     assert(IsVarProper(nlc.GetMainCon().var(i)));
     return nlc.GetMainCon().var(i);
   }
+
+  /// Get pointer to linear part's var array
+  const int* GetLinVars(const NLConstraint& nlc) const
+  { return nlc.GetMainCon().pvars(); }
 
   /// Get the expression term of an \a NLObjective.
   /// @note Can return the dummy expression
