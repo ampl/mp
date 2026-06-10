@@ -2,6 +2,13 @@ Summary of recent updates to COPT for AMPL
 ==========================================
 
 
+## 20260610
+- Fixed a bug causing NLP initial guess to be submitted
+  only when a dual initial guess was available.
+- Option *tech:writesolution* to export .bas, .iis, .sol
+  files.
+
+
 ## 20260609
 - Fixed a bug in the interface for the local solver
   where parts of expressions and objective function
