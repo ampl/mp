@@ -3069,7 +3069,7 @@ void XpressmpBackend::AddMIPStart(
   }
   XPRESSMP_CCALL(
       XPRSaddmipsol(lp(), idx.size(), val.data(), idx.data(), "AMPL_initial_guess"));
-  XPRESSMP_CCALL(
+  XPRESSMP_CCALL(  // in MIPStart() because NLP start is primal-only
       XPRSnlpsetinitval(lp(), idx.size(), idx.data(), val.data()));
 }
 

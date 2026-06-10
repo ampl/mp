@@ -262,16 +262,30 @@ CoptBackend::SolutionStats() {
     return stats;
 }
 void CoptBackend::DoWriteProblem(const std::string& name) {
-  if (ends_with(name, ".lp"))
+  auto CheckEnds = [&](std::string e) {
+    return ends_with(name, e) || ends_with(name, e + ".gz");
+  };
+  if (CheckEnds(".lp"))
     COPT_CCALL(COPT_WriteLp(lp(), name.c_str()));
-  else if (ends_with(name, ".mps"))
+  else if (CheckEnds(".mps"))
     COPT_CCALL(COPT_WriteMps(lp(), name.c_str()));
-  else if (ends_with(name, ".nl"))
+  else if (CheckEnds(".nl"))
     COPT_CCALL(COPT_WriteNL(lp(), name.c_str()));
-  else if (ends_with(name, ".cbf"))
+  else if (CheckEnds(".cbf"))
     COPT_CCALL(COPT_WriteCbf(lp(), name.c_str()));
+  else if (CheckEnds(".bin"))
+    COPT_CCALL(COPT_WriteBin(lp(), name.c_str()));
+  else if (CheckEnds(".bas"))
+    COPT_CCALL(COPT_WriteBasis(lp(), name.c_str()));
+  else if (CheckEnds(".iis"))
+    COPT_CCALL(COPT_WriteIIS(lp(), name.c_str()));
+  else if (CheckEnds(".sol"))
+    COPT_CCALL(COPT_WriteSol(lp(), name.c_str()));
+  else if (CheckEnds(".par"))
+    COPT_CCALL(COPT_WriteParam(lp(), name.c_str()));
   else
-    throw std::runtime_error("Can only export '.lp' or '.mps' files.");
+    MP_RAISE(
+        fmt::format("Unknown export format: '{}'.", name));
 }
 
 
@@ -891,11 +905,11 @@ void CoptBackend::VarStatii(ArrayRef<int> vst) {
         !COPT_GetColInfo(lp(), COPT_DBLINFO_UB, 1, index, &ub))
       { 
         if (lb >= -1e-6)
-          s = -1;
+          s = COPT_BASIS_LOWER;
         else if (ub <= 1e-6)
-          s = -2;
+          s = COPT_BASIS_UPPER;
         else
-          s = -3;  // or, leave at 0?
+          s = COPT_BASIS_SUPERBASIC;  // or, leave at 0?
       }
       break;
     default:
@@ -1048,23 +1062,11 @@ void CoptBackend::AddPrimalDualStart(Solution sol0_unpres) {
   auto pi0 = mv.GetConValues()(CG_Linear);
   std::vector<double> nv(x0.size());
   std::vector<double> ne(pi0.size());
-  COPT_CCALL(COPT_SetLpSolution(lp(), x0.data(), nv.data(), pi0.data(), ne.data()));
-
-  // @todo Only do this if we have expressions
-  // @todo Unify with AddMIPStart()
-  auto ms = GetValuePresolver().PresolveGenericInt({ sol0_unpres.spars_primal });
-  auto s0 = ms.GetVarValues()();
-  std::vector<int> idx;                 // Create sparse vector
-  idx.reserve(x0.size());
-  std::vector<double> val;
-  val.reserve(x0.size());
-  for (int i = 0; i < (int)x0.size(); ++i) {
-    if (s0[i]) {
-      idx.push_back(i);
-      val.push_back(x0[i]);
-    }
-  }
-  COPT_CCALL(COPT_SetNLPrimalStart(lp(), idx.size(), idx.data(), val.data()));
+  COPT_CCALL(COPT_SetLpSolution(lp(),
+                                x0.data(),
+                                ne.data(),
+                                pi0.data(),
+                                nv.data()));
 }
 
 void CoptBackend::AddMIPStart(
@@ -1084,6 +1086,9 @@ void CoptBackend::AddMIPStart(
     }
   }
   COPT_CCALL(COPT_AddMipStart(lp(), val.size(), idx.data(), const_cast<double*>(val.data())));
+  /// @todo Only do this if we have expressions
+  /// @note AddMIPStart() is called when the model can be non-LP
+  COPT_CCALL(COPT_SetNLPrimalStart(lp(), idx.size(), idx.data(), val.data()));
 }
 
 

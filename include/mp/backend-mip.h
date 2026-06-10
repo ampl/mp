@@ -112,19 +112,23 @@ public:
   { MP_UNSUPPORTED("MIPBackend::SetBasis"); }
   /**
   * General LP warm start, e.g.,
-  * set primal/dual initial guesses for continuous case.
+  * set primal+dual initial guesses for continuous case.
   * The specific Backend should
   * presolve the values if needed.
+  *
+  * @note Only called when both primal and dual initial guesses
+  *   are provided. Thus, use MIPSTART for primal-only
+  *   starts (MIP, NLP).
   **/
   DEFINE_STD_FEATURE( WARMSTART )
   ALLOW_STD_FEATURE( WARMSTART, false )
   virtual void AddPrimalDualStart(Solution )
   { MP_UNSUPPORTED("MIPBackend::AddPrimalDualStart"); }
   /**
-  * MIP warm start.
+  * Primal-only (MIP / NLP) warm start.
   * Provides solution hints (dense vector),
   * as well as sparsity pattern (dense 0-1 vector),
-  * allowing partial MIP warm start.
+  * allowing partial MIP / NLP warm start.
   * Presolve the values if needed.
   **/
   DEFINE_STD_FEATURE( MIPSTART )
