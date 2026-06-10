@@ -188,12 +188,17 @@ protected:
   ALLOW_STD_FEATURE(WRITE_PROBLEM, false)
   FEATURE_API_TO_IMPLEMENT(WRITE_PROBLEM,
                            void DoWriteProblem(const std::string& ))
+
+  /// Typedef set of result format extensions
+  using ResultExtensionsSet = std::set<std::string>;
+
       /// Redefine this if you want some extensions
       /// to be written after solving instead.
       /// This is for compatibility wiht ASL drivers
       /// where 'writeprob' was used both for native-format model
       /// and solution output #218.
-      virtual std::set<std::string> NativeResultExtensions() const
+
+      virtual ResultExtensionsSet NativeResultExtensions() const
   { return {".sol", ".ilp", ".mst", ".hnt", ".bas", ".json"}; }
 
       /**

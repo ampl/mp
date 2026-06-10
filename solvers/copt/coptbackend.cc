@@ -275,17 +275,26 @@ void CoptBackend::DoWriteProblem(const std::string& name) {
     COPT_CCALL(COPT_WriteCbf(lp(), name.c_str()));
   else if (CheckEnds(".bin"))
     COPT_CCALL(COPT_WriteBin(lp(), name.c_str()));
-  else if (CheckEnds(".bas"))
-    COPT_CCALL(COPT_WriteBasis(lp(), name.c_str()));
-  else if (CheckEnds(".iis"))
-    COPT_CCALL(COPT_WriteIIS(lp(), name.c_str()));
-  else if (CheckEnds(".sol"))
-    COPT_CCALL(COPT_WriteSol(lp(), name.c_str()));
   else if (CheckEnds(".par"))
     COPT_CCALL(COPT_WriteParam(lp(), name.c_str()));
   else
     MP_RAISE(
         fmt::format("Unknown export format: '{}'.", name));
+}
+
+void CoptBackend::DoWriteSolution(const std::string& name) {
+  auto CheckEnds = [&](std::string e) {
+    return ends_with(name, e) || ends_with(name, e + ".gz");
+  };
+  if (CheckEnds(".bas"))
+    COPT_CCALL(COPT_WriteBasis(lp(), name.c_str()));
+  else if (CheckEnds(".iis"))
+    COPT_CCALL(COPT_WriteIIS(lp(), name.c_str()));
+  else if (CheckEnds(".sol"))
+    COPT_CCALL(COPT_WriteSol(lp(), name.c_str()));
+  else
+    MP_RAISE(
+        fmt::format("Unknown result export format: '{}'.", name));
 }
 
 

@@ -45,6 +45,16 @@ public:
   void DoWriteProblem(const std::string& name) override;
 
   /**
+  * EXPORT SOLUTION
+  **/
+  ALLOW_STD_FEATURE(WRITE_SOLUTION, true)
+  void DoWriteSolution(const std::string& name) override;
+
+  /// Suported result format extensions
+  ResultExtensionsSet NativeResultExtensions() const override
+  { return {".sol", ".iis", ".bas"}; }
+
+    /**
    * MULTIOBJ
   **/
   ALLOW_STD_FEATURE(MULTIOBJ, true)
