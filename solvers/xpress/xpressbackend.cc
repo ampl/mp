@@ -195,13 +195,23 @@ int XpressmpBackend::BarrierIterations() const {
   return getIntAttr(XPRS_BARITER);
 }
 
+int XpressmpBackend::CrossoverIterations() const {
+  return getIntAttr(XPRS_CROSSOVERITER);
+}
+
+int XpressmpBackend::SLPIterations() const {
+  return getIntAttr(XPRS_SLPITER);
+}
+
 std::map<std::string, std::variant<int, double, std::string>>
 XpressmpBackend::SolutionStats() {
-    std::map<std::string, std::variant<int, double, std::string>> stats;
-    stats["simplex_iterations"] = SimplexIterations();
-    stats["barrier_iterations"] = BarrierIterations();
-    stats["node_count"] = NodeCount();
-    return stats;
+  std::map<std::string, std::variant<int, double, std::string>> stats;
+  stats["simplex_iterations"] = SimplexIterations();
+  stats["barrier_iterations"] = BarrierIterations();
+  stats["crossover_iterations"] = CrossoverIterations();
+  stats["SLP_iterations"] = SLPIterations();
+  stats["node_count"] = NodeCount();
+  return stats;
 }
 
 void XpressmpBackend::DoWriteProblem(const std::string& name) {
@@ -298,7 +308,6 @@ void XpressmpBackend::ReportXPRESSMPResults() {
     ReportXPRESSMPPool();
   if (need_fixed_MIP())
     ConsiderXpressFixedModel();
-  
 }
 
 void XpressmpBackend::ConsiderXpressFixedModel() {
@@ -390,12 +399,18 @@ std::string XpressmpBackend::DoXpressFixedModel()
 
 
   void XpressmpBackend::AddXPRESSMPMessages() {
-    if(auto iter = SimplexIterations())
-      AddToSolverMessage(
+    auto iter = SimplexIterations();    // Always
+    AddToSolverMessage(
         fmt::format("{} simplex iterations\n",iter));
     if (auto nbi = BarrierIterations())
       AddToSolverMessage(
-        fmt::format("{} barrier iterations\n", nbi));
+          fmt::format("{} barrier iterations\n", nbi));
+    if (auto nci = CrossoverIterations())
+      AddToSolverMessage(
+          fmt::format("{} crossover iterations\n", nci));
+    if (auto nslpi = SLPIterations())
+      AddToSolverMessage(
+          fmt::format("{} SLP iterations\n", nslpi));
     if (auto nnd = NodeCount())
       AddToSolverMessage(
         fmt::format("{} branching nodes\n", nnd));

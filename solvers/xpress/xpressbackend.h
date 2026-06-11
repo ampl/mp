@@ -193,6 +193,8 @@ protected:
   int NodeCount() const;
   int SimplexIterations() const;
   int BarrierIterations() const;
+  int CrossoverIterations() const;
+  int SLPIterations() const;
 
   std::map<std::string, std::variant<int, double, std::string>>
       SolutionStats() override;

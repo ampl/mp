@@ -299,12 +299,13 @@ void VisitorBackend::printModelStats() {
 }
 void VisitorBackend::AddVISITORMessages() {
   printModelStats();
-  if(auto si = SimplexIterations())
-  AddToSolverMessage(
-          fmt::format("{} simplex iterations\n", si));
+  auto si = SimplexIterations();
+  AddToSolverMessage(         // Always
+      fmt::format("{} simplex iterations\n", si));
   if (auto nbi = BarrierIterations())
     AddToSolverMessage(
           fmt::format("{} barrier iterations\n", nbi));
+  // TODO PDHG, SLP, NLP...
   if (auto nnd = NodeCount())
     AddToSolverMessage(
           fmt::format("{} branching nodes\n", nnd));
