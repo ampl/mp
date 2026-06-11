@@ -76,13 +76,11 @@ std::string HighsBackend::GetSolverVersion() {
       {
     #ifdef __APPLE__
           throw std::runtime_error("GPU support is not available on MacOS");
-    #elif !defined(_WIN32)
-    // Highs lib on linux does not support dynamic loading
+    #endif
       loader().Highs_destroy(lp());
       LoadHighsLibrary(true);
       OpenSolver();
       ReplaySolverOptions();
-    #endif
     }
     std::string method = storedOptions_.lpmethod_ == "pdlp-gpu" ? "pdlp" : storedOptions_.lpmethod_;
     SetSolverOption("solver", method);
