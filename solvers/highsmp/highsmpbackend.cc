@@ -82,7 +82,10 @@ std::string HighsBackend::GetSolverVersion() {
       OpenSolver();
       ReplaySolverOptions();
     }
-    std::string method = storedOptions_.lpmethod_ == "pdlp-gpu" ? "pdlp" : storedOptions_.lpmethod_;
+
+    std::string method = storedOptions_.lpmethod_;
+    if (method == "pdlp-gpu") method = "pdlp";
+    else if (method == "hipdlp-gpu") method = "hipdlp";
     SetSolverOption("solver", method);
     /// Copy env/lp to ModelAPI
     copy_common_info_to_other();
@@ -531,7 +534,10 @@ static const mp::OptionValueInfo lp_values_method[] = {
   { "simplex", "Simplex", 1},
   { "ipm", "Interior Point Method", 2},
   { "pdlp", "cuPDLP-c solver", 3},
-  { "pdlp-gpu", "cuPDLP-c solver on NVIDIA GPU. Requires CUDA v12, not available on MacOS", 3},
+  { "pdlp-gpu", "cuPDLP-c solver on NVIDIA GPU. Requires CUDA, not available on MacOS", 4},
+  { "hipdlp", "HiPDLP solver", 5},
+  { "hipdlp-gpu", "HiPDLP-c solver on NVIDIA GPU. Requires CUDA, not available on MacOS", 6},
+  { "qpasm", "QP active set method", 7}
 };
 
 static const mp::OptionValueInfo off_on_choose_values[] = {
@@ -547,11 +553,57 @@ static const mp::OptionValueInfo pdlperestartmethod_values[] = {
   { "2", "CPU", 2},
 };
 
+static const mp::OptionValueInfo pdlp_scaling_mode_values[] = {
+  { "1", "Ruiz scaling", 0},
+  { "2", "L2 (default)", 1},
+  { "4", "PC (preconditioner-oriented)", 2},
+};
+
+static const mp::OptionValueInfo pdlp_step_size_strategy_values[] = {
+    {"0", "Fixed", 0},
+    {"1", "Adaptive (default)", 1},
+    {"2", "Malitsky-Pock", 2},
+    {"3", "PID", 3}
+};
+
+static const mp::OptionValueInfo pdlp_restart_strategy_values[] = {
+  { "0", "Off", 0},
+  { "1", "Fixed", 1},
+  { "2", "Adaptive (default)", 2},
+  {"3", "Halpern", 3}
+};
+
+static const mp::OptionValueInfo iis_strategy_values[] = {
+    {"0", "Light test", 0 },
+    { "1", "Try dual ray", 1 },
+    { "2", "Try elastic LP", 2 },
+    { "4", "Prioritise columns", 4 },
+    { "8", "Find true IIS", 8 },
+    { "16", "Find relaxation IIS for MIP", 16 }
+};
 
 static const mp::OptionValueInfo run_crossover_values[] = {
   { "choose", "Run if the results of IPM without crossover is imprecise", -1},
   { "off", "Off", 1},
   { "on", "On", 2},
+};
+
+static const mp::OptionValueInfo hipo_system_values[] = {
+    { "choose", "Choose automatically (default)", 0},
+    { "augmented", "Augmented system", 1},
+    { "normaleq", "Normal equations", 2}
+};
+static const mp::OptionValueInfo hipo_parallel_type_values[] = {
+    // tree, node or both
+	{ "tree", "Tree parallelism", 1},
+	{ "node", "Node parallelism", 2},
+	{ "both", "Both tree and node parallelism", 3}
+};
+static const mp::OptionValueInfo hipo_ordering_values[] = {
+	{ "choose", "Choose automatically (default)", 0},
+	{ "metis", "Multilevel graph partitioning", 1},
+	{ "amd", "Approximate minimum degree", 2},
+	{ "rcm", "Reverse Cuthill-McKee", 3}
 };
 static const mp::OptionValueInfo simplex_strategy_values_[] = {
   { "0", "Choose automatically (default)", 0},
@@ -632,6 +684,13 @@ void HighsBackend::InitCustomOptions() {
     "\n.. value-table::\n",
     "presolve", off_on_choose_values, c);
 
+
+
+  AddSolverOption("pre:userobjectivescale user_objective_scale userobjectivescale",
+      "Exponent of power-of-two objective scaling for model (default 0).",
+      "user_objective_scale", 0, std::numeric_limits<HighsInt>::max());
+
+
   AddSolverOption("pre:userboundscale user_bound_scale userboundscale",
     "Exponent of power-of-two bound scaling for model (default 0).",
     "user_bound_scale", 0, std::numeric_limits<HighsInt>::max());
@@ -669,11 +728,11 @@ void HighsBackend::InitCustomOptions() {
     "Use native termination for PDLP solver:\n"
     "\n.. value-table::\n", "pdlp_native_termination", values_01_noyes_0default_, 0);
 
-  AddSolverOption("pre:pdlpscaling pdlp_scaling pdlpscaling",
-    "Scaling option for PDLP solver:\n"
-    "\n.. value-table::\n", "pdlp_scaling", values_01_noyes_1default_, 1);
+  AddSolverOption("pre:pdlpscaling_mode pdlp_scaling_mode",
+      "Scaling mode for PDLP solver, sum of:\n"
+      "\n.. value-table::\n", "pdlp_scaling_mode", pdlp_scaling_mode_values, 1);
 
-  AddSolverOption("lim:pdlpiterationlimit pdlpiterationlimit pdlp_iteration_limit",
+  AddSolverOption("lim:pdlp_iteration_limit pdlpiterationlimit pdlp_iteration_limit",
     "Iteration limit for PDLP solver (default: no limit).",
     "pdlp_iteration_limit", 0, INT_MAX);
 
@@ -694,8 +753,12 @@ void HighsBackend::InitCustomOptions() {
     "small_matrix_value", 1e-12, Infinity());
 
   AddSolverOption("alg:feastol feastol primal_feasibility_tolerance",
-    "Primal feasibility tolerance (default 1e-7).",
-    "primal_feasibility_tolerance", 1e-10, Infinity());
+      "Primal feasibility tolerance (default 1e-7).",
+      "primal_feasibility_tolerance", 1e-10, Infinity());
+
+  AddSolverOption("alg:kkt_tolerance kkttol kkt_tolerance",
+    "KKt tolerance (default 1e-7).",
+    "kkt_tolerance", 1e-10, Infinity());
 
   AddSolverOption("alg:dualfeastol dualfeastol dual_feasibility_tolerance",
     "Dual feasibility tolerance (default 1e-7).",
@@ -709,17 +772,58 @@ void HighsBackend::InitCustomOptions() {
     "IPM optimality tolerance (default 1e-8).",
     "ipm_optimality_tolerance", 1e-12, Infinity());
 
-  AddSolverOption("alg:pdlperestartmethod pdlperestartmethod pdlp_e_restart_method",
-    "Restart mode for PDLP solver (default 1).",
-    "pdlp_e_restart_method", pdlperestartmethod_values, 1);
+  AddSolverOption("pdlp:cupdlpc_restart_method pdlpcupdlpcrestartmethod pdlp_cupdlpc_restart_method",
+    "Restart mode for PDLP solver:\n"
+      "\n.. value-table::\n",
+    "pdlp_cupdlpc_restart_method", pdlperestartmethod_values, 1);
 
-  AddSolverOption("alg:pdlpopttol pdlpopttol  pdlp_d_gap_tol pdlp_optimality_tolerance",
+  AddSolverOption("pdlp:restart_strategy pdlprestartstrategy pdlp_restart_strategy",
+      "Restart strategy for PDLP solver:\n"
+      "\n.. value-table::\n",
+      "pdlp_restart_strategy", pdlp_restart_strategy_values, 1);
+
+  AddSolverOption("pdlp:step_size_strategy pdlpstepsizestrategy pdlp_step_size_strategy ",
+      "Stepsize strategy for PDLP solver:\n"
+      "\n.. value-table::\n",
+      "pdlp_step_size_strategy ", pdlp_step_size_strategy_values, 1);
+
+  AddSolverOption("pdlp:optimality_tolerance pdlp_optimality_tolerance pdlp_opt_tol pdlpopttol",
     "PDLP optimality tolerance (default 1e-7).",
     "pdlp_optimality_tolerance", 1e-12, Infinity());
 
+
+  AddSolverOption("pdlp:ruiz_iterations pdlp_ruiz_iterations ",
+      "Number of Ruiz scaling iterations for PDLP solver (default 10).",
+      "pdlp_ruiz_iterations", 0, INT_MAX);
+
+  AddSolverOption("lim:qp_iteration_limit qp_iteration_limit qpiterationlimit",
+      "Iteration limit for QP active set method (default: no limit).",
+      "qp_iteration_limit", 0, INT_MAX);
+
+  AddSolverOption("qp:nullspace_limit qp_nullspace_limit qpnullspacelimit",
+      "Nullspace limit for the active set QP solver (default: 4000  ).",
+      "qp_nullspace_limit", 0, INT_MAX);
+
+  AddSolverOption("qp:regularization_value qp_regularization_value qpregularizationvalue",
+      "Regularization value added to the Hessian in the active set QP solver (default: 1e-7).",
+      "qp_regularization_value", 0.0, DBL_MAX);
+
   AddSolverOption("bar:crossover crossover run_crossover",
-    "Run crossover after IPM to get a basic solution",
-    "run_crossover", run_crossover_values, c);
+    "Run crossover after IPM to get a basic solution\n"
+      "\n.. value-table::\n", "run_crossover", run_crossover_values, c);
+
+  AddSolverOption("bar:hipo_system hipo_system",
+      "Control which Newton/KKT system is used by HiPO:\n"
+      "\n.. value-table::\n",  "hipo_system", hipo_system_values , c);
+
+
+  AddSolverOption("bar:hipo_parallel_type hipo_parallel_type",
+	  "Control the type of parallelism used by HiPO:\n"
+      "\n.. value-table::\n", "hipo_parallel_type", hipo_parallel_type_values, c);
+
+  AddSolverOption("bar:hipo_ordering hipo_ordering",
+	  "Control the ordering used by HiPO before factorization:\n"
+      "\n.. value-table::\n", "hipo_ordering", hipo_ordering_values, c);
 
   AddSolverOption("tech:threads threads",
     "How many threads to use when using the barrier algorithm "
@@ -814,6 +918,15 @@ void HighsBackend::InitCustomOptions() {
     "Whether to blend multiple objectives or apply lexicographical ordering",
     "blend_multi_objectives", values_01_noyes_1default_, 1
   );
+
+  AddSolverOption("iis:strategy iis_strategy iisstrategy",
+      "Strategy for IIS calculation (sum of):\n"
+      "\n.. value-table::\n",
+	  "iis_strategy", iis_strategy_values, 0);
+
+  AddSolverOption("lim:iis_time_limit iis_time_limit iistimelimit",
+	  "Time limit for computing IIS (default: no limit).",
+	  "iis_time_limit", 0.0, DBL_MAX);
 }
 
 double HighsBackend::MIPGap() {

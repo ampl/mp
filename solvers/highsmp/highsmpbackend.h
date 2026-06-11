@@ -151,7 +151,7 @@ private:
   /// These options are stored in the class
   struct Options {
     std::string lpmethod_ = "choose";
-    bool onGPU() { return lpmethod_ == "pdlp-gpu"; }
+    bool onGPU() { return lpmethod_ == "pdlp-gpu" || lpmethod_ == "hipdlp-gpu"; }
   };
   Options storedOptions_;
 

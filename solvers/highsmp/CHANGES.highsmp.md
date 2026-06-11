@@ -2,6 +2,17 @@ Summary of recent updates to HiGHS for AMPL
 ===========================================
 
 
+## 20260611
+- Updated to HiGHS 1.143.
+- Added HiPO algorithm, an advanced interior point method,
+  accessible with *alg:method=hipo*
+- Added HiPDLP on CPU and GPU (*alg:method=hipdlp* and 
+  *alg:method=hipdlp-gpu*)
+- Added active set algorithm for qp (*alg:method=qpasm*)
+- Added options to control those algorithms, see namespaces 
+  (*pdlp:*) and (*qp:*)
+
+  
 ## 20260414
 - Changes in MP, in particular new naming for
   auxiliaries.
