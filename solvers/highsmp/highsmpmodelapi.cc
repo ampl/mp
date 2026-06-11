@@ -18,15 +18,15 @@ void HighsModelAPI::AddVariables(const VarArrayDef& v) {
     ubs[i] = std::isinf(v.pub()[i]) ?  Infinity() : v.pub()[i];
 
   }
-  HIGHS_CCALL(loader().Highs_addCols(lp(), v.size(), costs.data(), lbs.data(), ubs.data(), 0, NULL, NULL, NULL));
+  HIGHS_CCALL(Highs_addCols(lp(), v.size(), costs.data(), lbs.data(), ubs.data(), 0, NULL, NULL, NULL));
   if (intIndices.size() > 0) {
     std::vector<int> types(intIndices.size(), 1); // TODO get the 1 from solver API?
-    HIGHS_CCALL(loader().Highs_changeColsIntegralityBySet(lp(), intIndices.size(),
+    HIGHS_CCALL(Highs_changeColsIntegralityBySet(lp(), intIndices.size(),
       intIndices.data(), types.data()));
   }
   if (v.pnames())
     for (int i = 0; i < v.size(); i++)
-      HIGHS_CCALL(loader().Highs_passColName(lp(), i, v.pnames()[i]));
+      HIGHS_CCALL(Highs_passColName(lp(), i, v.pnames()[i]));
   accObjectives().setNumVars(v.size());
 }
 
@@ -64,7 +64,7 @@ void HighsModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective& qo
         startCols[j] = q;
       }
     }
-    HIGHS_CCALL(loader().Highs_passHessian(lp(), NumVars(), qt.size(),
+    HIGHS_CCALL(Highs_passHessian(lp(), NumVars(), qt.size(),
                                   kHighsHessianFormatTriangular,
       startCols.data(), qt.pvars2(), coeffs.data()));
   }
@@ -87,7 +87,7 @@ void HighsModelAPI::AddConstraint(const LinConGE& lc) {
 }
 
 void HighsModelAPI::FinishProblemModificationPhase() {
-  HIGHS_CCALL(loader().Highs_addRows(lp(),
+  HIGHS_CCALL(Highs_addRows(lp(),
     acc_constraints_.lb.size(),
     acc_constraints_.lb.data(),
     acc_constraints_.ub.data(),
