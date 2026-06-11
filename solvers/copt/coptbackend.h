@@ -188,8 +188,8 @@ protected:
 
   ArrayRef<int> VarStatii();
   ArrayRef<int> ConStatii();
-  void VarStatii(ArrayRef<int>);
-  void ConStatii(ArrayRef<int>);
+  /// Should be in 1 call?
+  void SetCoptBasis(ArrayRef<int> vs, ArrayRef<int> cs);
 
   ArrayRef<int> VarsIIS();
   pre::ValueMapInt ConsIIS();

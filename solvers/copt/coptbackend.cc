@@ -883,11 +883,12 @@ ArrayRef<int> CoptBackend::ConStatii() {
   return cons;
 }
 
-void CoptBackend::VarStatii(ArrayRef<int> vst) {
+void CoptBackend::SetCoptBasis(
+    ArrayRef<int> vst, ArrayRef<int>cst) {
   int index[1];
-  std::vector<int> stt(vst.data(), vst.data() + vst.size());
-  for (auto j = stt.size(); j--; ) {
-    auto& s = stt[j];
+  std::vector<int> vstt(vst.data(), vst.data() + vst.size());
+  for (auto j = vstt.size(); j--; ) {
+    auto& s = vstt[j];
     switch ((BasicStatus)s) {
     case BasicStatus::bas:
       s = COPT_BASIS_BASIC;
@@ -925,29 +926,46 @@ void CoptBackend::VarStatii(ArrayRef<int> vst) {
       MP_RAISE(fmt::format("Unknown AMPL var status value: {}", s));
     }
   }
-  COPT_SetBasis(lp(), stt.data(), NULL);
-}
-
-void CoptBackend::ConStatii(ArrayRef<int> cst) {
-  std::vector<int> stt(cst.data(), cst.data() + cst.size());
-  for (auto& s : stt) {
+  std::vector<int> cstt(cst.data(), cst.data() + cst.size());
+  for (int j = (int)cstt.size(); j--; ) {
+    auto& s = cstt[j];
     switch ((BasicStatus)s) {
     case BasicStatus::bas:
       s = COPT_BASIS_BASIC;
       break;
-    case BasicStatus::none:   // for 'none', which is the status
-    case BasicStatus::upp:    // assigned to new rows, it seems good to guess
-    case BasicStatus::sup:    // a valid status.
-    case BasicStatus::low:    // 
-    case BasicStatus::equ:    // For active constraints, it is usually 'sup'.
-    case BasicStatus::btw:    // We could compute slack to decide though.
+    case BasicStatus::low:
+      s = COPT_BASIS_LOWER;
+      break;
+    case BasicStatus::equ:
+      s = COPT_BASIS_FIXED;
+      break;
+    case BasicStatus::upp:
+      s = COPT_BASIS_UPPER;
+      break;
+    case BasicStatus::sup:
+    case BasicStatus::btw:
       s = COPT_BASIS_SUPERBASIC;
+      break;
+    case BasicStatus::none:
+      /// 'none' is assigned to new variables. Compute low/upp/sup:
+      /// Depending on where 0.0 is between bounds
+      double lb, ub;
+      if(!COPT_GetRowInfo(lp(), COPT_DBLINFO_LB, 1, &j, &lb) &&
+          !COPT_GetRowInfo(lp(), COPT_DBLINFO_UB, 1, &j, &ub))
+      {
+        if (lb >= -1e-6)
+          s = COPT_BASIS_LOWER;
+        else if (ub <= 1e-6)
+          s = COPT_BASIS_UPPER;
+        else
+          s = COPT_BASIS_SUPERBASIC;  // or, leave at 0?
+      }
       break;
     default:
       MP_RAISE(fmt::format("Unknown AMPL con status value: {}", s));
     }
   }
-  COPT_SetBasis(lp(), NULL, stt.data());
+  COPT_SetBasis(lp(), vstt.data(), cstt.data());
 }
 
 SolutionBasis CoptBackend::GetBasis() {
@@ -971,8 +989,7 @@ void CoptBackend::SetBasis(SolutionBasis basis) {
   auto constt = mv.GetConValues()(CG_Linear);
   assert(varstt.size());
   assert(constt.size());
-  VarStatii(varstt);
-  ConStatii(constt);
+  SetCoptBasis(varstt, constt);
 }
 
 

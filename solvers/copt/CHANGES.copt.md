@@ -5,6 +5,7 @@ Summary of recent updates to COPT for AMPL
 ## 20260610
 - Fixed a bug causing NLP initial guess to be submitted
   only when a dual initial guess was available.
+- Fixed input of LP basis (which helps accelerate resolve).
 - Option *tech:writesolution* to export .bas, .iis, .sol
   files.
 
