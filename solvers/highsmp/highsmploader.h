@@ -103,20 +103,20 @@ namespace mp {
     static const char* getHighsLibraryName(bool cuda) {
       if (cuda) {
       #ifdef _WIN32
-              return "highs-cuda.dll";
+              return "highs-ampl.dll";
       #elif defined(__APPLE__)
             throw std::runtime_error("GPU-based solver not supported on MacOS");
       #else
-            return "libhighs-cuda.so.1";
+            return "libhighs-ampl-gpu.so.1";
       #endif
       }
       else {
       #ifdef _WIN32
-              return "highs.dll";
+              return "highs-ampl.dll";
       #elif defined(__APPLE__)
-              return "libhighs.1.dylib";
+              return "libhighs-ampl.1.dylib";
       #else
-              return "libhighs.so.1";
+              return "libhighs-ampl.so.1";
       #endif
       }
     }

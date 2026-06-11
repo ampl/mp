@@ -150,7 +150,6 @@ protected:
 private:
   /// These options are stored in the class
   struct Options {
-    std::string presolve = "on";
     std::string lpmethod_ = "choose";
     bool onGPU() { return lpmethod_ == "pdlp-gpu"; }
   };

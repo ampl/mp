@@ -104,7 +104,7 @@ namespace mp{
   class HighsCommon :
     public Backend2ModelAPIConnector<HighsCommonInfo> {
   public:
-    /// These methods ï¿½ess Highs options. Used by AddSolverOption()
+    /// These methods £ess Highs options. Used by AddSolverOption()
     void GetSolverOption(const char* key, int& value) const;
     void SetSolverOption(const char* key, int value);
     void GetSolverOption(const char* key, double& value) const;
@@ -114,12 +114,13 @@ namespace mp{
 
     double myinf = 0;
     double Infinity() {
-      if (!myinf) myinf = Highs_getInfinity(lp());
+      if (!myinf) myinf = loader().Highs_getInfinity(lp());
       return myinf;
     }
     double MinusInfinity() { return -Infinity(); }
 
   protected:
+    void LoadHighsLibrary(bool gpu);
     void OpenSolver();
     void CloseSolver();
 
