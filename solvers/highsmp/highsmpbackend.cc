@@ -532,7 +532,9 @@ std::pair<int, std::string> HighsBackend::GetSolveResult() {
 static const mp::OptionValueInfo lp_values_method[] = {
   { "choose", "Automatic (default)", -1},
   { "simplex", "Simplex", 1},
-  { "ipm", "Interior Point Method", 2},
+  { "ipm", "Interior Point Method (automatic)", 2},
+  { "hipo", "Highs Interior point method", 2},
+  { "ipx", "IPX interior point method", 2},
   { "pdlp", "cuPDLP-c solver", 3},
   { "pdlp-gpu", "cuPDLP-c solver on NVIDIA GPU. Requires CUDA, not available on MacOS", 4},
   { "hipdlp", "HiPDLP solver", 5},
@@ -651,7 +653,7 @@ void HighsBackend::InitCustomOptions() {
     "Log file name.", "log_file");
 
   std::string c;
-  AddStoredOption("alg:method method lpmethod solver",
+  AddStoredOption("lp:method method lpmethod solver alg:method",
     "Which algorithm to use :\n"
     "\n.. value-table::\n", storedOptions_.lpmethod_, lp_values_method);
 
