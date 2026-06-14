@@ -656,7 +656,7 @@ void HighsBackend::InitCustomOptions() {
   AddStoredOption("lp:method method lpmethod solver alg:method",
     "Which algorithm to use :\n"
     "\n.. value-table::\n", storedOptions_.lpmethod_, lp_values_method);
-
+  AddAlias("lp:algorithm", "method");
   AddSolverOption("alg:simplex simplex simplex_strategy",
     "Strategy for simplex solver :\n"
     "\n.. value-table::\n", "simplex_strategy", simplex_strategy_values_, 0);

@@ -3,7 +3,7 @@ Summary of recent updates to SCIP for AMPL
 
 
 ## 20260526
-- Updated to SCIP 10.0.2
+- Updated to SCIP 10.0.2 which includes bug fixes and improvements.
 
 
 ## 20260414

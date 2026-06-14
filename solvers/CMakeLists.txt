@@ -143,7 +143,6 @@ function(add_ampl_solver name)
   target_include_directories(${static_lib}
     PUBLIC ${include_dirs} ${MP_BASE_DIR}/solvers)
   target_link_libraries(${static_lib} PUBLIC ${libraries})
-  message("target_link_libraries(${static_lib} PUBLIC ${libraries})")
   target_compile_options(${static_lib} PUBLIC ${definitions})
   if(add_ampl_solver_VERSION)
       target_compile_definitions(${static_lib} PUBLIC DRIVER_DATE=${add_ampl_solver_VERSION})
@@ -271,7 +270,7 @@ add_ampl_backend(gcgmp DLL_RUNTIME SHARED_LIB MODULE GCG
 add_ampl_backend(scipmp DLL_RUNTIME SHARED_LIB MODULE SCIP 
   LIBRARIES ${SCIP_LIBS} ${CMAKE_DL_LIBS})
 
-add_ampl_backend(highsmp
+add_ampl_backend(highsmp highsmploader.h highsmploader.cc
                   DLL_RUNTIME SHARED_LIB MODULE HIGHS 
                   LIBRARIES ${HIGHS_LIBS} ${CMAKE_DL_LIBS})
 
