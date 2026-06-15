@@ -1498,6 +1498,7 @@ private:
   int recognize_logistic_ =
       GetFlatCvt().ModelAPIWantsLogistic() ? 1 : 0;
   int dvelim_ = 2;
+  int pow2_as_qp_ = 1;
 
 
 public:
@@ -1507,6 +1508,7 @@ public:
   int recognize_signpow() const { return recognize_signpow_; }
   int recognize_logistic() const { return recognize_logistic_; }
   int defvarelim() const { return dvelim_; }
+  int pow2_as_qp() const { return pow2_as_qp_; }
 
   /// Distinguish between constraints and objectives.
   /// What about common expressions?
@@ -1526,18 +1528,29 @@ public:
   /// Changing to only do this when powconstexp not accepted,
   /// or the argument is linear.
   bool IfQuadratizePow2(const EExpr& ee) const override final {
+    bool ifAcceptsQP = IfFlatteningAConstraint() ?
+                           GetFlatCvt().IfPassQuadCon() :
+                           // For objectives, still multiply out
+                           // if we move the QP terms into contraints (SCIP)
+                           ( GetFlatCvt().IfPassQuadObj() || GetFlatCvt().IfPassQuadCon() );
+    if (!ifAcceptsQP)
+      return false;            // So we can Pl-approximate
     // pow() not desired
     if ( !GetFlatCvt().template UserAcceptsConOrExpr<PowConstExpConstraint>() )
       return true;
-    if ( !ee.is_affine() )
+    if (!ee.is_affine())
       return false;
-    // Leave ^2 if any subexpressions
+    // Leave ^2 if any subexpressions - otherwise can get big.
     // (@todo even when flattened?)
+    // (@todo only when the subexpr is not accepted as expression?)
+    // @todo Is this efficient?
     /// @note Subexpr cannot be linfn (they are inlined when visiting)
     for (auto arg: ee.GetLinTerms().vars()) {
       if ( GetFlatCvt().HasInitExpression(arg) )
         return false;
     }
+    if (!pow2_as_qp())
+      return false;
     return true;
   }
 
@@ -1570,7 +1583,9 @@ private:
     GetEnv().AddOption("cvt:sos2 sos2",
         "0*/1: Whether to honor SOS2 constraints for nonconvex "
         "piecewise-linear terms, using suffixes .sos and .sosref "
-        "provided by AMPL. Currently under rework.",
+        "provided by AMPL. Currently under rework; we recommend "
+                       "to switch off PL expression linearization "
+                       "in AMPL (option pl_linearize 0).",
         options_.sos2_, 0, 1);
     GetEnv().AddOption("cvt:pre:prod cvt:prod",
                        fmt::format("Product preprocessing flags. "
@@ -1605,12 +1620,18 @@ private:
                                  "see acc:logistic.",
                              recognize_logistic_, 0, 1);
     GetEnv().AddStoredOption("cvt:dvelim dvelim",
-                       "Eliminate AMPL defined variables "
-                       "by substitution into linear, quadratic, and polynomial "
-                       "expressions:\n"
-                       "\n.. value-table::\n"
-                       "\nSee also cvt:pre:unnest, as well as AMPL options linelim and substout.",
-                       dvelim_, values_dvelim);
+                             "Eliminate AMPL defined variables "
+                             "by substitution into linear, quadratic, and polynomial "
+                             "expressions:\n"
+                             "\n.. value-table::\n"
+                             "\nSee also cvt:pre:unnest, as well as AMPL options linelim and substout.",
+                             dvelim_, values_dvelim);
+    GetEnv().AddStoredOption("cvt:pow2_as_qp pow2_as_qp",
+                             "0/1*: whenever both quadratics and ^2 are accepted, "
+                             "submit (expr)^2 as out-multiplied quadratics, "
+                             "if (expr) is linear. See also cvt:multoutcard, "
+                             "cvt:quadobj, cvt:quadcon.",
+                             pow2_as_qp_, 0, 1);
   }
 
 

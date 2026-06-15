@@ -1840,8 +1840,7 @@ private:
                                                   "otherwise linearly approximated.",
         options_.passQuadObj_, 0, 1);
     GetEnv().AddOption("cvt:quadcon passquadcon",
-                       "Convenience option. "
-                       "Set to 0 to disable quadratic constraints. "
+                       "0/1*: set to 0 to disable quadratic constraints. "
                        "Synonym for acc:quad..=0. "
                        "Setting to 0 disables out-multiplication "
                        "of quadratic terms, then they are linearized.",
