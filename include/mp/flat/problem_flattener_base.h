@@ -12,13 +12,13 @@ public:
   /// Destructor
   virtual ~BasicProblemFlattener() { }
 
-  /// Number of variables in the original model
-  virtual int num_vars_orig() const = 0;
+  /// Number of variables in the flat model
+  virtual int num_vars_flat() const = 0;
 
-  /// Original variable's lower bound
-  virtual double var_orig_lb(int i) const = 0;
-  /// Original variable's upper bound
-  virtual double var_orig_ub(int i) const = 0;
+  /// Flat model variable's lower bound
+  virtual double var_lb_flat(int i) const = 0;
+  /// Flat model variable's upper bound
+  virtual double var_ub_flat(int i) const = 0;
 
   /// Quadratize ^2?
   virtual bool IfQuadratizePow2(const EExpr& ) const = 0;
@@ -28,6 +28,13 @@ public:
 
   /// Flatten an expression
   virtual EExpr VisitVirtual(Expr e) = 0;
+
+  /// Get the common expr
+  virtual typename Problem::CommonExpr
+  GetCommonExpr(int index) const = 0;
+
+  /// Can the defined variable be eliminated (substituted)?
+  virtual bool CanElimCommonExpr(Reference r) const = 0;
 
   /// Get original BasicProblem<>
   virtual Problem& GetOrigProblem() = 0;

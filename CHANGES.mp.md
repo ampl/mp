@@ -2,6 +2,11 @@ Summary of recent updates to the AMPL MP Library
 ================================================
 
 
+## unreleased
+- Faster parsing of quadratic expressions with
+  defined variables.
+
+
 ## 20260515
 - Fixed a bug in solve result name in the Multi-Objective
   Emulator.

@@ -10,8 +10,9 @@ namespace mp {
 template<class T, unsigned preallocN=0>
 class TMatrix {
 private:
-  SmallVec<T, (preallocN*preallocN + preallocN)/2> matrix;
-  unsigned int N;
+  using VecType = SmallVec<T, (preallocN*preallocN + preallocN)/2>;
+  VecType matrix;
+  unsigned int N, Nmax;
 protected:
   unsigned int computeSize();
   unsigned int computePosition(unsigned int x, unsigned int y);
@@ -23,11 +24,20 @@ public:
   /// Destruct
   ~TMatrix();
 
+  using size_type = typename VecType::size_type;
+
   /// Clear
   void clear();
 
+  /// Get size
+  size_type size() const { return N; }
+  /// Get capacity
+  size_type capacity() const { return Nmax; }
+
   /// Resize
   void resize(unsigned int s);
+  /// Resize
+  void reserve(unsigned int s);
 
   /// Shrink to fit
   void shrink_to_fit();
@@ -69,18 +79,30 @@ TMatrix<T, pre>::~TMatrix() { }
 
 template<class T, unsigned pre>
 void TMatrix<T, pre>::clear() {
+  this->N = 0;
   matrix.clear();
 }
 
 template<class T, unsigned pre>
 void TMatrix<T, pre>::resize(unsigned int N) {
   this->N=N;
+  if (N>Nmax)
+    Nmax = N;
   matrix.resize(computeSize());
+}
+
+template<class T, unsigned pre>
+void TMatrix<T, pre>::reserve(unsigned int N) {
+  if (N>Nmax) {
+    Nmax = N;
+    matrix.reserve((N*N+N)/2);
+  }
 }
 
 template<class T, unsigned pre>
 void TMatrix<T, pre>::shrink_to_fit() {
   matrix.shrink_to_fit();
+  Nmax = N;
 }
 
 template<class T, unsigned pre>

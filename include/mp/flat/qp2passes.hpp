@@ -106,6 +106,12 @@ protected:
   /// to multiply the constant factor for its subtree
   QP2PassNodeResult Visit(Expr e, double f);
 
+  /// Variable index
+  QP2PassNodeResult VisitVariableIndex(int i);
+  /// Overload VisitVariableIndex()
+  /// to multiply by the constant factor
+  QP2PassNodeResult VisitVariableIndex(int i, double f);
+
   bool CheckDegree(int degree);
   bool CheckAndMax(int degree_from_node, int& deg_max);
 
@@ -185,7 +191,7 @@ EExpr QP2Passes::GetResult() {
 
 void QP2Passes::InitPass1() {
   visitor_.InitPass1();
-  is_term_qp_.resize(GetTopExpr().num_args());
+  ResizePlus(is_term_qp_, GetTopExpr().num_args());
   n_qp_terms_ = 0;
 }
 
@@ -291,8 +297,8 @@ void QP2PassVisitor::InitPass1() {
   assert(!p_ae_);
   pass_ = 1;
   ++timestamp_;              // To distinguish active factor variables
-  ts_lin_.resize(GetFlattener().num_vars_orig());
-  ts_qp_.resize(GetFlattener().num_vars_orig());
+  ResizePlus(ts_lin_, GetFlattener().num_vars_flat());
+  ResizePlus(ts_qp_, GetFlattener().num_vars_flat());
   vars_lin_.clear();
   vars_qp_.clear();
   n_source_terms_qp_ = 0;
@@ -302,7 +308,7 @@ void QP2PassVisitor::InitPass2() {
   pass_ = 2;
   const_term_ = 0.0;
   assert (1.0 == factor_);
-  coefs_lin_dense_.resize(GetFlattener().num_vars_orig());
+  ResizePlus(coefs_lin_dense_, GetFlattener().num_vars_flat());
   // 0 out necessary elements in coefs_lin_
   for (auto v: vars_lin_) {
     assert(v < (int)coefs_lin_dense_.size());
@@ -310,8 +316,8 @@ void QP2PassVisitor::InitPass2() {
   }
   std::sort(vars_lin_.begin(), vars_lin_.end());
   coefs_qp_.clear();
-  coefs_qp_.resize(NumQPVars());
-  vperm_qp_.resize(GetFlattener().num_vars_orig());
+  ResizePlus(coefs_qp_, NumQPVars());
+  ResizePlus(vperm_qp_, GetFlattener().num_vars_flat());
   std::sort(vars_qp_.begin(), vars_qp_.end());
   for (auto i = vars_qp_.size(); i--; ) {
     assert(vars_qp_[i] < (int)vperm_qp_.size());
@@ -367,6 +373,38 @@ QP2PassNodeResult QP2PassVisitor::Visit(Expr e, double f) {
     return result;
   }
   return 0;
+}
+
+QP2PassNodeResult QP2PassVisitor::VisitVariableIndex(int i, double f) {
+  if (f) {
+    auto f_save = factor_;
+    factor_ *= f;
+    auto result = VisitVariableIndex(i);
+    factor_ = f_save;
+    return result;
+  }
+  return 0;
+}
+
+QP2PassNodeResult QP2PassVisitor::VisitVariableIndex(int index) {
+  const auto& flt = GetFlattener();
+  if (flt.var_lb_flat(index)    // var is constant
+      >= flt.var_ub_flat(index)) {
+    DoAddConst(factor_ * flt.var_lb_flat(index));
+    return 0;
+  }                                   // else: var is var
+  if (GetPAffineExpr())               // we are in a factor
+    GetPAffineExpr()->add_term(factor_, index);
+  else {
+    if (1==pass_) {
+      if (pass1_5_)
+        NoteLinVar(index);
+    } else {
+      assert(2==pass_);
+      AddLinTerm(factor_, index);
+    }
+  }
+  return 1;                   // degree 1
 }
 
 QP2PassNodeResult QP2PassVisitor::VisitAtmostAffine(
@@ -525,32 +563,35 @@ QP2PassNodeResult QP2PassVisitor::VisitNumericConstant(
 }
 
 QP2PassNodeResult QP2PassVisitor::VisitVariable(
-    Reference var) {
-  const auto& flt = GetFlattener();
-  if (flt.var_orig_lb(var.index())    // var is constant
-      == flt.var_orig_ub(var.index())) {
-    DoAddConst(factor_ * flt.var_orig_lb(var.index()));
-    return 0;
-  }                                   // else: var is var
-  if (GetPAffineExpr())               // we are in a factor
-    GetPAffineExpr()->add_term(factor_, var.index());
-  else {
-    if (1==pass_) {
-      if (pass1_5_)
-        NoteLinVar(var.index());
-    } else {
-      assert(2==pass_);
-      AddLinTerm(factor_, var.index());
-    }
-  }
-  return 1;                   // degree 1
-}
+    Reference var)
+{ return VisitVariableIndex(var.index()); }
 
 QP2PassNodeResult QP2PassVisitor::VisitCommonExpr(
-    Reference ) {
-  // ProblemFlattener converts them to EExpr's.
-  // To reuse, we need access to auxiliary vars.
-  return 1000;        // abort this top-level term
+    Reference r) {
+  if (!GetFlattener().CanElimCommonExpr(r)) {
+    return 1000;        // abandon
+    /// @todo Use the explicit result variable of the common expr.
+    /// @todo this requires re-entrable Visitor.
+    // const auto ee = GetFlattener().VisitVirtual(r);
+    // // this asserts that Flattener converted the common expr
+    // // to a single result variable (it is not substituted):
+    // return VisitVariableIndex(ee.get_representing_variable());
+  }
+  // Treat a DV like a sum
+  auto ce = GetFlattener().GetCommonExpr(r.index());
+  const auto& le = ce.linear_expr();
+  int degree_max = 0;
+  for (const auto& term: le) {
+    auto degree1 = VisitVariableIndex(term.var_index(), term.coef());
+    if (!CheckAndMax(degree1, degree_max))
+      return degree_max;
+  }
+  if (auto e = ce.nonlinear_expr()) {
+    auto degree1 = Visit(e);
+    if (!CheckAndMax(degree1, degree_max))
+      return degree_max;
+  }
+  return degree_max;
 }
 
 

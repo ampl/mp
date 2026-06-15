@@ -834,22 +834,42 @@ public:          // need to be public due to CRTP
     return EExpr::Constant{ n.value() };
   }
 
+  /// @todo constant if lb>=ub and cvt:pre:all?
   EExpr VisitVariable(Reference r) {
     return EExpr::Variable{ r.index() };
   }
 
-  EExpr VisitCommonExpr(Reference r) {
+  /// If the DefVar can be eliminated
+  bool CanElimCommonExpr(Reference r) const override final {
     const auto index = r.index();
-    auto ce = MP_DISPATCH( GetModel() ).common_expr(index);
+    auto ce = GetCommonExpr(index);
+    return CanElimCommonExpr(ce);
+  }
+
+  /// If the DefVar can be eliminated
+  bool CanElimCommonExpr(typename Problem::CommonExpr ce) const {
+    return
+        2==defvarelim()         // always inline
+        || (1==defvarelim()
+            && ce.position());  // used only 1x. @todo own ref count #153
+  }
+
+  /// Get the common expr
+  typename Problem::CommonExpr
+  GetCommonExpr(int index) const override final {
+    auto ce = MPCD( GetModel() ).common_expr(index);
     MP_ASSERT_ALWAYS(ce.is_known(),
                      fmt::format(
                          "Defined variable {} not provided in the input.\n"
                          "Please contact AMPL support.",
                          index));
-    bool dvelim
-        = 2==defvarelim()         // always inline
-          || (1==defvarelim()
-              && ce.position());  // used only 1x. @todo own ref count #153
+    return ce;
+  }
+
+  EExpr VisitCommonExpr(Reference r) {
+    const auto index = r.index();
+    auto ce = GetCommonExpr(index);
+    bool dvelim = CanElimCommonExpr(ce);
     if (index >= (int)common_exprs_.size()) {
       assert(index < GetModel().num_common_exprs());
       common_exprs_.resize(
@@ -869,9 +889,9 @@ public:          // need to be public due to CRTP
       } else                            // convert 2 var
         common_exprs_[index] = Convert2Var(std::move(eexpr));
     }
-    if (dvelim)
+    if (dvelim)                  // return EExpr which can be substituted
       return common_ee_[index];
-    return EExpr::Variable{ common_exprs_[index] };
+    return EExpr::Variable{ common_exprs_[index] }; // return result var
   }
 
   EExpr VisitMinus(UnaryExpr e) {
@@ -1375,16 +1395,16 @@ public:         // More utilities
     return mp::MultiplyOut(el, er);
   }
 
-  /// Number of variables in the original model
-  int num_vars_orig() const override final
-  { return GetModel().num_vars(); }
+  /// Number of variables in the flat model
+  int num_vars_flat() const override final
+  { return GetFlatCvt().num_vars(); }
 
-  /// Original variable's lower bound
-  double var_orig_lb(int i) const override final
-  { return GetModel().var(i).lb(); }
-  /// Original variable's upper bound
-  double var_orig_ub(int i) const override final
-  { return GetModel().var(i).ub(); }
+  /// Flat model variable's lower bound
+  double var_lb_flat(int i) const override final
+  { return GetFlatCvt().lb(i); }
+  /// Flat model variable's upper bound
+  double var_ub_flat(int i) const override final
+  { return GetFlatCvt().ub(i); }
 
   /// Mutliply-out cardinality
   double MultOutCard() const override final

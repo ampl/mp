@@ -1,6 +1,8 @@
 #ifndef MP__UTILS_MISC__
 #define MP__UTILS_MISC__
 
+#include <utility>
+
 namespace mp {
 
 /// Set provided value in destructor
