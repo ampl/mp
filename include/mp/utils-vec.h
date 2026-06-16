@@ -21,18 +21,37 @@ using SmallVec = gch::small_vector<T, N>;
 template <class T>
 using SmallVecDefSz = gch::small_vector<T>;
 
-/// Grow vector capacity by a factor if needed;
+/// Grow vector capacity by a factor,
+/// if needed, to accommodate index \a i;
+/// @note better preallocate, or call in the reverse order of indexes.
+template <class Vec>
+void GrowCapacity(Vec& vec, typename Vec::size_type i) {
+  if (vec.capacity()<=i)
+    vec.reserve(
+        typename Vec::size_type(std::ceil((i+1)*1.3)));
+}
+
+/// Resize container;
+/// grow capacity by a factor if needed;
+/// @note better preallocate, or call in the reverse order of indexes.
+template <class Vec>
+void ResizeWithExtraCapacity(Vec& vec, typename Vec::size_type sz) {
+  if (vec.size()<sz) {
+    GrowCapacity(vec, sz-1);
+  }
+  vec.resize(sz);
+}
+
+/// Increase container size if needed to accommodate index \a i;
+/// grow capacity by a factor if needed;
 /// @note better preallocate, or call in the reverse order of indexes.
 template <class Vec>
 void ResizePlus(Vec& vec, typename Vec::size_type i) {
-  if (vec.size()<=i) {
-    if (vec.capacity()<=i)
-      vec.reserve(
-          typename Vec::size_type(std::ceil((i+1)*1.3)));
-    vec.resize(i+1);
-  }
+  if (vec.size()<=i)
+    ResizeWithExtraCapacity(vec, i+1);
 }
 
+/// Increase vector size if needed to accommodate index \a i;
 /// Grow vector capacity by a factor if needed;
 /// set vec[i] = v.
 /// @note better preallocate, or call in the reverse order of indexes.

@@ -1141,11 +1141,13 @@ public:
   ///   but we might obtain stronger new bounds,
   ///   such as in redefinition of complementarity.
   /// @note Considers option *cvt:pre:boundsbest*.
-  bool IfSubmittedVarBoundsStrongerThanInitExpr(int res_var) {
+  /// @note Should not be used directly,
+  ///   use CanBeEliminated().
+  bool IfSubmittedVarBoundsStrongerThanInitExpr(int res_var) const {
     if (MPCD( HasInitExpression(res_var) )) {
       if (lb(res_var)>MPCD( MinusInfty() )
           || ub(res_var)<MPCD( Infty() )) {
-        const auto& cloc = MPD( GetInitExpression(res_var) );
+        const auto& cloc = MPCD( GetInitExpression(res_var) );
         PreprocessInfoStd preinfo;
         cloc.GetCK()->PreprocessConstraint(cloc.GetIndex(), preinfo);
         if (lb_hard(res_var) > preinfo.lb()     // If some hard bound better:

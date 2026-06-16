@@ -563,15 +563,15 @@ protected:
       };                    // assume the constraint order in NL
       auto e = GetModel().logical_con(i);
       const auto resvar = MP_DISPATCH( Convert2Var(e.expr()) );
-			if (GetFlatCvt().is_fixed(resvar)) {
+      if (GetFlatCvt().is_fixed(resvar)) {
         if (0==GetFlatCvt().fixed_value(resvar)) {
           MP_INFEAS("Constraint is false");
         }
-			} else {
-				GetFlatCvt().FixAsTrue(resvar);
-				// No: assert(GetFlatCvt().HasInitExpression(resvar));
-				// The constraint was simplified to 1 variable
-				// see hanoi1.mod
+      } else {
+        GetFlatCvt().FixAsTrue(resvar);
+        // No: assert(GetFlatCvt().HasInitExpression(resvar));
+        // The constraint was simplified to 1 variable
+        // see hanoi1.mod
       }
     } catch (const Error& err) {
       MP_RAISE_WITH_CODE(
@@ -886,8 +886,11 @@ public:          // need to be public due to CRTP
         common_exprs_[index] = 0;
         assert((int)common_ee_.size() > index);
         common_ee_[index] = std::move(eexpr);
-      } else                            // convert 2 var
-        common_exprs_[index] = Convert2Var(std::move(eexpr));
+      } else {                           // convert 2 var
+        auto resvar = common_exprs_[index] =
+            Convert2Var(std::move(eexpr));
+        GetFlatCvt().MarkAsExplicitDV(resvar);  // explicify
+      }
     }
     if (dvelim)                  // return EExpr which can be substituted
       return common_ee_[index];
@@ -1513,31 +1516,49 @@ public:
   /// Distinguish between constraints and objectives.
   /// What about common expressions?
   int IfMultOutQPTerms() const {
-    return IfFlatteningAConstraint() ?
-          GetFlatCvt().IfPassQuadCon() :
-               // For objectives, still multiply out
-               // if we move the QP terms into contraints (SCIP)
-               ( GetFlatCvt().IfPassQuadObj() || GetFlatCvt().IfPassQuadCon() );
+    return
+        IfFlatteningAConstraint() ?
+            GetFlatCvt().IfPassQuadCon() :
+            // For objectives, still multiply out
+            // if we move the QP terms into contraints (SCIP)
+            ( GetFlatCvt().IfPassQuadObj()
+                || GetFlatCvt().IfPassQuadCon() );
   }
 
   /// Estimate resulting QP matrix size
-  bool IfMultOutQPTerms(const LinTerms& lt1, const LinTerms& lt2) const
-  { return (double(lt1.size()))*lt2.size() <= GetFlatCvt().QPMultOutCard(); }
+  bool IfMultOutQPTerms(
+      const LinTerms& lt1, const LinTerms& lt2) const {
+    return
+        (double(lt1.size()))*lt2.size()
+           <= GetFlatCvt().QPMultOutCard();
+  }
 
-  /// Quadratize Pow2 exactly when we pass QP terms.
-  /// Changing to only do this when powconstexp not accepted,
-  /// or the argument is linear.
-  bool IfQuadratizePow2(const EExpr& ee) const override final {
-    bool ifAcceptsQP = IfFlatteningAConstraint() ?
-                           GetFlatCvt().IfPassQuadCon() :
-                           // For objectives, still multiply out
-                           // if we move the QP terms into contraints (SCIP)
-                           ( GetFlatCvt().IfPassQuadObj() || GetFlatCvt().IfPassQuadCon() );
+  /// Quadratize Pow2 exactly when we parse QP terms.
+  /// @note This is a generic query,
+  ///   without the specific argument.
+  bool IfQuadratizePow2() const override final {
+    bool ifAcceptsQP =
+        IfFlatteningAConstraint() ?
+            GetFlatCvt().IfPassQuadCon() :
+            // For objectives, still multiply out
+            // if we move the QP terms into contraints (SCIP)
+            ( GetFlatCvt().IfPassQuadObj()
+                            || GetFlatCvt().IfPassQuadCon() );
     if (!ifAcceptsQP)
       return false;            // So we can Pl-approximate
     // pow() not desired
-    if ( !GetFlatCvt().template UserAcceptsConOrExpr<PowConstExpConstraint>() )
+    if ( !GetFlatCvt().template
+         UserAcceptsConOrExpr<PowConstExpConstraint>() )
       return true;
+    if (!pow2_as_qp())
+      return false;
+    return true;
+  }
+
+  /// Quadratize Pow2 when we parse \a ee.
+  bool IfQuadratizePow2(const EExpr& ee) const {
+    if (!IfQuadratizePow2())
+      return false;
     if (!ee.is_affine())
       return false;
     // Leave ^2 if any subexpressions - otherwise can get big.
@@ -1546,11 +1567,11 @@ public:
     // @todo Is this efficient?
     /// @note Subexpr cannot be linfn (they are inlined when visiting)
     for (auto arg: ee.GetLinTerms().vars()) {
-      if ( GetFlatCvt().HasInitExpression(arg) )
+      if ( GetFlatCvt().HasInitExpression(arg)
+          &&                   // Also affine subexpr?
+          GetFlatCvt().CanBeEliminated_FastCheck(arg) )
         return false;
     }
-    if (!pow2_as_qp())
-      return false;
     return true;
   }
 
@@ -1629,7 +1650,7 @@ private:
     GetEnv().AddStoredOption("cvt:pow2_as_qp pow2_as_qp",
                              "0/1*: whenever both quadratics and ^2 are accepted, "
                              "submit (expr)^2 as out-multiplied quadratics, "
-                             "if (expr) is linear. See also cvt:multoutcard, "
+                             "if (expr) is linear.\n\nSee also cvt:multoutcard, "
                              "cvt:quadobj, cvt:quadcon.",
                              pow2_as_qp_, 0, 1);
   }

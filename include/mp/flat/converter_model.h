@@ -317,8 +317,10 @@ public:
 
   /// Is the variable proper - an explicit result var of a flat con,
   /// or just a primary variable?
-  /// (Otheriwse, it's marked as implicit
+  /// (Otherwise, it's marked as implicit
   ///   - the init expr will be an expression)
+  /// @note this is also used to prevent AMPL defined variables
+  ///   from inlining in ConsiderInliningAlgExpr().
   bool IsProperVar(int v) const {
     return !VarHasMarking(v) || var_result_[v];
   }
@@ -326,6 +328,17 @@ public:
   /// Get var proper flags
   const std::vector<bool>& GetVarProperFlags() const
   { return var_result_; }
+
+  /// Mark as an explicit defined variable
+  /// @todo AutoExpand fills 'false' for new elements...
+  void MarkAsExplicitDV(int v) {
+    AutoExpand(var_dv_explicit_, v, true);
+  }
+
+  bool IsExplicitDV(int v) const {
+    return (int)var_dv_explicit_.size()>v
+           && var_dv_explicit_[v];
+  }
 
   /// Mark var as eliminated.
   void MarkVarAsEliminated(int v) {
@@ -677,7 +690,11 @@ private:
   /// needs to stay a variable (vs being eliminated because the constraint
   /// is becoming an expression.)
   /// Normal variables are marked too.
+  /// @note Only used in the expression interface.
   std::vector<bool> var_result_;
+  /// In contrast to var_result_, this is used
+  /// to mark if AMPL defined variable stays explicit.
+  std::vector<bool> var_dv_explicit_;
   /// Eliminated variables.
   /// Currently they are just fixed.
   std::vector<bool> var_elim_;

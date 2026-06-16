@@ -191,7 +191,7 @@ EExpr QP2Passes::GetResult() {
 
 void QP2Passes::InitPass1() {
   visitor_.InitPass1();
-  ResizePlus(is_term_qp_, GetTopExpr().num_args());
+  ResizeWithExtraCapacity(is_term_qp_, GetTopExpr().num_args());
   n_qp_terms_ = 0;
 }
 
@@ -297,8 +297,8 @@ void QP2PassVisitor::InitPass1() {
   assert(!p_ae_);
   pass_ = 1;
   ++timestamp_;              // To distinguish active factor variables
-  ResizePlus(ts_lin_, GetFlattener().num_vars_flat());
-  ResizePlus(ts_qp_, GetFlattener().num_vars_flat());
+  ResizeWithExtraCapacity(ts_lin_, GetFlattener().num_vars_flat());
+  ResizeWithExtraCapacity(ts_qp_, GetFlattener().num_vars_flat());
   vars_lin_.clear();
   vars_qp_.clear();
   n_source_terms_qp_ = 0;
@@ -308,7 +308,7 @@ void QP2PassVisitor::InitPass2() {
   pass_ = 2;
   const_term_ = 0.0;
   assert (1.0 == factor_);
-  ResizePlus(coefs_lin_dense_, GetFlattener().num_vars_flat());
+  ResizeWithExtraCapacity(coefs_lin_dense_, GetFlattener().num_vars_flat());
   // 0 out necessary elements in coefs_lin_
   for (auto v: vars_lin_) {
     assert(v < (int)coefs_lin_dense_.size());
@@ -316,8 +316,8 @@ void QP2PassVisitor::InitPass2() {
   }
   std::sort(vars_lin_.begin(), vars_lin_.end());
   coefs_qp_.clear();
-  ResizePlus(coefs_qp_, NumQPVars());
-  ResizePlus(vperm_qp_, GetFlattener().num_vars_flat());
+  ResizeWithExtraCapacity(coefs_qp_, NumQPVars());
+  ResizeWithExtraCapacity(vperm_qp_, GetFlattener().num_vars_flat());
   std::sort(vars_qp_.begin(), vars_qp_.end());
   for (auto i = vars_qp_.size(); i--; ) {
     assert(vars_qp_[i] < (int)vperm_qp_.size());
@@ -500,7 +500,7 @@ QP2PassNodeResult QP2PassVisitor::VisitMul(
 QP2PassNodeResult QP2PassVisitor::VisitPowConstExp(
     BinaryExpr expr) {
   auto c = Cast<NumericConstant>(expr.rhs()).value();
-  if (2.0==c /*&& GetFlattener().IfQuadratizePow2() #276 */) {
+  if (2.0==c && GetFlattener().IfQuadratizePow2()) {  // #276
     return DoVisitPow2(expr.lhs());
   }
   return 1000;
@@ -508,7 +508,7 @@ QP2PassNodeResult QP2PassVisitor::VisitPowConstExp(
 
 QP2PassNodeResult QP2PassVisitor::VisitPow2(
     UnaryExpr expr) {
-  if (true /* GetFlattener().IfQuadratizePow2() #276 */) {
+  if (GetFlattener().IfQuadratizePow2()) {
     return DoVisitPow2(expr.arg());
   }
   return 1000;
@@ -518,8 +518,8 @@ QP2PassNodeResult QP2PassVisitor::VisitPow(
     BinaryExpr expr) {
   auto iscR = IsConst(expr.rhs());
   if (iscR.first) {
-    if (2.0==iscR.second /* &&
-        GetFlattener().IfQuadratizePow2() #276 */) {
+    if (2.0==iscR.second &&
+        GetFlattener().IfQuadratizePow2()) {
       return DoVisitPow2(expr.lhs());
     }
   }

@@ -599,6 +599,17 @@
     }
   },
   {
+    "name" : "signpow_03_negtest pow2_as_qp=0",
+    "tags" : ["continuous", "nonlinear", "quadraticnonconvex", "signpow"],
+    "options": { "mp_options": "debug=1 cvt:pow2_as_qp=0" },
+    "values": {
+      "solve_result": "limit",
+      "Initial.flat0__signpowc": 0,
+      "Initial.flat1__A__abs": 5,
+      "Initial.flat1__U__powc": 20
+    }
+  },
+  {
     "name" : "signpow_04_expr",
     "tags" : ["continuous", "nonlinear", "quadraticnonconvex", "signpow"],
     "objective": 570.849,
@@ -646,6 +657,15 @@
     "options": { "mp_options": "debug=1" },
     "values": {
       "Initial.flat1__U__powc": 11,
+      "Initial.flat1__U__exp": 11
+    }
+  },
+  {
+    "name" : "regr_nonlin_palmer8e pow2_as_qp=0",
+    "tags" : ["continuous", "nonlinear", "quadraticnonconvex"],
+    "options": { "mp_options": "debug=1 pow2_as_qp=0" },
+    "values": {
+      "Initial.flat1__U__powc": 12,
       "Initial.flat1__U__exp": 11
     }
   },

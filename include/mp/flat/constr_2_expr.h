@@ -57,13 +57,14 @@ public:
   ///   in Convert2NLCon() etc.
   template <class Con>
   void ConsiderMarkingResultVar(
-      const Con& con, int i, ExpressionAcceptanceLevel eal) {
+      const Con& con, int /*i*/, ExpressionAcceptanceLevel eal) {
+    MP_UNUSED(eal);
     assert(ExpressionAcceptanceLevel::NotAccepted!=eal);
     if (con.HasResultVar()) {  // A functional constraint
       assert(                  // Check: the result var has \a con as the init expr
           MPD( template GetInitExpressionOfType<Con>(con.GetResultVar()) )
           == &con);
-      if ( !MPD(IfSubmittedVarBoundsStrongerThanInitExpr(con.GetResultVar())) ) {
+      if ( MPCD(CanBeEliminated(con.GetResultVar())) ) {
         auto refcountmax = con.IsLogical() ?    // Ok to leave as expression:
                                MPD(NLReifLevel()) :
                                MPD(NLAssignLevel());
@@ -71,7 +72,8 @@ public:
           MPD( MarkAsExpression(con.GetResultVar()) ); // can be changed later?
         } // ModelAPI handles them as expressions
       }
-      // Else: if submitted bounds stronger, e.g., result fixed, leave as variable
+      // Else: if submitted bounds stronger, e.g., result fixed,
+      // or defined variable marked by dvelim=0, leave as variable
     }
   }
 

@@ -4,7 +4,7 @@ Summary of recent updates to the AMPL MP Library
 
 ## unreleased
 - Option *cvt:pow2_as_qp* prefers quadratization
-  of the ^2 operator for affine arguments.
+  of the ^2 operator for affine arguments (default).
 - Faster parsing of quadratic expressions with
   defined variables.
 
@@ -17,9 +17,9 @@ Summary of recent updates to the AMPL MP Library
   depending on options *cvt:pre:boundsbest* and
   *cvt:pre:boundlogarg*.
 - Fixed a debugging feature on Windows.
-- Fixed a non-critical bug in the inlining of algebraic subexpressions
-  resulting from redefinitions, option *cvt:pre:unnest*.
-  In particular
+- Fixed a non-critical bug in the inlining of algebraic
+  subexpressions resulting from redefinitions,
+  option *cvt:pre:unnest*. In particular
   with *cvt:pre:boundsbest=1*, subexpressions
   with stronger result bounds are not inlined.  
 

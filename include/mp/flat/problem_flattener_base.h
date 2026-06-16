@@ -20,8 +20,11 @@ public:
   /// Flat model variable's upper bound
   virtual double var_ub_flat(int i) const = 0;
 
-  /// Quadratize ^2?
-  virtual bool IfQuadratizePow2(const EExpr& ) const = 0;
+  /// Quadratize ^2 in some cases?
+  /// This is a less-elaborate query that with an EExpr argument.
+  /// Still, QP2Passes should in most cases have similar
+  /// behaviour, as it avoids nonlinear subexpressions.
+  virtual bool IfQuadratizePow2() const = 0;
 
   /// Mutliply-out cardinality
   virtual double MultOutCard() const = 0;

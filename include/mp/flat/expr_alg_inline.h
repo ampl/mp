@@ -33,6 +33,23 @@ public:
     return false;
   }
 
+  /// Check if the variable can be eliminated.
+  /// For that, it should not have stronger submitted bounds,
+  /// and not marked as explicit, e.g., by dvelim=0.
+  bool CanBeEliminated(int var) const {
+    return
+        CanBeEliminated_FastCheck(var)
+        &&
+        !MPCD( IfSubmittedVarBoundsStrongerThanInitExpr(var) );
+  }
+
+  /// Check if the variable can be eliminated.
+  /// Only the fast check:
+  /// not marked as explicit, e.g., by dvelim=0.
+  bool CanBeEliminated_FastCheck(int var) const
+  { return !MPCD(IsExplicitDV(var)); }
+
+
 protected:
   /// @todo Conditionals, indicators?
   /// But any new ones would be linearized before this action.
@@ -139,7 +156,7 @@ protected:
     AffineExpr ae_untouched;     // unmodified linear terms
 
     auto inline_alg_subexpr
-        = [&](const auto& subexpr, double ci, int vi) {
+        = [&](const auto& subexpr, double ci, int /*vi*/) {
       EExpr collected;
       if (HasAlgExpr(subexpr.GetBody().GetLinTerms())) {
         collected = CollectAlgSubExpr(
@@ -162,12 +179,12 @@ protected:
       if ((pLFC = MPCD(
                template GetActiveInitExpressionOfType<
                    LinearFunctionalConstraint>(vi) ))
-          && !MPD( IfSubmittedVarBoundsStrongerThanInitExpr(vi) )) {
+          && CanBeEliminated(vi)) {
         inline_alg_subexpr(pLFC->GetAffineExpr(), ci, vi);
       } else if ((pQFC = MPCD(
                       template GetActiveInitExpressionOfType<
                           QuadraticFunctionalConstraint>(vi) ))
-                 && !MPD( IfSubmittedVarBoundsStrongerThanInitExpr(vi) )) {
+                 && CanBeEliminated(vi)) {
         inline_alg_subexpr(pQFC->GetArguments(), ci, vi);
       } else
         ae_untouched.add_term(ci, vi);
@@ -197,14 +214,14 @@ protected:
       if (auto pLFC = MPCD(
               template GetActiveInitExpressionOfType<
                   LinearFunctionalConstraint>(vi) ))
-        if (!MPD( IfSubmittedVarBoundsStrongerThanInitExpr(vi) ))
+        if (CanBeEliminated(vi))
           return true;
       if (auto pQFC = MPCD(
               template GetActiveInitExpressionOfType<
                   QuadraticFunctionalConstraint>(vi) )) {
         if (pQFC->GetArguments().GetLinTerms().size()
             || fQuad_)
-          if (!MPD( IfSubmittedVarBoundsStrongerThanInitExpr(vi) ))
+          if (CanBeEliminated(vi))
             return true;
       }
     }
