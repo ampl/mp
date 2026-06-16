@@ -653,10 +653,9 @@ void HighsBackend::InitCustomOptions() {
     "Log file name.", "log_file");
 
   std::string c;
-  AddStoredOption("lp:method method lpmethod solver alg:method",
-    "Which algorithm to use :\n"
+  AddStoredOption("alg:method method lp:method lpmethod lp:algorithm solver",
+    "Which algorithm to use for non-MIP problems:\n"
     "\n.. value-table::\n", storedOptions_.lpmethod_, lp_values_method);
-  AddOptionSynonyms_OutOfLine("lp:algorithm", "lp:method");
 
   AddSolverOption("alg:simplex simplex simplex_strategy",
     "Strategy for simplex solver :\n"

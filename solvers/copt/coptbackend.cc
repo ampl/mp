@@ -737,13 +737,13 @@ void CoptBackend::InitCustomOptions() {
     "Maximum MIP nodes to explore (default: no limit).",
     COPT_INTPARAM_NODELIMIT, 0, INT_MAX);
 
-  AddSolverOption("lp:method method lpmethod",
+  AddSolverOption("alg:method method lp:method lpmethod",
     "Which algorithm to use for non-MIP problems:\n"
     "\n.. value-table::\n", COPT_INTPARAM_LPMETHOD, 
     lp_values_method, -1);
 
   AddSolverOption("lp:concurrentmode lp:concurrentlpmode concurrentlpmode",
-      "The LP concurrent solving mode, only effective when lp:method = 4. "
+      "The LP concurrent solving mode, only effective when alg:method = 4. "
       "The parameters alg:gpumode and alg:gpudevice are ignored, "
                   "and GPU usage and "
       "device selection are fully controlled by this parameter.",
