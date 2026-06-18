@@ -198,5 +198,111 @@
     "values": {
       "Initial.flat0__quadfn": 1
     }
+  },
+  {
+    "name" : "regr",
+    "objective" : 10164.112986010467,
+    "tags" : ["quadratic_obj"],
+    "options": {
+      "mp_options": "debug=1"
+    },
+    "values": {
+      "Initial.flat1_obj_quad": 1,
+      "Initial.flat1__quadfn": 0,
+      "Initial.flat1__quadle": 0,
+      "Initial.flat1__quadeq": 0,
+      "Initial.flat1__quadge": 0,
+      "Initial.flat1__quadrange": 0,
+      "Initial.flat0__linfn": 0,
+      "Initial.flat0__linle": 0,
+      "Initial.flat0__lineq": 0,
+      "Initial.flat0__linge": 0,
+      "Initial.flat0__linrange": 1
+    }
+  },
+  {
+    "name" : "regr cvt:dvelim=0",
+    "objective" : 10164.112986010467,
+    "tags" : ["quadratic"],
+    "options": {
+      "mp_options": "debug=1 dvelim=0"
+    },
+    "values": {
+      "Initial.flat1_obj_quad": 1,
+      "Initial.flat1__quadfn": 0,
+      "Initial.flat1__quadle": 1,
+      "Initial.flat1__quadeq": 0,
+      "Initial.flat1__quadge": 0,
+      "Initial.flat1__quadrange": 0,
+      "Initial.flat0__linfn": 50,
+      "Initial.flat0__linle": 0,
+      "Initial.flat1__lineq + Initial.flat1__linrange": 51,
+      "Initial.flat0__linge": 0
+    }
+  },
+  {
+    "name" : "regr cvt:pow2_as_qp=0",
+    "objective" : 10164.112986010467,
+    "tags" : ["nonlinear", "formulas"],
+    "options": {
+      "mp_options": "debug=1 pow2_as_qp=0",
+      "copt_options": "debug=1 pow2_as_qp=0 acc:_expr=1"
+    },
+    "values": {
+      "Initial.flat1_obj_lin + Initial.flat1_obj_nonlin": 1,
+      "Initial.flat1__quadfn": 0,
+      "Initial.flat1__quadle": 0,
+      "Initial.flat1__quadeq": 0,
+      "Initial.flat1__quadge": 0,
+      "Initial.flat1__quadrange": 0,
+      "Initial.flat0__powc": 80,
+      "Initial.flat0__linfn": 80,
+      "Initial.flat0__linle": 0,
+      "Initial.flat0__lineq": 0,
+      "Initial.flat0__linge": 0,
+      "Initial.flat0__linrange": 1
+    }
+  },
+  {
+    "name" : "regr cvt:qp2passes=0",
+    "objective" : 10164.112986010467,
+    "tags" : ["quadratic_obj"],
+    "options": {
+      "mp_options": "debug=1 cvt:qp2passes=0"
+    },
+    "values": {
+      "Initial.flat1_obj_quad": 1,
+      "Initial.flat1__quadfn": 0,
+      "Initial.flat1__quadle": 0,
+      "Initial.flat1__quadeq": 0,
+      "Initial.flat1__quadge": 0,
+      "Initial.flat1__quadrange": 0,
+      "Initial.flat0__linfn": 0,
+      "Initial.flat0__linle": 0,
+      "Initial.flat0__lineq": 0,
+      "Initial.flat0__linge": 0,
+      "Initial.flat0__linrange": 1
+    }
+  },
+  {
+    "name" : "regr cvt:multoutcard=0",
+    "objective" : 10164.112986010467,
+    "tags" : ["quadratic_obj"],
+    "options": {
+      "mp_options": "debug=1 cvt:multoutcard=0"
+    },
+    "values": {
+      "Initial.flat1_obj_quad": 1,
+      "Initial.flat1__quadfn": 0,
+      "Initial.flat1__quadle": 0,
+      "Initial.flat1__quadeq": 0,
+      "Initial.flat1__quadge": 0,
+      "Initial.flat1__quadrange": 0,
+      "Initial.flat0__linfn": 80,
+      "Initial.flat0__linle": 0,
+      "Initial.flat0__lineq": 0,
+      "Initial.flat0__linge": 0,
+      "Initial.flat0__linrange": 1
+    }
   }
 ]

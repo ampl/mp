@@ -16,7 +16,9 @@ class ModelTags(enum.Enum):
     socp = 4
     socp_hard_to_recognize = 4.1  ## For solvers recognizing from quadratics
     expcones = 4.4
-    nonlinear = 5
+    nonlinear = 5       # All MP drivers PL-approximate nonlinears
+    formulas = 5.5      # Expression interface
+    formulas_scip = 5.53 # SCIP expression interface
     complementarity = 6
     arc = 7
     plinear = 8         # Requires native handling of pl constraints

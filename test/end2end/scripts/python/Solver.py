@@ -396,6 +396,7 @@ class IPOptSolver(AMPLSolver):
                  ModelTags.quadratic,
                  ModelTags.quadratic_obj,
                  ModelTags.quadraticnonconvex,
+                 ModelTags.formulas,
 
                  # ModelTags.complementarity,  -- not supported without MP2NL.
 
@@ -1080,6 +1081,7 @@ class GurobiDirectSolver(MPDirectSolver):
                  ModelTags.quadratic,
                  ModelTags.quadratic_obj,
                  ModelTags.quadraticnonconvex,
+                 ModelTags.formulas,
 
                  ModelTags.socp,      ## MP transforms cones to quadratics
                  ModelTags.socp_hard_to_recognize,
@@ -1177,6 +1179,7 @@ class XPRESSDirectSolver(MPDirectSolver):
                  
                  ModelTags.socp,
                  ModelTags.nonlinear, ModelTags.log, ModelTags.trigonometric,
+                 ModelTags.formulas,
                  
                  ModelTags.return_mipgap,
 
@@ -1273,6 +1276,7 @@ class BaronMPSolver(MPDirectSolver):
                  ModelTags.quadratic_obj,
                  ModelTags.quadratic_obj_nonconvex,
                  ModelTags.quadraticnonconvex,
+                 ModelTags.formulas,
                  ModelTags.socp, ModelTags.socp_hard_to_recognize,
                  ModelTags.sos,
                  ModelTags.nonlinear,
@@ -1301,7 +1305,7 @@ class SCIPSolver(MPDirectSolver):
                  ModelTags.quadraticnonconvex,
                  ModelTags.socp, ModelTags.socp_hard_to_recognize,
                  ModelTags.sos,
-                 ModelTags.nonlinear,
+                 ModelTags.nonlinear, ModelTags.formulas_scip,
                  ModelTags.log,
                  ModelTags.trigonometric,
                  ModelTags.return_mipgap,
@@ -1398,6 +1402,7 @@ class COPTSolver(MPDirectSolver):
         stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
                  ModelTags.quadratic, ModelTags.quadratic_obj,
                  ModelTags.quadraticnonconvex,
+                 ModelTags.formulas,
 
                  ModelTags.socp,      ## MP transforms cones to quadratics
                  ModelTags.socp_hard_to_recognize,
@@ -1703,6 +1708,7 @@ class LindoglobalMP2NLSolver(MPDirectSolver):
                 ModelTags.quadratic,
                 ModelTags.quadratic_obj,
                 ModelTags.quadraticnonconvex,
+                ModelTags.formulas,
 
                 ModelTags.socp,      ## MP transforms cones to quadratics
                 ModelTags.socp_hard_to_recognize,
@@ -1803,6 +1809,7 @@ class KnitroMP2NLSolver(MPDirectSolver):
                 ModelTags.quadratic,
                 ModelTags.quadratic_obj,
                 ModelTags.quadraticnonconvex,
+                ModelTags.formulas,
 
                 ModelTags.socp,      ## MP transforms cones to quadratics
                 ModelTags.socp_hard_to_recognize,

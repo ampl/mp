@@ -1647,7 +1647,7 @@ private:
                              "\n.. value-table::\n"
                              "\nSee also cvt:pre:unnest, as well as AMPL options linelim and substout.",
                              dvelim_, values_dvelim);
-    GetEnv().AddStoredOption("cvt:pow2_as_qp pow2_as_qp",
+    GetEnv().AddStoredOption("cvt:pow2_as_qp pow2_as_qp pow2asqp",
                              "0/1*: whenever both quadratics and ^2 are accepted, "
                              "submit (expr)^2 as out-multiplied quadratics, "
                              "if (expr) is linear.\n\nSee also cvt:multoutcard, "
