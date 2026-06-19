@@ -136,12 +136,12 @@ function(add_ampl_solver name)
     endforeach() 
   endif()
 
-  # Add a solver static library to be linked with the shared library and
+  # Add a solver static library to be linked with the shared library and/or
   # the executable.
   set(static_lib ampl${name}-static)
   add_library(${static_lib} STATIC ${sources})
   target_include_directories(${static_lib}
-    PUBLIC ${include_dirs} ${MP_BASE_DIR}/solvers)
+      PUBLIC ${include_dirs} ${MP_BASE_DIR}/solvers)
   target_link_libraries(${static_lib} PUBLIC ${libraries})
   target_compile_options(${static_lib} PUBLIC ${definitions})
   if(add_ampl_solver_VERSION)
@@ -156,8 +156,15 @@ function(add_ampl_solver name)
 
   if(${add_ampl_solver_SHARED_LIB})
     set(shared_lib ${name}-lib)
-    add_library(${shared_lib} SHARED ${MP_BASE_DIR}/solvers/${name}/${name}-lib.c)
-    target_compile_definitions(${shared_lib} PRIVATE MP_SOLVER=${name})
+    # if we want the drivers linked with the shared library, we need to add main.cc to the shared library,
+    # as it will be consumed from the driver
+    if(${MP_LINK_WITH_SHARED_LIB})
+        add_library(${shared_lib} SHARED ${MP_BASE_DIR}/solvers/${name}/${name}-lib.c ${dir}main.cc)
+        target_compile_definitions(${shared_lib} PUBLIC MP_LINK_WITH_SHARED_LIB)
+    else()
+        add_library(${shared_lib} SHARED ${MP_BASE_DIR}/solvers/${name}/${name}-lib.c)
+    endif()
+    target_compile_definitions(${shared_lib} PRIVATE MP_SOLVER=${name} MP_SOLVER_LIBRARY)
     target_link_libraries(${shared_lib} PRIVATE ${static_lib})
   elseif(${add_ampl_solver_OLD_SHARED_LIB})     ## DEPRECATED
     # Old-style shared library if we are not building a directinterface
@@ -177,9 +184,16 @@ function(add_ampl_solver name)
     set(exename ${name})
     message("Setting exe " ${name})
   endif()
+ 
   add_executable(${exename} ${dir}main.cc)
-  target_link_libraries(${exename} PRIVATE ${static_lib}  ##${${module_upper}_LIBS}
-	  )
+  # If we want to link with the shared library, and we have it, do it
+  if(${MP_LINK_WITH_SHARED_LIB} AND ${add_ampl_solver_SHARED_LIB})
+     target_link_libraries(${exename} PRIVATE ${shared_lib})
+     message("Linking ${exename} with shared lib: ${shared_lib}")
+  else ()
+    target_link_libraries(${exename} PRIVATE ${static_lib})
+    message("Linking ${exename} with static lib")
+  endif ()
   if(add_ampl_solver_ADDITIONAL_DEPS)
     add_dependencies(${exename} ${add_ampl_solver_ADDITIONAL_DEPS})
     if(TARGET ${shared_lib})
@@ -256,7 +270,7 @@ add_ampl_backend(mosek DLL_RUNTIME MODULE MOSEK
   add_ampl_backend(knitromp knitroutils.h knitroutils.cc DLL_RUNTIME MODULE KNITRO
     KIBRARIES ${KNITRO_LIBS} ${CMAKE_DL_LIBS})
 
-add_ampl_backend(copt DLL_RUNTIME SHARED_LIB MODULE COPT 
+add_ampl_backend(copt SHARED_LIB MODULE COPT 
   LIBRARIES ${COPT_LIBS} ${CMAKE_DL_LIBS})
 
 

@@ -47,6 +47,7 @@ endif ()
 
 option(MP_GENERATE_EXPR_ONLY "Enable to just build MP and the expr-info file; useful before cross compiling" OFF)
 option(MP_CROSSCOMPILING "Set to override cross-compilation detection, as it does not detect compiling ARM-only on Intel Macs" OFF)
+option(MP_LINK_WITH_SHARED_LIB "Link solvers drivers with shared library, if present" OFF)
 option(USE_PROFILER "Use Profiler" OFF)
 if(USE_PROFILER)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
