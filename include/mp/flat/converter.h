@@ -1833,13 +1833,13 @@ private:
                        ModelAPIAcceptsQuadObj() ?
         "0/1*: Pass quadratic objective terms to the solver. "
         "When 0, if the solver accepts quadratic constraints, "
-                                                "such a constraint will be created with those, "
-                                                "otherwise linearly approximated."
+        "such a constraint will be created with those, "
+        "otherwise linearly approximated."
                        :
         "0*/1: Pass quadratic objective terms to the solver. "
-                                                  "When 0, if the solver accepts quadratic constraints, "
-                                                  "such a constraint will be created with those, "
-                                                  "otherwise linearly approximated.",
+        "When 0, if the solver accepts quadratic constraints, "
+        "such a constraint will be created with those, "
+        "otherwise linearly approximated.",
         options_.passQuadObj_, 0, 1);
     GetEnv().AddOption("cvt:quadcon passquadcon",
                        "0/1*: set to 0 to disable quadratic constraints. "

@@ -2378,7 +2378,7 @@ void GurobiBackend::InitCustomOptions() {
     "(default -1).", GRB_INT_PAR_AGGFILL, -1, GRB_MAXINT);
 
 
-  AddSolverOption("pre:aggregate aggregate", "0/1*: whether to use aggregation in presolve."
+  AddSolverOption("pre:aggregate aggregate", "0/1*: whether to use aggregation in presolve. "
     "Setting it to 0 can sometimes reduce numerical errors.", GRB_INT_PAR_AGGREGATE, 0, 1);
 
   AddSolverOption("pre:deprow predeprow",

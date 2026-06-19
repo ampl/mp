@@ -679,18 +679,30 @@ void BasicSolver::InitMetaInfoAndOptions(
     "| 2 - Second (if available), etc.\n",
     &Solver::GetObjNo, &Solver::SetObjNo);
 
-	/// Actually int, restricted to 0/1
-  struct BoolOption : TypedSolverOption<int> {
-    bool& value_;
-    BoolOption(bool& value, const char* name, const char* description)
-      : TypedSolverOption<int>(name, description), value_(value) {}
+  /// IntOption
+  struct IntOption : TypedSolverOption<int> {
+    int& value_;
+    int min_, max_;
+    IntOption(
+        int& value, const char* name, const char* description,
+        int min = INT_MIN, int max = INT_MAX)
+      : TypedSolverOption<int>(name, description), value_(value),
+        min_(min), max_(max) { }
 
     void GetValue(fmt::LongLong& value) const { value = value_; }
     void SetValue(fmt::LongLong value) {
-      if (value != 0 && value != 1)
+      if (value < min_ || value > max_)
         throw InvalidOptionValue(name(), value);
-      value_ = value != 0;
+      value_ = value;
     }
+  };
+
+  /// BoolOption
+  struct BoolOption : IntOption {
+    /// Construct
+    BoolOption(
+        bool& value, const char* name, const char* description)
+        : IntOption(*(int*)&value, name, description, 0, 1) { }
   };
 
 
@@ -698,7 +710,7 @@ void BasicSolver::InitMetaInfoAndOptions(
       new BoolOption(verbose_, "tech:outlev_mp outlev_mp",
                      "0*/1: whether to print MP model information.")));
 
-  AddOption(OptionPtr(new BoolOption(
+  AddOption(OptionPtr(new IntOption(
       debug_, "tech:debug debug",
       "0*/1: whether to assist testing & debugging, e.g., "
       "by outputting auxiliary information (mostly via suffixes).")));

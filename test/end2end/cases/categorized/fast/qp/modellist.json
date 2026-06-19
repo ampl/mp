@@ -204,9 +204,13 @@
     "objective" : 10164.112986010467,
     "tags" : ["quadratic_obj"],
     "options": {
-      "mp_options": "debug=1"
+      "mp_options": "debug=2"
     },
     "values": {
+      "Initial.stat__qp2p_complete_runs": 1,
+      "Initial.stat__qp2p_outmults": 80,
+      "Initial.stat__qp2p_qpterms": 465,
+      "Initial.stat__qp_outmults": 0,
       "Initial.flat1_obj_quad": 1,
       "Initial.flat1__quadfn": 0,
       "Initial.flat1__quadle": 0,
@@ -228,6 +232,12 @@
       "mp_options": "debug=1 dvelim=0"
     },
     "values": {
+      "Initial.stat__qp2p_complete_runs": 0,
+      "Initial.stat__qp2p_bucket_runs": 2,
+      "Initial.stat__qp2p_outmults": 0,
+      "Initial.stat__qp2p_qpterms": 80,
+      "Initial.stat__qp_outmults": 110,
+      "Initial.stat__qp_outmult_qpterms": 110,
       "Initial.flat1_obj_quad": 1,
       "Initial.flat1__quadfn": 0,
       "Initial.flat1__quadle": 1,
@@ -249,6 +259,12 @@
       "copt_options": "debug=1 pow2_as_qp=0 acc:_expr=1"
     },
     "values": {
+      "Initial.stat__qp2p_complete_runs": 0,
+      "Initial.stat__qp2p_bucket_runs": 2,
+      "Initial.stat__qp2p_outmults": 0,
+      "Initial.stat__qp2p_qpterms": 0,
+      "Initial.stat__qp_outmults": 30,
+      "Initial.stat__qp_outmult_qpterms": 0,
       "Initial.flat1_obj_lin + Initial.flat1_obj_nonlin": 1,
       "Initial.flat1__quadfn": 0,
       "Initial.flat1__quadle": 0,
@@ -271,6 +287,15 @@
       "mp_options": "debug=1 cvt:qp2passes=0"
     },
     "values": {
+      "Initial.stat__qp2p_complete_runs": 0,
+      "Initial.stat__qp2p_bucket_runs": 0,
+      "Initial.stat__qp2p_outmults": 0,
+      "Initial.stat__qp2p_qpterms": 0,
+      "Initial.stat__visitsum_bucket_runs": 2,
+      "Initial.stat__visitsum_bucket_outmults": 170,
+      "Initial.stat__visitsum_bucket_qpterms": 495,
+      "Initial.stat__qp_outmults": 110,
+      "Initial.stat__qp_outmult_qpterms": 23310,
       "Initial.flat1_obj_quad": 1,
       "Initial.flat1__quadfn": 0,
       "Initial.flat1__quadle": 0,
@@ -292,6 +317,12 @@
       "mp_options": "debug=1 cvt:multoutcard=0"
     },
     "values": {
+      "Initial.stat__qp2p_complete_runs": 0,
+      "Initial.stat__qp2p_bucket_runs": 2,
+      "Initial.stat__qp2p_outmults": 0,
+      "Initial.stat__qp2p_qpterms": 110,
+      "Initial.stat__qp_outmults": 30,
+      "Initial.stat__qp_outmult_qpterms": 30,
       "Initial.flat1_obj_quad": 1,
       "Initial.flat1__quadfn": 0,
       "Initial.flat1__quadle": 0,

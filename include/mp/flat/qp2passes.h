@@ -33,6 +33,13 @@ public:
   /// Obtain the result - moves out
   EExpr GetResult();
 
+  /// Was 2-pass used or switched to Buckets?
+  bool Was2Pass() const { return was_pass2_full_; }
+
+  /// Number of out-multiplications in Visitor
+  /// (not in Buckets, they are counted in Flattener)
+  long NumOutMults() const;
+
 protected:
   internal::ExprTypes::SumExpr GetTopExpr() const
   { return top_expr_; }
@@ -61,6 +68,7 @@ private:
   std::vector<bool> is_term_qp_;
   unsigned int n_qp_terms_ {};     // N terms of degree <=2
   EExpr result_;
+  mutable bool was_pass2_full_ {};
 };
 
 /// QP2PassVisitor factory.

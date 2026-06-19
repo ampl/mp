@@ -52,6 +52,9 @@ public:
   /// Extract result of Pass 2
   EExpr GetPass2Result();
 
+  /// Number of performed outmultiplications
+  long NumOutMults() const { return n_outmult_; }
+
   /// Call after the model is flattened.
   void Shrink();
 
@@ -159,6 +162,8 @@ private:
 
   TMatrix<double, 16> coefs_qp_;
   std::vector<int> vperm_qp_;   // inverse of vars_qp_
+
+  long n_outmult_ {};
 };
 
 
@@ -189,6 +194,10 @@ EExpr QP2Passes::GetResult() {
   return std::move(result_);
 }
 
+long QP2Passes::NumOutMults() const {
+  return visitor_.NumOutMults();
+}
+
 void QP2Passes::InitPass1() {
   visitor_.InitPass1();
   ResizeWithExtraCapacity(is_term_qp_, GetTopExpr().num_args());
@@ -209,9 +218,10 @@ void QP2Passes::RunPass1() {
 }
 
 bool QP2Passes::Pass2SeemsWorth() const {
-  return              // @todo a parameter?
+  return
+      was_pass2_full_ =
       n_qp_terms_
-      && visitor_.NumSourceTermsQP()
+      && visitor_.NumSourceTermsQP()  // @todo a parameter?
              > 0.25*visitor_.NumQPVars()
                    *visitor_.NumQPVars();
 }
@@ -638,6 +648,7 @@ bool QP2PassVisitor::ProcessAffineFactors(
   }
   assert(2==pass_);
   MultiplyOut(aeL, aeR);
+  ++ n_outmult_;
   return true;
 }
 

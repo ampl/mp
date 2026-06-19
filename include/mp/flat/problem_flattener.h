@@ -135,6 +135,8 @@ public:
     GetFlatCvt().StartModelInput();
     MP_DISPATCH( ConvertStandardItems() );
     GetFlatCvt().FinishModelInput();      // Chance to flush to the Backend
+
+    OutputDebugInfo();
   }
 
   /// Prepare model conversion
@@ -262,6 +264,29 @@ protected:
 
     // Signal we are not flattening anything
     ifFltCon_ = -1;
+  }
+
+  /// Output some debug info
+  void OutputDebugInfo() {
+    auto ReportVal = [this](const char* sufname, auto val) {
+      double va [] = { (double)val };
+      GetModel().ReportSuffix({sufname, suf::PROBLEM}, ArrayRef<double>(va));
+      if (GetEnv().debug_mode() > 1)
+        GetEnv().Print("  ----- DEBUG: Suffix '{}' = {}\n",
+                       sufname, val);
+    };
+    if (GetEnv().debug_mode()) {
+      ReportVal("stat__qp2p_runs", n_qp2pass_runs_);
+      ReportVal("stat__qp2p_complete_runs", n_qp2pass_complete_runs_);
+      ReportVal("stat__qp2p_bucket_runs", n_qp2pass_bucket_runs_);
+      ReportVal("stat__qp2p_outmults", n_qp2pass_outmult_);
+      ReportVal("stat__qp2p_qpterms", sum_qp2pass_qpterms_);
+      ReportVal("stat__visitsum_bucket_runs", n_visitsum_bucket_runs_);
+      ReportVal("stat__visitsum_bucket_outmults", n_visitsum_bucket_outmults_);
+      ReportVal("stat__visitsum_bucket_qpterms", sum_visitsum_bucket_qpterms_);
+      ReportVal("stat__qp_outmults", n_qp_outmult_);
+      ReportVal("stat__qp_outmult_qpterms", sum_qp_outmult_qpterms_);
+    }
   }
 
   /// Export common expression \a i.
@@ -953,6 +978,11 @@ public:          // need to be public due to CRTP
       qp2p.Process(expr);
       // return qp2p.GetResult();
       auto ee1 = qp2p.GetResult();
+      ++ n_qp2pass_runs_;
+      n_qp2pass_complete_runs_ += qp2p.Was2Pass();
+      n_qp2pass_bucket_runs_ += !qp2p.Was2Pass();
+      n_qp2pass_outmult_ = qp2p.NumOutMults();
+      sum_qp2pass_qpterms_ += ee1.GetQPTerms().size();
 #ifdef DEBUG_QP2PASSES
       {
         fmt::MemoryWriter wrt;
@@ -982,11 +1012,17 @@ public:          // need to be public due to CRTP
 #endif
       return ee1;
     }  // else
+    auto n_outm_0 = n_qp_outmult_;
     BucketAccumulator<EExpr> bucketaccum(expr.num_args());
     for (auto i =
          expr.begin(), end = expr.end(); i != end; ++i)
       bucketaccum.Add( MP_DISPATCH( Convert2EExpr(*i) ) );
-    return bucketaccum.ExtractSum();
+    auto result = bucketaccum.ExtractSum();
+    ++ n_visitsum_bucket_runs_;
+    // This includes out-mults in any nested expressions:
+    n_visitsum_bucket_outmults_ += (n_qp_outmult_ - n_outm_0);
+    sum_visitsum_bucket_qpterms_ += result.GetQPTerms().size();
+    return result;
   }
 
   EExpr VisitMax(typename BaseExprVisitor::VarArgExpr e) {
@@ -1354,7 +1390,10 @@ public:         // More utilities
       // as MIPFlatCvt only linearizes QC.
       return DontMultOut(std::move(el), std::move(er));
     }
-    return MultiplyOut(el, er);   // Quadratize
+    auto result = MultiplyOut(el, er);   // Quadratize
+    ++ n_qp_outmult_;
+    sum_qp_outmult_qpterms_ += result.GetQPTerms().size();
+    return result;
   }
 
   /// (9*x) * x -> 9 x^2
@@ -1680,6 +1719,18 @@ private:
   ProblemType model_;
   FlatConverter flat_cvt_;
   QP2PassVisitor* p_qp2p_visitor_ = MakeQP2PassVisitor(*this);
+
+  /// stats
+  long long n_qp2pass_runs_ {},
+      n_qp2pass_complete_runs_ {},
+      n_qp2pass_bucket_runs_ {},
+      n_qp2pass_outmult_ {},
+      sum_qp2pass_qpterms_ {},
+      n_visitsum_bucket_runs_ {},
+      n_visitsum_bucket_outmults_ {},
+      sum_visitsum_bucket_qpterms_ {},
+      n_qp_outmult_ {},
+      sum_qp_outmult_qpterms_ {};
 };
 
 

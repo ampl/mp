@@ -296,7 +296,7 @@ public:
 
   /// True if need to debug.
   /// Outputs test infos etc
-  bool debug_mode() const { return debug_; }
+  int debug_mode() const { return debug_; }
 
   /// Report obj value in solve_message
   /// when the status is '?' (UNKNOWN)
@@ -638,7 +638,7 @@ private:
   unsigned read_flags_ {0};  // flags passed to Problem::Read
 
   bool verbose_ {false};
-  bool debug_ {false};
+  int debug_ {0};
   bool report_uncertain_sol_ {true};
 
   int timing_ {0};
