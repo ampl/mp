@@ -6,3 +6,12 @@ AMPLS_C_EXPORT AMPLS_MP_Solver* AMPLSOpen_highs(int argc, char** argv)
   CCallbacks cb = { NULL };
   return Open_highs(cb);
 }
+
+
+
+#ifdef MP_LINK_WITH_SHARED_LIB
+AMPLS_C_EXPORT int highs_main(int argc, char** argv)
+{
+	return main(argc, argv);
+}
+#endif
