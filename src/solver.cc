@@ -646,6 +646,10 @@ void BasicSolver::InitMetaInfoAndOptions(
     Option_Type type() {
       return Option_Type::BOOL;
     }
+    /// Returns the option value.
+    virtual void GetValue(fmt::LongLong &val) const {
+      val = s.bool_options_ & SHOW_VERSION;
+    }
   };
   AddOption(OptionPtr(new VersionOption(*this)));
 
@@ -1331,17 +1335,24 @@ public:
   }
   SolverOption* getRealOption() const { return real_; }
 
-  virtual void Write(fmt::Writer& w) {
+  void GetValue(fmt::LongLong& v) const override { real_->GetValue(v); }
+  void GetValue(double& v) const override { real_->GetValue(v); }
+  void GetValue(std::string &v) const override { real_->GetValue(v); }
+  void SetValue(fmt::LongLong v) override { real_->SetValue(v); }
+  void SetValue(double v) override { real_->SetValue(v); }
+  void SetValue(fmt::StringRef v) override { real_->SetValue(v); }
+
+  virtual void Write(fmt::Writer& w) override {
     real_->Write(w);
   }
-  virtual void Parse(const char*& s, bool b) {
+  virtual void Parse(const char*& s, bool b) override {
     real_->Parse(s, b);
   }
 
-  virtual std::string echo() {
+  virtual std::string echo() override {
     return fmt::format("{} ({})", name(), real_->echo());
   }
-  Option_Type type() {
+  Option_Type type() override {
     return real_->type();
   }
 };

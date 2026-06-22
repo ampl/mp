@@ -929,10 +929,10 @@ public:
 
 protected:
   /// Adding solver options of types int/double/string/...
-  /// The type is deduced from the two last parameters min, max
+  /// @warning The type is deduced from the two last parameters min, max
   /// (currently unused otherwise.)
-  /// If min/max omitted, assume ValueType=std::string
-  /// Assumes existence of Impl::Get/SetSolverOption(KeyType, ValueType(&))
+  /// @note If min/max omitted, assume ValueType=std::string
+  /// @note Assumes existence of Impl::Get/SetSolverOption(KeyType, ValueType(&))
   template <class KeyType, class ValueType=std::string>
   void AddSolverOption(const char *name_list, const char *description,
                        KeyType k,

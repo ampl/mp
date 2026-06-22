@@ -36,19 +36,21 @@ public:
   virtual
   bool ParseSolverOptions(char **argv, unsigned flags = 0,
     ASLProblem* p=0, char* additional_options=0) {
+    bool result {};
     if (additional_options)
-      return ParseOptions(nullptr, flags, p, additional_options); 
+      result = ParseOptions(nullptr, flags, p, additional_options);
     else {
       /// Chance e.g. for the Backend to init solver environment, etc
       InitOptionParsing();
       if (ParseOptions(argv, flags, p, additional_options)) {
         /// Chance to consider options immediately (open cloud, etc)
         FinishOptionParsing();
-        return true;
+        result = true;
       }
-      return false;
+      result = false;
     }
-
+    ReportOptions2Debug();
+    return result;
   }
 
   /// Runs Solver given the NL file name
@@ -108,6 +110,9 @@ protected:
 
   /// option parser flags
   int GetOptionFlags() const { return flag_options_; }
+
+  /// Report options for debugging
+  virtual void ReportOptions2Debug() { }
 
 
 private:

@@ -15,12 +15,12 @@ namespace mp {
 
 /// A mix-in class to add Xpress parameters.
 /// Translated from '../mp/solvers/xpress/optprm.h'
-/// on Tue Dec  9 22:45:14 2025
+/// on Mon Jun 22 16:58:30 2026
 ///
 template <class Impl>
 class CompiledOptimizerOptions {
 public:
-  /// Add up to 337 'Optimizer' parameters
+  /// Add up to 332 'Optimizer' parameters
   void AddOptimizerOptions() {
 
 #ifdef XPRS_ALGAFTERCROSSOVER
@@ -557,13 +557,6 @@ public:
       XPRS_BREADTHFIRST, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_BREADTHFIRST
 
-#ifdef XPRS_CACHESIZE
-    MPD( AddSolverOption_MergeDuplicates("sys:xprs_cachesize XPRS_CACHESIZE",
-      "This parameter is deprecated and will be removed in a future release. Newton Barrier: L2 or L3 (see notes) cache size in kB (kilobytes) of the CPU. On Intel (or compatible) platforms a value of -1 may be used to determine the cache size automatically. If the CPU model is new then the cache size may not be correctly detected by an older release of the software. "
-      "\n\nDefault: -1",
-      XPRS_CACHESIZE, INT_MIN, INT_MAX) );
-#endif  // ifdef XPRS_CACHESIZE
-
 #ifdef XPRS_CALLBACKCHECKTIMEDELAY
     MPD( AddSolverOption_MergeDuplicates("tech:xprs_callbackchecktimedelay XPRS_CALLBACKCHECKTIMEDELAY",
       "Minimum delay in milliseconds between two consecutive executions of the CHECKTIME callback in the same solution process"
@@ -758,11 +751,11 @@ public:
       "\n- (3)  Multiple passes through the matrix considering slacks."
       "\n- (4)  Multiple (≤10) passes through the matrix but only doing slacks at the very end."
       "\n- (n>10)  As for value 4 but performing at most n - 10 passes."
-      "\n- (0)  Perform standard crash."
-      "\n- (1)  Perform additional numerical checks during crash."
-      "\n- (2)  Extend the set of column candidates for crash. "
-      "\n- (3)  Extend the set of row candidates for crash. "
-      "\n- (4)  Force crash, i.e., consider all suitable columns/rows as candidates for crash.",
+      "\n- (Bit 0)  Perform standard crash."
+      "\n- (Bit 1)  Perform additional numerical checks during crash."
+      "\n- (Bit 2)  Extend the set of column candidates for crash. "
+      "\n- (Bit 3)  Extend the set of row candidates for crash. "
+      "\n- (Bit 4)  Force crash, i.e., consider all suitable columns/rows as candidates for crash.",
       XPRS_CRASH, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_CRASH
 
@@ -1583,13 +1576,6 @@ public:
       XPRS_KEEPNROWS, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_KEEPNROWS
 
-#ifdef XPRS_L1CACHE
-    MPD( AddSolverOption_MergeDuplicates("bar:xprs_l1cache XPRS_L1CACHE",
-      "This parameter is deprecated and will be removed in a future release. Newton barrier: L1 cache size in kB (kilo bytes) of the CPU. On Intel (or compatible) platforms a value of -1 may be used to determine the cache size automatically. "
-      "\n\nDefault: Hardware/platform dependent.",
-      XPRS_L1CACHE, INT_MIN, INT_MAX) );
-#endif  // ifdef XPRS_L1CACHE
-
 #ifdef XPRS_LNPBEST
     MPD( AddSolverOption_MergeDuplicates("cut:xprs_lnpbest XPRS_LNPBEST",
       "Number of infeasible MIP entities to create lift-and-project cuts for during each round of Gomory cuts at the root node (see GOMCUTS)."
@@ -1822,17 +1808,6 @@ public:
       "\n- (>0)  If an integer solution has been found, stop MIP search after the given number of seconds without a new incumbent. No effect as long as no solution was found.",
       XPRS_MAXSTALLTIME, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_MAXSTALLTIME
-
-#ifdef XPRS_MAXTIME
-    MPD( AddSolverOption_MergeDuplicates("lim:xprs_maxtime XPRS_MAXTIME",
-      "This parameter is deprecated and will be removed in a future release. The maximum time in seconds that the Optimizer will run before it terminates, including the problem setup time and solution time. For MIP problems, this is the total time taken to solve all nodes. "
-      "\n\n"
-      "Values (default: 0):\n"
-      "\n- (0)  No time limit."
-      "\n- (n>0)  If an integer solution has been found, stop MIP search after n seconds, otherwise continue until an integer solution is finally found."
-      "\n- (n<0)  Stop in LP or MIP search after n seconds.",
-      XPRS_MAXTIME, INT_MIN, INT_MAX) );
-#endif  // ifdef XPRS_MAXTIME
 
 #ifdef XPRS_MAXTREEFILESIZE
     MPD( AddSolverOption_MergeDuplicates("tech:xprs_maxtreefilesize XPRS_MAXTREEFILESIZE",
@@ -2238,7 +2213,7 @@ public:
     MPD( AddSolverOption_MergeDuplicates("num:xprs_objscalefactor XPRS_OBJSCALEFACTOR",
       "Custom objective scaling factor, expressed as a power of 2. When set, it overwrites the automatic objective scaling factor. A value of 0 means no objective scaling. This control is applied for the full solve, and is independent of any extra scaling that may occur specifically for the barrier or simplex solvers. As it is a power of 2, to scale by 16, set the value of the control to 4."
       "\n\nDefault: 0",
-      XPRS_OBJSCALEFACTOR, -DBL_MAX, DBL_MAX) );
+      XPRS_OBJSCALEFACTOR, INT_MIN, INT_MAX) );  // manual change
 #endif  // ifdef XPRS_OBJSCALEFACTOR
 
 #ifdef XPRS_OPTIMALITYTOL
@@ -2859,17 +2834,6 @@ public:
       XPRS_REPAIRINDEFINITEQ, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_REPAIRINDEFINITEQ
 
-#ifdef XPRS_REPAIRINFEASMAXTIME
-    MPD( AddSolverOption_MergeDuplicates("inf:xprs_repairinfeasmaxtime XPRS_REPAIRINFEASMAXTIME",
-      "This parameter is deprecated and will be removed in a future release. Overall time limit for the repairinfeas tool"
-      "\n\n"
-      "Values (default: 0):\n"
-      "\n- (0)  No time limit."
-      "\n- (n>0)  If an integer solution has been found, stop MIP search after n seconds, otherwise continue until an integer solution is finally found."
-      "\n- (n<0)  Stop in LP or MIP search after n seconds.",
-      XPRS_REPAIRINFEASMAXTIME, INT_MIN, INT_MAX) );
-#endif  // ifdef XPRS_REPAIRINFEASMAXTIME
-
 #ifdef XPRS_REPAIRINFEASTIMELIMIT
     MPD( AddSolverOption_MergeDuplicates("inf:xprs_repairinfeastimelimit XPRS_REPAIRINFEASTIMELIMIT",
       "Overall time limit for the repairinfeas tool"
@@ -3041,17 +3005,6 @@ public:
       "\n- (>0)  Use the barrier algorithm while the number of dual infeasibilities is larger than this value, otherwise use dual simplex.",
       XPRS_SIFTSWITCH, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_SIFTSWITCH
-
-#ifdef XPRS_SLEEPONTHREADWAIT
-    MPD( AddSolverOption_MergeDuplicates("sys:xprs_sleeponthreadwait XPRS_SLEEPONTHREADWAIT",
-      "This parameter is deprecated and will be removed in a future release. In previous versions this was used to determine if the threads should be put into a wait state when waiting for work."
-      "\n\n"
-      "Values (default: -1):\n"
-      "\n- (-1)  Automatically determined depending on the CPU the Optimizer is running on."
-      "\n- (0)  Keep the threads busy when waiting for work."
-      "\n- (1)  Put the threads into a wait state when waiting for work.",
-      XPRS_SLEEPONTHREADWAIT, INT_MIN, INT_MAX) );
-#endif  // ifdef XPRS_SLEEPONTHREADWAIT
 
 #ifdef XPRS_SOLTIMELIMIT
     MPD( AddSolverOption_MergeDuplicates("lim:xprs_soltimelimit XPRS_SOLTIMELIMIT",

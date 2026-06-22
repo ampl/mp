@@ -5,9 +5,12 @@
 
 #include <algorithm>
 #include <memory>
+#include <string>
+#include <cctype>
 
 #include "mp/backend-base.h"
 #include "mp/model-mgr-base.h"
+
 
 namespace mp {
 
@@ -182,6 +185,37 @@ public:
   /// has unfixed integer variables?
   bool HasUnfixedIntVars() const {
     return GetMM().HasUnfixedIntVars();
+  }
+
+
+protected:
+  /// Report options for debugging
+  void ReportOptions2Debug() override {
+    if (debug_mode()) {
+      for (auto oit = option_begin(); oit != option_end(); ++oit) {
+        auto type = oit->type();
+        auto name = std::string("option___") + oit->name();
+        std::replace_if(name.begin(), name.end(), [](unsigned char c) {
+          return !std::isalnum(c);
+        }, '_');
+        if (SolverOption::STRING == type) {
+          std::string val;
+          oit->GetValue(val);
+          ReportSingleSuffix(
+              {name, suf::PROBLEM | suf::OUTONLY}, (double)NAN );
+        } else if (SolverOption::DBL == type) {
+          double val;
+          oit->GetValue(val);
+          ReportSingleSuffix(
+              {name, suf::PROBLEM | suf::OUTONLY}, val );
+        } else {
+          int val;
+          oit->GetValue(val);
+          ReportSingleSuffix(
+              {name, suf::PROBLEM | suf::OUTONLY}, val );
+        }
+      }
+    }
   }
 
 

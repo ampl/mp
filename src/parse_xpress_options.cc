@@ -99,7 +99,10 @@ public:
 
   /// Add new parameter
   void AddParam(Param prm) {
-    auto name_w_pref = key_prefix_ + prm.NameMain();
+    auto name_w_pref = key_prefix_;
+    if (name_w_pref.size())
+      name_w_pref += '_';
+    name_w_pref += prm.NameMain();
     if (params_.end() != params_.find(name_w_pref)) {
       RAISE( "parameter '"
             << name_w_pref << "' repeated.");
@@ -304,6 +307,9 @@ protected:
     }
     if (std::string::npos != topic.find("emory")) {
       return "tech";
+    }
+    if (std::string::npos != topic.find("SLP")) {
+      return "slp";
     }
     if (std::string::npos != topic.find("LP")) {
       return "lp";

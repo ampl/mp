@@ -1555,23 +1555,26 @@ void XpressmpBackend::InitCustomOptions() {
     "\n.. value-table::\n",
     storedOptions_.pooldupcol_, pool_values_);
 
-  AddSolverOption("sol:pooldups poold/ups",
-    "How poolstub should handle duplicate solutions:\n"
-    "\n.. value-table::\nRounding of discrete variables is affected by"
-    "poolmiptol and poolfeastol",
-    XPRS_MSP_DUPLICATESOLUTIONSPOLICY, pooldups_values_, 3);
+  /// turning off 2026-06-22:
+  /// requires XPRS_MST_getinticontrol(mse_, ...)
+  // AddSolverOption("sol:pooldups pooldups",
+  //   "How poolstub should handle duplicate solutions:\n"
+  //   "\n.. value-table::\nRounding of discrete variables is affected by"
+  //   "poolmiptol and poolfeastol",
+  //   XPRS_MSP_DUPLICATESOLUTIONSPOLICY, pooldups_values_, 3);
 
   AddOptionSynonyms_Inline_Front("ams_stub", "sol:stub");
 
-  AddSolverOption("sol:poolfeastol poolfeastol",
-    "Zero tolerance for discrete variables in the solution "
-    "pool (default 1e-6)",
-    XPRS_MSP_SOL_FEASTOL, 0, 1);
+  /// same
+  // AddSolverOption("sol:poolfeastol poolfeastol",
+  //   "Zero tolerance for discrete variables in the solution "
+  //   "pool (default 1e-6)",
+  //   XPRS_MSP_SOL_FEASTOL, 0, 1);
 
-  AddSolverOption("sol:poolmiptol poolmiptol",
-    "Error (nonintegrality) allowed in discrete variables "
-    "in the solution pool (default 5e-6)",
-    XPRS_MSP_SOL_MIPTOL, 0, 1);
+  // AddSolverOption("sol:poolmiptol poolmiptol",
+  //   "Error (nonintegrality) allowed in discrete variables "
+  //   "in the solution pool (default 5e-6)",
+  //   XPRS_MSP_SOL_MIPTOL, 0, 1);
 
 	AddStoredOption("sol:poollimit poollimit poolnbest",
     "When poollimit = n > 1, the "
@@ -1787,7 +1790,7 @@ void XpressmpBackend::InitCustomOptions() {
 
     AddSolverOption("pre:objscalefactor objscalefactor",
                     "Power of 2 (default 0) by which the objective is scaled. "
-                    "Nonzero objscalfactor values override automatic global "
+                    "Nonzero objscalefactor values override automatic global "
                     "objective scaling",
                     XPRS_OBJSCALEFACTOR, 0, INT_MAX);
 
@@ -2081,7 +2084,7 @@ void XpressmpBackend::InitCustomOptions() {
     "How the barrier algorithm scales the objective; when the objective "
     "is quadratic, the quadratic diagonal is used in determining the scale:\n"
     "\n.. value-table::\n",
-    XPRS_BAROBJSCALE, values_barobjscale, -1);
+    XPRS_BAROBJSCALE, values_barobjscale, -1.0);
 
   AddSolverOption("bar:order barorder",
     "Cholesky factorization pivot order for barrier algorithm:\n"
@@ -2331,8 +2334,10 @@ void XpressmpBackend::InitCustomOptions() {
 
     AddSolverOption("lim:heurdiveiterlimit heurdepth mip:heurdiveiterlimit",
       "Simplex iteration limit for reoptimizing during the diving heuristic; "
-      "default = -1 (automatic selection); a value of 0 implies no iteration limit",
-      XPRS_HEURDIVEITERLIMIT, -INT_MAX, INT_MAX);
+      "default = -1 (automatic selection); a value of 0 implies no iteration limit; "
+      "<0: automatic selection of the iteration limit based on the problem size. "
+                    "The absolute value is used as a multiplier on the automatic selection.",
+      XPRS_HEURDIVEITERLIMIT, -DBL_MAX, DBL_MAX);
 
 
     AddSolverOption("mip:heurshiftprop heurshiftprop",
@@ -2676,7 +2681,7 @@ AddSolverOption("mip:varselection varselection",
     "Limit on number of cuts and cut coefficients added "
     "while solving MIPs. Default=-1 (automatic); a value of 0 "
     "will disable cuts generation.",
-    XPRS_CUTFACTOR, -1, INT_MAX);
+    XPRS_CUTFACTOR, -1.0, DBL_MAX);
 
   AddSolverOption("cut:freq cutfreq",
     "Cuts are only generated at tree depths that are integer "

@@ -2920,9 +2920,12 @@ int GurobiBackend::GrbGetObjIntParam(const SolverOption& opt) const {
                          [&](const ObjNParam<int>& prm){
     return prm.first == std::make_pair(opt.wc_tail(), opt.wc_keybody_last());
   });
-  if (objnparam_int_.rend()==it)
+  if (objnparam_int_.rend()==it) {
+    if (debug_mode())
+      return INT_MIN;
     throw std::runtime_error("Failed to find recorded option " +
                              opt.wc_key_last__std_form());
+  }
   return it->second;
 }
 double GurobiBackend::GrbGetObjDblParam(const SolverOption& opt) const {
@@ -2930,9 +2933,12 @@ double GurobiBackend::GrbGetObjDblParam(const SolverOption& opt) const {
                          [&](const ObjNParam<int>& prm){
     return prm.first == std::make_pair(opt.wc_tail(), opt.wc_keybody_last());
   });
-  if (objnparam_dbl_.rend()==it)
+  if (objnparam_dbl_.rend()==it) {
+    if (debug_mode())
+      return NAN;
     throw std::runtime_error("Failed to find recorded option " +
                              opt.wc_key_last__std_form());
+  }
   return it->second;
 }
 

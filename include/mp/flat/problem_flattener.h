@@ -270,7 +270,8 @@ protected:
   void OutputDebugInfo() {
     auto ReportVal = [this](const char* sufname, auto val) {
       double va [] = { (double)val };
-      GetModel().ReportSuffix({sufname, suf::PROBLEM}, ArrayRef<double>(va));
+      GetModel().ReportSuffix(
+          {sufname, suf::PROBLEM | suf::OUTONLY}, ArrayRef<double>(va));
       if (GetEnv().debug_mode() > 1)
         GetEnv().Print("  ----- DEBUG: Suffix '{}' = {}\n",
                        sufname, val);

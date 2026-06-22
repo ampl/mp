@@ -15,7 +15,7 @@ namespace mp {
 
 /// A mix-in class to add Xpress parameters.
 /// Translated from '../mp/solvers/xpress/nlprm.h'
-/// on Thu Nov 20 15:22:28 2025
+/// on Mon Jun 22 16:58:29 2026
 ///
 template <class Impl>
 class CompiledNonlinearOptions {

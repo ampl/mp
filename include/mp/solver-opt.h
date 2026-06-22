@@ -473,7 +473,11 @@ public:
 		Option_Type type() {
 			return Option_Type::BOOL;
 		}
-	};
+    void GetValue(int &v) const override { v = (handler_.*get_)(*this); }
+    /// For retrieving of int options via the base class
+    void GetValue(fmt::LongLong &v) { v = (handler_.*get_)(*this); }
+    void SetValue(int v) override { (handler_.*set_)(*this, v); }
+  };
 
 
   /// Sets a text to be displayed before option descriptions.
@@ -557,6 +561,13 @@ public:
         value_(v) {}
 
     void GetValue(Value &v) const override { v = value_; }
+    /// For retrieving of int options via the base class
+    void GetValue(fmt::LongLong &v) const override {
+      if constexpr (std::is_integral_v<Value>)
+        v = (fmt::LongLong)value_;
+      else
+        MP_RAISE("Requested integral value of a non-integer option");
+    }
     void SetValue(typename internal::OptionHelper<Value>::Arg v) override
     { value_ = v; }
   };
@@ -607,8 +618,10 @@ public:
       : mp::TypedSolverOption<value_type>(
           name_list, description, values), value_(v) {}
 
-    void GetValue(value_type &v) const override
-    { assert(value_.size()); v = value_.back(); }
+    void GetValue(value_type &v) const override {
+      if (value_.size())
+        v = value_.back();
+    }
     void SetValue(
         typename internal::OptionHelper<value_type>::Arg v) override
     { value_.push_back(v); }

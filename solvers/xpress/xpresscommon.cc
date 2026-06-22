@@ -73,9 +73,12 @@ void XpressmpCommon::SetSolverOption(int  key, double value) {
 void XpressmpCommon::GetSolverOption(int  key, std::string &value) const {
   int l;
   XPRESSMP_CCALL(XPRSgetstringcontrol(lp(), key, nullptr, 0, &l));
-  std::vector<char> s(l);
-  XPRESSMP_CCALL(XPRSgetstringcontrol(lp(), key, s.data(), l, &l));
-  value.assign(s.data());
+  if (l) {
+    std::vector<char> s(l);
+    XPRESSMP_CCALL(XPRSgetstringcontrol(lp(), key, s.data(), l, &l));
+    value.assign(s.data());
+  } else
+    value.clear();
 }
 
 void XpressmpCommon::SetSolverOption(int  key, const std::string& value) {
