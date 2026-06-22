@@ -670,11 +670,11 @@ void ScipBackend::InitCustomOptions() {
   ////////////////////// PRESOLVE ////////////////////////
   AddSolverOption("pre:abortfac abortfac",
     "Abort presolve, if at most this fraction of the problem was changed in last presolve round (default: 0.0008)",
-    "presolving/advanced/abortfac", 0.0, 1.0);
+    "presolving/abortfac", 0.0, 1.0);
 
   AddSolverOption("pre:clqtablefac clqtablefac",
     "Limit on number of entries in clique table relative to number of problem nonzeros (default: 2.0)",
-    "presolving/advanced/clqtablefac", 0.0, SCIP_REAL_MAX);
+    "presolving/clqtablefac", 0.0, SCIP_REAL_MAX);
 
   AddSolverOption("pre:donotaggr donotaggr",
     "0/1: whether aggregation of variables should be forbidden"
@@ -692,19 +692,19 @@ void ScipBackend::InitCustomOptions() {
 
   AddSolverOption("pre:immrestartfac immrestartfac",
     "Fraction of integer variables that were fixed in the root node triggering an immediate restart with preprocessing (default: 0.1)",
-    "presolving/advanced/immrestartfac", 0.0, 1.0);
+    "presolving/immrestartfac", 0.0, 1.0);
 
   AddSolverOption("pre:restartfac restartfac",
     "Fraction of integer variables that were fixed in the root node triggering a restart with preprocessing after root node evaluation (default: 0.025)",
-    "presolving/advanced/restartfac", 0.0, 1.0);
+    "presolving/restartfac", 0.0, 1.0);
 
   AddSolverOption("pre:restartminred restartminred",
     "Minimal fraction of integer variables removed after restart to allow for an additional restart (default: 0.1)",
-    "presolving/advanced/restartminred", 0.0, 1.0);
+    "presolving/restartminred", 0.0, 1.0);
 
   AddSolverOption("pre:subrestartfac subrestartfac",
     "Fraction of integer variables that were globally fixed during the solving process triggering a restart with preprocessing (default: 1.0)",
-    "presolving/advanced/subrestartfac", 0.0, 1.0);
+    "presolving/subrestartfac", 0.0, 1.0);
 
   AddSolverOption("pre:maxrestarts",
     "Maximal number of restarts (default: -1: unlimited)",
@@ -745,14 +745,14 @@ void ScipBackend::InitCustomOptions() {
     "\n"
     "  | 0 - Order of constraints should not be permuted\n"
     "  | 1 - Order of constraints should be permuted (default).",
-    "randomization/advanced/permuteconss", 0, 1);
+    "randomization/permuteconss", 0, 1);
 
   AddSolverOption("ran:permutevars permutevars",
     "0/1: whether the order of variables should be permuted (depends on permutationseed)? "
     "\n"
     "  | 0 - Order of variables should not be permuted (default)\n"
     "  | 1 - Order of variables should be permuted.",
-    "randomization/advanced/permutevars", 0, 1);
+    "randomization/permutevars", 0, 1);
 
   AddSolverOption("ran:lpseed lpseed",
     "Random seed for LP solver, e.g. for perturbations in the simplex (default: 0: LP default)",

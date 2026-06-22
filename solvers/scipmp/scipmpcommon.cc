@@ -1,3 +1,6 @@
+#include <climits>
+
+#include "mp/error.h"
 #include "mp/format.h"
 #include "scipmpcommon.h"
 
@@ -125,6 +128,13 @@ void ScipCommon::GetSolverOption(const char* key, int &value) const {
     SCIP_CCALL( SCIPgetBoolParam(getSCIP(), key, &buffer) );
     value = (int)buffer;
   }
+  else if (SCIPparamGetType(SCIPgetParam(getSCIP(), key))==SCIP_PARAMTYPE_LONGINT) {
+    SCIP_Longint buffer;
+    SCIP_CCALL( SCIPgetLongintParam(getSCIP(), key, &buffer) );
+    MP_ASSERT_ALWAYS(buffer >= INT_MIN && buffer <= INT_MAX,
+                     fmt::format("Cannot represent {} as int", buffer));
+    value = (int)buffer;
+  }
   else
     SCIP_CCALL( SCIPgetIntParam(getSCIP(), key, &value) );
 }
@@ -132,6 +142,8 @@ void ScipCommon::GetSolverOption(const char* key, int &value) const {
 void ScipCommon::SetSolverOption(const char* key, int value) {
   if (SCIPparamGetType(SCIPgetParam(getSCIP(), key))==SCIP_PARAMTYPE_BOOL)
     SCIP_CCALL( SCIPsetBoolParam(getSCIP(), key, value) );
+  else if (SCIPparamGetType(SCIPgetParam(getSCIP(), key))==SCIP_PARAMTYPE_LONGINT)
+    SCIP_CCALL( SCIPsetLongintParam(getSCIP(), key, value) );
   else
     SCIP_CCALL( SCIPsetIntParam(getSCIP(), key, value) );
 }
