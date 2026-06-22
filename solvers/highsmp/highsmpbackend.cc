@@ -697,10 +697,6 @@ void HighsBackend::InitCustomOptions() {
     "Exponent of power-of-two bound scaling for model (default 0).",
     "user_bound_scale", 0, std::numeric_limits<HighsInt>::max());
 
-  AddSolverOption("pre:usercostscale user_cost_scale usercostscale",
-    "Exponent of power-of-two cost scaling for model (default 0).",
-    "user_cost_scale", 0, std::numeric_limits<HighsInt>::max());
-
   AddSolverOption("alg:parallel parallel",
     "Parallel option :\n"
     "\n.. value-table::\n", "parallel", off_on_choose_values, c);
@@ -726,9 +722,10 @@ void HighsBackend::InitCustomOptions() {
     "Objective target for termination of the MIP solver (default: no limit).",
     "objective_target", 0.0, DBL_MAX);
 
-  AddSolverOption("lim:pdlpnativetermination pdlp_native_termination pdlpnativetermination",
-    "Use native termination for PDLP solver:\n"
-    "\n.. value-table::\n", "pdlp_native_termination", values_01_noyes_0default_, 0);
+  /// Not in Highs 1.14:
+  // AddSolverOption("lim:pdlpnativetermination pdlp_native_termination pdlpnativetermination",
+  //   "Use native termination for PDLP solver:\n"
+  //   "\n.. value-table::\n", "pdlp_native_termination", values_01_noyes_0default_, 0);
 
   AddSolverOption("pre:pdlpscaling_mode pdlp_scaling_mode",
       "Scaling mode for PDLP solver, sum of:\n"
@@ -787,7 +784,7 @@ void HighsBackend::InitCustomOptions() {
   AddSolverOption("pdlp:step_size_strategy pdlpstepsizestrategy pdlp_step_size_strategy ",
       "Stepsize strategy for PDLP solver:\n"
       "\n.. value-table::\n",
-      "pdlp_step_size_strategy ", pdlp_step_size_strategy_values, 1);
+      "pdlp_step_size_strategy", pdlp_step_size_strategy_values, 1);
 
   AddSolverOption("pdlp:optimality_tolerance pdlp_optimality_tolerance pdlp_opt_tol pdlpopttol",
     "PDLP optimality tolerance (default 1e-7).",
@@ -914,7 +911,7 @@ void HighsBackend::InitCustomOptions() {
   AddSolverOption("pre:centringratiotolerance centring_ratio_tolerance centringratiotolerance",
     "Centring stops when the ratio max(x_j*s_j) / min(x_j*s_j) is below "
     "this tolerance (default 100).",
-    "centring_ratio_tolerance", 0, INT_MAX);
+    "centring_ratio_tolerance", 0.0, DBL_MAX);
 
   AddSolverOption("obj:blend blend_multi_objectives",
     "Whether to blend multiple objectives or apply lexicographical ordering",
