@@ -333,15 +333,15 @@ static const mp::OptionValueInfo childsel[] = {
 };
 
 static const mp::OptionValueInfo scoretype[] = {
-  { "maxwhi", "max white", 0},
-  { "border", "border area", 1},
-  { "classi", "classic", 2},
-  { "forswh", "max foreseeing white", 3},
-  { "spfwh", "ppc-max-white (default)", 4},
-  { "fawh", "max foreseeing white with aggregation info", 5},
-  { "spfawh", "ppc-max-white with aggregation info", 6},
-  { "bender", "experimental benders score", 7},
-  { "strong", "strong decomposition score", 8}
+  { "maxwhi", "max white", "maxwhi"},
+  { "border", "border area", "border"},
+  { "classi", "classic", "classi"},
+  { "forswh", "max foreseeing white", "forswh"},
+  { "spfwh", "ppc-max-white (default)", "spfwh"},
+  { "fawh", "max foreseeing white with aggregation info", "fawh"},
+  { "spfawh", "ppc-max-white with aggregation info", "spfawh"},
+  { "bender", "experimental benders score", "bender"},
+  { "strong", "strong decomposition score", "strong"}
 };
 
 static const mp::OptionValueInfo mode[] = {
@@ -645,41 +645,41 @@ void GcgBackend::InitCustomOptions() {
   ////////////////////// PRESOLVE ////////////////////////
   AddSolverOption("pre:abortfac abortfac",
     "Abort presolve, if at most this fraction of the problem was changed in last presolve round (default: 0.0008)",
-    "presolving/advanced/abortfac", 0.0, 1.0);
+    "presolving/abortfac", 0.0, 1.0);
 
   AddSolverOption("pre:clqtablefac clqtablefac",
     "Limit on number of entries in clique table relative to number of problem nonzeros (default: 2.0)",
-    "presolving/advanced/clqtablefac", 0.0, SCIP_REAL_MAX);
+    "presolving/clqtablefac", 0.0, SCIP_REAL_MAX);
 
   AddSolverOption("pre:donotaggr donotaggr",
     "0/1: whether aggregation of variables should be forbidden"
     "\n"
     "  | 0 - Aggregation of variables should not be forbidden (default)\n"
     "  | 1 - Aggregation of variables should be forbidden.",
-    "presolving/advanced/donotaggr", 0, 1);
+    "presolving/donotaggr", 0, 1);
 
   AddSolverOption("pre:donotmultaggr donotmultaggr",
     "0/1: whether multi-aggregation of variables should be forbidden"
     "\n"
     "  | 0 - Multi-aggregation of variables should not be forbidden (default)\n"
     "  | 1 - Multi-aggregation of variables should be forbidden.",
-    "presolving/advanced/donotmultaggr", 0, 1);
+    "presolving/donotmultaggr", 0, 1);
 
   AddSolverOption("pre:immrestartfac immrestartfac",
     "Fraction of integer variables that were fixed in the root node triggering an immediate restart with preprocessing (default: 0.1)",
-    "presolving/advanced/immrestartfac", 0.0, 1.0);
+    "presolving/immrestartfac", 0.0, 1.0);
 
   AddSolverOption("pre:restartfac restartfac",
     "Fraction of integer variables that were fixed in the root node triggering a restart with preprocessing after root node evaluation (default: 0.025)",
-    "presolving/advanced/restartfac", 0.0, 1.0);
+    "presolving/restartfac", 0.0, 1.0);
 
   AddSolverOption("pre:restartminred restartminred",
     "Minimal fraction of integer variables removed after restart to allow for an additional restart (default: 0.1)",
-    "presolving/advanced/restartminred", 0.0, 1.0);
+    "presolving/restartminred", 0.0, 1.0);
 
   AddSolverOption("pre:subrestartfac subrestartfac",
     "Fraction of integer variables that were globally fixed during the solving process triggering a restart with preprocessing (default: 1.0)",
-    "presolving/advanced/subrestartfac", 0.0, 1.0);
+    "presolving/subrestartfac", 0.0, 1.0);
 
   AddSolverOption("pre:maxrestarts",
     "Maximal number of restarts (default: -1: unlimited)",
@@ -720,14 +720,14 @@ void GcgBackend::InitCustomOptions() {
     "\n"
     "  | 0 - Order of constraints should not be permuted\n"
     "  | 1 - Order of constraints should be permuted (default).",
-    "randomization/advanced/permuteconss", 0, 1);
+    "randomization/permuteconss", 0, 1);
 
   AddSolverOption("ran:permutevars permutevars",
     "0/1: whether the order of variables should be permuted (depends on permutationseed)? "
     "\n"
     "  | 0 - Order of variables should not be permuted (default)\n"
     "  | 1 - Order of variables should be permuted.",
-    "randomization/advanced/permutevars", 0, 1);
+    "randomization/permutevars", 0, 1);
 
   AddSolverOption("ran:lpseed lpseed",
     "Random seed for LP solver, e.g. for perturbations in the simplex (default: 0: LP default)",
@@ -767,7 +767,8 @@ void GcgBackend::InitCustomOptions() {
 
   AddSolverOption("det:scoretype scoretype",
     "Score calculation for comparing (partial) decompositions:\n"
-    "\n.. value-table::\n", "detection/scores/selected", scoretype, 4);
+    "\n.. value-table::\n", "detection/scores/selected", scoretype,
+    "spfwh");
 
   AddSolverOption("det:origprob-classificationenabled origprob-classificationenabled",
     "0/1: whether classification for the original problem should be enabled? "
@@ -820,19 +821,22 @@ void GcgBackend::InitCustomOptions() {
     "detection/benders/onlycontsubpr", 0, 1);
 
   //////////////////// RELAXING-GCG //////////////////////
-  AddSolverOption("gcg:bliss-enabled bliss-enabled",
-    "0/1: whether bliss should be used to check for identical blocks? "
-    "\n"
-    "  | 0 - Bliss should not be used to check for identical blocks\n"
-    "  | 1 - Bliss should be used to check for identical blocks (default).",
-    "relaxing/gcg/bliss/enabled", 0, 1);
 
-  AddSolverOption("gcg:aggregation",
-    "0/1: whether identical blocks should be aggregated (only for discretization approach)? "
-    "\n"
-    "  | 0 - Identical blocks should not be aggregated (only for discretization approach)\n"
-    "  | 1 - Identical blocks should be aggregated (only for discretization approach) (default).",
-    "relaxing/gcg/aggregation", 0, 1);
+  /// Seems absent in SCIP 10.0.2
+  // AddSolverOption("gcg:bliss-enabled bliss-enabled",
+  //   "0/1: whether bliss should be used to check for identical blocks? "
+  //   "\n"
+  //   "  | 0 - Bliss should not be used to check for identical blocks\n"
+  //   "  | 1 - Bliss should be used to check for identical blocks (default).",
+  //   "relaxing/gcg/bliss/enabled", 0, 1);
+
+  /// Seems absent in SCIP 10.0.2
+  // AddSolverOption("gcg:aggregation aggregation",
+  //   "0/1: whether identical blocks should be aggregated (only for discretization approach)? "
+  //   "\n"
+  //   "  | 0 - Identical blocks should not be aggregated (only for discretization approach)\n"
+  //   "  | 1 - Identical blocks should be aggregated (only for discretization approach) (default).",
+  //   "relaxing/gcg/aggregation", 0, 1);
 
   AddSolverOption("gcg:discretization discretization",
     "0/1: whether discretization (TRUE) or convexification (FALSE) approach should be used? "

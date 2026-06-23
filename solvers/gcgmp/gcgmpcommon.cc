@@ -1,6 +1,9 @@
-#include "mp/format.h"
-#include "gcgmpcommon.h"
+#include <climits>
 
+#include "mp/format.h"
+#include "mp/error.h"
+
+#include "gcgmpcommon.h"
 #include "gcg/gcgplugins.h"
 
 static
@@ -92,13 +95,21 @@ void GcgCommon::GetSolverOption(const char* key, int &value) const {
     GCG_CCALL( SCIPgetBoolParam(getSCIP(), key, &buffer) );
     value = (int)buffer;
   }
-  else
+  else if (SCIPparamGetType(SCIPgetParam(getSCIP(), key))==SCIP_PARAMTYPE_LONGINT) {
+    SCIP_Longint buffer;
+    GCG_CCALL( SCIPgetLongintParam(getSCIP(), key, &buffer) );
+    MP_ASSERT_ALWAYS(buffer >= INT_MIN && buffer <= INT_MAX,
+                     fmt::format("Cannot represent {} as int", buffer));
+    value = (int)buffer;
+  }  else
     GCG_CCALL( SCIPgetIntParam(getSCIP(), key, &value) );
 }
 
 void GcgCommon::SetSolverOption(const char* key, int value) {
   if (SCIPparamGetType(SCIPgetParam(getSCIP(), key))==SCIP_PARAMTYPE_BOOL)
     GCG_CCALL( SCIPsetBoolParam(getSCIP(), key, value) );
+  else if (SCIPparamGetType(SCIPgetParam(getSCIP(), key))==SCIP_PARAMTYPE_LONGINT)
+    GCG_CCALL( SCIPsetLongintParam(getSCIP(), key, value) );
   else
     GCG_CCALL( SCIPsetIntParam(getSCIP(), key, value) );
 }
