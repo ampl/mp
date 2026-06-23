@@ -2,6 +2,14 @@ Summary of recent updates to BARONMP for AMPL
 =============================================
 
 
+## 20260624
+- Changes in MP, in particular:
+  - Option *cvt:pow2_as_qp* prefers quadratization
+    of the ^2 operator for affine arguments (default).
+  - Faster parsing of quadratic expressions with
+    defined variables.
+
+
 ## 20251225
 - Updated to Baron 25.12.10, which inlcludes bug fixes.
 - Fixed issue with numeric precision when writing bounds

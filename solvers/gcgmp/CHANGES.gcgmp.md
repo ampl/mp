@@ -2,6 +2,10 @@ Summary of recent updates to GCG for AMPL
 =========================================
 
 
+## 20260624
+- Option updates for GCG 4.0.2.
+
+
 ## 20260526
 - Updated to GCG 4.0.2.
 

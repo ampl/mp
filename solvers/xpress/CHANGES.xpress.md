@@ -2,6 +2,16 @@ Summary of recent updates to Xpress for AMPL
 ============================================
 
 
+## 20260624
+- Changes in MP, in particular:
+  - Option *cvt:pow2_as_qp* prefers quadratization
+    of the ^2 operator for affine arguments (default).
+  - Faster parsing of quadratic expressions with
+    defined variables.
+  - CMake option *MP_LINK_WITH_SHARED_LIB* links the
+    driver as a shared library (default).
+
+
 ## 20260515
 - Updated to Xpress 46.01.02, which includes bugfixes
   and performance improvements. 

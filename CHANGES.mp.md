@@ -2,7 +2,13 @@ Summary of recent updates to the AMPL MP Library
 ================================================
 
 
-## unreleased
+## 20260624
+- CMake option *MP_LINK_WITH_SHARED_LIB* links the
+  driver as a shared library (Gurobi, IBM ILOG CPLEX,
+  Cardinal Optimizer, FICO Xpress;
+  for them, it's the default).
+- Option *debug=1* outputs all options in problem
+  suffixes *option___...*.
 - Option *cvt:pow2_as_qp* prefers quadratization
   of the ^2 operator for affine arguments (default).
 - Faster parsing of quadratic expressions with

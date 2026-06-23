@@ -2,6 +2,14 @@ Summary of recent updates to SCIP for AMPL
 ==========================================
 
 
+## 20260624
+- Changes in MP, in particular:
+  - Option *cvt:pow2_as_qp* prefers quadratization
+    of the ^2 operator for affine arguments (default).
+  - Faster parsing of quadratic expressions with
+    defined variables.
+
+
 ## 20260526
 - Updated to SCIP 10.0.2 which includes bug fixes and improvements.
 

@@ -1,6 +1,15 @@
 Summary of recent updates to MOSEK for AMPL
 ===========================================
 
+
+## 20260624
+- Changes in MP, in particular:
+  - Option *cvt:pow2_as_qp* prefers quadratization
+    of the ^2 operator for affine arguments (default).
+  - Faster parsing of quadratic expressions with
+    defined variables.
+
+
 ## 20260515
 - Updated to MOSEK 11.2.0, which includes many bug fixes and 
   improvements.

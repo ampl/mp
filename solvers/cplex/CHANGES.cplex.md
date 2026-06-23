@@ -2,8 +2,19 @@ Summary of recent updates to CPLEX for AMPL
 ==============================================
 
 
+## 20260624
+- Changes in MP, in particular:
+  - Option *cvt:pow2_as_qp* prefers quadratization
+    of the ^2 operator for affine arguments (default).
+  - Faster parsing of quadratic expressions with
+    defined variables.
+  - CMake option *MP_LINK_WITH_SHARED_LIB* links the
+    driver as a shared library (default).
+
+
 ## 20260527
 - Updated CPLEX libraries to 22.2.0, which include some bug fixes.
+
 
 ## 20260414
 - Changes in MP, see MP changelog.

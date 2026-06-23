@@ -177,7 +177,7 @@ void EnumOption::GetValue(std::string &value) const {
   }
   for (mp::ValueArrayRef::iterator
       i = values().begin(), e = values().end(); i != e; ++i) {
-    if (i->data == int_value) {
+    if (std::get<intptr_t>(i->data) == (intptr_t)int_value) {
       value = i->value;
       return;
     }
@@ -204,7 +204,7 @@ void EnumOption::SetValue(fmt::StringRef value) {
     for (mp::ValueArrayRef::iterator
         i = values().begin(), e = values().end(); i != e; ++i) {
       if (strcmp(str, i->value) == 0) {
-        cp_.setParameter(param_, i->data);
+        cp_.setParameter(param_, std::get<intptr_t>(i->data));
         return;
       }
     }

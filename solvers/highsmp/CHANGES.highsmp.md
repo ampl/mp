@@ -2,6 +2,14 @@ Summary of recent updates to HiGHS for AMPL
 ===========================================
 
 
+## 20260624
+- Changes in MP, in particular:
+  - Option *cvt:pow2_as_qp* prefers quadratization
+    of the ^2 operator for affine arguments (default).
+  - Faster parsing of quadratic expressions with
+    defined variables.
+
+
 ## 20260611
 - Updated to HiGHS 1.143.
 - Added HiPO algorithm, an advanced interior point method,
