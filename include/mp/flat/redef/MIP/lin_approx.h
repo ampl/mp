@@ -5,6 +5,8 @@
  *  via piecewise-linear approximation
  */
 
+#include <type_traits>
+
 #include "mp/common.h"
 
 #include "mp/flat/redef/redef_base.h"
@@ -42,7 +44,162 @@ public:
   using ItemType = FuncCon;
 
   /// Convert in any context
-  Context Convert(const ItemType& con, int ) {
+  Context Convert(const ItemType& con, int i) {
+
+		if constexpr (
+			std::is_same_v<ItemType,SinhConstraint> ||
+			std::is_same_v<ItemType,CoshConstraint> ||
+			std::is_same_v<ItemType,TanhConstraint>
+			)
+			if(GetMC().template UserAcceptsConOrExpr<ExpConstraint>())
+				return Convert_ToExp(con, i);
+
+		if constexpr (
+			std::is_same_v<ItemType,AsinhConstraint> ||
+			std::is_same_v<ItemType,AcoshConstraint> ||
+			std::is_same_v<ItemType,AtanhConstraint>
+			)
+			if(GetMC().template UserAcceptsConOrExpr<LogConstraint>()
+			  && GetMC().template UserAcceptsConOrExpr<PowConstExpConstraint>())
+				return Convert_ToLogPow(con, i);
+
+  	return Convert_PLApprox(con, i);
+  }
+
+	Context Convert_ToLogPow(const AsinhConstraint & con, int ) {
+		/// log(x+sqrt(x^2+1))
+		auto x = con.GetArguments()[0];
+
+		auto x2 = GetMC().AssignResultVar2Args(
+			PowConstExpConstraint({{{x}}, {2.}}));
+		auto x2plus1 = GetMC().AssignResultVar2Args(
+			LinearFunctionalConstraint({{{1.0},{x2}}, 1.0}));
+		auto sq = GetMC().AssignResultVar2Args(
+			PowConstExpConstraint({{{x2plus1}}, {.5}}));
+		auto sqplusx = GetMC().AssignResultVar2Args(
+			LinearFunctionalConstraint({{{1.0, 1.0},{x, sq}}, 0.0}));
+		GetMC().RedefineVariable(con.GetResultVar(),
+														 LogConstraint ({sqplusx}));
+		GetMC().SetInitExprContext(con.GetResultVar(), con.GetContext());
+
+		return Context::CTX_MIX;
+	}
+
+		Context Convert_ToLogPow(const AcoshConstraint & con, int ) {
+			/// log(x+sqrt(x^2-1))
+			auto x = con.GetArguments()[0];
+
+			auto x2 = GetMC().AssignResultVar2Args(
+				PowConstExpConstraint({{{x}}, {2.}}));
+			auto x2minus1 = GetMC().AssignResultVar2Args(
+				LinearFunctionalConstraint({{{1.0},{x2}}, -1.0}));
+			auto sq = GetMC().AssignResultVar2Args(
+				PowConstExpConstraint({{{x2minus1}}, {.5}}));
+			auto sqplusx = GetMC().AssignResultVar2Args(
+				LinearFunctionalConstraint({{{1.0, 1.0},{x, sq}}, 0.0}));
+			GetMC().RedefineVariable(con.GetResultVar(),
+															 LogConstraint ({sqplusx}));
+			GetMC().SetInitExprContext(con.GetResultVar(), con.GetContext());
+
+			return Context::CTX_MIX;
+		}
+
+		Context Convert_ToLogPow(const AtanhConstraint & con, int ) {
+			/// .5*log(1+x) - .5*log(1-x)
+			auto x = con.GetArguments()[0];
+
+			auto res1 = GetMC().AssignResultVar2Args(
+				LinearFunctionalConstraint({{{1.0},{x}}, 1.0}));
+			auto res2 = GetMC().AssignResultVar2Args(
+				LinearFunctionalConstraint({{{-1.0},{x}}, 1.0}));
+			auto log1 = GetMC().AssignResultVar2Args(
+				LogConstraint ({res1}));
+			auto log2 = GetMC().AssignResultVar2Args(
+				LogConstraint ({res2}));
+			GetMC().RedefineVariable(
+				con.GetResultVar(),
+				LinearFunctionalConstraint({{{.5, -.5},{log1, log2}}, 0.}));
+			GetMC().SetInitExprContext(con.GetResultVar(), con.GetContext());
+
+			return Context::CTX_MIX;
+		}
+
+	Context Convert_ToExp(const SinhConstraint & con, int ) {
+			/// 0.5*(exp(x)-exp(-x))
+			auto x = con.GetArguments()[0];
+
+			auto res1 = GetMC().AssignResultVar2Args(
+				ExpConstraint({x}));
+			auto x_neg = GetMC().AssignResultVar2Args(
+				LinearFunctionalConstraint({{{-1.0},{x}}, 0.0}));
+			auto res2 = GetMC().AssignResultVar2Args(
+				ExpConstraint({x_neg}));
+
+			GetMC().RedefineVariable(
+				con.GetResultVar(),
+				LinearFunctionalConstraint({{{.5, -.5}, {res1, res2}}, 0.0}));
+			GetMC().SetInitExprContext(con.GetResultVar(), con.GetContext());
+
+			return Context::CTX_MIX;
+	}
+
+		Context Convert_ToExp(const CoshConstraint & con, int ) {
+			/// 0.5*(exp(x)+exp(-x))
+			auto x = con.GetArguments()[0];
+
+			auto res1 = GetMC().AssignResultVar2Args(
+				ExpConstraint({x}));
+			auto x_neg = GetMC().AssignResultVar2Args(
+				LinearFunctionalConstraint({{{-1.0},{x}}, 0.0}));
+			auto res2 = GetMC().AssignResultVar2Args(
+				ExpConstraint({x_neg}));
+
+			GetMC().RedefineVariable(
+				con.GetResultVar(),
+				LinearFunctionalConstraint({{{.5, .5}, {res1, res2}}, 0.0}));
+			GetMC().SetInitExprContext(con.GetResultVar(), con.GetContext());
+
+			return Context::CTX_MIX;
+		}
+
+		Context Convert_ToExp(const TanhConstraint & con, int ) {
+			/// sinh(x)/cosh(x)
+			auto x = con.GetArguments()[0];
+
+			auto res1 = GetMC().AssignResultVar2Args(
+				SinhConstraint({x}));
+			auto res2 = GetMC().AssignResultVar2Args(
+				CoshConstraint({x}));
+
+			GetMC().RedefineVariable(
+				con.GetResultVar(),
+				DivConstraint({res1, res2}));
+			GetMC().SetInitExprContext(con.GetResultVar(), con.GetContext());
+
+			return Context::CTX_MIX;
+		}
+
+		Context Convert_ToExp(const AsinhConstraint & con, int ) {
+			/// 0.5*(exp(x)-exp(-x))
+			auto x = con.GetArguments()[0];
+
+			auto res1 = GetMC().AssignResultVar2Args(
+				ExpConstraint({x}));
+			auto x_neg = GetMC().AssignResultVar2Args(
+				LinearFunctionalConstraint({{{-1.0},{x}}, 0.0}));
+			auto res2 = GetMC().AssignResultVar2Args(
+				ExpConstraint({x_neg}));
+
+			GetMC().RedefineVariable(
+				con.GetResultVar(),
+				LinearFunctionalConstraint({{{.5, -.5}, {res1, res2}}, 0.0}));
+			GetMC().SetInitExprContext(con.GetResultVar(), con.GetContext());
+
+			return Context::CTX_MIX;
+		}
+
+  /// Convert in any context
+  Context Convert_PLApprox(const ItemType& con, int ) {
     assert(!con.GetContext().IsNone());
     assert(1==con.GetArguments().size());          // 1 argument var
     auto x = con.GetArguments()[0];

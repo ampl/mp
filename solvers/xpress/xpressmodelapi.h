@@ -169,8 +169,9 @@ public:
   /// @todo bug in 9.7.0
   ACCEPT_CONSTRAINT(AndConstraint, Recommended, CG_General)
   void AddConstraint(const AndConstraint& ac);
-  
+
   #define GLOBAL_LEVEL Recommended // Since v9.5.0
+  #define HYPERBOLIC_LEVEL AcceptedButNotRecommended
   ACCEPT_CONSTRAINT(DivConstraint, GLOBAL_LEVEL, CG_General)
   void AddConstraint(const DivConstraint& cc);
   ACCEPT_CONSTRAINT(SinConstraint, GLOBAL_LEVEL, CG_General)
@@ -201,18 +202,18 @@ public:
   ACCEPT_CONSTRAINT(ExpAConstraint, GLOBAL_LEVEL, CG_General)
   void AddConstraint(const ExpAConstraint& cc);
 
-  ACCEPT_CONSTRAINT(SinhConstraint, GLOBAL_LEVEL, CG_General)
+  ACCEPT_CONSTRAINT(SinhConstraint, HYPERBOLIC_LEVEL, CG_General)
   void AddConstraint(const SinhConstraint& cc);
-  ACCEPT_CONSTRAINT(CoshConstraint, GLOBAL_LEVEL, CG_General)
+  ACCEPT_CONSTRAINT(CoshConstraint, HYPERBOLIC_LEVEL, CG_General)
   void AddConstraint(const CoshConstraint& cc);
-  ACCEPT_CONSTRAINT(TanhConstraint, GLOBAL_LEVEL, CG_General)
+  ACCEPT_CONSTRAINT(TanhConstraint, HYPERBOLIC_LEVEL, CG_General)
   void AddConstraint(const TanhConstraint& cc);
 
-  ACCEPT_CONSTRAINT(AsinhConstraint, GLOBAL_LEVEL, CG_General)
+  ACCEPT_CONSTRAINT(AsinhConstraint, HYPERBOLIC_LEVEL, CG_General)
   void AddConstraint(const AsinhConstraint& cc);
-  ACCEPT_CONSTRAINT(AcoshConstraint, GLOBAL_LEVEL, CG_General)
+  ACCEPT_CONSTRAINT(AcoshConstraint, HYPERBOLIC_LEVEL, CG_General)
   void AddConstraint(const AcoshConstraint& cc);
-  ACCEPT_CONSTRAINT(AtanhConstraint, GLOBAL_LEVEL, CG_General)
+  ACCEPT_CONSTRAINT(AtanhConstraint, HYPERBOLIC_LEVEL, CG_General)
   void AddConstraint(const AtanhConstraint& cc);
 
 
