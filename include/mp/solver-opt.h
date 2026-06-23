@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <cassert>
 #include <typeinfo>
+#include <variant>
 
 #include "mp/error.h"
 #include "mp/format.h"
@@ -15,9 +16,11 @@ namespace mp {
 
 /// Information about a possible option value.
 struct OptionValueInfo {
-  const char *value;
+  const char *value;       // This is presented to the user
   const char *description;
-  intptr_t data;  // Solver-specific data associated with this value.
+  /// Solver-specific data associated with this value.
+  /// This is actually given to / taken from the solver.
+  std::variant<intptr_t, const char*> data;
 };
 
 /// A reference to an array of OptionValueInfo objects.
