@@ -1219,7 +1219,7 @@ public:
 
   template <class T>
   ArrayRef<T> ReadSuffix_OneTypeOnly(const SuffixDef<T>& sufdef) {
-    auto suf = FindSuffix(sufdef);
+    auto suf = FindSuffix(sufdef, true);
     if (!suf)
       return {};
     auto subvec = GetSufSubvec(suf);
@@ -1263,11 +1263,15 @@ public:
     return suf_dbl;
   }
 
+  /// @param noOutSuf: don't return out-only suffixes,
+  ///   useful for MP2NL with *debug=1*.
   template <class T>
-  BasicMutSuffix<T> FindSuffix(const SuffixDef<T>& sufdef) {
+  BasicMutSuffix<T> FindSuffix(
+      const SuffixDef<T>& sufdef, bool noOutSuf = false) {
     auto main_kind = (suf::Kind)(sufdef.kind() & suf::KIND_MASK);
     auto suf_raw = suffixes(main_kind).Find(sufdef.name());
-    if (suf_raw)
+    if (suf_raw &&
+        (!noOutSuf || !(suf::OUTONLY & suf_raw.kind())))
       return Cast< BasicMutSuffix<T> >( suf_raw );
     return BasicMutSuffix<T>();
   }
