@@ -40,6 +40,19 @@
     }
   },
   {
+    "name": "diet TEST OPTIONS",
+    "objective": 88.2,
+    "tags": [ "linear", "continuous" ],
+    "files": [ "diet.mod", "diet.dat" ],
+    "options": {
+      "mp_options": "debug=1"
+    },
+    "comment": "Testing retrieval of MP and solver options",
+    "values": {
+      "Initial.option___tech_outlev": 0
+    }
+  },
+  {
     "name": "diet writeprob='diet.lp' (quoted)",
     "objective": 88.2,
     "tags": [ "linear", "continuous", "writelp" ],
