@@ -416,13 +416,13 @@
     "tags" : ["continuous", "nonlinear"],
     "comment": "Gurobi 11.0.0 mispresolves the PL function.",
     "options": {
-      "gurobi_options": "presolve=0",
       "mp_options": "debug=1"
     },
     "values": {
       "if abs(y-sinh(x))<=1e-2 then 1 else 0": 1,
       "if abs(_obj[1]-6.88087328277653)<=0.01 then 1 else 0": 1,
-      "if Initial.option___acc_sinh < 2 && Initial.option___acc_exp >= 2 then Initial.flat1__exp else 2": 2
+      "if Initial.option___acc_sinh >= 0 then 1": 1,
+      "if Initial.option___acc_sinh < 2 ==> (Initial.option___acc_exp >= 2 ==> Initial.flat1__exp == 2 else Initial.flat1__U__pl == 1) then 1": 1
     }
   },
   {

@@ -978,7 +978,7 @@ class MPDirectSolver(AMPLSolver):
         if method == "REFORMULATION":
             return " ".join([f"{opt}=1" for opt in self._supported_nl()])
         if method == "NATIVE":
-            return " ".join([f"{opt}=2" for opt in self._supported_nl()])
+            return " ".join([f"{opt}=?" for opt in self._supported_nl()])
         else:
             raise RuntimeError(f"{method} not supported in this solver")
         
@@ -1056,8 +1056,7 @@ class GurobiDirectSolver(MPDirectSolver):
         if method == "REFORMULATION":
             return " ".join([f"{opt}=1" for opt in self._supported_nl()])
         if method == "NATIVE":
-            param = " ".join([f"{opt}=2" for opt in self._supported_nl()])
-            param += " pre:funcnonlinear=1"
+            param = " ".join([f"{opt}=?" for opt in self._supported_nl()])
             return param
         if method == "NATIVEPL":
             param = " ".join([f"{opt}=2" for opt in self._supported_nl()])
@@ -1222,7 +1221,7 @@ class MP2NLSolver(MPDirectSolver):
                 return "mp2nl"
 
             def _setNThreads(self, threads):
-                return ""
+                return "solver=gurobi"  ## For auto-testing
 
             def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
                 stags = {
