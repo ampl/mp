@@ -64,7 +64,7 @@ public:
   /// Read NL.
   /// This is also used by the AMPLS C API.
   /// @param opts: 0-terminated list of extra options,
-  /// to be read after the [solver]_options nev var.
+  /// to be read after the [solver]_options env var.
   /// All model-related options should be here
   /// (obj:.../objno/multiobj, cvt:..., acc:...),
   /// they are not effective after NL input.

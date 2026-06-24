@@ -1,16 +1,13 @@
 # This Python file uses the following encoding: utf-8
 
-# if __name__ == "__main__":
-#     pass
-
 import psutil
 import os
 import threading
 import multiprocessing
-import time
 import traceback
 
-
+if __name__ == '__main__':
+    multiprocessing.freeze_support()
 
 ################# CLEANUP ####################
 """
