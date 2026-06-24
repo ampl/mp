@@ -1,16 +1,22 @@
-from threading import Lock
+# from threading import Lock
 import math
 from pathlib import Path
 from shutil import which
-from token import LBRACE
+# from token import LBRACE
 import os
 
 from Solver import Solver
-from amplpy import AMPL, Kind, OutputHandler, ErrorHandler, Environment
+from amplpy import AMPL, OutputHandler, ErrorHandler, Environment
 from Model import Model
 import time
 from TimeMe import TimeMe
+import multiprocessing
 import TimeoutFunc
+
+# Where else should it be?
+if __name__ == '__main__':
+    multiprocessing.freeze_support()
+
 
 class InnerOutputHandler(OutputHandler):
     def isInvalidOption(msg):
