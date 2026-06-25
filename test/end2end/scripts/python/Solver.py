@@ -240,9 +240,11 @@ class AMPLSolver(Solver):
                 return self._runProcess([self._exePath, model.getFilePath(), "-AMPL"],
                                                timeout=self._timeout, logFile = logFile)
         except subprocess.TimeoutExpired:
-            pass
+            return "subprocess timeout expired"
         except subprocess.CalledProcessError as e:
             print(str(e))
+            return str(e)
+        return ""
 
     def stopProcess(p):
         # forcefully terminate solvers that do not terminate automatically 
@@ -252,6 +254,7 @@ class AMPLSolver(Solver):
     def _runProcess(self, args : list, vestigial=True, timeout=None, logFile = None):
       # ritorna stdout
       # throws if not successfull
+         exit_code = 0
          if vestigial:
            if timeout:   ## https://psutil.readthedocs.io/en/latest/#terminate-my-children
              proc = psutil.Popen(args, universal_newlines=True,
@@ -272,6 +275,8 @@ class AMPLSolver(Solver):
                    print("Kill ", p.pid)
                    p.kill()
                out, err = proc.communicate()
+             exit_code = proc.returncode
+             self._stats["exit_code"] = exit_code
              return out + '\n\nSTDERR:\n' + err
               ## This does not timeout with MP2NL:
               ## return subprocess.check_output(args, text=True,
@@ -304,6 +309,8 @@ class AMPLSolver(Solver):
                   except subprocess.TimeoutExpired:
                       pass
               out, err = p.communicate()
+              exit_code = p.returncode
+              self._stats["exit_code"] = exit_code
               if logFile is not None:
                 if self.setLogFile(logFile) is None: # if not handled via option
                     print(out, flush=True)

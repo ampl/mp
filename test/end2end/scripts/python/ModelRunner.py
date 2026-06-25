@@ -28,6 +28,7 @@ class ModelRunner(object):
         self._models = modelList
         n = 0
         nFailedSolver = [0 for r in self.getRunners()]
+        nAbortedSolver = [0 for r in self.getRunners()]
         nFailedScriptOrAMPL = [0 for r in self.getRunners()]
         nSkipped = [0 for r in self.getRunners()]
         EFM ="eval_fail_msg"
@@ -47,7 +48,7 @@ class ModelRunner(object):
             n += 1
             if m.isNL():
                 cr = self._runners
-                msg = "{}. Solving as NL: '{}'".format(n, m.getName())
+                msg = "{}. As NL: '{}'".format(n, m.getName())
             else:
                 if not self._amplRunners:
                     print("AMPL executable: '{}'".format(self._ampl))
@@ -57,8 +58,8 @@ class ModelRunner(object):
                                    timeout=r.getTimeout())
                         for r in self._runners ]
                 cr = self._amplRunners
-                msg = "{}. Solving with AMPL: '{}'".format(n, m.getName())
-            print("{0: <80}".format(msg), end="", flush=True)
+                msg = "{}. Via AMPL: '{}'".format(n, m.getName())
+            print("{0: <60}".format(msg), end="", flush=True)
             for (i,r) in enumerate(cr):
                 t = TimeMe()
                 with t:
@@ -96,14 +97,16 @@ class ModelRunner(object):
                       if exporter:
                         if not exporter.printStatus(m, stats):
                             nFailedSolver[i] += 1
+                      if 0 != stats["exit_code"]:
+                          nAbortedSolver[i] += 1
                   except Exception as exc:
                     self._runs[i][-1]["outmsg"] = "AMPL(PY)/script failure"
                     self._runs[i][-1]["solver"] = ss
                     self._runs[i][-1][EFM]=str(exc)
                     print("   EXCEPTION: ", exc)
                     nFailedScriptOrAMPL[i] += 1
-                print("  (%.4fs, %d failed solver, %d failed AMPL(PY)/script, %d skipped)" %
-                  (t.interval, nFailedSolver[i], nFailedScriptOrAMPL[i], nSkipped[i]),
+                print("  (%.2fs, %d fail (%d abrt) slv, %d fail AMPL/PY/scrpt, %d skip)" %
+                  (t.interval, nFailedSolver[i], nAbortedSolver[i], nFailedScriptOrAMPL[i], nSkipped[i]),
                   end="", flush=True)
             if exporter:
                 self.export(exporter)

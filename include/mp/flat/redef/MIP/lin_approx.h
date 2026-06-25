@@ -179,25 +179,6 @@ public:
 			return Context::CTX_MIX;
 		}
 
-		Context Convert_ToExp(const AsinhConstraint & con, int ) {
-			/// 0.5*(exp(x)-exp(-x))
-			auto x = con.GetArguments()[0];
-
-			auto res1 = GetMC().AssignResultVar2Args(
-				ExpConstraint({x}));
-			auto x_neg = GetMC().AssignResultVar2Args(
-				LinearFunctionalConstraint({{{-1.0},{x}}, 0.0}));
-			auto res2 = GetMC().AssignResultVar2Args(
-				ExpConstraint({x_neg}));
-
-			GetMC().RedefineVariable(
-				con.GetResultVar(),
-				LinearFunctionalConstraint({{{.5, -.5}, {res1, res2}}, 0.0}));
-			GetMC().SetInitExprContext(con.GetResultVar(), con.GetContext());
-
-			return Context::CTX_MIX;
-		}
-
   /// Convert in any context
   Context Convert_PLApprox(const ItemType& con, int ) {
     assert(!con.GetContext().IsNone());

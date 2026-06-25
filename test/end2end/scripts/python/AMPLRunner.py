@@ -335,6 +335,7 @@ class AMPLRunner(object):
       self._outputHandler.close_log()
       
       # Gather results
+      self.stats["exit_code"] = self._ampl.get_value('solve_exitcode')
       self.stats["AMPLstats"] = amplStats
       if not solve_result:
          solve_result = self._ampl.getValue("solve_result")
