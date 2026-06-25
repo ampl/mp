@@ -8,8 +8,8 @@ Summary of recent updates to CPLEX for AMPL
     of the ^2 operator for affine arguments (default).
   - Faster parsing of quadratic expressions with
     defined variables.
-  - CMake option *MP_LINK_WITH_SHARED_LIB* links the
-    driver as a shared library (default).
+  - The main driver code is separated into a shared
+    library and used commonly with AMPLS API.
 
 
 ## 20260527

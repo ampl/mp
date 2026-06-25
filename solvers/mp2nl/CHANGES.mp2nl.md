@@ -8,6 +8,8 @@ Summary of recent updates to MP2NL for AMPL
     of the ^2 operator for affine arguments (default).
   - Faster parsing of quadratic expressions with
     defined variables.
+  - The main driver code is separated into a shared
+    library and used commonly with AMPLS API.
 
 
 ## 20260525

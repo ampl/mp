@@ -1344,14 +1344,18 @@ public:
     return ie.GetCK()->GetContext(ie.GetIndex());
   }
 
-  /// Set func expr context
-  void SetInitExprContext(int var, Context ctx) {
+  /// Set func expr context.
+  /// @warning 1 level only, no propagation.
+  ///   Use PropagateResultOfInitExpr() otherwise.
+  void SetInitExprContext_NoProp(int var, Context ctx) {
     const auto& ie = GetInitExpression(var);
     ie.GetCK()->SetContext(ie.GetIndex(), ctx);
   }
 
-  /// Add func expr context
-  void AddInitExprContext(int var, Context ctx) {
+  /// Add func expr context.
+  /// @warning 1 level only, no propagation.
+  ///   Use PropagateResultOfInitExpr() otherwise.
+  void AddInitExprContext_NoProp(int var, Context ctx) {
     const auto& ie = GetInitExpression(var);
     ie.GetCK()->AddContext(ie.GetIndex(), ctx);
   }

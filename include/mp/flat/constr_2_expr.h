@@ -565,8 +565,8 @@ protected:
               { {{std::move(lt_in_expr), std::move(qobj.GetQPTerms())}, 0.0} } ) );
           qobj.GetQPTerms().clear();           // std::move() does not clear
         }
-        MPD( AddInitExprContext(exprResVar,             // Context is compulsory
-                               obj::MAX==qobj.obj_sense_true()    // no need to propagate
+        MPD( AddInitExprContext_NoProp(exprResVar,             // Context is compulsory
+                               obj::MAX==qobj.obj_sense_true() // no need to propagate
                                    ? Context::CTX_POS : Context::CTX_NEG) );
       }
       if ( !MPCD(VarHasMarking(exprResVar) ))         // mark as expr if new
