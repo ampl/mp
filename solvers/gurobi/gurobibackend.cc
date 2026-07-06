@@ -1222,8 +1222,6 @@ std::string GurobiBackend::DoGurobiFixedModel() {
   GRBenv *env;
   if (!(env = GRBgetenv(model_fixed_)))
     return "GRBgetenv";
-  if (GRBsetintparam(env, "Presolve", 0))     // why?
-    return "GRBsetintparam(\"Presolve\")";
   int k = -12345;
   GRBgetintparam(env, GRB_INT_PAR_METHOD, &k);
   int& fixedmethod = storedOptions_.nFixedMethod_;
