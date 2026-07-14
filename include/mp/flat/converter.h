@@ -2227,73 +2227,35 @@ protected:
   /// Can be changed in a derived class by ConstraintCvtPriority().
   /// NOTE: The reformulation meta-graph should be acyclic #248.
 
-  /// Static algebraic cons
-  STORE_CONSTRAINT_TYPE__NO_MAP(LinConRange,   // before QuadFuncCon
-                                "acc:linrange acc:linrng", 3091)
-  STORE_CONSTRAINT_TYPE__NO_MAP(LinConLE, "acc:linle", 5100)
-  STORE_CONSTRAINT_TYPE__NO_MAP(LinConEQ, "acc:lineq", 5200)
-  STORE_CONSTRAINT_TYPE__NO_MAP(LinConGE, "acc:linge", 5300)
-
-  STORE_CONSTRAINT_TYPE__NO_MAP(QuadConRange,  // Before LinConRange
-                                "acc:quadrange acc:quadrng", 3090)
-  STORE_CONSTRAINT_TYPE__NO_MAP(QuadConLE, "acc:quadle", 4100)
-  STORE_CONSTRAINT_TYPE__NO_MAP(QuadConEQ, "acc:quadeq", 4200)
-  STORE_CONSTRAINT_TYPE__NO_MAP(QuadConGE, "acc:quadge", 4300)
-
-  /// Our own functional constraints: LFC, QFC.
-  /// We'll also add inlining with priority 3099,
-  /// see AddConversionAction() in the constructor #266.
-  STORE_CONSTRAINT_TYPE__WITH_MAP(
-      LinearFunctionalConstraint, "acc:linfn acc:linfunccon", 3200)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(
-      QuadraticFunctionalConstraint, "acc:quadfn acc:quadfunccon", 3100)
-
   /// Flattened NL expressions
-  STORE_CONSTRAINT_TYPE__WITH_MAP(MaxConstraint, "acc:max", 1100)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(MinConstraint, "acc:min", 1200)
   STORE_CONSTRAINT_TYPE__WITH_MAP(AbsConstraint, "acc:abs", 100)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(AndConstraint,
-                                  "acc:and acc:forall", 2200)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(OrConstraint,
-                                  "acc:or acc:exists", 2300)
-  /// Used only for expression output,
-  /// flat model keeps this in algebraic form
-  STORE_CONSTRAINT_TYPE__WITH_MAP(
-      EquivalenceConstraint, "acc:equiv acc:equivalence", 2150)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(AllDiffConstraint, "acc:alldiff", 200)
 
-  STORE_CONSTRAINT_TYPE__WITH_MAP(CondLinConEQ, "acc:condlineq", 1950)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(CondLinConLE, "acc:condlinle", 2050)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(CondLinConLT, "acc:condlinlt", 2060)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(CondLinConGE, "acc:condlinge", 2070)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(CondLinConGT, "acc:condlingt", 2080)
+  STORE_CONSTRAINT_TYPE__NO_MAP(
+      ComplementarityQuadratic, "acc:complquad", 300)
+  STORE_CONSTRAINT_TYPE__NO_MAP(
+      ComplementarityLinear, "acc:compl acc:compllin", 350)
+  STORE_CONSTRAINT_TYPE__NO_MAP(
+      NLComplementarity, "acc:nlcompl", 360)
 
-  STORE_CONSTRAINT_TYPE__WITH_MAP(CondQuadConEQ, "acc:condquadeq", 1900)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(CondQuadConLE, "acc:condquadle", 2000)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(CondQuadConLT, "acc:condquadlt", 2010)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(CondQuadConGE, "acc:condquadge", 2020)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(CondQuadConGT, "acc:condquadgt", 2030)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(CountConstraint, "acc:count", 400)
 
-  STORE_CONSTRAINT_TYPE__WITH_MAP(NotConstraint, "acc:not", 2100)
   STORE_CONSTRAINT_TYPE__WITH_MAP(DivConstraint, "acc:div", 600)
   STORE_CONSTRAINT_TYPE__WITH_MAP(IfThenConstraint, "acc:ifthen", 700)
   STORE_CONSTRAINT_TYPE__WITH_MAP(ImplicationConstraint, "acc:impl", 800)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(AllDiffConstraint, "acc:alldiff", 200)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(NumberofConstConstraint,
-                                  "acc:numberofconst", 1300)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(NumberofVarConstraint,
-                                  "acc:numberofvar", 1350)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(CountConstraint, "acc:count", 400)
 
-  STORE_CONSTRAINT_TYPE__WITH_MAP(ExpConstraint, "acc:exp", 1000)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(ExpAConstraint, "acc:expa acc:expA", 1002)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(LogConstraint, "acc:log", 1004)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(LogAConstraint, "acc:loga acc:logA", 1006)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(PowConstExpConstraint, "acc:powc acc:powconstexp", 900)
   STORE_CONSTRAINT_TYPE__WITH_MAP(SignpowConstExpConstraint,
                                   "acc:signpowc acc:signpowconstexp", 890)
   STORE_CONSTRAINT_TYPE__WITH_MAP(LogisticConstraint,
                                   "acc:logi acc:logistic", 880)
+
+  STORE_CONSTRAINT_TYPE__WITH_MAP(PowConstExpConstraint, "acc:powc acc:powconstexp", 900)
+
   STORE_CONSTRAINT_TYPE__WITH_MAP(PowConstraint, "acc:pow", 950) // -> exp, log
+  STORE_CONSTRAINT_TYPE__WITH_MAP(ExpConstraint, "acc:exp", 1000)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(ExpAConstraint, "acc:expa acc:expA", 1002)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(LogConstraint, "acc:log", 1004)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(LogAConstraint, "acc:loga acc:logA", 1006)
   STORE_CONSTRAINT_TYPE__WITH_MAP(SinConstraint, "acc:sin", 1008)
   STORE_CONSTRAINT_TYPE__WITH_MAP(CosConstraint, "acc:cos", 1010)
   STORE_CONSTRAINT_TYPE__WITH_MAP(TanConstraint, "acc:tan", 1012)
@@ -2311,39 +2273,17 @@ protected:
 
   STORE_CONSTRAINT_TYPE__WITH_MAP(SDPDotProdConstraint, "acc:sdpdotprod acc:sdpdot", 1045)
 
-  /// No maps for static constraints
-  STORE_CONSTRAINT_TYPE__NO_MAP(
-      IndicatorConstraintLinLE, "acc:indle acc:indlinle", 2460)
-  STORE_CONSTRAINT_TYPE__NO_MAP(
-      IndicatorConstraintLinEQ, "acc:indeq acc:indlineq", 2450)
-  STORE_CONSTRAINT_TYPE__NO_MAP(
-      IndicatorConstraintLinGE, "acc:indge acc:indlinge", 2470)
-  STORE_CONSTRAINT_TYPE__NO_MAP(
-      IndicatorConstraintQuadLE, "acc:indquadle", 2410)
-  STORE_CONSTRAINT_TYPE__NO_MAP(
-      IndicatorConstraintQuadEQ, "acc:indquadeq", 2400)
-  STORE_CONSTRAINT_TYPE__NO_MAP(
-      IndicatorConstraintQuadGE, "acc:indquadge", 2420)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(MaxConstraint, "acc:max", 1100)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(MinConstraint, "acc:min", 1200)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(NumberofConstConstraint,
+                                  "acc:numberofconst", 1300)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(NumberofVarConstraint,
+                                  "acc:numberofvar", 1350)
   STORE_CONSTRAINT_TYPE__WITH_MAP(PLConstraint,
-                                "acc:pl acc:pwl acc:piecewise", 1500)
+      "acc:pl acc:pwl acc:piecewise", 1500)
   STORE_CONSTRAINT_TYPE__NO_MAP(SOS1Constraint, "acc:sos1", 1600)
   STORE_CONSTRAINT_TYPE__NO_MAP(SOS2Constraint, "acc:sos2", 1700)
-  STORE_CONSTRAINT_TYPE__NO_MAP(
-      ComplementarityLinear, "acc:compl acc:compllin", 350)
-  STORE_CONSTRAINT_TYPE__NO_MAP(
-      ComplementarityQuadratic, "acc:complquad", 300)
-  STORE_CONSTRAINT_TYPE__NO_MAP(
-      NLComplementarity, "acc:nlcompl", 360)
-  STORE_CONSTRAINT_TYPE__NO_MAP(
-      QuadraticConeConstraint, "acc:quadcone", 3002)
-  STORE_CONSTRAINT_TYPE__NO_MAP(
-      RotatedQuadraticConeConstraint, "acc:rotatedquadcone", 3001)
-  STORE_CONSTRAINT_TYPE__NO_MAP(
-      PowerConeConstraint, "acc:powercone", 3000)
-  STORE_CONSTRAINT_TYPE__NO_MAP(
-      ExponentialConeConstraint, "acc:expcone", 3010)
-  STORE_CONSTRAINT_TYPE__NO_MAP(
-      GeometricConeConstraint, "acc:geomcone", 3020)
+
   /// Store UEncConstr
   STORE_CONSTRAINT_TYPE__NO_MAP(
       UnaryEncodingConstraint, "acc:uenc", 1800)
@@ -2355,10 +2295,80 @@ protected:
     return true;
   }
 
-  // Here conversion action with priority 3090:
-  // Inline algebraic subexpressions in algebraic
-  // constraints and objectives.
-  // This includes algebralized indicators.
+  STORE_CONSTRAINT_TYPE__WITH_MAP(CondQuadConEQ, "acc:condquadeq", 1900)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(CondLinConEQ, "acc:condlineq", 1950)
+
+  STORE_CONSTRAINT_TYPE__WITH_MAP(CondQuadConLE, "acc:condquadle", 2000)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(CondQuadConLT, "acc:condquadlt", 2010)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(CondQuadConGE, "acc:condquadge", 2020)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(CondQuadConGT, "acc:condquadgt", 2030)
+
+  STORE_CONSTRAINT_TYPE__WITH_MAP(CondLinConLE, "acc:condlinle", 2050)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(CondLinConLT, "acc:condlinlt", 2060)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(CondLinConGE, "acc:condlinge", 2070)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(CondLinConGT, "acc:condlingt", 2080)
+
+  STORE_CONSTRAINT_TYPE__WITH_MAP(NotConstraint, "acc:not", 2100)
+
+  /// Used only for expression output,
+  /// flat model keeps this in algebraic form
+  STORE_CONSTRAINT_TYPE__WITH_MAP(
+      EquivalenceConstraint, "acc:equiv acc:equivalence", 2150)
+
+  STORE_CONSTRAINT_TYPE__WITH_MAP(AndConstraint,
+                                  "acc:and acc:forall", 2200)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(OrConstraint,
+                                  "acc:or acc:exists", 2300)
+
+  /// No maps for static constra ints
+  STORE_CONSTRAINT_TYPE__NO_MAP(
+      IndicatorConstraintQuadEQ, "acc:indquadeq", 2400)
+  STORE_CONSTRAINT_TYPE__NO_MAP(
+      IndicatorConstraintQuadLE, "acc:indquadle", 2410)
+  STORE_CONSTRAINT_TYPE__NO_MAP(
+      IndicatorConstraintQuadGE, "acc:indquadge", 2420)
+  STORE_CONSTRAINT_TYPE__NO_MAP(
+      IndicatorConstraintLinEQ, "acc:indeq acc:indlineq", 2450)
+  STORE_CONSTRAINT_TYPE__NO_MAP(
+      IndicatorConstraintLinLE, "acc:indle acc:indlinle", 2460)
+  STORE_CONSTRAINT_TYPE__NO_MAP(
+      IndicatorConstraintLinGE, "acc:indge acc:indlinge", 2470)
+
+  STORE_CONSTRAINT_TYPE__NO_MAP(
+      PowerConeConstraint, "acc:powercone", 3000)
+  STORE_CONSTRAINT_TYPE__NO_MAP(
+      RotatedQuadraticConeConstraint, "acc:rotatedquadcone", 3001)
+  STORE_CONSTRAINT_TYPE__NO_MAP(
+      QuadraticConeConstraint, "acc:quadcone", 3002)
+  STORE_CONSTRAINT_TYPE__NO_MAP(
+      ExponentialConeConstraint, "acc:expcone", 3010)
+  STORE_CONSTRAINT_TYPE__NO_MAP(
+      GeometricConeConstraint, "acc:geomcone", 3020)
+
+  /// Static algebraic cons
+  STORE_CONSTRAINT_TYPE__NO_MAP(QuadConRange,  // Before LinConRange
+                                "acc:quadrange acc:quadrng", 3090)
+  STORE_CONSTRAINT_TYPE__NO_MAP(LinConRange,   // before QuadFuncCon
+                                "acc:linrange acc:linrng", 3091)
+
+  /// Our own functional constraints: LFC, QFC.
+  /// We'll also add inlining with priority 3099,
+  /// see AddConversionAction() in the constructor #266.
+  /// Inline algebraic subexpressions in algebraic
+  /// constraints and objectives.
+  /// This includes algebralized indicators.
+  STORE_CONSTRAINT_TYPE__WITH_MAP(
+      QuadraticFunctionalConstraint, "acc:quadfn acc:quadfunccon", 3100)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(
+      LinearFunctionalConstraint, "acc:linfn acc:linfunccon", 3200)
+
+  STORE_CONSTRAINT_TYPE__NO_MAP(QuadConLE, "acc:quadle", 4100)
+  STORE_CONSTRAINT_TYPE__NO_MAP(QuadConEQ, "acc:quadeq", 4200)
+  STORE_CONSTRAINT_TYPE__NO_MAP(QuadConGE, "acc:quadge", 4300)
+
+  STORE_CONSTRAINT_TYPE__NO_MAP(LinConLE, "acc:linle", 5100)
+  STORE_CONSTRAINT_TYPE__NO_MAP(LinConEQ, "acc:lineq", 5200)
+  STORE_CONSTRAINT_TYPE__NO_MAP(LinConGE, "acc:linge", 5300)
 
   ////////////////////// NL constraints & expressions ///////////////////////
   STORE_CONSTRAINT_TYPE__NO_MAP(
