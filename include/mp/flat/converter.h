@@ -1236,13 +1236,13 @@ public:
 
   /// MakeComplementVar()
   int MakeComplementVar(int bvar) {
-    if ( !(lb_hard(bvar)==0.0 && ub_hard(bvar)==1.0) ) {
-      // Should be hard-fixed at 0 or 1
-      MP_ASSERT_ALWAYS( ((!lb_hard(bvar) && !ub_hard(bvar))
-                        || (1.0==lb_hard(bvar) && 1.0==ub_hard(bvar))),
-                "Asked to complement variable with bounds "
-                    + std::to_string(lb_hard(bvar))
-                    + ".." + std::to_string(ub_hard(bvar)));
+    if ( !(lb(bvar)==0.0 && ub(bvar)==1.0) ) {
+      // Should be (hard-?)fixed at 0 or 1
+      MP_ASSERT_ALWAYS( ((!lb(bvar) && !ub(bvar))
+                        || (1.0==lb(bvar) && 1.0==ub(bvar))),
+                "Asked to complement variable with best-known bounds "
+                    + std::to_string(lb(bvar))
+                    + ".." + std::to_string(ub(bvar)));
     }
     /// Algebraic way: AffineExpr ae({{-1.0}, {bvar}}, 1.0);
     /// return MP_DISPATCH( Convert2Var(std::move(ae)) );
