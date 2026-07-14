@@ -2244,10 +2244,10 @@ protected:
   STORE_CONSTRAINT_TYPE__WITH_MAP(IfThenConstraint, "acc:ifthen", 700)
   STORE_CONSTRAINT_TYPE__WITH_MAP(ImplicationConstraint, "acc:impl", 800)
 
-  STORE_CONSTRAINT_TYPE__WITH_MAP(SignpowConstExpConstraint,
-                                  "acc:signpowc acc:signpowconstexp", 890)
   STORE_CONSTRAINT_TYPE__WITH_MAP(LogisticConstraint,
                                   "acc:logi acc:logistic", 880)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(SignpowConstExpConstraint,
+                                  "acc:signpowc acc:signpowconstexp", 890)
 
   STORE_CONSTRAINT_TYPE__WITH_MAP(PowConstExpConstraint, "acc:powc acc:powconstexp", 900)
 
