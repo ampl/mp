@@ -16,6 +16,12 @@ extern "C" int main1(int, char **argv) {
   return mp::RunBackendApp(argv, CreateGurobiBackend);
 }
 
+#ifndef SLV_MAIN_IN_MAIN_CC
+extern "C" int grb_main(int, char **argv) {
+  return mp::RunBackendApp(argv, CreateGurobiBackend);
+}
+#endif  // SLV_MAIN_IN_MAIN_CC
+
 extern "C" int main2(int, char** argv, CCallbacks cb) {
   return mp::RunBackendApp(argv, CreateGurobiBackend, cb);
 }

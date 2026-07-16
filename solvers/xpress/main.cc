@@ -17,6 +17,12 @@ extern "C" int main1(int, char** argv) {
     mp::RunBackendApp(argv, CreateXpressmpBackend);
 }
 
+#ifndef SLV_MAIN_IN_MAIN_CC
+extern "C" int xpress_main(int, char **argv) {
+  return mp::RunBackendApp(argv, CreateXpressmpBackend);
+}
+#endif  // SLV_MAIN_IN_MAIN_CC
+
 extern "C" int main2(int, char** argv, CCallbacks cb) {
   return mp::RunBackendApp(argv, CreateXpressmpBackend, cb);
 }
