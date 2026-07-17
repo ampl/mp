@@ -984,13 +984,47 @@ void CplexBackend::ComputeIIS() {
     CPXgetconflictext(env(), lp(), grpStat.data(), 0, nGroups - 1);
     for (int i = j = 0; i < NumVars(); i++)
     {
+      int val = CPX_CONFLICT_EXCLUDED;
       if (lbs[i] > MinusInfinity()) {
-        iisColIndices.push_back(i);
-        iisColValues.push_back(grpStat[j++]);
+        switch (grpStat[j++]) {
+        case CPX_CONFLICT_EXCLUDED:
+          break;
+        case CPX_CONFLICT_MEMBER:
+        case CPX_CONFLICT_LB:
+          val = CPX_CONFLICT_LB;
+          break;
+        case CPX_CONFLICT_POSSIBLE_MEMBER:
+        case CPX_CONFLICT_POSSIBLE_LB:
+          val = CPX_CONFLICT_POSSIBLE_LB;
+          break;
+        default:
+          break;
+        }
       }
       if (ubs[i] < Infinity()) {
+        switch (grpStat[j++]) {
+        case CPX_CONFLICT_EXCLUDED:
+          break;
+        case CPX_CONFLICT_MEMBER:
+        case CPX_CONFLICT_UB:
+          val =
+              (CPX_CONFLICT_EXCLUDED==val) ?
+              CPX_CONFLICT_UB : CPX_CONFLICT_MEMBER;
+          break;
+        case CPX_CONFLICT_POSSIBLE_MEMBER:
+        case CPX_CONFLICT_POSSIBLE_UB:
+          val =
+              (CPX_CONFLICT_EXCLUDED==val) ?
+                  CPX_CONFLICT_POSSIBLE_UB :
+                    CPX_CONFLICT_POSSIBLE_MEMBER;
+          break;
+        default:
+          break;
+        }
+      }
+      if (CPX_CONFLICT_EXCLUDED != val) {
         iisColIndices.push_back(i);
-        iisColValues.push_back(grpStat[j++]);
+        iisColValues.push_back(val);
       }
     }
     for (int i = 0; i < NumLinCons(); i++) {
@@ -1044,11 +1078,16 @@ void CplexBackend::ComputeIIS() {
 }
 
 int IISCplexToAMPL(int i) {
-  static int stmap[7] = { 0, 5, 6, 7, 4, 1, 3 };
-  i++;
-  if ((i < 0) || (i > 6))
-    return 8;
-  return stmap[i];
+  switch (i) {
+  case CPX_CONFLICT_EXCLUDED: return (int)IISStatus::non;
+  case CPX_CONFLICT_MEMBER: return (int)IISStatus::mem;
+  case CPX_CONFLICT_LB: return (int)IISStatus::low;
+  case CPX_CONFLICT_UB: return (int)IISStatus::upp;
+  case CPX_CONFLICT_POSSIBLE_MEMBER: return (int)IISStatus::pmem;
+  case CPX_CONFLICT_POSSIBLE_LB: return (int)IISStatus::plow;
+  case CPX_CONFLICT_POSSIBLE_UB: return (int)IISStatus::pupp;
+  }
+  return (int)IISStatus::bug;
 }
 IIS CplexBackend::GetIIS() {
   auto variis = VarsIIS();
@@ -1058,17 +1097,19 @@ IIS CplexBackend::GetIIS() {
   return { mv.GetVarValues()(), mv.GetConValues()() };
 }
 ArrayRef<int> CplexBackend::VarsIIS() {
-
-  std::vector<int> iis(NumVars(), 0);
-  for (int i = 0; i < iisColIndices.size(); i++)
+  std::vector<int> iis(NumVars(), (int)IISStatus::non);
+  for (int i = 0; i < (int)iisColIndices.size(); i++)
     iis[iisColIndices[i]] = (int)IISCplexToAMPL(iisColValues[i]);
   return iis;
 }
 pre::ValueMapInt CplexBackend::ConsIIS() {
-  std::vector<int> iis_lincon(NumLinCons(), 0), iis_qc(NumQPCons(), 0),
-    iis_indcon(NumIndicatorCons(), 0), iis_soscon(NumSOSCons(), 0);
+  std::vector<int>
+      iis_lincon(NumLinCons(), (int)IISStatus::non),
+      iis_qc(NumQPCons(), (int)IISStatus::non),
+      iis_indcon(NumIndicatorCons(), (int)IISStatus::non),
+      iis_soscon(NumSOSCons(), (int)IISStatus::non);
 
-  for (int i = 0; i < iisRowIndices.size(); i++)
+  for (int i = 0; i < (int)iisRowIndices.size(); i++)
     iis_lincon[iisRowIndices[i]] = (int)IISCplexToAMPL(iisRowValues[i]);
   int j = NumLinCons();
   for (int i = 0; i < NumQPCons(); i++)
