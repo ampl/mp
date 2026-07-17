@@ -126,16 +126,25 @@ public:
   void PostsolveIISEntry(const typename Base::LinkEntry& be) {
     if (auto slk_iis = GetInt(be, VAR_SLK)) {
       switch ((IISStatus)slk_iis) {
-        case IISStatus::low:
-          slk_iis = (int)IISStatus::upp;
-          break;
-        case IISStatus::upp:
-          slk_iis = (int)IISStatus::low;
-          break;
-        case IISStatus::fix:
-          break;
-        default:
-          MP_RAISE("Unknown IIS status for a range constraint slack");
+      case IISStatus::low:
+        slk_iis = (int)IISStatus::upp;
+        break;
+      case IISStatus::upp:
+        slk_iis = (int)IISStatus::low;
+        break;
+      case IISStatus::plow:
+        slk_iis = (int)IISStatus::pupp;
+        break;
+      case IISStatus::pupp:
+        slk_iis = (int)IISStatus::plow;
+        break;
+      case IISStatus::fix:
+        break;
+      default: { }
+        cvt_.GetEnv().AddWarning("range_con_IIS_status",
+            fmt::format(
+                "Unexpected IIS status {} for a range constraint slack",
+                slk_iis));
       }
       SetInt(be, CON_SRC, slk_iis);
     } else
