@@ -2715,6 +2715,10 @@ void GurobiBackend::InitCustomOptions() {
       "to write several files.",
       GRB_STR_PAR_RESULTFILE);
 
+  AddToOptionDescription(
+      "tech:writesolution",
+      "File name extensions can be "
+      "``.sol[.tar.gz]``, ``.json``, ``.bas``, ``.ilp``, etc.");
 
   AddSolverOption("tech:seed seed",
       "Random number seed (default 0), affecting perturbations that "

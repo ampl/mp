@@ -431,6 +431,24 @@ void CplexBackend::DoWriteProblem(const std::string &file) {
   CPLEX_CALL( CPXwriteprob (env(), lp(), file.c_str(), NULL) );
 }
 void CplexBackend::DoWriteSolution(const std::string& file) {
+  auto CheckEnds = [&](std::string e) {
+    return ends_with(file, e)
+           || ends_with(file, e + ".gz")
+           || ends_with(file, e + ".zip");
+  };
+  if (CheckEnds(".clp")) {
+    CPLEX_CALL(CPXclpwrite(env(), lp(), file.c_str()));
+    return;
+  } else if (CheckEnds(".bas")) {
+    CPLEX_CALL(CPXmbasewrite(env(), lp(), file.c_str()));
+    return;
+  } else if (CheckEnds(".sol")) {
+    CPLEX_CALL(CPXsolwrite(env(), lp(), file.c_str()));
+    return;
+  }
+  AddWarning("UnknownResultExt",
+             fmt::format("Unknown or non-supported result extension: '{}'.\n"
+                         "Trying to write the file as solution", file));
   CPLEX_CALL(CPXsolwrite(env(), lp(), file.c_str()));
 }
 
@@ -1776,13 +1794,20 @@ void CplexBackend::InitCustomOptions() {
 
   set_option_header(
       "IBM ILOG CPLEX Optimizer Options for AMPL\n"
-      "--------------------------------------------\n"
+      "-----------------------------------------\n"
       "\n"
       "To set these options, assign a string specifying their values to the "
       "AMPL option ``cplex_options``. For example::\n"
       "\n"
       "  ampl: option cplex_options 'mipgap=1e-6';\n");
   
+
+  AddToOptionDescription(
+      "tech:writesolution",
+      "File name extensions can be "
+      "``.sol[.gz|.zip]``, ``.clp``, ``.bas``.");
+
+
 
   // Multi objective controls
   AddIntOption("obj:*:priority obj_*_priority", "Priority for objective with index *",

@@ -193,13 +193,13 @@ protected:
   /// Typedef set of result format extensions
   using ResultExtensionsSet = std::set<std::string>;
 
-      /// Redefine this if you want some extensions
-      /// to be written after solving instead.
-      /// This is for compatibility wiht ASL drivers
-      /// where 'writeprob' was used both for native-format model
-      /// and solution output #218.
+  /// Redefine this if you want some extensions, if asked,
+  /// to be written after solving.
+  /// This is for compatibility with ASL drivers
+  /// where 'writeprob' was used both for native-format model
+  /// and solution output #218.
 
-      virtual ResultExtensionsSet NativeResultExtensions() const
+  virtual ResultExtensionsSet NativeResultExtensions() const
   { return {".sol", ".ilp", ".mst", ".hnt", ".bas", ".json"}; }
 
       /**
@@ -1163,9 +1163,7 @@ protected:
       AddListOption("tech:writesolution writesol writesolution",
         "Specifies the names of files where to export the solution "
         "and/or other result files in solver's native formats. "
-        "Option can be repeated. "
-        "File name extensions can be "
-        "``.sol[.tar.gz]``, ``.json``, ``.bas``, ``.ilp``, etc.",
+        "Option can be repeated.",
         storedOptions_.export_sol_files_);
   }
 

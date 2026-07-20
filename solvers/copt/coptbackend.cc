@@ -536,12 +536,17 @@ void CoptBackend::InitCustomOptions() {
 
   set_option_header(
       "COPT Optimizer Options for AMPL\n"
-      "--------------------------------------------\n"
+      "-------------------------------\n"
       "\n"
       "To set these options, assign a string specifying their values to the "
       "AMPL option ``copt_options``. For example::\n"
       "\n"
       "  ampl: option copt_options 'mipgap=1e-6';\n");
+
+  AddToOptionDescription(
+      "tech:writesolution",
+      "File name extensions can be "
+      "``.sol``, ``.bas``, ``.iis``.");
 
   AddSolverOption("tech:outlev outlev",
       "0-1: output logging verbosity. "

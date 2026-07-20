@@ -2,8 +2,9 @@ Summary of recent updates to CPLEX for AMPL
 ==============================================
 
 
-## unreleased
+## 20260720
 - Fixed IIS reporting for range constraints.
+- Support IIS export to file: *writesol=(name).clp*.
 
 
 ## 20260624

@@ -221,7 +221,9 @@ void XpressmpBackend::DoWriteProblem(const std::string& name) {
   else if (ends_with(name, ".mps"))
     wpflags = "";
   else
-    throw std::runtime_error(fmt::format("Expected \"writeprob=...\" to specify a filename ending in \".lp\"\n"
+    throw std::runtime_error(
+        fmt::format(
+            "Expected \"writeprob=...\" to specify a filename ending in \".lp\"\n"
       "or \".mps\"; got \"{}\".\n", name));
   XPRESSMP_CCALL(XPRSwriteprob(lp(), name.c_str(), wpflags));
 }
@@ -1430,12 +1432,18 @@ void XpressmpBackend::InitCustomOptions() {
 
   set_option_header(
       "XPRESS Optimizer Options for AMPL\n"
-      "--------------------------------------------\n"
+      "---------------------------------\n"
       "\n"
       "To set these options, assign a string specifying their values to the "
       "AMPL option ``xpress_options``. For example::\n"
       "\n"
       "  ampl: option xpress_options 'mipgap=1e-6';\n");
+
+  AddToOptionDescription(
+      "tech:writesolution",
+      "Supported name extension: "
+      "``.sol``.");
+
 
   // ****************************
   // General
