@@ -48,8 +48,9 @@ protected:
   int getIntAttr(int attr) const;
   double getDblAttr(int attr) const;
   
+  /// Actually all algebraic cons?
   int NumLinCons() const;
-  /// N "original" lin cons, relevant for NLP presolve
+  /// N "original" cons, relevant for NLP presolve
   int NumLinConsOrig() const;
   int NumVars() const;
   /// N "original" vars, relevant for NLP presolve

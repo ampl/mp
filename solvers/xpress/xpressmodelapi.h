@@ -117,18 +117,18 @@ public:
   /// LinCon(LE/EQ/GE) should have 'Recommended' for all backends
   /// and have an implementation,
   /// or a conversion rule is needed in a derived FlatConverter
-  ACCEPT_CONSTRAINT(LinConLE, Recommended, CG_Linear)
+  ACCEPT_CONSTRAINT(LinConLE, Recommended, CG_Algebraic)
   void AddConstraint(const LinConLE& lc);
-  ACCEPT_CONSTRAINT(LinConEQ, Recommended, CG_Linear)
+  ACCEPT_CONSTRAINT(LinConEQ, Recommended, CG_Algebraic)
   void AddConstraint(const LinConEQ& lc);
-  ACCEPT_CONSTRAINT(LinConGE, Recommended, CG_Linear)
+  ACCEPT_CONSTRAINT(LinConGE, Recommended, CG_Algebraic)
   void AddConstraint(const LinConGE& lc);
 
-  ACCEPT_CONSTRAINT(QuadConLE, Recommended, CG_Quadratic)
+  ACCEPT_CONSTRAINT(QuadConLE, Recommended, CG_Algebraic)
   void AddConstraint(const QuadConLE& qc);
-  ACCEPT_CONSTRAINT(QuadConEQ, Recommended, CG_Quadratic)
+  ACCEPT_CONSTRAINT(QuadConEQ, Recommended, CG_Algebraic)
   void AddConstraint(const QuadConEQ& qc);
-  ACCEPT_CONSTRAINT(QuadConGE, Recommended, CG_Quadratic)
+  ACCEPT_CONSTRAINT(QuadConGE, Recommended, CG_Algebraic)
   void AddConstraint(const QuadConGE& qc);
   void AddLinTerms(XPRSprob lp, const LinTerms& lt, double rhsc, const char typec); // for quadratics
 

@@ -123,7 +123,7 @@ public:
 
   /// Suported result format extensions
   ResultExtensionsSet NativeResultExtensions() const override
-  { return {".sol"}; }
+  { return {".sol", ".prt", ".iis", ".bas", ".bss"}; }
 
   ALLOW_STD_FEATURE(WRITE_SOLUTION, true)
   void DoWriteSolution(const std::string& name) override;

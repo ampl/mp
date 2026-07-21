@@ -162,7 +162,7 @@ ArrayRef<double> XpressmpBackend::PrimalSolution() {
 }
 
 pre::ValueMapDbl XpressmpBackend::DualSolution() {
-  return {{ { CG_Linear, DualSolution_LP() } }};
+  return {{ { CG_Algebraic, DualSolution_LP() } }};
 }
 
 ArrayRef<double> XpressmpBackend::DualSolution_LP() {
@@ -229,8 +229,16 @@ void XpressmpBackend::DoWriteProblem(const std::string& name) {
 }
 
 void XpressmpBackend::DoWriteSolution(const std::string& name) {
-  char const* wpflags = "";
-  XPRESSMP_CCALL(XPRSwriteprtsol(lp(), name.c_str(), wpflags));
+  char const* wpflags = "v";  // do not add extension
+  auto CheckEnds = [&](std::string e) {
+    return ends_with(name, e);
+  };
+  if (CheckEnds("sol") || CheckEnds("prt"))
+    XPRESSMP_CCALL(XPRSwriteprtsol(lp(), name.c_str(), wpflags));
+  else if (CheckEnds("iis"))
+    XPRESSMP_CCALL(XPRSiiswrite(lp(), 1, name.c_str(), 0, "lv"));
+  else if (CheckEnds("bas") || CheckEnds("bss"))
+    XPRESSMP_CCALL(XPRSwritebasis(lp(), name.c_str(), wpflags));
 }
 
 
@@ -1441,8 +1449,8 @@ void XpressmpBackend::InitCustomOptions() {
 
   AddToOptionDescription(
       "tech:writesolution",
-      "Supported name extension: "
-      "``.sol``.");
+      "Supported name extensions: "
+      "``.sol/.prt``, ``.iss``, ``.bas/.bss``.");
 
 
   // ****************************
@@ -2967,7 +2975,7 @@ SolutionBasis XpressmpBackend::GetBasis() {
   if (varstt.size() && constt.size()) {
     auto mv = GetValuePresolver().PostsolveBasis(
       { varstt,
-        {{{ CG_Linear, constt }}} });
+        {{{ CG_Algebraic, constt }}} });
     varstt = mv.GetVarValues()();
     constt = mv.GetConValues()();
     assert(varstt.size());
@@ -2980,7 +2988,7 @@ void XpressmpBackend::SetBasis(SolutionBasis basis) {
   auto mv = GetValuePresolver().PresolveBasis(
     { basis.varstt, basis.constt });
   auto &varstt = mv.GetVarValues()();
-  auto &constt = mv.GetConValues()(CG_Linear);
+  auto &constt = mv.GetConValues()(CG_Algebraic);
 //#define XPRESS__ROW_STATS_GENCONS    // Is this valid?
 #ifdef XPRESS__ROW_STATS_GENCONS
   // Append general constraints. TODO
@@ -3069,7 +3077,7 @@ void XpressmpBackend::AddPrimalDualStart(Solution sol0_unpres) {
   auto mv = GetValuePresolver().PresolveSolution(
     { sol0_unpres.primal, sol0_unpres.dual });
   auto& x0 = mv.GetVarValues()();
-  auto& pi0 = mv.GetConValues()(CG_Linear);
+  auto& pi0 = mv.GetConValues()(CG_Algebraic);
 
   int status;
   XPRESSMP_CCALL(XPRSloadlpsol(lp(), x0.data(), NULL,
