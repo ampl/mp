@@ -136,11 +136,11 @@ public:
   /// auxiliary constraints for logical conditions.
   /// If not handled, the compared expressions need
   /// deducible finite bounds for a big-M redefinition.
-  ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, Recommended, CG_General)
+  ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, Recommended, CG_Indicator)
   void AddConstraint(const IndicatorConstraintLinLE& mc);
-  ACCEPT_CONSTRAINT(IndicatorConstraintLinEQ, Recommended, CG_General)
+  ACCEPT_CONSTRAINT(IndicatorConstraintLinEQ, Recommended, CG_Indicator)
   void AddConstraint(const IndicatorConstraintLinEQ& mc);
-  ACCEPT_CONSTRAINT(IndicatorConstraintLinGE, Recommended, CG_General)
+  ACCEPT_CONSTRAINT(IndicatorConstraintLinGE, Recommended, CG_Indicator)
   void AddConstraint(const IndicatorConstraintLinGE& mc);
 
   /// SOS constraints can be used by AMPL for redefinition of

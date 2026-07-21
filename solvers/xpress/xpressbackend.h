@@ -219,6 +219,8 @@ protected:
   ArrayRef<int> VarsIIS();
   pre::ValueMapInt ConsIIS();
 
+  IISStatus IIS_VarToAMPL(char c);
+
   /* Xpress-MP callback in case the user wants some output from Optimizer */
   static int outlev_;
   

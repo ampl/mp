@@ -1181,7 +1181,9 @@ enum class IISStatus {
   pmem = 5,   // 'possibly member'
   plow = 6,
   pupp = 7,
-  bug = 8
+  bug = 8,
+  intvar = 9,
+  semi = 10
 };
 
 /// Basic status values (suffix .sstatus)

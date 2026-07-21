@@ -703,7 +703,10 @@ private:
       "5\tpmem\tpossible member\n"
       "6\tplow\tpossibly lower bound\n"
       "7\tpupp\tpossibly upper bound\n"
-      "8\tbug\n";
+      "8\tbug\n"
+      "9\tintvar\tinteger variable\n"
+      "10\tsemi\tsemi-continuous or semi-integer variable\n"
+      ;
   const SuffixDef<int> sufIISCon = { "iis", suf::CON | suf::OUTPUT, iis_table };
   const SuffixDef<int> sufIISVar = { "iis", suf::VAR | suf::OUTPUT, iis_table };
 

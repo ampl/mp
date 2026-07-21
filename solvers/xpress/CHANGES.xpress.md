@@ -2,6 +2,12 @@ Summary of recent updates to Xpress for AMPL
 ============================================
 
 
+## unreleased
+- Fixes in IIS reporting.
+- Option *tech:writesolution* supports formats
+  .sol/.prt, .iis, .bas/.bss.
+
+
 ## 20260624
 - Changes in MP, in particular:
   - Option *cvt:pow2_as_qp* prefers quadratization

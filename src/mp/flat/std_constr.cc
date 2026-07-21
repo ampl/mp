@@ -22,20 +22,21 @@ namespace mp {
 
 /// @todo Keep consistent with the \a ConstraintGroups enum.
 static const char* const congroup_names[]
-= {
- "Default",
- "All",
- "Algebraic",
- "Linear",
- "Quadratic",
- "Conic",
- "General",
-        "Nonlinear",
- "Piecewiselinear",
- "SOS",
- "SOS1",
- "SOS2",
- "Logical"
+    = {
+    "Default",
+    "All",
+    "Algebraic",
+    "Linear",
+    "Quadratic",
+    "Conic",
+    "General",
+    "Indicator",
+    "Nonlinear",
+    "Piecewiselinear",
+    "SOS",
+    "SOS1",
+    "SOS2",
+    "Logical"
 };
 
 const char* ConGroupName(int cg) {

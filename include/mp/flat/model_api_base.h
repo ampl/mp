@@ -118,11 +118,12 @@ const char* ConGroupName(int cg);
 enum ConstraintGroup {
 	CG_Default,
 	CG_All,
-  CG_Algebraic,          // MOSEK 10 seems to have algebraic vs others
+  CG_Algebraic,          // MOSEK and Xpress: algebraic vs others
   CG_Linear,
   CG_Quadratic,
 	CG_Conic,
   CG_General,
+  CG_Indicator,          // Xpress
   CG_Nonlinear,
   CG_Piecewiselinear,
   CG_SOS,

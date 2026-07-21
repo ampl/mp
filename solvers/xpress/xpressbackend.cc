@@ -3009,6 +3009,9 @@ void XpressmpBackend::SetBasis(SolutionBasis basis) {
 void XpressmpBackend::ComputeIIS() {
   int status;
   XPRESSMP_CCALL(XPRSiisfirst(lp(), 1, &status));
+//  switch (status) {
+//  case XPRS_IIS_COMPLETED:
+  SetStatus( GetSolveResult() );
 }
 
 IIS XpressmpBackend::GetIIS() {
@@ -3018,7 +3021,7 @@ IIS XpressmpBackend::GetIIS() {
     { variis, coniis });
   return { mv.GetVarValues()(), mv.GetConValues()() };
 }
-static IISStatus IIS_VarToAMPL(char c) {
+IISStatus XpressmpBackend::IIS_VarToAMPL(char c) {
   switch (c)
   {
   case 'L':
@@ -3027,20 +3030,16 @@ static IISStatus IIS_VarToAMPL(char c) {
     return IISStatus::upp;
   case 'F':
     return IISStatus::fix;
-  }
-  return IISStatus::mem;
-}
-static IISStatus IIS_ConsToAMPL(char c) {
-  switch (c)
-  {
-  case 'G':
-    return IISStatus::low;
-  case 'L':
-    return IISStatus::upp;
-  case '1':
-  case '2':
-  case 'E':
-    return IISStatus::pmem;
+  case 'B':
+  case 'I':
+  case 'P':
+    return IISStatus::intvar;
+  case 'S':
+  case 'R':
+    return IISStatus::semi;
+  default:
+    AddWarning("IISVarStatus",
+               fmt::format("Unknown status '{}' of an IIS variable", c));
   }
   return IISStatus::mem;
 }
@@ -3049,28 +3048,63 @@ ArrayRef<int> XpressmpBackend::VarsIIS() {
   int nconsiis, nvarsiis;
   XPRESSMP_CCALL(XPRSgetiisdata(lp(), 1, &nconsiis, &nvarsiis, 0, 0, 0, 0, 0, 0, 0, 0));
   std::vector<int> vars(nvarsiis);
-  std::vector<char> bounds(nvarsiis), isolvars(nvarsiis);
+  std::vector<char> bounds(nvarsiis);
   XPRESSMP_CCALL(XPRSgetiisdata(lp(), 1, &nconsiis, &nvarsiis, 0,
-    vars.data(), 0, bounds.data(), 0, 0, 0, isolvars.data()));
-  std::vector<int> iis(NumVars(), 0);
+    vars.data(), 0, bounds.data(), 0, 0, 0, 0));
+  std::vector<int> iis(NumVars(), (int)IISStatus::non);
   for (int i = 0; i < nvarsiis; i++)
-    iis[i] = (int)IIS_VarToAMPL(bounds[i]);
+    iis[vars[i]] = (int)IIS_VarToAMPL(bounds[i]);
   return iis;
 }
+
 pre::ValueMapInt XpressmpBackend::ConsIIS() {
   int nconsiis, nvarsiis;
   XPRESSMP_CCALL(XPRSgetiisdata(lp(), 1, &nconsiis, &nvarsiis, 0, 0, 0, 0, 0, 0, 0, 0));
   std::vector<int> cons(nconsiis);
-  std::vector<char> contype(nconsiis), isolrows(nconsiis);
+  std::vector<char> contype(nconsiis);
   XPRESSMP_CCALL(XPRSgetiisdata(lp(), 1, &nconsiis, &nvarsiis, cons.data(),
-    0, contype.data(), 0, 0, 0, isolrows.data(), 0));
-  std::vector<int> iis_lincon(NumLinCons(), 0);
+    0, contype.data(), 0, 0, 0, 0, 0));
+  std::vector<int> iis_algcon(NumLinCons(), (int)IISStatus::non);
+  std::vector<int> iis_sos(NumSOSCons(), (int)IISStatus::non);
+  std::vector<int> iis_pl(NumPWLs(), (int)IISStatus::non);
+  std::vector<int> iis_gencon(NumGenCons(), (int)IISStatus::non);
+  std::vector<int> iis_indcon(NumIndicatorCons(), (int)IISStatus::non);
   for (int i = 0; i < nconsiis; i++)
   {
-    if ((contype[i] != 'X') && (contype[i] != 'I') && (contype[i] != 'W'))
-      iis_lincon[cons[i]] = (int)IIS_ConsToAMPL(contype[i]);
+    switch (contype[i]) {
+    case 'G':
+      iis_algcon[cons[i]] = (int)IISStatus::low;
+      break;
+    case 'L':
+      iis_algcon[cons[i]] = (int)IISStatus::upp;
+      break;
+    case 'E':
+      iis_algcon[cons[i]] = (int)IISStatus::fix;
+      break;
+    case '1':
+    case '2':
+      iis_sos[cons[i]] = (int)IISStatus::mem;
+      break;
+    case 'W':
+      iis_pl[cons[i]] = (int)IISStatus::mem;
+      break;
+    case 'X':
+      iis_gencon[cons[i]] = (int)IISStatus::mem;
+      break;
+    case 'I':
+      iis_indcon[cons[i]] = (int)IISStatus::mem;
+      break;
+    default:
+      AddWarning("IISVarStatus",
+                 fmt::format("Unknown status '{}' of an IIS constraint",
+                             contype[i]));
+    }
   }
-  return { {{ CG_All, iis_lincon }} }; // TODO other constraint types
+  return {{{ CG_Algebraic, iis_algcon },
+           { CG_SOS, iis_sos },
+           { CG_Piecewiselinear, iis_pl },
+           { CG_General, iis_gencon },
+           { CG_Indicator, iis_indcon }}};
 }
 
 void XpressmpBackend::AddPrimalDualStart(Solution sol0_unpres) {
