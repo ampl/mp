@@ -782,16 +782,46 @@ public:
     Exprs2EExprs(ea, ee);
     ee[0].subtract(std::move(ee[1]));
     auto& lhs = ee[0];
-    lhs.sort_terms();                             // to catch duplicates
-    if (lhs.is_affine())                          // no QP terms
-      return AssignResult2Args(                   // add conditional linear constraint
+    lhs.sort_terms();                 // to catch duplicates
+// #define FULL_CONDITIONALS
+#ifdef  FULL_CONDITIONALS
+    /// This stores the compared expressions inline.
+    /// Deprecated, see #268.
+    if (lhs.is_affine())              // no QP terms
+      return AssignResult2Args(       // add conditional linear constraint
             ConditionalConstraint< LinConRhs<comp_kind> >
             { { std::move(lhs.GetLinTerms()),
                 -lhs.constant_term() } } );
-    return AssignResult2Args(                     // add conditional quadratic constraint
+    return AssignResult2Args(         // add conditional quadratic constraint
             ConditionalConstraint< QuadConRhs<comp_kind> >
             { { std::move(lhs.GetAlgConBody()),
                 -lhs.constant_term() } } );
+#else   // FULL_CONDITIONALS
+    /// Here we always compress the compared expression into a variable.
+    /// This might be substituted out when linearized, see cvt:pre:unnest.
+    bool fNegate {false};
+                       // Normalize sign. Scale too?
+    if ((lhs.GetLinTerms().size() && lhs.GetLinTerms().coef(0)<0.0)
+        || (lhs.GetQPTerms().size() && lhs.GetQPTerms().coef(0)<0.0)) {
+      lhs.negate();
+      fNegate = true;
+    }
+    auto rhs = -lhs.constant_term();
+    int cmp_var;
+    if (lhs.is_variable()) {
+      cmp_var = lhs.get_representing_variable();
+    } else {
+      lhs.constant_term(0.0);
+      cmp_var = Convert2Var(std::move(lhs));
+    }
+    if (fNegate)
+      return AssignResult2Args(    // add conditional linear constraint
+          ConditionalConstraint< LinConRhs<-comp_kind> >
+          { { { {1.0}, {cmp_var} }, rhs } }  );
+    return AssignResult2Args(
+        ConditionalConstraint< LinConRhs<comp_kind> >
+        { { { {1.0}, {cmp_var} }, rhs } }  );
+#endif  // FULL_CONDITIONALS
   }
 
   /// Disequality visitor.
@@ -826,6 +856,7 @@ public:
       }
     }
     // General case: represent as: Not(lhs == 0)
+#ifdef  FULL_CONDITIONALS
     auto eq = (lhs.is_affine()) ?                // no QP terms
         AssignResult2Args(  // add conditional linear constraint
               ConditionalConstraint< LinConRhs<0> >
@@ -835,6 +866,9 @@ public:
               ConditionalConstraint< QuadConRhs<0> >
               { { std::move(lhs.GetAlgConBody()),
                   -lhs.constant_term() } } );
+#else
+    auto eq = VisitRelationalExpression<0>(ea);
+#endif
     if (eq.is_variable())
       return AssignResult2Args(
           NotConstraint({eq.get_representing_variable()}));

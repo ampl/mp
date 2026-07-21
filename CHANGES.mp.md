@@ -2,6 +2,15 @@ Summary of recent updates to the AMPL MP Library
 ================================================
 
 
+## unreleased
+- Option *cvt:pre:unnest*: bit 5 (value 16) turns on
+  inlining of algebraic subexpressions in indicator
+  constraints. When it is off, the body of indicator
+  constraints is always just a variable
+  (possibly assigned to a larger expression).
+  On by default.
+
+
 ## 20260624
 - CMake option *MP_LINK_WITH_SHARED_LIB* links the
   driver as a shared library (Gurobi, IBM ILOG CPLEX,

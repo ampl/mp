@@ -450,15 +450,28 @@
     "tags" : ["logical", "quadraticnonconvex"],
     "values": {
       "solve_result": "infeasible",
-      "Initial.flat1__A__indle": 3,
-      "Initial.flat1__A__indeq": 3,
-      "Initial.flat1__A__indge": 3
+      "Initial.flat1__A__indle": 4,
+      "Initial.flat1__A__indeq": 4,
+      "Initial.flat1__A__indge": 4
     }
   },
   {
     "name" : "ctx2numberofvar_01",
     "options": {
       "mp_options": "acc:condlinle=1 acc:condlinge=1 debug=1"
+    },
+    "tags" : ["logical", "quadraticnonconvex"],
+    "values": {
+      "solve_result": "infeasible",
+      "Initial.flat1__A__indle": 0,
+      "Initial.flat1__A__indeq": 4,
+      "Initial.flat1__A__indge": 0
+    }
+  },
+  {
+    "name" : "ctx2numberofvar_01 cvt:unnest=15",
+    "options": {
+      "mp_options": "acc:condlinle=1 acc:condlinge=1 cvt:pre:unnest=15 debug=1"
     },
     "tags" : ["logical", "quadraticnonconvex"],
     "values": {
@@ -634,9 +647,10 @@
       "mp_options": "ctx2bndeq=0 debug=1 acc:condlineq=0 acc:condlinge=0 acc:condlinle=0 acc:condlinlt=0 acc:condlingt=0" },
     "objective": -18,
     "values": {
-      "Initial.flat1__U__indeq": 5,
-      "Initial.flat1__U__indle": 2,
-      "Initial.flat1__U__indge": 3,
+      "Initial.flat1__U__indeq": 8,
+      "Initial.flat1__U__indle": 4,
+      "Initial.flat1__indle": 2,
+      "Initial.flat1__U__indge": 5,
       "min {i in 1.._nlogcons} _logcon[i]": 1
     }
   },
@@ -647,8 +661,9 @@
       "mp_options": "debug=1 acc:condlineq=0 acc:condlinge=0 acc:condlinle=0 acc:condlinlt=0 acc:condlingt=0" },
     "objective": -18,
     "values": {
-      "Initial.flat1__U__indeq": 5,
-      "Initial.flat1__U__indle": 1,
+      "Initial.flat1__U__indeq": 8,
+      "Initial.flat1__indeq": 5,
+      "Initial.flat1__U__indle": 2,
       "Initial.flat1__U__indge": 0,
       "min {i in 1.._nlogcons} _logcon[i]": 1
     }

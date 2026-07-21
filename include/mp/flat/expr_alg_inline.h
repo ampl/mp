@@ -20,17 +20,29 @@ public:
   /// Consider inlining if the corresponding type
   /// of expressions exist and desired for that.
   bool ConsiderInliningAlgExpr(
-      bool fLin, bool fQuad) {
+      int flags) {
+    bool result {};
+    fLin_ = flags & 2;
+    fQuad_ = flags & 4;
+
     auto nlfc = MPCD( GetNumberOfAddable(
         (LinearFunctionalConstraint*)nullptr) );
     auto nqfc = MPCD( GetNumberOfAddable(
         (QuadraticFunctionalConstraint*)nullptr) );
-    if ((nlfc && (fLin || fQuad)) || (nqfc && fQuad)) {
-      fLin_ = fLin;
-      fQuad_ = fQuad;
-      return DoConsiderInlining();
+    if ((nlfc && fLin_) || (nqfc && fQuad_)) {
+      result = result || DoConsiderInliningStaticAlgCons();
     }
-    return false;
+
+    if (flags & 16) {
+      nlfc = MPCD( GetNumberOfAddable(
+          (LinearFunctionalConstraint*)nullptr) );
+      nqfc = MPCD( GetNumberOfAddable(
+          (QuadraticFunctionalConstraint*)nullptr) );
+      if ((nlfc && fLin_) || (nqfc && fQuad_)) {
+        result = result || DoConsiderInliningInIndicators();
+      }
+    }
+    return result;
   }
 
   /// Check if the variable can be eliminated.
@@ -51,9 +63,8 @@ public:
 
 
 protected:
-  /// @todo Conditionals, indicators?
-  /// But any new ones would be linearized before this action.
-  bool DoConsiderInlining() {
+  /// @todo Currently always return false...
+  bool DoConsiderInliningStaticAlgCons() {
     Walk2Inline<LinConRange>(0);
     Walk2Inline<LinConLE>(1);
     Walk2Inline<LinConEQ>(2);
@@ -65,6 +76,20 @@ protected:
     Walk2Inline<QuadConGE>(7);
 
     WalkObjectives();
+
+    return false;
+  }
+
+  /// Any new ones would have been linearized before this action.
+  /// @todo Currently always return false...
+  bool DoConsiderInliningInIndicators() {
+    Walk2Inline<IndicatorConstraintLinLE>(8);
+    Walk2Inline<IndicatorConstraintLinEQ>(9);
+    Walk2Inline<IndicatorConstraintLinGE>(10);
+
+    Walk2Inline<IndicatorConstraintQuadLE>(11);
+    Walk2Inline<IndicatorConstraintQuadEQ>(12);
+    Walk2Inline<IndicatorConstraintQuadGE>(13);
 
     return false;
   }
@@ -118,17 +143,59 @@ protected:
       auto auto_link_scope = MPD( MakeAutoLinker(con, i) );
       if (qexpr.GetQPTerms().size())
         MPD( AddConstraint(        // not _AS_ROOT
-               AlgebraicConstraint<QuadAndLinTerms, RangeOrRHS>{
-                 { qexpr.GetLinTerms(), qexpr.GetQPTerms() },
-                 range_or_rhs
-               }) );
+            AlgebraicConstraint<QuadAndLinTerms, RangeOrRHS>{
+            { std::move(qexpr.GetLinTerms()),
+             std::move(qexpr.GetQPTerms()) },
+            range_or_rhs
+            }) );
       else
         MPD( AddConstraint(
-               AlgebraicConstraint<LinTerms, RangeOrRHS>{
-                 { qexpr.GetLinTerms() },
-                 range_or_rhs
-               }) );
+            AlgebraicConstraint<LinTerms, RangeOrRHS>{
+            { std::move(qexpr.GetLinTerms()) },
+            range_or_rhs
+            }) );
       return true;
+    }
+    return false;
+  }
+
+  /// Inline algebraic subexpressions
+  /// into an indicator constraint.
+  /// @return true iff made this one redundant
+  template <class Body, class RangeOrRHS>
+  bool InlineAlgExpr(
+      const IndicatorConstraint<
+              AlgebraicConstraint<Body, RangeOrRHS> >& con, int i) {
+    const auto& algcon = con.get_constraint();
+    if (HasAlgExpr(algcon.GetBody().GetLinTerms())) {
+      auto qexpr = CollectAlgSubExpr(algcon.GetBody());
+      auto range_or_rhs = algcon.GetRhsOrRange();
+      range_or_rhs.add_to_rhs( -qexpr.constant_term() );   // subtract
+      auto auto_link_scope = MPD( MakeAutoLinker(con, i) );
+      if (qexpr.GetQPTerms().size()) {
+        using IndConQP = IndicatorConstraint<
+            AlgebraicConstraint<QuadAndLinTerms, RangeOrRHS> >;
+        // Only if accepted, redefine into IndQuad:
+        if (MPCD( UserAcceptsAndRecommends((const IndConQP*)0) )) {
+          MPD( AddConstraint(        // not _AS_ROOT
+              IndConQP
+              { con.get_binary_var(), con.get_binary_value(),
+               { { std::move(qexpr.GetLinTerms()),
+                std::move(qexpr.GetQPTerms()) },
+               range_or_rhs
+               } }) );
+          return true;
+        }
+      } else {
+        MPD( AddConstraint(
+            IndicatorConstraint<
+                AlgebraicConstraint<LinTerms, RangeOrRHS> >
+            { con.get_binary_var(), con.get_binary_value(),
+             { { std::move(qexpr.GetLinTerms()) },
+             range_or_rhs
+             } }) );
+        return true;
+      }
     }
     return false;
   }
@@ -231,7 +298,7 @@ protected:
 
 private:
   bool fLin_ {}, fQuad_ {};
-  std::array<int, 8> last_con_ {};   // does this init to 0's?
+  std::array<int, 14> last_con_ {};   // does this init to 0's?
 };
 
 }  // namespace mp

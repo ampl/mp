@@ -452,7 +452,7 @@ protected:
   bool InlineAlgSubexpr() {
     auto preu = MPCD( IfPreproUnnest() );
     return MPD(
-        ConsiderInliningAlgExpr(preu & 2, preu & 4) );
+        ConsiderInliningAlgExpr(preu) );
   }
 
   /// Default map conversions. Currently empty
@@ -1594,7 +1594,7 @@ private:
     int preprocessIneq2BndEq_ = 1;
     int preprocessIneq2Related_ = 1;
 
-    int preproUnnest_ = 15;
+    int preproUnnest_ = 31;
     int preproSortUnify_  = 1;
     int boundLogArg_ = 0;
 
@@ -1778,13 +1778,14 @@ private:
         "Inline nested expressions. Bitwise OR of the following values:\n"
                        "\n"
                        "|  1 - AND/FORALL and OR/EXISTS expressions\n"
-                       "|  2 - Linear subexpressions\n"
-                       "|  4 - Quadratic subexpressions\n"
-                       "|  8 - MIN/MAX.\n"
+                       "|  2 - Linear subexpressions in algebraic constraints\n"
+                       "|  4 - Linear and quadratic subexpressions in algebraic constraints\n"
+                       "|  8 - MIN/MAX\n"
+                       "| 16 - Algebraic subexpressions in indicator constraints.\n"
                        "\n"
                        "See also option cvt:dvelim concerning only the input model. "
-                       "Default 15.",
-        options_.preproUnnest_, 0, 15);
+                       "Default 31.",
+        options_.preproUnnest_, 0, 31);
     GetEnv().AddOption("cvt:pre:sort cvt:sort",
                        "0/1*: Sort and eliminate duplicates in arguments "
                        "of AND, OR, MIN, MAX. Sort arguments of "
@@ -2390,7 +2391,7 @@ protected:
       NLReifRimpl, "acc:nlreifrimpl", 12300)
 
 
-  protected:
+protected:
   ////////////////////// Default map accessors /////////////////////////
   /// Constraints without map should overload these by empty methods ///
 
