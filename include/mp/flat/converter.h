@@ -1508,6 +1508,11 @@ public:
     return 0 < ModelAPI::AcceptsQuadObj();
   }
 
+  /// Whether the ModelAPI accepts nonlinear objectives
+  static bool ModelAPIAcceptsNLObj() {
+    return 0 < ModelAPI::AcceptsNLObj();
+  }
+
   /// Whether the ModelAPI accepts quadratic constraints
   bool ModelAPIAcceptsQC() const {
     return ModelAPIAcceptsAndRecommends(
@@ -1604,6 +1609,7 @@ private:
 
     int passQuadObj_ = ModelAPIAcceptsQuadObj();
     int passQuadCon_ = 1;
+    int passNLObj_ = ModelAPIAcceptsNLObj();
     int useQP2Pass_ = 1;
     double QPMultOutCard_ = 1e9;
     int passSOCPCones_ = 0;
@@ -1839,12 +1845,15 @@ private:
         "0/1*: Pass quadratic objective terms to the solver. "
         "When 0, if the solver accepts quadratic constraints, "
         "such a constraint will be created with those, "
-        "otherwise linearly approximated."
+        "otherwise linearly approximated. "
+        "With cvt:nlobj=0, ensures the objective is linear."
                        :
         "0*/1: Pass quadratic objective terms to the solver. "
         "When 0, if the solver accepts quadratic constraints, "
         "such a constraint will be created with those, "
-        "otherwise linearly approximated.",
+        "otherwise linearly approximated. "
+        "With cvt:nlobj=0, ensures the objective is linear."
+                       ,
         options_.passQuadObj_, 0, 1);
     GetEnv().AddOption("cvt:quadcon passquadcon",
                        "0/1*: set to 0 to disable quadratic constraints. "
@@ -1852,6 +1861,23 @@ private:
                        "Setting to 0 disables out-multiplication "
                        "of quadratic terms, then they are linearized.",
                        options_.passQuadCon_, 0, 1);
+
+    GetEnv().AddOption("cvt:nlobj passnlobj",
+                       ModelAPIAcceptsNLObj() ?
+                           "0/1*: Pass nonlinear objective terms to the solver. "
+                           "When 0, if the solver accepts nonlinear constraints, "
+                           "such a constraint will be created with those, "
+                           "otherwise linearly approximated. "
+                           "With cvt:quadobj=0, ensures the objective is linear."
+                                                :
+                           "0*/1: Pass nonlinear objective terms to the solver. "
+                           "When 0, if the solver accepts nonlinear constraints, "
+                           "such a constraint will be created with those, "
+                           "otherwise linearly approximated. "
+                           "With cvt:quadobj=0, ensures the objective is linear."
+                       ,
+                       options_.passNLObj_, 0, 1);
+
     GetEnv().AddOption("cvt:qp2passes cvt:qp2pass qp2passes qp2pass",
                        "0/1*: Parse sums of QP expressions in 2 passes. "
                        "Usually faster.",
@@ -2069,6 +2095,9 @@ public:
   /// Whether we pass quad con terms to the solver without linearization
   bool IfPassQuadCon() const
   { return options_.passQuadCon_ && ModelAPIAcceptsQC(); }
+
+  /// Whether we pass NL obj terms to the solver without linearization
+  bool IfPassNLObj() const { return options_.passNLObj_; }
 
   /// Whether to quadratize pow(..., const_pos_int).
   /// The fact that we use IfPassQuadCon()

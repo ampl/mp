@@ -748,7 +748,8 @@ void BasicSolver::InitMetaInfoAndOptions(
         "\n"
         "Note that with solver's native handling (when obj:multi=1 and supported), "
         "some solvers might have special rules for the tolerances, especially for LP, "
-        "and not allow quadratic objectives. See the solver documentation.",
+        "and only allow linear objectives. See the solver documentation "
+        "and options cvt:quadobj, cvt:nlobj.",
         multiobj_, values_multiobj_);
 
     static const mp::OptionValueInfo values_multiobjweight_[] = {

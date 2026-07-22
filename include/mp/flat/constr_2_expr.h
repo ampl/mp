@@ -572,7 +572,7 @@ protected:
       if ( !MPCD(VarHasMarking(exprResVar) ))         // mark as expr if new
         MPD( MarkAsExpression(exprResVar) );
       if ( !MPCD( HasInitExpression(exprResVar) )        // e.g., was fixed
-          || !MPCD( GetModelAPI() ).AcceptsNLObj() )    // or, if NLObj not accepted
+          || !MPCD( IfPassNLObj() ) )    // or, if NLObj not accepted
         MPD( MarkAsResultVar(exprResVar) );
       if ( MPCD( IsProperVar(exprResVar) ) ) {        // Not an expression after all
         lt_varsonly.add_term(1.0, exprResVar);

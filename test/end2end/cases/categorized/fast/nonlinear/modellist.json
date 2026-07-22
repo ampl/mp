@@ -602,7 +602,7 @@
     "tags" : ["continuous", "nonlinear", "quadraticnonconvex", "signpow"],
     "options": { "mp_options": "debug=1" },
     "values": {
-      "solve_result": "limit",
+      "solve_result": "infeasible",
       "Initial.flat0__signpowc": 0,
       "Initial.flat1__A__abs": 5,
       "Initial.flat1__U__powc": 19
@@ -613,7 +613,7 @@
     "tags" : ["continuous", "nonlinear", "quadraticnonconvex", "signpow"],
     "options": { "mp_options": "debug=1 cvt:pow2_as_qp=0" },
     "values": {
-      "solve_result": "limit",
+      "solve_result": "infeasible",
       "Initial.flat0__signpowc": 0,
       "Initial.flat1__A__abs": 5,
       "Initial.flat1__U__powc": 20

@@ -3,6 +3,13 @@ Summary of recent updates to the AMPL MP Library
 
 
 ## unreleased
+- Option *cvt:nlobj* controls whether nonlinear
+  objective terms are passed to the objective,
+  vs moved to a constraint or piecewise-linearly
+  approximated. Setting *cvt:nlobj=0*
+  *cvt:quadobj=0* enables native
+  multiobjective method (*obj:multi=1*)
+  if only supported for linear objectives.
 - Option *cvt:pre:unnest*: bit 5 (value 16) turns on
   inlining of algebraic subexpressions in indicator
   constraints. When it is off, the body of indicator
