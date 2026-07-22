@@ -728,5 +728,10 @@
     "tags" : ["continuous", "nonlinear", "quadraticnonconvex", "mp2nl"],
     "options": { "mp2nl_options": "nl:assign:defvar=100000" },
     "objective": 2.1851756747802034
+  },
+  {
+    "name" : "ellipse_nonconvex_nl",
+    "tags" : ["continuous", "nonlinear", "quadraticnonconvex"],
+    "objective": 2.013167836756
   }
 ]

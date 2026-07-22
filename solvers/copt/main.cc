@@ -17,6 +17,13 @@ extern "C" int main1(int, char **argv) {
   return
       mp::RunBackendApp(argv, CreateCoptBackend);
 }
+
+#ifndef SLV_MAIN_IN_MAIN_CC
+extern "C" int copt_main(int, char **argv) {
+  return mp::RunBackendApp(argv, CreateCoptBackend);
+}
+#endif  // SLV_MAIN_IN_MAIN_CC
+
 extern "C" int main2(int, char** argv, CCallbacks cb) {
   return mp::RunBackendApp(argv, CreateCoptBackend, cb);
 }

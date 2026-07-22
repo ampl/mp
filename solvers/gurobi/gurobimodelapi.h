@@ -183,7 +183,13 @@ public:
 #ifdef GRB_OPCODE_CONSTANT
 
   /// Whether accepts NLObjective
+#if GRB_VERSION_MAJOR>=13 && GRB_VERSION_MINOR>=9
+#define __GRB_NL_OBJCON__
+  static int AcceptsNLObj() { return 1; }
+  void SetNLObjective(int, const NLObjective&);
+#else
   static int AcceptsNLObj() { return 0; }
+#endif  // GRBsetnlobj
 
   //////////////////////////// EXPRESSION TREES ////////////////////////////
   /// Handle expression trees: inherit basic API
@@ -200,8 +206,13 @@ public:
   /// Can be used to represent empty expression in an NLConstraint.
   Expr GetZeroExpression() { return MakeEmptyExpr(); }
 
+#ifdef __GRB_NL_OBJCON__
+  ACCEPT_CONSTRAINT(NLConstraint, Recommended, CG_Algebraic)
+  void AddConstraint(const NLConstraint& nl);
+#else
   /// Gurobi 12 has no classical NL range constraint
   ACCEPT_CONSTRAINT(NLConstraint, NotAccepted, CG_Algebraic)
+#endif  // __GRB_NL_OBJCON__
 
   /// NLAssignEQ: algebraic expression expicifier.
   /// Meaning: var == expr.

@@ -137,6 +137,11 @@ public:
     return nlc.GetMainCon().ub();
   }
 
+  /// Get NLConstraint's name
+  const char* GetName(const NLConstraint& nl) const {
+    return nl.GetName();
+  }
+
   /// NLAssign constraint name.
   template <int sense>
   const char* GetName(const NLBaseAssign<sense>& nll) {

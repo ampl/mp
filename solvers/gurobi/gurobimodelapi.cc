@@ -30,11 +30,13 @@ void GurobiModelAPI::AddVariables(const VarArrayDef& v) {
 }
 void ThrowForUnsupportedObjectives()
 {
-  throw std::runtime_error(format_error("Multiple quadratic objectives are not supported natively by Gurobi; "
-                                        "enable multi-objective emulator by setting the option obj:multi=2"));
+  throw std::runtime_error(
+      format_error("Multiple quadratic objectives are not supported natively by Gurobi; "
+                   "enable multi-objective emulator by setting the option obj:multi=2"));
 }
 
-void GurobiModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
+void GurobiModelAPI::SetLinearObjective(
+    int iobj, const LinearObjective& lo ) {
   if (1>iobj) {
     GrbSetIntAttr( GRB_INT_ATTR_MODELSENSE,
                   obj::Type::MAX==lo.obj_sense() ? GRB_MAXIMIZE : GRB_MINIMIZE);
@@ -44,6 +46,9 @@ void GurobiModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
       GrbSetDblAttrList( GRB_DBL_ATTR_OBJ, obj_ind_save_, obj_coef_0 );
     }
     GRB_CALL( GRBdelq(model()) );           // zero out previous QP part
+#ifdef __GRB_NL_OBJCON__
+    GRB_CALL( GRBdelnlobj(model()) );
+#endif
     GrbSetDblAttrList( GRB_DBL_ATTR_OBJ, lo.vars(), lo.coefs() );
     obj_ind_save_ = lo.vars();
   } else {
@@ -58,7 +63,8 @@ void GurobiModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
   }
 }
 
-void GurobiModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective &qo) {
+void GurobiModelAPI::SetQuadraticObjective(
+    int iobj, const QuadraticObjective &qo) {
   has_quadratic_obj_ = true;
   if (1>iobj) {
     GRB_CALL( GRBdelq(model()) );                         // delete current QP terms
@@ -71,6 +77,53 @@ void GurobiModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective &q
     ThrowForUnsupportedObjectives();
   }
 }
+
+#ifdef __GRB_NL_OBJCON__
+void GurobiModelAPI::SetNLObjective(int i, const NLObjective& nlo) {
+  if (i == 0)
+  {
+#define __GRB_NL_OBJCON__REUSE_LIN_QP_OBJ__
+#ifdef __GRB_NL_OBJCON__REUSE_LIN_QP_OBJ__
+    SetQuadraticObjective(i, (const QuadraticObjective&)nlo);  // Reuse Lin+QP part
+    const auto& frm = GetFormula(GetExpression(nlo));
+#else
+    GrbSetIntAttr( GRB_INT_ATTR_MODELSENSE,
+                  obj::Type::MAX==nlo.obj_sense() ?
+                      GRB_MAXIMIZE : GRB_MINIMIZE);
+    NoteGurobiMainObjSense(nlo.obj_sense());
+
+    auto frm = StartFormula(GRB_OPCODE_PLUS);
+    frm.Append( GetFormula(GetExpression(nlo)) );
+
+    MP_ASSERT_ALWAYS(((const QuadraticObjective&)nlo).GetQPTerms().empty(),
+                     "NL objective: QP terms.\n"
+                     "Please contact AMPL support.");
+
+    const auto& lint = nlo.GetLinTerms();
+    for (int i=0; i<(int)lint.size(); ++i) {     // TODO
+      if (double coef = lint.coef(i)) {
+        if (1.0 != coef) {
+          auto f1 = StartFormula(GRB_OPCODE_MULTIPLY);
+          AppendArgument(f1, MakeConstantExpr(coef));
+          AppendArgument(f1, MakeVarExpr(lint.var(i)));
+          frm.Append(f1);
+        } else {
+          AppendArgument(frm, MakeVarExpr(lint.var(i)));
+        }
+      }
+    }
+#endif  // __GRB_NL_OBJCON__REUSE_LIN_QP_OBJ__
+    GRB_CALL(GRBsetnlobj(model(), frm.size(),
+                         (int*)frm.opcodes(),
+                         (double*)frm.data(), (int*)frm.parents()));
+  }
+  else {
+    MP_RAISE("Multiple non-linear objectives not supported natively. "
+             "Use multi-objective emulator by setting obj:multi=2");
+  }
+}
+#endif
+
 
 void GurobiModelAPI::NoteGurobiMainObjSense(obj::Type s) { main_obj_sense_ = s; }
 
@@ -251,6 +304,49 @@ void GurobiModelAPI::InitCustomOptions() { }
 
 /////////////////////////////// EXPRESSIONS ////////////////////////////////////
 #ifdef GRB_OPCODE_CONSTANT
+
+#ifdef __GRB_NL_OBJCON__
+void GurobiModelAPI::AddConstraint(const NLConstraint& nl) {
+  double lb = GetLower(nl), ub = GetUpper(nl);
+  double rhs;
+  char sense;
+
+  if (lb > -GRB_INFINITY) {
+    rhs = lb;
+    if (ub < GRB_INFINITY) {
+      MP_ASSERT_ALWAYS(lb >= ub,            // TODO
+                     "Range NL constraint.\n"
+                     "Please contact AMPL Support.");
+      sense = GRB_EQUAL;
+    } else
+      sense = GRB_GREATER_EQUAL;
+  } else {
+    rhs = ub;
+    sense = GRB_LESS_EQUAL;
+  }
+
+  auto frm = StartFormula(GRB_OPCODE_PLUS);
+  frm.Append( GetFormula(GetExpression(nl)) );
+
+  for (int i=0; i<GetLinSize(nl); ++i) {     // TODO
+    if (double coef = GetLinCoef(nl, i)) {
+      if (1.0 != coef) {
+        auto f1 = StartFormula(GRB_OPCODE_MULTIPLY);
+        AppendArgument(f1, MakeConstantExpr(coef));
+        AppendArgument(f1, MakeVarExpr( GetLinVar(nl, i) ));
+        frm.Append(f1);
+      }  else {
+        AppendArgument(frm, MakeVarExpr( GetLinVar(nl, i) ));
+      }
+    }
+  }
+
+  GRB_CALL(GRBaddnlconstr(
+      model(), frm.size(),
+      (int*)frm.opcodes(), (double*)frm.data(), (int*)frm.parents(),
+      sense, rhs, GetName(nl)));
+}
+#endif  // __GRB_NL_OBJCON__
 
 void GurobiModelAPI::AddConstraint(const NLAssignEQ& nla) {
   const auto& frm = GetFormula(GetExpression(nla));
