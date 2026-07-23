@@ -10,7 +10,7 @@ Summary of recent updates to the AMPL MP Library
   *cvt:quadobj=0* enables native
   multiobjective method (*obj:multi=1*)
   if only supported for linear objectives.
-- Option *cvt:pre:unnest*: bit 5 (value 16) turns on
+- Option *cvt:pre:unnest*: bit 4 (value 16) turns on
   inlining of algebraic subexpressions in indicator
   constraints. When it is off, the body of indicator
   constraints is always just a variable
@@ -139,7 +139,7 @@ Summary of recent updates to the AMPL MP Library
   - Sorting arguments of COUNT, ATLEAST,
     EXACTLY, ATMOST, NUMBEROF, ALLDIFF.
 - Option *cvt:pre:unnest* extended for MIN, MAX
-  (bit 8).
+  (bit 3).
 
 
 
@@ -165,7 +165,7 @@ Summary of recent updates to the AMPL MP Library
 
 
 ## 20250617
-- Option *cvt:unnest*: bits 2 and 4 switch on
+- Option *cvt:unnest*: bits 1 and 2 switch on
   inlining of linear and quadratic subexpressions
   produced during reformulations (by default on).
 - Options *cvt:pre:ctx2ineq*, *cvt:pre:ctx2count*
