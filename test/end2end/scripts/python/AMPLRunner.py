@@ -329,7 +329,8 @@ class AMPLRunner(object):
                   self._timeout, 5)
           solve_result = self._ampl.get_value("solve_result")
           if solve_result != "solved":
-              print("WARNING: not solved (solve_result: {})".format(solve_result))
+              print("\n  WARNING:\n    - not solved (solve_result: {})". \
+                  format(solve_result), "\n", " "*62, end="")
           amplStats["AMPLsolveTime"]= t.toc()
       # Close log before any further amplapi operations
       self._outputHandler.close_log()
@@ -404,14 +405,15 @@ class AMPLRunner(object):
                     self._assertAndRecord(ev, val,
                         "value of entity '{}'".format(name))
                 except:
-                    self.stats["eval_fail_msg"] = "error retrieving '{}'".format(name)
+                    self.stats.setdefault("eval_fail_msg", []).append( \
+                        "error retrieving '{}'".format(name))
         if model.hasExpectedOutput():
             for oitem in model.getExpectedOutput():
                 self.stats["eval_done"] = True
                 if str(oitem) not in output:       ## Add solver message or is it in?
-                    self.stats["eval_fail_msg"] = \
+                    self.stats.setdefault("eval_fail_msg", []).append( \
                     "string  '" + str(oitem) + \
-                    "'  is not found in the output"
+                    "'  is not found in the output")
 
     def _assertAndRecord(self, expval, val, msg):
         if isinstance(expval, dict):
@@ -429,9 +431,9 @@ class AMPLRunner(object):
             math.isclose(expval, val, rel_tol=1e-5, abs_tol=1e-5) \
             if b1 and b2 else expval != val
         if uneq:
-            self.stats["eval_fail_msg"] = msg + \
+            self.stats.setdefault("eval_fail_msg", []).append(msg + \
                 ": value " + str(val) + \
-                ", expected " + str(expval)
+                ", expected " + str(expval))
 
     def _assertAndRecordObjectValue(self, expval, val, msg):
         errmsg = ''
@@ -459,8 +461,8 @@ class AMPLRunner(object):
                     ": reference object contains an unknown keyword '" + \
                     str(kw) + "'"
         if '' != errmsg:
-            self.stats["eval_fail_msg"] = msg + \
-                ": value " + errmsg
+            self.stats.setdefault("eval_fail_msg", []).append(msg + \
+                ": value " + errmsg)
 
     def getName(self):
         return "ampl-" + self._solver.getName()

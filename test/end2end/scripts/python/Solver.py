@@ -93,9 +93,9 @@ class Solver(object):
             for oitem in model.getExpectedOutput():
                 self._stats["eval_done"] = True
                 if str(oitem) not in output:
-                   self._stats["eval_fail_msg"] = \
+                   self._stats.setdefault("eval_fail_msg", []).append( \
                     "string  '" + str(oitem) + \
-                    "'  is not found in the output"
+                    "'  is not found in the output")
 
     def _assertAndRecord(self, expval, val, msg):
         b1 = isinstance(expval, (int, float))
@@ -103,9 +103,9 @@ class Solver(object):
         uneq = not math.isclose(expval, val, rel_tol=1e-6) if \
             b1 and b2 else expval != val
         if uneq:
-            self._stats["eval_fail_msg"] = msg + \
+            self._stats.setdefault("eval_fail_msg", []).append(msg + \
                 ": value " + str(val) + \
-                ", expected " + str(expval)
+                ", expected " + str(expval))
 
     def runAndEvaluate(self, model: Model, logFile : str = None):
         t = TimeMe()

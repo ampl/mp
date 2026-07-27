@@ -82,8 +82,8 @@ class Exporter(object):
             if "eval_fail_msg" not in run:    # Evaluation ok
                 print("  Ok.", end='', flush=True)
             else:
-                print("          FAILED({}): {}\n{: <80}".format(
-                    run["solver"], run["eval_fail_msg"], ' '),
+                print("\n  FAILED({}):\n    - {}\n{: <68}".format(
+                    run["solver"], "\n    - ".join(run["eval_fail_msg"]), ' '),
                     end='', flush=True)
                 return False
         else:

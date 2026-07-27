@@ -90,7 +90,7 @@ class ModelRunner(object):
                       
                       if EFM in stats:
                         if EM in stats:
-                            stats[EFM]= stats[EM]
+                            stats.setdefault(EFM, []).append( stats[EM] )
                       if keep_output:
                          stats["output"]=r.get_output()
                       self._runs[i][-1] = stats
@@ -102,7 +102,7 @@ class ModelRunner(object):
                   except Exception as exc:
                     self._runs[i][-1]["outmsg"] = "AMPL(PY)/script failure"
                     self._runs[i][-1]["solver"] = ss
-                    self._runs[i][-1][EFM]=str(exc)
+                    self._runs[i][-1].setdefault(EFM, []).append(str(exc))
                     print("   EXCEPTION: ", exc)
                     nFailedScriptOrAMPL[i] += 1
                 print("  (%.2fs, %d fail (%d abrt) slv, %d fail AMPL/PY/scrpt, %d skip)" %

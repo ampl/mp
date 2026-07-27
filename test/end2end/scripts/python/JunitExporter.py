@@ -60,13 +60,13 @@ class JunitExporter(Exporter):
                 tc.result=[Skipped(last_run["outmsg"])]
                 res="Skipped"
             elif "script failure" in last_run["outmsg"]:
-                tc.result=[Error(last_run["eval_fail_msg"])]
+                tc.result=[Error("\n    - ".join(last_run["eval_fail_msg"]))]
                 res="Failure"
             elif "eval_fail_msg" in last_run:
-                safe_string = xml.sax.saxutils.escape(last_run["output"])
+                safe_string = xml.sax.saxutils.escape("\n    - ".join(last_run["output"]))
                 safe_string =safe_string.replace('\b', '')
                 tc.system_out=safe_string
-                tc.result=[Failure(last_run["eval_fail_msg"])]
+                tc.result=[Failure("\n    - ".join(last_run["eval_fail_msg"]))]
                 res="Failure"
             else:
                 res = "OK"
