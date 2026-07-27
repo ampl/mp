@@ -551,32 +551,39 @@ void BasicConstraintKeeper::DoAddAcceptanceOptions(
     acc_level_default_      // Won't be taken however, if acc:_expr==0
         = std::underlying_type_t<ExpressionAcceptanceLevel>(eal) + 2;
   if (conacc && expracc) {
-    env.AddStoredOption(GetAcceptanceOptionNames(),
-                        fmt::format(
-                            "Solver acceptance level for '{}' as either constraint or expression, "
-                            "default {}:\n\n.. value-table::",
-                            GetConstraintName(), acc_level_default_).c_str(),
-                        acc_level_item_, values_universal_acceptance);
+    env.AddOption<int>(GetAcceptanceOptionNames(),
+                       fmt::format(
+                           "Solver acceptance level for '{}' as either constraint or expression, "
+                           "default {}:\n\n.. value-table::",
+                           GetConstraintName(), acc_level_default_).c_str(),
+                       [this]() { return GetFinalItemAcceptance(); },
+                       [this](int v) { acc_level_item_=v; },
+                       values_universal_acceptance);
   } else
     if (conacc) {
-      env.AddStoredOption(GetAcceptanceOptionNames(),
-                          fmt::format(
-                              "Solver acceptance level for '{}' as flat constraint, "
-                              "default {}:\n\n.. value-table::",
-                              GetConstraintName(), acc_level_default_).c_str(),
-                          acc_level_item_, values_con_acceptance);
+      env.AddOption<int>(GetAcceptanceOptionNames(),
+                         fmt::format(
+                             "Solver acceptance level for '{}' as flat constraint, "
+                             "default {}:\n\n.. value-table::",
+                             GetConstraintName(), acc_level_default_).c_str(),
+                         [this]() { return GetFinalItemAcceptance(); },
+                         [this](int v) { acc_level_item_=v; },
+                         values_con_acceptance);
     } else
       if (expracc) {
-        env.AddStoredOption(GetAcceptanceOptionNames(),
-                            fmt::format(
-                                "Solver acceptance level for '{}' as expression, "
-                                "default {}:\n\n.. value-table::",
-                                GetConstraintName(), acc_level_default_).c_str(),
-                            acc_level_item_, values_expr_acceptance);
+        env.AddOption<int>(GetAcceptanceOptionNames(),
+                           fmt::format(
+                               "Solver acceptance level for '{}' as expression, "
+                               "default {}:\n\n.. value-table::",
+                               GetConstraintName(), acc_level_default_).c_str(),
+                           [this]() { return GetFinalItemAcceptance(); },
+                           [this](int v) { acc_level_item_=v; },
+                           values_expr_acceptance);
       } else {
-        env.AddStoredOption(GetAcceptanceOptionNames(),
-                            "HIDDEN",
-                            acc_level_item_, 0, 4);
+        env.AddOption<int>(GetAcceptanceOptionNames(),
+                           "HIDDEN",
+                           [this]() { return GetFinalItemAcceptance(); },
+                           [this](int v) { acc_level_item_=v; });
       }
 }
 

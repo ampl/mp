@@ -2,6 +2,7 @@
 #define SOLVEROPT_H
 
 #include <set>
+#include <functional>
 #include <cstdint>
 #include <cassert>
 #include <typeinfo>
@@ -104,6 +105,7 @@ inline OptionError OptionTypeError(fmt::StringRef name, fmt::StringRef type) {
 }
 
 }  // namespace internal
+
 
 /// Formats and return the string (possibly containing RST markup).
 /// Useful for formatting error messages to fit a predetermined terminal width
@@ -329,6 +331,8 @@ public:
     : OptionError(Format(opt.name(), value, msg)) {}
 };
 
+
+/// Typed solver option
 template <typename T>
 class TypedSolverOption : public SolverOption {
 public:
@@ -370,15 +374,12 @@ public:
       return Option_Type::STRING;
     throw std::runtime_error("Type not found!");
   }
-
 };
 
 
-/// A collection of solver options.
+/// A collection of solver options
 class SolverOptionManager {
-
 public:
-
   /// Returns the number of options.
   int num_options() const { return static_cast<int>(options_.size()); }
 
@@ -390,7 +391,49 @@ public:
     return opt;
   }
 
-  /// Handler should be a class derived from BasicSolver that will receive
+
+  /// Option with generic get/set functors.
+  template <typename T, typename AccessorT = T>
+  class DirectOption : public TypedSolverOption<T> {
+    using Getter = std::function<AccessorT (void)>;
+    using Setter = std::function<
+        void (typename internal::OptionHelper<AccessorT>::Arg)>;
+
+    Getter getter_;
+    Setter setter_;
+
+  public:
+    /// Construct
+    DirectOption(const char *name, const char *description,
+                   Getter get, Setter set, ValueArrayRef values = ValueArrayRef())
+        : TypedSolverOption<T>(name, description, values),
+        getter_(get), setter_(set) {}
+
+    /// Implement GetValue
+    void GetValue(T &value) const override { value = (T)getter_(); }
+    /// Implement SetValue
+    void SetValue(typename internal::OptionHelper<T>::Arg value)
+        override {
+      setter_(internal::OptionHelper<AccessorT>::CastArg(value));
+    }
+  };
+
+  /// Simple direct option.
+  /// @note description "HIDDEN" means the option is not printed
+  template <class Value>
+  void AddOption(const char *name, const char *description,
+      std::function<Value ()> get,
+      std::function<
+          void (typename internal::OptionHelper<Value>::Arg)> set,
+      ValueArrayRef values = ValueArrayRef()) {
+    AddOption(OptionPtr(
+        new DirectOption<Value>(
+            name, description, get, set, values)));
+  }
+
+
+  /// Handler should be, e.g.,
+  /// a class derived from BasicSolver that will receive
   /// notifications about parsed options.
   template <typename Handler, typename T, typename AccessorT = T>
   class ConcreteOption : public TypedSolverOption<T> {
@@ -416,6 +459,9 @@ public:
                        internal::OptionHelper<AccessorT>::CastArg(value));
     }
   };
+
+
+  /// @tparam InfoArg: e.g., solver parameter key
   template <typename Handler, typename T,
             typename Info, typename InfoArg = Info, typename AccessorT = T>
   class ConcreteOptionWithInfo : public TypedSolverOption<T> {
@@ -448,6 +494,7 @@ public:
                        info_);
     }
   };
+
 
 	/// Flag option
 	/// @param Handler is a class (derived from BasicSolver?)
