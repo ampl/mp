@@ -3,6 +3,7 @@ Summary of recent updates to Xpress for AMPL
 
 
 ## unreleased
+- Fix LP basis input.
 - Fixes in IIS reporting.
 - Option *tech:writesolution* supports formats
   .sol/.prt, .iis, .bas/.bss.
