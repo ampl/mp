@@ -427,9 +427,16 @@ bool SolverAppOptionParser::ShowSolverOptions(const char* param) {
     i = solver_.option_begin(), end = solver_.option_end(); i != end; ++i) {
     if (i->is_hidden())
       continue;
-    if (param && strlen(param)>0)
-      if (!contains(i->name(), param))
-        continue;
+    if (param && strlen(param)>0) {
+      if (!contains(i->name(), param)) {
+        bool found {};
+        for (const auto& syn: i->inline_synonyms())
+          if ((found = contains(syn.c_str(), param)))
+            break;
+        if (!found)
+          continue;
+      }
+    }
     writer.clear();
     writer << '\n' << i->name();
     const auto& syns = i->inline_synonyms();
