@@ -197,15 +197,15 @@ Summary of recent updates to Xpress for AMPL
 
 ## 20240617
 - *Multi-objective emulator*
-	- obj:multi=2 forces emulation, even if MO natively supported.
+  - *obj:multi=2* forces emulation, even if MO natively supported.
 	- Fixed a bug in the objective degradation suffixes
 		.objasbtol, .objreltol.
 
 
 ## 20240606
-- Fix mip:basis (post-solving as fixed MIP),
+- Fix *mip:basis* (post-solving as fixed MIP),
 	although fix + resolve from AMPL can be faster.
-- Fix reporting infeasibility with obj:multi=1.
+- Fix reporting infeasibility with *obj:multi=1*.
 
 
 ## 20240604
@@ -215,15 +215,15 @@ Summary of recent updates to Xpress for AMPL
 
 ## 20240529
 - *Multi-objective emulator*
-	- All flat MP solvers support multi-objective mode (obj:multi=1),
+  - All flat MP solvers support multi-objective mode (*obj:multi=1*),
 		either natively, or via emulation.
 	- Suffixes .objpriority, .objweight, .objabstol, .objreltol.
-	- [BREAKING] Default intuitive handling of .objweight,
-		see option obj:multi:weight, even when natively supported.
+  - [BREAKING] Default intuitive handling of .objweight,
+    see option *obj:multi:weight*, even when natively supported.
 
 
 ## 20240429
-- [BREAKING] Merged `report_times` and `timing`; they 
+- [BREAKING] Merged options *report_times* and *timing*; they 
   are now aliases, set the value to 1 to have basic info,
   to 2 to have more detailed info.
 
@@ -236,13 +236,13 @@ Summary of recent updates to Xpress for AMPL
     native PL functions or MP linearization.)
   - Disallow repeated weights for SOS constraints
     (suffixes `.sosno`/`.ref`.)
-- *Native handling of POW(x, INT)*.
+- Native handling of POW(x, INT).
   - Power expressions with positive integer exponent
     are passed natively to the solvers accepting them,
     vs previously quadratic or linear reformulation.
-- *Option `report_times`*.
-- *Unused `acc:` options*.
-  - The constraint acceptance options `acc:...`
+- Option *report_times*.
+- Unused *acc:* options.
+  - The constraint acceptance options *acc:...*
     for non-handled constraints are ignored
     (previously triggered error.)
 

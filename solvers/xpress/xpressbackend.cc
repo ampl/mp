@@ -2851,16 +2851,16 @@ ArrayRef<int> XpressmpBackend::VarStatii() {
   else 
     for (auto& s : vars) {
       switch (s) {
-      case 1:
+      case XPRS_BASISSTATUS_BASIC:
         s = (int)BasicStatus::bas;
         break;
-      case 0:
+      case XPRS_BASISSTATUS_NONBASIC_LOWER:
         s = (int)BasicStatus::low;
         break;
-      case 2:
+      case XPRS_BASISSTATUS_NONBASIC_UPPER:
         s = (int)BasicStatus::upp;
         break;
-      case 3:
+      case XPRS_BASISSTATUS_SUPERBASIC:
         s = (int)BasicStatus::sup;
         break;
       default:
@@ -2871,7 +2871,6 @@ ArrayRef<int> XpressmpBackend::VarStatii() {
 }
 
 ArrayRef<int> XpressmpBackend::ConStatii() {
-
   std::vector<int> cons(NumLinConsOrig());
   int status = XPRSgetbasis(model_fixed_, cons.data(), NULL);
   if (status)
@@ -2879,16 +2878,16 @@ ArrayRef<int> XpressmpBackend::ConStatii() {
   else
     for (auto& s : cons) {
       switch (s) {
-      case 1:
+      case XPRS_BASISSTATUS_BASIC:
         s = (int)BasicStatus::bas;
         break;
-      case 0:
+      case XPRS_BASISSTATUS_NONBASIC_LOWER:
         s = (int)BasicStatus::low;
         break;
-      case 2:
+      case XPRS_BASISSTATUS_NONBASIC_UPPER:
         s = (int)BasicStatus::upp;
         break;
-      case 3:
+      case XPRS_BASISSTATUS_SUPERBASIC:
         s = (int)BasicStatus::sup;
         break;
       default:
@@ -2905,20 +2904,18 @@ std::vector<int> XpressmpBackend::VarStatii(ArrayRef<int> vst) {
     auto& s = stt[j];
     switch ((BasicStatus)s) {
     case BasicStatus::bas:
-      s = 1;
+      s = XPRS_BASISSTATUS_BASIC;
       break;
     case BasicStatus::low:
-      s = 0;
-      break;
-    case BasicStatus::equ:
-      s = 1;
+      s = XPRS_BASISSTATUS_NONBASIC_LOWER;
       break;
     case BasicStatus::upp:
-      s = 2;
+      s = XPRS_BASISSTATUS_NONBASIC_UPPER;
       break;
+    case BasicStatus::equ:
     case BasicStatus::sup:
     case BasicStatus::btw:
-      s = 3;
+      s = XPRS_BASISSTATUS_SUPERBASIC;
       break;
     case BasicStatus::none:
       /// 'none' is assigned to new variables. Compute low/upp/sup:
@@ -2931,11 +2928,11 @@ std::vector<int> XpressmpBackend::VarStatii(ArrayRef<int> vst) {
         XPRESSMP_CCALL(XPRSgetub(lp(), ub.data(), 0, vst.size()-1));
       }
       if (lb[j] >= -1e-6)
-        s = 0;
+        s = XPRS_BASISSTATUS_NONBASIC_LOWER;
       else if (ub[j] <= 1e-6)
-        s = 2;
+        s = XPRS_BASISSTATUS_NONBASIC_UPPER;
       else
-        s = 3;
+        s = XPRS_BASISSTATUS_SUPERBASIC;
       break;
     default:
       MP_RAISE(fmt::format("Unknown AMPL var status value: {}", s));
@@ -2949,15 +2946,19 @@ std::vector<int> XpressmpBackend::ConStatii(ArrayRef<int> cst) {
   for (auto& s : stt) {
     switch ((BasicStatus)s) {
     case BasicStatus::bas:
-      s = 1;
+      s = XPRS_BASISSTATUS_BASIC;
+      break;
+    case BasicStatus::low:
+      s = XPRS_BASISSTATUS_NONBASIC_LOWER;
+      break;
+    case BasicStatus::upp:    // assigned to new rows, it seems good to guess
+      s = XPRS_BASISSTATUS_NONBASIC_UPPER;
       break;
     case BasicStatus::none:   // for 'none', which is the status
-    case BasicStatus::upp:    // assigned to new rows, it seems good to guess
     case BasicStatus::sup:    // a valid status.
-    case BasicStatus::low:    //
     case BasicStatus::equ:    // For active constraints, it is usually 'sup'.
     case BasicStatus::btw:    // We could compute slack to decide though.
-      s = 3;
+      s = XPRS_BASISSTATUS_SUPERBASIC;
       break;
     default:
       MP_RAISE(fmt::format("Unknown AMPL con status value: {}", s));
@@ -2981,7 +2982,6 @@ SolutionBasis XpressmpBackend::GetBasis() {
     assert(varstt.size());
   }
   return { varstt,constt};
-
 }
 
 void XpressmpBackend::SetBasis(SolutionBasis basis) {
