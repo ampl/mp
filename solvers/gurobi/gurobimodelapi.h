@@ -183,7 +183,7 @@ public:
 #ifdef GRB_OPCODE_CONSTANT
 
   /// Whether accepts NLObjective
-#if GRB_VERSION_MAJOR>=13 && GRB_VERSION_MINOR>=9
+#if (GRB_VERSION_MAJOR==13 && GRB_VERSION_MINOR>=9) || GRB_VERSION_MAJOR>=14
 #define __GRB_NL_OBJCON__
   static int AcceptsNLObj() { return 1; }
   void SetNLObjective(int, const NLObjective&);
