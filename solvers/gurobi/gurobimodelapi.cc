@@ -349,22 +349,52 @@ void GurobiModelAPI::AddConstraint(const NLConstraint& nl) {
 #endif  // __GRB_NL_OBJCON__
 
 void GurobiModelAPI::AddConstraint(const NLAssignEQ& nla) {
+#ifdef __GRB_NL_OBJCON__
+  auto frm = StartFormula(GRB_OPCODE_MINUS);
+  AppendArgument(frm, MakeVarExpr( GetVariable(nla) ));
+  frm.Append( GetFormula(GetExpression(nla)) );
+  GRB_CALL(GRBaddnlconstr(
+      model(), frm.size(),
+      (int*)frm.opcodes(), (double*)frm.data(), (int*)frm.parents(),
+      GRB_EQUAL, 0.0, GetName(nla)));
+#else
   const auto& frm = GetFormula(GetExpression(nla));
   GRB_CALL( GRBaddgenconstrNL(
       model(), GetName(nla), GetVariable(nla), frm.size(),
       frm.opcodes(), frm.data(), frm.parents()) );
+#endif
 }
 void GurobiModelAPI::AddConstraint(const NLAssignLE& nla) {
+#ifdef __GRB_NL_OBJCON__
+  auto frm = StartFormula(GRB_OPCODE_MINUS);
+  AppendArgument(frm, MakeVarExpr( GetVariable(nla) ));
+  frm.Append( GetFormula(GetExpression(nla)) );
+  GRB_CALL(GRBaddnlconstr(
+      model(), frm.size(),
+      (int*)frm.opcodes(), (double*)frm.data(), (int*)frm.parents(),
+      GRB_LESS_EQUAL, 0.0, GetName(nla)));
+#else
   const auto& frm = GetFormula(GetExpression(nla));
   GRB_CALL( GRBaddgenconstrNL(
       model(), GetName(nla), GetVariable(nla), frm.size(),
       frm.opcodes(), frm.data(), frm.parents()) );
+#endif
 }
 void GurobiModelAPI::AddConstraint(const NLAssignGE& nla) {
+#ifdef __GRB_NL_OBJCON__
+  auto frm = StartFormula(GRB_OPCODE_MINUS);
+  AppendArgument(frm, MakeVarExpr( GetVariable(nla) ));
+  frm.Append( GetFormula(GetExpression(nla)) );
+  GRB_CALL(GRBaddnlconstr(
+      model(), frm.size(),
+      (int*)frm.opcodes(), (double*)frm.data(), (int*)frm.parents(),
+      GRB_GREATER_EQUAL, 0.0, GetName(nla)));
+#else
   const auto& frm = GetFormula(GetExpression(nla));
   GRB_CALL( GRBaddgenconstrNL(
       model(), GetName(nla), GetVariable(nla), frm.size(),
       frm.opcodes(), frm.data(), frm.parents()) );
+#endif
 }
 
 GRB_Expr GurobiModelAPI::AddExpression(const NLAffineExpression& nla) {
