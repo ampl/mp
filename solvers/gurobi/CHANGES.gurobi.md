@@ -2,6 +2,11 @@ Summary of recent updates to gurobi for AMPL
 ============================================
 
 
+## 20260804
+- Output suffixes .objpass[_result|mipgap|runtime|...]
+  for per-objective hierarchical optimization results.
+
+
 ## 20260624
 - Changes in MP, in particular:
   - Option *cvt:pow2_as_qp* prefers quadratization

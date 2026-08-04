@@ -189,6 +189,11 @@ public:
       override
   { return GetFlatCvt().PrepareNextSolveIteration(get_stt, get_sol); }
 
+  /// Is/was MultiObj Emulator used?
+  bool IsMOEmulationOn() const override
+  { return GetFlatCvt().IsMOActive(); }
+
+
   /// Objective weights
   ArrayRef<double> GetObjWeightsAdapted() override
   { return GetFlatCvt().GetObjWeightsAdapted(); }

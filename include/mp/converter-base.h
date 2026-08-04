@@ -38,6 +38,9 @@ public:
       std::function<sol::Status(void)> get_stt, std::function<Solution(void)> get_sol)
       = 0;
 
+  /// Is/was MultiObj Emulator used?
+  virtual bool IsMOEmulationOn() const = 0;
+
   /// Objective weights
   virtual ArrayRef<double> GetObjWeightsAdapted() = 0;
 

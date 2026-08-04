@@ -5,6 +5,8 @@ from Exporter import CSVTestExporter
 from Solver import Solver, LindoSolver, GurobiSolver, OcteractSolver, CPLEXSolver
 from pathlib import Path
 from sys import platform
+from amplpy import modules
+import shutil
 from AMPLRunner import AMPLRunner
 from Model import ModelTags
 
@@ -21,6 +23,20 @@ def writeModels(ampl, directory,modelList=True, justNL=False, recursive=False,pr
     for m in toGenerate:
         amplRunner.writeModel(m, writeMPS=writeMPS)
 
+def find_solver(solver_name: str):
+    # 2. Try locating it through amplpy modules first
+    # (this updates the environment path)
+    try:
+        modules.find(solver_name)
+    except Exception:
+        pass  # If it fails, amplpy will fall back to searching the system path
+
+    # 3. Check where the operating system will actually resolve the binary execution
+    actual_path = shutil.which(solver_name)
+
+    if actual_path:
+        return actual_path
+    return solver_name + ": not found"
 
 def runModels(directory, ampl: str, solvers: list,
               solverOptions=None,
@@ -75,7 +91,8 @@ def runModels(directory, ampl: str, solvers: list,
     if not modelList:
         print("No models or case descriptions found.")
     else:
-        msg = "Running {} test cases with solvers {}".format(len(modelList), solvernames)
+        msg = "Running {} test cases with solvers {}".format(
+            len(modelList), [find_solver(s) for s in solvernames])
         if found_models is not None:
             end = "s" if len(found_models)>1 else ""
             msg +=f"\nContinuing previous run, discarding {len(found_models)} model{end}."

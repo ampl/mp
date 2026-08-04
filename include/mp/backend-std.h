@@ -69,6 +69,25 @@ DEFAULT_STD_FEATURES_TO( false )
 
 namespace mp {
 
+/// Multiobjective pass information.
+/// Every array should be either empty,
+/// or have NumObj entries.
+struct MultiobjPassStats {
+  std::vector<int>
+      objpass_,                   // 1-base indexing
+      objpass_result_;
+  std::vector<double>
+      objpass_mipgap_,
+      objpass_objval_,
+      objpass_objbound_,
+      objpass_runtime_,
+      objpass_work_,
+      objpass_itercount_,
+      objpass_nodecount_,
+      objpass_opennodecount_;
+};
+
+
 /// StdBackend: the standard solver API wrapper
 ///
 /// The standard wrapper provides common functionality:
@@ -132,12 +151,15 @@ protected:
   /// Placeholder: set objective rel tol
   /// Presolve the values if needed
   virtual void ObjRelTol(ArrayRef<double>) { }
-  /// Set multi-objective options
+  /// Set multi-objective options natively
   virtual void SetMultiobjOptions(BasicObjOptionSetter* pS) {
     if (pS->GetPassesWithOptions().size())
       AddWarning("MultiobjOptionsNotImplemented",
                  "See obj:multi:options");
   }
+  /// Fill native multi-objective pass information
+  virtual MultiobjPassStats GetMultiobjPassStats()
+  { return {}; }
 
   /**
    * MULTISOL support.
@@ -501,18 +523,49 @@ protected:
 
   /// Report standard suffixes
   virtual void ReportStandardSuffixes() {
+    if (multiobj()) {
+      ReportMultiobjPasses();
+    }
     if (IsProblemSolved() && exportKappa()) { 
     	ReportKappa(); 
     }
     if (IsProblemSolved() && exportKappaExact()) { 
-    	ReportKappaExact(); 
-	}
+      ReportKappaExact();
+    }
     if (timing()) {
       	ReportTimes();
     }
     if (solution_stats()) {
         ReportSolutionStats();
     }
+  }
+
+  /// Report multiobj passes
+  virtual void ReportMultiobjPasses() {
+    assert(multiobj());
+    MultiobjPassStats stats;
+    if (GetMM().IsMOEmulationOn()) {
+      // stats = ...
+      AddWarning("MOEmulatorPassStats",
+                 "Multiobjective Emulator: pass statistics not implemented");
+    } else {
+      stats = GetMultiobjPassStats();
+    }
+    auto report = [this](const char* name, const auto& vals) {
+      // vals.resize(GetMM().GetSuffixSize(suf::OBJ));
+      if (vals.size())
+        this->ReportSuffix({name, suf::OBJ}, vals);
+    };
+    report("objpass", stats.objpass_);                   // 1-base indexing
+    report("objpass_result", stats.objpass_result_);
+    report("objpass_itercount", stats.objpass_itercount_);
+    report("objpass_nodecount", stats.objpass_nodecount_);
+    report("objpass_opennodecount", stats.objpass_opennodecount_);
+    report("objpass_runtime", stats.objpass_runtime_);
+    report("objpass_work", stats.objpass_work_);
+    report("objpass_mipgap", stats.objpass_mipgap_);
+    report("objpass_objval", stats.objpass_objval_);
+    report("objpass_objbound", stats.objpass_objbound_);
   }
 
   /// Report Kappa

@@ -67,6 +67,7 @@ public:
   void ObjAbsTol(ArrayRef<double>) override;
   void ObjRelTol(ArrayRef<double>) override;
   void SetMultiobjOptions(BasicObjOptionSetter* ) override;
+  MultiobjPassStats GetMultiobjPassStats() override;
   /**
    * MULTISOL support.
    * No API, use ReportIntermediateSolution()
@@ -232,6 +233,8 @@ protected:
   void ReportGurobiResults();
 
   std::pair<int, std::string> GetSolveResult() override;
+  std::pair<int, std::string>
+  GetSolveResult(int optstat, int nsol);
   void AddGurobiMessage();
 
   void ReportGurobiPool();

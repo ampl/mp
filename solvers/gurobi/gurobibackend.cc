@@ -603,6 +603,33 @@ void GurobiBackend::SetMultiobjOptions(BasicObjOptionSetter* pSetter) {
   set_env_current(nullptr);
 }
 
+MultiobjPassStats GurobiBackend::GetMultiobjPassStats() {
+  MultiobjPassStats stats;
+  auto nobj = NumObjs();
+  auto push = [nobj](auto& vec, auto v) {
+    vec.reserve(nobj);
+    vec.push_back(v);
+  };
+  bool f {};
+  for (int i=0; i<nobj; ++i) {
+    GrbSetIntParam(GRB_INT_PAR_OBJNUMBER, i);
+
+    push(stats.objpass_, GrbGetIntAttr(GRB_INT_ATTR_OBJNPASS, &f)+1);  // +1
+    int solve_result =
+        GetSolveResult(GrbGetIntAttr(GRB_INT_ATTR_OBJPASSNSTATUS, &f), 1).first;
+    push(stats.objpass_result_, solve_result);
+    push(stats.objpass_mipgap_, GrbGetDblAttr(GRB_DBL_ATTR_OBJPASSNMIPGAP, &f));
+    push(stats.objpass_objval_, GrbGetDblAttr(GRB_DBL_ATTR_OBJPASSNOBJVAL, &f));
+    push(stats.objpass_objbound_, GrbGetDblAttr(GRB_DBL_ATTR_OBJPASSNOBJBOUND, &f));
+    push(stats.objpass_runtime_, GrbGetDblAttr(GRB_DBL_ATTR_OBJPASSNRUNTIME, &f));
+    push(stats.objpass_work_, GrbGetDblAttr(GRB_DBL_ATTR_OBJPASSNWORK, &f));
+    push(stats.objpass_itercount_, GrbGetDblAttr(GRB_DBL_ATTR_OBJPASSNITERCOUNT, &f));
+    push(stats.objpass_nodecount_, GrbGetDblAttr(GRB_DBL_ATTR_OBJPASSNNODECOUNT, &f));
+    push(stats.objpass_opennodecount_, GrbGetDblAttr(GRB_DBL_ATTR_OBJPASSNOPENNODECOUNT, &f));
+  }
+  return stats;
+}
+
 ArrayRef<double> GurobiBackend::Ray() {
   auto uray_pres =
     GrbGetDblAttrArray(GRB_DBL_ATTR_UNBDRAY, NumVars());
@@ -1119,6 +1146,7 @@ void GurobiBackend::ReportGurobiResults() {
   if (need_report_work())
     ReportGurobiWork();
 }
+
 void GurobiBackend::ReportGurobiWork() {
   double value[]{ GrbGetDblAttr(GRB_DBL_ATTR_WORK) };
   ReportSuffix(sufWork, value);
@@ -1316,6 +1344,11 @@ std::pair<int, std::string> GurobiBackend::GetSolveResult() {
   GRB_CALL( GRBgetintattr(model(), GRB_INT_ATTR_STATUS, &optimstatus) );
   int solcount;
   GRB_CALL( GRBgetintattr(model(), GRB_INT_ATTR_SOLCOUNT, &solcount) );
+  return GetSolveResult(optimstatus, solcount);
+}
+
+std::pair<int, std::string>
+GurobiBackend::GetSolveResult(int optimstatus, int solcount) {
   int has_sol = int(0<solcount);
   // See guidelines from sol::Status.
   // TODO Keep result code registry in AddOptons() up2date.

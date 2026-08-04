@@ -90,6 +90,9 @@ public:
   virtual bool PrepareSolveIteration(
       std::function<sol::Status(void)> get_stt, std::function<Solution(void)> get_sol) = 0;
 
+  /// Is/was MultiObj Emulator used?
+  virtual bool IsMOEmulationOn() const = 0;
+
   /// Objective weights in the 'legacy' format of the obj:multi:weight option
   virtual ArrayRef<double> GetObjWeightsAdapted() = 0;
 

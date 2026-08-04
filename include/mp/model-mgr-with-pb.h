@@ -350,6 +350,10 @@ protected:
       override
   { return GetCvt().PrepareSolveIteration(get_stt, get_sol); }
 
+  /// Is/was MultiObj Emulator used?
+  bool IsMOEmulationOn() const override
+  { return GetCvt().IsMOEmulationOn(); }
+
   /// Objective weights
   ArrayRef<double> GetObjWeightsAdapted() override
   { return GetCvt().GetObjWeightsAdapted(); }
