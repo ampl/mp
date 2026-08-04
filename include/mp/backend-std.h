@@ -75,7 +75,7 @@ namespace mp {
 struct MultiobjPassStats {
   std::vector<int>
       objpass_,                   // 1-base indexing
-      objpass_result_;
+      objpass_result_;            // Should be sol::UNKNOWN for unprocessed
   std::vector<double>
       objpass_mipgap_,
       objpass_objval_,

@@ -615,8 +615,10 @@ MultiobjPassStats GurobiBackend::GetMultiobjPassStats() {
     GrbSetIntParam(GRB_INT_PAR_OBJNUMBER, i);
 
     push(stats.objpass_, GrbGetIntAttr(GRB_INT_ATTR_OBJNPASS, &f)+1);  // +1
-    int solve_result =
-        GetSolveResult(GrbGetIntAttr(GRB_INT_ATTR_OBJPASSNSTATUS, &f), 1).first;
+    auto grbstatus = GrbGetIntAttr(GRB_INT_ATTR_OBJPASSNSTATUS, &f);
+    int solve_result = f ?
+                           GetSolveResult(grbstatus, 1).first :
+                           sol::UNKNOWN;
     push(stats.objpass_result_, solve_result);
     push(stats.objpass_mipgap_, GrbGetDblAttr(GRB_DBL_ATTR_OBJPASSNMIPGAP, &f));
     push(stats.objpass_objval_, GrbGetDblAttr(GRB_DBL_ATTR_OBJPASSNOBJVAL, &f));
