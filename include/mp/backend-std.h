@@ -160,13 +160,6 @@ protected:
   /// Fill native multi-objective pass information
   virtual MultiobjPassStats GetMultiobjPassStats()
   { return {}; }
-  /// Called once, right after SetMultiobjOptions(), for any
-  /// MIP-specific per-multiobjective-pass option capture (e.g. plateau
-  /// options, which are pure MP state with no native equivalent and so
-  /// can't ride along on SetOptionsForMultiobjPass()'s env-scoped writes
-  /// the way real native solver parameters do). No-op by default;
-  /// MIPBackend overrides it.
-  virtual void SetMultiobjPlateauOptions(BasicObjOptionSetter*) { }
 
   /**
    * MULTISOL support.
@@ -367,7 +360,6 @@ protected:
       if (auto suf = ReadSuffix(suf_objreltol))
         ObjRelTol( suf );
       SetMultiobjOptions(GetObjOptionSetter());
-      SetMultiobjPlateauOptions(GetObjOptionSetter());
     }
     if (feasrelax())
       InputFeasrelaxData();
