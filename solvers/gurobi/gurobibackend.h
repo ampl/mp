@@ -152,6 +152,15 @@ public:
   * Impl should check need_fixed_MIP()
   **/
   ALLOW_STD_FEATURE( FIX_MODEL, true )
+  /**
+  * Stop the MIP search on a plateau (mip:plateau* options).
+  * PLATEAU_STOP_BOUND is required too: without it, core never
+  * registers mip:plateauabsgaptol/mip:plateaurelgaptol as options, even
+  * though DoPlateauCallback() below always computes and reports gap.
+  **/
+  ALLOW_STD_FEATURE( PLATEAU_STOP, true )
+  ALLOW_STD_FEATURE( PLATEAU_STOP_BOUND, true )
+  void SetupPlateauCallbacks() override;
 
 
   ///////////////////// Model attributes /////////////////////
@@ -224,6 +233,17 @@ protected:
 
   void PrepareGurobiSolve();
   void SetPartitionValues();
+
+  /// Native callback implementing PLATEAU_STOP / PLATEAU_STOP_BOUND:
+  /// forwards new incumbents (GRB_CB_MIPSOL) to ReportIncumbentForPlateau(),
+  /// and derives absgap/relgap from GRB_CB_MIPSOL_OBJ/OBJBND (at incumbent
+  /// time) and GRB_CB_MIP_OBJBST/OBJBND (periodically) to report via
+  /// ReportGapForPlateau(); GRB_CB_POLLING (Gurobi's generic, always-on
+  /// polling context) calls CheckTimeoutForPlateau() so the plateau clock
+  /// is still checked even between incumbents/gap ticks. Terminates the
+  /// solve when any of these signals a plateau.
+  static int __stdcall DoPlateauCallback(
+      GRBmodel* model, void* cbdata, int where, void* usrdata);
 
   void DoGurobiTune();
 

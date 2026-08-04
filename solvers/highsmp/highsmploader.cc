@@ -104,6 +104,17 @@ bool HighsLoader::load(const char* dllPath) {
   LoadFunc(Highs_writeSolutionPretty, "Highs_writeSolutionPretty");
 
 
+  auto LoadOptionalFunc = [&](auto& funcPtr, const char* name) {
+#ifdef _WIN32
+    funcPtr = reinterpret_cast<std::remove_reference_t<decltype(funcPtr)>>(GetProcAddress(hDLL, name));
+#else
+    funcPtr = reinterpret_cast<std::remove_reference_t<decltype(funcPtr)>>(dlsym(hDLL, name));
+#endif
+    };
+  LoadOptionalFunc(Highs_setCallback, "Highs_setCallback");
+  LoadOptionalFunc(Highs_startCallback, "Highs_startCallback");
+  LoadOptionalFunc(Highs_stopCallback, "Highs_stopCallback");
+
   // Verify all pointers
   if (!(Highs_create && Highs_destroy &&
     Highs_run && Highs_getSolution && Highs_getObjectiveValue &&
@@ -183,6 +194,10 @@ void HighsLoader::unload() {
   Highs_passColName = nullptr;
   Highs_passHessian = nullptr;
   Highs_addRows = nullptr;
+
+  Highs_setCallback = nullptr;
+  Highs_startCallback = nullptr;
+  Highs_stopCallback = nullptr;
 }
 
 } // namespace mp

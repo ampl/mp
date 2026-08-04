@@ -98,6 +98,13 @@ public:
     ArrayRef<double> Ray() override;
   ArrayRef<double> DRay() override;
 
+  /**
+  * Stop the MIP search on a plateau (mip:plateau* options)
+  **/
+  ALLOW_STD_FEATURE( PLATEAU_STOP, true )
+  ALLOW_STD_FEATURE(PLATEAU_STOP_BOUND, true)
+  void SetupPlateauCallbacks() override;
+
   /////////////////////////// Model attributes /////////////////////////
   bool IsQCP() const override;
   
@@ -127,6 +134,18 @@ protected:
   ArrayRef<double> DualSolution_LP();
 
   void WindupHIGHSSolve();
+
+  /// Native callback implementing PLATEAU_STOP / PLATEAU_STOP_BOUND:
+  /// forwards new incumbents (kHighsCallbackMipImprovingSolution) to
+  /// ReportIncumbentForPlateau(), and gap updates (from
+  /// kHighsCallbackMipInterrupt and kHighsCallbackMipSolution --
+  /// absgap/relgap derived from mip_primal_bound/mip_dual_bound/mip_gap)
+  /// to ReportGapForPlateau(), requesting termination via
+  /// data_in->user_interrupt when either signals a plateau.
+  static void DoPlateauCallback(
+      int callback_type, const char* message,
+      const HighsCallbackDataOut* data_out, HighsCallbackDataIn* data_in,
+      void* user_callback_data);
 
   void ReportResults() override;
   void ReportHIGHSResults();

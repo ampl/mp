@@ -1,6 +1,7 @@
 #include <vector>
 #include <climits>
 #include <cfloat>
+#include <cmath>
 #include <algorithm>
 
 #include "mp/env.h"
@@ -184,6 +185,51 @@ void HighsBackend::DoWriteSolution(const std::string &file) {
 void HighsBackend::SetInterrupter(mp::Interrupter *inter) {
   inter->SetHandler(InterruptHighs, lp());
 }
+
+
+void HighsBackend::SetupPlateauCallbacks() {
+  if (!loader().Highs_setCallback || !loader().Highs_startCallback)
+    throw std::runtime_error(
+        "This HiGHS build does not provide the callback API "
+        "(Highs_setCallback); mip:plateautime is not available.");
+  HIGHS_CCALL( loader().Highs_setCallback(
+      lp(), &HighsBackend::DoPlateauCallback, this) );
+  HIGHS_CCALL( loader().Highs_startCallback(
+      lp(), kHighsCallbackMipImprovingSolution) );
+    HIGHS_CCALL( loader().Highs_startCallback(
+        lp(), kHighsCallbackMipInterrupt) );
+    HIGHS_CCALL(loader().Highs_startCallback(
+        lp(), kHighsCallbackMipSolution));
+    }
+
+void HighsBackend::DoPlateauCallback(
+    int callback_type, const char* /*message*/,
+    const HighsCallbackDataOut* data_out, HighsCallbackDataIn* data_in,
+    void* user_callback_data) {
+  auto* backend = static_cast<HighsBackend*>(user_callback_data);
+
+  // Check that we're in a correct callback. Probably non necessary.
+  if ((callback_type == kHighsCallbackMipImprovingSolution) ||
+      (callback_type == kHighsCallbackMipInterrupt) ||
+      (callback_type == kHighsCallbackMipSolution))
+  {
+      double relgap = data_out->mip_gap;
+      double absgap = std::fabs(data_out->mip_primal_bound - data_out->mip_dual_bound);
+      if (callback_type == kHighsCallbackMipImprovingSolution) {
+          // If new solution is reported, send it to the plateau monitor
+          if (backend->ReportIncumbentForPlateau(data_out->objective_function_value))
+          {
+              data_in->user_interrupt = 1;
+              return;
+          }
+      }
+	  // Now check if we should stop due to plateau due to mip gap changes
+      // Eventual solution improvement is already handled
+        if (backend->ReportGapForPlateau(absgap, relgap))
+          data_in->user_interrupt = 1;
+  } 
+}
+
 
 void HighsBackend::Solve() {
   int status = loader().Highs_run(lp());

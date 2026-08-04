@@ -311,6 +311,33 @@ protected:
     SetMultiObjectiveOptions(iPass);
   }
 
+  /// Read-only lookup of pass iPass's suffix-provided value for optname,
+  /// without applying it. See BasicObjOptionSetter for the rationale.
+  bool GetPassOptionValueDbl(
+      int iPass, const char* optname, double& val) const override {
+    auto itPass = pass_opt_maps_.find(iPass);
+    if (pass_opt_maps_.end() == itPass)
+      return false;
+    auto itOpt = itPass->second.find(optname);
+    if (itPass->second.end() == itOpt || !itOpt->second.IsDouble())
+      return false;
+    val = itOpt->second.GetDouble();
+    return true;
+  }
+
+  /// Same as GetPassOptionValueDbl(), for int-valued options.
+  bool GetPassOptionValueInt(
+      int iPass, const char* optname, int& val) const override {
+    auto itPass = pass_opt_maps_.find(iPass);
+    if (pass_opt_maps_.end() == itPass)
+      return false;
+    auto itOpt = itPass->second.find(optname);
+    if (itPass->second.end() == itOpt || !itOpt->second.IsInt())
+      return false;
+    val = itOpt->second.GetInt();
+    return true;
+  }
+
 
   //////////////////////////////////////////////////////////////////////
   void SetupMultiobjEmulation() {
