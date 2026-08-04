@@ -77,6 +77,14 @@ controlling solver behavior and information flow.
   controls multi-objective solving, including hierarchical
   and blended objectives, as well as objective-specific options.
 
+* :ref:`plateauStop` (options ``mip:plateautime, mip:plateauabstol,
+  mip:plateaureltol, mip:plateauwarmup, mip:plateaulog``, plus
+  ``mip:plateauwarmuprelgap, mip:plateauwarmupabsgap,
+  mip:plateauabsgaptol, mip:plateaurelgaptol`` for solvers that also
+  support :ref:`plateauStopBound`) -
+  stop a MIP search early once the incumbent (and, optionally, the
+  MIP gap) has stopped improving enough for a while.
+
 
 .. _solver-options:
 
@@ -343,6 +351,10 @@ or visit `AMPL Development solver page <https://dev.ampl.com/solvers/index.html>
 | :ref:`returnBestBound`       | |y|   | |y|    | |y|     | |y|    | |y|     | |n|  | |y|  | |y|    | |y|   |
 +------------------------------+-------+--------+---------+--------+---------+------+------+--------+-------+
 | :ref:`varPriorities`         | |n|   | |n|    | |y|     | |n|    | |n|     | |n|  | |n|  | |n|    | |n|   |
++------------------------------+-------+--------+---------+--------+---------+------+------+--------+-------+
+| :ref:`plateauStop`           | |n|   | |n|    | |y|     | |n|    | |n|     | |n|  | |n|  | |y|    | |n|   |
++------------------------------+-------+--------+---------+--------+---------+------+------+--------+-------+
+| :ref:`plateauStopBound`      | |n|   | |n|    | |y|     | |n|    | |n|     | |n|  | |n|  | |y|    | |n|   |
 +------------------------------+-------+--------+---------+--------+---------+------+------+--------+-------+
 
 
@@ -1443,6 +1455,166 @@ This option controls if to generate and solve the fixed model after solving the 
             option <solver>_options "mip:basis=1";
 
             # TODO SHOW OUTPUT
+
+
+.. _plateauStop:
+
+Plateau stop (stall-based MIP termination)
+-------------------------------------------
+
+For long-running MIP searches it is often useful to give up once the
+solver is spending a lot of time without making meaningful progress,
+rather than waiting for a hard time or gap limit. This feature stops
+the MIP search once the incumbent objective has not improved by at
+least ``mip:plateauabstol`` (absolute) or ``mip:plateaureltol``
+(relative to the current incumbent) for ``mip:plateautime`` seconds.
+
+The check only starts after an initial grace period of
+``mip:plateauwarmup`` seconds after the solve begins, so that the
+absence of a first (or an early) incumbent does not immediately count
+as a plateau. (Solvers that also support :ref:`plateauStopBound` offer
+a second, gap-based way to end this grace period early -- see below.)
+
+For the algorithm behind this option see :ref:`plateauStopTheory`.
+
+.. list-table::
+   :header-rows: 0
+
+   * - **Option**
+     - ``mip:plateautime``, ``mip:plateauabstol``, ``mip:plateaureltol``,
+       ``mip:plateauwarmup``, ``mip:plateaulog``
+   * - **Applicability**
+     - MIP models, for solvers that support it (see :ref:`support-by-solvers`)
+   * - **Input**
+     - None
+   * - **Output**
+     - None; the solve terminates early, similarly to a time or gap limit.
+       If ``mip:plateaulog=1``, a status line is also printed to stdout
+       on every native callback report.
+   * - **Values**
+     - * ``mip:plateautime`` - seconds without sufficient improvement
+         before stopping; **0** (default) disables the feature
+       * ``mip:plateauabstol`` - minimum absolute objective improvement
+         counted as progress; default **0** (any improvement, however
+         small, counts)
+       * ``mip:plateaureltol`` - minimum relative objective improvement
+         (fraction of the current incumbent) counted as progress;
+         default **0**
+       * ``mip:plateauwarmup`` - grace period in seconds before the
+         plateau check starts; default **0**
+       * ``mip:plateaulog`` - **0** (default, silent) or **1**: print
+         the current plateau status (value, baseline, time since last
+         progress, whether the report counted as progress) on every
+         callback report used by ``mip:plateautime``
+   * - **Example**
+     - .. admonition:: mip:plateauabstol and mip:plateaureltol combine with OR, not AND
+
+          Progress is counted if *either* tolerance is cleared
+          (``absDelta > abstol || relDelta > reltol``). Since
+          ``mip:plateauabstol`` defaults to **0**, leaving it unset while
+          only setting ``mip:plateaureltol`` does **not** enforce the
+          relative threshold: any nonzero absolute change already
+          clears ``absDelta > 0``, so the relative tolerance never
+          becomes the binding condition. To make a relative threshold
+          actually bind, also raise ``mip:plateauabstol`` above the
+          absolute-improvement floor you're willing to ignore.
+
+       ::
+
+          option <solver>_options "mip:plateautime=30 mip:plateauabstol=1e-6 mip:plateaureltol=0.001";
+          solve;
+
+       Stops the search if the incumbent has not improved by at least
+       0.1% (or, failing that, by at least ``1e-6`` in absolute terms)
+       for 30 seconds -- here ``mip:plateauabstol`` is set small enough
+       that it only matters near-zero objectives, so
+       ``mip:plateaureltol`` is effectively the binding criterion for
+       any incumbent of realistic magnitude.
+
+       ::
+
+          option <solver>_options "mip:plateautime=30 mip:plateaulog=1";
+          solve;
+
+       With both tolerances left at their default of 0 (any improvement
+       at all resets the timer), prints a line like the following on
+       every reported incumbent::
+
+          MP Plateau [incumbent]: current=145.2 previous=150 progress=no elapsed=8.1s (limit=30.0s)
+
+
+.. _plateauStopBound:
+
+Plateau stop including MIP gap progress
+-------------------------------------------
+
+By default, :ref:`plateauStop` only considers new incumbent solutions
+as progress. Some solvers can also report the current MIP gap from the
+same (or an additional) native callback; for those,
+``mip:plateauabsgaptol`` and ``mip:plateaurelgaptol`` each
+independently add a *gap* progress channel: if set to a value greater
+than 0, the plateau timer also resets whenever the absolute /
+relative MIP gap shrinks by at least that amount, even while the
+incumbent stays fixed. Unlike ``mip:plateauabstol``/``mip:plateaureltol``
+(whose default of **0** means "any change counts"), both gap options
+are opt-in: **0** (the default) means that channel isn't tracked at
+all. Set one, the other, or both; whichever channels are active
+(incumbent, absolute gap, relative gap) contribute to the same shared
+timer via a logical OR -- any one of them making sufficient progress
+resets it, not a requirement that all of them advance together.
+
+These solvers also get a second, gap-based way to end the
+:ref:`plateauStop` warmup grace period early, via
+``mip:plateauwarmuprelgap``/``mip:plateauwarmupabsgap``: the grace
+period ends as soon as *either* the time-based ``mip:plateauwarmup``
+elapses *or* the reported gap first reaches one of these two
+thresholds, whichever comes first. Solvers that only support
+:ref:`plateauStop` (not this feature) never see a live gap value at
+all, so these two options only exist, and only ever matter, alongside
+the two gap-progress options above.
+
+All four of these options, and the feature that makes them available
+at all, are only valid for solvers that support it -- see
+:ref:`support-by-solvers`.
+
+.. list-table::
+   :header-rows: 0
+
+   * - **Option**
+     - ``mip:plateauwarmuprelgap``, ``mip:plateauwarmupabsgap``,
+       ``mip:plateauabsgaptol``, ``mip:plateaurelgaptol``
+   * - **Applicability**
+     - MIP models, for solvers that support it (see :ref:`support-by-solvers`)
+   * - **Input**
+     - None
+   * - **Output**
+     - None
+   * - **Values**
+     - * ``mip:plateauwarmuprelgap`` / ``mip:plateauwarmupabsgap`` -
+         relative / absolute MIP gap at which the :ref:`plateauStop`
+         warmup grace period ends early; default **0** (disabled --
+         only the time-based ``mip:plateauwarmup`` applies)
+       * ``mip:plateauabsgaptol`` - **0** (default, disabled) or a value
+         greater than 0: also treat an absolute-gap decrease of at
+         least this amount (in raw objective units, matching
+         ``mip:bestbound``'s units) as progress
+       * ``mip:plateaurelgaptol`` - **0** (default, disabled) or a value
+         greater than 0: also treat a relative-gap decrease of at
+         least this amount as progress
+   * - **Example**
+     - ::
+
+          option <solver>_options "mip:plateautime=30 mip:plateauabstol=15 mip:plateaurelgaptol=0.01";
+          solve;
+
+       Stops the search if the incumbent has not improved by at least
+       15 (in raw objective units) *and* the relative gap has not
+       narrowed by more than 0.01 (one percentage point) for 30
+       seconds -- here ``mip:plateauabstol=15`` is set explicitly (its
+       default of 0 would otherwise make any incumbent change at all
+       count as progress, per the OR-not-AND note above); the
+       incumbent and the relative-gap channels are both live, and
+       either can independently reset the timer.
 
 
 * Round

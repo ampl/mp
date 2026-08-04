@@ -91,7 +91,6 @@ namespace mp {
   // I/O
   typedef int    (*Highs_writeModel_Func)(void*, const char*);
   typedef int    (*Highs_writeSolutionPretty_Func)(void*, const char*);
-)
   typedef int    (*Highs_setCallback_Func)(void*, HighsCCallbackType, void*);
   typedef int    (*Highs_startCallback_Func)(void*, const HighsInt);
   typedef int    (*Highs_stopCallback_Func)(void*, const HighsInt);

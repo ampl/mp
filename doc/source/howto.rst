@@ -561,6 +561,102 @@ do the following:
    correspond to that LP solution.
 
 
+Plateau stop (:ref:`plateauStop`, :ref:`plateauStopBound`)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+All the timing/tolerance bookkeeping for this feature lives in
+`MIPBackend` already; a driver only needs to wire its native
+callback(s) to it, in a single overridden method.
+
+1. In your `Backend` class, declare:
+
+   .. code-block:: c++
+
+      ALLOW_STD_FEATURE( PLATEAU_STOP, true )
+
+2. Override `SetupPlateauCallbacks()` to register whatever native
+   callback(s) you need (this is called once, only if
+   ``mip:plateautime`` is set, right where the interrupter is set up):
+
+   .. code-block:: c++
+
+      void GurobiBackend::SetupPlateauCallbacks() {
+        GRB_CALL( GRBsetcallbackfunc(
+            model(), &GurobiBackend::DoPlateauCallback, this) );
+      }
+
+   From within the native callback, call `ReportIncumbentForPlateau()`
+   with each new incumbent objective value; if it returns ``true``,
+   terminate the native solve right there (the same call your
+   `SetInterrupter()` implementation already uses for Ctrl-C, e.g.
+   ``GRBterminate``):
+
+   .. code-block:: c++
+
+      int __stdcall GurobiBackend::DoPlateauCallback(
+          GRBmodel* model, void* cbdata, int where, void* usrdata) {
+        auto* backend = static_cast<GurobiBackend*>(usrdata);
+        if (GRB_CB_MIPSOL == where) {
+          double obj = 0.0;
+          if (!GRBcbget(cbdata, where, GRB_CB_MIPSOL_OBJ, &obj)
+              && backend->ReportIncumbentForPlateau(obj))
+            GRBterminate(model);
+        }
+        return 0;
+      }
+
+3. If the solver can also cheaply report the MIP gap from the same
+   (or another) native callback, additionally declare:
+
+   .. code-block:: c++
+
+      ALLOW_STD_FEATURE( PLATEAU_STOP_BOUND, true )
+
+   and, from wherever `SetupPlateauCallbacks()` gives you a
+   gap-bearing callback, call `ReportGapForPlateau(absgap, relgap)`
+   with the current absolute and relative MIP gap.
+
+   Not every solver hands you a ready-made gap value the way HiGHS
+   does (``mip_gap``, relative, populated for free); a driver without
+   that convenience derives both values itself from whatever
+   incumbent/bound values its own callback already provides. Gurobi's
+   ``GRB_CB_MIP`` (periodic, independent of new incumbents) is a
+   worked example:
+
+   .. code-block:: c++
+
+      // Inside GurobiBackend::DoPlateauCallback(), GRB_CB_MIP branch:
+      double bound = 0.0, objbst = 0.0;
+      bool haveBound = !GRBcbget(cbdata, where, GRB_CB_MIP_OBJBND, &bound);
+      if (haveBound && !GRBcbget(cbdata, where, GRB_CB_MIP_OBJBST, &objbst)) {
+        double absgap = std::fabs(objbst - bound);
+        double relgap = absgap / std::max(1e-10, std::fabs(objbst));
+        if (backend->ReportGapForPlateau(absgap, relgap))
+          GRBterminate(model);
+      }
+
+  
+4. If the solver has a native callback context that fires
+   independently of both incumbents and gap updates (e.g. Gurobi's
+   ``GRB_CB_POLLING``, a generic always-on context with no MIP-specific
+   data attached), call `CheckTimeoutForPlateau()` from it instead --
+   it evaluates the same shared stop condition (including the warmup
+   gate) without needing a fresh value to report:
+
+   .. code-block:: c++
+
+      // Inside GurobiBackend::DoPlateauCallback(), GRB_CB_POLLING branch:
+      else if (GRB_CB_POLLING == where) {
+        if (backend->CheckTimeoutForPlateau())
+          GRBterminate(model);
+      }
+
+   This keeps the plateau clock being checked even during long
+   stretches with no new incumbent and no gap channel active, rather
+   than only ever re-evaluating the stop condition as a side effect of
+   `ReportIncumbentForPlateau()`/`ReportGapForPlateau()`.
+
+
 .. _implement-custom-features:
 
 Custom features

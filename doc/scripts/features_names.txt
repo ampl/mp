@@ -15,3 +15,5 @@ LAZY_USER_CUTS,:ref:`lazyConstraints`
 RETURN_MIP_GAP,:ref:`returnMIPgap`
 RETURN_BEST_DUAL_BOUND,:ref:`returnBestBound`
 VAR_PRIORITIES,:ref:`varPriorities`
+PLATEAU_STOP,:ref:`plateauStop`
+PLATEAU_STOP_BOUND,:ref:`plateauStopBound`
