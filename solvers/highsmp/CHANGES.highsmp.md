@@ -2,6 +2,13 @@ Summary of recent updates to HiGHS for AMPL
 ===========================================
 
 
+## 20260806
+- Options *mip:plateau:...* control MIP
+  tailing-off.
+  Can be used in multi-objective solves,
+  see option *obj:multi:options*. 
+
+
 ## 20260624
 - Changes in MP, in particular:
   - Option *cvt:pow2_as_qp* prefers quadratization

@@ -2,9 +2,14 @@ Summary of recent updates to gurobi for AMPL
 ============================================
 
 
-## 20260804
+## 20260806
+- Options *mip:plateau:...* control MIP
+  tailing-off.
+  Can be used in multi-objective solves,
+  see option *obj:multi:options*. 
 - Output suffixes .objpass[_result|mipgap|runtime|...]
-  for per-objective hierarchical optimization results.
+  for per-objective hierarchical optimization results
+  (Gurobi native multi-objective solving only).
 
 
 ## 20260624

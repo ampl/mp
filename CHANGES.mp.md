@@ -2,7 +2,11 @@ Summary of recent updates to the AMPL MP Library
 ================================================
 
 
-## unreleased
+## 20260806
+- Options *mip:plateau:...* control MIP
+  tailing-off in supporting solvers.
+  Can be used in multi-objective solves,
+  see option *obj:multi:options*. 
 - Option *cvt:nlobj* controls whether nonlinear
   objective terms are passed to the objective,
   vs moved to a constraint or piecewise-linearly

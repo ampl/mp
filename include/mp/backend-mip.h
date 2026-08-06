@@ -553,7 +553,7 @@ private:
           {
               timeoutPassed_ = true;
               lastImprovement_ = std::chrono::steady_clock::now();
-              if (log_) fmt::print("    MP Plateau: Warmum gap reached.\n");
+              if (log_) fmt::print("    MP Plateau: Warmup gap reached.\n");
               return true;
           }
           // if condition on gap is not reached, check time
@@ -598,7 +598,7 @@ private:
       void LogStatus(const char* kind, double val, double baseline,
           bool progress, bool stop, 
           double sinceProgress) const {
-          auto now = std::chrono::steady_clock::now();
+          // auto now = std::chrono::steady_clock::now();
           fmt::print(
               "    MP Plateau [{}]: current={:.6g} previous={:.6g} progress={} "
               "elapsed={:.1f}s (limit={:.1f}s){}\n",
@@ -622,7 +622,8 @@ private:
         if (!active_) return false;
 
         // Cannot assume I know the new MIP gap here
-        if (!IsWarmupDone(std::numeric_limits<double>::infinity(), 1))
+        auto kInf = std::numeric_limits<double>::infinity();
+        if (!IsWarmupDone(kInf, kInf))
             return false;
 
         if (!haveIncumbent_) {
@@ -667,9 +668,11 @@ private:
 	  // Any of the two works as a sufficient condition for improvement
       constexpr double kInf = std::numeric_limits<double>::infinity();
       if (absmipgap_tol_ > 0.0)
-          Improved("absmipgap", bestAbsGap_, absgap, absmipgap_tol_, kInf);
+          if (Improved("absmipgap", bestAbsGap_, absgap, absmipgap_tol_, kInf))
+          return true;
       if (relmipgap_tol_ > 0.0)
-          Improved("relmipgap", bestRelGap_, relgap, relmipgap_tol_, kInf);
+          if (Improved("relmipgap", bestRelGap_, relgap, relmipgap_tol_, kInf))
+          return true;
 
       return CheckTimeout();
     }
@@ -1017,29 +1020,29 @@ protected:
                     GetMIPOptions().fixModel_, values_01_noyes_0default_);
 
     if (IMPL_HAS_STD_FEATURE( PLATEAU_STOP )) {
-      AddStoredOption("mip:plateautime plateautime",
+      AddStoredOption("mip:plateau:time mip:plateautime plateautime",
         "Stop the MIP search if the incumbent objective (and, if "
         "mip:plateauabsgaptol/mip:plateaurelgaptol are set, the MIP gap) "
         "has not improved by at least mip:plateauabstol or "
         "mip:plateaureltol for this many seconds. Default 0 (disabled).",
         plateauState_.plateau_time_);
 
-      AddStoredOption("mip:plateauabstol plateauabstol",
+      AddStoredOption("mip:plateau:abstol mip:plateauabstol plateauabstol",
         "Minimum absolute objective improvement to reset the "
         "mip:plateautime timer. Default 0 (any improvement resets the timer).",
         plateauState_.abstol_);
 
-      AddStoredOption("mip:plateaureltol plateaureltol",
+      AddStoredOption("mip:plateau:reltol mip:plateaureltol plateaureltol",
         "Minimum relative objective improvement, as a fraction of the current "
         "value, to reset the mip:plateautime timer. Default 0.",
         plateauState_.reltol_);
 
-      AddStoredOption("mip:plateauwarmup plateauwarmup",
+      AddStoredOption("mip:plateau:warmup mip:plateauwarmup plateauwarmup",
         "Grace period (in seconds) after the solve starts before "
         "mip:plateautime is checked. Default 0.",
         plateauState_.warmup_time_);
 
-      AddStoredOption("mip:plateaulog plateaulog",
+      AddStoredOption("mip:plateau:log mip:plateaulog plateaulog",
           "Whether to print the current plateau status. Default 0 (silent).",
           plateauState_.log_);
     }
@@ -1048,23 +1051,23 @@ protected:
         // Only meaningful for solvers that also report gap: an
         // incumbent-only driver never has a real gap value to offer
         // these checks, so they'd never do anything for it.
-        AddStoredOption("mip:plateauwarmuprelgap plateauwarmuprelgap",
+        AddStoredOption("mip:plateau:warmup:relgap mip:plateauwarmuprelgap plateauwarmuprelgap",
             "Relative MIP gap to be reached before mip:plateautime is "
             "checked. Default 0.",
             plateauState_.warmup_relgap_);
 
-        AddStoredOption("mip:plateauwarmupabsgap plateauwarmupabsgap",
+        AddStoredOption("mip:plateau:warmup:absgap mip:plateauwarmupabsgap plateauwarmupabsgap",
             "Absolute MIP gap to be reached before mip:plateautime is "
             "checked. Default 0.",
             plateauState_.warmup_absgap_);
 
-        AddStoredOption("mip:plateaurelgaptol plateaurelgaptol",
+        AddStoredOption("mip:plateau:relgaptol mip:plateaurelgaptol plateaurelgaptol",
             "If set (>0), also track the reported relative MIP gap as progress "
             "for mip:plateautime: the plateau timer resets whenever the relative "
             "gap shrinks by at least this amount. Default 0 (disabled).",
             plateauState_.relmipgap_tol_);
 
-        AddStoredOption("mip:plateauabsgaptol plateauabsgaptol",
+        AddStoredOption("mip:plateau:absgaptol mip:plateauabsgaptol plateauabsgaptol",
             "If set (>0), also track the reported absolute MIP gap as progress "
             "for mip:plateautime: the plateau timer resets whenever the absolute "
             "gap shrinks by at least this amount. Default 0 (disabled).",
