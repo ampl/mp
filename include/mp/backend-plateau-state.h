@@ -1,7 +1,6 @@
 #ifndef BACKEND_PLATEAU_STATE_H
 #define BACKEND_PLATEAU_STATE_H
 
-#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <limits>
@@ -26,18 +25,23 @@ struct PlateauState {
   double bestRelGap_ = 0.0;
   std::chrono::steady_clock::time_point lastImprovement_;
 
-  // Options
-  double warmup_time_ = 0.0;        // mip:plateauwarmup, seconds
-  double warmup_absgap_ = 0.0;      // mip::plateauwarmupabsgap; 0=disabled
-  double warmup_relgap_ = 0.0;      // mip::plateauwarmuprelgap; 0=disabled
-  double plateau_time_ = 0.0;       // mip:plateautime, seconds; 0 = disabled
-  double abstol_ = 0.0;             // mip:plateauabstol
-  double reltol_ = 0.0;             // mip:plateaureltol
-  double absmipgap_tol_ = 0.0;      // mip:plateauabsgaptol: 0=disabled, >0=also track abs gap
-  double relmipgap_tol_ = 0.0;      // mip:plateaurelgaptol: 0=disabled, >0=also track rel gap
-  int log_ = false;                 // mip:plateaulog: 0=silent, 1=log every callback
+  /// Options
+  struct Options {
+    double warmup_time_ = 0.0;        // mip:plateauwarmup, seconds
+    double warmup_absgap_ = 0.0;      // mip::plateauwarmupabsgap; 0=disabled
+    double warmup_relgap_ = 0.0;      // mip::plateauwarmuprelgap; 0=disabled
+    double plateau_time_ = 0.0;       // mip:plateautime, seconds; 0 = disabled
+    double abstol_ = 0.0;             // mip:plateauabstol
+    double reltol_ = 0.0;             // mip:plateaureltol
+    double absmipgap_tol_ = 0.0;      // mip:plateauabsgaptol: 0=disabled, >0=also track abs gap
+    double relmipgap_tol_ = 0.0;      // mip:plateaurelgaptol: 0=disabled, >0=also track rel gap
+    int log_ = false;                 // mip:plateaulog: 0=silent, 1=log every callback
+  };
 
+  Options opts_dflt_, opts_;
 
+  /// Save current options as default
+  void SaveOptions() { opts_dflt_ = opts_; }
 
   // Per-pass overrides for native multi-objective solving, indexed
   // directly by pass number (as assigned by MOManager -- for Gurobi
@@ -45,32 +49,35 @@ struct PlateauState {
   // Empty (size 0) means no per-pass overrides were captured at all
   // (single-objective solve, or emulated multiobj -- which instead
   // gets a fresh Init() per pass from MIPBackend::SetupPlateau()).
-  std::vector<double> warmupByPass_, warmupAbsGapByPass_, warmupRelGapByPass_,
-      plateauTimeByPass_, abstolByPass_, reltolByPass_,
-      absGaptolByPass_, relGaptolByPass_;
-  std::vector<bool> logByPass_;
+  // std::vector<double> warmupByPass_, warmupAbsGapByPass_, warmupRelGapByPass_,
+  //     plateauTimeByPass_, abstolByPass_, reltolByPass_,
+  //     absGaptolByPass_, relGaptolByPass_;
+  // std::vector<bool> logByPass_;
 
   void Init(double warmup_time, double warmup_absgap, double warmup_relgap,
             double plateauTimeVal,
             double abstol, double reltol, double absmipgap_tol, double relmipgap_tol,
             bool log) {
-    warmup_time_ = warmup_time;
-    warmup_absgap_ = warmup_absgap;
-    warmup_relgap_ = warmup_relgap;
-    plateau_time_ = plateauTimeVal;
-    abstol_ = abstol;
-    reltol_ = reltol;
-    absmipgap_tol_ = absmipgap_tol;
-    relmipgap_tol_ = relmipgap_tol;
-    log_ = log;
     Reset();
+    opts_.warmup_time_ = warmup_time;
+    opts_.warmup_absgap_ = warmup_absgap;
+    opts_.warmup_relgap_ = warmup_relgap;
+    opts_.plateau_time_ = plateauTimeVal;
+    opts_.abstol_ = abstol;
+    opts_.reltol_ = reltol;
+    opts_.absmipgap_tol_ = absmipgap_tol;
+    opts_.relmipgap_tol_ = relmipgap_tol;
+    opts_.log_ = log;
   }
+
+  /// Also resets options
   void Reset() {
     active_ = true;
     timeoutPassed_ = false;
     haveIncumbent_ = haveGap_ = false;
     lastImprovement_ = std::chrono::steady_clock::now();
 
+    opts_ = opts_dflt_;
   }
 
   /// Compares val against the reference point `best` (the value as of
@@ -96,9 +103,11 @@ struct PlateauState {
       lastImprovement_ = std::chrono::steady_clock::now();
     }
     bool stop = CheckTimeout();
-    if (log_) {
+    if (opts_.log_) {
       double sinceProgress =
-          std::chrono::duration<double>(std::chrono::steady_clock::now() - old_last_improvement).count();
+          std::chrono::duration<double>(
+                                 std::chrono::steady_clock::now() -
+                                 old_last_improvement).count();
       LogStatus(kind, val, old_best, improved, stop, sinceProgress);
     }
     return stop;
@@ -108,21 +117,22 @@ struct PlateauState {
 
     if (timeoutPassed_) return true;
 
-    if ((warmup_absgap_ > 0.0 && current_absgap <= warmup_absgap_) ||
-        (warmup_relgap_ > 0.0 && current_relgap <= warmup_relgap_))
+    if ((opts_.warmup_absgap_ > 0.0 && current_absgap <= opts_.warmup_absgap_) ||
+        (opts_.warmup_relgap_ > 0.0 && current_relgap <= opts_.warmup_relgap_))
     {
       timeoutPassed_ = true;
       lastImprovement_ = std::chrono::steady_clock::now();
-      if (log_) fmt::print("    MP Plateau: Warmup gap reached.\n");
+      if (opts_.log_) fmt::print("    MP Plateau: Warmup gap reached.\n");
       return true;
     }
     // if condition on gap is not reached, check time
     auto now = std::chrono::steady_clock::now();
-    if (std::chrono::duration<double>(now - lastImprovement_).count() >= warmup_time_)
+    if (std::chrono::duration<double>(now - lastImprovement_).count() >=
+        opts_.warmup_time_)
     {
       timeoutPassed_ = true;
       lastImprovement_ = std::chrono::steady_clock::now();
-      if (log_) fmt::print("    MP Plateau: Warmup time reached.\n");
+      if (opts_.log_) fmt::print("    MP Plateau: Warmup time reached.\n");
       return true;
 
     }
@@ -143,11 +153,11 @@ struct PlateauState {
       return false;
     auto now = std::chrono::steady_clock::now();
     auto diff = std::chrono::duration<double>(now - lastImprovement_).count();
-    auto stop = diff >= plateau_time_;
+    auto stop = diff >= opts_.plateau_time_;
 
     if (stop) {
       fmt::print("    MP Plateau: stopping after {:.1f}s without sufficient improvement (limit={:.1f}s)\n",
-                 diff, plateau_time_);
+                 diff, opts_.plateau_time_);
     }
     return stop;
   }
@@ -163,21 +173,21 @@ struct PlateauState {
         "    MP Plateau [{}]: current={:.6g} previous={:.6g} progress={} "
         "elapsed={:.1f}s (limit={:.1f}s){}\n",
         kind, val, baseline, progress ? "yes" : "no",
-        sinceProgress, plateau_time_,
+        sinceProgress, opts_.plateau_time_,
         stop ? " -- STOPPING (plateau reached)" : "");
     std::fflush(stdout);
   }
 
-
   void SetCurrentObjective(int nobj) {
     Reset();
-    if (log_)
+    if (opts_.log_)
     {
       fmt::print("   MP Plateau: new pass {}, resetting\n",
                  nobj + 1);
       std::fflush(stdout);
     }
   }
+
   bool ReportIncumbent(double obj) {
     if (!active_) return false;
 
@@ -194,14 +204,12 @@ struct PlateauState {
           std::chrono::duration<double>(now - lastImprovement_).count();
       lastImprovement_ = now  ;
       bool stop = CheckTimeout();
-      if (log_)
+      if (opts_.log_)
         LogStatus("incumbent", obj, bestObj_, true, stop, sinceProgress);
       return stop;
     }
-    return Improved("incumbent", bestObj_, obj, abstol_, reltol_);
+    return Improved("incumbent", bestObj_, obj, opts_.abstol_, opts_.reltol_);
   }
-
-
 
   bool ReportGap(double absgap, double relgap) {
     if (!active_) return false;
@@ -217,7 +225,7 @@ struct PlateauState {
           std::chrono::duration<double>(now - lastImprovement_).count();
       lastImprovement_ = now;
       bool stop = CheckTimeout();
-      if (log_) {
+      if (opts_.log_) {
         LogStatus("absmipgap", absgap, bestAbsGap_, true, stop, sinceProgress);
         LogStatus("relmipgap", relgap, bestRelGap_, true, stop, sinceProgress);
       }
@@ -227,11 +235,11 @@ struct PlateauState {
     // Compare only if abs or gap limit given
     // Any of the two works as a sufficient condition for improvement
     constexpr double kInf = std::numeric_limits<double>::infinity();
-    if (absmipgap_tol_ > 0.0)
-      if (Improved("absmipgap", bestAbsGap_, absgap, absmipgap_tol_, kInf))
+    if (opts_.absmipgap_tol_ > 0.0)
+      if (Improved("absmipgap", bestAbsGap_, absgap, opts_.absmipgap_tol_, kInf))
         return true;
-    if (relmipgap_tol_ > 0.0)
-      if (Improved("relmipgap", bestRelGap_, relgap, relmipgap_tol_, kInf))
+    if (opts_.relmipgap_tol_ > 0.0)
+      if (Improved("relmipgap", bestRelGap_, relgap, opts_.relmipgap_tol_, kInf))
         return true;
 
     return CheckTimeout();

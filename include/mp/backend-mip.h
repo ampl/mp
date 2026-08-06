@@ -236,6 +236,8 @@ public:
   using BaseBackend::ReportDblSuffix;
 
   void InputExtras() override {
+    if (!nPlateauSetups_++)
+      plateauState_.SaveOptions();        // before native MO options
     BaseBackend::InputExtras();
     InputMIPExtras();
   }
@@ -454,6 +456,7 @@ private:
   Options mipStoredOptions_;
 
   PlateauState plateauState_;
+  int nPlateauSetups_ {0};
 
 
 protected:
@@ -504,7 +507,7 @@ protected:
   }
 
   double plateau_time() const
-  { return IMPL_HAS_STD_FEATURE(PLATEAU_STOP) ? plateauState_.plateau_time_ : 0.0; }
+  { return IMPL_HAS_STD_FEATURE(PLATEAU_STOP) ? plateauState_.opts_.plateau_time_ : 0.0; }
 
   /// Whether the plateau stopping logic should be armed for this solve
   bool plateau_active() const
@@ -517,6 +520,8 @@ protected:
     // equal priority
     // auto passes = pSetter->GetPassesWithOptions();
 
+    assert(nPlateauSetups_);
+
     plateauState_.SetCurrentObjective(objn);
     // If nobjs==-1, then we are in a MO-emulator solve, so the options
     // are set while preparing the iteration
@@ -527,32 +532,35 @@ protected:
     int iv;
     int pass = objn;
 
-    static const std::unordered_map<std::string, double PlateauState::*> dblOptions = {
-            {"plateautime", &PlateauState::plateau_time_},
-            {"plateauabstol", &PlateauState::abstol_},
-            {"plateaureltol", &PlateauState::reltol_},
-            {"plateauwarmup", &PlateauState::warmup_time_},
-            {"plateauwarmuprelgap", &PlateauState::warmup_relgap_},
-            {"plateauwarmupabsgap", &PlateauState::warmup_absgap_},
-            {"plateaurelgaptol", &PlateauState::relmipgap_tol_},
-            {"plateauabsgaptol", &PlateauState::absmipgap_tol_}
+
+    static const std::unordered_map<std::string, double PlateauState::Options::*>
+        dblOptions = {
+            {"plateautime", &PlateauState::Options::plateau_time_},
+            {"plateauabstol", &PlateauState::Options::abstol_},
+            {"plateaureltol", &PlateauState::Options::reltol_},
+            {"plateauwarmup", &PlateauState::Options::warmup_time_},
+            {"plateauwarmuprelgap", &PlateauState::Options::warmup_relgap_},
+            {"plateauwarmupabsgap", &PlateauState::Options::warmup_absgap_},
+            {"plateaurelgaptol", &PlateauState::Options::relmipgap_tol_},
+            {"plateauabsgaptol", &PlateauState::Options::absmipgap_tol_}
     };
-    static const std::unordered_map<std::string, int PlateauState::*> intOptions = {
-            {"plateaulog", &PlateauState::log_}
+    static const std::unordered_map<std::string, int PlateauState::Options::*>
+        intOptions = {
+            {"plateaulog", &PlateauState::Options::log_}
     };
     for (const auto& [optName, member] : dblOptions) {
       if (pSetter->GetPassOptionValueDbl(pass, optName.c_str(), v))
-        plateauState_.*member = v;
+        plateauState_.opts_.*member = v;
     }
     for (const auto& [optName, member] : intOptions)
       if (pSetter->GetPassOptionValueInt(pass, optName.c_str(), iv)) {
-        plateauState_.*member = iv;
+        plateauState_.opts_.*member = iv;
       }
   }
 
   /// Whether to print plateau status on every callback report
   bool plateau_log() const
-  { return 0!=plateauState_.log_; }
+  { return 0!=plateauState_.opts_.log_; }
 
   /// To be called by the driver's native incumbent callback with the
   /// new incumbent objective value.
@@ -591,20 +599,20 @@ public:
   }
 
   void SetupPlateau() override {
-      if (plateau_active()) {
-          SetupPlateauCallbacks();
-          if (this->GetMM().IsMOEmulationOn())
-            // Emulated MO: this pass's per-objective options are applied
-            // separately, while preparing the iteration (SetMultiObjectiveOptions()).
-            plateau_set_current_objective(0, -1);
-          else
-            // Native multiobj (or plain single-objective solve): there is
-            // no separate per-iteration setup call, so pass 0's options
-            // (if overridden) must be applied right away. Any later
-            // passes are picked up by the driver's native per-objective
-            // callback invoking plateau_set_current_objective() itself.
-            plateau_set_current_objective(0, 0);
-      }
+    if (plateau_active()) {
+      SetupPlateauCallbacks();
+      if (this->GetMM().IsMOEmulationOn())
+        // Emulated MO: this pass's per-objective options are applied
+        // separately, while preparing the iteration (SetMultiObjectiveOptions()).
+        plateau_set_current_objective(0, -1);
+      else
+        // Native multiobj (or plain single-objective solve): there is
+        // no separate per-iteration setup call, so pass 0's options
+        // (if overridden) must be applied right away. Any later
+        // passes are picked up by the driver's native per-objective
+        // callback invoking plateau_set_current_objective() itself.
+        plateau_set_current_objective(0, 0);
+    }
   }
 
   using BaseBackend::AddStoredOption;
@@ -805,26 +813,26 @@ protected:
         "mip:plateauabsgaptol/mip:plateaurelgaptol are set, the MIP gap) "
         "has not improved by at least mip:plateauabstol or "
         "mip:plateaureltol for this many seconds. Default 0 (disabled).",
-        plateauState_.plateau_time_);
+        plateauState_.opts_.plateau_time_);
 
       AddStoredOption("mip:plateau:abstol mip:plateauabstol plateauabstol",
         "Minimum absolute objective improvement to reset the "
         "mip:plateautime timer. Default 0 (any improvement resets the timer).",
-        plateauState_.abstol_);
+        plateauState_.opts_.abstol_);
 
       AddStoredOption("mip:plateau:reltol mip:plateaureltol plateaureltol",
         "Minimum relative objective improvement, as a fraction of the current "
         "value, to reset the mip:plateautime timer. Default 0.",
-        plateauState_.reltol_);
+        plateauState_.opts_.reltol_);
 
       AddStoredOption("mip:plateau:warmup mip:plateauwarmup plateauwarmup",
         "Grace period (in seconds) after the solve starts before "
         "mip:plateautime is checked. Default 0.",
-        plateauState_.warmup_time_);
+        plateauState_.opts_.warmup_time_);
 
       AddStoredOption("mip:plateau:log mip:plateaulog plateaulog",
           "Whether to print the current plateau status. Default 0 (silent).",
-          plateauState_.log_);
+          plateauState_.opts_.log_);
     }
 
     if (IMPL_HAS_STD_FEATURE( PLATEAU_STOP_BOUND )) {
@@ -834,24 +842,24 @@ protected:
         AddStoredOption("mip:plateau:warmup:relgap mip:plateauwarmuprelgap plateauwarmuprelgap",
             "Relative MIP gap to be reached before mip:plateautime is "
             "checked. Default 0.",
-            plateauState_.warmup_relgap_);
+            plateauState_.opts_.warmup_relgap_);
 
         AddStoredOption("mip:plateau:warmup:absgap mip:plateauwarmupabsgap plateauwarmupabsgap",
             "Absolute MIP gap to be reached before mip:plateautime is "
             "checked. Default 0.",
-            plateauState_.warmup_absgap_);
+            plateauState_.opts_.warmup_absgap_);
 
         AddStoredOption("mip:plateau:relgaptol mip:plateaurelgaptol plateaurelgaptol",
             "If set (>0), also track the reported relative MIP gap as progress "
             "for mip:plateautime: the plateau timer resets whenever the relative "
             "gap shrinks by at least this amount. Default 0 (disabled).",
-            plateauState_.relmipgap_tol_);
+            plateauState_.opts_.relmipgap_tol_);
 
         AddStoredOption("mip:plateau:absgaptol mip:plateauabsgaptol plateauabsgaptol",
             "If set (>0), also track the reported absolute MIP gap as progress "
             "for mip:plateautime: the plateau timer resets whenever the absolute "
             "gap shrinks by at least this amount. Default 0 (disabled).",
-            plateauState_.absmipgap_tol_);
+            plateauState_.opts_.absmipgap_tol_);
     }
   }
 

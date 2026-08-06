@@ -1115,44 +1115,44 @@ int __stdcall GurobiBackend::DoPlateauCallback(
 
   
   auto stop = [](GRBmodel* model, int numobjs, void* cbdata) {
-      if (numobjs > 1)
-          GRBcbstoponemultiobj(model, cbdata, -1);
-      else
-          GRBterminate(model);
+    if (numobjs > 1)
+      GRBcbstoponemultiobj(model, cbdata, -1);
+    else
+      GRBterminate(model);
   };
 
   if (GRB_CB_MULTIOBJ == where) {
-      int nobj;
-      GRBcbget(cbdata, where, GRB_CB_MULTIOBJ_OBJCNT, &nobj);
-      backend->plateau_set_current_objective(nobj, backend->NumObjs());
-  }else 
-   if (GRB_CB_MIPSOL == where) {
-    double obj = 0.0, bound = 0.0;
-    bool haveObj = !GRBcbget(cbdata, where, GRB_CB_MIPSOL_OBJ, &obj);
+    int nobj;
+    GRBcbget(cbdata, where, GRB_CB_MULTIOBJ_OBJCNT, &nobj);
+    backend->plateau_set_current_objective(nobj, backend->NumObjs());
+  } else
+    if (GRB_CB_MIPSOL == where) {
+      double obj = 0.0, bound = 0.0;
+      bool haveObj = !GRBcbget(cbdata, where, GRB_CB_MIPSOL_OBJ, &obj);
 
-    if (haveObj && backend->ReportIncumbentForPlateau(obj))
+      if (haveObj && backend->ReportIncumbentForPlateau(obj))
         stop(model, backend->NumObjs(), cbdata);
-    else if (haveObj && !GRBcbget(cbdata, where, GRB_CB_MIPSOL_OBJBND, &bound))
-    {
-      double absgap = compute_absgap(obj, bound);
-      double relgap = compute_relgap(absgap, obj);
-      if (backend->ReportGapForPlateau(absgap, relgap))
+      else if (haveObj && !GRBcbget(cbdata, where, GRB_CB_MIPSOL_OBJBND, &bound))
+      {
+        double absgap = compute_absgap(obj, bound);
+        double relgap = compute_relgap(absgap, obj);
+        if (backend->ReportGapForPlateau(absgap, relgap))
           stop(model, backend->NumObjs(), cbdata);
-    }
-  } else if (GRB_CB_MIP == where) {
-    double bound = 0.0, objbst = 0.0;
-    bool haveBound = !GRBcbget(cbdata, where, GRB_CB_MIP_OBJBND, &bound);
-    if (haveBound && !GRBcbget(cbdata, where, GRB_CB_MIP_OBJBST, &objbst)) {
-      double absgap = compute_absgap(objbst, bound);
-      double relgap = compute_relgap(absgap, objbst);
-      if (backend->ReportGapForPlateau(absgap, relgap))
+      }
+    } else if (GRB_CB_MIP == where) {
+      double bound = 0.0, objbst = 0.0;
+      bool haveBound = !GRBcbget(cbdata, where, GRB_CB_MIP_OBJBND, &bound);
+      if (haveBound && !GRBcbget(cbdata, where, GRB_CB_MIP_OBJBST, &objbst)) {
+        double absgap = compute_absgap(objbst, bound);
+        double relgap = compute_relgap(absgap, objbst);
+        if (backend->ReportGapForPlateau(absgap, relgap))
           stop(model, backend->NumObjs(), cbdata);
+      }
     }
-  }
-  else if (GRB_CB_POLLING== where) {
+    else if (GRB_CB_POLLING== where) {
       if (backend->CheckTimeoutForPlateau())
-          stop(model, backend->NumObjs(), cbdata);
-  }
+        stop(model, backend->NumObjs(), cbdata);
+    }
   return 0;
 }
 

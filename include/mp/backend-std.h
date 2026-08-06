@@ -326,13 +326,13 @@ protected:
       return GetSolution();
     };
     int i_solve=0;
-    while (GetMM().PrepareSolveIteration(get_stt, get_sol)) {
+    while ((SetupPlateau(),            // Save plateau options before MO options
+        GetMM().PrepareSolveIteration(get_stt, get_sol))) {
       if (++i_solve==storedOptions_.writemodel_index_
           && exportFileMode() > 0)
         ExportModel(export_file_names());
       std::fflush(stdout);
       std::fflush(stderr);     // fmt::print() doesn't
-      SetupPlateau();
       Solve();
     }
   }
