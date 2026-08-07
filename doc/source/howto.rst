@@ -576,7 +576,7 @@ callback(s) to it, in a single overridden method.
 
 2. Override `SetupPlateauCallbacks()` to register whatever native
    callback(s) you need (this is called once, only if
-   ``mip:plateautime`` is set, right where the interrupter is set up):
+   ``mip:plateau:time`` is set, right where the interrupter is set up):
 
    .. code-block:: c++
 
@@ -598,7 +598,7 @@ callback(s) to it, in a single overridden method.
         auto* backend = static_cast<GurobiBackend*>(usrdata);
         if (GRB_CB_MIPSOL == where) {
           double obj = 0.0;
-          if (!GRBcbget(cbdata, where, GRB_CB_MIPSOL_OBJ, &obj)
+          if (!GRBcbget(cbdata, where, GRB_CB_MIPSOL_OBJBST, &obj)
               && backend->ReportIncumbentForPlateau(obj))
             GRBterminate(model);
         }
