@@ -1114,9 +1114,10 @@ int __stdcall GurobiBackend::DoPlateauCallback(
   };
 
   
-  auto stop = [](GRBmodel* model, int numobjs, void* cbdata) {
+  auto stop = [backend](GRBmodel* model, int numobjs, void* cbdata) {
     if (numobjs > 1)
-      GRBcbstoponemultiobj(model, cbdata, -1);
+      GRBcbstoponemultiobj(model, cbdata,
+                           backend->plateau_get_current_objective());
     else
       GRBterminate(model);
   };

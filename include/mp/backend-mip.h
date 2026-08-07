@@ -506,12 +506,19 @@ protected:
           GetMIPOptions().fixModel_ : 0;
   }
 
-  double plateau_time() const
-  { return IMPL_HAS_STD_FEATURE(PLATEAU_STOP) ? plateauState_.opts_.plateau_time_ : 0.0; }
+  double plateau_time() const {
+    return IMPL_HAS_STD_FEATURE(PLATEAU_STOP) ?
+               plateauState_.opts_.plateau_time_ : 0.0;
+  }
 
   /// Whether the plateau stopping logic should be armed for this solve
   bool plateau_active() const
   { return plateau_time() > 0.0; }
+
+  int plateau_get_current_objective() const {
+    assert(n_current_pass_ >= 0);
+    return n_current_pass_;
+  }
 
   void plateau_set_current_objective(int objn, int nobjs) {
     // When setting the current objective in a native solve,
@@ -522,6 +529,7 @@ protected:
 
     assert(nPlateauSetups_);    // before we reset options from dflt
 
+    n_current_pass_ = objn;
     plateauState_.SetCurrentObjective(objn);
     // If nobjs==-1, then we are in a MO-emulator solve, so the options
     // are set while preparing the iteration
@@ -584,6 +592,9 @@ protected:
   bool CheckTimeoutForPlateau() {
 	  return plateauState_.CheckTimeout();
   }
+
+private:
+  int n_current_pass_ {-1};
 
 
 public:
