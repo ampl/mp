@@ -520,7 +520,7 @@ protected:
     // equal priority
     // auto passes = pSetter->GetPassesWithOptions();
 
-    assert(nPlateauSetups_);
+    assert(nPlateauSetups_);    // before we reset options from dflt
 
     plateauState_.SetCurrentObjective(objn);
     // If nobjs==-1, then we are in a MO-emulator solve, so the options

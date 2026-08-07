@@ -1128,11 +1128,13 @@ int __stdcall GurobiBackend::DoPlateauCallback(
   } else
     if (GRB_CB_MIPSOL == where) {
       double obj = 0.0, bound = 0.0;
-      bool haveObj = !GRBcbget(cbdata, where, GRB_CB_MIPSOL_OBJ, &obj);
+      bool haveObj =
+          !GRBcbget(cbdata, where, GRB_CB_MIPSOL_OBJBST, &obj);
 
       if (haveObj && backend->ReportIncumbentForPlateau(obj))
         stop(model, backend->NumObjs(), cbdata);
-      else if (haveObj && !GRBcbget(cbdata, where, GRB_CB_MIPSOL_OBJBND, &bound))
+      else if (haveObj &&
+               !GRBcbget(cbdata, where, GRB_CB_MIPSOL_OBJBND, &bound))
       {
         double absgap = compute_absgap(obj, bound);
         double relgap = compute_relgap(absgap, obj);
@@ -1141,8 +1143,10 @@ int __stdcall GurobiBackend::DoPlateauCallback(
       }
     } else if (GRB_CB_MIP == where) {
       double bound = 0.0, objbst = 0.0;
-      bool haveBound = !GRBcbget(cbdata, where, GRB_CB_MIP_OBJBND, &bound);
-      if (haveBound && !GRBcbget(cbdata, where, GRB_CB_MIP_OBJBST, &objbst)) {
+      bool haveBound =
+          !GRBcbget(cbdata, where, GRB_CB_MIP_OBJBND, &bound);
+      if (haveBound &&
+          !GRBcbget(cbdata, where, GRB_CB_MIP_OBJBST, &objbst)) {
         double absgap = compute_absgap(objbst, bound);
         double relgap = compute_relgap(absgap, objbst);
         if (backend->ReportGapForPlateau(absgap, relgap))
