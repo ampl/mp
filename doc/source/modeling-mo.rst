@@ -151,6 +151,19 @@ See
 for examples.
 
 
+Multi-objective solve statistics (experimental, Gurobi native mode only)
+***********************************************************************************
+
+The following suffixes are available after a multi-objective solve:
+
+- `.objpass`: the index of the optimization pass where this objective was optimized
+  (0 if not optimized due to a time limit etc. in previous passes);
+- `.objpass_result`: the `solve_result` value corresponding to the pass of this objective, if any;
+- `.objpass_(runtime/mipgap/...)` as described
+  at `Gurobi multi-objective documentation <https://docs.gurobi.com/projects/optimizer/en/current/reference/attributes/multiobjective.html>`__.
+
+
+
 Examples
 **************************************
 
