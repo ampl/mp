@@ -76,6 +76,14 @@ and
 `AMPL Colab notebooks with lexicographical objectives <https://colab.ampl.com/tags/lexicographic-objectives.html>`__.
 
 
+Nonlinear multiple objectives
+**************************************
+
+In native mode (``obj:multi=1``), many solvers only accept linear objectives.
+To use it for nonlinear objectives, set ``cvt:nlobj=0 cvt:quadobj=0``
+which moves nonlinear terms into constraints.
+
+
 .. _objective-specific-options:
 
 
