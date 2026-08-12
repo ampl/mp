@@ -2,6 +2,10 @@ Summary of recent updates to HiGHS for AMPL
 ===========================================
 
 
+## 20260812
+- Fixed runtime issue on some containers
+
+
 ## 20260806
 - Options *mip:plateau:...* control MIP
   tailing-off.
