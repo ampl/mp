@@ -588,6 +588,21 @@ static const mp::OptionValueInfo lp_values_method[] = {
   { "qpasm", "QP active set method", 7}
 };
 
+
+static const mp::OptionValueInfo mip_lp_solver_values[] = {
+  { "choose", "Automatic (default)", -1},
+  { "simplex", "Simplex", 1},
+  { "ipm", "Interior Point Method (automatic)", 2},
+  { "hipo", "Highs Interior point method", 3},
+  { "ipx", "IPX interior point method", 4 }
+};
+
+static const mp::OptionValueInfo mip_ipm_solver_values[] = {
+  { "choose", "Automatic (default)", -1},
+  { "ipm", "Interior Point Method (automatic)", 2},
+  { "hipo", "Highs Interior point method", 3}
+};
+
 static const mp::OptionValueInfo off_on_choose_values[] = {
   { "choose", "Automatic (default)", -1},
   { "off", "Off", 1},
@@ -902,6 +917,28 @@ void HighsBackend::InitCustomOptions() {
     "Maximal age of dynamic LP rows before they are removed from the LP relaxation "
     "(default 10)",
     "mip_lp_age_limit", 0, INT_MAX);
+
+  /*
+  * mip_lp_solver
+MIP LP solver: "choose", "simplex", "ipm", "ipx" or "hipo"
+Type: string
+Default: "choose"
+mip_ipm_solver
+MIP IPM solver: "choose", "ipx" or "hipo"
+Type: string
+Default: "choose"
+ipm_optimality_tolera
+  */
+
+  AddSolverOption("mip:lpsolver miplpsolver mip_lp_solver",
+      "Choose the lp solver to be used during mip solves:\n"
+      "\n.. value-table::\n", "mip_lp_solver", mip_lp_solver_values, c);
+
+  AddSolverOption("mip:ipmsolver mipipmsolver mip_ipm_solver",
+      "Choose the ipm solver to be used during mip solves:\n"
+      "\n.. value-table::\n", "mip_ipm_solver", mip_ipm_solver_values, c);
+
+
 
   AddSolverOption("mip:poolsoftlimit poolsoftlimit mip_pool_soft_limit",
     "Soft limit on the number of rows in the cutpool for dynamic age adjustment"
