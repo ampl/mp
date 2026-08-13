@@ -43,8 +43,12 @@ public:
 
   /// Validate
   bool check() const {
-    return coefs_.size()==vars_.size() &&
-        (!size() || 0<=*std::min_element(vars_.begin(), vars_.end()));
+    return coefs_.size()==vars_.size()
+           // &&   // Too much when num_terms() in a loop:
+           // (!size()
+           //  // || 0<=*std::min_element(vars_.begin(), vars_.end())
+           //  );
+        ;
   }
 
   /// empty()
