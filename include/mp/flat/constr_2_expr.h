@@ -138,6 +138,9 @@ public:
       ConstraintAcceptanceLevel , ExpressionAcceptanceLevel eal) {
     assert(stage_cvt2expr_>0 && stage_cvt2expr_<=2);
     assert(!con.GetContext().IsNone());
+    // For release build:
+    if (con.GetContext().IsNone())
+      con.SetContext(Context::CTX_MIX);
     // See if the item is going into an expr.
     // Otherwise it's a flat con.
     if (ExpressionAcceptanceLevel::NotAccepted != eal) {
