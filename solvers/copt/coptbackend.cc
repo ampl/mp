@@ -319,6 +319,40 @@ void CoptBackend::ReportCOPTResults() {
   AddCOPTMessages();
   if (need_multiple_solutions())
     ReportCOPTPool();
+
+  if(storedOptions_.mempeak())
+  {
+	  double mempeak = getDblAttr(COPT_DBLATTR_MEMPEAK);
+	  AddToSolverMessage(fmt::format("Peak memory used: {} MB\n", mempeak));
+      ReportDblSuffix({ "peakmem", suf::PROBLEM }, { { mempeak } });
+  }
+  if (storedOptions_.numericalStats())
+  {
+      std::vector<std::pair<const char*, std::string>> vec = {
+				{ COPT_DBLATTR_MINELEM, "minelem" },                
+                { COPT_DBLATTR_MAXELEM, "maxelem" },
+		        { COPT_DBLATTR_MINBOUND, "minbound" },
+				{ COPT_DBLATTR_MAXBOUND, "maxbound" },
+				{ COPT_DBLATTR_MINRHS, "minrhs" },
+				{ COPT_DBLATTR_MAXRHS, "maxrhs" },
+				{ COPT_DBLATTR_MINCOST, "mincost" },
+				{ COPT_DBLATTR_MAXCOST, "maxcost" },
+				{ COPT_DBLATTR_MINQELEM, "minqelem" },
+				{ COPT_DBLATTR_MAXQELEM, "maxqelem" },
+				{ COPT_DBLATTR_MINQLELEM, "minqlelem" },
+				{ COPT_DBLATTR_MAXQLELEM, "maxqlelem" },
+				{ COPT_DBLATTR_MINQRHS, "minqrhs" },
+				{ COPT_DBLATTR_MAXQRHS, "maxqrhs" },
+				{ COPT_DBLATTR_MINQCOST, "minqcost" },
+				{ COPT_DBLATTR_MAXQCOST, "maxqcost" }
+      };
+
+	  for (const auto& [attr, name] : vec) {
+		  double val = getDblAttr(attr);
+		  ReportDblSuffix({ name, suf::PROBLEM }, { { val } });
+	  }
+  }
+
 }
 std::vector<double> CoptBackend::getPoolSolution(int i)
 {
@@ -558,10 +592,19 @@ void CoptBackend::InitCustomOptions() {
     "\n.. value-table::\n", COPT_INTPARAM_LOGLEVEL,
 	  values_loglevel_, 2);
 
-  
-
   AddStoredOption("tech:logfile logfile",
     "Log file name.", storedOptions_.logFile_);
+
+  AddStoredOption("tech:mempeak mempeak",
+      "Return the peak memory used by the solver in the problem suffix "
+      "\"peakmem\". Default = 0 (do not return).", storedOptions_.mempeak_);
+
+  AddStoredOption("tech:numericalranges numericalranges numerical_ranges",
+	  "Return the numerical ranges of the problem as problem suffixes: minelem, maxelem, "
+	  "minbound, maxbound, minrhs, maxrhs, mincost, maxcost, minqelem, maxqelem, minqlelem, "
+      "maxqlelem, minqrhs, maxqrhs, minqcost, maxqcost. See CHANGES.copt.md for details. "
+      "Default = 0 (do not return).", 
+      storedOptions_.numericalStats_);
 
   AddSolverOption("lp:dualprice dualprice",
     "Specifies the dual simplex pricing algorithm:\n"
@@ -741,6 +784,12 @@ void CoptBackend::InitCustomOptions() {
   AddSolverOption("lim:nodes nodelim nodelimit",
     "Maximum MIP nodes to explore (default: no limit).",
     COPT_INTPARAM_NODELIMIT, 0, INT_MAX);
+
+  AddSolverOption("lim:memlimit memlimit",
+      "Soft limit (number of MB) on memory allocated; "
+      "default = 0 (no limit)",
+      COPT_DBLPARAM_MEMLIMIT, 0.0, Infinity());
+
 
   AddSolverOption("alg:method method lp:method lpmethod",
     "Which algorithm to use for non-MIP problems:\n"

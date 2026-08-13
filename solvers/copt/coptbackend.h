@@ -194,10 +194,28 @@ protected:
   ArrayRef<int> VarsIIS();
   pre::ValueMapInt ConsIIS();
 
+  /// Native callback implementing PLATEAU_STOP / PLATEAU_STOP_BOUND:
+  /// on COPT_CBCONTEXT_MIPSOL (new incumbent found) forwards the
+  /// updated "BestObj" info to ReportIncumbentForPlateau(); on both
+  /// COPT_CBCONTEXT_MIPSOL and COPT_CBCONTEXT_MIPNODE (periodic, keeps
+  /// the plateau clock alive between incumbents) derives absgap/relgap
+  /// from "BestObj"/"BestBnd" to report via ReportGapForPlateau().
+  /// Terminates the solve via COPT_Interrupt() when either signals a
+  /// plateau (COPT's callback has no per-objective partial-stop
+  /// equivalent to Gurobi's GRBcbstoponemultiobj/Xpress's
+  /// XPRS_STOP_NEXTOBJECTIVE, so this always stops the whole solve).
+  static int COPT_CALL DoPlateauCallback(
+      copt_prob* prob, void* cbdata, int cbctx, void* usrdata);
+
 
 private:
   struct Options {
     std::string logFile_;
+    int mempeak_ = 0;
+    int numericalStats_ = 0;;
+
+	int mempeak() const { return mempeak_; }
+	int numericalStats() const { return numericalStats_; }
   };
   Options storedOptions_;
 

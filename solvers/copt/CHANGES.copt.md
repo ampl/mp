@@ -1,6 +1,33 @@
 Summary of recent updates to COPT for AMPL
 ==========================================
 
+## 20260813
+- Updated to COPT 8.0.6, that introduces performance improvements 
+  and bug fixes.
+- Added keywords *lim:memlimit* and *tech:mempeak* to control and report memory usage.
+- Added keyword *tech:numericalranges* to return the numerical 
+  ranges of the problem in suffixes:
+  - Linear constraints:
+      - minelem: minimum absolute value of the non-zero elements of the coefficient matrix
+      - maxelem: maximum absolute value of the non-zero elements of the coefficient matrix
+      - minbound: minimum absolute value of the non-zero variable bounds
+      - maxbound: maximum absolute value of the non-zero variable bounds
+      - minrhs: minimum absolute value of the non-zero right-hand sides
+      - maxrhs: maximum absolute value of the non-zero right-hand sides
+  - Quadratic constraints:
+      - minqelem: minimum absolute value of the non-zero quadratic elements
+      - maxqelem: maximum absolute value of the non-zero quadratic elements
+      - minqlelem: minimum absolute value of the non-zero linear elements
+      - maxqlelem: maximum absolute value of the non-zero linear elements
+      - minqrhs: minimum absolute value of the non-zero right-hand sides
+      - maxqrhs: maximum absolute value of the non-zero right-hand sides
+  - Objectives:
+      - mincost: minimum absolute value of the non-zero linear costs
+      - maxcost: maximum absolute value of the non-zero linear costs
+      - minqcost: minimum absolute value of the non-zero quadratic costs
+      - maxqcost: maximum absolute value of the non-zero quadratic costs
+
+
 
 ## 20260624
 - Changes in MP, in particular:
