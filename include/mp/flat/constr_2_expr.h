@@ -765,6 +765,9 @@ protected:
   void DoExplicify(const FuncCon& con, int i) {
     auto alscope = MPD( MakeAutoLinker( con, i ) );       // link from \a con
     assert(!con.GetContext().IsNone());
+    // For release build:
+    if (con.GetContext().IsNone())
+      con.SetContext(Context::CTX_MIX);
     auto resvar = con.GetResultVar();
     assert( MPCD(IsProperVar(resvar)) );
     if (con.GetContext().IsMixed())
@@ -787,6 +790,9 @@ protected:
     auto resvar = con.GetResultVar();
     assert( MPCD(IsProperVar(resvar)) );
     assert(!con.GetContext().IsNone());
+    // For release build:
+    if (con.GetContext().IsNone())
+      con.SetContext(Context::CTX_MIX);
     if (con.GetContext().IsMixed())
       MPD( AddConstraint(NLReifEquiv(resvar)) );
     else if (con.GetContext().HasPositive())

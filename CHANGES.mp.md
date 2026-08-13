@@ -2,7 +2,9 @@ Summary of recent updates to the AMPL MP Library
 ================================================
 
 
-## 20260806
+## unreleased
+- Fix a bug in complementarity reformulation
+  with *cvt:compl=2,3*.
 - Options *mip:plateau:...* control MIP
   tailing-off in supporting solvers.
   Can be used in multi-objective solves,

@@ -228,7 +228,7 @@ protected:
   /// NCPcon(sv, v, bnd, se, e, eps):
   ///   e.g., FB(sv*v+bnd, se*e, eps) == 0
   template <class NCPConFn>
-  Context ConvertWithNCPCon(const ItemType& cc, int i, NCPConFn NCPcon) {
+  Context ConvertWithNCPCon(const ItemType& cc, int , NCPConFn NCPcon) {
     const auto& expr = cc.GetExpression();
     auto compl_var = cc.GetVariable();
 
@@ -245,7 +245,8 @@ protected:
 
     if (fin_var_lb && !fin_var_ub) {
       // NCP(v-lb)*expr = 0
-      GetMC().AddConstraint(
+      // AS_ROOT for the subexpression contexts
+      GetMC().AddConstraint_AS_ROOT(
           NCPcon(1.0, compl_var, -var_lb, 1.0, expr_var,
                 GetMC().ComplementarityCvtTol() ) );
       // Add the algebraic constraint via the representing variable.
@@ -254,7 +255,7 @@ protected:
       GetMC().set_var_lb_context(expr_var, 0.0, Context::CTX_MIX);
     } else if (fin_var_ub && !fin_var_lb) {
       // (v-ub)*expr = 0
-      GetMC().AddConstraint(
+      GetMC().AddConstraint_AS_ROOT(
           NCPcon(-1.0, compl_var, var_ub, -1.0, expr_var,
                 GetMC().ComplementarityCvtTol() ) );
       // Add the algebraic constraint via the representing variable
@@ -263,6 +264,9 @@ protected:
       GetMC().set_var_ub_context(expr_var, 0.0, Context::CTX_MIX);
     } else {
       assert(fin_var_lb && fin_var_ub);
+      // Propagate mixed context (logical constraint would set CTX_POS):
+      // Already done in prop_down.
+      // GetMC().set_var_lb_ub_context(expr_var, 0.0, Context::CTX_MIX);
       // Reduce mixed compl into 2 standard ones
       // le <= expr, le <= 0
       int le = (int)GetMC().AddVar(GetMC().MinusInfty(), 0.0);
@@ -271,11 +275,11 @@ protected:
       int ue = (int)GetMC().AddVar(0.0, GetMC().Infty());
       GetMC().AddConstraint(LinConGE{{ {1.0, -1.0}, {ue, expr_var} }, 0.0});
       // (v-lb)*ue = 0
-      GetMC().AddConstraint(
+      GetMC().AddConstraint_AS_ROOT(
           NCPcon(1.0, compl_var, -var_lb, 1.0, ue,
                  GetMC().ComplementarityCvtTol() ) );
       // (ub-v)*(-le) = 0
-      GetMC().AddConstraint(
+      GetMC().AddConstraint_AS_ROOT(
           NCPcon(-1.0, compl_var, var_ub, -1.0, le,
                  GetMC().ComplementarityCvtTol() ) );
     }

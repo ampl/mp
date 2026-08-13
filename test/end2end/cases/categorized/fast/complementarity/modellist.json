@@ -1,10 +1,88 @@
 [
   {
-    "name" : "econ2 compl_range",
+    "name" : "econ2 compl_range cvt:compl=0",
     "files" : ["econ2.mod", "econ2.dat"],
     "tags" : ["linear", "continuous", "complementarity"],
     "options": {
-      "mp_options": "cvt:bigm=1e5"
+      "mp_options": "cvt:bigm=1e5 cvt:compl=0"
+    },
+    "values": {
+      "Price['AA1']": 0.0,
+      "Price['AC1']": 0.0,
+      "Price['BC1']": 105.7142857142857,
+      "Price['BC2']": 0.0,
+      "Price['NA2']": 0.0,
+      "Price['NA3']": 0.0,
+      "Level['P1']": 240,
+      "Level['P1a']": 1000,
+      "Level['P2']": 220,
+      "Level['P2a']": 680,
+      "Level['P2b']": 200,
+      "Level['P3']": 260,
+      "Level['P3c']": 1000,
+      "Level['P4']": 240,
+      "max{i in 1 .. _nccons} abs(_ccon[i])": { "max": 1e-5 },
+      "min{i in 1 .. _ncons} _con[i].slack": { "min": -1e-5 }
+    }
+  },
+  {
+    "name" : "econ2 compl_range cvt:compl=1",
+    "files" : ["econ2.mod", "econ2.dat"],
+    "tags" : ["linear", "continuous", "complementarity"],
+    "options": {
+      "mp_options": "cvt:bigm=1e5 cvt:compl=1"
+    },
+    "values": {
+      "Price['AA1']": 0.0,
+      "Price['AC1']": 0.0,
+      "Price['BC1']": 105.7142857142857,
+      "Price['BC2']": 0.0,
+      "Price['NA2']": 0.0,
+      "Price['NA3']": 0.0,
+      "Level['P1']": 240,
+      "Level['P1a']": 1000,
+      "Level['P2']": 220,
+      "Level['P2a']": 680,
+      "Level['P2b']": 200,
+      "Level['P3']": 260,
+      "Level['P3c']": 1000,
+      "Level['P4']": 240,
+      "max{i in 1 .. _nccons} abs(_ccon[i])": { "max": 1e-5 },
+      "min{i in 1 .. _ncons} _con[i].slack": { "min": -1e-5 }
+    }
+  },
+  {
+    "name" : "econ2 compl_range cvt:compl=2",
+    "files" : ["econ2.mod", "econ2.dat"],
+    "tags" : ["linear", "continuous", "complementarity"],
+    "options": {
+      "mp_options": "cvt:bigm=1e5 cvt:compl=2"
+    },
+    "values": {
+      "Price['AA1']": 0.0,
+      "Price['AC1']": 0.0,
+      "Price['BC1']": 105.7142857142857,
+      "Price['BC2']": 0.0,
+      "Price['NA2']": 0.0,
+      "Price['NA3']": 0.0,
+      "Level['P1']": 240,
+      "Level['P1a']": 1000,
+      "Level['P2']": 220,
+      "Level['P2a']": 680,
+      "Level['P2b']": 200,
+      "Level['P3']": 260,
+      "Level['P3c']": 1000,
+      "Level['P4']": 240,
+      "max{i in 1 .. _nccons} abs(_ccon[i])": { "max": 1e-5 },
+      "min{i in 1 .. _ncons} _con[i].slack": { "min": -1e-5 }
+    }
+  },
+  {
+    "name" : "econ2 compl_range cvt:compl=3",
+    "files" : ["econ2.mod", "econ2.dat"],
+    "tags" : ["linear", "continuous", "complementarity"],
+    "options": {
+      "mp_options": "cvt:bigm=1e5 cvt:compl=3"
     },
     "values": {
       "Price['AA1']": 0.0,
