@@ -155,13 +155,15 @@ protected:
   virtual void SetMultiobjOptions(BasicObjOptionSetter* pS) {
     if (pS->GetPassesWithOptions().size())
       AddWarning("MultiobjOptionsNotImplemented",
-                 "See obj:multi:options");
+                 "See obj:multi:options.");
   }
   /// Fill native multi-objective pass information
   virtual MultiobjPassStats GetMultiobjPassStats() {
     AddWarning("MOPassStats",
                "Multiobjective pass statistics\n"
-               "not implemented for this solver");
+               "not implemented for this solver.\n"
+               "Use multi-objective emulator\n"
+               "(obj:multi=2).");
     return {};
   }
 
@@ -329,16 +331,80 @@ protected:
     auto get_sol = [this]() {
       return GetSolution();
     };
-    int i_solve=0;
+    i_solve_=0;
+    StartRecordingMOPassStats();
     while ((SetupPlateau(),            // Save plateau options before MO options
         GetMM().PrepareSolveIteration(get_stt, get_sol))) {
-      if (++i_solve==storedOptions_.writemodel_index_
+      if (++i_solve_==storedOptions_.writemodel_index_
           && exportFileMode() > 0)
         ExportModel(export_file_names());
       std::fflush(stdout);
       std::fflush(stderr);     // fmt::print() doesn't
       Solve();
+      RecordMOPassStats();
     }
+  }
+
+  /// Start recording MO pass stats
+  void StartRecordingMOPassStats() {
+    if (GetMM().IsMOEmulationOn()) {
+      tp_moe_ = std::chrono::steady_clock::now();
+    }
+  }
+
+  /// Record multiobjective pass results
+  void RecordMOPassStats() {
+    if (GetMM().IsMOEmulationOn()) {
+      mo_pass_stats__per_pass_.objpass_.push_back(i_solve_); // 1-based
+      mo_pass_stats__per_pass_.objpass_result_
+          // Should be sol::UNKNOWN for unprocessed
+          .push_back(GetSolveResult().first);
+      auto obj_vals = GetObjectiveValues();
+      if (obj_vals.size())
+        mo_pass_stats__per_pass_.objpass_objval_
+            .push_back(obj_vals[0]);
+      auto tp_new = std::chrono::steady_clock::now();
+      // Important to cast
+      std::chrono::duration<double> dur1 = tp_new - tp_moe_;
+      double tm_diff = dur1.count();
+      mo_pass_stats__per_pass_.objpass_runtime_
+          .push_back(tm_diff);
+      tp_moe_ = tp_new;
+
+      RecordMOPassMIPStats(mo_pass_stats__per_pass_);
+
+      ExtractStandardSolStats(mo_pass_stats__per_pass_);
+    }
+  }
+
+  /// MIP gap, dual bound
+  virtual void RecordMOPassMIPStats(MultiobjPassStats& ) = 0;
+
+  void ExtractStandardSolStats(MultiobjPassStats& stats) {
+    auto sol_stats = SolutionStats();
+    auto extract_val = [this,&sol_stats](
+                           const char* name, auto& vector) {
+      auto it = sol_stats.find(name);
+      if (sol_stats.end() != it) {
+        if (i_solve_ > 1 && vector.empty()) {
+          assert(0 && "Solver stats has different items per iteration");
+        } else {
+          if (std::holds_alternative<int>(it->second))
+            vector.push_back(std::get<int>(it->second));
+          else if (std::holds_alternative<double>(it->second))
+            vector.push_back(std::get<double>(it->second));
+        }
+      } else {
+        if (vector.size()) {
+          assert(0 && "Solver stats has different items per iteration");
+          vector.clear();
+        }
+      }
+    };
+    extract_val("simplex_iterations", stats.objpass_itercount_);
+    extract_val("work", stats.objpass_work_);
+    extract_val("node_count", stats.objpass_nodecount_);
+    extract_val("open_node_count", stats.objpass_opennodecount_);
   }
 
   /// Report
@@ -552,10 +618,7 @@ protected:
     assert(multiobj());
     MultiobjPassStats stats;
     if (GetMM().IsMOEmulationOn()) {
-      // stats = ...
-      AddWarning("MOEmulatorPassStats",
-                 "Multiobjective Emulator:\n"
-                 "pass statistics not implemented");
+      stats = GetMOEPassStats();
     } else {
       stats = GetMultiobjPassStats();
     }
@@ -574,6 +637,38 @@ protected:
     report("objpass_mipgap", stats.objpass_mipgap_);
     report("objpass_objval", stats.objpass_objval_);
     report("objpass_objbound", stats.objpass_objbound_);
+  }
+
+  /// Fill MO Emulator's pass stats
+  MultiobjPassStats GetMOEPassStats() {
+    MultiobjPassStats result;
+    const auto pass_map = GetMM().GetMultiobjPasses();
+    const auto& stats_per_pass = mo_pass_stats__per_pass_;
+
+    auto move_values = [this,pass_map,&result,&stats_per_pass](
+                          auto MultiobjPassStats::* pMbr) {
+      const auto& vec2 = stats_per_pass.*pMbr;
+      if (vec2.size()) {
+        auto& vec1 = result.*pMbr;
+        vec1.resize(pass_map.size());
+        for (auto i=vec1.size(); i--; ) {
+          vec1[i] = vec2.at(pass_map.at_checked(i));
+        }
+      }
+    };
+
+    move_values(&MultiobjPassStats::objpass_);
+    move_values(&MultiobjPassStats::objpass_result_);
+    move_values(&MultiobjPassStats::objpass_itercount_);
+    move_values(&MultiobjPassStats::objpass_nodecount_);
+    move_values(&MultiobjPassStats::objpass_opennodecount_);
+    move_values(&MultiobjPassStats::objpass_runtime_);
+    move_values(&MultiobjPassStats::objpass_work_);
+    move_values(&MultiobjPassStats::objpass_mipgap_);
+    move_values(&MultiobjPassStats::objpass_objval_);
+    move_values(&MultiobjPassStats::objpass_objbound_);
+
+    return result;
   }
 
   /// Report Kappa
@@ -1093,6 +1188,12 @@ private:
     bool orig_obj_available_ = false;
     double orig_obj_value_ = 0.0;
   } feasRelaxIO_;
+
+  /// This one is per-pass, not per objective
+  MultiobjPassStats mo_pass_stats__per_pass_;
+  std::chrono::time_point<std::chrono::steady_clock> tp_moe_;
+  /// Solve iteration
+  int i_solve_ {};
 
 
 protected:  //////////// Option accessors ////////////////

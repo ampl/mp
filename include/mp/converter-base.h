@@ -41,6 +41,10 @@ public:
   /// Is/was MultiObj Emulator used?
   virtual bool IsMOEmulationOn() const = 0;
 
+  /// Vector of pass indexes for each original objective
+  /// @note 0 is the first index
+  virtual ArrayRef<int> GetMultiobjPasses() const = 0;
+
   /// Objective weights
   virtual ArrayRef<double> GetObjWeightsAdapted() = 0;
 

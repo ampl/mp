@@ -354,6 +354,11 @@ protected:
   bool IsMOEmulationOn() const override
   { return GetCvt().IsMOEmulationOn(); }
 
+  /// Vector of pass indexes for each original objective
+  /// @note 0 is the first index
+  ArrayRef<int> GetMultiobjPasses() const override
+  { return GetCvt().GetMultiobjPasses(); }
+
   /// Objective weights
   ArrayRef<double> GetObjWeightsAdapted() override
   { return GetCvt().GetObjWeightsAdapted(); }

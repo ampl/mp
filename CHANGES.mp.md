@@ -3,6 +3,8 @@ Summary of recent updates to the AMPL MP Library
 
 
 ## unreleased
+- Option *obj:multi:stats=1* outputs multi-objective
+  pass statistics in the *.objpass[_...]* suffixes.
 - Fix a bug in complementarity reformulation
   with *cvt:compl=2,3*.
 - Options *mip:plateau:...* control MIP

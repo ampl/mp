@@ -359,6 +359,15 @@ public:
     }
   }
 
+  /// MIP gap, dual bound
+  void RecordMOPassMIPStats(MultiobjPassStats& stats) override {
+    if (IMPL_HAS_STD_FEATURE( RETURN_MIP_GAP ))
+      stats.objpass_mipgap_.push_back(MIPGap());
+    if (IMPL_HAS_STD_FEATURE( RETURN_BEST_DUAL_BOUND ))
+      stats.objpass_mipgap_.push_back(BestDualBound());
+  }
+
+
   virtual void CalculateAndReportIIS() {
     if (( this->IsProblemInfeasible() ||
                this->IsProblemIndiffInfOrUnb() ) &&

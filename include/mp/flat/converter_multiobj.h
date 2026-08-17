@@ -55,6 +55,11 @@ public:
   std::vector<QuadraticObjective>&
   get_emulated_objectives() { return obj_new_; }
 
+  /// Vector of pass indexes for each original objective
+  /// @note 0 is the first index
+  ArrayRef<int> GetMultiobjPasses() const
+  { return passes_reverse_; }
+
   /// Get obj option setter
   BasicObjOptionSetter* GetObjOptionSetter() {
     return this;
@@ -363,10 +368,14 @@ protected:
     obj_new_.reserve(multiobj_pass_map_.size());
     obj_new_tola_.reserve(multiobj_pass_map_.size());
     obj_new_tolr_.reserve(multiobj_pass_map_.size());
+    passes_reverse_.resize(obj_orig.size());
+    int i_pass {-1};
     for (const auto& pr_level: multiobj_pass_map_) {
+      ++i_pass;
       const auto& i0_vec = pr_level.second;
       const auto& obj_orig_1st = obj_orig.at(i0_vec.front());
       const auto objwgt_1st = objwgt.at(i0_vec.front());
+      passes_reverse_.at(i0_vec.front()) = i_pass;
       obj_new_.push_back(obj_orig_1st);
       obj_new_.back().set_sense(obj_orig.front().obj_sense());  // "Legacy" obj:multi:weight
       obj_new_.back().set_sense_true(obj_orig.front().obj_sense_true());
@@ -376,6 +385,7 @@ protected:
       obj_new_tolr_.push_back(objtolr.at(i0_vec.front()));
       assert (!obj_orig_1st.HasExpr());              // should be before NL conversion
       for (auto i0i=i0_vec.size(); --i0i; ) {
+        passes_reverse_.at(i0_vec[i0i]) = i_pass;
         // Add next objective with weight and sense factor
         double sensef
             = (obj_orig_1st.obj_sense() == obj_orig.at(i0_vec[i0i]).obj_sense())
@@ -544,6 +554,7 @@ private:
       multiobj_pass_list_;
   std::map<int, std::vector<int>, std::greater<int> >
       multiobj_pass_map_;      // Decreasing order
+  std::vector<int> passes_reverse_;
   std::unordered_map<int, MOPassOptionMap> pass_opt_maps_;
 
   int i_current_obj_ {-1};

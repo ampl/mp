@@ -101,6 +101,10 @@ namespace mp {
     /// operator[]
     const T& operator[](std::size_t i) const { return data_[i]; }
 
+    /// at_checked
+    const T& at_checked(std::size_t i) const
+    { assert(i<size()); return data_[i]; }
+
   protected:
     std::vector<T> move_or_copy() {
       if (save_.size()) {

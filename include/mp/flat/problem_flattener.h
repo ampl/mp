@@ -193,6 +193,10 @@ public:
   bool IsMOEmulationOn() const override
   { return GetFlatCvt().IsMOActive(); }
 
+  /// Vector of pass indexes for each original objective
+  /// @note 0 is the first index
+  ArrayRef<int> GetMultiobjPasses() const override
+  { return GetFlatCvt().GetMultiobjPasses(); }
 
   /// Objective weights
   ArrayRef<double> GetObjWeightsAdapted() override
