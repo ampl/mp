@@ -158,8 +158,12 @@ protected:
                  "See obj:multi:options");
   }
   /// Fill native multi-objective pass information
-  virtual MultiobjPassStats GetMultiobjPassStats()
-  { return {}; }
+  virtual MultiobjPassStats GetMultiobjPassStats() {
+    AddWarning("MOPassStats",
+               "Multiobjective pass statistics\n"
+               "not implemented for this solver");
+    return {};
+  }
 
   /**
    * MULTISOL support.
@@ -383,65 +387,66 @@ protected:
 
   /// Return all solution stats as name-value pairs
   virtual std::map<std::string,
-      std::variant<int, double, std::string>> 
-  		SolutionStats() { return {}; }
+                   std::variant<int, double, std::string>>
+  SolutionStats() { return {}; }
 
 
   virtual void ReportSolutionStats() {
-        fmt::MemoryWriter wrt;
-        MiniJSONWriter jw(wrt);
-        {
-            auto jsonstats = jw["stats"];
-            int dummyint[]{ 0 };
-            double dummydbl[]{ 0.0 };
-            for (const auto& [key, val] : SolutionStats()) {
-                if (std::holds_alternative<int>(val)) {
-                    dummyint[0] = std::get<int>(val);
-                    if (solution_stats() & 1) 
-                        jsonstats[key.c_str()] = dummyint[0];
-                    if (solution_stats() & 2) {
-                      SuffixDef<int> intsuf = { key.c_str(), suf::PROBLEM | suf::OUTONLY };
-                      ReportSuffix(intsuf, dummyint);
-					}
-                }
-                else if (std::holds_alternative<double>(val)) {
-                    dummydbl[0] = std::get<double>(val);
-					if (solution_stats() & 1)
-                        jsonstats[key.c_str()] = dummydbl[0];
-                    if (solution_stats() & 2) {
-                        SuffixDef<double> dblsuf = { key.c_str(), suf::PROBLEM | suf::OUTONLY };
-                        ReportSuffix(dblsuf, dummydbl);
-                    }
-                }
-                else {
-                    if (solution_stats() & 1)
-                        jsonstats[key.c_str()] = std::get<std::string>(val);
-                }
-            }
+    fmt::MemoryWriter wrt;
+    MiniJSONWriter jw(wrt);
+    {
+      auto jsonstats = jw["stats"];
+      int dummyint[]{ 0 };
+      double dummydbl[]{ 0.0 };
+      for (const auto& [key, val] : SolutionStats()) {
+        if (std::holds_alternative<int>(val)) {
+          dummyint[0] = std::get<int>(val);
+          if (solution_stats() & 1)
+            jsonstats[key.c_str()] = dummyint[0];
+          if (solution_stats() & 2) {
+            SuffixDef<int> intsuf = { key.c_str(), suf::PROBLEM | suf::OUTONLY };
+            ReportSuffix(intsuf, dummyint);
+          }
         }
-        if (timing()>0 && (solution_stats() & 1))
-        {
-            auto times = jw["times"];
-			times["solver"] = stats().solution_time;
-			times["setup"] = stats().setup_time;
-            times["total"] = stats().solution_time + stats().setup_time + stats().output_time;
-            if (timing() > 1) {
-                times["read"] = stats().read_time;
-                times["conversion"] = stats().conversion_time;
-                times["output"] = stats().output_time;
-            }
+        else if (std::holds_alternative<double>(val)) {
+          dummydbl[0] = std::get<double>(val);
+          if (solution_stats() & 1)
+            jsonstats[key.c_str()] = dummydbl[0];
+          if (solution_stats() & 2) {
+            SuffixDef<double> dblsuf = { key.c_str(), suf::PROBLEM | suf::OUTONLY };
+            ReportSuffix(dblsuf, dummydbl);
+          }
         }
-        jw.Close(); 
-        if (solution_stats() & 1) {
-            // Return 0 JSON object stripped of spaces
-			std::string toret = wrt.str();
-            toret.erase(std::remove(toret.begin(), toret.end(), ' '), toret.end());
-            toret = "0 " + toret;
-            SuffixDef<int> sufStats = { "stats", suf::PROBLEM | suf::OUTONLY, toret };
-            int dummy[]{ 0 };
-            ReportSuffix(sufStats, dummy);
+        else {
+          if (solution_stats() & 1)
+            jsonstats[key.c_str()] = std::get<std::string>(val);
         }
+      }
+    }
+    if (timing()>0 && (solution_stats() & 1))
+    {
+      auto times = jw["times"];
+      times["solver"] = stats().solution_time;
+      times["setup"] = stats().setup_time;
+      times["total"] = stats().solution_time + stats().setup_time + stats().output_time;
+      if (timing() > 1) {
+        times["read"] = stats().read_time;
+        times["conversion"] = stats().conversion_time;
+        times["output"] = stats().output_time;
+      }
+    }
+    jw.Close();
+    if (solution_stats() & 1) {
+      // Return 0 JSON object stripped of spaces
+      std::string toret = wrt.str();
+      toret.erase(std::remove(toret.begin(), toret.end(), ' '), toret.end());
+      toret = "0 " + toret;
+      SuffixDef<int> sufStats = { "stats", suf::PROBLEM | suf::OUTONLY, toret };
+      int dummy[]{ 0 };
+      ReportSuffix(sufStats, dummy);
+    }
   }
+
   virtual void ReportTimes() {
     // First of all record solution output time
     RecordOutputTime();
@@ -525,7 +530,7 @@ protected:
 
   /// Report standard suffixes
   virtual void ReportStandardSuffixes() {
-    if (multiobj()) {
+    if (multiobj() && report_obj_passes()) {
       ReportMultiobjPasses();
     }
     if (IsProblemSolved() && exportKappa()) { 
@@ -549,7 +554,8 @@ protected:
     if (GetMM().IsMOEmulationOn()) {
       // stats = ...
       AddWarning("MOEmulatorPassStats",
-                 "Multiobjective Emulator: pass statistics not implemented");
+                 "Multiobjective Emulator:\n"
+                 "pass statistics not implemented");
     } else {
       stats = GetMultiobjPassStats();
     }
@@ -1049,6 +1055,8 @@ private:
     int round_=0;
     double round_reptol_=1e-9;
 
+    int report_obj_passes_ {0};
+
     /// For write prob
     std::vector<std::string> export_files_;
     int writemodel_index_ = 0;
@@ -1103,6 +1111,9 @@ protected:  //////////// Option accessors ////////////////
   { return IMPL_HAS_STD_FEATURE(WANT_ROUNDING) ? storedOptions_.round_ : 0; }
   /// MIP solution rounding reporting tolerance
   double round_reptol() const { return storedOptions_.round_reptol_; }
+
+  /// Report multiobj pass stats?
+  int report_obj_passes() const { return storedOptions_.report_obj_passes_; }
 
   /// Return 2 if we only need to write the problem, 1 if solution 
   /// and export are wanted, 0 if no export is needed or supported
@@ -1189,6 +1200,21 @@ protected:
         "integer values; see \"mip:round\".  Default = 1e-9.",
         storedOptions_.round_reptol_);
     }
+
+    AddStoredOption("obj:multi:stats multiobjstats",
+                    "0*/1: Report multiobjective pass statistics "
+                    "in the following objective suffixes:\n"
+                    "\n"
+                    "- .objpass: index of the pass where this "
+                    "objective was solved, 0 if not solved due to a stop "
+                    "in a previous pass\n"
+                    "- .objpass_result: the solve_result of the pass "
+                    "where this objective was solved; -1 if not\n"
+                    "- .objpass_runtime, _mipgap, _objval, _objbound, "
+                    "_work, _itercount, _nodecount, _opennodecount if available.\n"
+                    "\n"
+                    "See also tech:stats.",
+                    storedOptions_.report_obj_passes_);
 
     if (IMPL_HAS_STD_FEATURE(WRITE_PROBLEM)) {
       AddListOption("tech:writemodel tech:writeprob writeprob writemodel tech:exportfile",

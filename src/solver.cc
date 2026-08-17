@@ -779,7 +779,7 @@ void BasicSolver::InitMetaInfoAndOptions(
         { "0", "Do not report statistics (default)", 0},
         { "1", "Report statistics in JSON format in the problem suffix 'stats'", 1},
         { "2", "Report statistics in suffixes", 2},
-        { "3", "Report statistics both in suffixes and the suffix 'stats'", 3}
+        { "3", "Report statistics both in suffixes and the suffix 'stats'.", 3}
   };
 
   AddIntOption("tech:stats stats tech:report_stats solve_stats",
@@ -789,7 +789,8 @@ void BasicSolver::InitMetaInfoAndOptions(
       "the problem suffix `stats`.\n"
       "Note that timing information will also be included in the JSON "
       "representation if tech:timing>0. Values:\n\n"
-      ".. value-table::\n\n",
+      ".. value-table::\n\n"
+               "See also obj:multi:stats.",
 	 
       &Solver::GetSolutionStats, &Solver::SetSolutionStats, values_techstats_);
 

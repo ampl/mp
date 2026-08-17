@@ -61,11 +61,11 @@
     }
   },
   {
-    "name" : "dietobj_1000 multiobj=1 obj_pr_1 .objpass",
+    "name" : "dietobj_1000 multiobj=1 obj_pr_1 multiobjstats=1",
     "Comment": "Modify obj priorities and weights via suffixes in dietobj_pr_1",
     "tags" : ["linear", "continuous", "multiobj"],
     "files" : ["dietobj_1000.mod", "dietobj.dat", "dietobj_pr_1.inc"],
-    "options": { "ANYSOLVER_options": "multiobj=1" },
+    "options": { "ANYSOLVER_options": "multiobj=1 multiobjstats=1" },
     "values": {
       "_obj[1].objpass": 3,
       "total_cost['A&P'].objpass": 3,
@@ -189,9 +189,9 @@
     "name" : "multiobj_abstol_MIP",
     "tags" : ["linear", "integer", "multiobj"],
     "options": {
-      "ANYSOLVER_options": "multiobj=1",
-      "gurobi_options": "multiobj=1 mip:gap=0",
-      "xpress_options": "multiobj=1 mip:gap=0"
+      "ANYSOLVER_options": "multiobj=1 obj:multi:stats=1",
+      "gurobi_options": "multiobj=1 mip:gap=0 obj:multi:stats=1",
+      "xpress_options": "multiobj=1 mip:gap=0 obj:multi:stats=1"
     },
     "values": {
       "_obj[1].objpass": 1,
