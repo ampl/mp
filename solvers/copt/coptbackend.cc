@@ -627,6 +627,11 @@ void CoptBackend::InitCustomOptions() {
     "\n.. value-table::\n", COPT_INTPARAM_BARORDER,
     lp_barorder_values_, -1);
 
+  AddSolverOption("tech:seed seed",
+                  "Random number seed, can influence the solution path. "
+                  "Default -1.", "RandSeed",
+                  INT_MIN, INT_MAX);
+
   
   AddSolverOption("bar:iterlim BarIterLimit",
     "Limit on the number of barrier iterations (default 500).",

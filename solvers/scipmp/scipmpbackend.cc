@@ -754,15 +754,15 @@ void ScipBackend::InitCustomOptions() {
     "  | 1 - Order of variables should be permuted.",
     "randomization/permutevars", 0, 1);
 
-  AddSolverOption("ran:lpseed lpseed",
+  AddSolverOption("tech:lpseed lpseed ran:lpseed lpseed",
     "Random seed for LP solver, e.g. for perturbations in the simplex (default: 0: LP default)",
     "randomization/lpseed", 0, INT_MAX);
 
-  AddSolverOption("ran:permutationseed permutationseed",
+  AddSolverOption("tech:permseed permseed ran:permutationseed permutationseed",
     "Seed value for permuting the problem after reading/transformation (default: 0: no permutation) ",
     "randomization/permutationseed", 0, INT_MAX);
 
-  AddSolverOption("ran:randomseedshift randomseedshift",
+  AddSolverOption("tech:seed seed ran:randomseedshift randomseedshift",
     "Global shift of all random seeds in the plugins and the LP random seed (default: 0) ",
     "randomization/randomseedshift", 0, INT_MAX);
 
@@ -778,19 +778,23 @@ void ScipBackend::InitCustomOptions() {
 
   AddSolverOption("est:completiontype",
     "Approximation of search tree completion:\n"
-    "\n.. value-table::\n", "estimation/completiontype", estimation_completion, "a");
+    "\n.. value-table::\n",
+                  "estimation/completiontype", estimation_completion, "a");
 }
 
 
 double ScipBackend::MIPGap() {
-  return SCIPgetGap(getSCIP())<Infinity() ? SCIPgetGap(getSCIP()) : AMPLInf();
+  return
+      SCIPgetGap(getSCIP())<Infinity() ?
+             SCIPgetGap(getSCIP()) : AMPLInf();
 }
 double ScipBackend::BestDualBound() {
   return SCIPgetDualbound(getSCIP());
 }
 
 double ScipBackend::MIPGapAbs() {
-  double gapabs = std::fabs(ObjectiveValue() - BestDualBound());
+  double gapabs =
+      std::fabs(ObjectiveValue() - BestDualBound());
   return gapabs<Infinity() ? gapabs : AMPLInf();
 }
 

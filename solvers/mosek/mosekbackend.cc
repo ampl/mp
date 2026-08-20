@@ -641,10 +641,16 @@ void MosekBackend::InitCustomOptions() {
     storedOptions_.paramWrite_);
 
 
-  AddSolverOption("tech:seed seed",
-    "Random number seed (default 42), used for randomization in the mixed-integer optimizer, "
-    "may influence the solution path.",
-    MSK_IPAR_MIO_SEED, 0, INT_MAX);
+  AddSolverOption("tech:seed seed tech:mipseed mipseed",
+                  "Random number seed (default 42), "
+                  "used for randomization in the mixed-integer optimizer, "
+                  "may influence the solution path.",
+                  MSK_IPAR_MIO_SEED, 0, INT_MAX);
+
+  AddSolverOption("tech:lpseed lpseed",
+                  "Sets the random seed (default 23456) used for randomization "
+                  "in the simplex optimizers.",
+                  MSK_IPAR_SIM_SEED, 0, INT_MAX);
 
   AddSolverOption("tech:threads threads",
     "Controls the number of threads employed by the optimizer. "

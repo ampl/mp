@@ -1703,7 +1703,7 @@ void XpressmpBackend::InitCustomOptions() {
                     "Default: 1.0E-4.",
                     XPRS_MIPRELCUTOFF, 1e-4, Infinity());
 
-    AddSolverOption("alg:randomseed randomseed",
+    AddSolverOption("tech:seed seed alg:randomseed randomseed",
                     "Sets the initial seed to use for the pseudo-random number generator in the "
                     "Optimizer; default=1",
                     XPRS_RANDOMSEED, -INT_MAX,  INT_MAX);
@@ -1906,7 +1906,7 @@ void XpressmpBackend::InitCustomOptions() {
       "\n.. value-table::\n",
       XPRS_PREPERMUTE, values_prepermute, 0);
 
-    AddSolverOption("pre:permuteseed prepermuteseed",
+    AddSolverOption("tech:permseed permseed pre:permuteseed prepermuteseed permuteseed",
       "Sets the seed for the pseudo-random number generator for permuting; "
       "default=0",
       XPRS_PREPERMUTESEED, -INT_MAX, INT_MAX);

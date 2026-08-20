@@ -390,23 +390,37 @@ public:
   }
 
   virtual void CalculateAndReportMIPGap() {
-    std::vector<double> dbl(1);
-    if (1 & GetMIPOptions().returnMipGap_) {
-      dbl[0] = MP_DISPATCH( MIPGap() );
-      ReportSuffix(sufRelMipGapObj, dbl);
-      ReportSuffix(sufRelMipGapProb, dbl);
+    double gaprel[] = {0.0};
+    double gapabs[] = {0.0};
+    if (1 & GetMIPOptions().returnMipGap_
+        || !(GetMIPOptions().returnMipGap_ & 4)) {
+      try {
+        gaprel[0] = MP_DISPATCH( MIPGap() );
+        if (1 & GetMIPOptions().returnMipGap_) {
+          ReportSuffix(sufRelMipGapObj, gaprel);
+          ReportSuffix(sufRelMipGapProb, gaprel);
+        }
+      } catch (const std::exception& exc) {
+        this->AddWarning(".relmipgap", exc.what());
+      }
     }
-    if (2 & GetMIPOptions().returnMipGap_) {
-      dbl[0] = MP_DISPATCH( MIPGapAbs() );
-      ReportSuffix(sufAbsMipGapObj, dbl);
-      ReportSuffix(sufAbsMipGapProb, dbl);
+    if (2 & GetMIPOptions().returnMipGap_
+        || !(GetMIPOptions().returnMipGap_ & 4)) {
+      try {
+        gapabs[0] = MP_DISPATCH( MIPGapAbs() );
+        if (2 & GetMIPOptions().returnMipGap_) {
+          ReportSuffix(sufAbsMipGapObj, gapabs);
+          ReportSuffix(sufAbsMipGapProb, gapabs);
+        }
+      } catch (const std::exception& exc) {
+        this->AddWarning(".absmipgap", exc.what());
+      }
     }
     if (!(GetMIPOptions().returnMipGap_ & 4)) {
-      double absMIPGap = MP_DISPATCH(MIPGapAbs());
-      if(absMIPGap > 0. && absMIPGap < MP_DISPATCH(Infinity()))
+      if(gapabs[0] > 0. && gapabs[0] < MP_DISPATCH(Infinity()))
         BaseBackend::AddToSolverMessage(
               fmt::format("absmipgap={}, relmipgap={}",
-                          absMIPGap, MP_DISPATCH(MIPGap())));
+                          gapabs[0], gaprel[0]));
     }
   }
 

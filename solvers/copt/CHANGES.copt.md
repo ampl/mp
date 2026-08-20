@@ -1,6 +1,11 @@
 Summary of recent updates to COPT for AMPL
 ==========================================
 
+
+## unreleased
+- Added option *tech:seed*.
+
+
 ## 20260813
 - Updated to COPT 8.0.6, that introduces performance improvements 
   and bug fixes.

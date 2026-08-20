@@ -574,14 +574,14 @@ void MP2NLBackend::InitCustomOptions() {
 
 
 double MP2NLBackend::MIPGap() {
-  return 0.0;
+  return INFINITY;
 }
 double MP2NLBackend::BestDualBound() {
-  return 0.0;
+  return std::numeric_limits<double>::quiet_NaN();
 }
 
 double MP2NLBackend::MIPGapAbs() {
-  return 0.0;
+  return INFINITY;
 }
 
 

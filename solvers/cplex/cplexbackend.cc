@@ -2444,7 +2444,7 @@ void CplexBackend::InitCustomOptions() {
 
   AddSolverOption("tech:seed seed",
     "Seed for random number generator used internally "
-    "by CPLEX.Use \"seed=?\" to see the default, which "
+    "by CPLEX. Use \"seed=?\" to see the default, which "
     "depends on the CPLEX release.",
     CPX_PARAM_RANDOMSEED, 0, CPXINT_MAX);
 
