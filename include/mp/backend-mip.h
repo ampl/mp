@@ -426,9 +426,13 @@ public:
 
   virtual void ReportBestDualBound() {
     if (GetMIPOptions().returnBestDualBound_) {
-      std::vector<double> dbl(1, MP_DISPATCH( BestDualBound() ));
-      ReportSuffix(sufBestBoundObj, dbl);
-      ReportSuffix(sufBestBoundProb, dbl);
+      try {
+        std::vector<double> dbl(1, MP_DISPATCH( BestDualBound() ));
+        ReportSuffix(sufBestBoundObj, dbl);
+        ReportSuffix(sufBestBoundProb, dbl);
+      } catch (const std::exception& exc) {
+        this->AddWarning(".bestbound", exc.what());
+      }
     }
   }
 

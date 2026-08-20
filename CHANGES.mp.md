@@ -3,6 +3,9 @@ Summary of recent updates to the AMPL MP Library
 
 
 ## unreleased
+- Don't fail when *mip:return_gap* or *mip:bestbound*
+  ask for values but they are not available
+  (warning issued).
 - Option *obj:multi:stats=1* outputs multi-objective
   pass statistics in the *.objpass[_...]* suffixes.
 - Fix a bug in complementarity reformulation
