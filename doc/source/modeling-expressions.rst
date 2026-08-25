@@ -454,6 +454,30 @@ This is the simplest use of ``in`` to restrict the domain of a set; more
 generally, the *in set-expr* phrase may appear in any ``var`` definition
 that does not contain an *=* phrase.
 
+.. admonition:: Work in Progress
+   :class: warning
+
+   The set membership feature is currently under rework. Until further notice,
+   it is recommended to use disjunctive constraints instead,
+   especially when the involved variables participate in logical
+   expressions. Example:
+   
+   .. code-block:: ampl
+
+       var grade in
+           0..2 union {5}
+           union interval[8.1,9]
+           union interval[10,13.7];
+       #
+       # replace by
+       #
+       var grade >=0 <=13.7;
+       s.t. GradeDomain:
+           grade <= 0 || grade == 1 || grade == 2
+               || grade == 5 || 8 <= grade <= 9
+               || grade >= 10;
+
+
 Before sending a problem to the solver interface, AMPL converts variable
 definitions of this kind to alternative definitions that do not use the
 ``in`` operator. This may involve the definition of auxiliary binary
