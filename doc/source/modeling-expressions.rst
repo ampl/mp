@@ -474,7 +474,7 @@ that does not contain an *=* phrase.
        var grade >=0 <=13.7;
        s.t. GradeDomain:
            grade <= 0 || grade == 1 || grade == 2
-               || grade == 5 || 8 <= grade <= 9
+               || grade == 5 || 8.1 <= grade <= 9
                || grade >= 10;
 
 
