@@ -423,7 +423,7 @@ protected:
   /// Check if the variable is defined by an expression
   /// representing sqrt(c1 * x1^2 + ... [ + const ]).
   template <class ConInfo>
-  ConeArgs CheckNorm2_Pow(const ConInfo& ci, int res_var) {
+  ConeArgs CheckNorm2_Pow(const ConInfo& ci, int /*res_var*/) {
     const auto& con_pow = MC().template
         GetConstraint<PowConstExpConstraint>(ci);
     const auto arg_pow = con_pow.GetArguments()[0];

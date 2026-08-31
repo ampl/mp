@@ -229,12 +229,12 @@ public:
   /// Mark as bridged. Use index only.
   virtual void MarkAsBridged(int i) = 0;
 
-  /// Mark as unused. Use index only.
-  virtual void MarkAsUnused(int i) = 0;
+  /// Mark as reformulated. Use index only.
+  /// Do not propagate to arguments.
+  virtual void MarkAsBridged_ThisOnly(int i) = 0;
 
   /// Mark as unused. Use index only.
-  /// Do not propagate to arguments.
-  virtual void MarkAsUnused_ThisOnly(int i) = 0;
+  virtual void MarkAsUnused(int i) = 0;
 
   /// Mark as used, e.g., for logical top-level expr.
   /// Or, when an expr re-appears.

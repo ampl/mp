@@ -412,7 +412,8 @@ protected:
   }
 
   /// Mark unused CondLinEQ's which were replaced by UEnc
-  void MarkUnusedConditionals(int var, const SingleVarEqConstMap& map) {
+  void MarkUnusedConditionals(int /*var*/,
+      const SingleVarEqConstMap& map) {
     auto& ck = GET_CONSTRAINT_KEEPER(CondLinConEQ);
     for (const auto& el: map) {
       assert(!ck.IsRedundant(el.second));

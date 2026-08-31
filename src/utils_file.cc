@@ -50,7 +50,8 @@ public:
   void Close() override { fs_.close(); }
 
   /// Append string
-  bool Append(const char* s) override { fs_ << s; return fs_.good(); }
+  bool Append(const char* s) override
+  { fs_ << s << std::flush; return fs_.good(); }
 
 
 private:

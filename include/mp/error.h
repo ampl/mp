@@ -32,7 +32,7 @@ namespace mp {
 #ifndef MP_ASSERT
   /// Debug assert
   #define MP_ASSERT(condition, message) \
-    assert((condition) && message)
+    assert((condition) && (message))
 #endif
 
 /// Assert with throw, only for Debug

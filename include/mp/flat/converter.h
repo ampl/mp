@@ -114,7 +114,7 @@ public:
     ub = std::min(ub, MPCD(ub(var)));
     if (tighterBounds)
       NarrowVarBestBounds(var, lb, ub);       // cvt:pre:boundsbest
-    if (HasInitExpression(var)) {
+    if (HasActiveOrInactiveInitExpression(var)) {
       const auto& ckid = GetInitExpression(var);
       const auto ctx_old = ckid.GetCK()->GetContext(ckid.GetIndex());
       if (tighterBounds
@@ -261,7 +261,7 @@ public:
   /// mark as "used" if not redefined.
   void IncrementVarUsage(int v) {
     if (1==++VarUsageRef(v)) {
-      if (HasInitExpression(v)) {
+      if (HasActiveOrInactiveInitExpression(v)) {
         auto& ci = GetInitExpression(v);
         if (ci.GetCK()->IsUnused(ci.GetIndex())
             && !ci.GetCK()->IsBridged(ci.GetIndex())) {
@@ -270,7 +270,8 @@ public:
       }
     }
     // Not catching reuse after redef:
-    // @todo check new context in context propagation.
+    // just checking new context in context propagation,
+    // see PropagateBoundsAndContext().
 #ifdef CATCH_REUSE_AFTER_REDEF
     // If unused, no reformulation tried,
     // currently no repetition of reformulation cycle.
@@ -326,7 +327,7 @@ public:
 	/// Normally should delete them.
   void EliminateUnusedDefinedVars() {
 		for (auto i=num_vars(); i--; ) {
-			if (HasInitExpression(i) &&
+      if (HasActiveOrInactiveInitExpression(i) &&      // why only defined?
 					! VarUsageRef(i)) {
         MPD( MarkVarAsEliminated(i) );
 			}
@@ -827,15 +828,15 @@ public:
 		ci.GetCK()->MarkAsBridged(ci.GetIndex());
 	}
 
+  /// Mark constraint as unused.
+  /// Do not decrease argument usage.
+  void MarkAsBridged_ThisOnly(const ConInfo& ci) {
+    ci.GetCK()->MarkAsBridged_ThisOnly(ci.GetIndex());
+  }
+
   /// Mark constraint as unused
   void MarkAsUnused(const ConInfo& ci) {
     ci.GetCK()->MarkAsUnused(ci.GetIndex());
-  }
-
-  /// Mark constraint as unused.
-  /// Do not propagate to arguments.
-  void MarkAsUnused_ThisOnly(const ConInfo& ci) {
-    ci.GetCK()->MarkAsUnused_ThisOnly(ci.GetIndex());
   }
 
   /// Mark constraint as used
@@ -1144,7 +1145,7 @@ public:
   /// @note Should not be used directly,
   ///   use CanBeEliminated().
   bool IfSubmittedVarBoundsStrongerThanInitExpr(int res_var) const {
-    if (MPCD( HasInitExpression(res_var) )) {
+    if (MPCD( HasActiveOrInactiveInitExpression(res_var) )) {
       if (lb(res_var)>MPCD( MinusInfty() )
           || ub(res_var)<MPCD( Infty() )) {
         const auto& cloc = MPCD( GetInitExpression(res_var) );
@@ -1299,21 +1300,30 @@ protected:
 
 
 public:
-  /// Variable has an init expr?
+  /// Variable has an active init expr?
   bool HasInitExpression(int var) const {
+    if (HasActiveOrInactiveInitExpression(var)) {
+      const auto& ci0 = MPCD( GetInitExpression(var) );
+      return IsConActive(ci0);
+    }
+    return false;
+  }
+
+  /// Has active or inactive init expr?
+  bool HasActiveOrInactiveInitExpression(int var) const {
     return int(var_info_.size())>var && var_info_[var].HasId();
   }
 
-  /// Get the init expr
+  /// Get the init expr (active or inactive)
   const ConInfo& GetInitExpression(int var) const {
-    assert(HasInitExpression(var));
+    assert(HasActiveOrInactiveInitExpression(var));
 		return var_info_.at(var);
   }
 
   /// The variable has an init expr,
   /// and the init expr is a logical constraint?
   bool IsInitExprLogical(int var) const {
-    if (!MPCD(HasInitExpression(var)))
+    if (!MPCD(HasActiveOrInactiveInitExpression(var)))
       return false;
     const auto& ie = GetInitExpression(var);
     return ie.GetCK()->IsLogical();
@@ -1364,7 +1374,7 @@ public:
 	/// @return nullptr if no init expr or not this type
 	template <class ConType>
   const ConType* GetInitExpressionOfType(int var) const {
-		if (MPCD( HasInitExpression(var) )) {
+    if (MPCD( HasActiveOrInactiveInitExpression(var) )) {
       const auto& ci0 = MPCD( GetInitExpression(var) );
 			if (IsConInfoType<ConType>(ci0)) {
 				const auto& con =

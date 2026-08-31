@@ -501,7 +501,7 @@
     "tags" : ["logical", "linear"],
     "objective": 114,
     "values": {
-      "Initial.flat1__U__and": 0,
+      "Initial.flat1__U__and": 1,
       "Initial.flat1__U__or": 1
     }
   },

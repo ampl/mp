@@ -118,18 +118,19 @@ public:
   }
 
   void PropagateResult(NotConstraint& con, double lb, double ub, Context ctx) {
-    MPD( NarrowVarBestBounds(con.GetResultVar(), lb, ub) );
+    auto resvar = con.GetResultVar();
+    MPD( NarrowVarBestBounds(resvar, lb, ub) );
     con.AddContext(ctx);
     if (lb==ub) {                         // result fixed
       if (!lb && ctx.HasNegative()) {     // result==0 && ctx-
         MPD( PropagateResultOfInitExpr(con.GetArguments()[0], 1.0, 1.0, -ctx) );
-        MPD( MarkAsUnused_ThisOnly(       // #201
-               MPCD( GetInitExpression(con.GetResultVar()) ) ) );
+        MPD( MarkAsBridged_ThisOnly(  // #201. Actually MarkAsBridged_ThisOnly?
+            MPCD( GetInitExpression(resvar) ) ) );
         return;
       } else if (lb && ctx.HasPositive()) { // result==1 && ctx+
         MPD( PropagateResultOfInitExpr(con.GetArguments()[0], 0.0, 0.0, -ctx) );
-        MPD( MarkAsUnused_ThisOnly(       // #201
-               MPCD( GetInitExpression(con.GetResultVar()) ) ) );
+        MPD( MarkAsBridged_ThisOnly(       // #201
+            MPCD( GetInitExpression(resvar) ) ) );
         return;
       }
     }
@@ -141,7 +142,7 @@ public:
     con.AddContext(ctx);
     if (lb>0.5 && ctx.HasPositive()) {                  // Remove, arguments are fixed
       MPD( PropagateResult2Vars(con.GetArguments(), lb, 1.0, +ctx) );
-      MPD( MarkAsUnused_ThisOnly(       // #201
+      MPD( MarkAsBridged_ThisOnly(       // #201
              MPCD( GetInitExpression(con.GetResultVar()) ) ) );
     } else
       MPD( PropagateResult2Vars(con.GetArguments(), 0.0, 1.0, +ctx) );  // in any ctx??
@@ -152,7 +153,7 @@ public:
     con.AddContext(ctx);
     if (ub<0.5 && ctx.HasNegative()) {                 // Remove, arguments are fixed
       MPD( PropagateResult2Vars(con.GetArguments(), 0.0, ub, +ctx) );
-      MPD( MarkAsUnused_ThisOnly(       // #201
+      MPD( MarkAsBridged_ThisOnly(       // #201
              MPCD( GetInitExpression(con.GetResultVar()) ) ) );
     } else
       MPD( PropagateResult2Vars(con.GetArguments(), 0.0, 1.0, +ctx) );

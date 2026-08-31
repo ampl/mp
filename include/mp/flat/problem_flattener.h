@@ -1652,7 +1652,7 @@ public:
     for (auto arg: ee.GetLinTerms().vars()) {
       if ( GetFlatCvt().HasInitExpression(arg)
           &&                   // Also affine subexpr?
-          GetFlatCvt().CanBeEliminated_FastCheck(arg) )
+          GetFlatCvt().CanBeEliminated_FastCheck(arg) )   // TODO
         return false;
     }
     return true;

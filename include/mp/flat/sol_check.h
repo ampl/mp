@@ -96,7 +96,7 @@ private:
   /// Functor to recompute auxiliary var \a i
   VarsRecomputeFn recomp_fn
   = [this](int i, const VarInfoRecomp& x) {
-    if (MPCD( HasInitExpression(i) )) {
+    if (MPCD( HasActiveOrInactiveInitExpression(i) )) {
       const auto& iexpr = MPCD( GetInitExpression(i) );
       auto pCK = iexpr.GetCK();
 #if __GNUC__ > 8            // manylinux2010 fails

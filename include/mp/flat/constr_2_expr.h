@@ -498,11 +498,14 @@ protected:
               : Context::CTX_NEG);
       exprResVar = MPD( AssignResultVar2Args(std::move(exprTerm)) );
     }
+    MPD( CheckInitExpressionAcceptance(exprResVar) );
     bool need_nlc {false};
     if (exprResVar >= 0) {                            // Some expressions are there
       if ( !MPCD( VarHasMarking(exprResVar) ) )             // mark as expr if new
         MPD( MarkAsExpression(exprResVar) );
-      if ( !MPCD( HasInitExpression(exprResVar) )        // e.g., was fixed
+      // Can be still unused at this point if new.
+      // What if bridged? TODO
+      if ( !MPCD( HasActiveOrInactiveInitExpression(exprResVar) )  // e.g., was fixed
           || !MPCD( UserAcceptsAndRecommends(
               (const NLConstraint*)nullptr) ) )
         MPD( MarkAsResultVar(exprResVar) );
@@ -572,9 +575,10 @@ protected:
                                obj::MAX==qobj.obj_sense_true() // no need to propagate
                                    ? Context::CTX_POS : Context::CTX_NEG) );
       }
+      MPD( CheckInitExpressionAcceptance(exprResVar) );
       if ( !MPCD(VarHasMarking(exprResVar) ))         // mark as expr if new
         MPD( MarkAsExpression(exprResVar) );
-      if ( !MPCD( HasInitExpression(exprResVar) )        // e.g., was fixed
+      if ( !MPCD( HasActiveOrInactiveInitExpression(exprResVar) )    // e.g., was fixed
           || !MPCD( IfPassNLObj() ) )    // or, if NLObj not accepted
         MPD( MarkAsResultVar(exprResVar) );
       if ( MPCD( IsProperVar(exprResVar) ) ) {        // Not an expression after all
@@ -612,20 +616,21 @@ protected:
     int exprResVar = -1;
     if (exprTerm.GetArguments().is_variable()) {
       exprResVar = exprTerm.GetArguments().get_representing_variable();
-      assert( MPCD(HasInitExpression(exprResVar)) );
+      assert( MPCD(HasActiveOrInactiveInitExpression(exprResVar)) );
     } else                  // has more terms, or coef != 1.0, or const_term != 0
       if ( !exprTerm.GetArguments().empty() ) {
         exprTerm.AddContext(Context::CTX_MIX);          // Context is compulsory
         exprResVar
             = MPD( AssignResult2Args__FullExpression(   // Constant as expression
                 std::move(exprTerm)) );
-        assert( MPCD( HasInitExpression(exprResVar) ) );
+        assert( MPCD( HasActiveOrInactiveInitExpression(exprResVar) ) );
       }
+    MPD( CheckInitExpressionAcceptance(exprResVar) );
     bool need_nlcc {false};
     if (exprResVar >= 0) {                              // Some expressions are there
       if ( !MPCD( VarHasMarking(exprResVar) ) )             // mark as expr if new
         MPD( MarkAsExpression(exprResVar) );
-      if ( !MPCD( HasInitExpression(exprResVar) )       // e.g., was fixed
+      if ( !MPCD( HasActiveOrInactiveInitExpression(exprResVar) )  // e.g., was fixed
           || !MPCD( UserAcceptsAndRecommends(
               (const NLComplementarity*)nullptr) ) )
         MPD( MarkAsResultVar(exprResVar) );             // acc:nlcompl=0
@@ -655,6 +660,20 @@ protected:
       return true;
     }
     return false;
+  }
+
+  /// Check that init expression is accepted.
+  /// Only for linfn, quadfn, they are required for NLP interface.
+  void CheckInitExpressionAcceptance(int var) {
+    /// Can be activated by adding the constraint
+    if (MPCD( HasActiveOrInactiveInitExpression(var) )) {
+      const auto& ie = MPD( GetInitExpression(var) );
+      if (ExpressionAcceptanceLevel::Recommended
+          != ie.GetCK()->GetChosenAcceptanceLevelEXPR())
+        MPD(GetEnv()).AddWarning("NLP_interface_linfn_quadfn",
+                                 "For (MI)NLP native interface (acc:_expr=1),\n"
+                                 "acc:linfn=4 acc:quadfn=4 are required.");
+    }
   }
 
   /// Extract linear and expression args

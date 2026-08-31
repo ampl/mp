@@ -415,7 +415,7 @@ protected:
       if (!IfConverterConverts(GetConverter())) {
         i = (int)cons_.size();             // skip unconverted items
       } else {
-        for ( ; ++i!=(int)cons_.size(); )
+        for ( ; ++i!=(int)cons_.size(); ) {
           if (!cons_[i].IsRedundant() &&
               !GetConverter().IfDelayConversion(cons_[i].GetCon(), i)) {
             ConvertConstraint(cons_[i], i);
@@ -423,6 +423,7 @@ protected:
               GetConverter().GetEnv().warn_from_cb(GetShortTypeName());
             }
           }
+        }
       }
     }
     else if (ConstraintAcceptanceLevel::AcceptedButNotRecommended == acceptanceLevel) {
@@ -523,27 +524,27 @@ protected:
   }
 
   /// Mark item as reformulated
-  void MarkAsBridged(Container& cnt, int i) {
+  void MarkAsBridged(Container& cnt, int , bool recurs=true) {
     if (!cnt.IsBridged()) {  // can be called 2x,
       cnt.MarkAsBridged();   // e.g. IfThen: 1st by RedefineVariable(),
-      GetConverter().UncountArgRefs(cnt.GetCon());
+      if (recurs)
+        GetConverter().UncountArgRefs(cnt.GetCon());
       ++n_bridged_;          // then in ConvertConstraint()
     }
   }
 
   /// Mark item as unused
-  void MarkAsUnused(Container& cnt, int i, bool recurs=true) {
+  void MarkAsUnused(Container& cnt, int ) {
     assert(!cnt.IsUnused());
     if (!cnt.IsUnused()) {        // in Release
       cnt.MarkAsUnused();
-      if (recurs)
-        GetConverter().UncountArgRefs(cnt.GetCon());
+      GetConverter().UncountArgRefs(cnt.GetCon());
       ++n_unused_;
     }
   }
 
   /// Mark item as used
-  void MarkAsUsed(Container& cnt, int i) {
+  void MarkAsUsed(Container& cnt, int ) {
     assert(cnt.IsUnused());
     if (cnt.IsUnused()) {
       cnt.MarkAsUsed();
@@ -612,17 +613,17 @@ public:
     MarkAsBridged(cons_.at(i), i);
 	}
 
+  /// Mark cons[\a i] as reformulated.
+  /// Do not propagate to arguments.
+  /// Use index only.
+  void MarkAsBridged_ThisOnly(int i) override {
+    MarkAsBridged(cons_.at(i), i, false);
+  }
+
   /// Mark cons[\a i] as unused.
   /// Use index only.
   void MarkAsUnused(int i) override {
     MarkAsUnused(cons_.at(i), i);
-  }
-
-  /// Mark cons[\a i] as unused.
-  /// Do not propagate to arguments.
-  /// Use index only.
-  void MarkAsUnused_ThisOnly(int i) override {
-    MarkAsUnused(cons_.at(i), i, false);
   }
 
   /// Mark cons[\a i] as used.
@@ -741,10 +742,10 @@ protected:
     auto con_group = GetConstraintGroup(be);
 		for ( ; i_2add_next_ < (int)cons_.size(); ++i_2add_next_) {
       const auto& cont = cons_[i_2add_next_];
-      bool adding = !cont.IsRedundant();            // includes 'unused'
+      bool adding = !cont.IsRedundant();         // no 'unused'
       if (adding) {
         static_cast<Backend&>(be).AddConstraint(cont.GetCon());
-        GetConverter().GetCopyLink().             // Linking to the "final" nodes
+        GetConverter().GetCopyLink().   // Linking to the "final" nodes
             AddEntry({
                        GetValueNode().Select(i_2add_next_),
                        GetConverter().GetValuePresolver().GetTargetNodes().
