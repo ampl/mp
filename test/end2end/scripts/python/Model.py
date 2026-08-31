@@ -18,6 +18,7 @@ class ModelTags(enum.Enum):
     expcones = 4.4
     nonlinear = 5       # All MP drivers PL-approximate nonlinears
     formulas = 5.5      # Expression interface
+    nlobj_native = 5.7  # API accepts NL objective
     formulas_scip = 5.53 # SCIP expression interface
     complementarity = 6
     arc = 7

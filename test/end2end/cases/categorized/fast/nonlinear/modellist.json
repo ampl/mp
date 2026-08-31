@@ -662,6 +662,19 @@
     }
   },
   {
+    "name" : "sinrosnb_small NLobj",
+    "tags" : ["continuous", "nonlinear", "quadraticnonconvex", "nlobj_native"],
+    "objective": -900.9987652,
+    "options": {
+      "mp_options": "debug=1",
+      "copt_options": "debug=1 acc:_expr=1"
+    },
+    "values": {
+      "solve_result": "solved",
+      "Initial.flat1_obj_nonlin": 1
+    }
+  },
+  {
     "name" : "regr_nonlin_palmer8e",
     "tags" : ["continuous", "nonlinear", "quadraticnonconvex"],
     "options": { "mp_options": "debug=1" },

@@ -387,7 +387,7 @@ void GurobiBackend::SetBasis(SolutionBasis basis) {
   auto& varstt = mv.GetVarValues()();
   auto& constt = mv.GetConValues()(CG_Linear);
   assert(varstt.size());
-  assert(constt.size());
+  assert(constt.size() || !NumLinCons());
   VarStatii(varstt);
   ConStatii(constt);
 }

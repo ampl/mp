@@ -1309,6 +1309,16 @@ public:
     return false;
   }
 
+  /// Variable has an unbridged init expr?
+  /// (even if currently unused)
+  bool HasUnbridgedInitExpression(int var) const {
+    if (HasActiveOrInactiveInitExpression(var)) {
+      const auto& ci0 = MPCD( GetInitExpression(var) );
+      return !IsBridged(ci0);
+    }
+    return false;
+  }
+
   /// Has active or inactive init expr?
   bool HasActiveOrInactiveInitExpression(int var) const {
     return int(var_info_.size())>var && var_info_[var].HasId();

@@ -504,8 +504,7 @@ protected:
       if ( !MPCD( VarHasMarking(exprResVar) ) )             // mark as expr if new
         MPD( MarkAsExpression(exprResVar) );
       // Can be still unused at this point if new.
-      // What if bridged? TODO
-      if ( !MPCD( HasActiveOrInactiveInitExpression(exprResVar) )  // e.g., was fixed
+      if ( !MPCD( HasUnbridgedInitExpression(exprResVar) )  // e.g., was fixed
           || !MPCD( UserAcceptsAndRecommends(
               (const NLConstraint*)nullptr) ) )
         MPD( MarkAsResultVar(exprResVar) );
@@ -578,7 +577,7 @@ protected:
       MPD( CheckInitExpressionAcceptance(exprResVar) );
       if ( !MPCD(VarHasMarking(exprResVar) ))         // mark as expr if new
         MPD( MarkAsExpression(exprResVar) );
-      if ( !MPCD( HasActiveOrInactiveInitExpression(exprResVar) )    // e.g., was fixed
+      if ( !MPCD( HasUnbridgedInitExpression(exprResVar) )    // e.g., was fixed
           || !MPCD( IfPassNLObj() ) )    // or, if NLObj not accepted
         MPD( MarkAsResultVar(exprResVar) );
       if ( MPCD( IsProperVar(exprResVar) ) ) {        // Not an expression after all
@@ -630,7 +629,7 @@ protected:
     if (exprResVar >= 0) {                              // Some expressions are there
       if ( !MPCD( VarHasMarking(exprResVar) ) )             // mark as expr if new
         MPD( MarkAsExpression(exprResVar) );
-      if ( !MPCD( HasActiveOrInactiveInitExpression(exprResVar) )  // e.g., was fixed
+      if ( !MPCD( HasUnbridgedInitExpression(exprResVar) )  // e.g., was fixed
           || !MPCD( UserAcceptsAndRecommends(
               (const NLComplementarity*)nullptr) ) )
         MPD( MarkAsResultVar(exprResVar) );             // acc:nlcompl=0
@@ -666,7 +665,7 @@ protected:
   /// Only for linfn, quadfn, they are required for NLP interface.
   void CheckInitExpressionAcceptance(int var) {
     /// Can be activated by adding the constraint
-    if (MPCD( HasActiveOrInactiveInitExpression(var) )) {
+    if (MPCD( HasUnbridgedInitExpression(var) )) {
       const auto& ie = MPD( GetInitExpression(var) );
       if (ExpressionAcceptanceLevel::Recommended
           != ie.GetCK()->GetChosenAcceptanceLevelEXPR())

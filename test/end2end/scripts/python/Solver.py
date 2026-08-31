@@ -1094,6 +1094,7 @@ class GurobiDirectSolver(MPDirectSolver):
                  ModelTags.expcones,  ## Although might not have the expconic solver
 
                  ModelTags.nonlinear, ModelTags.log, ModelTags.trigonometric,
+                 ModelTags.nlobj_native,
 
                  ModelTags.signpow,
                  ModelTags.logistic,
@@ -1409,6 +1410,7 @@ class COPTSolver(MPDirectSolver):
                  ModelTags.quadratic, ModelTags.quadratic_obj,
                  ModelTags.quadraticnonconvex,
                  ModelTags.formulas,
+                 ModelTags.nlobj_native,
 
                  ModelTags.socp,      ## MP transforms cones to quadratics
                  ModelTags.socp_hard_to_recognize,
