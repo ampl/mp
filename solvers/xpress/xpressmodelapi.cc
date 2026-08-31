@@ -7,6 +7,17 @@ void XpressmpModelAPI::InitProblemModificationPhase(
     const FlatModelInfo*) {
 }
 
+void XpressmpModelAPI::FinishProblemModificationPhase() {
+  con_formula_starts_.push_back(con_formulas_.size());
+  XPRESSMP_CCALL(
+      XPRSnlploadformulas(lp(), con_formula_rowind_.size(),
+                          con_formula_rowind_.data(), con_formula_starts_.data(),
+                          true,
+                          con_formulas_.types(), con_formulas_.values()));
+  // TODO
+  // XPRESSMP_CCALL( XPRSslpsetdetrow(lp(), 1, params.resultVar(), &rowindex) );
+}
+
 std::string& myreplace(std::string& s, const std::string& from, const std::string& to)
 {
   for (size_t pos = 0; (pos = s.find(from, pos)) != std::string::npos; pos += to.size())
@@ -344,17 +355,11 @@ void XpressmpModelAPI::AddGlobalConstraint(int resultVar, int argumentVar, int f
 }
 
 void XpressmpModelAPI::AddGlobalConstraint(const NLParams& params, char type) {
-  char BUFFER[512];
-  int status;
-
   double rhs = 0, coef = -1;
   int start = 0;
   XPRESSMP_CCALL(XPRSaddrows(lp(), 1, 1, &type, &rhs, NULL, &start, params.resultVar(), &coef));
   int rowindex = NumLinCons() - 1;
-  int formulaStart[] = { 0, params.size() };
-  XPRESSMP_CCALL(
-      XPRSnlpaddformulas(lp(), 1, &rowindex, formulaStart, true, params.types(), params.values()));
-  // XPRESSMP_CCALL( XPRSslpsetdetrow(lp(), 1, params.resultVar(), &rowindex) );
+  AddConFormula(rowindex, params);
 }
 
 
@@ -540,14 +545,7 @@ void XpressmpModelAPI::AddConstraint(const NLConstraint& nl) {
     }
   }
   int rowindex = addLinearRow(nl, type, rhs, prange);
-  char BUFFER[512];
-  int status;
-  int formulaStart[] = { 0, exp.size() };
-  status = XPRSnlpaddformulas(lp(), 1, &rowindex, formulaStart, true, exp.types(), exp.values());
-  if (status) {
-    XPRSgetlasterror(lp(), BUFFER);
-    printf("%s", BUFFER);
-  }
+  AddConFormula(rowindex, exp);
 }
 void XpressmpModelAPI::AddConstraint(const NLAssignEQ& neq) {
   NLParams params(GetVariable(neq));
@@ -612,6 +610,12 @@ void XpressmpModelAPI::AppendLinAndConstTerms(Expr& exp, const MPExpr& ae) {
       exp.addMember(NLParams::op(XPRS_OP_PLUS));
     }
   }
+}
+
+void XpressmpModelAPI::AddConFormula(int rowindex, const NLParams& exp) {
+  con_formula_rowind_.push_back(rowindex);
+  con_formula_starts_.push_back(con_formulas_.size());
+  con_formulas_.addMembers(exp);
 }
 
 NLParams XpressmpModelAPI::AddExpression(const NLAffineExpression& ae) {
@@ -715,8 +719,6 @@ XpressmpModelAPI::AddExpression(const LogAExpression& e) {
   exp.addMember(NLParams::constant(par));
   exp.addMember(XPRS_TOK_RB, 0);
   return exp;
-}
-void XpressmpModelAPI::FinishProblemModificationPhase() {
 }
 
 

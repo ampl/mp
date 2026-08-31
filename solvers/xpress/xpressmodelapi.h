@@ -275,8 +275,8 @@ public:
   template <class MPExpr> void 
     AppendLinAndConstTerms(Expr& ff, const MPExpr& nla);
 
-  /// Add a row to the linear coefficients matrix, return the last added row number, 
-  /// to be used in XPRSnlpaddformulas to add a formula to the latest added row
+  /// Add a row to the linear coefficients matrix, return the last added row number,
+  /// to be used in XPRSnlploadformulas to add a formula to the latest added row
   template <class MPExpr> int addLinearRow(MPExpr nl, char type, double rhs, double *prange) {
     int start = 0;
 
@@ -291,6 +291,10 @@ public:
     XPRESSMP_CCALL(XPRSaddrows(lp(), 1, size, &type, &rhs, prange, &start, cols.data(), coefs.data()));
     return NumLinCons() - 1;
   }
+
+  /// Add a comstraint formula.
+  /// We accumulate them and load all together for performance.
+  void AddConFormula(int row, const NLParams& exp);
 
   /// Create an expression with one argument (e.g. sin(exp(x)))
   template <class MPExpr> NLParams CreateExpressionOneArg(MPExpr expr, int xpressfunc) {
@@ -372,8 +376,13 @@ public:
     Expr AddExpression(const AcosExpression&);
   ACCEPT_EXPRESSION(AtanExpression, Recommended)
     Expr AddExpression(const AtanExpression&);
+
+
 private:
   std::vector<int> obj_ind_save_, qobj_ind1_save_, qobj_ind2_save_;
+
+  std::vector<int> con_formula_rowind_, con_formula_starts_;
+  NLParams con_formulas_;
 };
 
 } // namespace mp
