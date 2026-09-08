@@ -2,7 +2,7 @@ Summary of recent updates to the AMPL MP Library
 ================================================
 
 
-## unreleased
+## 20260908
 - Set membership operator discouraged
   during rework, see Modeling Guide.
 - Don't fail when *mip:return_gap* or *mip:bestbound*
