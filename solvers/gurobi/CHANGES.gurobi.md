@@ -1,8 +1,9 @@
-Summary of recent updates to gurobi for AMPL
+Summary of recent updates to Gurobi for AMPL
 ============================================
 
 
-## unreleased
+## 20260908
+- Updated to Gurobi 13.0.3 that includes bug fixes.
 - Changes in MP:
   - Option *obj:multi:stats=1* outputs multi-objective
     pass statistics in the *.objpass[_...]* suffixes.

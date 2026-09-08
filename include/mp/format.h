@@ -40,8 +40,10 @@
 #include <vector>
 #include <utility>
 
-#ifdef _SECURE_SCL
-# define FMT_SECURE_SCL _SECURE_SCL
+// stdext::checked_array_iterator was dropped from MSVC
+// starting with the VS2026 (_MSC_VER 1951) STL
+#if defined(_SECURE_SCL) && _SECURE_SCL && _MSC_VER < 1951
+# define FMT_SECURE_SCL 1
 #else
 # define FMT_SECURE_SCL 0
 #endif
