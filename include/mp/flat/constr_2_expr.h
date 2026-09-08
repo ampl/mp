@@ -179,7 +179,7 @@ public:
   /// Special handling for LinearFunctionalConstraint
   bool ConvertWithExpressions(
       const LinearFunctionalConstraint& con, int i,
-      ConstraintAcceptanceLevel , ExpressionAcceptanceLevel eal) {
+      ConstraintAcceptanceLevel , ExpressionAcceptanceLevel ) {
     if (1==stage_cvt2expr_)
       HandleLogicalArgs(con, i);         // explicify logical args
     if (2==stage_cvt2expr_) {
@@ -191,7 +191,7 @@ public:
   /// Special handling for QuadraticFunctionalConstraint
   bool ConvertWithExpressions(
       const QuadraticFunctionalConstraint& con, int i,
-      ConstraintAcceptanceLevel , ExpressionAcceptanceLevel eal) {
+      ConstraintAcceptanceLevel , ExpressionAcceptanceLevel ) {
     if (1==stage_cvt2expr_)
       HandleLogicalArgs(con, i);         // explicify logical args
     if (2==stage_cvt2expr_) {
@@ -731,7 +731,7 @@ protected:
   void ConvertConditionalConLHS(
       const ConditionalConstraint< AlgebraicConstraint<Body, RhsOrRange> >& con,
       int i) {
-    assert(!con.GetArguments().GetBody().is_variable());                 // ensured by caller
+    assert(!con.GetArguments().GetBody().is_variable());   // ensured by caller
     auto alscope = MPD( MakeAutoLinker( con, i ) );       // link from \a con
     /// Create a functional constraint from the LHS
     auto fc = MakeFunctionalConstraint(

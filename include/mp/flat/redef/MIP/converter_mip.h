@@ -340,8 +340,9 @@ protected:
     // 1. Convert the ConLinEq's into indicators.
     // Make sure IfMightUseEqualityEncoding() returns false.
     for (const auto& el: map) {
-      if (!ck.IsRedundant(el.second))
+      if (!ck.IsRedundant(el.second)) {
         ck.ConvertConstraint(el.second);
+      }
     }
     // 2. Initiate possible conversions into big-M's
     //    - done later for all.

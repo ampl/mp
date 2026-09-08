@@ -1843,7 +1843,7 @@ private:
                        "Default 7, see #267.",
                        options_.propCtxCountNumberof_, 0, 7);
 
-    GetEnv().AddOption("cvt:pre:boundsbest boundsbest",
+    GetEnv().AddOption("cvt:pre:boundsbest boundsbest bestbounds bestbound",
                        "0*/1: Submit best-known variable bounds to the solver. "
                        "Can inhibit its presolve.\n"
                        "\n"
