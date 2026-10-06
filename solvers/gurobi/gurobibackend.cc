@@ -1437,7 +1437,7 @@ GurobiBackend::GetSolveResult(int optimstatus, int solcount) {
   case GRB_LOCALLY_OPTIMAL:
     return { sol::OPTIMAL_LOCALLY, "locally optimal solution" };
   case GRB_SUBOPTIMAL:
-    return { sol::UNCERTAIN, "suboptimal solution, can be infeasible" };
+    return { sol::UNCERTAIN, "suboptimal solution" };
   case GRB_INFEASIBLE:
     return { sol::INFEASIBLE, "infeasible problem" };
   case GRB_LOCALLY_INFEASIBLE:
