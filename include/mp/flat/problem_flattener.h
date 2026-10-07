@@ -597,17 +597,9 @@ protected:
           Add()           // Just add next node -
       };                    // assume the constraint order in NL
       auto e = GetModel().logical_con(i);
-      const auto resvar = MP_DISPATCH( Convert2Var(e.expr()) );
-      if (GetFlatCvt().is_fixed(resvar)) {
-        if (0==GetFlatCvt().fixed_value(resvar)) {
-          MP_INFEAS("Constraint is false");
-        }
-      } else {
-        GetFlatCvt().FixAsTrue(resvar);
-        // No: assert(GetFlatCvt().HasInitExpression(resvar));
-        // The constraint was simplified to 1 variable
-        // see hanoi1.mod
-      }
+      /// Try native indicator constraints first, see option cvt:pre:disj2ind
+      if (!AssertLogicalExpr_AsIndicators(e.expr()))
+        AssertLogicalExpr(e.expr());
     } catch (const Error& err) {
       MP_RAISE_WITH_CODE(
           err.exit_code(), fmt::format(
@@ -618,6 +610,303 @@ protected:
           "Error flattening logical constraint _slogcon[{}]:\n  {}",
           i+1, exc.what()));
     }
+  }
+
+  /// Assert a logical expression \a e (fix its result as true.)
+  void AssertLogicalExpr(Expr e) {
+    AssertLogicalResult( MP_DISPATCH( Convert2EExpr(e) ) );
+  }
+
+  /// Assert the disjunction (\a arg0 || \a arg1),
+  /// in the standard way (as an OrConstraint.)
+  void AssertDisjunction(Expr arg0, Expr arg1) {
+    auto v0 = MP_DISPATCH( Convert2Var(arg0) );
+    auto v1 = MP_DISPATCH( Convert2Var(arg1) );
+    AssertLogicalResult( AssignResult2Args( OrConstraint{ {v0, v1} } ) );
+  }
+
+  /// Assert a flattened logical result \a ee (fix it as true.)
+  void AssertLogicalResult(EExpr&& ee) {
+    const auto resvar = MP_DISPATCH( Convert2Var(std::move(ee)) );
+    if (GetFlatCvt().is_fixed(resvar)) {
+      if (0==GetFlatCvt().fixed_value(resvar)) {
+        MP_INFEAS("Constraint is false");
+      }
+    } else {
+      GetFlatCvt().FixAsTrue(resvar);
+      // No: assert(GetFlatCvt().HasInitExpression(resvar));
+      // The constraint was simplified to 1 variable
+      // see hanoi1.mod
+    }
+  }
+
+  /// Try to assert an *asserted* (root) logical expression \a e
+  /// as native indicator constraint(s), see option cvt:pre:disj2ind.
+  ///
+  /// Recognized are disjunctions
+  ///
+  ///     [bvar != 0/1] || [algebraic relation],
+  ///
+  /// which is how AMPL sends implications
+  /// `bvar==0/1 ==> [algebraic relation]`,
+  /// as well as conjunctions of those (each conjunct of an asserted
+  /// conjunction is asserted itself.)
+  ///
+  /// @note This cannot be done in VisitOr(): a nested disjunction
+  ///   has to produce a result variable, whereas an indicator
+  ///   constraint has none. Only an asserted disjunction can become
+  ///   an indicator, thus we walk the root expression here.
+  ///
+  /// @return true iff \a e has been completely asserted,
+  ///   so that nothing else is needed for it.
+  bool AssertLogicalExpr_AsIndicators(Expr e) {
+    if (!IfDisj2Ind())
+      return false;
+    switch (e.kind()) {
+    case expr::AND: {
+      auto ee = Cast<BinaryLogicalExpr>(e);
+      return AssertConjunction_AsIndicators(
+            std::array<Expr, 2>{ ee.lhs(), ee.rhs() });
+    }
+    case expr::FORALL:
+      return AssertConjunction_AsIndicators(
+            Cast<IteratedLogicalExpr>(e));
+    case expr::OR: {
+      auto ee = Cast<BinaryLogicalExpr>(e);
+      return AssertDisjunction_AsIndicators(ee.lhs(), ee.rhs());
+    }
+    case expr::EXISTS: {
+      auto ee = Cast<IteratedLogicalExpr>(e);
+      return 2==ee.num_args()
+          && AssertDisjunction_AsIndicators(ee.arg(0), ee.arg(1));
+    }
+    default:
+      return false;
+    }
+  }
+
+  /// Assert the conjuncts of an asserted conjunction, individually:
+  /// each conjunct of an asserted conjunction is asserted itself.
+  /// @return true if at least 1 conjunct became an indicator
+  ///   (then all of them have been asserted, one way or another),
+  ///   or false if none did (then nothing has been done at all
+  ///   and the caller handles \a ea as a whole,
+  ///   which preserves the previous behaviour.)
+  template <class ExprArray>
+  bool AssertConjunction_AsIndicators(ExprArray ea) {
+    SmallVec<bool, 4> f_done(
+          std::distance(ea.begin(), ea.end()), false);
+    int n_ind = 0, i = 0;
+    for (auto it=ea.begin(); it!=ea.end(); ++it, ++i)
+      n_ind += (f_done[i] = AssertLogicalExpr_AsIndicators(*it));
+    if (!n_ind)
+      return false;                    // nothing recognized
+    i = 0;
+    for (auto it=ea.begin(); it!=ea.end(); ++it, ++i)
+      if (!f_done[i])
+        AssertLogicalExpr(*it);        // assert the remaining conjuncts
+    return true;
+  }
+
+  /// Try to assert the disjunction (\a arg0 || \a arg1)
+  /// as native indicator constraint(s).
+  /// @return true iff done.
+  bool AssertDisjunction_AsIndicators(Expr arg0, Expr arg1) {
+    /// Which argument could be the *condition*?
+    /// Check the other one first: this is side-effect-free.
+    Expr e_cond, e_body;
+    if (IfCanBeIndicatorBody(arg1))
+      { e_cond = arg0; e_body = arg1; }
+    else if (IfCanBeIndicatorBody(arg0))
+      { e_cond = arg1; e_body = arg0; }
+    else
+      return false;
+    /// [cond || body] <==> [!cond ==> body]
+    int b, bv;
+    if (!IfNegatedBinaryVarCondition(e_cond, b, bv)) {
+      /// Nothing recognized syntactically. With bit 4 of
+      /// cvt:pre:disj2ind, accept any 0/1 variable as the condition.
+      /// @note we have to convert e_cond, but it would be
+      ///   converted anyway if we don't succeed.
+      if (!(IfDisj2Ind() & 4)
+          || !IfIndicatorVarValue(Convert2Var(e_cond), b, bv))
+        return false;
+    }
+    AssertImplication_AsIndicators(b, bv, e_cond, e_body);
+    return true;
+  }
+
+  /// Recognize, without side effects, a disjunct \a e
+  /// of the form [bvar ==/!= 0/1], possibly under negations,
+  /// where bvar is a binary variable of the model.
+  /// @param b, bv: (out) the indicator variable and value, so that
+  ///   [!e] <==> [b==bv], i.e., [e || body] <==> [b==bv ==> body].
+  /// @return true iff recognized.
+  bool IfNegatedBinaryVarCondition(Expr e, int& b, int& bv) {
+    bool fNeg {false};
+    while (expr::NOT == e.kind()) {
+      fNeg = !fNeg;
+      e = Cast<NotExpr>(e).arg();
+    }
+    bool fEq;                        // e is [var == const]?
+    switch (e.kind()) {
+    case expr::EQ: fEq = true; break;
+    case expr::NE: fEq = false; break;
+    default: return false;
+    }
+    fEq ^= fNeg;                     // fEq: [e] <==> [var==const]
+    auto ee = Cast<RelationalExpr>(e);
+    Expr lhs = ee.lhs(), rhs = ee.rhs();
+    if (expr::NUMBER == lhs.kind())
+      std::swap(lhs, rhs);           // normalize as [var .. const]
+    if (expr::VARIABLE != lhs.kind()
+        || expr::NUMBER != rhs.kind())
+      return false;
+    b = Cast<Reference>(lhs).index();
+    const auto c = Cast<NumericConstant>(rhs).value();
+    if ((0.0!=c && 1.0!=c)
+        || !GetFlatCvt().is_binary_var(b))
+      return false;
+    /// [b==c || body] <==> [b==1-c ==> body];
+    /// [b!=c || body] <==> [b==c   ==> body]
+    bv = fEq ? int(1.0-c) : int(c);
+    return true;
+  }
+
+  /// Check, without side effects, whether \a e can serve as the body
+  /// of indicator constraint(s): a non-strict algebraic relation,
+  /// or a conjunction of those.
+  /// @note strict inequalities and `!=` are not indicator bodies.
+  bool IfCanBeIndicatorBody(Expr e) {
+    switch (e.kind()) {
+    case expr::LE:
+    case expr::EQ:
+    case expr::GE:
+      return true;
+    case expr::AND: {
+      auto ee = Cast<BinaryLogicalExpr>(e);
+      return IfCanBeIndicatorBody(ee.lhs())
+          && IfCanBeIndicatorBody(ee.rhs());
+    }
+    case expr::FORALL: {
+      auto ee = Cast<IteratedLogicalExpr>(e);
+      if (!ee.num_args())
+        return false;
+      for (int i=0; i<ee.num_args(); ++i)
+        if (!IfCanBeIndicatorBody(ee.arg(i)))
+          return false;
+      return true;
+    }
+    default:
+      return false;
+    }
+  }
+
+  /// See if variable \a v can serve as the "relaxing flag"
+  /// of an indicator constraint: [v || body] <==> [v==0 ==> body].
+  /// @param b, bv: (out) the indicator variable and its value,
+  ///   so that the implication reads [b==bv ==> body].
+  /// @return true iff \a v is a 0/1 variable,
+  ///   or the complement of one.
+  bool IfIndicatorVarValue(int v, int& b, int& bv) {
+    if (v<0 || !GetFlatCvt().is_binary_var(v))
+      return false;
+    b = v;
+    bv = 0;                       // [v || body] <==> [v==0 ==> body]
+    if (auto pNot = GetFlatCvt().template
+        GetInitExpressionOfType<NotConstraint>(v)) {
+      auto v1 = pNot->GetArguments()[0];             // v == !v1
+      if (GetFlatCvt().is_binary_var(v1)) {
+        b = v1;
+        bv = 1;                   // [!v1 || body] <==> [v1==1 ==> body]
+      }
+    }
+    if (!(IfDisj2Ind() & 4)      // otherwise: only model binary variables
+        && GetFlatCvt().HasActiveOrInactiveInitExpression(b))
+      return false;              // b is a reified expression
+    return true;
+  }
+
+  /// Assert [\a b == \a bv ==> \a e_body] as indicator constraint(s),
+  /// where \a e_body satisfies IfCanBeIndicatorBody().
+  /// A conjunctive body is split: [b==bv ==> (C1 and C2)]
+  /// is the same as [b==bv ==> C1] and [b==bv ==> C2].
+  /// @param e_cond: the original condition disjunct,
+  ///   for the fallback [e_cond || Ci] of an individual Ci
+  ///   whose body is not accepted, see AddIndicator().
+  void AssertImplication_AsIndicators(
+      int b, int bv, Expr e_cond, Expr e_body) {
+    switch (e_body.kind()) {
+    case expr::LE:
+    case expr::EQ:
+    case expr::GE:
+      if (!AddIndicator(b, bv, Cast<RelationalExpr>(e_body)))
+        AssertDisjunction(e_cond, e_body);       // fallback
+      break;
+    case expr::AND: {
+      auto ee = Cast<BinaryLogicalExpr>(e_body);
+      AssertImplication_AsIndicators(b, bv, e_cond, ee.lhs());
+      AssertImplication_AsIndicators(b, bv, e_cond, ee.rhs());
+      break;
+    }
+    case expr::FORALL: {
+      auto ee = Cast<IteratedLogicalExpr>(e_body);
+      for (int i=0; i<ee.num_args(); ++i)
+        AssertImplication_AsIndicators(b, bv, e_cond, ee.arg(i));
+      break;
+    }
+    default:
+      MP_RAISE("AssertImplication_AsIndicators: unexpected body");
+    }
+  }
+
+  /// Add a single indicator constraint
+  /// [\a b == \a bv ==> (lhs(e) <sens(e)> rhs(e))].
+  /// @note in contrast to VisitRelationalExpression(), the compared
+  ///   expression is kept inline in the indicator's sub-constraint,
+  ///   which is what solvers want for an indicator.
+  /// @return false if not added: the compared expression turned out
+  ///   non-linear and quadratic indicators are not requested
+  ///   (bit 2 of cvt:pre:disj2ind.) Nothing has been added then.
+  bool AddIndicator(int b, int bv, RelationalExpr e) {
+    std::array<EExpr, 2> ee;
+    Exprs2EExprs(std::array<Expr, 2>{ e.lhs(), e.rhs() }, ee);
+    ee[0].subtract(std::move(ee[1]));
+    auto& body = ee[0];
+    body.sort_terms();                          // to catch duplicates
+    if (!body.is_affine() && !(IfDisj2Ind() & 2))
+      return false;
+    if (body.GetLinTerms().empty() && body.GetQPTerms().empty())
+      return false;                             // constant comparison
+    auto rhs = -body.constant_term();
+    body.constant_term(0.0);
+    /// Add "_flat_" if expr args, as in ConvertAlgCon()
+    GetFlatCvt().SetNameChunk(
+        (GetFlatCvt().HasInitExpression(body.GetLinTerms())
+         || GetFlatCvt().HasInitExpression(body.GetQPTerms()))
+            ? "flat" : nullptr);
+    switch (e.kind()) {
+    case expr::LE: AddIndicator<-1>(b, bv, std::move(body), rhs); break;
+    case expr::EQ: AddIndicator< 0>(b, bv, std::move(body), rhs); break;
+    case expr::GE: AddIndicator< 1>(b, bv, std::move(body), rhs); break;
+    default: MP_RAISE("AddIndicator: unexpected comparison");
+    }
+    GetFlatCvt().SetNameChunk(nullptr);         // reset name chunk
+    return true;
+  }
+
+  /// Add indicator [\a b == \a bv ==> (\a body <sens> \a rhs)].
+  /// @tparam sens: -1 for <=, 0 for ==, 1 for >=.
+  template <int sens>
+  void AddIndicator(int b, int bv, EExpr&& body, double rhs) {
+    if (body.is_affine())
+      AddConstraint_AS_ROOT( IndicatorConstraint< LinConRhs<sens> >{
+                               b, bv,
+                               { std::move(body.GetLinTerms()), rhs } } );
+    else
+      AddConstraint_AS_ROOT( IndicatorConstraint< QuadConRhs<sens> >{
+                               b, bv,
+                               { body.GetAlgConBody(), rhs } } );
   }
 
   void CopyItemNames() {
@@ -1121,9 +1410,14 @@ public:          // need to be public due to CRTP
     return VisitFunctionalExpression<AndConstraint>(e);
   }
 
-  /// @note AMPL presents (e ==> f) as (!e || or).
+  /// @note AMPL presents (e ==> f) as (!e || f).
   /// We leave it so because seems better with Gurobi 13
   /// and equally good with Knitro 15.1.0, see #153.
+  /// @note An *asserted* disjunction of the special form
+  ///   [bvar!=0/1 || alg. relation] is instead converted into a native
+  ///   indicator constraint, see AssertLogicalExpr_AsIndicators()
+  ///   and option cvt:pre:disj2ind. That cannot be done here
+  ///   because a nested disjunction needs a result variable.
   EExpr VisitOr(BinaryLogicalExpr e) {
     return VisitFunctionalExpression<OrConstraint>({ e.lhs(), e.rhs() });
   }
@@ -1573,6 +1867,7 @@ private:
   struct Options {
     int sos_ = 1;
     int sos2_ = 0;
+    int disj2ind_ = 1;
   };
   Options options_;
 
@@ -1590,6 +1885,10 @@ private:
 public:
   int sos() const { return options_.sos_; }
   int sos2_ampl_pl() const { return options_.sos2_; }
+  /// Convert disjunctions [bvar!=0/1 || alg. relation]
+  /// into indicator constraints?
+  /// See option cvt:pre:disj2ind.
+  int IfDisj2Ind() const { return options_.disj2ind_; }
   int prepro_products() const { return prepro_products_; }
   int recognize_signpow() const { return recognize_signpow_; }
   int recognize_logistic() const { return recognize_logistic_; }
@@ -1730,6 +2029,46 @@ private:
                              "\n.. value-table::\n"
                              "\nSee also cvt:pre:unnest, as well as AMPL options linelim and substout.",
                              dvelim_, values_dvelim);
+    /// By default, only if the solver has native indicators:
+    /// otherwise a solver with native logical expressions
+    /// (or NL output) would have to linearize them, see #153.
+    if (!GetFlatCvt().template
+        ModelAPIOk<IndicatorConstraintLinLE>())
+      options_.disj2ind_ = 0;
+    GetEnv().AddOption("cvt:pre:disj2ind disj2ind",
+                       fmt::format(
+                       "Whether to recognize asserted disjunctions "
+                       "of the form\n"
+                       "\n"
+                       "|   [bvar != 0/1] or [algebraic relation]\n"
+                       "\n"
+                       "and pass them to the solver as indicator "
+                       "constraints\n"
+                       "\n"
+                       "|   bvar == 0/1 ==> [algebraic relation].\n"
+                       "\n"
+                       "This is how AMPL sends implications "
+                       "'bvar==0/1 ==> [algebraic relation]'. "
+                       "Conjunctions of such disjunctions, as well as "
+                       "conjunctions in the implied part, are handled too. "
+                       "Sum of a subset of the following bits:\n"
+                       "\n"
+                       "| 1 - Recognize the above pattern, with a linear "
+                       "      implied relation and the condition on a "
+                       "      binary variable of the model.\n"
+                       "| 2 - Also accept a quadratic implied relation.\n"
+                       "| 4 - Also accept any 0/1 variable as the condition, "
+                       "      e.g., the result of a nested logical "
+                       "      expression.\n"
+                       "\n"
+                       "Default for this solver: {}. The default is 1 "
+                       "if the solver has native indicator constraints, "
+                       "and 0 otherwise, because then the indicators would "
+                       "have to be linearized (big-M) while the disjunction "
+                       "might be passed on natively."
+                       "\n\nSee also acc:indle, acc:indeq, acc:indge.",
+                       options_.disj2ind_).c_str(),
+                       options_.disj2ind_, 0, 7);
     GetEnv().AddStoredOption("cvt:pow2_as_qp pow2_as_qp pow2asqp",
                              "0/1*: whenever both quadratics and ^2 are accepted, "
                              "submit (expr)^2 as out-multiplied quadratics, "

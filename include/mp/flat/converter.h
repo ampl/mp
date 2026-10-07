@@ -785,8 +785,9 @@ public:
   template <class Constraint>
   pre::NodeRange AddConstraint_AS_ROOT(Constraint con) {
     auto nr = AddConstraint( std::move(con) );
-    MPD( PropagateResult(             // after AddConstraint() #201 #266
-           GetConstraint<Constraint>(int(nr))) );
+    if (nr.IsValid())               // PreprocessStaticConstraint()
+      MPD( PropagateResult(         // could have removed it.
+             GetConstraint<Constraint>(int(nr))) );  // after AddConstraint() #201 #266
     return nr;
   }
 

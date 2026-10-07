@@ -80,6 +80,29 @@
     "name" : "ifthen_var_01 cmp:eps=0 ineq2related=0",
     "objective" : 2,
     "tags" : ["logical"],
+    "comment": [
+      "cvt:pre:disj2ind=0 so that the implication in the model ",
+      "still produces a conditional constraint, which is what ",
+      "this case tests. See the next case for the default."
+    ],
+    "options": {
+      "mp_options": "cvt:cmp:eps=0 ineq2rel=0 debug=1 cvt:pre:disj2ind=0",
+      "mp2nl_options": "solver_options='cvt:cmp:eps=0 ineq2rel=0 debug=1 cvt:pre:disj2ind=0'"
+    },
+    "values": {
+      "2*x+3*y": 5,
+      "Initial.flat0__condlingt": 1,
+      "Initial.flat0__condlinle": 1
+    }
+  },
+  {
+    "name" : "ifthen_var_01 cmp:eps=0 ineq2related=0 disj2ind",
+    "objective" : 2,
+    "tags" : ["logical"],
+    "comment": [
+      "Same, but with default cvt:pre:disj2ind: the implication ",
+      "becomes an indicator constraint, so no condlinle is created."
+    ],
     "options": {
       "mp_options": "cvt:cmp:eps=0 ineq2rel=0 debug=1",
       "mp2nl_options": "solver_options='cvt:cmp:eps=0 ineq2rel=0 debug=1'"
@@ -87,7 +110,8 @@
     "values": {
       "2*x+3*y": 5,
       "Initial.flat0__condlingt": 1,
-      "Initial.flat0__condlinle": 1
+      "Initial.flat0__condlinle": 0,
+      "Initial.flat0__indle": 1
     }
   },
   {
@@ -118,6 +142,110 @@
     "name" : "impl2",
     "objective" : -40,
     "tags" : ["logical"]
+  },
+  {
+    "name" : "disj2ind_01",
+    "objective" : 10,
+    "tags" : ["logical"],
+    "values": {
+      "solve_result_num": 0,
+      "x": -2,
+      "y": 4
+    },
+    "comment": [
+      "Implications [bvar==0/1 ==> linear relation] are sent by AMPL ",
+      "as disjunctions and recognized as indicator constraints, ",
+      "see option cvt:pre:disj2ind. Default value."
+    ]
+  },
+  {
+    "name" : "disj2ind_01 disj2ind=0",
+    "objective" : 10,
+    "tags" : ["logical"],
+    "options": {
+      "mp_options": "cvt:pre:disj2ind=0",
+      "mp2nl_options": "solver_options='cvt:pre:disj2ind=0'"
+    }
+  },
+  {
+    "name" : "disj2ind_01 disj2ind=7",
+    "objective" : 10,
+    "tags" : ["logical"],
+    "options": {
+      "mp_options": "cvt:pre:disj2ind=7",
+      "mp2nl_options": "solver_options='cvt:pre:disj2ind=7'"
+    }
+  },
+  {
+    "name" : "disj2ind_01 bigM",
+    "objective" : 10,
+    "tags" : ["logical"],
+    "options": {
+      "mp_options": "cvt:pre:disj2ind=7 acc:indle=0 acc:indeq=0 acc:indge=0",
+      "mp2nl_options": "solver_options='cvt:pre:disj2ind=7 acc:indle=0 acc:indeq=0 acc:indge=0'"
+    },
+    "comment": "Linearize the indicators, to check the big-M route"
+  },
+  {
+    "name" : "disj2ind_02",
+    "objective" : 16,
+    "tags" : ["logical"],
+    "values": {
+      "solve_result_num": 0
+    },
+    "comment": [
+      "Disjunctions which are *not* convertible into indicators, ",
+      "mixed with those which are. See option cvt:pre:disj2ind."
+    ]
+  },
+  {
+    "name" : "disj2ind_02 disj2ind=0",
+    "objective" : 16,
+    "tags" : ["logical"],
+    "options": {
+      "mp_options": "cvt:pre:disj2ind=0",
+      "mp2nl_options": "solver_options='cvt:pre:disj2ind=0'"
+    }
+  },
+  {
+    "name" : "disj2ind_02 disj2ind=7",
+    "objective" : 16,
+    "tags" : ["logical"],
+    "options": {
+      "mp_options": "cvt:pre:disj2ind=7",
+      "mp2nl_options": "solver_options='cvt:pre:disj2ind=7'"
+    }
+  },
+  {
+    "name" : "disj2ind_03",
+    "objective" : 21.6,
+    "tags" : ["logical", "quadraticnonconvex"],
+    "values": {
+      "solve_result_num": 0
+    },
+    "comment": [
+      "Implication with a quadratic implied part: an indicator ",
+      "constraint only with bit 2 of cvt:pre:disj2ind. ",
+      "Default value (bit 2 off): the disjunction is kept."
+    ]
+  },
+  {
+    "name" : "disj2ind_03 disj2ind=0",
+    "objective" : 21.6,
+    "tags" : ["logical", "quadraticnonconvex"],
+    "options": {
+      "mp_options": "cvt:pre:disj2ind=0",
+      "mp2nl_options": "solver_options='cvt:pre:disj2ind=0'"
+    }
+  },
+  {
+    "name" : "disj2ind_03 disj2ind=7",
+    "objective" : 21.6,
+    "tags" : ["logical", "quadraticnonconvex"],
+    "options": {
+      "mp_options": "cvt:pre:disj2ind=7",
+      "mp2nl_options": "solver_options='cvt:pre:disj2ind=7'"
+    }
   },
   {
     "name" : "impl3_var_EQ_var",

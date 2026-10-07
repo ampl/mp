@@ -2,6 +2,20 @@ Summary of recent updates to the AMPL MP Library
 ================================================
 
 
+## Unreleased
+- Option *cvt:pre:disj2ind*: recognize the disjunctions
+  by which AMPL sends the implications
+  *bvar==0/1 ==> [linear relation]*,
+  and produce native indicator constraints for them.
+  Conjunctions of such implications, as well as conjunctions
+  in the implied part, are handled too. Bit 2 of the option
+  extends this to a quadratic implied part, and bit 4
+  to any 0/1 variable as the condition.
+  Default 1 for solvers with native indicator constraints,
+  0 otherwise (they would have to be linearized, while
+  the disjunction might be passed on natively.)
+
+
 ## 20260908
 - Set membership operator discouraged
   during rework, see Modeling Guide.

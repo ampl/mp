@@ -138,6 +138,19 @@ are "indicator" constraints that can be handled natively by some solvers. Otherw
 they are transformed to simpler constraints that use relational operators. The other
 cases are treated similarly.
 
+.. note::
+    AMPL sends an implication *constr1* ==> *constr2* as the disjunction
+    (not *constr1*) or *constr2*. When *constr1* is of the form
+    *binary-var* = 0 or *binary-var* = 1 and *constr2* is a linear
+    equality or inequality, MP recognizes this pattern and produces a
+    native indicator constraint. Conjunctions of such implications, as
+    well as conjunctions in the implied part, are handled too.
+    Use option ``cvt:pre:disj2ind`` to control this, in particular
+    to also accept a quadratic implied part, or to switch the
+    recognition off (then the disjunction is passed on as such, or
+    linearized.) It is on by default only for solvers with native
+    indicator constraints.
+
 .. code-block:: ampl
 
     subject to Multi_Min_Ship {i in ORIG, j in DEST}:

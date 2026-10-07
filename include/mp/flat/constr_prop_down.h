@@ -81,6 +81,19 @@ public:
     PropagateResult2Args(con.GetBody(), LB, UB, ctx_new);
   }
 
+  /// Propagate a root indicator constraint
+  template <class Body, int sens>
+  void PropagateResult(const IndicatorConstraint<
+                         AlgebraicConstraint< Body, AlgConRhs<sens> > >& con) {
+    MPD( PropagateResultOfInitExpr(con.get_binary_var(),
+                              MPD( MinusInfty() ), MPD( Infty() ),
+                              1==con.get_binary_value() ?  // b==1 means b in CTX_NEG
+                                Context::CTX_NEG : Context::CTX_POS) );
+    /// Not CTX_ROOT: the sub-constraint holds conditionally,
+    /// so its body's bounds may not be narrowed.
+    MPD( PropagateResult(con.get_constraint(), Context::CTX_POS) );
+  }
+
   template <class Body, int sens>
   void PropagateResult(IndicatorConstraint<
                          AlgebraicConstraint< Body, AlgConRhs<sens> > >& con,
