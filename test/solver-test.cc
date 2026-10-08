@@ -1110,25 +1110,17 @@ TEST(SolverTest, SolutionStubOption) {
   EXPECT_EQ("abc", s2.GetStrOption("solutionstub"));
 }
 
-struct SuffixNameIsNsol {
-  bool operator()(const Solver::SuffixInfo &info) const {
-    return std::strcmp(info.name(), "nsol") == 0;
-  }
-};
-
-// Test that the nsol suffix is added to the Solver if MULTIPLE_SOL flag
-// is specified in the Solver's ctor.
-TEST(SolverTest, NSolSuffix) {
+// Capability registration enables counting; output suffixes are created by
+// SolutionWriter when it receives a solution with primal values.
+TEST(SolverTest, MultipleSolutionCounting) {
   SolCountingSolver s1(false);
-  const Solver::SuffixList *suffixes = &s1.suffixes();
-  EXPECT_EQ(suffixes->end(),
-            std::find_if(suffixes->begin(), suffixes->end(),
-                         SuffixNameIsNsol()));
+  EXPECT_FALSE(s1.need_multiple_solutions());
+  EXPECT_FALSE(s1.FindOption("countsolutions"));
   SolCountingSolver s2(true);
-  suffixes = &s2.suffixes();
-  Solver::SuffixList::const_iterator i =
-      std::find_if(suffixes->begin(), suffixes->end(), SuffixNameIsNsol());
-  EXPECT_STREQ("nsol", i->name());
+  EXPECT_FALSE(s2.need_multiple_solutions());
+  ASSERT_TRUE(s2.FindOption("countsolutions"));
+  s2.SetIntOption("countsolutions", 1);
+  EXPECT_TRUE(s2.need_multiple_solutions());
 }
 
 TEST(NameProviderTest, GenerateNames) {
@@ -1395,9 +1387,14 @@ MATCHER(MatchNoNSol, "") {
 // Matcher that returns true if the argument is a solution that contains
 // an nsol suffix with the specified value.
 MATCHER_P(MatchNSol, nsol, "") {
-  mp::IntSuffix suffix = mp::Cast<mp::IntSuffix>(
-        arg.suffixes(mp::suf::PROBLEM)->Find("nsol"));
-  return suffix != 0 && suffix.value(0) == nsol;
+  for (auto kind : {mp::suf::PROBLEM, mp::suf::OBJ}) {
+    for (const char* name : {"nsol", "npool"}) {
+      auto suffix = arg.suffixes(kind)->template Find<int>(name);
+      if (!suffix || suffix.num_values() == 0 || suffix.value(0) != nsol)
+        return false;
+    }
+  }
+  return true;
 }
 
 // Test that SolutionWriter::HandleSolution doesn't set the nsol suffix
@@ -1421,6 +1418,8 @@ TEST(SolutionWriterTest, CountSolutions) {
   solver.SetIntOption("countsolutions", 1);
   typedef SolCountingSolver::ProblemBuilder ProblemBuilder;
   ProblemBuilder problem_builder;
+  problem_builder.AddVar(0, 1);
+  problem_builder.AddObj(mp::obj::MIN);
   mp::SolutionWriter<SolCountingSolver,
       StrictMock<MockSolWriter<ProblemBuilder> > >
       writer("test", solver, problem_builder);
@@ -1428,7 +1427,8 @@ TEST(SolutionWriterTest, CountSolutions) {
   for (int i = 0; i < nsol; ++i)
     writer.HandleFeasibleSolution("", 0, 0, 0);
   EXPECT_CALL(writer.sol_writer(), Write(_, MatchNSol(nsol)));
-  writer.HandleSolution(0, "", 0, 0, 0);
+  const double values[] = {0.5};
+  writer.HandleSolution(0, "", values, 0, 0);
 }
 
 // Test that SolutionWriter::HandleSolution sets the nsol suffix before
@@ -1438,6 +1438,8 @@ TEST(SolutionWriterTest, WriteFeasibleSolutions) {
   solver.SetStrOption("solutionstub", "foo");
   typedef SolCountingSolver::ProblemBuilder ProblemBuilder;
   ProblemBuilder problem_builder;
+  problem_builder.AddVar(0, 1);
+  problem_builder.AddObj(mp::obj::MIN);
   typedef StrictMock<MockSolWriter<ProblemBuilder> > SolWriter;
   mp::SolutionWriter<SolCountingSolver, SolWriter>
       writer("test", solver, problem_builder);
@@ -1449,7 +1451,19 @@ TEST(SolutionWriterTest, WriteFeasibleSolutions) {
     writer.HandleFeasibleSolution("", 0, 0, 0);
   }
   EXPECT_CALL(sol_writer, Write(_, MatchNSol(nsol)));
-  writer.HandleSolution(0, "", 0, 0, 0);
+  const double values[] = {0.5};
+  writer.HandleSolution(0, "", values, 0, 0);
+}
+
+TEST(SolutionWriterTest, NoCountingSuffixWithoutPrimalValues) {
+  SolCountingSolver solver(true);
+  solver.SetIntOption("countsolutions", 1);
+  typedef SolCountingSolver::ProblemBuilder ProblemBuilder;
+  ProblemBuilder problem_builder;
+  mp::SolutionWriter<SolCountingSolver,
+      StrictMock<MockSolWriter<ProblemBuilder>>> writer("test", solver, problem_builder);
+  EXPECT_CALL(writer.sol_writer(), Write(_, MatchNoNSol()));
+  writer.HandleSolution(500, "no primal solution", 0, 0, 0);
 }
 
 struct MockOptionHandler {

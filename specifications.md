@@ -20,6 +20,7 @@ Scope includes the core library, transformations, drivers, examples, NL Writer c
 - Provide backend and model-API abstractions for constructing solver drivers. The documented recommended setup uses the backend hierarchy with flat or expression model APIs; legacy setups also exist.
 - Represent expressions and constraints, negotiate supported constructs, and transform models when needed by the backend and selected options.
 - Expose driver options and suffix mechanisms and map solver results into AMPL solution/status output. Particular features depend on the driver and solver.
+- The legacy `SolutionWriter` creates problem/objective `nsol` and `npool` outputs when multiple-solution reporting is requested and primal values are supplied. Capability flags alone do not populate the legacy solver's suffix registration list.
 - Provide NL Writer facilities and SOL reading for applications that submit models to AMPL-compatible solvers; these form a separate usable API surface.
 - Provide examples and a mock `visitor` driver for understanding model traversal and starting a new driver.
 
