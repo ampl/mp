@@ -1,6 +1,6 @@
 # TASK-003: Sequential unit-test repairs
 
-- Status: active; maintainer: Codex; updated: 2026-10-08 (Australia/Sydney).
+- Status: done (steps 1-4 repairs and steps 5-6 planning); maintainer: Codex; updated: 2026-10-08 (Australia/Sydney).
 - Related: [TASK-001](../TASK-001-unit-test-investigation/task.md), [TASK-002](../TASK-002-format-library-investigation/task.md), [specification](../../../specifications.md).
 - Baseline: a2a3b5ae; branch: codex/unit-test-repairs.
 
@@ -11,10 +11,10 @@ Perform roadmap steps 1-4 sequentially, preferring a Google Test update. Commit 
 Read guidance, specification, both investigations, and current working tree. TASK-002 corrected the initial suffix crash classification: the diagnostic global CXX_FLAGS override removed /EHsc. A new normal build must preserve compiler defaults. Inherited uncommitted TASK-002 and TASK-001 correction will be delivered as their own documentation checkpoint before repair code.
 
 ## Validation and next step
-No repair tests run yet. Next: pin and vendor modern Google Test/Mock, adapt test-only compatibility helpers, and rebuild with default MSVC exception flags. Error constructor redesign would alter public call meaning; retain signatures and investigate explicit preformatting of ambiguous internal calls instead.
+Steps 1-4 are delivered; the final full-suite run passes 16/21 CTest targets with default MSVC exception flags. Error constructor redesign is deferred because it would alter public call meaning; existing signatures are retained. Detailed proposed follow-up is in [plan.md](plan.md). Steps 5-6 are not implemented.
 
 ## Delivery and recovery
-No source changes yet. Baseline build logs and untracked artifacts remain in place. No push or PR requested. Update this record at every repair/validation checkpoint.
+Delivered commits: 2ce534b8 (baseline/tracking correction), 7f3fb008 (framework), d529c8de (bool storage), a7a5ea7d (diagnostics), 4044c81d (solution counting), cec0c376 (NL fixtures), followed by the documentation commit containing final evidence and step 5/6 plans. Baseline logs and unrelated untracked artifacts remain in place. No push or PR requested. Descriptive commits and this record provide history; a duplicate history file is unnecessary.
 
 ## Step 1: Modern test framework (complete)
 Vendored unchanged Google Test/Mock v1.18.0 headers/sources at upstream commit 063de7e9578f82b369302001269680b4b1553359 with license and provenance. Removed old amalgamations and obsolete compiler workarounds. Updated helper assertions and optional ILOG CP source compilation; no MP public API change. Added a local-object unwinding regression to detect missing exception settings. Documentation explains offline configuration and compiler-default preservation.
@@ -43,6 +43,16 @@ Step 3 validation: complete solver-test runs to completion without exclusions or
 ## Step 4: NL fixture contracts (complete)
 Step 3 commit: 4044c81d. Text fixture serialization now explicitly chooses TEXT, while binary header fixtures explicitly choose their flags. Optional-header parser tests explicitly initialize their option fields rather than relying on obsolete defaults. Strict builder fixtures expect current zero-size variable blocks and objective-choice notifications. Multi-objective tests enable multiobj deliberately; single-objective selection expects one resulting objective and its selection callback. Bounds-order mocks explicitly request objective input. Bound diagnostic expectations retain existing max_digits10 output precision. Added a public text/binary header-and-bounds round trip that checks actual numeric bounds. No reader behavior or public API is changed.
 
-First serial NL-reader run after fixture repair: 107/110 cases pass; three remaining precision/objective-interest expectations corrected in the next iteration. Logs retained at build/unit-repairs-step4-nl-ctest.log. Complete reader/solver verification is running serially before this step is committed.
+First serial NL-reader run after fixture repair: 107/110 cases pass; three remaining precision/objective-interest expectations corrected in the next iteration. Logs retained at build/unit-repairs-step4-nl-ctest.log.
 
 Final step 4 validation: single-worker Debug reader/solver build succeeds. All 111 NL-reader cases pass, including text/binary bounds round trips. Solver completes all 108 cases: 92 pass, 16 fail; the three objective-selection/header callback failures are fixed. Logs: build/unit-repairs-step4-build.log and build/unit-repairs-step4-ctest.log. Next: refresh every target and run all CTest targets serially, then deliver detailed step 5/6 plans.
+
+## Final acceptance evidence and follow-up
+
+The complete Debug build succeeds with `cmake --build build/unit-repairs --config Debug --parallel 1`. All registered targets run without exclusions using `ctest --test-dir build/unit-repairs -C Debug -j 1 --output-on-failure --timeout 60`: 16/21 pass in 53.08 seconds. Both compulsory converter targets pass, as do NL-reader, suffix, OS, error, util and problem-builder targets. No target is missing or times out. Local logs: build/unit-repairs-final-build.log and build/unit-repairs-final-ctest.log (not committed).
+
+Remaining failures: expr-test (2 allocator cases), expr-visitor-test (InvalidExpr), problem-test (LinearExpr capacity), solver-test (16 cases), sp-test (CommonExprInExpectation). These 21 individual failing cases across five targets are recorded and planned in [plan.md](plan.md); the full suite is not green. Plans cover allocator alignment/ownership/API review, meaningful fixture assertions, option/status/signal contracts, core CI, sanitizers, optional dependencies and separate end-to-end outputs.
+
+Configuration: MSVC 14.44.35207, C++17, tests/examples enabled, optional BUILD empty, default /EHsc preserved. Release, Unix, sanitizers, optional ASL/solver SDK tests and licensed end-to-end validation were not run. NOSE2 is unavailable, so Python support-test is not registered. Existing unrelated generated files and the diagnostic build tree are preserved. All work after the worker-count correction used one build worker and serial commands/tests; no additional agents were launched.
+
+Authorized scope is complete: safe steps 1-4 committed independently, consequential Error API change flagged and deferred, and steps 5-6 discussed/planned without implementation. Next authorized follow-up would begin with step 5a in plan.md, then allocation review before visitor repair. fmt modernization remains the separate TASK-002 proposal.
