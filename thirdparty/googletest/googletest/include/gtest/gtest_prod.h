@@ -1,4 +1,4 @@
-// Copyright 2008, Google Inc.
+// Copyright 2006, Google Inc.
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -26,29 +26,35 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+// Google C++ Testing and Mocking Framework definitions useful in production
+// code.
+
+#ifndef GOOGLETEST_INCLUDE_GTEST_GTEST_PROD_H_
+#define GOOGLETEST_INCLUDE_GTEST_GTEST_PROD_H_
+
+// When you need to test the private or protected members of a class,
+// use the FRIEND_TEST macro to declare your tests as friends of the
+// class.  For example:
 //
-// Author: wan@google.com (Zhanyong Wan)
+// class MyClass {
+//  private:
+//   void PrivateMethod();
+//   FRIEND_TEST(MyClassTest, PrivateMethodWorks);
+// };
+//
+// class MyClassTest : public testing::Test {
+//   // ...
+// };
+//
+// TEST_F(MyClassTest, PrivateMethodWorks) {
+//   // Can call MyClass::PrivateMethod() here.
+// }
+//
+// Note: The test class must be in the same namespace as the class being tested.
+// For example, putting MyClassTest in an anonymous namespace will not work.
 
-#include <iostream>
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
+#define FRIEND_TEST(test_case_name, test_name) \
+  friend class test_case_name##_##test_name##_Test
 
-// MS C++ compiler/linker has a bug on Windows (not on Windows CE), which
-// causes a link error when _tmain is defined in a static library and UNICODE
-// is enabled. For this reason instead of _tmain, main function is used on
-// Windows. See the following link to track the current status of this bug:
-// http://connect.microsoft.com/VisualStudio/feedback/ViewFeedback.aspx?FeedbackID=394464  // NOLINT
-#if GTEST_OS_WINDOWS_MOBILE
-# include <tchar.h>  // NOLINT
-
-GTEST_API_ int _tmain(int argc, TCHAR** argv) {
-#else
-GTEST_API_ int main(int argc, char** argv) {
-#endif  // GTEST_OS_WINDOWS_MOBILE
-  std::cout << "Running main() from gmock_main.cc\n";
-  // Since Google Mock depends on Google Test, InitGoogleMock() is
-  // also responsible for initializing Google Test.  Therefore there's
-  // no need for calling testing::InitGoogleTest() separately.
-  testing::InitGoogleMock(&argc, argv);
-  return RUN_ALL_TESTS();
-}
+#endif  // GOOGLETEST_INCLUDE_GTEST_GTEST_PROD_H_

@@ -70,6 +70,8 @@ The existing [testing manual](doc/source/testing.rst) calls `converter-flat-test
 
 Submodule identities are in [.gitmodules](.gitmodules). A public standalone checkout must not require private consuming repositories or their infrastructure.
 
+Component tests compile vendored Google Test/Mock v1.18.0 (C++17) with the MP toolchain and runtime. The pinned sources and license are in `thirdparty/googletest`; test configuration requires no dependency download. This test-only update does not change MP public interfaces.
+
 ### 2.6 Technology constraints
 
 [CMakeLists.txt](CMakeLists.txt) defines C++17, module selection through `BUILD`, examples, documentation, unit tests, library linkage, and optional sanitizer/profiler settings. [solvers/CMakeLists.txt](solvers/CMakeLists.txt) and driver sources define SDK discovery and driver-specific constraints. Version requirements should be maintained there rather than copied as a second changing inventory here. The minimum CMake declaration alone does not establish compatibility for every optional module.

@@ -39,4 +39,18 @@ TEST(ErrorTest, ThrowError) {
   }
   EXPECT_STREQ("test error message", error.what());
 }
+
+TEST(ErrorTest, UnwindsLocalObjects) {
+  bool destroyed = false;
+  struct Guard {
+    bool& destroyed;
+    ~Guard() { destroyed = true; }
+  };
+  try {
+    Guard guard{destroyed};
+    throw mp::Error("unwind");
+  } catch (const mp::Error&) {
+    EXPECT_TRUE(destroyed);
+  }
+}
 }

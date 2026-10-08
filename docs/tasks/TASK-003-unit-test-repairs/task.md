@@ -15,3 +15,12 @@ No repair tests run yet. Next: pin and vendor modern Google Test/Mock, adapt tes
 
 ## Delivery and recovery
 No source changes yet. Baseline build logs and untracked artifacts remain in place. No push or PR requested. Update this record at every repair/validation checkpoint.
+
+## Step 1: Modern test framework (complete)
+Vendored unchanged Google Test/Mock v1.18.0 headers/sources at upstream commit 063de7e9578f82b369302001269680b4b1553359 with license and provenance. Removed old amalgamations and obsolete compiler workarounds. Updated helper assertions and optional ILOG CP source compilation; no MP public API change. Added a local-object unwinding regression to detect missing exception settings. Documentation explains offline configuration and compiler-default preservation.
+
+Fresh build/unit-repairs with default MSVC flags builds all Debug tests and examples. Across disjoint CTest selections: 14/21 targets pass; 7 fail (util, expr, expr-visitor, nl-reader, problem, solver, sp). Both converter targets, all suffix cases, OS tests, and the unwinding regression pass. Solver still aborts at NSolSuffix. Logs: build/unit-repairs-step1-ctest.log and build/unit-repairs-step1-extra-ctest.log. Optional solver/ASL configurations unavailable and not validated. Step 1 delivered in the framework-update commit containing this checkpoint.
+
+Execution constraint updated: all subsequent builds use --parallel 1; tests and commands execute serially; no additional workers. Earlier --parallel 4 build has completed. Keep detailed changes in commit messages and verification/deferrals here; a separate history file is not needed yet.
+
+Next: type-correct bool options, then explicit internal Error formatting without changing public constructor signatures.

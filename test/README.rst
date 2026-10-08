@@ -1,11 +1,16 @@
-This directory contains tests implemented using the
-`Google C++ Testing Framework <http://code.google.com/p/googletest/>`__
-also known as Google Test. The source code for the framework is stored
-in `thirdparty/gtest <https://github.com/ampl/mp/tree/master/thirdparty/gtest>`__
-and built as part of the tests because it is recommended that each
-project compiles Google Test itself instead of using pre-compiled libraries.
-See `Google Test FAQ <http://code.google.com/p/googletest/wiki/FAQ>`__
-for more details.
+MP component tests use Google Test and Google Mock v1.18.0, vendored in
+``thirdparty/googletest``. See that directory's ``README.mp.md`` for the exact
+upstream revision and license. The framework is compiled with MP's toolchain
+and runtime; configuration does not download dependencies.
 
-The `INSTALL file <https://github.com/ampl/mp/blob/master/INSTALL>`__ contains
-instructions on building and running the tests.
+From an independent checkout, build and run the registered tests with::
+
+    cmake -S . -B build-tests -DBUILD_TESTS=ON -DBUILD_DOC=OFF
+    cmake --build build-tests --config Debug
+    ctest --test-dir build-tests -C Debug --output-on-failure
+
+Use ``ctest --test-dir build-tests -C Debug -N`` to inspect the test inventory.
+Optional modules change which tests are registered. End-to-end driver tests
+are separate; see ``doc/source/testing.rst``. Compiler exception flags must
+remain enabled: do not replace CMake's default ``CMAKE_CXX_FLAGS`` with a
+single diagnostic macro on MSVC.

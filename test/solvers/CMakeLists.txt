@@ -11,12 +11,19 @@ if (TARGET gecode)
 endif ()
 
 if (TARGET ilogcp)
-  include_directories(${PROJECT_SOURCE_DIR}/thirdparty/gtest)
   # Include the gtest source in test instead of linking with the library to
   # avoid a problem when gtest is built with a different runtime than ilogcp.
-  add_prefix(ILOGCP_TEST_SRC ../ ${GTEST_SRC})
+  set(ILOGCP_TEST_SRC
+      ${MP_GTEST_DIR}/googletest/src/gtest-all.cc
+      ${MP_GTEST_DIR}/googlemock/src/gmock-all.cc
+      ${PROJECT_SOURCE_DIR}/test/gtest-extra.cc
+      ${PROJECT_SOURCE_DIR}/test/util.cc
+      ${PROJECT_SOURCE_DIR}/test/test-main.cc)
   add_executable(ilogcp-test ilogcp-test.cc feature.h nl-solver-test.h
                  ${ILOGCP_TEST_SRC})
+  target_include_directories(ilogcp-test PRIVATE
+      ${MP_GTEST_INCLUDE_DIRS} ${MP_GTEST_SOURCE_DIRS})
+  target_compile_definitions(ilogcp-test PRIVATE FMT_USE_FILE_DESCRIPTORS)
   target_link_libraries(ilogcp-test amplilogcp-static)
   add_test(NAME ilogcp-test COMMAND $<TARGET_FILE:ilogcp-test>)
   

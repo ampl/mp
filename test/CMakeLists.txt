@@ -15,7 +15,16 @@ if (NOSE2)
   add_test(support-test ${NOSE2} -s ${CMAKE_CURRENT_SOURCE_DIR}/support)
 endif ()
 
-add_prefix(GTEST_SRC ../thirdparty/gmock/ gmock-gtest-all.cc gmock.h)
+set(MP_GTEST_DIR ${PROJECT_SOURCE_DIR}/thirdparty/googletest)
+set(MP_GTEST_INCLUDE_DIRS
+    ${MP_GTEST_DIR}/googletest/include
+    ${MP_GTEST_DIR}/googlemock/include)
+set(MP_GTEST_SOURCE_DIRS
+    ${MP_GTEST_DIR}/googletest
+    ${MP_GTEST_DIR}/googlemock)
+set(GTEST_SRC
+    ${MP_GTEST_DIR}/googletest/src/gtest-all.cc
+    ${MP_GTEST_DIR}/googlemock/src/gmock-all.cc)
 
 # Add gtest library with some extra features.
 set(GTEST_SRC ${GTEST_SRC}
@@ -23,29 +32,11 @@ set(GTEST_SRC ${GTEST_SRC}
 add_library(gtest-extra STATIC ${GTEST_SRC})
 add_to_folder(${MP_FOLDER_PREFIX}test gtest-extra)
 target_compile_definitions(gtest-extra PUBLIC FMT_USE_FILE_DESCRIPTORS)
+target_include_directories(gtest-extra PUBLIC ${MP_GTEST_INCLUDE_DIRS}
+                           PRIVATE ${MP_GTEST_SOURCE_DIRS})
 target_compile_options(gtest-extra PUBLIC ${MP_CXX11_FLAG})
 find_package(Threads)
 target_link_libraries(gtest-extra ${CMAKE_THREAD_LIBS_INIT})
-
-# Workaround GTest bug https://github.com/google/googletest/issues/705.
-check_cxx_compiler_flag(
-  -fno-delete-null-pointer-checks HAVE_FNO_DELETE_NULL_POINTER_CHECKS)
-if (HAVE_FNO_DELETE_NULL_POINTER_CHECKS)
-  target_compile_options(gtest-extra PUBLIC -fno-delete-null-pointer-checks)
-endif ()
-
-# Workaround a bug in implementation of variadic templates in MSVC11.
-if (MSVC)
-  target_compile_definitions(gtest-extra PUBLIC _VARIADIC_MAX=10)
-endif ()
-
-check_cxx_source_compiles("
-  #include <initializer_list>
-  int main() {}" MP_INITIALIZER_LISTS)
-
-if (NOT MP_VARIADIC_TEMPLATES OR NOT MP_INITIALIZER_LISTS)
-  add_definitions(-DGTEST_LANG_CXX11=0)
-endif ()
 
 # Adds an MP test.
 # Usage:

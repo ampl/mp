@@ -73,7 +73,7 @@
     } \
   } else \
     GTEST_CONCAT_TOKEN_(gtest_label_testthrow_, __LINE__): \
-      fail(gtest_ar.failure_message())
+      fail(gtest_ar.message())
 
 // Tests that the statement throws the expected exception and the exception's
 // what() method returns expected message.
@@ -97,7 +97,8 @@ class OutputRedirect {
   fmt::File original_;  // Original file passed to redirector.
   fmt::File read_end_;  // Read end of the pipe where the output is redirected.
 
-  GTEST_DISALLOW_COPY_AND_ASSIGN_(OutputRedirect);
+  OutputRedirect(const OutputRedirect&) = delete;
+  OutputRedirect& operator=(const OutputRedirect&) = delete;
 
   void flush();
   void restore();
@@ -127,7 +128,7 @@ class OutputRedirect {
     } \
   } else \
     GTEST_CONCAT_TOKEN_(gtest_label_testthrow_, __LINE__): \
-      fail(gtest_ar.failure_message())
+      fail(gtest_ar.message())
 
 // Tests that the statement writes the expected output to file.
 #define EXPECT_WRITE(file, statement, expected_output) \
