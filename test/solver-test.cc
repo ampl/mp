@@ -1662,11 +1662,15 @@ struct MultiObjTestSolver : mp::SolverImpl<MultiObjMockProblemBuilder> {
 TEST(MultiObjTest, NeedAllObjs) {
   typedef MockNLReader<MultiObjTestSolver<> > NLReader;
   mp::SolverApp<MultiObjTestSolver<>, NLReader> app;
+  app.solver().SetIntOption("multiobj", 1);
   struct Test {
     static void OnHeader(NLReader::Handler &h) {
       auto header = mp::NLHeader();
       header.num_objs = 42;
       EXPECT_CALL(h.builder(), SetInfo(_));
+      EXPECT_CALL(h.builder(), AddVars(0, mp::var::CONTINUOUS));
+      EXPECT_CALL(h.builder(), AddVars(0, mp::var::INTEGER));
+      EXPECT_CALL(h.builder(), NotifyObjChoice(42, true, 1));
       h.OnHeader(header);
     }
 
@@ -1697,7 +1701,9 @@ struct TestNLReader {
     auto &builder = adapter.builder();
     EXPECT_CALL(builder, SetInfo(_));
     EXPECT_CALL(builder, AddVars(header.num_vars, mp::var::CONTINUOUS));
-    EXPECT_CALL(builder, AddObjs(2));
+    EXPECT_CALL(builder, AddVars(0, mp::var::INTEGER));
+    EXPECT_CALL(builder, NotifyObjChoice(2, false, adapter.objno()));
+    EXPECT_CALL(builder, AddObjs(1));
     adapter.OnHeader(header);
   }
 };

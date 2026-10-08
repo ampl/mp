@@ -194,9 +194,11 @@ TEST(TextReaderTest, ReadString) {
 }
 
 // Formats header and variable bounds as a string.
-std::string FormatHeader(const NLHeader &h, bool var_bounds = true) {
+std::string FormatTextHeader(const NLHeader &h, bool var_bounds = true) {
+  NLHeader text_header = h;
+  text_header.format = NLHeader::TEXT;
   fmt::MemoryWriter w;
-  w << h;
+  w << text_header;
   if (var_bounds) {
     w << "b\n";
     for (int i = 0; i < h.num_vars; ++i)
@@ -209,13 +211,16 @@ std::string FormatHeader(const NLHeader &h, bool var_bounds = true) {
 NLHeader ReadHeader(const std::string &s) {
   TextReader reader(s, "(input)");
   NLHeader header = NLHeader();
+  // These optional-field tests start with explicitly empty options.
+  header.num_ampl_options = 0;
+  std::fill(std::begin(header.ampl_options), std::end(header.ampl_options), 0);
   reader.ReadHeader(header);
   return header;
 }
 
 // Reads a zero header with one modified line.
 NLHeader ReadHeader(int line_index, fmt::StringRef line) {
-  return ReadHeader(ReplaceLine(FormatHeader(NLHeader()), line_index, line));
+  return ReadHeader(ReplaceLine(FormatTextHeader(NLHeader()), line_index, line));
 }
 
 TEST(TextReaderTest, InvalidFormat) {
@@ -303,7 +308,7 @@ TEST(TextReaderTest, IncompleteHeader) {
         ReadHeader(i, " 0 0 0 0"), ReadError,
         fmt::format("(input):{}:9: expected unsigned integer", i + 1));
   }
-  std::string input = ReplaceLine(FormatHeader(NLHeader()), 4, " 0 0");
+  std::string input = ReplaceLine(FormatTextHeader(NLHeader()), 4, " 0 0");
   ReadHeader(ReplaceLine(input, 6, " 0 0"));
   EXPECT_THROW_MSG(
       ReadHeader(ReplaceLine(input, 6, " 0")),
@@ -833,6 +838,7 @@ TEST(NLReaderTest, WriteTextHeader) {
 TEST(NLReaderTest, WriteBinaryHeader) {
   NLHeader header = NLHeader();
   header.format = NLHeader::BINARY;
+  header.flags = 0;
   header.num_ampl_options = 3;
   for (int i = 0; i < header.num_ampl_options; ++i)
     header.ampl_options[i] = 11 * (i + 1);
@@ -1065,7 +1071,7 @@ NLHeader MakeHeader() {
 // a single expression type.
 TEST(NLReaderTest, ExprHierarchy) {
   TestNLHandler2 handler;
-  ReadNLString(FormatHeader(MakeHeader()), handler);
+  ReadNLString(FormatTextHeader(MakeHeader()), handler);
 }
 
 TEST(NLReaderTest, NoNewlineAtEOF) {
@@ -1086,7 +1092,7 @@ TEST(NLReaderTest, NoNewlineAtEOF) {
 
 std::string ReadNL(std::string body, bool var_bounds = true) {
   TestNLHandler handler;
-  ReadNLString(FormatHeader(MakeHeader(), var_bounds) + body, handler);
+  ReadNLString(FormatTextHeader(MakeHeader(), var_bounds) + body, handler);
   return handler.log.str();
 }
 
@@ -1304,7 +1310,7 @@ TEST(NLReaderTest, ReadVarBounds) {
                    "(input):11:1: segment 'b' missing");
   EXPECT_THROW_MSG(ReadNL("b\n"), ReadError,
                    "(input):17:1: duplicate 'b' segment");
-  EXPECT_EQ("1.1 <= v0; v1 <= 22; v2 = 33; v3; 44 <= v4 <= 55;",
+  EXPECT_EQ("1.1000000000000001 <= v0; v1 <= 22; v2 = 33; v3; 44 <= v4 <= 55;",
             ReadNL("b\n21.1\n1 22\n4 33\n3\n0 44 55\n", false));
   EXPECT_THROW_MSG(ReadNL("b\n-1\n", false), ReadError,
                    "(input):12:1: expected bound");
@@ -1315,7 +1321,7 @@ TEST(NLReaderTest, ReadVarBounds) {
 }
 
 TEST(NLReaderTest, ReadConBounds) {
-  EXPECT_READ("1.1 <= c0; c1 <= 22; c2 = 33; c3; 44 <= c4 <= 55; "
+  EXPECT_READ("1.1000000000000001 <= c0; c1 <= 22; c2 = 33; c3; 44 <= c4 <= 55; "
               "-inf <= c5 <= inf complements v1; "
               "-inf <= c6 <= 0 complements v4;",
               "r\n21.1\n1 22\n4 33\n3\n0 44 55\n5 7 2\n5 2 5\n");
@@ -1357,7 +1363,7 @@ TEST(NLReaderTest, SkipObj) {
   EXPECT_CALL(handler, OnLinearObjExpr(_, _)).Times(0);
   auto header = NLHeader();
   header.num_vars = header.num_objs = 1;
-  ReadNLString(FormatHeader(header) + "G0 1\n0 1\n", handler);
+  ReadNLString(FormatTextHeader(header) + "G0 1\n0 1\n", handler);
 }
 
 // Test that handler's OnLinearObjExpr is called if NeedObj returns true.
@@ -1368,7 +1374,7 @@ TEST(NLReaderTest, PassObj) {
       WillOnce(Return(MockNLHandler::LinearObjHandler()));
   auto header = NLHeader();
   header.num_vars = header.num_objs = 1;
-  ReadNLString(FormatHeader(header) + "G0 1\n0 1\n", handler);
+  ReadNLString(FormatTextHeader(header) + "G0 1\n0 1\n", handler);
 }
 
 TEST(NLReaderTest, ReadLinearConExpr) {
@@ -1459,7 +1465,7 @@ void CheckReadFile(std::string nl) {
 }
 
 TEST(NLReaderTest, ReadNLFile) {
-  std::string header = FormatHeader(MakeHeader());
+  std::string header = FormatTextHeader(MakeHeader());
   std::string nl = header + "C0\nn4.2";
   std::size_t page_size = fmt::getpagesize();
   EXPECT_LT(nl.size() + 1, page_size);
@@ -1471,7 +1477,7 @@ TEST(NLReaderTest, ReadNLFile) {
 }
 
 TEST(NLReaderTest, ReadNLFileMultipleOfPageSize) {
-  std::string header = FormatHeader(MakeHeader());
+  std::string header = FormatTextHeader(MakeHeader());
   std::string nl = header + "C0\nn4.2";
   std::size_t page_size = fmt::getpagesize();
   for (std::size_t i = nl.size(); i < page_size - 1; ++i)
@@ -1507,7 +1513,7 @@ struct TestNLHandler3 : mp::NLHandler<TestNLHandler3, int> {
 
 TEST(NLReaderTest, NLHandler) {
   TestNLHandler3 handler;
-  ReadNLString(FormatHeader(MakeHeader()) + "C0\nn4.2\n", handler);
+  ReadNLString(FormatTextHeader(MakeHeader()) + "C0\nn4.2\n", handler);
 }
 
 TEST(NLReaderTest, ReadBoundsFirst) {
@@ -1515,11 +1521,41 @@ TEST(NLReaderTest, ReadBoundsFirst) {
   testing::InSequence dummy;
   EXPECT_CALL(handler, OnHeader(_));
   EXPECT_CALL(handler, OnVarBounds(0, 1, 2));
+  EXPECT_CALL(handler, NeedObj(0)).WillRepeatedly(Return(true));
   EXPECT_CALL(handler, OnObj(_, _, _));
   auto header = NLHeader();
   header.num_vars = header.num_objs = 1;
-  ReadNLString(FormatHeader(header, false) + "O0 0\no2\nv0\nv0\nb\n0 1 2\n",
+  ReadNLString(FormatTextHeader(header, false) + "O0 0\no2\nv0\nv0\nb\n0 1 2\n",
                handler, "", mp::READ_BOUNDS_FIRST);
+}
+
+TEST(NLReaderTest, TextAndBinaryBoundsRoundTrip) {
+  const double lower = -0.25, upper = 1.1;
+  for (auto format : {NLHeader::TEXT, NLHeader::BINARY}) {
+    NLHeader header;
+    header.format = format;
+    header.num_vars = 1;
+    header.arith_kind = static_cast<NLArithKind>(mp::arith::GetKind());
+    fmt::MemoryWriter writer;
+    writer << header;
+    std::string input = writer.str();
+    if (format == NLHeader::TEXT) {
+      input += "b\n0 -0.25 1.1\n";
+    } else {
+      input += "b0";
+      input.append(reinterpret_cast<const char*>(&lower), sizeof(lower));
+      input.append(reinterpret_cast<const char*>(&upper), sizeof(upper));
+    }
+    StrictMock<MockNLHandler> handler;
+    EXPECT_CALL(handler, OnHeader(_)).WillOnce([&](const NLHeader& actual) {
+      EXPECT_EQ(format, actual.format);
+      EXPECT_EQ(1, actual.num_vars);
+      EXPECT_EQ(header.num_ampl_options, actual.num_ampl_options);
+    });
+    EXPECT_CALL(handler, OnVarBounds(0, lower, upper));
+    EXPECT_CALL(handler, EndInput());
+    ReadNLString(input, handler);
+  }
 }
 
 // Count the number of variable references in all nonlinear expressions.
@@ -1533,7 +1569,7 @@ struct VarCounter : mp::NullNLHandler<int> {
 };
 
 TEST(NLReaderTest, Example) {
-  WriteFile("test.nl", FormatHeader(MakeHeader()) + "O0 0\no2\nv0\nv0\n");
+  WriteFile("test.nl", FormatTextHeader(MakeHeader()) + "O0 0\no2\nv0\nv0\n");
   VarCounter counter;
   mp::ReadNLFile("test.nl", counter);
   EXPECT_WRITE(stdout, fmt::print("The number of variable references is {}.",
@@ -1548,7 +1584,7 @@ TEST(NLReaderTest, EndInput) {
   EXPECT_CALL(handler, EndInput());
   auto header = NLHeader();
   header.num_vars = header.num_objs = 1;
-  ReadNLString(FormatHeader(header, false) + "b\n0 1 2\n", handler, "");
+  ReadNLString(FormatTextHeader(header, false) + "b\n0 1 2\n", handler, "");
 }
 
 struct MockNameHandler {
@@ -1709,6 +1745,16 @@ class NLProblemBuilderTest : public ::testing::Test {
   NLProblemBuilder<MockProblemBuilder> adapter;
 
   NLProblemBuilderTest() : adapter(builder) {}
+
+  void ExpectHeader(const NLHeader& header) {
+    EXPECT_CALL(builder, SetInfo(testing::Ref(header)));
+    const int integers = header.num_linear_integer_vars + header.num_linear_binary_vars;
+    if (header.num_vars - integers == 0)
+      EXPECT_CALL(builder, AddVars(0, mp::var::CONTINUOUS));
+    if (integers == 0)
+      EXPECT_CALL(builder, AddVars(0, mp::var::INTEGER));
+    EXPECT_CALL(builder, NotifyObjChoice(header.num_objs, true, 1));
+  }
 };
 
 TEST_F(NLProblemBuilderTest, Forward) {
@@ -1800,22 +1846,22 @@ TEST_F(NLProblemBuilderTest, Forward) {
 
 TEST_F(NLProblemBuilderTest, OnHeader) {
   NLHeader h;
-  EXPECT_CALL(builder, SetInfo(testing::Ref(h)));
+  ExpectHeader(h);
   adapter.OnHeader(h);
 }
 
 TEST_F(NLProblemBuilderTest, AddVars) {
   auto header = mp::NLHeader();
   header.num_vars = 42;
-  EXPECT_CALL(builder, SetInfo(testing::Ref(header)));
+  ExpectHeader(header);
   EXPECT_CALL(builder, AddVars(header.num_vars, mp::var::CONTINUOUS));
   adapter.OnHeader(header);
   header.num_linear_integer_vars = 42;
-  EXPECT_CALL(builder, SetInfo(testing::Ref(header)));
+  ExpectHeader(header);
   EXPECT_CALL(builder, AddVars(header.num_vars, mp::var::INTEGER));
   adapter.OnHeader(header);
   header.num_linear_integer_vars = 10;
-  EXPECT_CALL(builder, SetInfo(testing::Ref(header)));
+  ExpectHeader(header);
   EXPECT_CALL(builder, AddVars(header.num_linear_integer_vars,
                                mp::var::INTEGER));
   EXPECT_CALL(builder, AddVars(header.num_vars - header.num_linear_integer_vars,
@@ -1834,7 +1880,7 @@ TEST_F(NLProblemBuilderTest, OnVarBounds) {
 TEST_F(NLProblemBuilderTest, AddObjs_allByDefault) {
   auto header = mp::NLHeader();
   header.num_objs = 42;
-  EXPECT_CALL(builder, SetInfo(testing::Ref(header)));
+  ExpectHeader(header);
   EXPECT_CALL(builder, AddObjs(42));
   adapter.OnHeader(header);
 }
@@ -1859,7 +1905,7 @@ TEST_F(NLProblemBuilderTest, OnLinearObjExpr) {
 TEST_F(NLProblemBuilderTest, AddAlgebraicCons) {
   auto header = mp::NLHeader();
   header.num_algebraic_cons = 42;
-  EXPECT_CALL(builder, SetInfo(testing::Ref(header)));
+  ExpectHeader(header);
   EXPECT_CALL(builder, AddAlgebraicCons(header.num_algebraic_cons));
   adapter.OnHeader(header);
 }
@@ -1905,7 +1951,7 @@ TEST_F(NLProblemBuilderTest, OnInitialDualValue) {
 TEST_F(NLProblemBuilderTest, AddLogicalCons) {
   auto header = mp::NLHeader();
   header.num_logical_cons = 42;
-  EXPECT_CALL(builder, SetInfo(testing::Ref(header)));
+  ExpectHeader(header);
   EXPECT_CALL(builder, AddLogicalCons(header.num_logical_cons));
   adapter.OnHeader(header);
 }
@@ -1931,7 +1977,7 @@ TEST_F(NLProblemBuilderTest, OnComplementarity) {
 TEST_F(NLProblemBuilderTest, AddCommonExprs) {
   auto header = mp::NLHeader();
   header.num_common_exprs_in_both = 42;
-  EXPECT_CALL(builder, SetInfo(testing::Ref(header)));
+  ExpectHeader(header);
   EXPECT_CALL(builder, AddCommonExprs(header.num_common_exprs_in_both));
   adapter.OnHeader(header);
 }
@@ -1961,7 +2007,7 @@ TEST_F(NLProblemBuilderTest, OnColumnSizes) {
 TEST_F(NLProblemBuilderTest, AddFunctions) {
   auto header = mp::NLHeader();
   header.num_funcs = 42;
-  EXPECT_CALL(builder, SetInfo(testing::Ref(header)));
+  ExpectHeader(header);
   EXPECT_CALL(builder, AddFunctions(header.num_funcs));
   adapter.OnHeader(header);
 }
