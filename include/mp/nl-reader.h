@@ -2333,7 +2333,7 @@ class NLProblemBuilder {
     // Check if the function is defined.
     if (Function func = builder_.function(func_index))
       return builder_.BeginCall(func, num_args);
-    throw Error("function {} is not defined", func_index);
+    throw Error(fmt::format("function {} is not defined", func_index));
   }
   NumericExpr EndCall(CallArgHandler handler) {
     return builder_.EndCall(handler);

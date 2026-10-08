@@ -838,7 +838,7 @@ class BasicExprFactory : private Alloc {
     internal::CheckIndex(index, funcs_.size());
     const Function::Impl *&impl = funcs_[index];
     if (impl)
-      throw Error("function {} is already defined", index);
+      throw Error(fmt::format("function {} is already defined", index));
     return CreateFunction(impl, index, name, num_args, type);
   }
 

@@ -224,7 +224,7 @@ public:
     GetValue(value);
     if (value < std::numeric_limits<int>::min() ||
         value > std::numeric_limits<int>::max()) {
-      throw Error("Value {} doesn't fit in int", value);
+      throw Error(fmt::format("Value {} doesn't fit in int", value));
     }
     int_value = static_cast<int>(value);
   }

@@ -53,4 +53,15 @@ TEST(ErrorTest, UnwindsLocalObjects) {
     EXPECT_TRUE(destroyed);
   }
 }
+
+TEST(ErrorTest, IntegerMessageArgumentAndExplicitExitCode) {
+  mp::Error formatted(fmt::format("answer {}", 42));
+  EXPECT_STREQ("answer 42", formatted.what());
+  mp::Error coded("literal {}", 200);
+  EXPECT_STREQ("literal {}", coded.what());
+  EXPECT_EQ(200, coded.exit_code());
+  mp::Error both(fmt::format("answer {}", 42), 200);
+  EXPECT_STREQ("answer 42", both.what());
+  EXPECT_EQ(200, both.exit_code());
+}
 }

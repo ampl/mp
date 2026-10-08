@@ -84,7 +84,9 @@ class Error : public fmt::internal::RuntimeError {
   /// Costruct from message formatting arguments?
   FMT_VARIADIC_(char, , Error, init, fmt::CStringRef)
 
-  /// Construct from message and optional exit code
+  /// Construct from message and optional exit code.
+  /// A single int argument selects this overload, not formatted construction.
+  /// Use Error(fmt::format(format, value)) when the int is a message argument.
   Error(fmt::CStringRef msg, int c=-1) : exit_code_(c)
   { SetMessage(msg.c_str()); }
 

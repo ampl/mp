@@ -69,7 +69,7 @@ std::string FixPath(fmt::CStringRef path, char sep) {
 
 void ChangeDirectory(fmt::CStringRef path) {
   if (chdir(path.c_str()) != 0)
-    throw mp::Error("chdir failed, error code = {}", errno);
+    throw mp::Error(fmt::format("chdir failed, error code = {}", errno));
 }
 
 int ExecuteShellCommand(
@@ -83,16 +83,16 @@ int ExecuteShellCommand(
 #endif
   // Check if system function failed.
   if (result == -1)
-    throw mp::Error("system failed, error code = {}", errno);
+    throw mp::Error(fmt::format("system failed, error code = {}", errno));
   // Check if process hasn't exited normally.
   if (!WIFEXITED(result)) {
-    throw mp::Error(
-        "process hasn't exited normally, error code = {}", result);
+    throw mp::Error(fmt::format(
+        "process hasn't exited normally, error code = {}", result));
   }
   // Process exited normally - check exit code.
   int exit_code = WEXITSTATUS(result);
   if (exit_code != 0 && throw_on_nonzero_exit_code)
-    throw mp::Error("process exited with code {}", exit_code);
+    throw mp::Error(fmt::format("process exited with code {}", exit_code));
   return exit_code;
 }
 
