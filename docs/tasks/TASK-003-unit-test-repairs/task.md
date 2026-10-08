@@ -24,3 +24,8 @@ Fresh build/unit-repairs with default MSVC flags builds all Debug tests and exam
 Execution constraint updated: all subsequent builds use --parallel 1; tests and commands execute serially; no additional workers. Earlier --parallel 4 build has completed. Keep detailed changes in commit messages and verification/deferrals here; a separate history file is not needed yet.
 
 Next: type-correct bool options, then explicit internal Error formatting without changing public constructor signatures.
+
+## Step 2a: Type-correct boolean option storage (complete)
+Step 1 commit: 7f3fb008. Replaced BoolOption's reinterpretation of bool as int with a TypedSolverOption<int> adapter that reads/writes the actual bool and accepts only 0/1. Public option signatures, names, values and storage layout are unchanged. Added regressions covering defaults, reset, invalid values, independent bool values, and adjacent debug state. Single-worker Debug solver-test build succeeds; CountSolutionsOption and BooleanOptionsPreserveIndependentValues both pass. Logs: build/unit-repairs-bool-build.log and build/unit-repairs-bool-tests.log. Delivered in the bool-storage commit containing this checkpoint.
+
+Next: explicit formatting at internal integer Error call sites; public Error constructor redesign deferred as a consequential API change.

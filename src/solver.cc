@@ -709,11 +709,19 @@ void BasicSolver::InitMetaInfoAndOptions(
   };
 
   /// BoolOption
-  struct BoolOption : IntOption {
+  struct BoolOption : TypedSolverOption<int> {
+    bool& value_;
     /// Construct
     BoolOption(
         bool& value, const char* name, const char* description)
-        : IntOption(*(int*)&value, name, description, 0, 1) { }
+        : TypedSolverOption<int>(name, description), value_(value) { }
+
+    void GetValue(fmt::LongLong& value) const { value = value_ ? 1 : 0; }
+    void SetValue(fmt::LongLong value) {
+      if (value != 0 && value != 1)
+        throw InvalidOptionValue(name(), value);
+      value_ = (value != 0);
+    }
   };
 
 

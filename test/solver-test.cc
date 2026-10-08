@@ -1077,6 +1077,30 @@ TEST(SolverTest, CountSolutionsOption) {
   EXPECT_EQ(1, s2.GetIntOption("countsolutions"));
 }
 
+TEST(SolverTest, BooleanOptionsPreserveIndependentValues) {
+  SolCountingSolver s(true);
+  EXPECT_EQ(0, s.GetIntOption("outlev_mp"));
+  EXPECT_EQ(1, s.GetIntOption("report_uncertain_sol"));
+  EXPECT_EQ(0, s.GetIntOption("countsolutions"));
+  s.SetIntOption("debug", 1);
+  for (const char* option : {"outlev_mp", "report_uncertain_sol", "countsolutions"}) {
+    for (int value : {0, 1, 0}) {
+      s.SetIntOption(option, value);
+      EXPECT_EQ(value, s.GetIntOption(option));
+      EXPECT_EQ(1, s.GetIntOption("debug"));
+      EXPECT_THROW(s.SetIntOption(option, -1), InvalidOptionValue);
+      EXPECT_THROW(s.SetIntOption(option, 2), InvalidOptionValue);
+      EXPECT_EQ(value, s.GetIntOption(option));
+    }
+  }
+  s.SetIntOption("outlev_mp", 1);
+  s.SetIntOption("report_uncertain_sol", 1);
+  s.SetIntOption("countsolutions", 1);
+  s.SetIntOption("countsolutions", 0);
+  EXPECT_EQ(1, s.GetIntOption("outlev_mp"));
+  EXPECT_EQ(1, s.GetIntOption("report_uncertain_sol"));
+}
+
 TEST(SolverTest, SolutionStubOption) {
   SolCountingSolver s1(false);
   EXPECT_THROW(s1.GetStrOption("solutionstub"), OptionError);
