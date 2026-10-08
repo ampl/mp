@@ -1,5 +1,11 @@
 # Agent instructions
 
+## Task tracking
+
+- Read [TASK_RULES.md](TASK_RULES.md) when assessing or resuming a task. Automatically create or reuse a canonical record for substantial tasks according to its recovery criteria, and maintain it at meaningful checkpoints.
+- Read the task index and matching record when present. Use an explicitly supplied canonical record instead of duplicating it; keep repository-owned tracking suitable for public independent use.
+- Clarify consequential scope or visibility uncertainty while continuing independent work. Routine record creation does not require separate permission.
+
 ## Specifications
 
 - Before changing behavior, read this repository's `specifications.md` if it exists and the relevant documentation. If it is missing, use existing code and documentation and report consequential uncertainty; do not invent requirements.

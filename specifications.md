@@ -166,6 +166,7 @@ Public specifications, documentation, and build instructions remain self-contain
 | Tests and release checks | [testing.rst](doc/source/testing.rst), [test](test) |
 | Dependencies and licenses | [.gitmodules](.gitmodules), [thirdparty](thirdparty), [LICENSE.rst](LICENSE.rst) |
 | Change history/agent workflow | [CHANGES.mp.md](CHANGES.mp.md), [AGENTS.md](AGENTS.md) |
+| Task lifecycle and recovery records | [TASK_RULES.md](TASK_RULES.md); repository-owned records under `docs/tasks/` when needed |
 
 ### 3.5 Change coordination
 
