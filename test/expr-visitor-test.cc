@@ -32,12 +32,12 @@ namespace expr = mp::expr;
 // IsSame<T, U>::VALUE is true iff T and U are the same type.
 template <typename T, typename U>
 struct IsSame {
-  static const bool VALUE = false;
+  static constexpr bool VALUE = false;
 };
 
 template <typename T>
 struct IsSame<T, T> {
-  static const bool VALUE = true;
+  static constexpr bool VALUE = true;
 };
 
 // Checks if ExprTypes::T is a typedef of mp::T.
