@@ -102,6 +102,7 @@ void MosekBackend::OpenSolver() {
 }
 
 void MosekBackend::CloseSolver() {
+  if (fixed_task_) MSK_deletetask(&fixed_task_);
   if (lp()) MSK_deletetask(&lp_ref());
   if (env()) MSK_deleteenv(&env_ref());
 }
@@ -119,9 +120,9 @@ void MosekBackend::InitOptionParsing() {
 }
 
 bool MosekBackend::IsMIP() const {
-  int is_int_sol = 0;
-  MOSEK_CCALL(MSK_solutiondef(lp(), MSK_SOL_ITG, &is_int_sol));
-  return is_int_sol;
+  int num_int = 0;
+  MOSEK_CCALL(MSK_getnumintvar(lp(), &num_int));
+  return num_int != 0;
 }
 
 bool MosekBackend::IsQCP() const {
@@ -131,6 +132,7 @@ bool MosekBackend::IsQCP() const {
 }
 
 ArrayRef<double> MosekBackend::PrimalSolution() {
+  if (HasFixedLP()) return FixedLP().primal;
 	std::vector<double> x;
   // MSKsolstae solst;
   // MSK_getsolsta(lp(), solToFetch_, &solst);
@@ -156,6 +158,7 @@ pre::ValueMapDbl MosekBackend::DualSolution() {
 }
 
 ArrayRef<double> MosekBackend::DualSolution_LP() {
+  if (IsMIP()) return HasFixedLP() ? ArrayRef<double>(FixedLP().dual) : ArrayRef<double>{};
   int num_cons = NumLinCons();
   std::vector<double> pi(num_cons);
   // if (!IsMIP())
@@ -250,10 +253,73 @@ void MosekBackend::Solve() {
   WindupMOSEKSolve();
 }
 
+MosekBackend::FixedLPResult MosekBackend::SolveFixedLP(ArrayRef<double> x) {
+  if (solToFetch_ != MSK_SOL_ITG ||
+      (solSta_ != MSK_SOL_STA_INTEGER_OPTIMAL && solSta_ != MSK_SOL_STA_PRIM_FEAS))
+    MP_RAISE("no integer-feasible incumbent");
+  if (fixed_task_) MSK_deletetask(&fixed_task_);
+  MOSEK_CCALL(MSK_clonetask(lp(), &fixed_task_));
+  int n = NumVars(), m = NumLinCons();
+  double tol;
+  GetSolverOption(MSK_DPAR_MIO_TOL_ABS_RELAX_INT, tol);
+  for (int j = 0; j < n; ++j) {
+    MSKvariabletypee type;
+    MOSEK_CCALL(MSK_getvartype(lp(), j, &type));
+    if (type == MSK_VAR_TYPE_INT) {
+      MSKboundkeye key;
+      double lb, ub;
+      MOSEK_CCALL(MSK_getvarbound(lp(), j, &key, &lb, &ub));
+      if (key == MSK_BK_UP || key == MSK_BK_FR) lb = -INFINITY;
+      if (key == MSK_BK_LO || key == MSK_BK_FR) ub = INFINITY;
+      double value = FixedIntegerValue(x[j], lb, ub, tol);
+      MOSEK_CCALL(MSK_putvartype(fixed_task_, j, MSK_VAR_TYPE_CONT));
+      MOSEK_CCALL(MSK_putvarbound(fixed_task_, j, MSK_BK_FX, value, value));
+    }
+  }
+  MOSEK_CCALL(MSK_putintparam(fixed_task_, MSK_IPAR_OPTIMIZER, MSK_OPTIMIZER_DUAL_SIMPLEX));
+  MOSEK_CCALL(MSK_putdouparam(fixed_task_, MSK_DPAR_OPTIMIZER_MAX_TIME,
+      fixed_model_time_limit() < 0 ? -1.0 : fixed_model_time_limit()));
+  MOSEK_CCALL(MSK_putintparam(fixed_task_, MSK_IPAR_SIM_MAX_ITERATIONS,
+      fixed_model_iter_limit() < 0 ? INT_MAX : fixed_model_iter_limit()));
+  MSKrescodee termination;
+  MOSEK_CCALL(MSK_optimizetrm(fixed_task_, &termination));
+  MSKsolstae status;
+  MOSEK_CCALL(MSK_getsolsta(fixed_task_, MSK_SOL_BAS, &status));
+  if (status != MSK_SOL_STA_OPTIMAL)
+    MP_RAISE(fmt::format("fixed LP not optimal (MOSEK status {}, termination {})", (int)status, (int)termination));
+  FixedLPResult result;
+  MOSEK_CCALL(MSK_getprimalobj(fixed_task_, MSK_SOL_BAS, &result.objective));
+  result.primal.resize(n);
+  result.dual.resize(m);
+  std::vector<MSKstakeye> vst(n), cst(m);
+  MOSEK_CCALL(MSK_getxx(fixed_task_, MSK_SOL_BAS, result.primal.data()));
+  MOSEK_CCALL(MSK_gety(fixed_task_, MSK_SOL_BAS, result.dual.data()));
+  MOSEK_CCALL(MSK_getskx(fixed_task_, MSK_SOL_BAS, vst.data()));
+  MOSEK_CCALL(MSK_getskc(fixed_task_, MSK_SOL_BAS, cst.data()));
+  auto convert = [](MSKstakeye status) {
+    switch (status) {
+    case MSK_SK_BAS: return (int)BasicStatus::bas;
+    case MSK_SK_LOW: return (int)BasicStatus::low;
+    case MSK_SK_UPR: return (int)BasicStatus::upp;
+    case MSK_SK_FIX: return (int)BasicStatus::equ;
+    case MSK_SK_SUPBAS: return (int)BasicStatus::sup;
+    default: MP_RAISE(fmt::format("Unknown MOSEK fixed-LP basis status {}", (int)status));
+    }
+  };
+  for (auto status : vst) result.varstt.push_back(convert(status));
+  for (auto status : cst) result.constt.push_back(convert(status));
+  int primal = 0, dual = 0;
+  MOSEK_CCALL(MSK_getintinf(fixed_task_, MSK_IINF_SIM_PRIMAL_ITER, &primal));
+  MOSEK_CCALL(MSK_getintinf(fixed_task_, MSK_IINF_SIM_DUAL_ITER, &dual));
+  result.iterations = primal + dual;
+  return result;
+}
+
 void MosekBackend::WindupMOSEKSolve() { }
 
 void MosekBackend::ReportResults() {
   ReportMOSEKResults();
+  ConsiderEmulatedFixedModel();
   BaseBackend::ReportResults();
 }
 
@@ -677,6 +743,10 @@ void MosekBackend::InitCustomOptions() {
     "Limit on solve time (in seconds; default: no limit).",
     MSK_DPAR_OPTIMIZER_MAX_TIME, 0.0, DBL_MAX);
 
+  AddSolverOption("lim:nodes nodelim nodelimit",
+    "Limit the number of MIP branches (MOSEK MIO_MAX_NUM_BRANCHES; default: no limit).",
+    MSK_IPAR_MIO_MAX_NUM_BRANCHES, 0, INT_MAX);
+
   AddSolverOption("lim:sol sollimit solutionlimit",
     "Limit the number of feasible MIP solutions found, causing early "
     "termination if exceeded; default -1 (no limit).",
@@ -699,6 +769,8 @@ double MosekBackend::MIPGapAbs() {
 
 SensRangesPresolved MosekBackend::GetSensRangesPresolved()
 {
+  if (IsMIP() && !HasFixedLP()) return {};
+  MSKtask_t task = HasFixedLP() ? fixed_task_ : lp();
   // Set sensitivity range parameters for constraints
   int lencon = NumLinCons();
   std::vector<MSKint32t> cindex(lencon);
@@ -747,7 +819,7 @@ SensRangesPresolved MosekBackend::GetSensRangesPresolved()
   // Compute sensitivity ranges for lower bounds
   MOSEK_CCALL(
     MSK_primalsensitivity(
-        lp(),
+        task,
         lencon,
         cindex.data(),
         cmarklb.data(),
@@ -768,7 +840,7 @@ SensRangesPresolved MosekBackend::GetSensRangesPresolved()
   // Compute sensitivity ranges for upper bounds
   MOSEK_CCALL(
     MSK_primalsensitivity(
-        lp(),
+        task,
         lencon,
         cindex.data(),
         cmarkub.data(),
@@ -789,7 +861,7 @@ SensRangesPresolved MosekBackend::GetSensRangesPresolved()
   // Compute sensitivity ranges for objective coeffs
   MOSEK_CCALL(
     MSK_dualsensitivity(
-        lp(),
+        task,
         lenvar,
         vindex.data(),
         opricelo.data(),
@@ -802,7 +874,7 @@ SensRangesPresolved MosekBackend::GetSensRangesPresolved()
   // Get bounds and add them to sensitivity ranges
   std::vector<MSKboundkeye> vbk(lenvar);
   std::vector<MSKrealt> vbl(lenvar), vbu(lenvar);
-  MOSEK_CCALL(MSK_getvarboundslice(lp(), (MSKint32t)0, (MSKint32t)lenvar, vbk.data(), vbl.data(), vbu.data()));
+  MOSEK_CCALL(MSK_getvarboundslice(task, (MSKint32t)0, (MSKint32t)lenvar, vbk.data(), vbl.data(), vbu.data()));
   std::transform(vrangelblo.begin(), vrangelblo.end(), vbl.begin(), vrangelblo.begin(), std::plus<MSKrealt>());
   std::transform(vrangelbhi.begin(), vrangelbhi.end(), vbl.begin(), vrangelbhi.begin(), std::plus<MSKrealt>());
   std::transform(vrangeublo.begin(), vrangeublo.end(), vbu.begin(), vrangeublo.begin(), std::plus<MSKrealt>());
@@ -823,7 +895,7 @@ SensRangesPresolved MosekBackend::GetSensRangesPresolved()
 
   std::vector<MSKboundkeye> cbk(lencon);
   std::vector<MSKrealt> cbl(lencon), cbu(lencon);
-  MOSEK_CCALL(MSK_getconboundslice(lp(), (MSKint32t)0, (MSKint32t)lencon, cbk.data(), cbl.data(), cbu.data()));
+  MOSEK_CCALL(MSK_getconboundslice(task, (MSKint32t)0, (MSKint32t)lencon, cbk.data(), cbl.data(), cbu.data()));
   std::transform(crangelblo.begin(), crangelblo.end(), cbl.begin(), crangelblo.begin(), std::plus<MSKrealt>());
   std::transform(crangelbhi.begin(), crangelbhi.end(), cbl.begin(), crangelbhi.begin(), std::plus<MSKrealt>());
   std::transform(crangeublo.begin(), crangeublo.end(), cbu.begin(), crangeublo.begin(), std::plus<MSKrealt>());
@@ -848,7 +920,7 @@ SensRangesPresolved MosekBackend::GetSensRangesPresolved()
   }
 
   std::vector<MSKrealt> c(lenvar);
-  MOSEK_CCALL(MSK_getc(lp(), c.data()));
+  MOSEK_CCALL(MSK_getc(task, c.data()));
   std::transform(orangelo.begin(), orangelo.end(), c.begin(), orangelo.begin(), std::plus<MSKrealt>());
   std::transform(orangehi.begin(), orangehi.end(), c.begin(), orangehi.begin(), std::plus<MSKrealt>());
 
@@ -1044,6 +1116,7 @@ void MosekBackend::ConStatii(ArrayRef<int> cst) {
 }
 
 SolutionBasis MosekBackend::GetBasis() {
+  if (IsMIP()) return FixedLPBasis(CG_Algebraic);
   std::vector<int> varstt = VarStatii();
   std::vector<int> constt = ConStatii();
   if (varstt.size() && constt.size()) {
@@ -1083,7 +1156,6 @@ void MosekBackend::AddPrimalDualStart(Solution sol)
 void MosekBackend::AddMIPStart(
     ArrayRef<double> x0_unpres, ArrayRef<int> sparsity)
 {
-  solToFetch_ = GetSolutionTypeToFetch();
   auto mv = GetValuePresolver().PresolveSolution( { x0_unpres } );
   auto x0 = mv.GetVarValues()();
 
@@ -1092,7 +1164,7 @@ void MosekBackend::AddMIPStart(
     // Use integer part of given solution to construct initial solution by solving for continuous part.
     MOSEK_CCALL(MSK_putintparam(lp(), MSK_IPAR_MIO_CONSTRUCT_SOL, MSK_ON));
   }
-  MOSEK_CCALL(MSK_putxx(lp(), solToFetch_, (MSKrealt *)x0.data()));
+  MOSEK_CCALL(MSK_putxx(lp(), MSK_SOL_ITG, (MSKrealt *)x0.data()));
 }
 
 ArrayRef<double> MosekBackend::Ray()

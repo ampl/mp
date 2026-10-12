@@ -53,6 +53,9 @@ public:
   // Use this section to declare and implement some standard features
   // that may or may not need additional functions. 
   USING_STD_FEATURES;
+  ALLOW_STD_FEATURE(FIX_MODEL, true)
+  bool IsFixedModelEmulated() const override { return true; }
+  FixedLPResult SolveFixedLP(ArrayRef<double>) override;
 
   // Export problem
   ALLOW_STD_FEATURE(WRITE_PROBLEM, true)
@@ -110,7 +113,7 @@ public:
 
   ArrayRef<double> GetObjectiveValues() override
   {
-    return std::vector<double>{ObjectiveValue()};
+    return std::vector<double>{HasFixedLP() ? FixedLP().objective : ObjectiveValue()};
   }
 
 
@@ -168,6 +171,7 @@ protected:
   MSKsoltypee GetSolutionTypeToFetch();
 
 private:
+  MSKtask_t fixed_task_ = nullptr;
   MSKsoltypee solToFetch_;
   MSKrescodee termCode_;
   MSKprostae proSta_;

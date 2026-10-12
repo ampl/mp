@@ -2,6 +2,11 @@ Summary of recent updates to MOSEK for AMPL
 ===========================================
 
 
+## unreleased
+- Emulate *mip:basis* for linear algebraic MIPs, with separate
+  *mip:basis:timelimit* and *mip:basis:iterlimit* options.
+
+
 ## 20260624
 - Changes in MP, in particular:
   - Option *cvt:pow2_as_qp* prefers quadratization
