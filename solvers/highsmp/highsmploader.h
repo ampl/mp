@@ -141,6 +141,10 @@ namespace mp {
     Highs_create_Func Highs_create;
     Highs_destroy_Func Highs_destroy;
 
+    decltype(&::Highs_getLp) Highs_getLp = nullptr;
+    decltype(&::Highs_passLp) Highs_passLp = nullptr;
+    decltype(&::Highs_getNumNz) Highs_getNumNz = nullptr;
+
     // Solve
     Highs_run_Func Highs_run;
 

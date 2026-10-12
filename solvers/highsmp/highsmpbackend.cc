@@ -61,13 +61,14 @@ std::string HighsBackend::GetSolverVersion() {
     HIGHS_VERSION_MINOR, HIGHS_VERSION_PATCH);
 }
 
-  void HighsBackend::InputExtras() {
-  BaseBackend::InputExtras();
+void HighsBackend::InputStartValues() {
   // Set the accumulated objectives
   // In case of native MO, accObjectives will contain all the problem's objectives - and their meta into
   // and will have the flag hadMultiObjective set to true
   accObjectives().setAllInHighs(lp());
-  accObjectives().clear(); 
+  accObjectives().clear();
+  // Changing objective data invalidates a HiGHS start: install it afterwards.
+  BaseBackend::InputStartValues();
 }
   void HighsBackend::FinishOptionParsing() {
     // If CUDA is specified, scrap the current library, load the cuda one
@@ -102,6 +103,9 @@ bool HighsBackend::IsQCP() const {
 }
 
 ArrayRef<double> HighsBackend::PrimalSolution() {
+  if (HasFixedLP()) return FixedLP().primal;
+  if (IsMIP() && getIntAttr("primal_solution_status") != kHighsSolutionStatusFeasible)
+    return {};
   int num_vars = NumVars();
   std::vector<double> x(num_vars);
   // int primal_solution_status;
@@ -120,6 +124,7 @@ pre::ValueMapDbl HighsBackend::DualSolution() {
 }
 
 ArrayRef<double> HighsBackend::DualSolution_LP() {
+  if (IsMIP()) return HasFixedLP() ? ArrayRef<double>(FixedLP().dual) : ArrayRef<double>{};
   int num_cons = NumLinCons();
   std::vector<double> pi(num_cons);
   int error = loader().Highs_getSolution(lp(), NULL, NULL, NULL, pi.data());
@@ -129,6 +134,7 @@ ArrayRef<double> HighsBackend::DualSolution_LP() {
 }
 
   ArrayRef<double> HighsBackend::GetObjectiveValues() {
+    if (HasFixedLP()) return std::vector<double>{FixedLP().objective};
     if (accObjectives().hadNativeMultiObj()) {
       AddToSolverMessage("Warning: HiGHS does not support returning the objective values for multiple\n"
         "objectives; AMPL will compute the actual values.");
@@ -241,10 +247,79 @@ void HighsBackend::Solve() {
   WindupHIGHSSolve();
 }
 
+HighsBackend::FixedLPResult HighsBackend::SolveFixedLP(ArrayRef<double> x) {
+  if (!loader().Highs_getLp || !loader().Highs_passLp || !loader().Highs_getNumNz)
+    MP_RAISE("HiGHS library lacks fixed-model LP API");
+  int feasible = 0;
+  HIGHS_CCALL(loader().Highs_getIntInfoValue(lp(), "primal_solution_status", &feasible));
+  if (feasible != kHighsSolutionStatusFeasible)
+    MP_RAISE("no integer-feasible incumbent");
+  if (accObjectives().hadNativeMultiObj())
+    MP_RAISE("native multiple objectives are unsupported by fixed-model emulation");
+  int n = NumVars(), m = NumLinCons(), nz = loader().Highs_getNumNz(lp());
+  int sense, nc, nr, nnz;
+  double offset, tol;
+  GetSolverOption("mip_feasibility_tolerance", tol);
+  std::vector<double> cost(n), lb(n), ub(n), lhs(m), rhs(m), val(nz);
+  std::vector<int> start(n+1), index(nz), integrality(n);
+  HIGHS_CCALL(loader().Highs_getLp(lp(), kHighsMatrixFormatColwise,
+      &nc, &nr, &nnz, &sense, &offset, cost.data(), lb.data(), ub.data(),
+      lhs.data(), rhs.data(), start.data(), index.data(), val.data(), integrality.data()));
+  for (int j = 0; j < n; ++j) {
+    if (integrality[j] == kHighsVarTypeInteger)
+      lb[j] = ub[j] = FixedIntegerValue(x[j], lb[j], ub[j], tol);
+    else if (integrality[j] != kHighsVarTypeContinuous)
+      MP_RAISE("unsupported semi-continuous/semi-integer variable");
+  }
+  auto destroy = [this](void* model) { loader().Highs_destroy(model); };
+  std::unique_ptr<void, decltype(destroy)> fixed(loader().Highs_create(), destroy);
+  if (!fixed) MP_RAISE("cannot create fixed LP");
+  int output = 0, threads = 0;
+  GetSolverOption("output_flag", output);
+  GetSolverOption("threads", threads);
+  HIGHS_CCALL(loader().Highs_setBoolOptionValue(fixed.get(), "output_flag", output));
+  HIGHS_CCALL(loader().Highs_setIntOptionValue(fixed.get(), "threads", threads));
+  HIGHS_CCALL(loader().Highs_setStringOptionValue(fixed.get(), "solver", "simplex"));
+  if (fixed_model_time_limit() >= 0)
+    HIGHS_CCALL(loader().Highs_setDoubleOptionValue(fixed.get(), "time_limit", fixed_model_time_limit()));
+  if (fixed_model_iter_limit() >= 0)
+    HIGHS_CCALL(loader().Highs_setIntOptionValue(fixed.get(), "simplex_iteration_limit", fixed_model_iter_limit()));
+  HIGHS_CCALL(loader().Highs_passLp(fixed.get(), n, m, nz,
+      kHighsMatrixFormatColwise, sense, offset, cost.data(), lb.data(), ub.data(),
+      lhs.data(), rhs.data(), start.data(), index.data(), val.data()));
+  HIGHS_CCALL(loader().Highs_run(fixed.get()));
+  int status = loader().Highs_getModelStatus(fixed.get());
+  if (status != kHighsModelStatusOptimal)
+    MP_RAISE(fmt::format("fixed LP not optimal (HiGHS status {})", status));
+  FixedLPResult result;
+  result.objective = loader().Highs_getObjectiveValue(fixed.get());
+  result.primal.resize(n);
+  result.dual.resize(m);
+  result.varstt.resize(n);
+  result.constt.resize(m);
+  HIGHS_CCALL(loader().Highs_getSolution(fixed.get(), result.primal.data(), nullptr, nullptr, result.dual.data()));
+  HIGHS_CCALL(loader().Highs_getBasis(fixed.get(), result.varstt.data(), result.constt.data()));
+  auto convert = [](int status) {
+    switch (status) {
+    case kHighsBasisStatusBasic: return (int)BasicStatus::bas;
+    case kHighsBasisStatusLower: return (int)BasicStatus::low;
+    case kHighsBasisStatusUpper: return (int)BasicStatus::upp;
+    case kHighsBasisStatusNonbasic:
+    case kHighsBasisStatusZero: return (int)BasicStatus::sup;
+    default: MP_RAISE(fmt::format("Unknown HiGHS fixed-LP basis status {}", (int)status));
+    }
+  };
+  for (auto& status : result.varstt) status = convert(status);
+  for (auto& status : result.constt) status = convert(status);
+  HIGHS_CCALL(loader().Highs_getIntInfoValue(fixed.get(), "simplex_iteration_count", &result.iterations));
+  return result;
+}
+
 void HighsBackend::WindupHIGHSSolve() { }
 
 void HighsBackend::ReportResults() {
    ReportHIGHSResults();
+  ConsiderEmulatedFixedModel();
   BaseBackend::ReportResults();
 }
 
@@ -254,6 +329,7 @@ void HighsBackend::ReportHIGHSResults() {
 }
 
 SolutionBasis HighsBackend::GetBasis() {
+  if (IsMIP()) return FixedLPBasis(CG_Linear);
   std::vector<int> varstt = VarStatii();
   std::vector<int> constt = ConStatii();
   if (varstt.size() && constt.size()) {
@@ -280,6 +356,13 @@ void HighsBackend::SetBasis(SolutionBasis basis) {
 
 /// We also use this for MIP.
 /// Attempting partial MIP start.
+void HighsBackend::AddMIPStart(ArrayRef<double> primal, ArrayRef<int> sparsity) {
+  Solution start;
+  start.primal = primal;
+  start.spars_primal = sparsity;
+  AddPrimalDualStart(std::move(start));
+}
+
 void HighsBackend::AddPrimalDualStart(Solution sol0_unpres) {
   auto mv = GetValuePresolver().PresolveSolution(
     { sol0_unpres.primal, sol0_unpres.dual });
@@ -549,8 +632,8 @@ std::pair<int, std::string> HighsBackend::GetSolveResult() {
       return { sol::LIMIT_FEAS_ITER, "iteration limit, feasible solution" };
     return { sol::LIMIT_NO_FEAS_ITER, "iteration limit, no solution" };
   case kHighsModelStatusSolutionLimit:
-    assert (hasSol);
-    return { sol::LIMIT_FEAS_NUMSOLS, "solution limit" };
+    if (hasSol) return { sol::LIMIT_FEAS_NUMSOLS, "solution limit, feasible solution" };
+    return { sol::LIMIT_NO_FEAS, "solution limit, no solution" };
   case kHighsModelStatusInterrupt:
     if (hasSol)
       return { sol::LIMIT_FEAS_INTERRUPT, "interrupt, feasible solution" };

@@ -33,7 +33,7 @@ public:
 
 
   /// This can actually modify the model -- e.g., suffixes
-  void InputExtras() override;
+  void InputStartValues() override;
 
 
   ////////////////////////////////////////////////////////////
@@ -42,6 +42,9 @@ public:
   // Use this section to declare and implement some standard features
   // that may or may not need additional functions. 
   USING_STD_FEATURES;
+  ALLOW_STD_FEATURE(FIX_MODEL, true)
+  bool IsFixedModelEmulated() const override { return true; }
+  FixedLPResult SolveFixedLP(ArrayRef<double>) override;
 
   /**
   * MULTIOBJ
@@ -70,6 +73,8 @@ public:
   * General warm start:
   * set primal/dual initial guesses for continuous case
   **/
+  ALLOW_STD_FEATURE(MIPSTART, true)
+  void AddMIPStart(ArrayRef<double>, ArrayRef<int>) override;
   ALLOW_STD_FEATURE(WARMSTART, true)
     void AddPrimalDualStart(Solution sol0) override;
   /**
