@@ -1314,11 +1314,11 @@ void GurobiBackend::ConsiderGurobiFixedModel() {
 }
 
 std::string GurobiBackend::DoGurobiFixedModel() {
-  GRBenv *env;
-  if (!(env = GRBgetenv(model_fixed_)))
+  GRBenv *fixed_env;
+  if (!(fixed_env = GRBgetenv(model_fixed_)))
     return "GRBgetenv";
   int k = -12345;
-  GRBgetintparam(env, GRB_INT_PAR_METHOD, &k);
+  GRBgetintparam(fixed_env, GRB_INT_PAR_METHOD, &k);
   int& fixedmethod = storedOptions_.nFixedMethod_;
   if (fixedmethod < -1 || fixedmethod >= 5) { /* not specified or invalid */
     if (k >= 2 || k < 0)
@@ -1327,9 +1327,15 @@ std::string GurobiBackend::DoGurobiFixedModel() {
       fixedmethod = k;
     }
   if (fixedmethod != k)
-    GRBsetintparam(env, GRB_INT_PAR_METHOD, k);
-  if (!GRBgetintparam(env, GRB_INT_PAR_METHOD, &k) && k != fixedmethod)
-    GRBsetintparam(env, GRB_INT_PAR_METHOD, fixedmethod);
+    GRBsetintparam(fixed_env, GRB_INT_PAR_METHOD, k);
+  if (!GRBgetintparam(fixed_env, GRB_INT_PAR_METHOD, &k) && k != fixedmethod)
+    GRBsetintparam(fixed_env, GRB_INT_PAR_METHOD, fixedmethod);
+  GRB_CALL(GRBsetdblparam(fixed_env, GRB_DBL_PAR_TIMELIMIT,
+      fixed_model_time_limit() < 0 ? GRB_INFINITY : fixed_model_time_limit()));
+  GRB_CALL(GRBsetdblparam(fixed_env, GRB_DBL_PAR_ITERATIONLIMIT,
+      fixed_model_iter_limit() < 0 ? GRB_INFINITY : fixed_model_iter_limit()));
+  if (fixed_model_iter_limit() >= 0)
+    GRB_CALL(GRBsetintparam(fixed_env, GRB_INT_PAR_BARITERLIMIT, fixed_model_iter_limit()));
   if (GRBoptimize(model_fixed_))
     return "optimize()";
   int i;

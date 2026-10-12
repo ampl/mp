@@ -2,6 +2,11 @@ Summary of recent updates to Gurobi for AMPL
 ============================================
 
 
+## unreleased
+- Add separate fixed-model limits *mip:basis:timelimit* and
+  *mip:basis:iterlimit*.
+
+
 ## 20260908
 - Updated to Gurobi 13.0.3 that includes bug fixes.
 - Changes in MP:
