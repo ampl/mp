@@ -154,6 +154,7 @@ namespace mp {
   }
 
   double  CplexBackend::MIPGap() {
+    if (have_mip_result_before_fixed_) return mip_result_before_fixed_.gap;
     if (HasSolution()) {
       getAndReturnDblParam(CPXgetmiprelgap);
     }
@@ -161,6 +162,7 @@ namespace mp {
   }
 
   double  CplexBackend::MIPGapAbs() {
+    if (have_mip_result_before_fixed_) return mip_result_before_fixed_.absolute_gap;
     auto type = CPXgetprobtype(env(), lp());
     if ((type == CPXPROB_LP) ||
       (type == CPXPROB_QP) || (type == CPXPROB_QCP))
@@ -176,6 +178,7 @@ namespace mp {
     return std::abs(obj - BestDualBound());
   }
   double  CplexBackend::BestDualBound() {
+    if (have_mip_result_before_fixed_) return mip_result_before_fixed_.bound;
     auto type = CPXgetprobtype(env(), lp());
     if ((type == CPXPROB_LP) ||
       (type == CPXPROB_QP) || (type == CPXPROB_QCP))
@@ -311,6 +314,7 @@ namespace mp {
 
 
   SolutionBasis CplexBackend::GetBasis() {
+    if (fixed_model_failed_) return {};
     bool outputStatus = silenceOutput_;
     setSilenceOutput(!debug_mode());
     std::vector<int> varstt = VarStatii();
@@ -368,6 +372,7 @@ namespace mp {
   }
 
 ArrayRef<double> CplexBackend::PrimalSolution() {
+  if (fixed_model_failed_) return mip_result_before_fixed_.primal;
   // if (!HasSolution())
   //   return std::vector<double>();
   int num_vars = NumVars();
@@ -383,6 +388,7 @@ pre::ValueMapDbl CplexBackend::DualSolution() {
 }
 
 ArrayRef<double> CplexBackend::DualSolution_LP() {
+  if (fixed_model_failed_) return {};
   // if (HasSolution() && ((!IsMIP()) || need_fixed_MIP()) && (NumLinCons()>0))
   {
     int num_cons = NumLinCons();
@@ -399,6 +405,7 @@ ArrayRef<double> CplexBackend::DualSolution_LP() {
 }
 
 double CplexBackend::ObjectiveValue() const {
+  if (fixed_model_failed_) return mip_result_before_fixed_.objective;
   double objval = -Infinity();
   if(hasSolution_)
     CPLEX_CALL(CPXgetobjval(env(), lp(), &objval));
@@ -406,14 +413,17 @@ double CplexBackend::ObjectiveValue() const {
 }
 
 int CplexBackend::NodeCount() const {
+  if (have_mip_result_before_fixed_) return mip_result_before_fixed_.nodes;
   return  IsMIP() ? CPXgetnodecnt(env(), lp()) : 0;
 }
 
 int CplexBackend::SimplexIterations() const {
+  if (have_mip_result_before_fixed_) return mip_result_before_fixed_.simplex_iterations;
   return IsMIP() ? CPXgetmipitcnt(env(), lp()) : CPXgetitcnt(env(), lp());
 }
 
 int CplexBackend::BarrierIterations() const {
+  if (have_mip_result_before_fixed_) return mip_result_before_fixed_.barrier_iterations;
   if (!IsMIP() && (storedOptions_.cpxMethod_ == CPX_ALG_BARRIER))
     return CPXgetbaritcnt(env(), lp());
   else
@@ -493,6 +503,8 @@ void CplexBackend::RedirectOutput() {
 }
 
 void CplexBackend::Solve() {
+  have_mip_result_before_fixed_ = false;
+  fixed_model_failed_ = false;
     if (!storedOptions_.tunefileprm.empty())
         DoCPLEXTune();
 
@@ -599,6 +611,7 @@ double CplexBackend::Kappa() {
 }
 
 SensRanges CplexBackend::GetSensRanges() {
+  if (fixed_model_failed_) return {};
   SensRanges sensr;
 
   std::vector<double> objlow(NumVars()), objhigh(NumVars());
@@ -1172,12 +1185,47 @@ void CplexBackend::InputCPLEXExtras() {
 void CplexBackend::ConsiderCplexFixedModel() {
   if (!IsMIP())
     return;
-  auto msg = DoCplexFixedModel();
+  MIPResultBeforeFixed result;
+  result.primal = PrimalSolution();
+  if (result.primal.empty()) {
+    AddToSolverMessage("Fixed MIP for mip:basis skipped: no integer-feasible incumbent.");
+    mip_result_before_fixed_ = {};
+    mip_result_before_fixed_.objective = ObjectiveValue();
+    fixed_model_failed_ = true;
+    return;
+  }
+  result.objective = ObjectiveValue();
+  result.gap = MIPGap();
+  result.absolute_gap = MIPGapAbs();
+  result.bound = BestDualBound();
+  result.nodes = NodeCount();
+  result.simplex_iterations = SimplexIterations();
+  result.barrier_iterations = BarrierIterations();
+  mip_result_before_fixed_ = std::move(result);
+  have_mip_result_before_fixed_ = true;
+  // CPXcloneprob copies problem data, not solution data. Save both to
+  // retain the MIP result when the supplementary solve reaches a limit.
+  int error = 0;
+  CPXLPptr original = CPXcloneprob(env(), lp(), &error);
+  if (!original) {
+    fixed_model_failed_ = true;
+    AddToSolverMessage(fmt::format("Cannot save MIP before fixed solve (CPLEX error {}).", error));
+    return;
+  }
+  std::string msg;
+  try {
+    msg = DoCplexFixedModel();
+  } catch (const std::exception& e) {
+    msg = e.what();
+  }
   if (!msg.empty()) {
-    AddToSolverMessage(msg +
-      " failed in DoCplexFixedModel().");
-    CPXfreeprob(env(),  &lp_ref());
-    CPXchgprobtype(env(), lp(), original_model_type_);
+    fixed_model_failed_ = true;
+    AddToSolverMessage(msg + " failed in DoCplexFixedModel().");
+    CPXfreeprob(env(), &lp_ref());
+    lp_ref() = original;
+    copy_common_info_to_other();
+  } else {
+    CPXfreeprob(env(), &original);
   }
 }
 
@@ -1223,11 +1271,29 @@ std::string CplexBackend::DoCplexFixedModel() {
   }
   else
     CPLEX_CALL(CPXchgprobtype(env(), lp(), new_model_type));
+  double old_time_limit;
+  CPXLONG old_iteration_limit;
+  int old_barrier_limit;
+  CPLEX_CALL(CPXgetdblparam(env(), CPXPARAM_TimeLimit, &old_time_limit));
+  CPLEX_CALL(CPXgetlongparam(env(), CPXPARAM_Simplex_Limits_Iterations, &old_iteration_limit));
+  CPLEX_CALL(CPXgetintparam(env(), CPXPARAM_Barrier_Limits_Iteration, &old_barrier_limit));
+  auto restore_limits = [&](void*) {
+    CPXsetdblparam(env(), CPXPARAM_TimeLimit, old_time_limit);
+    CPXsetlongparam(env(), CPXPARAM_Simplex_Limits_Iterations, old_iteration_limit);
+    CPXsetintparam(env(), CPXPARAM_Barrier_Limits_Iteration, old_barrier_limit);
+  };
+  std::unique_ptr<void, decltype(restore_limits)> limits_guard(env(), restore_limits);
+  CPLEX_CALL(CPXsetdblparam(env(), CPXPARAM_TimeLimit,
+      fixed_model_time_limit() < 0 ? 1e75 : fixed_model_time_limit()));
+  CPLEX_CALL(CPXsetlongparam(env(), CPXPARAM_Simplex_Limits_Iterations,
+      fixed_model_iter_limit() < 0 ? CPX_BIGLONG : fixed_model_iter_limit()));
+  CPLEX_CALL(CPXsetintparam(env(), CPXPARAM_Barrier_Limits_Iteration,
+      fixed_model_iter_limit() < 0 ? INT_MAX : fixed_model_iter_limit()));
   CPLEX_CALL(Contopt(env(), lp()));
 
   int optimstatus = CPXgetstat(env(), lp());
-  if (optimstatus != CPX_STAT_OPTIMAL){
-  }
+  if (optimstatus != CPX_STAT_OPTIMAL)
+    return fmt::format("Fixed model status {}", optimstatus);
   int cnt = CPXgetitcnt(env(), lp());
   AddToSolverMessage(fmt::format("Fixed MIP for mip:basis: {} simplex iteration{}",
     cnt, "s"[cnt == 1.]));

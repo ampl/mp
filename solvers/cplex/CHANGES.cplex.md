@@ -2,6 +2,12 @@ Summary of recent updates to CPLEX for AMPL
 ==============================================
 
 
+## unreleased
+- Add separate fixed-model limits *mip:basis:timelimit* and
+  *mip:basis:iterlimit*.
+- Retain the MIP solution when a supplementary fixed solve reaches a limit.
+
+
 ## 20260720
 - Fixed IIS reporting for range constraints.
 - Support IIS export to file: *writesol=(name).clp*.

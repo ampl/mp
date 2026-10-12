@@ -107,6 +107,7 @@ public:
   * Impl should check need_fixed_MIP()
   **/
   ALLOW_STD_FEATURE(FIX_MODEL, true)
+  bool FixedModelReady() const override { return !fixed_model_failed_; }
   void ConsiderCplexFixedModel();
   std::string DoCplexFixedModel();
   /**
@@ -249,6 +250,14 @@ private:
   void ReadBendersSuffix();
   void setSolutionMethod();
   int original_model_type_ = -1;
+  struct MIPResultBeforeFixed {
+    std::vector<double> primal;
+    double objective = 0, gap = 0, absolute_gap = 0, bound = 0;
+    int nodes = 0, simplex_iterations = 0, barrier_iterations = 0;
+  };
+  MIPResultBeforeFixed mip_result_before_fixed_;
+  bool have_mip_result_before_fixed_ = false;
+  bool fixed_model_failed_ = false;
   
   typedef struct
     CutInfo {
