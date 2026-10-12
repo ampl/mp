@@ -3,6 +3,8 @@ Summary of recent updates to COPT for AMPL
 
 
 ## unreleased
+- Emulate *mip:basis* for linear algebraic MIPs, with separate
+  *mip:basis:timelimit* and *mip:basis:iterlimit* options.
 - Added option *tech:seed*.
 
 

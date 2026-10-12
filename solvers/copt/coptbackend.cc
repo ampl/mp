@@ -117,6 +117,7 @@ void CoptBackend::InputCOPTExtras() {
 }
 
 ArrayRef<double> CoptBackend::GetObjectiveValues() {
+  if (HasFixedLP()) return std::vector<double>{FixedLP().objective};
   int nobjs = NumObjs();
   if (nobjs > 1) {
     std::vector<double> v(nobjs);
@@ -203,6 +204,7 @@ void CoptBackend::DoCOPTFeasRelax() {
 }
 
 ArrayRef<double> CoptBackend::PrimalSolution() {
+  if (HasFixedLP()) return FixedLP().primal;
   int num_vars = NumVars();
   int error;
   std::vector<double> x(num_vars);
@@ -221,6 +223,7 @@ pre::ValueMapDbl CoptBackend::DualSolution() {
 }
 
 ArrayRef<double> CoptBackend::DualSolution_LP() {
+  if (IsMIP()) return HasFixedLP() ? ArrayRef<double>(FixedLP().dual) : ArrayRef<double>{};
   int num_cons = NumLinCons();
   std::vector<double> pi(num_cons);
   if (!IsMIP()) {
@@ -307,10 +310,85 @@ void CoptBackend::Solve() {
   WindupCOPTSolve();
 }
 
+const char* CoptBackend::FixedModelIterationLimitHelp() const {
+  return "Iteration limit for the fixed-model solve only. -1 (default) uses simplex "
+         "with the solver default limit. Setting this option selects barrier with "
+         "crossover and limits barrier iterations. 0 skips the supplementary solve.";
+}
+
+CoptBackend::FixedLPResult CoptBackend::SolveFixedLP(ArrayRef<double> x) {
+  if (!getIntAttr(COPT_INTATTR_HASMIPSOL)) MP_RAISE("no integer-feasible incumbent");
+  if (NumObjs() > 1) MP_RAISE("multiple objectives are unsupported by fixed-model emulation");
+  copt_prob* copy = nullptr;
+  COPT_CCALL(COPT_CreateCopy(lp(), &copy));
+  auto destroy = [](copt_prob* model) { COPT_DeleteProb(&model); };
+  std::unique_ptr<copt_prob, decltype(destroy)> fixed(copy, destroy);
+  int n = NumVars(), m = NumLinCons();
+  std::vector<char> types(n);
+  std::vector<double> lb(n), ub(n);
+  COPT_CCALL(COPT_GetColType(lp(), n, nullptr, types.data()));
+  COPT_CCALL(COPT_GetColInfo(lp(), COPT_DBLINFO_LB, n, nullptr, lb.data()));
+  COPT_CCALL(COPT_GetColInfo(lp(), COPT_DBLINFO_UB, n, nullptr, ub.data()));
+  double tol;
+  GetSolverOption(COPT_DBLPARAM_INTTOL, tol);
+  for (int j = 0; j < n; ++j) {
+    if (types[j] == COPT_BINARY || types[j] == COPT_INTEGER) {
+      double value = FixedIntegerValue(x[j], lb[j], ub[j], tol);
+      char continuous = COPT_CONTINUOUS;
+      COPT_CCALL(COPT_SetColType(copy, 1, &j, &continuous));
+      COPT_CCALL(COPT_SetColLower(copy, 1, &j, &value));
+      COPT_CCALL(COPT_SetColUpper(copy, 1, &j, &value));
+    } else if (types[j] != COPT_CONTINUOUS)
+      MP_RAISE("unsupported variable type");
+  }
+  double time_limit, solution_time_limit;
+  int barrier_iterations;
+  COPT_CCALL(COPT_GetDblParamDef(copy, COPT_DBLPARAM_TIMELIMIT, &time_limit));
+  COPT_CCALL(COPT_GetDblParamDef(copy, COPT_DBLPARAM_SOLTIMELIMIT, &solution_time_limit));
+  COPT_CCALL(COPT_GetIntParamDef(copy, COPT_INTPARAM_BARITERLIMIT, &barrier_iterations));
+  if (fixed_model_time_limit() >= 0) time_limit = fixed_model_time_limit();
+  if (fixed_model_iter_limit() >= 0) barrier_iterations = fixed_model_iter_limit();
+  COPT_CCALL(COPT_SetDblParam(copy, COPT_DBLPARAM_TIMELIMIT, time_limit));
+  COPT_CCALL(COPT_SetDblParam(copy, COPT_DBLPARAM_SOLTIMELIMIT, solution_time_limit));
+  COPT_CCALL(COPT_SetIntParam(copy, COPT_INTPARAM_LPMETHOD, fixed_model_iter_limit() < 0 ? 1 : 2));
+  COPT_CCALL(COPT_SetIntParam(copy, COPT_INTPARAM_CROSSOVER, 1));
+  COPT_CCALL(COPT_SetIntParam(copy, COPT_INTPARAM_BARITERLIMIT, barrier_iterations));
+  COPT_CCALL(COPT_Solve(copy));
+  int status = 0, basis = 0;
+  COPT_CCALL(COPT_GetIntAttr(copy, COPT_INTATTR_LPSTATUS, &status));
+  COPT_CCALL(COPT_GetIntAttr(copy, COPT_INTATTR_HASBASIS, &basis));
+  if (status != COPT_LPSTATUS_OPTIMAL || !basis)
+    MP_RAISE(fmt::format("fixed LP not optimal or no basis (COPT status {})", status));
+  FixedLPResult result;
+  COPT_CCALL(COPT_GetDblAttr(copy, COPT_DBLATTR_LPOBJVAL, &result.objective));
+  result.primal.resize(n);
+  result.dual.resize(m);
+  result.varstt.resize(n);
+  result.constt.resize(m);
+  COPT_CCALL(COPT_GetLpSolution(copy, result.primal.data(), nullptr, result.dual.data(), nullptr));
+  COPT_CCALL(COPT_GetBasis(copy, result.varstt.data(), result.constt.data()));
+  auto convert = [](int status) {
+    switch (status) {
+    case COPT_BASIS_BASIC: return (int)BasicStatus::bas;
+    case COPT_BASIS_LOWER: return (int)BasicStatus::low;
+    case COPT_BASIS_UPPER: return (int)BasicStatus::upp;
+    case COPT_BASIS_FIXED: return (int)BasicStatus::equ;
+    case COPT_BASIS_SUPERBASIC: return (int)BasicStatus::sup;
+    default: MP_RAISE(fmt::format("Unknown COPT fixed-LP basis status {}", (int)status));
+    }
+  };
+  for (auto& status : result.varstt) status = convert(status);
+  for (auto& status : result.constt) status = convert(status);
+  COPT_CCALL(COPT_GetIntAttr(copy, fixed_model_iter_limit() < 0 ?
+      COPT_INTATTR_SIMPLEXITER : COPT_INTATTR_BARRIERITER, &result.iterations));
+  return result;
+}
+
 void CoptBackend::WindupCOPTSolve() { }
 
 void CoptBackend::ReportResults() {
   ReportCOPTResults();
+  ConsiderEmulatedFixedModel();
   BaseBackend::ReportResults();
 }
 
@@ -1028,6 +1106,7 @@ void CoptBackend::SetCoptBasis(
 }
 
 SolutionBasis CoptBackend::GetBasis() {
+  if (IsMIP()) return FixedLPBasis(CG_Linear);
   std::vector<int> varstt = VarStatii();
   std::vector<int> constt = ConStatii();
   if (varstt.size() && constt.size()) {
