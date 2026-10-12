@@ -3,6 +3,9 @@ Summary of recent updates to Xpress for AMPL
 
 
 ## unreleased
+- Add separate fixed-model limits *mip:basis:timelimit* and
+  *mip:basis:iterlimit*.
+- Retain the MIP solution when a supplementary fixed solve reaches a limit.
 - Optimized input of nonlinear expressions.
 - Fixed LP basis input.
 - Fixes in IIS reporting.

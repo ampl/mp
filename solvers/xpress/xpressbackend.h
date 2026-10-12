@@ -117,6 +117,7 @@ public:
   * FixModel - duals, basis, and sensitivity for MIP.
   **/
   ALLOW_STD_FEATURE(FIX_MODEL, true)
+  bool FixedModelReady() const override { return !fixed_model_failed_; }
 
   ALLOW_STD_FEATURE(WRITE_PROBLEM, true)
   void DoWriteProblem(const std::string& name) override;
@@ -236,6 +237,8 @@ protected:
 private:
   int global_flag_ {1};
   XPRSprob model_fixed_ = nullptr;
+  bool fixed_model_failed_ = false;
+  std::vector<double> mip_primal_before_fixed_, mip_objectives_before_fixed_;
 
   /// These options are stored in the class
   struct Options {

@@ -146,6 +146,7 @@ bool XpressmpBackend::IsQCP() const {
 }
 
 ArrayRef<double> XpressmpBackend::PrimalSolution() {
+  if (fixed_model_failed_) return mip_primal_before_fixed_;
   int num_vars = NumVars();
   int error;
   std::vector<double> x(num_vars);
@@ -166,6 +167,7 @@ pre::ValueMapDbl XpressmpBackend::DualSolution() {
 }
 
 ArrayRef<double> XpressmpBackend::DualSolution_LP() {
+  if (fixed_model_failed_) return {};
   std::vector<double> pi(NumLinCons());
   int solst;
   int opttype;
@@ -180,6 +182,8 @@ ArrayRef<double> XpressmpBackend::DualSolution_LP() {
 }
 
 double XpressmpBackend::ObjectiveValue() const {
+  if (fixed_model_failed_ && !mip_objectives_before_fixed_.empty())
+    return mip_objectives_before_fixed_.front();
   return getDblAttr(XPRS_OBJVAL);
 }
 
@@ -260,6 +264,7 @@ void XpressmpBackend::DoXPRESSTune() {
 }
 
 void XpressmpBackend::Solve() {
+  fixed_model_failed_ = false;
   int nsols = 10;
   if (tunebase().size())
     DoXPRESSTune();
@@ -323,22 +328,46 @@ void XpressmpBackend::ReportXPRESSMPResults() {
 void XpressmpBackend::ConsiderXpressFixedModel() {
   if (!IsMIP())
     return;
-
-  // For XPRESS we just fix the main model.
-  //  XPRSsetintcontrol(mdl, XPRS_PRESOLVE, 0);
-  if (XPRSfixmipentities(model_fixed_, 1)) return;
-
-  if (outlev_)
-    Print("\n\n     ======= Solving the fixed MIP =======\n\n");
-
-  auto msg = DoXpressFixedModel();
+  // The native operation modifies the main model. Retain the incumbent for
+  // reporting if the supplementary solve reaches a limit.
+  mip_primal_before_fixed_ = PrimalSolution();
+  mip_objectives_before_fixed_ = GetObjectiveValues();
+  std::string msg;
+  try {
+    if (XPRSfixmipentities(model_fixed_, 1))
+      msg = "XPRSfixmipentities()";
+    else {
+      if (outlev_)
+        Print("\n\n     ======= Solving the fixed MIP =======\n\n");
+      msg = DoXpressFixedModel();
+    }
+  } catch (const std::exception& e) {
+    msg = e.what();
+  }
   if (!msg.empty()) {
-    AddToSolverMessage(msg +
-      " failed in DoXpressFixedModel().\n");
+    fixed_model_failed_ = true;
+    AddToSolverMessage(msg + " failed in DoXpressFixedModel().\n");
   }
 }
 std::string XpressmpBackend::DoXpressFixedModel()
 {
+  double old_time_limit;
+  int old_iteration_limit, old_barrier_limit;
+  XPRESSMP_CCALL(XPRSgetdblcontrol(model_fixed_, XPRS_TIMELIMIT, &old_time_limit));
+  XPRESSMP_CCALL(XPRSgetintcontrol(model_fixed_, XPRS_LPITERLIMIT, &old_iteration_limit));
+  XPRESSMP_CCALL(XPRSgetintcontrol(model_fixed_, XPRS_BARITERLIMIT, &old_barrier_limit));
+  auto restore_limits = [&](void*) {
+    XPRSsetdblcontrol(model_fixed_, XPRS_TIMELIMIT, old_time_limit);
+    XPRSsetintcontrol(model_fixed_, XPRS_LPITERLIMIT, old_iteration_limit);
+    XPRSsetintcontrol(model_fixed_, XPRS_BARITERLIMIT, old_barrier_limit);
+  };
+  std::unique_ptr<void, decltype(restore_limits)> limits_guard(model_fixed_, restore_limits);
+  XPRESSMP_CCALL(XPRSsetdblcontrol(model_fixed_, XPRS_TIMELIMIT,
+      fixed_model_time_limit() < 0 ? 1e20 : fixed_model_time_limit()));
+  XPRESSMP_CCALL(XPRSsetintcontrol(model_fixed_, XPRS_LPITERLIMIT,
+      fixed_model_iter_limit() < 0 ? INT_MAX : fixed_model_iter_limit()));
+  XPRESSMP_CCALL(XPRSsetintcontrol(model_fixed_, XPRS_BARITERLIMIT,
+      fixed_model_iter_limit() < 0 ? INT_MAX : fixed_model_iter_limit()));
   if (XPRSlpoptimize(model_fixed_, ""))
     return "optimize()";
   int status;
@@ -674,6 +703,7 @@ std::string XpressmpBackend::DoXpressFixedModel()
 
   ArrayRef<double> XpressmpBackend::GetObjectiveValues()
   {
+    if (fixed_model_failed_) return mip_objectives_before_fixed_;
     int n = NumObjs();
     if (n==0)
       return { };
@@ -2968,6 +2998,7 @@ std::vector<int> XpressmpBackend::ConStatii(ArrayRef<int> cst) {
 }
 
 SolutionBasis XpressmpBackend::GetBasis() {
+  if (fixed_model_failed_) return {};
   int old_outlev = outlev_;
   outlev_ = 0;
     std::vector<int> varstt = VarStatii();
