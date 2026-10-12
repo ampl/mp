@@ -1,0 +1,546 @@
+[
+  {
+    "files": [
+      "fixed_mip.mod"
+    ],
+    "tags": [
+      "linear",
+      "integer",
+      "fixmodel"
+    ],
+    "objective": 14.75,
+    "options": {
+      "mp_options": "mip:basis=1"
+    },
+    "values": {
+      "b": 1,
+      "k": 1,
+      "y": 2.25,
+      "demand": 3,
+      "y.sstatus": "bas",
+      "solve_result_num": 0,
+      "if (demand.sstatus != 'none') then 1 else 0": 1
+    },
+    "name": "fixed_mip default"
+  },
+  {
+    "files": [
+      "fixed_mip.mod"
+    ],
+    "tags": [
+      "linear",
+      "integer",
+      "fixmodel"
+    ],
+    "objective": 14.75,
+    "options": {
+      "mp_options": "mip:basis=1 mip:basis:timelimit=10 mip:basis:iterlimit=100"
+    },
+    "values": {
+      "b": 1,
+      "k": 1,
+      "y": 2.25,
+      "demand": 3,
+      "y.sstatus": "bas",
+      "solve_result_num": 0,
+      "if (demand.sstatus != 'none') then 1 else 0": 1
+    },
+    "name": "fixed_mip separate limits"
+  },
+  {
+    "name": "fixed_mip zero time",
+    "files": [
+      "fixed_mip.mod"
+    ],
+    "tags": [
+      "linear",
+      "integer",
+      "fixmodel"
+    ],
+    "solvers": [
+      "highs",
+      "copt",
+      "scip",
+      "mosek"
+    ],
+    "objective": 14.75,
+    "options": {
+      "mp_options": "mip:basis=1 mip:basis:timelimit=0"
+    },
+    "values": {
+      "b": 1,
+      "k": 1,
+      "y": 2.25,
+      "demand": 0,
+      "solve_result_num": 0,
+      "solve_message": {
+        "contains": "Fixed MIP for mip:basis (emulated) failed"
+      }
+    }
+  },
+  {
+    "name": "fixed_mip zero iterations",
+    "files": [
+      "fixed_mip.mod"
+    ],
+    "tags": [
+      "linear",
+      "integer",
+      "fixmodel"
+    ],
+    "solvers": [
+      "highs",
+      "copt",
+      "scip",
+      "mosek"
+    ],
+    "objective": 14.75,
+    "options": {
+      "mp_options": "mip:basis=1 mip:basis:iterlimit=0"
+    },
+    "values": {
+      "b": 1,
+      "k": 1,
+      "y": 2.25,
+      "demand": 0,
+      "solve_result_num": 0,
+      "solve_message": {
+        "contains": "Fixed MIP for mip:basis (emulated) failed"
+      }
+    }
+  },
+  {
+    "name": "fixed_mip disabled",
+    "files": [
+      "fixed_mip.mod"
+    ],
+    "tags": [
+      "linear",
+      "integer",
+      "fixmodel"
+    ],
+    "objective": 14.75,
+    "options": {
+      "mp_options": "mip:basis=0"
+    },
+    "values": {
+      "demand": 0,
+      "solve_result_num": 0
+    }
+  },
+  {
+    "name": "fixed_lp continuous control",
+    "tags": [
+      "linear",
+      "continuous",
+      "fixmodel"
+    ],
+    "objective": 6.75,
+    "options": {
+      "mp_options": "mip:basis=1"
+    },
+    "values": {
+      "y": 2.25,
+      "demand": 3,
+      "solve_result_num": 0
+    },
+    "solvers": [
+      "highs",
+      "copt",
+      "mosek",
+      "gurobi",
+      "cplex",
+      "xpress"
+    ]
+  },
+  {
+    "name": "fixed_infeasible no incumbent",
+    "tags": [
+      "linear",
+      "integer",
+      "fixmodel"
+    ],
+    "solvers": [
+      "highs",
+      "copt",
+      "scip",
+      "mosek"
+    ],
+    "options": {
+      "mp_options": "mip:basis=1"
+    },
+    "values": {
+      "solve_result": "infeasible",
+      "solve_message": {
+        "contains": "no integer-feasible incumbent"
+      }
+    }
+  },
+  {
+    "name": "fixed_logical unsupported emulation",
+    "tags": [
+      "integer",
+      "fixmodel"
+    ],
+    "solvers": [
+      "highs",
+      "copt",
+      "scip",
+      "mosek"
+    ],
+    "objective": 1,
+    "options": {
+      "mp_options": "mip:basis=1"
+    },
+    "values": {
+      "solve_result_num": 0,
+      "solve_message": {
+        "contains": "unsupported model"
+      }
+    }
+  },
+  {
+    "name": "fixed_mip zero nodes with incumbent",
+    "files": [
+      "fixed_incumbent.run"
+    ],
+    "tags": [
+      "linear",
+      "integer",
+      "fixmodel",
+      "cd"
+    ],
+    "solvers": [
+      "scip"
+    ],
+    "objective": 15.75,
+    "options": {
+      "mp_options": "mip:basis=1 lim:nodes=0 mip:return_gap=3 mip:bestbound=1 tech:stats=2",
+      "scip_options": "pre:settings=3"
+    },
+    "values": {
+      "b": 1,
+      "k": 2,
+      "y": 0.25,
+      "demand": 3,
+      "solve_result_num": 404,
+      "Initial.node_count": 0,
+      "cost.bestbound": {
+        "max": 0
+      },
+      "cost.absmipgap": {
+        "min": 1e+20
+      },
+      "cost.relmipgap": {
+        "min": 1e+20
+      },
+      "solve_message": {
+        "contains": [
+          "Fixed MIP for mip:basis (emulated):",
+          "objective 15.75"
+        ]
+      }
+    }
+  },
+  {
+    "name": "fixed_max negative integer and range",
+    "tags": [
+      "linear",
+      "integer",
+      "fixmodel"
+    ],
+    "objective": 11,
+    "options": {
+      "mp_options": "mip:basis=1"
+    },
+    "values": {
+      "k": -1,
+      "b": 1,
+      "y": 3,
+      "range": 3,
+      "y.sstatus": "bas",
+      "solve_result_num": 0
+    }
+  },
+  {
+    "name": "dietu_mip mip:basis=1",
+    "objective": 74.27382,
+    "tags": [
+      "linear",
+      "integer",
+      "fixmodel"
+    ],
+    "options": {
+      "mp_options": "mip:basis=1"
+    },
+    "values": {
+      "Buy['BEEF'].sstatus": "low",
+      "Buy['MTL'].sstatus": "bas",
+      "Buy['CHK'].sstatus": "upp",
+      "Diet_Min['A']": 0.0,
+      "Diet_Min['C']": 0.006707865168539329,
+      "Diet_Min['CAL']": 0.00447191011235955,
+      "Diet_Min['A'].sstatus": "bas"
+    },
+    "files": [
+      "../suf_std/dietu_mip.mod"
+    ]
+  },
+  {
+    "name": "dietu_mip mip:basis=0 (default for x-gurobi)",
+    "objective": 74.27382,
+    "tags": [
+      "linear",
+      "integer",
+      "fixmodel"
+    ],
+    "values": {
+      "Buy['BEEF'].sstatus": "bas",
+      "Buy['MTL'].sstatus": "upp",
+      "Diet_Min['C']": 0,
+      "Diet_Min['CAL']": 0
+    },
+    "options": {
+      "mp_options": "mip:basis=0"
+    },
+    "files": [
+      "../suf_std/dietu_mip.mod"
+    ]
+  },
+  {
+    "name": "mipb_int mip:basis=1",
+    "objective": 1,
+    "tags": [
+      "linear",
+      "integer",
+      "fixmodel"
+    ],
+    "options": {
+      "mp_options": "mip:basis=1"
+    },
+    "values": {
+      "C1": 0,
+      "C1.sstatus": "bas",
+      "if (x.sstatus = 'low' or x.sstatus = 'equ') then 1 else 0": 1,
+      "if (y.sstatus = 'low' or y.sstatus = 'equ') then 1 else 0": 1,
+      "if (z.sstatus = 'low' or z.sstatus = 'equ') then 1 else 0": 1
+    },
+    "files": [
+      "../suf_std/mipb_int.mod"
+    ]
+  },
+  {
+    "name": "fixed_mip MOSEK sensitivity",
+    "files": [
+      "fixed_mip.mod"
+    ],
+    "tags": [
+      "linear",
+      "integer",
+      "fixmodel",
+      "sens"
+    ],
+    "solvers": [
+      "mosek"
+    ],
+    "objective": 14.75,
+    "options": {
+      "mp_options": "mip:basis=1 alg:sens=1"
+    },
+    "values": {
+      "y.sensobj": 3,
+      "y.sensobjlo": {
+        "max": 3
+      },
+      "y.sensobjhi": {
+        "min": 3
+      },
+      "demand": 3
+    }
+  },
+  {
+    "name": "dietu_mip fixed iteration limit reached",
+    "files": [
+      "../suf_std/dietu_mip.mod"
+    ],
+    "tags": [
+      "linear",
+      "integer",
+      "fixmodel"
+    ],
+    "solvers": [
+      "highs",
+      "copt",
+      "scip",
+      "mosek"
+    ],
+    "objective": 74.27382,
+    "options": {
+      "mp_options": "mip:basis=1 mip:basis:iterlimit=1"
+    },
+    "values": {
+      "Diet_Min['C']": 0,
+      "Diet_Min['CAL']": 0,
+      "solve_result_num": 0,
+      "solve_message": {
+        "contains": "Fixed MIP for mip:basis (emulated) failed"
+      }
+    }
+  },
+  {
+    "name": "fixed_sos unsupported emulation",
+    "tags": [
+      "integer",
+      "fixmodel"
+    ],
+    "solvers": [
+      "highs",
+      "copt",
+      "scip",
+      "mosek"
+    ],
+    "objective": 1,
+    "options": {
+      "mp_options": "mip:basis=1"
+    },
+    "values": {
+      "solve_result_num": 0,
+      "solve_message": {
+        "contains": "unsupported model"
+      }
+    }
+  },
+  {
+    "name": "fixed_mip preserved MIP metadata",
+    "files": [
+      "fixed_mip.mod"
+    ],
+    "tags": [
+      "linear",
+      "integer",
+      "fixmodel"
+    ],
+    "solvers": [
+      "highs",
+      "copt",
+      "scip",
+      "mosek",
+      "cplex"
+    ],
+    "objective": 14.75,
+    "options": {
+      "mp_options": "mip:basis=1 mip:return_gap=3 mip:bestbound=1 tech:stats=2"
+    },
+    "values": {
+      "cost.bestbound": 14.75,
+      "cost.absmipgap": 0,
+      "cost.relmipgap": 0,
+      "Initial.node_count": {
+        "min": 0
+      }
+    }
+  },
+  {
+    "name": "fixed_mip highs zero nodes with incumbent",
+    "files": [
+      "fixed_incumbent.run"
+    ],
+    "tags": [
+      "linear",
+      "integer",
+      "fixmodel",
+      "cd"
+    ],
+    "solvers": [
+      "highs"
+    ],
+    "objective": 15.75,
+    "options": {
+      "mp_options": "mip:basis=1 lim:nodes=0 mip:bestbound=1 tech:stats=2",
+      "highs_options": "pre:solve=off"
+    },
+    "values": {
+      "b": 1,
+      "k": 2,
+      "y": 0.25,
+      "demand": 3,
+      "solve_result_num": 408,
+      "Initial.node_count": 0,
+      "cost.bestbound": {
+        "max": 0
+      },
+      "solve_message": {
+        "contains": [
+          "Fixed MIP for mip:basis (emulated):",
+          "objective 15.75"
+        ]
+      }
+    }
+  },
+  {
+    "name": "fixed_mip mosek zero nodes with incumbent",
+    "files": [
+      "fixed_incumbent.run"
+    ],
+    "tags": [
+      "linear",
+      "integer",
+      "fixmodel",
+      "cd"
+    ],
+    "solvers": [
+      "mosek"
+    ],
+    "objective": 15.75,
+    "options": {
+      "mp_options": "mip:basis=1 lim:nodes=0 mip:bestbound=1 tech:stats=2",
+      "mosek_options": "pre:solve=0 mip:constructsol=1"
+    },
+    "values": {
+      "b": 1,
+      "k": 2,
+      "y": 0.25,
+      "demand": 3,
+      "solve_result_num": 400,
+      "Initial.node_count": 1,
+      "cost.bestbound": {
+        "max": 0
+      },
+      "solve_message": {
+        "contains": [
+          "Fixed MIP for mip:basis (emulated):",
+          "objective 15.75"
+        ]
+      }
+    }
+  },
+  {
+    "name": "dietu_mip native fixed limit recovery",
+    "files": [
+      "../suf_std/dietu_mip.mod"
+    ],
+    "tags": [
+      "linear",
+      "integer",
+      "fixmodel"
+    ],
+    "solvers": [
+      "cplex",
+      "gurobi",
+      "xpress"
+    ],
+    "objective": 74.27382,
+    "options": {
+      "mp_options": "mip:basis=1 mip:basis:iterlimit=0"
+    },
+    "values": {
+      "Buy['BEEF']": 2,
+      "Buy['CHK']": 10,
+      "Diet_Min['C']": 0,
+      "solve_result_num": 0,
+      "solve_message": {
+        "contains": "failed"
+      }
+    }
+  }
+]

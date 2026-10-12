@@ -122,7 +122,7 @@
   {
     "name": "dietu_mip mip:basis=1",
     "objective": 74.273820,
-    "tags": [ "linear", "continuous", "fixmodel" ],
+    "tags": [ "linear", "integer", "fixmodel" ],
     "options": { "mp_options": "mip:basis=1" },
     "values": {
       "Buy['BEEF'].sstatus": "low",
@@ -137,7 +137,8 @@
   {
     "name": "dietu_mip mip:basis=0 (default for x-gurobi)",
     "objective": 74.273820,
-    "tags": [ "linear", "continuous", "fixmodel" ],
+    "tags": [ "linear", "integer", "fixmodel" ],
+    "options": { "mp_options": "mip:basis=0" },
     "values": {
       "Buy['BEEF'].sstatus": "bas",
       "Buy['MTL'].sstatus": "upp",
@@ -148,12 +149,12 @@
   {
     "name": "mipb_int mip:basis=1",
     "objective": 1,
-    "tags": [ "linear", "continuous", "fixmodel" ],
+    "tags": [ "linear", "integer", "fixmodel" ],
     "options": { "mp_options": "mip:basis=1" },
     "values": {
-      "x.sstatus": "low",
-      "y.sstatus": "low",
-      "z.sstatus": "low",
+      "if (x.sstatus = 'low' or x.sstatus = 'equ') then 1 else 0": 1,
+      "if (y.sstatus = 'low' or y.sstatus = 'equ') then 1 else 0": 1,
+      "if (z.sstatus = 'low' or z.sstatus = 'equ') then 1 else 0": 1,
       "C1": 0,
       "C1.sstatus": "bas"
     }

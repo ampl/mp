@@ -1305,7 +1305,7 @@ class SCIPSolver(MPDirectSolver):
         return ""
 
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
-        stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary, 
+        stags = {ModelTags.fixmodel, ModelTags.continuous, ModelTags.integer, ModelTags.binary,
                  ModelTags.quadratic,
                  ModelTags.quadratic_obj,
                  ModelTags.quadratic_obj_nonconvex,
@@ -1355,7 +1355,7 @@ class HighsSolver(MPDirectSolver):
         return f"threads={threads} {parallel}"
 
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
-        stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
+        stags = {ModelTags.fixmodel, ModelTags.continuous, ModelTags.integer, ModelTags.binary,
                  ModelTags.quadratic_obj,
 
                  ModelTags.sstatus, 
@@ -1406,7 +1406,7 @@ class COPTSolver(MPDirectSolver):
         return "copt"
 
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
-        stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
+        stags = {ModelTags.fixmodel, ModelTags.continuous, ModelTags.integer, ModelTags.binary,
                  ModelTags.quadratic, ModelTags.quadratic_obj,
                  ModelTags.quadraticnonconvex,
                  ModelTags.formulas,
@@ -1445,7 +1445,7 @@ class MosekSolver(MPDirectSolver):
         return "mosek"
 
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
-        stags = {ModelTags.continuous, ModelTags.linear, ModelTags.integer,
+        stags = {ModelTags.fixmodel, ModelTags.continuous, ModelTags.linear, ModelTags.integer,
                  ModelTags.binary,
 
                  ModelTags.quadratic, ModelTags.quadratic_obj,

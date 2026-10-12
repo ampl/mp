@@ -1,0 +1,4 @@
+model fixed_mip.mod;
+# Leave room for the fixed LP to improve the continuous part of the start.
+let y := 1;
+solve;

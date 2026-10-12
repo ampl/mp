@@ -71,14 +71,15 @@ class ModelRunner(object):
                     else:
                         ss = r
                     if not m.isSubsetOfTags(ss.getSupportedTags()) or \
-                            m.hasAnyTag(ss.getUnsupportedTags()):
-                        self._runs[i][-1]["outmsg"] = "Skipped, unsupported tags"
+                            m.hasAnyTag(ss.getUnsupportedTags()) or \
+                            (m.hasSolvers() and ss.getName() not in m.getSolvers()):
+                        self._runs[i][-1]["outmsg"] = "Skipped, unsupported tags or solver restriction"
                         self._runs[i][-1]["solver"] = ss
                         if r.isBenchmark:
-                            print("\n\t\t{0: <20}: Skipped due to unsupported tags".
+                            print("\n\t\t{0: <20}: Skipped due to unsupported tags or solver restriction".
                               format(ss.getName()), flush=True)
                         else:
-                            print("Skipped due to unsupported tags", flush=True)
+                            print("Skipped due to unsupported tags or solver restriction", flush=True)
                         nSkipped[i] += 1
                     else:
                       if keepLogs:

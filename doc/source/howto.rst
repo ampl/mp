@@ -560,6 +560,18 @@ do the following:
    to `GetBasis()`, as well as dual solution and sensitivity information should
    correspond to that LP solution.
 
+For linear algebraic models, COPT, MOSEK, HiGHS, and SCIP implement this
+operation by emulation. The shared ``FlatBackend`` helper validates input
+eligibility, publishes fixed-LP results only after successful extraction,
+and handles supplementary failures without replacing the MIP outcome.
+Driver implementations of ``SolveFixedLP()`` live in their backend source
+files and create separate continuous models. They apply
+``fixed_model_time_limit()`` and ``fixed_model_iter_limit()`` to those
+models, leaving MIP limits unchanged. Their basis accessors use
+``FixedLPBasis()`` for postsolve mapping; solution accessors select the
+fixed result when available. Drivers must check incumbent feasibility
+before fixing values and respect their solver's integrality tolerance.
+
 
 Plateau stop (:ref:`plateauStop`, :ref:`plateauStopBound`)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

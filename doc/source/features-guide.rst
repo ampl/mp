@@ -1420,6 +1420,29 @@ dual values or sensitivity information that wouldn't normally be available for M
 
 This option controls if to generate and solve the fixed model after solving the integer problem.
 
+COPT, MOSEK, HiGHS, and SCIP emulate this operation for linear algebraic
+models by fixing all integer columns to an integer-feasible incumbent and
+solving a separate continuous model. The incumbent need not be proven optimal.
+SOS, piecewise-linear, logical, and nonlinear inputs are not supported by
+this initial emulation. Duals describe the fixed continuous problem and are
+not MIP shadow prices. Basis statuses can differ across solvers, especially
+for fixed variables and degenerate solutions. Sensitivity is available only
+when supported by the driver and requested with ``alg:sens``.
+
+The supplementary solve preserves the MIP status, bounds, gaps, pool, and
+statistics. If successful, the reported primal and objective values correspond
+to the fixed solution; continuous variables may move. If unsuccessful, the
+MIP solution is retained, supplementary duals/basis/sensitivity are omitted,
+and the solve message explains the failure.
+
+``mip:basis:timelimit`` specifies a separate time limit in seconds, and
+``mip:basis:iterlimit`` specifies a separate iteration limit. Both default
+to -1 (independent solver defaults). For emulation, zero skips the fixed solve.
+COPT uses simplex by default; an explicit iteration limit selects barrier
+with crossover and counts barrier iterations. HiGHS, MOSEK, and SCIP use
+simplex. These options also apply to native fixed-model solves in Gurobi,
+CPLEX, and Xpress.
+
 .. list-table::
    :header-rows: 0
 
@@ -1433,8 +1456,8 @@ This option controls if to generate and solve the fixed model after solving the 
    * - **Output**
      - Suffixes:
   
-       * ``dual`` on variables
-       * ``sstatus`` on variables
+       * Constraint dual values
+       * ``sstatus`` on variables and constraints
        * See :ref:`sensitivityanalysis` if requested
   
    * - **Values**

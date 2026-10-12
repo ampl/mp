@@ -2,6 +2,12 @@ Summary of recent updates to the AMPL MP Library
 ================================================
 
 
+## unreleased
+- Emulate *mip:basis* for linear algebraic MIPs in COPT, MOSEK, HiGHS,
+  and SCIP. Add independent fixed-model limits *mip:basis:timelimit*
+  and *mip:basis:iterlimit*, including native fixed-model paths.
+
+
 ## 20260908
 - Set membership operator discouraged
   during rework, see Modeling Guide.
