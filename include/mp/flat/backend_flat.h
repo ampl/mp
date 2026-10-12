@@ -108,6 +108,69 @@ public:
 
 
 protected:
+  /// Supplementary LP data in solver coordinates, published atomically only
+  /// after an optimal fixed solve and successful extraction.
+  struct FixedLPResult {
+    std::vector<double> primal, dual;
+    std::vector<int> varstt, constt;
+    double objective = 0;
+    int iterations = 0;
+  };
+  virtual FixedLPResult SolveFixedLP(ArrayRef<double>) {
+    MP_RAISE("Fixed-model emulation not implemented");
+  }
+  bool FixedModelReady() const override {
+    return !this->IsFixedModelEmulated() || fixed_ready_;
+  }
+  const FixedLPResult& FixedLP() const { return fixed_lp_; }
+  bool HasFixedLP() const { return fixed_ready_; }
+
+  /// Called after recording MIP status/messages/pool, before standard reports.
+  void ConsiderEmulatedFixedModel() {
+    fixed_ready_ = false;
+    fixed_lp_ = {};
+    if (!BaseBackend::need_fixed_MIP() || !this->IsMIP())
+      return;
+    try {
+      if (!this->GetMM().IsLinearAlgebraic())
+        MP_RAISE("unsupported model: requires linear algebraic constraints and objective, without SOS/PWL/logical constructs");
+      auto x = PrimalSolution();
+      if (x.empty())
+        MP_RAISE("no integer-feasible incumbent");
+      if (this->fixed_model_time_limit() == 0 || this->fixed_model_iter_limit() == 0)
+        MP_RAISE("fixed-model time or iteration limit is zero");
+      auto result = SolveFixedLP(x);
+      fixed_lp_ = std::move(result);
+      fixed_ready_ = true;
+      this->AddToSolverMessage(fmt::format(
+          "Fixed MIP for mip:basis (emulated): {} iterations\n", fixed_lp_.iterations));
+    } catch (const std::exception& e) {
+      this->AddToSolverMessage(fmt::format(
+          "Fixed MIP for mip:basis (emulated) failed: {}.\n", e.what()));
+    }
+  }
+
+  SolutionBasis FixedLPBasis(int group) {
+    if (!fixed_ready_)
+      return {};
+    auto mv = GetValuePresolver().PostsolveBasis(
+        {fixed_lp_.varstt, {{{group, fixed_lp_.constt}}}});
+    return {mv.GetVarValues()(), mv.GetConValues()()};
+  }
+
+  static double FixedIntegerValue(double x, double lb, double ub, double tol) {
+    double rounded = std::round(x);
+    if (!std::isfinite(x) || std::fabs(x-rounded) > tol ||
+        rounded < lb-tol || rounded > ub+tol)
+      MP_RAISE("incumbent has an invalid integer value");
+    return rounded;
+  }
+
+private:
+  FixedLPResult fixed_lp_;
+  bool fixed_ready_ = false;
+
+protected:
   /// Convenience feature:
   /// Read int suffixes for several entities (var/con/obj).
   /// @return suffix value map

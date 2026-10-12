@@ -237,8 +237,27 @@ protected:
   /// Says we finished problem modification,
   /// so we run model conversion and communicate the result into the ModelAPI.
   void ConvertModelAndUpdateBackend() {
+    linear_algebraic_ = !GetModel().num_logical_cons();
+    auto is_linear = [](NumericExpr expression) {
+      return !expression || expression.kind() == expr::NUMBER;
+    };
+    for (auto obj : GetModel().objs())
+      linear_algebraic_ &= is_linear(obj.nonlinear_expr());
+    for (auto con : GetModel().algebraic_cons())
+      linear_algebraic_ &= is_linear(con.nonlinear_expr());
+    for (const char* name : {"sosno", "sos"}) {
+      auto values = GetModel().ReadIntSuffix({name, suf::Kind::VAR});
+      for (auto value : values)
+        linear_algebraic_ &= !value;
+    }
     GetCvt().ConvertModel();
   }
+
+public:
+  bool IsLinearAlgebraic() const override { return linear_algebraic_; }
+
+private:
+  bool linear_algebraic_ = false;
 
 
 protected:

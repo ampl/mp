@@ -194,6 +194,13 @@ public:
   **/
   DEFINE_STD_FEATURE( FIX_MODEL )
   ALLOW_STD_FEATURE( FIX_MODEL, false )
+  /// Whether the driver implements the fixed-model operation by emulation.
+  virtual bool IsFixedModelEmulated() const { return false; }
+  virtual bool FixedModelReady() const { return true; }
+  virtual const char* FixedModelIterationLimitHelp() const {
+    return "Iteration limit for the fixed-model solve only. -1 (default) uses "
+           "the solver default. For emulation, 0 skips the supplementary solve.";
+  }
   /**
   * Stop the MIP search once the incumbent objective (and, if
   * PLATEAU_STOP_BOUND is also enabled, the absolute/relative MIP gap)
@@ -334,7 +341,7 @@ public:
     if (IsMIP())
       CalculateAndReportMIPGap();
     ReportBestDualBound();
-    if (sensitivity())
+    if (sensitivity() && (!IsMIP() || FixedModelReady()))
       ReportSensitivity();
   }
 
@@ -479,6 +486,8 @@ private:
     int returnBestDualBound_=0;
     int solnSens_=0;
     int fixModel_=0;
+    double fixedTimeLimit_ = -1;
+    int fixedIterLimit_ = -1;
   };
   Options mipStoredOptions_;
 
@@ -532,6 +541,9 @@ protected:
     return IMPL_HAS_STD_FEATURE( FIX_MODEL ) ?
           GetMIPOptions().fixModel_ : 0;
   }
+
+  double fixed_model_time_limit() const { return GetMIPOptions().fixedTimeLimit_; }
+  int fixed_model_iter_limit() const { return GetMIPOptions().fixedIterLimit_; }
 
   double plateau_time() const {
     return IMPL_HAS_STD_FEATURE(PLATEAU_STOP) ?
@@ -839,11 +851,23 @@ protected:
                       ,
                     GetMIPOptions().solnSens_);
 
-    if (IMPL_HAS_STD_FEATURE( FIX_MODEL ))
+    if (IMPL_HAS_STD_FEATURE( FIX_MODEL )) {
       AddStoredOption("mip:basis fixmodel mip:fix",
-                      "Whether to compute duals / basis / sensitivity for MIP models:\n"
-                      "\n.. value-table::\n",
+                      (std::string("Whether to compute duals / basis / sensitivity for MIP models. ") +
+                      (IsFixedModelEmulated() ?
+                       "Emulated by fixing integer variables to an incumbent and solving "
+                       "a continuous model. Currently supports linear algebraic models only "
+                       "(no SOS, piecewise-linear, logical, or general constraints). " : "") +
+                      "\n\n.. value-table::\n").c_str(),
                     GetMIPOptions().fixModel_, values_01_noyes_0default_);
+      AddStoredOption("mip:basis:timelimit",
+                      "Time limit in seconds for the fixed-model solve only. "
+                      "-1 (default) uses the solver default, independently of the MIP time limit. "
+                      "For emulation, 0 skips the supplementary solve.",
+                      GetMIPOptions().fixedTimeLimit_, -1.0, DBL_MAX);
+      AddStoredOption("mip:basis:iterlimit", FixedModelIterationLimitHelp(),
+                      GetMIPOptions().fixedIterLimit_, -1, INT_MAX);
+    }
 
     if (IMPL_HAS_STD_FEATURE( PLATEAU_STOP )) {
       AddStoredOption("mip:plateau:time mip:plateautime plateautime",

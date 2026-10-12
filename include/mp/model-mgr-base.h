@@ -107,6 +107,10 @@ public:
   /// Has unfixed int vars?
   /// This is about the solver-facing instance.
   virtual bool HasUnfixedIntVars() const = 0;
+
+  /// Original input is linear algebraic, without SOS/PWL/logical constructs.
+  /// Conservative default for model managers that cannot establish this.
+  virtual bool IsLinearAlgebraic() const { return false; }
 };
 
 } // namespace mp
