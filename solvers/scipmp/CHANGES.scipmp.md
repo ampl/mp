@@ -74,6 +74,8 @@ Summary of recent updates to SCIP for AMPL
 
 
 ## unreleased
+- Emulate *mip:basis* for linear algebraic MIPs, with separate
+  *mip:basis:timelimit* and *mip:basis:iterlimit* options.
 - Reenable native OR constraint by default
   (requires marking all variables as integer,
   even if fixed). See option acc:or.

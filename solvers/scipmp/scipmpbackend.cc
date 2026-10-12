@@ -1,3 +1,6 @@
+#include <unordered_map>
+#include "lpi/lpi.h"
+#include "scip/cons_linear.h"
 #include <vector>
 #include <climits>
 #include <cfloat>
@@ -88,6 +91,7 @@ bool ScipBackend::IsQCP() const {
 }
 
 ArrayRef<double> ScipBackend::PrimalSolution() {
+  if (HasFixedLP()) return FixedLP().primal;
   SCIP* scip = getSCIP();
   int num_vars = NumVars();
   auto sol = SCIPgetBestSol(scip);
@@ -105,6 +109,7 @@ pre::ValueMapDbl ScipBackend::DualSolution() {
 }
 
 ArrayRef<double> ScipBackend::DualSolution_LP() {
+  if (IsMIP()) return HasFixedLP() ? ArrayRef<double>(FixedLP().dual) : ArrayRef<double>{};
   int num_cons = NumLinCons();
   std::vector<double> pi(num_cons);
   if (SCIPisDualSolAvailable(getSCIP(), TRUE)) {
@@ -175,10 +180,79 @@ void ScipBackend::Solve() {
   WindupSCIPSolve();
 }
 
+ScipBackend::FixedLPResult ScipBackend::SolveFixedLP(ArrayRef<double> x) {
+  if (!SCIPgetBestSol(getSCIP())) MP_RAISE("no integer-feasible incumbent");
+  int n = NumVars(), m = NumLinCons();
+  auto* vars = getPROBDATA()->vars;
+  std::unordered_map<SCIP_VAR*, int> columns;
+  std::vector<double> obj(n), lb(n), ub(n), lhs(m), rhs(m);
+  std::vector<std::vector<std::pair<int, double>>> entries(n);
+  for (int j = 0; j < n; ++j) {
+    columns[vars[j]] = j;
+    obj[j] = SCIPvarGetObj(vars[j]);
+    lb[j] = SCIPvarGetLbOriginal(vars[j]); ub[j] = SCIPvarGetUbOriginal(vars[j]);
+    if (SCIPvarGetType(vars[j]) != SCIP_VARTYPE_CONTINUOUS)
+      lb[j] = ub[j] = FixedIntegerValue(x[j], lb[j], ub[j], SCIPfeastol(getSCIP()));
+  }
+  for (int i = 0; i < m; ++i) {
+    auto* con = getPROBDATA()->linconss[i];
+    lhs[i] = SCIPgetLhsLinear(getSCIP(), con); rhs[i] = SCIPgetRhsLinear(getSCIP(), con);
+    auto* rowvars = SCIPgetVarsLinear(getSCIP(), con);
+    auto* values = SCIPgetValsLinear(getSCIP(), con);
+    for (int k = 0; k < SCIPgetNVarsLinear(getSCIP(), con); ++k) {
+      auto it = columns.find(rowvars[k]);
+      if (it == columns.end()) MP_RAISE("fixed LP row contains an unmapped variable");
+      entries[it->second].push_back({i, values[k]});
+    }
+  }
+  std::vector<int> start(n), index;
+  std::vector<double> value;
+  for (int j = 0; j < n; ++j) {
+    start[j] = index.size();
+    for (auto entry : entries[j]) { index.push_back(entry.first); value.push_back(entry.second); }
+  }
+  SCIP_LPI* model = nullptr;
+  SCIP_CCALL(SCIPlpiCreate(&model, nullptr, "mip:basis", static_cast<SCIP_OBJSEN>(SCIPgetObjsense(getSCIP()))));
+  auto destroy = [](SCIP_LPI* model) { SCIPlpiFree(&model); };
+  std::unique_ptr<SCIP_LPI, decltype(destroy)> fixed(model, destroy);
+  SCIP_CCALL(SCIPlpiLoadColLP(model, static_cast<SCIP_OBJSEN>(SCIPgetObjsense(getSCIP())), n, obj.data(),
+      lb.data(), ub.data(), nullptr, m, lhs.data(), rhs.data(), nullptr,
+      index.size(), start.data(), index.data(), value.data()));
+  if (fixed_model_time_limit() == 0) MP_RAISE("fixed LP time limit 0");
+  if (fixed_model_time_limit() > 0)
+    SCIP_CCALL(SCIPlpiSetRealpar(model, SCIP_LPPAR_LPTILIM, fixed_model_time_limit()));
+  if (fixed_model_iter_limit() >= 0)
+    SCIP_CCALL(SCIPlpiSetIntpar(model, SCIP_LPPAR_LPITLIM, fixed_model_iter_limit()));
+  SCIP_CCALL(SCIPlpiSolveDual(model));
+  if (!SCIPlpiIsOptimal(model)) MP_RAISE("fixed LP not optimal (limit or numerical failure)");
+  FixedLPResult result;
+  result.primal.resize(n);
+  result.dual.resize(m);
+  result.varstt.resize(n);
+  result.constt.resize(m);
+  SCIP_CCALL(SCIPlpiGetSol(model, &result.objective, result.primal.data(), result.dual.data(), nullptr, nullptr));
+  result.objective = SCIPgetOrigObjscale(getSCIP()) * result.objective + SCIPgetOrigObjoffset(getSCIP());
+  SCIP_CCALL(SCIPlpiGetBase(model, result.varstt.data(), result.constt.data()));
+  auto convert = [](int status) {
+    switch (status) {
+    case SCIP_BASESTAT_BASIC: return (int)BasicStatus::bas;
+    case SCIP_BASESTAT_LOWER: return (int)BasicStatus::low;
+    case SCIP_BASESTAT_UPPER: return (int)BasicStatus::upp;
+    case SCIP_BASESTAT_ZERO: return (int)BasicStatus::sup;
+    default: MP_RAISE(fmt::format("Unknown SCIP fixed-LP basis status {}", (int)status));
+    }
+  };
+  for (auto& status : result.varstt) status = convert(status);
+  for (auto& status : result.constt) status = convert(status);
+  SCIP_CCALL(SCIPlpiGetIterations(model, &result.iterations));
+  return result;
+}
+
 void ScipBackend::WindupSCIPSolve() { }
 
 void ScipBackend::ReportResults() {
   ReportSCIPResults();
+  ConsiderEmulatedFixedModel();
   BaseBackend::ReportResults();
 }
 
@@ -930,6 +1004,7 @@ void ScipBackend::ConStatii(ArrayRef<int> cst) {
 }
 
 SolutionBasis ScipBackend::GetBasis() {
+  if (IsMIP()) return FixedLPBasis(CG_Linear);
   std::vector<int> varstt = VarStatii();
   std::vector<int> constt = ConStatii();
   if (varstt.size() && constt.size()) {
@@ -970,13 +1045,22 @@ void ScipBackend::AddPrimalDualStart(Solution sol)
 }
 
 void ScipBackend::AddMIPStart(ArrayRef<double> x0, ArrayRef<int> sparsity) {
-  SCIP_SOL* solution;
-  SCIP_Bool keep;
-  SCIP_CCALL( SCIPcreateSol(getSCIP(), &solution, NULL) );
-
-  SCIP_CCALL( SCIPsetSolVals(getSCIP(), solution, getPROBDATA()->nvars, getPROBDATA()->vars, (double*)x0.data()) );
-
-  SCIP_CCALL( SCIPaddSolFree(getSCIP(), &solution, &keep) );
+  auto mv = GetValuePresolver().PresolveSolution({x0});
+  auto ms = GetValuePresolver().PresolveGenericInt({sparsity});
+  auto x = mv.GetVarValues()();
+  auto present = ms.GetVarValues()();
+  SCIP_SOL* solution = nullptr;
+  bool complete = present.size() == x.size() &&
+      std::all_of(present.begin(), present.end(), [](int value) { return value != 0; });
+  if (complete)
+    SCIP_CCALL(SCIPcreateSol(getSCIP(), &solution, nullptr));
+  else
+    SCIP_CCALL(SCIPcreatePartialSol(getSCIP(), &solution, nullptr));
+  for (int j = 0; j < NumVars(); ++j)
+    if (j < (int)present.size() && present[j])
+      SCIP_CCALL(SCIPsetSolVal(getSCIP(), solution, getPROBDATA()->vars[j], x[j]));
+  SCIP_Bool stored;
+  SCIP_CCALL(SCIPaddSolFree(getSCIP(), &solution, &stored));
 }
 
 void ScipBackend::DoWriteProblem(const std::string& name) {

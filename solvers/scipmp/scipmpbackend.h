@@ -51,6 +51,9 @@ public:
   // Use this section to declare and implement some standard features
   // that may or may not need additional functions. 
   USING_STD_FEATURES;
+  ALLOW_STD_FEATURE(FIX_MODEL, true)
+  bool IsFixedModelEmulated() const override { return true; }
+  FixedLPResult SolveFixedLP(ArrayRef<double>) override;
 
   /**
  * MULTISOL support
@@ -70,14 +73,14 @@ public:
   * General warm start, e.g.,
   * set primal/dual initial guesses for continuous case
   **/
-  ALLOW_STD_FEATURE( WARMSTART, false )
+  ALLOW_STD_FEATURE( WARMSTART, true )
   void AddPrimalDualStart(Solution sol) override;
   /**
   * MIP warm start
   **/
   // If MIP warm start is supported, implement the function below
   // to set a non-presolved starting solution
-  ALLOW_STD_FEATURE(MIPSTART, false)
+  ALLOW_STD_FEATURE(MIPSTART, true)
   void AddMIPStart(ArrayRef<double> x0,
 									 ArrayRef<int> sparsity) override;
 
@@ -121,7 +124,7 @@ public:  // public for static polymorphism
 
   /// Default impl of GetObjValues()
   ArrayRef<double> GetObjectiveValues() override
-  { return std::vector<double>{ObjectiveValue()}; } 
+  { return std::vector<double>{HasFixedLP() ? FixedLP().objective : ObjectiveValue()}; }
 
 
   //////////////////// [[ Implementation details ]] //////////////////////
