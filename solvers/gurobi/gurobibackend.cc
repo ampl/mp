@@ -1947,7 +1947,7 @@ void GurobiBackend::InitCustomOptions() {
                   "(default 1e-6).", GRB_DBL_PAR_NLBARDFEASTOL, 1e-12, 0.1);
 
   AddSolverOption("nlbar:pfeastol nlbarpfeastol",
-                  "For the NL barrier algorithm, the dual feasibility error must be "
+                  "For the NL barrier algorithm, the primal feasibility error must be "
                   "smaller in order for a model to be declared locally optimal "
                   "(default 1e-6).", GRB_DBL_PAR_NLBARPFEASTOL, 1e-12, 0.1);
 
