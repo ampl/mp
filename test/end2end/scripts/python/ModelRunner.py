@@ -23,6 +23,18 @@ class ModelRunner(object):
     def getLogFileName(m : Model, s : Solver):
         return f"{m.getName()}.{s.getName()}.log"
 
+    @staticmethod
+    def getAMPLVersion(amplPath: str) -> str:
+        """First line of 'ampl -v', or a note when it cannot be run"""
+        import subprocess
+        try:
+            out = subprocess.run([amplPath, "-v"], capture_output=True, text=True,
+                                 stdin=subprocess.DEVNULL, timeout=30)
+            first = (out.stdout or out.stderr).strip().splitlines()
+            return first[0] if first else "unavailable (no output)"
+        except Exception as exc:
+            return "unavailable ({})".format(exc)
+
     STARS = "*" * 60
 
     def _folderSummaryLines(self, folder, nCases, counters, start):
@@ -94,7 +106,9 @@ class ModelRunner(object):
                 msg = "{}. As NL: '{}'".format(n, m.getName())
             else:
                 if not self._amplRunners:
-                    print("AMPL executable: '{}'".format(self._ampl))
+                    amplPath = Solver.resolveExecutable(self._ampl)
+                    print("AMPL executable: '{}'".format(amplPath))
+                    print("AMPL version: {}".format(ModelRunner.getAMPLVersion(amplPath)), flush=True)
                     self._amplRunners = [
                         AMPLRunner(self._ampl, r, self._optionsExtra,
                                    printOutput=verbose, storeOutput=keep_output,

@@ -24,19 +24,8 @@ def writeModels(ampl, directory,modelList=True, justNL=False, recursive=False,pr
         amplRunner.writeModel(m, writeMPS=writeMPS)
 
 def find_solver(solver_name: str):
-    # 2. Try locating it through amplpy modules first
-    # (this updates the environment path)
-    try:
-        modules.find(solver_name)
-    except Exception:
-        pass  # If it fails, amplpy will fall back to searching the system path
-
-    # 3. Check where the operating system will actually resolve the binary execution
-    actual_path = shutil.which(solver_name)
-
-    if actual_path:
-        return actual_path
-    return solver_name + ": not found"
+    """Path of the solver executable that will actually run (see Solver.resolveExecutable)"""
+    return Solver.resolveExecutable(solver_name)
 
 def runModels(directory, ampl: str, solvers: list,
               solverOptions=None,
@@ -92,7 +81,7 @@ def runModels(directory, ampl: str, solvers: list,
         print("No models or case descriptions found.")
     else:
         msg = "Running {} test cases with solvers {}".format(
-            len(modelList), [find_solver(s) for s in solvernames])
+            len(modelList), [find_solver(slv.getExecutable()) for slv in solvers])
         if found_models is not None:
             end = "s" if len(found_models)>1 else ""
             msg +=f"\nContinuing previous run, discarding {len(found_models)} model{end}."

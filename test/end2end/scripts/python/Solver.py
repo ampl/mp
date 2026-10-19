@@ -15,6 +15,23 @@ class Solver(object):
     NLPMETHODS = ["REFORMULATION", "NATIVE", "NATIVEPL"]
     
     @staticmethod
+    def resolveExecutable(name: str) -> str:
+        """Path of the executable that will actually run for 'name':
+           a name with a directory part is used as given (absolute),
+           a bare name is looked up through amplpy modules and PATH"""
+        import os, shutil
+        if os.path.dirname(name):
+            p = os.path.abspath(name)
+            return p if os.path.isfile(p) else p + ": not found"
+        try:
+            from amplpy import modules
+            modules.find(name)     # extends the search path with installed modules
+        except Exception:
+            pass
+        found = shutil.which(name)
+        return found if found else name + ": not found"
+
+    @staticmethod
     def getExecutableName(name):
         path = PurePath(name)
         if sys.platform == "win32":
