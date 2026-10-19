@@ -1,0 +1,7 @@
+# Global lim:sol=1 (set via gurobi_options by the test case) stops
+# every pass at its first solution; the per-pass suffix lifts the
+# limit for the second objective, so pass 2 solves to optimality.
+model multiobj_abstol_MIP.mod;
+suffix option_sollimit;
+let yobj.option_sollimit := 2000000000;
+solve;

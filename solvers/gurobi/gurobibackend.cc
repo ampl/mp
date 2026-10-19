@@ -333,11 +333,11 @@ ArrayRef<double> GurobiBackend::GetObjectiveValues() {
 
 ArrayRef<double> GurobiBackend::CurrentGrbPoolPrimalSolution() {
   return
-    GrbGetDblAttrArray(GRB_DBL_ATTR_XN, NumVars());
+    GrbGetDblAttrArray(GRB_DBL_ATTR_POOLNX, NumVars());
 }
 
 double GurobiBackend::CurrentGrbPoolObjectiveValue() const {
-  return GrbGetDblAttr(GRB_DBL_ATTR_POOLOBJVAL);
+  return GrbGetDblAttr(GRB_DBL_ATTR_POOLNOBJVAL);
 }
 
 
@@ -1618,6 +1618,9 @@ static const mp::OptionValueInfo values_method[] = {
   { "5", "Deterministic concurrent simplex (deprecated; use alg:concurrentmethod).", 5},
   {"6", "PDHG (Primal-Dual Hybrid Gradient). "
            "For PDHG on GPU, see alg:pdhggpu.", 6}
+#ifdef GRB_METHOD_NLBARRIER
+  , {"7", "NL barrier (Gurobi 14+); see also alg:optimalitytarget.", 7}
+#endif
 };
 static const mp::OptionValueInfo values_concurrentmethod[] = {
    { "-1", "Automatic (default)", -1},
@@ -1625,6 +1628,9 @@ static const mp::OptionValueInfo values_concurrentmethod[] = {
   { "1", "Barrier and dual simplex", 1},
   { "2", "Barrier and primal simplex", 2},
   { "3", "Dual and primal simplex", 3}
+#ifdef GRB_CONCURRENTMETHOD_PDHG_DUAL_PRIMAL
+  , { "4", "PDHG, dual and primal simplex (Gurobi 14+)", 4}
+#endif
 };
 
 static const mp::OptionValueInfo values_solutiontarget[] = {
@@ -1750,6 +1756,14 @@ static const mp::OptionValueInfo values_siftmethod_[] = {
   { "0", "Primal simplex", 0},
   { "1", "Dual simplex", 1},
   { "2", "Barrier.", 2}
+};
+
+static const mp::OptionValueInfo values_inheritparams_[] = {
+  {"-1", "Automatic choice (default): same as 1", -1},
+  { "0", "No: only parameters set for the pass apply, "
+         "others take Gurobi defaults (Gurobi 13 behavior)", 0},
+  { "1", "Yes: parameters not set for the pass are taken "
+         "from the main environment.", 1}
 };
 
 static const mp::OptionValueInfo values_tunecriterion_[] = {
@@ -1901,10 +1915,18 @@ void GurobiBackend::InitCustomOptions() {
 
 
 
+#if GRB_VERSION_MAJOR >= 14
+  AddSolverOption("alg:pdhggpu pdhggpu",
+      "Enables PDHG on GPU on compatible systems "
+      "(requires alg:method=6 or a PDHG MIP heuristic option, "
+      "and a GPU-enabled build):\n"
+      "\n.. value-table::\n", GRB_INT_PAR_PDHGGPU, values_autonoyes_, -1);
+#else
   AddSolverOption("alg:pdhggpu pdhggpu",
       "Enables PDHG on GPU on compatible systems "
       "(requires alg:method=6 and a GPU-enabled build):\n"
       "\n.. value-table::\n", GRB_INT_PAR_PDHGGPU, values_01_noyes_0default_, 0);
+#endif
 
 
   AddOptionSynonyms_OutOfLine("alg:infunbdinfo infunbdinfo InfUnbdInfo", "alg:rays");
@@ -1953,7 +1975,11 @@ void GurobiBackend::InitCustomOptions() {
   ////////////////// NLBAR ////////////////////////
   AddSolverOption("nlbar:iterlim nlbariterlim lim:nlbariter",
                   "Limits the number of barrier NL iterations performed "
+#if GRB_VERSION_MAJOR >= 14
+                  "(default 10000).",
+#else
                   "(default 1000).",
+#endif
                   GRB_INT_PAR_NLBARITERLIMIT, 0, INT_MAX);
 
   AddSolverOption("nlbar:cfeastol nlbarcfeastol",
@@ -1974,6 +2000,19 @@ void GurobiBackend::InitCustomOptions() {
                   "For the NL barrier algorithm, the primal feasibility error must be "
                   "smaller in order for a model to be declared locally optimal "
                   "(default 1e-6).", GRB_DBL_PAR_NLBARPFEASTOL, 1e-12, 0.1);
+#ifdef GRB_DBL_PAR_NLBARINITMU
+  AddSolverOption("nlbar:initmu nlbarinitmu",
+                  "Initial barrier parameter of the NL barrier algorithm; "
+                  "smaller values suit starting points close to the optimum "
+                  "(default 1).", GRB_DBL_PAR_NLBARINITMU, 1e-8, Infinity());
+#endif
+#ifdef GRB_DBL_PAR_NLBARSTARTPUSH
+  AddSolverOption("nlbar:startpush nlbarstartpush",
+                  "Minimum distance by which the NL barrier algorithm pushes "
+                  "a user starting point away from variable bounds, never past "
+                  "the midpoint of finite bounds (default 1e-2).",
+                  GRB_DBL_PAR_NLBARSTARTPUSH, 1e-12, Infinity());
+#endif
 
 
   /////////////////////// CUTS /////////////////////////
@@ -2074,6 +2113,13 @@ void GurobiBackend::InitCustomOptions() {
     "PSD cuts for nonconvex quadratic models: overrides \"cuts\":\n"
     "\n.. value-table::\n",
     GRB_INT_PAR_PSDCUTS, values_cuts_upto2, -1);
+#ifdef GRB_INT_PAR_OACUTS
+  AddSolverOption("cut:oa oacuts",
+    "Outer approximation cuts for MIQP, MIQCP and MINLP "
+    "(Gurobi 14+; not overridden by \"cuts\"):\n"
+    "\n.. value-table::\n",
+    GRB_INT_PAR_OACUTS, values_cuts_upto2, -1);
+#endif
   AddSolverOption("cut:relaxliftcuts relaxliftcuts",
     "Whether to enable relax-and-lift cut generation:\n"
     "\n.. value-table::\n",
@@ -2166,7 +2212,9 @@ void GurobiBackend::InitCustomOptions() {
 
   AddSolverOption("lim:sol sollimit solutionlimit",
     "Limit the number of feasible MIP solutions found, causing early "
-    "termination if exceeded; default = 2e9",
+    "termination if exceeded; default = 2e9. "
+    "Since Gurobi 14, value 1 no longer triggers additional "
+    "feasibility heuristics; use mip:focus=1 for that.",
     GRB_INT_PAR_SOLUTIONLIMIT, 1, 2000000000);
 
 #ifdef GRB_DBL_PAR_SOFTMEMLIMIT
@@ -2432,6 +2480,33 @@ void GurobiBackend::InitCustomOptions() {
     "before solving the root relaxation.  The work metrix is hard "
     "to define precisely, as it depends on the machine (default 0).",
     GRB_DBL_PAR_NORELHEURWORK, 0.0, DBL_MAX);
+#ifdef GRB_INT_PAR_NORELTREEHEUR
+  AddSolverOption("mip:noreltreeheur noreltreeheur",
+    "How aggressively to run the NoRel heuristic during the tree search "
+    "(Gurobi 14+). Helps when LP relaxations are cheap but feasible "
+    "solutions are hard to find; the final dual bound may be weaker:\n"
+    "\n"
+    "| -1 - Automatic: only when mip:focus=1 (default)\n"
+    "| 0 - Off\n"
+    "| 1-3 - Increasingly aggressive.",
+    GRB_INT_PAR_NORELTREEHEUR, -1, 3);
+#endif
+#ifdef GRB_INT_PAR_PDHGMIPHEURSOLUTIONS
+  AddSolverOption("mip:pdhgheursolutions pdhgmipheursolutions",
+    "Limit on the number of solutions found by the PDHG MIP heuristic, "
+    "which runs branch-and-bound with PDHG node relaxations "
+    "(Gurobi 14+; default 0 = heuristic off). "
+    "See also alg:pdhggpu.",
+    GRB_INT_PAR_PDHGMIPHEURSOLUTIONS, 0, GRB_MAXINT);
+  AddSolverOption("mip:pdhgheurtime pdhgmipheurtime",
+    "Time limit (in seconds) for the PDHG MIP heuristic (Gurobi 14+; "
+    "default 0). Introduces nondeterminism; use mip:pdhgheurwork "
+    "for deterministic results.",
+    GRB_DBL_PAR_PDHGMIPHEURTIME, 0.0, DBL_MAX);
+  AddSolverOption("mip:pdhgheurwork pdhgmipheurwork",
+    "Work limit for the PDHG MIP heuristic (Gurobi 14+; default 0).",
+    GRB_DBL_PAR_PDHGMIPHEURWORK, 0.0, DBL_MAX);
+#endif
 
 
 
@@ -2517,6 +2592,14 @@ void GurobiBackend::InitCustomOptions() {
     "\n.. value-table::\n",
     GRB_INT_PAR_MULTIOBJPRE, values_multiobjpre, -1);
 
+  AddSolverOption("obj:multi:inheritparams obj:inheritparams inheritparams",
+    "Whether the environments of lower-priority multi-objective passes "
+    "inherit parameters from the main environment "
+    "(Gurobi 14 default: inherit; Gurobi 13 and earlier: not inherit). "
+    "Per-pass keywords obj_n_<name> always take precedence:\n"
+    "\n.. value-table::\n",
+    GRB_INT_PAR_INHERITPARAMS, values_inheritparams_, -1);
+
   AddSolverOption("obj:scale objscale",
     "How to scale the objective:\n"
     "\n"
@@ -2595,7 +2678,7 @@ void GurobiBackend::InitCustomOptions() {
   AddOptionSynonyms_OutOfLine("alg:global global", "pre:funcnonlinear");
 
   AddSolverOption("pre:funcpieceerror funcpieceerror",
-      "Deprecated since Gurobi 13.0 together with function constraints. "
+      "Deprecated by Gurobi together with function constraints. "
       "For 'funcpieces=-1' or -2, this "
       "option provides the maximum allowed error (absolute for -1, "
       "relative for -2) in the piecewise-linear approximation.\n\n"
@@ -2605,14 +2688,14 @@ void GurobiBackend::InitCustomOptions() {
                   GRB_DBL_PAR_FUNCPIECEERROR, 0.0, GRB_INFINITY);
 
   AddSolverOption("pre:funcpiecelength funcpiecelength",
-      "Deprecated since Gurobi 13.0 together with function constraints. "
+      "Deprecated by Gurobi together with function constraints. "
       "If 'funcpieces=1', this option or suffix "
       "provide the length of each piece of the piecewise-linear "
       "approximation.",
                   GRB_DBL_PAR_FUNCPIECELENGTH, 0.0, GRB_INFINITY);
 
   AddSolverOption("pre:funcpieceratio funcpieceratio",
-      "Deprecated since Gurobi 13.0 together with function constraints. "
+      "Deprecated by Gurobi together with function constraints. "
       "This option (and suffix) control whether the piecewise-linear "
       "approximation "
       "of a function constraint is an underestimate of the function, an "
@@ -2624,7 +2707,7 @@ void GurobiBackend::InitCustomOptions() {
                   GRB_DBL_PAR_FUNCPIECERATIO, -1.0, 1.0);
 
   AddSolverOption("pre:funcpieces funcpieces",
-                  "Deprecated since Gurobi 13.0 together with function constraints. "
+                  "Deprecated by Gurobi together with function constraints. "
                   "This option (and suffix) set the strategy used for "
                   "performing a piecewise-linear approximation of "
                   "a function constraint. They have the following "
@@ -3022,7 +3105,8 @@ void GurobiBackend::InitCustomOptions() {
   AddSolverOption("tech:tunecriterion tunecriterion",
       "Secondary criterion for tuning, used when the primary criterion "
       "(solve time or optimality gap) does not distinguish parameter sets. "
-      "Values 1-3 are not supported for multi-objective models:\n"
+      "For multi-objective models, values 2 and 3 are not supported, "
+      "and value 1 only from Gurobi 14:\n"
       "\n.. value-table::\n",
           GRB_INT_PAR_TUNECRITERION, values_tunecriterion_, -1);
   AddSolverOption("tech:tunemetric tunemetric",

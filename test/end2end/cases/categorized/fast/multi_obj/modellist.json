@@ -495,5 +495,23 @@
       "x": 1.5864656920647173,
       "y": -0.24060292377693776
     }
+  },
+  {
+    "name" : "multiobj_abstol_MIP inherit global sollimit into pass env",
+    "files" : ["multiobj_abstol_MIP.mod"],
+    "tags" : ["linear", "integer", "multiobj"],
+    "solvers" : ["gurobi"],
+    "objective" : 0,
+    "options": { "gurobi_options": "multiobj=1 obj:multi:stats=1 obj_2_method=1 lim:sol=1" },
+    "values": { "_obj[1].objpass_result": 100, "_obj[2].objpass_result": 100 }
+  },
+  {
+    "name" : "multiobj_inherit_sollimit per-pass option overrides global",
+    "files" : ["multiobj_inherit_sollimit.run"],
+    "tags" : ["linear", "integer", "multiobj", "script"],
+    "solvers" : ["gurobi"],
+    "objective" : 0,
+    "options": { "gurobi_options": "multiobj=1 obj:multi:stats=1 lim:sol=1" },
+    "values": { "_obj[1].objpass_result": 100, "_obj[2].objpass_result": 0 }
   }
 ]
