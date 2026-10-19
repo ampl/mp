@@ -283,7 +283,7 @@
       "Diet_Min['A'].sstatus": "bas"
     },
     "files": [
-      "../suf_std/dietu_mip.mod"
+      "dietu_mip.mod"
     ]
   },
   {
@@ -304,7 +304,7 @@
       "mp_options": "mip:basis=0"
     },
     "files": [
-      "../suf_std/dietu_mip.mod"
+      "dietu_mip.mod"
     ]
   },
   {
@@ -326,7 +326,7 @@
       "if (z.sstatus = 'low' or z.sstatus = 'equ') then 1 else 0": 1
     },
     "files": [
-      "../suf_std/mipb_int.mod"
+      "mipb_int.mod"
     ]
   },
   {
@@ -361,7 +361,7 @@
   {
     "name": "dietu_mip fixed iteration limit reached",
     "files": [
-      "../suf_std/dietu_mip.mod"
+      "dietu_mip.mod"
     ],
     "tags": [
       "linear",
@@ -517,7 +517,7 @@
   {
     "name": "dietu_mip native fixed limit recovery",
     "files": [
-      "../suf_std/dietu_mip.mod"
+      "dietu_mip.mod"
     ],
     "tags": [
       "linear",

@@ -22,10 +22,14 @@ class ModelsDiscovery(object):
            useful for models exported from GAMS/MPS as many found in NETLIB"""
         self._desc = None
         p = Path(directory)
+        if not hasattr(self, "_root"):
+            self._root = p
         if modellist==True:
             models = self._parseModelList(p, preferAMPLModels)
         else:
             models = self._findModelsFunction(p, preferAMPLModels, justNL)
+        for m in models:
+            m.setCaseDir(self._caseDirLabel(p))
         if not recursive:
           return models
         
@@ -37,6 +41,15 @@ class ModelsDiscovery(object):
                 newmodels = self.FindModelsGeneral(d, True, modellist, preferAMPLModels, justNL)
                 models.extend(newmodels)
         return models
+
+    def _caseDirLabel(self, dir: Path):
+        """Folder label for screen output: path relative to the top directory,
+           or the top directory's own name"""
+        try:
+            rel = dir.resolve().relative_to(self._root.resolve())
+        except ValueError:
+            return dir.name
+        return str(rel) if str(rel) != "." else dir.name
 
     def _parseModelList(self, dir: Path, preferAMPLModels):
         desc = self._ReadModelsDescription(dir)

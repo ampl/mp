@@ -125,6 +125,14 @@ class Model(object):
             self._otherFiles = None
         self._name = overrideName if overrideName else filename.stem
         self._description = description
+        self._caseDir = None
+
+    def setCaseDir(self, caseDir: str):
+        """Label of the folder whose case list or file scan produced this case"""
+        self._caseDir = caseDir
+
+    def getCaseDir(self):
+        return self._caseDir
 
     def hasSolvers(self):
         return (self._description is not None) and \

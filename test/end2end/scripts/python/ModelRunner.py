@@ -23,6 +23,33 @@ class ModelRunner(object):
     def getLogFileName(m : Model, s : Solver):
         return f"{m.getName()}.{s.getName()}.log"
 
+    STARS = "*" * 60
+
+    def _folderSummaryLines(self, folder, nCases, counters, start):
+        """Summary of one folder: counters are cumulative, start is their
+           snapshot when the folder began"""
+        nFailedSolver, nAbortedSolver, nFailedScriptOrAMPL, nSkipped = counters
+        lines = []
+        for i, r in enumerate(self.getRunners()):
+            slv = f" {r.getName()}:" if len(self.getRunners()) > 1 else ""
+            lines.append("Folder '%s':%s %d cases, %d fail (%d abrt) slv, "
+                         "%d fail AMPL/PY/scrpt, %d skip" % (
+                folder, slv, nCases,
+                nFailedSolver[i] - start[0][i], nAbortedSolver[i] - start[1][i],
+                nFailedScriptOrAMPL[i] - start[2][i], nSkipped[i] - start[3][i]))
+        return lines
+
+    def _printFolderSummary(self, lines):
+        for l in lines:
+            print(l)
+        print(ModelRunner.STARS, flush=True)
+
+    def _printFolderBanner(self, folder):
+        print("")
+        print(ModelRunner.STARS)
+        print(folder)
+        print(ModelRunner.STARS, flush=True)
+
     def run(self, modelList: list, exporter=None, keepLogs = False, verbose=False):
         """Run the models in this instance. If exporter != None, it exports the results as it goes"""
         self._models = modelList
@@ -31,6 +58,11 @@ class ModelRunner(object):
         nAbortedSolver = [0 for r in self.getRunners()]
         nFailedScriptOrAMPL = [0 for r in self.getRunners()]
         nSkipped = [0 for r in self.getRunners()]
+        counters = (nFailedSolver, nAbortedSolver, nFailedScriptOrAMPL, nSkipped)
+        folderSummaries = []     # (folder, summary lines) in run order
+        curFolder = None
+        folderStart = None
+        nFolderCases = 0
         EFM ="eval_fail_msg"
         EM ="errormsg"
         # Set to true for junit to add the solver output to the test result
@@ -45,7 +77,18 @@ class ModelRunner(object):
             pass
         
         for m in modelList:
+            folder = m.getCaseDir() or ""
+            if folder != curFolder:
+                if curFolder is not None:
+                    lines = self._folderSummaryLines(curFolder, nFolderCases, counters, folderStart)
+                    self._printFolderSummary(lines)
+                    folderSummaries.append(lines)
+                curFolder = folder
+                folderStart = tuple(list(c) for c in counters)
+                nFolderCases = 0
+                self._printFolderBanner(folder)
             n += 1
+            nFolderCases += 1
             if m.isNL():
                 cr = self._runners
                 msg = "{}. As NL: '{}'".format(n, m.getName())
@@ -112,6 +155,28 @@ class ModelRunner(object):
             if exporter:
                 self.export(exporter)
             print("")
+        if curFolder is not None:
+            lines = self._folderSummaryLines(curFolder, nFolderCases, counters, folderStart)
+            self._printFolderSummary(lines)
+            folderSummaries.append(lines)
+        if len(folderSummaries) > 1:
+            print("")
+            print(ModelRunner.STARS)
+            print("Per-folder summary")
+            print(ModelRunner.STARS)
+            for lines in folderSummaries:
+                for l in lines:
+                    print(l)
+        if curFolder is not None:
+            print("")
+            print(ModelRunner.STARS)
+            for i, r in enumerate(self.getRunners()):
+                slv = f" {r.getName()}:" if len(self.getRunners()) > 1 else ""
+                print("Overall:%s %d cases, %d fail (%d abrt) slv, "
+                      "%d fail AMPL/PY/scrpt, %d skip" % (
+                    slv, n, nFailedSolver[i], nAbortedSolver[i],
+                    nFailedScriptOrAMPL[i], nSkipped[i]))
+            print(ModelRunner.STARS, flush=True)
         exporter.export()
 
     def export(self, exporter):
