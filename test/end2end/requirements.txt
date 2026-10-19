@@ -1,4 +1,4 @@
 amplpy
 psutil
 openpyxl
-multiprocessing
+junitparser

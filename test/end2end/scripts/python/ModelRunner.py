@@ -36,23 +36,64 @@ class ModelRunner(object):
             return "unavailable ({})".format(exc)
 
     STARS = "*" * 60
+    SUMMARY_HEADER = ("Folder", "Solver", "Cases", "Fail slv", "Abrt", "Fail AMPL/PY/scrpt", "Skip")
 
-    def _folderSummaryLines(self, folder, nCases, counters, start):
-        """Summary of one folder: counters are cumulative, start is their
-           snapshot when the folder began"""
+    def _folderSummaryRows(self, folder, nCases, counters, start):
+        """Summary rows (one per solver) of one folder: counters are cumulative,
+           start is their snapshot when the folder began"""
         nFailedSolver, nAbortedSolver, nFailedScriptOrAMPL, nSkipped = counters
-        lines = []
-        for i, r in enumerate(self.getRunners()):
-            slv = f" {r.getName()}:" if len(self.getRunners()) > 1 else ""
-            lines.append("Folder '%s':%s %d cases, %d fail (%d abrt) slv, "
-                         "%d fail AMPL/PY/scrpt, %d skip" % (
-                folder, slv, nCases,
-                nFailedSolver[i] - start[0][i], nAbortedSolver[i] - start[1][i],
-                nFailedScriptOrAMPL[i] - start[2][i], nSkipped[i] - start[3][i]))
+        return [(folder, r.getName(), nCases,
+                 nFailedSolver[i] - start[0][i], nAbortedSolver[i] - start[1][i],
+                 nFailedScriptOrAMPL[i] - start[2][i], nSkipped[i] - start[3][i])
+                for i, r in enumerate(self.getRunners())]
+
+    def _summaryLine(self, row):
+        """One-line form of a summary row, used right after a folder"""
+        folder, slv, nCases, nFail, nAbrt, nScrpt, nSkip = row
+        slv = f" {slv}:" if len(self.getRunners()) > 1 else ""
+        return "Folder '%s':%s %d cases, %d fail (%d abrt) slv, %d fail AMPL/PY/scrpt, %d skip" % (
+            folder, slv, nCases, nFail, nAbrt, nScrpt, nSkip)
+
+    def _printFolderSummary(self, rows):
+        for row in rows:
+            print(self._summaryLine(row))
+        print(ModelRunner.STARS, flush=True)
+
+    @staticmethod
+    def _formatTable(header, rows, separatorBefore=None):
+        """Plain-text table: columns padded to their widest cell, text columns
+           left-aligned, numbers right-aligned; a separator line before the
+           row index separatorBefore"""
+        cells = [[str(c) for c in row] for row in rows]
+        widths = [max(len(h), *(len(r[i]) for r in cells)) for i, h in enumerate(header)]
+        def fmt(row):
+            return "  ".join(str(c).rjust(w) if isinstance(c, (int, float)) else str(c).ljust(w)
+                             for c, w in zip(row, widths))
+        separator = "  ".join("-" * w for w in widths)
+        lines = [fmt(header), separator]
+        for k, row in enumerate(rows):
+            if k == separatorBefore:
+                lines.append(separator)
+            lines.append(fmt(row))
         return lines
 
-    def _printFolderSummary(self, lines):
-        for l in lines:
+    def _printFinalSummary(self, folderRows, nCases, counters):
+        """Per-folder recap (multi-folder runs) and overall summary as a table"""
+        nFailedSolver, nAbortedSolver, nFailedScriptOrAMPL, nSkipped = counters
+        overall = [("Overall", r.getName(), nCases, nFailedSolver[i], nAbortedSolver[i],
+                    nFailedScriptOrAMPL[i], nSkipped[i]) for i, r in enumerate(self.getRunners())]
+        print("")
+        print(ModelRunner.STARS)
+        if len(folderRows) > len(overall):      # more than one folder
+            print("Summary per folder and overall")
+            rows = folderRows + overall
+            sep = len(folderRows)
+        else:
+            print("Overall summary")
+            rows = overall
+            sep = None
+        print(ModelRunner.STARS)
+        for l in ModelRunner._formatTable(ModelRunner.SUMMARY_HEADER, rows, sep):
             print(l)
         print(ModelRunner.STARS, flush=True)
 
@@ -71,7 +112,7 @@ class ModelRunner(object):
         nFailedScriptOrAMPL = [0 for r in self.getRunners()]
         nSkipped = [0 for r in self.getRunners()]
         counters = (nFailedSolver, nAbortedSolver, nFailedScriptOrAMPL, nSkipped)
-        folderSummaries = []     # (folder, summary lines) in run order
+        folderRows = []          # summary rows (folder, solver, counts) in run order
         curFolder = None
         folderStart = None
         nFolderCases = 0
@@ -92,9 +133,9 @@ class ModelRunner(object):
             folder = m.getCaseDir() or ""
             if folder != curFolder:
                 if curFolder is not None:
-                    lines = self._folderSummaryLines(curFolder, nFolderCases, counters, folderStart)
-                    self._printFolderSummary(lines)
-                    folderSummaries.append(lines)
+                    rows = self._folderSummaryRows(curFolder, nFolderCases, counters, folderStart)
+                    self._printFolderSummary(rows)
+                    folderRows.extend(rows)
                 curFolder = folder
                 folderStart = tuple(list(c) for c in counters)
                 nFolderCases = 0
@@ -170,27 +211,10 @@ class ModelRunner(object):
                 self.export(exporter)
             print("")
         if curFolder is not None:
-            lines = self._folderSummaryLines(curFolder, nFolderCases, counters, folderStart)
-            self._printFolderSummary(lines)
-            folderSummaries.append(lines)
-        if len(folderSummaries) > 1:
-            print("")
-            print(ModelRunner.STARS)
-            print("Per-folder summary")
-            print(ModelRunner.STARS)
-            for lines in folderSummaries:
-                for l in lines:
-                    print(l)
-        if curFolder is not None:
-            print("")
-            print(ModelRunner.STARS)
-            for i, r in enumerate(self.getRunners()):
-                slv = f" {r.getName()}:" if len(self.getRunners()) > 1 else ""
-                print("Overall:%s %d cases, %d fail (%d abrt) slv, "
-                      "%d fail AMPL/PY/scrpt, %d skip" % (
-                    slv, n, nFailedSolver[i], nAbortedSolver[i],
-                    nFailedScriptOrAMPL[i], nSkipped[i]))
-            print(ModelRunner.STARS, flush=True)
+            rows = self._folderSummaryRows(curFolder, nFolderCases, counters, folderStart)
+            self._printFolderSummary(rows)
+            folderRows.extend(rows)
+            self._printFinalSummary(folderRows, n, counters)
         exporter.export()
 
     def export(self, exporter):
