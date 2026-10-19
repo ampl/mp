@@ -1523,8 +1523,15 @@ static const mp::OptionValueInfo values_barcrossover[] = {
 };
 
 static const mp::OptionValueInfo values_barcrossoverbasis[] = {
-  { "0", "Favor speed (default)", 0},
+  {"-1", "Automatic choice (default)", -1},
+  { "0", "Favor speed", 0},
   { "1", "Favor numerical stability.", 1}
+};
+
+static const mp::OptionValueInfo values_aggregate[] = {
+  { "0", "No", 0},
+  { "1", "Moderate (default)", 1},
+  { "2", "Aggressive.", 2}
 };
 
 static const mp::OptionValueInfo values_barhomogeneous[] = {
@@ -1559,7 +1566,6 @@ static const mp::OptionValueInfo values_cuts[] = {
   { "2", "Aggressive cut generation", 2},
   { "3", "Very aggressive cut generation.", 3}
 };
-static constexpr int PrmCutsMin=-1, PrmCutsMax=3;
 static const mp::OptionValueInfo values_cuts_upto2[] = {
   {"-1", "Automatic choice (default)", -1},
   { "0", "No cuts", 0},
@@ -1576,9 +1582,11 @@ static const mp::OptionValueInfo values_disconnected[] = {
 
 static const mp::OptionValueInfo values_iismethod[] = {
   {"-1", "Automatic choice (default)", -1},
-  { "0", "Often faster than method 1", 0},
-  { "1", "Can find a smaller IIS than method 0", 1},
-  { "2", "Ignore the bound constraints.", 2},
+  { "0", "Filtering-based method", 0},
+  { "1", "Faster LP-based method, may produce a larger IIS", 1},
+  { "2", "Filtering-based method ignoring variable bounds "
+         "(can fail if bounds are needed for infeasibility)", 2},
+  { "3", "For MIP models, compute the IIS of the LP relaxation.", 3},
 };
 static const mp::OptionValueInfo values_optimalitytarget [] = {
   {"-1", "Automatic (default)", -1},
@@ -1600,7 +1608,8 @@ static const mp::OptionValueInfo values_infproofcuts[] = {
 };
 
 static const mp::OptionValueInfo values_method[] = {
-  { "-1", "Automatic (default): 3 for LP, 2 for QP, 1/4/5 for MIP", -1},
+  { "-1", "Automatic (default): concurrent for LP, barrier for QP/QCP, "
+          "dual simplex for MIP root relaxations", -1},
   { "0", "Primal simplex", 0},
   { "1", "Dual simplex", 1},
   { "2", "Barrier", 2},
@@ -1743,6 +1752,20 @@ static const mp::OptionValueInfo values_siftmethod_[] = {
   { "2", "Barrier.", 2}
 };
 
+static const mp::OptionValueInfo values_tunecriterion_[] = {
+  {"-1", "Automatic choice (default)", -1},
+  { "0", "Ignore the secondary criterion", 0},
+  { "1", "Optimality gap", 1},
+  { "2", "Best feasible objective", 2},
+  { "3", "Best objective bound.", 3}
+};
+
+static const mp::OptionValueInfo values_tunemetric_[] = {
+  {"-1", "Automatic choice (default)", -1},
+  { "0", "Average of the results over the models", 0},
+  { "1", "Maximum of the results.", 1}
+};
+
 static const mp::OptionValueInfo values_tuneoutput_[] = {
   { "0", "None", 0},
   { "1", "Summarize each new best parameter set", 1},
@@ -1879,8 +1902,9 @@ void GurobiBackend::InitCustomOptions() {
 
 
   AddSolverOption("alg:pdhggpu pdhggpu",
-      "Enables PDHG on GPU on compatible systems (preview):\n"
-      "\n.. value-table::\n", GRB_INT_PAR_PDHGGPU, values_autonoyes_, -1);
+      "Enables PDHG on GPU on compatible systems "
+      "(requires alg:method=6 and a GPU-enabled build):\n"
+      "\n.. value-table::\n", GRB_INT_PAR_PDHGGPU, values_01_noyes_0default_, 0);
 
 
   AddOptionSynonyms_OutOfLine("alg:infunbdinfo infunbdinfo InfUnbdInfo", "alg:rays");
@@ -1901,7 +1925,7 @@ void GurobiBackend::InitCustomOptions() {
 
   AddSolverOption("bar:crossoverbasis crossoverbasis",
     "Strategy for initial basis construction during crossover:\n"
-    "\n.. value-table::\n", GRB_INT_PAR_CROSSOVERBASIS, values_barcrossoverbasis, 0);
+    "\n.. value-table::\n", GRB_INT_PAR_CROSSOVERBASIS, values_barcrossoverbasis, -1);
 
   AddSolverOption("bar:homog barhomogeneous",
     "Whether to use the homogeneous barrier algorithm (e.g., when method=2 is specified):\n"
@@ -1960,12 +1984,14 @@ void GurobiBackend::InitCustomOptions() {
     GRB_INT_PAR_BQPCUTS, values_bqpcuts, -1);
 
   AddSolverOption("cut:clique cliquecuts",
-    "Overrides \"cuts\"; choices as for \"cuts\".",
-    GRB_INT_PAR_CLIQUECUTS, PrmCutsMin, PrmCutsMax);
+    "Overrides \"cuts\":\n"
+    "\n.. value-table::\n",
+    GRB_INT_PAR_CLIQUECUTS, values_cuts_upto2, -1);
 
   AddSolverOption("cut:cover covercuts",
-    "Overrides \"cuts\"; choices as for \"cuts\".",
-    GRB_INT_PAR_COVERCUTS, PrmCutsMin, PrmCutsMax);
+    "Overrides \"cuts\":\n"
+    "\n.. value-table::\n",
+    GRB_INT_PAR_COVERCUTS, values_cuts_upto2, -1);
 
   AddSolverOption("cut:agg cutagg cut:aggpasses",
     "Maximum number of constraint aggregation passes "
@@ -1985,22 +2011,30 @@ void GurobiBackend::InitCustomOptions() {
     "\n.. value-table::\n",
     GRB_INT_PAR_CUTS, values_cuts, -1);
 
+  AddSolverOption("cut:dualimplied dualimpliedcuts",
+    "Dual implied bound cuts: overrides \"cuts\":\n"
+    "\n.. value-table::\n",
+    GRB_INT_PAR_DUALIMPLIEDCUTS, values_cuts_upto2, -1);
   AddSolverOption("cut:flowcover flowcovercuts",
-    "Flowcover cuts: overrides \"cuts\"; choices as for \"cuts\".",
-    GRB_INT_PAR_FLOWCOVERCUTS, PrmCutsMin, PrmCutsMax);
+    "Flowcover cuts: overrides \"cuts\":\n"
+    "\n.. value-table::\n",
+    GRB_INT_PAR_FLOWCOVERCUTS, values_cuts_upto2, -1);
   AddSolverOption("cut:flowpath flowpathcuts",
-    "Overrides \"cuts\"; choices as for \"cuts\".",
-    GRB_INT_PAR_FLOWPATHCUTS, PrmCutsMin, PrmCutsMax);
+    "Overrides \"cuts\":\n"
+    "\n.. value-table::\n",
+    GRB_INT_PAR_FLOWPATHCUTS, values_cuts_upto2, -1);
   AddSolverOption("cut:gomory gomorycuts",
     "Maximum number of Gomory cut passes during cut generation "
         "(-1 = default = no limit); overrides \"cuts\".",
     GRB_INT_PAR_GOMORYPASSES, -1, GRB_MAXINT);
   AddSolverOption("cut:gubcover gubcovercuts",
-    "Overrides \"cuts\"; choices as for \"cuts\".",
-    GRB_INT_PAR_GUBCOVERCUTS, PrmCutsMin, PrmCutsMax);
+    "Overrides \"cuts\":\n"
+    "\n.. value-table::\n",
+    GRB_INT_PAR_GUBCOVERCUTS, values_cuts_upto2, -1);
   AddSolverOption("cut:implied impliedcuts",
-    "Implied cuts: overrides \"cuts\"; choices as for \"cuts\".",
-    GRB_INT_PAR_IMPLIEDCUTS, PrmCutsMin, PrmCutsMax);
+    "Implied cuts: overrides \"cuts\":\n"
+    "\n.. value-table::\n",
+    GRB_INT_PAR_IMPLIEDCUTS, values_cuts_upto2, -1);
 
   AddSolverOption("cut:infproof infproofcuts",
     "Whether to generate infeasibility proof cuts:"
@@ -2008,21 +2042,38 @@ void GurobiBackend::InitCustomOptions() {
     "\n.. value-table::\n",
     GRB_INT_PAR_INFPROOFCUTS, values_infproofcuts, -1);
 
+  AddSolverOption("cut:liftproject liftprojectcuts",
+    "Lift-and-project cuts: overrides \"cuts\":\n"
+    "\n.. value-table::\n",
+    GRB_INT_PAR_LIFTPROJECTCUTS, values_cuts_upto2, -1);
   AddSolverOption("cut:masterkp masterkpcuts",
-                  "MIPsep cuts: overrides \"cuts\"; choices as for \"cuts\".",
-                  GRB_INT_PAR_MASTERKNAPSACKCUTS, PrmCutsMin, PrmCutsMax);
+                  "MIPsep cuts: overrides \"cuts\":\n"
+                  "\n.. value-table::\n",
+                  GRB_INT_PAR_MASTERKNAPSACKCUTS, values_cuts_upto2, -1);
   AddSolverOption("cut:mipsep mipsepcuts",
-                  "MIPsep cuts: overrides \"cuts\"; choices as for \"cuts\".",
-                  GRB_INT_PAR_MIPSEPCUTS, PrmCutsMin, PrmCutsMax);
+                  "MIPsep cuts: overrides \"cuts\":\n"
+                  "\n.. value-table::\n",
+                  GRB_INT_PAR_MIPSEPCUTS, values_cuts_upto2, -1);
   AddSolverOption("cut:mir mircuts",
-    "MIR cuts: overrides \"cuts\"; choices as for \"cuts\".",
-    GRB_INT_PAR_MIRCUTS, PrmCutsMin, PrmCutsMax);
+    "MIR cuts: overrides \"cuts\":\n"
+    "\n.. value-table::\n",
+    GRB_INT_PAR_MIRCUTS, values_cuts_upto2, -1);
   AddSolverOption("cut:modk modkcuts",
-    "Mod-k cuts: overrides \"cuts\"; choices as for \"cuts\".",
-    GRB_INT_PAR_MODKCUTS, PrmCutsMin, PrmCutsMax);
+    "Mod-k cuts: overrides \"cuts\":\n"
+    "\n.. value-table::\n",
+    GRB_INT_PAR_MODKCUTS, values_cuts_upto2, -1);
   AddSolverOption("cut:network networkcuts",
-    "Network cuts: overrides \"cuts\"; choices as for \"cuts\".",
-    GRB_INT_PAR_NETWORKCUTS, PrmCutsMin, PrmCutsMax);
+    "Network cuts: overrides \"cuts\":\n"
+    "\n.. value-table::\n",
+    GRB_INT_PAR_NETWORKCUTS, values_cuts_upto2, -1);
+  AddSolverOption("cut:projimplied projimpliedcuts",
+    "Projected implied bound cuts: overrides \"cuts\":\n"
+    "\n.. value-table::\n",
+    GRB_INT_PAR_PROJIMPLIEDCUTS, values_cuts_upto2, -1);
+  AddSolverOption("cut:psd psdcuts",
+    "PSD cuts for nonconvex quadratic models: overrides \"cuts\":\n"
+    "\n.. value-table::\n",
+    GRB_INT_PAR_PSDCUTS, values_cuts_upto2, -1);
   AddSolverOption("cut:relaxliftcuts relaxliftcuts",
     "Whether to enable relax-and-lift cut generation:\n"
     "\n.. value-table::\n",
@@ -2032,12 +2083,18 @@ void GurobiBackend::InitCustomOptions() {
     "Linearization Technique (RLT):\n"
     "\n.. value-table::\n",
     GRB_INT_PAR_RLTCUTS, values_cuts_upto2, -1);
+  AddSolverOption("cut:strongcg strongcgcuts",
+    "Strong Chvatal-Gomory cuts: overrides \"cuts\":\n"
+    "\n.. value-table::\n",
+    GRB_INT_PAR_STRONGCGCUTS, values_cuts_upto2, -1);
   AddSolverOption("cut:submip submipcuts",
-    "Sub-MIP cuts: overrides \"cuts\"; choices as for \"cuts\".",
-    GRB_INT_PAR_SUBMIPCUTS, PrmCutsMin, PrmCutsMax);
+    "Sub-MIP cuts: overrides \"cuts\":\n"
+    "\n.. value-table::\n",
+    GRB_INT_PAR_SUBMIPCUTS, values_cuts_upto2, -1);
   AddSolverOption("cut:zerohalf zerohalfcuts",
-    "Zero-half cuts: overrides \"cuts\"; choices as for \"cuts\".",
-    GRB_INT_PAR_ZEROHALFCUTS, PrmCutsMin, PrmCutsMax);
+    "Zero-half cuts: overrides \"cuts\":\n"
+    "\n.. value-table::\n",
+    GRB_INT_PAR_ZEROHALFCUTS, values_cuts_upto2, -1);
   AddSolverOption("cut:mixingcuts",
     "Mixing cuts: overrides \"cuts\" \n" "\n.. value-table::\n",
     GRB_INT_PAR_MIXINGCUTS, values_cuts_upto2, -1);
@@ -2103,19 +2160,19 @@ void GurobiBackend::InitCustomOptions() {
     "causing early termination if exceeded "
                   "(solution cannot be retrieved); "
                   "prefer lim:softmem. "
-                  "Default = 0 (no limit)",
+                  "Default = Infinity (no limit)",
     GRB_DBL_PAR_MEMLIMIT, 0.0, Infinity());
 
 
   AddSolverOption("lim:sol sollimit solutionlimit",
     "Limit the number of feasible MIP solutions found, causing early "
     "termination if exceeded; default = 2e9",
-    GRB_INT_PAR_SOLUTIONLIMIT, 0, 2000000000);
+    GRB_INT_PAR_SOLUTIONLIMIT, 1, 2000000000);
 
 #ifdef GRB_DBL_PAR_SOFTMEMLIMIT
   AddSolverOption("lim:softmem softmemlimit maxmemorysoft",
     "Soft limit (number of GB) on memory allocated; "
-    "default = 0 (no limit)",
+    "default = Infinity (no limit)",
     GRB_DBL_PAR_SOFTMEMLIMIT, 0.0, Infinity());
 #endif
 
@@ -2212,6 +2269,16 @@ void GurobiBackend::InitCustomOptions() {
           storedOptions_.nFixedMethod_);
 
 #ifdef GRB_INT_PAR_OBBT
+  AddSolverOption("mip:fixvarsinindicators fixvarsinindicators",
+    "How indicator constraints are treated in the fixed model "
+    "used to compute a basis and duals for a MIP (see mip:basis):\n"
+    "\n"
+    "| 0 - Drop indicator constraints whose binary variable is "
+    "not at the active value (default)\n"
+    "| 1 - Fix all variables of indicator constraints to their "
+    "solution values.",
+    GRB_INT_PAR_FIXVARSININDICATORS, 0, 1);
+
   AddSolverOption("mip:obbt obbt",
     "Controls aggressiveness of Optimality - Based Bound Tightening:\n"
     "\n.. value-table::\n",
@@ -2225,15 +2292,15 @@ void GurobiBackend::InitCustomOptions() {
 
   AddSolverOption("mip:gap mipgap",
     "Max. relative MIP optimality gap (default 1e-4).",
-    GRB_DBL_PAR_MIPGAP, 1e-4, DBL_MAX);
+    GRB_DBL_PAR_MIPGAP, 0.0, DBL_MAX);
 
   AddSolverOption("mip:gapabs mipgapabs",
     "Max. absolute MIP optimality gap (default 1e-10).",
-    GRB_DBL_PAR_MIPGAPABS, 1e-10, DBL_MAX);
+    GRB_DBL_PAR_MIPGAPABS, 0.0, DBL_MAX);
 
   AddSolverOption("mip:heurfrac heurfrac",
     "Fraction of time to spend in MIP heuristics (default 0.05).",
-    GRB_DBL_PAR_HEURISTICS, 0.05, 1.0);
+    GRB_DBL_PAR_HEURISTICS, 0.0, 1.0);
 
 
   AddSolverOption("alg:optimalitytarget optimalitytarget opttarget",
@@ -2274,7 +2341,7 @@ void GurobiBackend::InitCustomOptions() {
                   GRB_DBL_PAR_IMPROVESTARTTIME, 0.0, DBL_MAX);
 
   AddSolverOption("mip:improvework improvework impstartwork",
-                  "Execution seconds after which the MIP solver switches from "
+                  "Work units after which the MIP solver switches from "
                   "trying to improve the best bound to trying to find better "
                   "feasible solutions (default Infinity).",
                   GRB_DBL_PAR_IMPROVESTARTWORK, 0.0, DBL_MAX);
@@ -2305,7 +2372,7 @@ void GurobiBackend::InitCustomOptions() {
     "Feasibility tolerance for integer variables "
                   "(default 1e-05; should be in [1e-9, 1e-1])."
                   "\n\nConsider mip:intfocus which can have more impact.",
-    GRB_DBL_PAR_INTFEASTOL, 0.0, DBL_MAX);
+    GRB_DBL_PAR_INTFEASTOL, 1e-9, 1e-1);
 
 
   AddSolverOption("mip:intfocus integralityfocus intfocus",
@@ -2485,8 +2552,17 @@ void GurobiBackend::InitCustomOptions() {
     "(default -1).", GRB_INT_PAR_AGGFILL, -1, GRB_MAXINT);
 
 
-  AddSolverOption("pre:aggregate aggregate", "0/1*: whether to use aggregation in presolve. "
-    "Setting it to 0 can sometimes reduce numerical errors.", GRB_INT_PAR_AGGREGATE, 0, 1);
+  AddSolverOption("pre:aggregate aggregate",
+    "Whether to use aggregation in presolve:\n"
+    "\n.. value-table::\n"
+    "Setting it to 0 can sometimes reduce numerical errors.",
+    GRB_INT_PAR_AGGREGATE, values_aggregate, 1);
+
+  AddSolverOption("pre:crush precrush",
+    "0*/1: whether presolve should keep user cuts "
+    "(.lazy=-1) applicable to the presolved model. "
+    "Required for user cuts added through callbacks.",
+    GRB_INT_PAR_PRECRUSH, 0, 1);
 
   AddSolverOption("pre:deprow predeprow",
     "Whether Gurobi's presolve should remove linearly dependent "
@@ -2519,6 +2595,7 @@ void GurobiBackend::InitCustomOptions() {
   AddOptionSynonyms_OutOfLine("alg:global global", "pre:funcnonlinear");
 
   AddSolverOption("pre:funcpieceerror funcpieceerror",
+      "Deprecated since Gurobi 13.0 together with function constraints. "
       "For 'funcpieces=-1' or -2, this "
       "option provides the maximum allowed error (absolute for -1, "
       "relative for -2) in the piecewise-linear approximation.\n\n"
@@ -2528,12 +2605,14 @@ void GurobiBackend::InitCustomOptions() {
                   GRB_DBL_PAR_FUNCPIECEERROR, 0.0, GRB_INFINITY);
 
   AddSolverOption("pre:funcpiecelength funcpiecelength",
+      "Deprecated since Gurobi 13.0 together with function constraints. "
       "If 'funcpieces=1', this option or suffix "
       "provide the length of each piece of the piecewise-linear "
       "approximation.",
                   GRB_DBL_PAR_FUNCPIECELENGTH, 0.0, GRB_INFINITY);
 
   AddSolverOption("pre:funcpieceratio funcpieceratio",
+      "Deprecated since Gurobi 13.0 together with function constraints. "
       "This option (and suffix) control whether the piecewise-linear "
       "approximation "
       "of a function constraint is an underestimate of the function, an "
@@ -2545,6 +2624,7 @@ void GurobiBackend::InitCustomOptions() {
                   GRB_DBL_PAR_FUNCPIECERATIO, -1.0, 1.0);
 
   AddSolverOption("pre:funcpieces funcpieces",
+                  "Deprecated since Gurobi 13.0 together with function constraints. "
                   "This option (and suffix) set the strategy used for "
                   "performing a piecewise-linear approximation of "
                   "a function constraint. They have the following "
@@ -2610,7 +2690,7 @@ void GurobiBackend::InitCustomOptions() {
     "|  0 - No conversion\n"
     "\n"
     "Large values (e.g., 1e8) may cause numeric trouble.",
-    GRB_DBL_PAR_PRESOS1BIGM, -1.0, 1e15);
+    GRB_DBL_PAR_PRESOS1BIGM, -1.0, 1e10);
 
   AddSolverOption("pre:sos2bigm presos2bigm",
     "Big-M for converting SOS2 constraints to binary form:\n"
@@ -2619,7 +2699,7 @@ void GurobiBackend::InitCustomOptions() {
     "|  0 - No conversion\n"
     "\n"
     "Large values (e.g., 1e8) may cause numeric trouble.",
-    GRB_DBL_PAR_PRESOS2BIGM, -1.0, 1e15);
+    GRB_DBL_PAR_PRESOS2BIGM, -1.0, 1e10);
 
   AddSolverOption("pre:sos1enc presos1enc",
                   "Encoding used for SOS1 reformulation:\n"
@@ -2728,7 +2808,7 @@ void GurobiBackend::InitCustomOptions() {
       "evenly as possible among the concurrent solves.  Default = 1.\n"
       "\n"
       "See also \"tech:distmip\", \"tech:pooljobs\".",
-          GRB_INT_PAR_CONCURRENTMIP, 1, GRB_MAXINT);
+          GRB_INT_PAR_CONCURRENTMIP, 1, 64);
 
   AddSolverOption("tech:distmip pool_distmip distmip",
       "Enables distributed MIP. A value of n causes the MIP solver "
@@ -2829,6 +2909,12 @@ void GurobiBackend::InitCustomOptions() {
       "File name extensions can be "
       "``.sol[.tar.gz]``, ``.json``, ``.bas``, ``.ilp``, etc.");
 
+  AddSolverOption("tech:solfiles solfiles",
+      "Base name for files to which each new MIP incumbent is written "
+      "as it is found; the files are named <solfiles>_<n>.sol. "
+      "Default = \"\" (do not write).",
+      GRB_STR_PAR_SOLFILES);
+
   AddSolverOption("tech:seed seed",
       "Random number seed (default 0), affecting perturbations that "
       "may influence the solution path.",
@@ -2894,7 +2980,7 @@ void GurobiBackend::InitCustomOptions() {
       "How many threads to apply to parallel algorithms (concurrent LP, "
       "parallel barrier, parallel MIP, etc). Default 0 - automatic (max 32), set "
       "-1 to use as many threads as detected virtual processors.",
-      GRB_INT_PAR_THREADS, -1, GRB_MAXINT);
+      GRB_INT_PAR_THREADS, -1, 1024);
 
   AddStoredOption("tech:tunebase tunebase",
                   "Base name for results of running Gurobi's search for best "
@@ -2926,34 +3012,51 @@ void GurobiBackend::InitCustomOptions() {
     "tuning tool to use a dynamic set of up to n workers in parallel. "
     "A value of -1 allows the solver to use an unlimited number of workers. "
     "Default = 0.",
-    GRB_INT_PAR_TUNEDYNAMICJOBS, 0, GRB_MAXINT);
+    GRB_INT_PAR_TUNEDYNAMICJOBS, -1, GRB_MAXINT);
 
-#ifdef GRB_INT_PAR_TUNEUSEFILENAME
-  AddSolverOption("tech:tuneusefilename tuneusefilename ",
-    "Whether to use the model file name (1) "
-    "or the model contents (0, default) when "
-    "displaying progress while tuning.",
-    GRB_INT_PAR_TUNEUSEFILENAME, 0,1 );
-#endif
-
+  AddSolverOption("tech:tunecleanup tunecleanup",
+      "Fraction of the total tuning time devoted to a final cleanup "
+      "phase which tries to reduce the number of parameter changes "
+      "in the best result (default 0).",
+          GRB_DBL_PAR_TUNECLEANUP, 0.0, 1.0);
+  AddSolverOption("tech:tunecriterion tunecriterion",
+      "Secondary criterion for tuning, used when the primary criterion "
+      "(solve time or optimality gap) does not distinguish parameter sets. "
+      "Values 1-3 are not supported for multi-objective models:\n"
+      "\n.. value-table::\n",
+          GRB_INT_PAR_TUNECRITERION, values_tunecriterion_, -1);
+  AddSolverOption("tech:tunemetric tunemetric",
+      "How tuning results over several models are aggregated:\n"
+      "\n.. value-table::\n",
+          GRB_INT_PAR_TUNEMETRIC, values_tunemetric_, -1);
+  AddSolverOption("tech:tunetargetmipgap tunetargetmipgap",
+      "Target MIP gap for tuning: once a parameter set reaches it, "
+      "the tuner moves to the cleanup phase. Applies only when "
+      "tech:tunecriterion is -1 or 1 (default 0).",
+          GRB_DBL_PAR_TUNETARGETMIPGAP, 0.0, DBL_MAX);
+  AddSolverOption("tech:tunetargettime tunetargettime",
+      "Target solve time (in seconds) for tuning: once a parameter set "
+      "reaches it, the tuner moves to the cleanup phase (default 0.005).",
+          GRB_DBL_PAR_TUNETARGETTIME, 0.0, DBL_MAX);
   AddSolverOption("tech:tuneoutput tuneoutput",
       "Amount of tuning output when tunebase is specified:\n"
                         "\n.. value-table::\n",
           GRB_INT_PAR_TUNEOUTPUT, values_tuneoutput_, 2);
   AddSolverOption("tech:tuneresults tuneresults",
       "Limit on the number of tuning result files to write "
-      "when tunerbase is specified.  The default (-1) is to write "
-      "results for all parameter sets on the efficient frontier.",
-          GRB_INT_PAR_TUNERESULTS, -1, GRB_MAXINT);
+      "when tunebase is specified.  The default (-1) is to write "
+      "results for all parameter sets on the efficient frontier; "
+      "-2 writes all parameter sets tried.",
+          GRB_INT_PAR_TUNERESULTS, -2, GRB_MAXINT);
   AddSolverOption("tech:tunetimelim tunetimelim lim:tunetime",
       "Time limit (in seconds) on tuning when tunebase "
-      "is specified.  Default -1 ==> automatic choice of time limit.",
-          GRB_DBL_PAR_TUNETIMELIMIT, -1.0, DBL_MAX);
+      "is specified.  Default 86400 (24 hours).",
+          GRB_DBL_PAR_TUNETIMELIMIT, 0.0, DBL_MAX);
   AddSolverOption("tech:tunetrials tunetrials",
       "Number of trials for each parameter set when tunebase "
       "is specified, each with a different random seed value. "
-      "Default = 3.",
-          GRB_INT_PAR_TUNETRIALS, 1, GRB_MAXINT);
+      "Default 0 ==> automatic choice.",
+          GRB_INT_PAR_TUNETRIALS, 0, GRB_MAXINT);
 
 
 

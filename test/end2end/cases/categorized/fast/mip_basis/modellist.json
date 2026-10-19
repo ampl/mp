@@ -542,5 +542,59 @@
         "contains": "failed"
       }
     }
+  },
+  {
+    "name": "fixed_indicator default",
+    "files": [
+      "fixed_indicator.mod"
+    ],
+    "tags": [
+      "linear",
+      "integer",
+      "logical",
+      "fixmodel"
+    ],
+    "solvers": [
+      "gurobi"
+    ],
+    "objective": 2,
+    "options": {
+      "mp_options": "mip:basis=1"
+    },
+    "values": {
+      "b": 0,
+      "y": 2,
+      "z": 0,
+      "demand": 1,
+      "y.sstatus": "bas",
+      "solve_result_num": 0
+    }
+  },
+  {
+    "name": "fixed_indicator fixvarsinindicators",
+    "files": [
+      "fixed_indicator.mod"
+    ],
+    "tags": [
+      "linear",
+      "integer",
+      "logical",
+      "fixmodel"
+    ],
+    "solvers": [
+      "gurobi"
+    ],
+    "objective": 2,
+    "options": {
+      "mp_options": "mip:basis=1",
+      "gurobi_options": "mip:fixvarsinindicators=1"
+    },
+    "values": {
+      "b": 0,
+      "y": 2,
+      "z": 0,
+      "if (y.sstatus != 'bas') then 1 else 0": 1,
+      "solve_result_num": 0
+    }
   }
 ]
