@@ -2,7 +2,7 @@ from junitparser import TestCase, TestSuite, JUnitXml,  Failure, Skipped, Error
 from Exporter import Exporter
 import Solver
 import ModelRunner
-from os.path import splitext
+from os.path import join, split, splitext
 import xml.sax.saxutils
 
 class JunitExporter(Exporter):
@@ -14,8 +14,11 @@ class JunitExporter(Exporter):
         self._versions={}
 
     def get_file_name(self, solver: str):
-        base_name, _= splitext(self._fileName)
-        return f"{solver}-{base_name}.xml"
+        """<dir>/<solver>-<stub>.xml: the solver name prefixes the file
+        name, not the directory of a report path"""
+        folder, name = split(self._fileName)
+        base_name, _ = splitext(name)
+        return join(folder, f"{solver}-{base_name}.xml")
     
     def _exportInstanceResults(self, mr: ModelRunner):
         i = len( mr.getRuns()[0] )
@@ -63,7 +66,10 @@ class JunitExporter(Exporter):
                 tc.result=[Error("\n    - ".join(last_run["eval_fail_msg"]))]
                 res="Failure"
             elif "eval_fail_msg" in last_run:
-                safe_string = xml.sax.saxutils.escape("\n    - ".join(last_run["output"]))
+                output = last_run.get("output", "")   # str, or a list of lines
+                if not isinstance(output, str):
+                    output = "\n    - ".join(output)
+                safe_string = xml.sax.saxutils.escape(output)
                 safe_string =safe_string.replace('\b', '')
                 tc.system_out=safe_string
                 tc.result=[Failure("\n    - ".join(last_run["eval_fail_msg"]))]

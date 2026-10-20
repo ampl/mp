@@ -136,8 +136,13 @@ class Solver(object):
                 with open(logFile, 'w') as f:
                     f.write(stdout)
         self._stats["solutionTime"] = t.interval
+        self._output = stdout
         self._getSolution(model, stdout)
         self._evaluateRun(model, stdout)
+
+    def get_output(self) -> str:
+        """The solver's console output of the last run (NL runs)"""
+        return getattr(self, "_output", "")
 
     def getName(self):
         path = PurePath(self._exePath)
