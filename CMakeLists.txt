@@ -521,10 +521,29 @@ if(MP_GENERATE_EXPR_ONLY)
   return()
 endif()
 
-# Option build_xpress_option_parser
-option(BUILD_XPRESS_OPTION_PARSER "Build Xpress 9.8 XML option parser in any case" OFF)
-if (# (TARGET xpress) OR
-    (BUILD_XPRESS_OPTION_PARSER))
+# Xpress option headers.
+# solvers/xpress/optprm.h and nlprm.h are generated from the parameter
+# XML database shipped with the Xpress SDK (<SDK>/xml/optimizerparams.xml,
+# nonlinearparams.xml) by parse-xpress-options, which also verifies the
+# control types against the SDK headers (<SDK>/include/xprs.h, xslp.h).
+# The generated headers are committed, so the xpress driver builds without
+# the SDK database. Set XPRESS_PARAMS_XML_DIR to regenerate them whenever
+# the database or the parser changes; the files are copied into the source
+# tree only when they differ.
+# (A consuming project may set these as normal variables before adding MP;
+# the cache entries are created only when they are not defined, so that
+# an old CMake policy (CMP0126) does not discard the normal variables.)
+if (NOT DEFINED XPRESS_PARAMS_XML_DIR)
+  set(XPRESS_PARAMS_XML_DIR "" CACHE PATH
+    "Directory with the Xpress parameter database (optimizerparams.xml, nonlinearparams.xml); when set, solvers/xpress/optprm.h and nlprm.h are regenerated before the xpress driver is built")
+endif()
+if (NOT DEFINED XPRESS_PARAMS_INCLUDE_DIR)
+  set(XPRESS_PARAMS_INCLUDE_DIR "" CACHE PATH
+    "Directory with xprs.h and xslp.h used to verify control types; default: <XPRESS_PARAMS_XML_DIR>/../include")
+endif()
+option(BUILD_XPRESS_OPTION_PARSER
+  "Build the Xpress XML option parser even without XPRESS_PARAMS_XML_DIR" OFF)
+if (BUILD_XPRESS_OPTION_PARSER OR XPRESS_PARAMS_XML_DIR)
   add_executable(parse-xpress-options
     src/parse_xpress_options.cc
     src/wrap_tinyxml2.cc
@@ -532,10 +551,59 @@ if (# (TARGET xpress) OR
     ${PROJECT_SOURCE_DIR}/thirdparty/tinyxml2/tinyxml2.cpp)
   target_include_directories(parse-xpress-options PUBLIC
     ${PROJECT_SOURCE_DIR}/thirdparty/tinyxml2)
-  message(STATUS "Getting inside")
+  set_property(TARGET parse-xpress-options PROPERTY CXX_STANDARD 17)
+  add_to_folder(${MP_FOLDER_PREFIX}util parse-xpress-options)
 endif()
-
-message(STATUS "Getting here")
+if (XPRESS_PARAMS_XML_DIR)
+  set(xpress_params_xml_opt ${XPRESS_PARAMS_XML_DIR}/optimizerparams.xml)
+  set(xpress_params_xml_nl  ${XPRESS_PARAMS_XML_DIR}/nonlinearparams.xml)
+  if (NOT EXISTS ${xpress_params_xml_opt} OR NOT EXISTS ${xpress_params_xml_nl})
+    message(FATAL_ERROR
+      "XPRESS_PARAMS_XML_DIR=${XPRESS_PARAMS_XML_DIR} must contain optimizerparams.xml and nonlinearparams.xml")
+  endif()
+  if (NOT XPRESS_PARAMS_INCLUDE_DIR)
+    get_filename_component(XPRESS_PARAMS_INCLUDE_DIR
+      ${XPRESS_PARAMS_XML_DIR}/../include ABSOLUTE)
+  endif()
+  set(xpress_params_hdrs
+    ${XPRESS_PARAMS_INCLUDE_DIR}/xprs.h ${XPRESS_PARAMS_INCLUDE_DIR}/xslp.h)
+  foreach (hdr ${xpress_params_hdrs})
+    if (NOT EXISTS ${hdr})
+      message(FATAL_ERROR "Xpress header ${hdr} not found; set XPRESS_PARAMS_INCLUDE_DIR")
+    endif()
+  endforeach()
+  set(xpress_params_src_dir ${PROJECT_SOURCE_DIR}/solvers/xpress)
+  set(xpress_params_gen_dir ${PROJECT_BINARY_DIR}/xpress-options)
+  file(MAKE_DIRECTORY ${xpress_params_gen_dir})
+  add_custom_command(OUTPUT ${xpress_params_gen_dir}/optprm.h
+    COMMAND parse-xpress-options ${xpress_params_xml_opt}
+      ${xpress_params_gen_dir}/optprm.h Optimizer XPRS ${xpress_params_hdrs}
+    DEPENDS parse-xpress-options ${xpress_params_xml_opt} ${xpress_params_hdrs}
+    COMMENT "Generating Xpress optimizer options (optprm.h)")
+  add_custom_command(OUTPUT ${xpress_params_gen_dir}/nlprm.h
+    COMMAND parse-xpress-options ${xpress_params_xml_nl}
+      ${xpress_params_gen_dir}/nlprm.h Nonlinear - ${xpress_params_hdrs}
+    DEPENDS parse-xpress-options ${xpress_params_xml_nl} ${xpress_params_hdrs}
+    COMMENT "Generating Xpress nonlinear options (nlprm.h)")
+  # The generated headers replace the committed ones only when they differ,
+  # so an unchanged database does not rebuild the driver.
+  add_custom_target(xpress-option-headers
+    DEPENDS ${xpress_params_gen_dir}/optprm.h ${xpress_params_gen_dir}/nlprm.h
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+      ${xpress_params_gen_dir}/optprm.h ${xpress_params_src_dir}/optprm.h
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+      ${xpress_params_gen_dir}/nlprm.h ${xpress_params_src_dir}/nlprm.h
+    COMMENT "Updating solvers/xpress/optprm.h and nlprm.h")
+  add_to_folder(${MP_FOLDER_PREFIX}util xpress-option-headers)
+  message(STATUS "MP: Xpress option headers regenerated from ${XPRESS_PARAMS_XML_DIR}")
+  # The xpress driver targets exist here only in a standalone MP build;
+  # a consuming project that creates them itself adds the same dependency.
+  foreach (tgt amplxpress-static xpress-lib xpress)
+    if (TARGET ${tgt})
+      add_dependencies(${tgt} xpress-option-headers)
+    endif()
+  endforeach()
+endif()
 
 # Option BUILD_EXAMPLES
 option(BUILD_EXAMPLES "Build examples: nl reader, nl writer" ON)

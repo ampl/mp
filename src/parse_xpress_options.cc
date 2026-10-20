@@ -10,8 +10,6 @@
 #include <cmath>
 #include <climits>
 #include <cfloat>
-#include <chrono>
-#include <ctime>
 #include <cctype>
 
 #include "wrap_xml.h"
@@ -63,23 +61,121 @@ public:
   bool IsControl() const { return "Control"==category_; }
 };
 
+/// Control types read from the Xpress C headers (xprs.h, xslp.h).
+/// The XML parameter database is the source of names and documentation,
+/// but its type attribute is not always right (e.g., OBJSCALEFACTOR is
+/// declared as double in the 9.8 database but is an integer control).
+/// The headers group the controls in sections such as
+/// "/* Double control parameters */", which we use as the authority.
+class HeaderControlTypes {
+  std::map<std::string, std::string> types_;     // name -> int/double/string/attr
+  std::map<std::string, std::string> aliases_;   // name -> other macro
+  std::map<std::string, bool> deprecated_;
+public:
+  /// Read a header file. Returns false if it cannot be opened.
+  bool ReadFile(const char* fln) {
+    std::ifstream ifs(fln);
+    if (!ifs)
+      return false;
+    std::string line, sec;           // sec: "", int, double, string, attr
+    while (std::getline(ifs, line)) {
+      auto cmt = line.find("/*");
+      auto def = line.find("#define");
+      if (std::string::npos != cmt && (std::string::npos==def || cmt<def)) {
+        auto txt = MakeLower(line.substr(cmt));
+        if (std::string::npos != txt.find("attribute")
+            && std::string::npos == txt.find("control"))
+          sec = "attr";
+        else if (std::string::npos != txt.find("control")) {
+          if (std::string::npos != txt.find("double"))
+            sec = "double";
+          else if (std::string::npos != txt.find("string"))
+            sec = "string";
+          else
+            sec = "int";
+        } else
+          sec = "";                      // e.g. "/* Knitro's parameters */"
+      }
+      if (std::string::npos != def) {
+        std::string rest = line.substr(def + 7);
+        auto p1 = rest.find_first_not_of(" \t");
+        if (std::string::npos == p1)
+          continue;
+        auto p2 = rest.find_first_of(" \t", p1);
+        auto name = rest.substr(p1, p2-p1);
+        if (0 != name.find("XPRS_") && 0 != name.find("XSLP_")
+            && 0 != name.find("XKTR_"))
+          continue;
+        std::string val;
+        if (std::string::npos != p2) {
+          auto p3 = rest.find_first_not_of(" \t", p2);
+          if (std::string::npos != p3) {
+            auto p4 = rest.find_first_of(" \t", p3);
+            val = rest.substr(p3, p4-p3);
+          }
+        }
+        deprecated_[name] = (std::string::npos != line.find("Deprecated"));
+        if (val.size() && (std::isdigit((unsigned char)val[0]) || '('==val[0]))
+          types_[name] = sec;
+        else if (val.size() && (0==val.find("XPRS_") || 0==val.find("XSLP_")))
+          aliases_[name] = val;
+      }
+    }
+    return true;
+  }
+  /// Header type of a control: int/double/string, "attr" for attributes,
+  /// "" if unknown.
+  std::string Type(const std::string& name) const {
+    auto nm = name;
+    for (int i=0; i<5; ++i) {              // follow aliases
+      auto it = types_.find(nm);
+      if (types_.end() != it)
+        return it->second;
+      auto ia = aliases_.find(nm);
+      if (aliases_.end() == ia)
+        break;
+      nm = ia->second;
+    }
+    return "";
+  }
+  /// Is deprecated according to the header?
+  bool IsDeprecated(const std::string& name) const {
+    auto it = deprecated_.find(name);
+    return deprecated_.end() != it && it->second;
+  }
+  /// Any headers read?
+  bool Empty() const { return types_.empty(); }
+  /// Lowercase
+  static std::string MakeLower(std::string s) {
+    std::transform(s.begin(), s.end(), s.begin(),
+                   [](unsigned char c){ return std::tolower(c); });
+    return s;
+  }
+};
+
+
 /// Param list translator
 class ParamListTranslator {
   std::string key_prefix_;
+  const HeaderControlTypes& hdr_types_;
 
   std::ofstream ofs_;
-  std::string filename_, classname_, hdr_, ftr_;
+  std::string filename_, xmlfile_, classname_, hdr_, ftr_;
 
   std::map<std::string, Param> params_;
   std::map<std::string, int> prefixes_;
 public:
   /// Construct
-  ParamListTranslator(const char* prefix)
-      : key_prefix_(prefix ? prefix : "") { }
+  ParamListTranslator(const char* prefix, const HeaderControlTypes& ht)
+      : key_prefix_(prefix ? prefix : ""), hdr_types_(ht) { }
   /// Start output
-  bool Start(const char* filename, const char* classname) {
+  bool Start(const char* xmlfile, const char* filename, const char* classname) {
     classname_ = classname;
     filename_ = filename;
+    xmlfile_ = xmlfile;
+    auto pos = xmlfile_.find_last_of("/\\");
+    if (std::string::npos != pos)
+      xmlfile_ = xmlfile_.substr(pos+1);
     if (OpenFile(filename)) {
       return true;
     }
@@ -89,7 +185,7 @@ public:
   /// Destroy
   ~ParamListTranslator() {
     if (ofs_) {
-      ofs_ << GetHeader(filename_, classname_);
+      ofs_ << GetHeader(xmlfile_, classname_);
       WriteControlParams(ofs_);
       ofs_ << GetFooter(classname_);
       ofs_.close();
@@ -108,6 +204,27 @@ public:
             << name_w_pref << "' repeated.");
     }
     prm.name_main_ = name_w_pref;
+    auto ht = hdr_types_.Type(name_w_pref);
+    if ("attr" == ht) {
+      std::cerr << "WARNING: Skipping param " << name_w_pref
+                << ": the header declares it as an attribute" << std::endl;
+      return;
+    }
+    if (hdr_types_.IsDeprecated(name_w_pref)) {
+      std::cerr << "WARNING: Skipping param " << name_w_pref
+                << ": deprecated in the header" << std::endl;
+      return;
+    }
+    if (ht.size()) {
+      std::string xt = ("integer"==prm.type_) ? "int" : prm.type_;
+      if (xt != ht) {
+        std::cerr << "WARNING: Param " << name_w_pref
+                  << ": XML type '" << prm.type_
+                  << "' but the header section says '" << ht
+                  << "'; using the header type" << std::endl;
+        prm.type_ = ("int"==ht) ? "integer" : ht;
+      }
+    }
     params_[name_w_pref] = std::move(prm);
   }
 
@@ -127,8 +244,6 @@ protected:
   const char* GetHeader(
       const std::string& filename,
       const std::string& classname) {
-    auto tm = std::chrono::system_clock::now();
-    auto tm_t = std::chrono::system_clock::to_time_t(tm);
     hdr_ =
         "#include <climits>\n"
         "#include <cfloat>\n"
@@ -145,8 +260,9 @@ protected:
         "namespace mp {\n"
         "\n"
         "/// A mix-in class to add Xpress parameters.\n"
-        "/// Translated from '" + filename +
-        "'\n/// on " + std::string(std::ctime(&tm_t)) +
+        "/// Generated by parse-xpress-options from '" + filename +
+        "'\n/// (parameter types verified against the Xpress headers).\n"
+        "/// Do not edit; regenerate when the Xpress SDK changes.\n"
         "///\n"
         "template <class Impl>\n"
         "class Compiled" + classname + "Options {\n";
@@ -477,21 +593,35 @@ public:
 
 int main(int argc, const char** argv) {
   if (argc<4)
-    RAISE( "Provide an XML parameter database file,\n"
-          "an output C++ header file,\n"
-          "a mix-in class name,\n"
-          "and optionally a common key prefix, such as XPRS_." );
+    RAISE( "Usage: parse-xpress-options <params.xml> <output.h> <ClassName>"
+          " [<key prefix>|-] [<xprs.h> [<xslp.h> ...]]\n"
+          "  <params.xml>  XML parameter database from the Xpress SDK\n"
+          "  <output.h>    C++ header to write (mix-in class Compiled<ClassName>Options)\n"
+          "  <key prefix>  common macro prefix, e.g. XPRS for optimizerparams.xml;"
+          " '-' for none\n"
+          "  <xprs.h> ...  Xpress C headers; when given, control types are taken"
+          " from them\n"
+          "                and controls they declare as attributes or deprecated"
+          " are skipped." );
 
   std::cout << "Processing XML parameter database file '"
             << argv[1] << "' ..." << std::endl;
+
+  const char* prefix = (argc>4 && std::strcmp("-", argv[4])) ? argv[4] : nullptr;
+  mp::HeaderControlTypes hdr_types;
+  for (int i=5; i<argc; ++i) {
+    if (!hdr_types.ReadFile(argv[i]))
+      RAISE("Cannot read header file '" << argv[i] << "'");
+    std::cout << "   Control types read from '" << argv[i] << "'" << std::endl;
+  }
 
   auto pwlk = mp::MakeDefaultXMLWalker();
   if (pwlk->ReadFile(argv[1])) {
     if ( std::strcmp("paramList", pwlk->GetName()) )
       RAISE("Unknown top-level entry: " << pwlk->GetName());
 
-    mp::ParamListTranslator plt(argv[4]);
-    if (plt.Start(argv[2], argv[3])) {
+    mp::ParamListTranslator plt(prefix, hdr_types);
+    if (plt.Start(argv[1], argv[2], argv[3])) {
 
       mp::ParamListHandler prmlh(plt);  // to handle individual <param>s
       pwlk->Walk(prmlh);
@@ -499,8 +629,8 @@ int main(int argc, const char** argv) {
       std::cout << "Writing header file '"
                 << argv[2] << "' with mix-in class '"
                 << argv[3] << "' ..." << std::endl;
-      if (argv[4])
-        std::cout << "   (Key name prefix '" << argv[4]
+      if (prefix)
+        std::cout << "   (Key name prefix '" << prefix
                   << "' applied)" << std::endl;
     }
   } else
