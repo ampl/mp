@@ -72,7 +72,8 @@
     "objective" : 0.8,
     "tags" : ["quadraticnonconvex", "mipstart"],
     "options": {
-      "mp_options": "debug=1"
+      "mp_options": "debug=1",
+      "copt_options": "debug=1 nonconvex=2"
     },
     "values": {
       "_var[1].test_ini_mip": 0.5,
