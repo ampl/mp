@@ -314,6 +314,8 @@ private:
     int netopt_ = 0;
     bool fSifting_ = false;
     bool fConcurrent_ = false;
+    int feasopt_ = 0;
+    int feasoptobj_ = 1;
     bool fBenders_ = false;
 
     int cuts_ = -2;

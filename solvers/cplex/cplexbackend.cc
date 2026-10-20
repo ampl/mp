@@ -1710,6 +1710,18 @@ static const mp::OptionValueInfo values_mipstarteffort[] = {
   { "7", "CPX_MIPSTART_NOCHECK: assume the start is feasible", 7}
 };
 
+static const mp::OptionValueInfo values_feasopt[] = {
+  { "0", "No (default)", 0},
+  { "1", "Find a relaxed feasible point", 1},
+  { "2", "Find a \"best\" solution among the relaxed feasible points", 2}
+};
+static const mp::OptionValueInfo values_feasoptobj[] = {
+  { "1", "Minimize the sum of constraint and variable bound relaxations (default)", 1},
+  { "2", "Minimize the number of constraints and variable bounds relaxed "
+         "(a MIP problem, generally harder than 1)", 2},
+  { "3", "Minimize the sum of squares of constraint and variable bound relaxations", 3}
+};
+
 static const mp::OptionValueInfo values_presolvenode[] = {
   { "-1", "No node presolve", -1},
   { "0", "Automatic (default)", 0},
@@ -1930,6 +1942,14 @@ void CplexBackend::setSolutionMethod() {
 ////////////////////////////// OPTIONS /////////////////////////////////
 
 void CplexBackend::FinishOptionParsing() {
+  // cplexasl-compatible feasopt/feasoptobj -> alg:feasrelax
+  if (storedOptions_.feasopt_) {
+    static const int mode_by_obj[] = { 0, 1, 3, 2 };  // sum, count, squares
+    int mode = mode_by_obj[storedOptions_.feasoptobj_];
+    if (2 == storedOptions_.feasopt_)
+      mode += 3;
+    SetIntOption("alg:feasrelax", mode);
+  }
   {
     // Set output on screen
     int lp, mip, bar;
@@ -2683,6 +2703,18 @@ void CplexBackend::InitCustomOptions() {
     "and \"A5\" indicate that CPUs 0, 2, 5, and 7 are available for binding "
     "to threads, since hex value a5 =2^7+2^5+2^2+2^0.",
     storedOptions_.cpuMask_);
+
+  AddStoredOption("alg:feasopt feasopt",
+    "Compatibility option of the cplexasl driver, together with "
+    "alg:feasoptobj mapped onto alg:feasrelax: for infeasible problems, "
+    "whether to find a feasible point for a relaxed problem:\n"
+    "\n.. value-table::\n",
+    storedOptions_.feasopt_, values_feasopt);
+
+  AddStoredOption("alg:feasoptobj feasoptobj",
+    "Objective for alg:feasopt:\n"
+    "\n.. value-table::\n",
+    storedOptions_.feasoptobj_, values_feasoptobj);
 
   AddStoredOption("alg:droptol droptol",
     "If droptol > 0 is specified, linear constraint and objective coefficients "
