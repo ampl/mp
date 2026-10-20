@@ -1,3 +1,5 @@
+#include <cstdio>
+
 #include "mp/format.h"
 #include "mosekcommon.h"
 
@@ -52,12 +54,34 @@ int MosekCommon::NumIndicatorCons() const {
   return 0;
 }
 
+std::string MosekCommon::ParamName(MSKparametertypee type, int key) const {
+  char name[MSK_MAX_STR_LEN];
+  if (MSK_RES_OK != MSK_getparamname(lp(), type, key, name))
+    std::snprintf(name, sizeof(name), "parameter %d", key);
+  auto it = optNames_.find({type, key});
+  return it == optNames_.end()
+      ? std::string(name) : fmt::format("{} (MOSEK parameter {})", it->second, name);
+}
+
+void MosekCommon::CheckParamSet(MSKrescodee code, MSKparametertypee type,
+                                int key, const std::string& value) const {
+  if (MSK_RES_OK == code)
+    return;
+  char symb[MSK_MAX_STR_LEN], desc[MSK_MAX_STR_LEN];
+  MSK_getcodedesc(code, symb, desc);
+  MP_RAISE(fmt::format("Rejecting value {} for {}: {} ({}); "
+                       "see the MOSEK message above or docs.mosek.com "
+                       "for the accepted values",
+                       value, ParamName(type, key), desc, symb));
+}
+
 void MosekCommon::GetSolverOption(MSKiparame key, int &value) const {
   MOSEK_CCALL(MSK_getintparam(lp(), key, &value));
 }
 
 void MosekCommon::SetSolverOption(MSKiparame key, int value) {
-  MOSEK_CCALL(MSK_putintparam(lp(), key, value));
+  CheckParamSet(MSK_putintparam(lp(), key, value),
+                MSK_PAR_INT_TYPE, key, std::to_string(value));
 }
 
 void MosekCommon::GetSolverOption(MSKdparame key, double &value) const {
@@ -65,7 +89,8 @@ void MosekCommon::GetSolverOption(MSKdparame key, double &value) const {
 }
 
 void MosekCommon::SetSolverOption(MSKdparame key, double value) {
-  MOSEK_CCALL(MSK_putdouparam(lp(), key, value));
+  CheckParamSet(MSK_putdouparam(lp(), key, value),
+                MSK_PAR_DOU_TYPE, key, fmt::format("{}", value));
 }
 
 void MosekCommon::GetSolverOption(MSKsparame key, std::string &value) const {
@@ -80,7 +105,8 @@ void MosekCommon::GetSolverOption(MSKsparame key, std::string &value) const {
 }
 
 void MosekCommon::SetSolverOption(MSKsparame key, const std::string& value) {
-  MOSEK_CCALL(MSK_putstrparam(lp(), key, value.data()));
+  CheckParamSet(MSK_putstrparam(lp(), key, value.data()),
+                MSK_PAR_STR_TYPE, key, value);
 }
 
 void handleError(MSKrescodee e, const char* fname) {

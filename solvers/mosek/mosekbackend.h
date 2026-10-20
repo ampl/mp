@@ -3,6 +3,7 @@
 
 #include <list>
 #include <string>
+#include <utility>
 
 #include "mp/backend-mip.h"
 #include "mp/flat/backend_flat.h"
@@ -171,6 +172,22 @@ protected:
   MSKsoltypee GetSolutionTypeToFetch();
 
 private:
+  /// Register a MOSEK parameter as an AMPL option and remember
+  /// the AMPL name for rejection messages
+  template <class Key, class... Args>
+  void AddMosekOption(const char* names, const char* descr,
+                      Key key, Args&&... args) {
+    RecordOptionName(ParamTypeOf(key), (int)key, PrimaryName(names));
+    AddSolverOption(names, descr, key, std::forward<Args>(args)...);
+  }
+  static MSKparametertypee ParamTypeOf(MSKiparame) { return MSK_PAR_INT_TYPE; }
+  static MSKparametertypee ParamTypeOf(MSKdparame) { return MSK_PAR_DOU_TYPE; }
+  static MSKparametertypee ParamTypeOf(MSKsparame) { return MSK_PAR_STR_TYPE; }
+  static std::string PrimaryName(const char* names) {
+    std::string s(names);
+    return s.substr(0, s.find(' '));
+  }
+
   MSKtask_t fixed_task_ = nullptr;
   MSKsoltypee solToFetch_;
   MSKrescodee termCode_;

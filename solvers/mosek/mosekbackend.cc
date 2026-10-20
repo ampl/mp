@@ -576,34 +576,34 @@ void MosekBackend::InitCustomOptions() {
       "  ampl: option mosek_options 'threads=3';\n");
 
   // ********** ALG OPTIONS **********
-  AddSolverOption("alg:method method lpmethod simplex",
+  AddMosekOption("alg:method method lpmethod simplex",
                   "Which algorithm to use for non-MIP problems or for the root node of MIP problems:\n"
                   "\n.. value-table::\n", MSK_IPAR_OPTIMIZER, alg_values_method, 2);
 
   // ********** PRESOLVER OPTIONS **********
-  AddSolverOption("pre:aggregate aggregate", 
+  AddMosekOption("pre:aggregate aggregate", 
     "Whether to use aggregation in presolve:\n"
     "\n.. value-table::\n", 
     MSK_IPAR_MIO_PRESOLVE_AGGREGATOR_USE, values_01_noyes_1default_, 1);
 
-  AddSolverOption("pre:solve presolve",
+  AddMosekOption("pre:solve presolve",
     "MIP presolve:\n"
     "\n.. value-table::\n",
     MSK_IPAR_PRESOLVE_USE, alg_values_presolve_use, 2);
 
-  AddSolverOption("pre:passes prepasses",
+  AddMosekOption("pre:passes prepasses",
     "Limit on the number of presolve passes; a negative value implies MOSEK decides:\n"
     "\n"
     "| -1 - Automatic choice (default)\n"
     "| n>=0 - At most n passes.",
     MSK_IPAR_PRESOLVE_MAX_NUM_PASS, -1, std::numeric_limits<int>::max());
 
-  AddSolverOption("pre:dualray_analysis dualrayanalysis",
+  AddMosekOption("pre:dualray_analysis dualrayanalysis",
     "Controls the amount of dual ray analysis employed by the mixed-integer optimizer:\n"
     "\n.. value-table::\n",
     MSK_IPAR_MIO_DUAL_RAY_ANALYSIS_LEVEL, values_mip_presolve_dual_ray, -1);
 
-  AddSolverOption("pre:folding folding foldinguse",
+  AddMosekOption("pre:folding folding foldinguse",
     "Whether to use folding in presolve (for MIP problems use pre:mipfolding):\n"
     "\n.. value-table::\n",
     MSK_IPAR_FOLDING_USE, values_prefoldinguse_, 1);
@@ -612,12 +612,12 @@ void MosekBackend::InitCustomOptions() {
     "Whether to use scaling in presolve. Applies to both simplex and interior point method:\n"
     "\n.. value-table::\n", storedOptions_.PREScale_, values_bar_presolve_scaling);
 
-  AddSolverOption("pre:mipfolding mipfolding miosimmetrylevel",
+  AddMosekOption("pre:mipfolding mipfolding miosimmetrylevel",
     "Controls the amount of symmetry detection by the mixed-integer optimizer in presolve:\n"
     "\n.. value-table::\n",
     MSK_IPAR_MIO_SYMMETRY_LEVEL, values_premipfoldinguse_, 1);
 
-  AddSolverOption("bar:basis bar:crossover crossover",
+  AddMosekOption("bar:basis bar:crossover crossover",
     "Whether the interior-point optimizer also computes an optimal basis:\n"
     "\n.. value-table::\n", MSK_IPAR_INTPNT_BASIS, values_bar_intpnt_basis, 1);
 
@@ -631,48 +631,48 @@ void MosekBackend::InitCustomOptions() {
       "Default = OFF",
       storedOptions_.MIPConstructSol_);
 
-  AddSolverOption("mip:gap mipgap",
+  AddMosekOption("mip:gap mipgap",
                   "Max. relative MIP optimality gap (default 1e-4).",
                   MSK_DPAR_MIO_TOL_REL_GAP, 0.0, DBL_MAX);
 
-  AddSolverOption("mip:gapabs mipgapabs",
+  AddMosekOption("mip:gapabs mipgapabs",
                   "Max. absolute MIP optimality gap (default 0.0).",
                   MSK_DPAR_MIO_TOL_ABS_GAP, 0.0, DBL_MAX);
 
-  AddSolverOption("mip:feastol feastol",
+  AddMosekOption("mip:feastol feastol",
                   "MIP feasibility tolerance. Default 1e-6.",
                   MSK_DPAR_MIO_TOL_FEAS, 1e-15, Infinity());
 
-  AddSolverOption("mip:inttol inttol intfeastol",
+  AddMosekOption("mip:inttol inttol intfeastol",
                   "MIP integrality tolerance. Default 1e-5.",
                   MSK_DPAR_MIO_TOL_ABS_RELAX_INT, 1e-15, Infinity());
 
-  AddSolverOption("mip:heurlevel heurlevel",
+  AddMosekOption("mip:heurlevel heurlevel",
                   "MIP heuristic level to find an initial good feasible solution.\n\n"
                   "-1: automatic (default);\n0: not used;\n"
                   "positive, larger - more effort (3-5 recommended).",
                   MSK_IPAR_MIO_HEURISTIC_LEVEL, -1, INT_MAX);
 
-  AddSolverOption("mip:feaspump feaspump",
+  AddMosekOption("mip:feaspump feaspump",
                   "MIP feasibility pump.\n"
                   "\n.. value-table::\n",
                   MSK_IPAR_MIO_FEASPUMP_LEVEL, values_mip_feaspump_, -1);
 
 
-  AddSolverOption("mip:relgapconst miorelgapconst",
+  AddMosekOption("mip:relgapconst miorelgapconst",
     "This value is used to compute the relative gap for the solution "
     "to an integer optimization problem."
     "Default = 1.0e-10",
     MSK_DPAR_MIO_REL_GAP_CONST, 0.0, DBL_MAX);
 
-  AddSolverOption("mip:conic:outapprox conicoutapprox",
+  AddMosekOption("mip:conic:outapprox conicoutapprox",
                   "0*/1: If this option is turned on outer approximation is used "
                   "when solving relaxations of conic problems; "
                   "otherwise interior point is used.",
                   MSK_IPAR_MIO_CONIC_OUTER_APPROXIMATION, 0, 1);
 
 
-  AddSolverOption("mip:varselection varselection",
+  AddMosekOption("mip:varselection varselection",
     "Controls the variable selection strategy employed by the mixed-integer optimizer:\n"
     "\n.. value-table::\n",
     MSK_IPAR_MIO_VAR_SELECTION, values_mip_var_selection_types, 2);
@@ -707,24 +707,24 @@ void MosekBackend::InitCustomOptions() {
     storedOptions_.paramWrite_);
 
 
-  AddSolverOption("tech:seed seed tech:mipseed mipseed",
+  AddMosekOption("tech:seed seed tech:mipseed mipseed",
                   "Random number seed (default 42), "
                   "used for randomization in the mixed-integer optimizer, "
                   "may influence the solution path.",
                   MSK_IPAR_MIO_SEED, 0, INT_MAX);
 
-  AddSolverOption("tech:lpseed lpseed",
+  AddMosekOption("tech:lpseed lpseed",
                   "Sets the random seed (default 23456) used for randomization "
                   "in the simplex optimizers.",
                   MSK_IPAR_SIM_SEED, 0, INT_MAX);
 
-  AddSolverOption("tech:threads threads",
+  AddMosekOption("tech:threads threads",
     "Controls the number of threads employed by the optimizer. "
     "Default 0 ==> number of threads used will be equal to the number "
     "of cores detected on the machine.",
     MSK_IPAR_NUM_THREADS, 0, INT_MAX);
 
-  AddSolverOption("tech:outlev outlev",
+  AddMosekOption("tech:outlev outlev",
     "0*/1: Whether to write mosek log lines to stdout and to the logfile.",
     MSK_IPAR_LOG, 0, 1);
 
@@ -739,15 +739,15 @@ void MosekBackend::InitCustomOptions() {
 
 
 
-  AddSolverOption("lim:time timelim timelimit",
+  AddMosekOption("lim:time timelim timelimit",
     "Limit on solve time (in seconds; default: no limit).",
     MSK_DPAR_OPTIMIZER_MAX_TIME, 0.0, DBL_MAX);
 
-  AddSolverOption("lim:nodes nodelim nodelimit",
+  AddMosekOption("lim:nodes nodelim nodelimit",
     "Limit the number of MIP branches (MOSEK MIO_MAX_NUM_BRANCHES; default: no limit).",
     MSK_IPAR_MIO_MAX_NUM_BRANCHES, 0, INT_MAX);
 
-  AddSolverOption("lim:sol sollimit solutionlimit",
+  AddMosekOption("lim:sol sollimit solutionlimit",
     "Limit the number of feasible MIP solutions found, causing early "
     "termination if exceeded; default -1 (no limit).",
     MSK_IPAR_MIO_MAX_NUM_SOLUTIONS, 0, INT_MAX);
