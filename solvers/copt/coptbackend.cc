@@ -116,6 +116,60 @@ void CoptBackend::InputCOPTExtras() {
     SetSolverOption(COPT_INTPARAM_REQSENSITIVITY, 1);
 }
 
+void CoptBackend::MarkLazyOrUserCuts(ArrayRef<int> lazyVals) {
+  auto vm = GetValuePresolver().PresolveLazyUserCutFlags({ {}, lazyVals });
+  std::vector<int> lv_lin = vm.GetConValues()(CG_Linear);
+  int m = NumLinCons();
+  if ((int)lv_lin.size() > m)
+    lv_lin.resize(m);
+  auto rowlb = getConInfo(COPT_DBLINFO_LB);
+  auto rowub = getConInfo(COPT_DBLINFO_UB);
+  int n_lazy = 0, n_user = 0;
+  std::vector<int> idx;
+  std::vector<double> elem;
+  for (int i=0; i<(int)lv_lin.size(); ++i) {
+    if (lv_lin[i] > 0 && lazy_cuts()) {
+      int req = 0, beg = 0, cnt = 0;
+      COPT_CCALL(COPT_GetRows(lp(), 1, &i, NULL, NULL, NULL, NULL, 0, &req));
+      idx.resize(req);
+      elem.resize(req);
+      COPT_CCALL(COPT_GetRows(lp(), 1, &i, &beg, &cnt,
+                              idx.data(), elem.data(), req, &req));
+      char name[1024] = "";
+      int namelen = 0;
+      COPT_GetRowName(lp(), i, name, (int)sizeof(name), &namelen);
+      char sense = COPT_FREE;
+      double bound = 0.0, upper = 0.0;
+      bool lbfin = rowlb[i] > -COPT_INFINITY, ubfin = rowub[i] < COPT_INFINITY;
+      if (lbfin && ubfin && rowlb[i] == rowub[i]) {
+        sense = COPT_EQUAL; bound = rowlb[i];
+      } else if (lbfin && ubfin) {
+        sense = COPT_RANGE; bound = rowlb[i]; upper = rowub[i];
+      } else if (ubfin) {
+        sense = COPT_LESS_EQUAL; bound = rowub[i];
+      } else if (lbfin) {
+        sense = COPT_GREATER_EQUAL; bound = rowlb[i];
+      }
+      COPT_CCALL(COPT_AddLazyConstr(lp(), cnt, idx.data(), elem.data(),
+                                    sense, bound, upper,
+                                    namelen > 0 ? name : NULL));
+      double ninf = -COPT_INFINITY, pinf = COPT_INFINITY;    // free the original row
+      COPT_CCALL(COPT_SetRowLower(lp(), 1, &i, &ninf));
+      COPT_CCALL(COPT_SetRowUpper(lp(), 1, &i, &pinf));
+      lazy_rows_.push_back({i, rowlb[i], rowub[i]});
+      ++n_lazy;
+    } else if (lv_lin[i] < 0 && user_cuts())
+      ++n_user;
+  }
+  if (n_user)
+    AddWarning("USER_CUTS",
+               "COPT has no user cuts; constraints with .lazy < 0 "
+               "stay ordinary constraints");
+  // Testing
+  if (debug_mode())
+    ReportProblemSuffix("test_lin_constr_lazy", n_lazy);
+}
+
 ArrayRef<double> CoptBackend::GetObjectiveValues() {
   if (HasFixedLP()) return std::vector<double>{FixedLP().objective};
   if (feasrelax_solved_)
@@ -408,6 +462,15 @@ CoptBackend::FixedLPResult CoptBackend::SolveFixedLP(ArrayRef<double> x) {
   auto destroy = [](copt_prob* model) { COPT_DeleteProb(&model); };
   std::unique_ptr<copt_prob, decltype(destroy)> fixed(copy, destroy);
   int n = NumVars(), m = NumLinCons();
+  {                      // the copy's log follows tech:outlev
+    int logging = 0;
+    GetSolverOption(COPT_INTPARAM_LOGGING, logging);
+    COPT_CCALL(COPT_SetIntParam(copy, COPT_INTPARAM_LOGGING, logging));
+  }
+  for (const auto& row: lazy_rows_) {   // lazy constraints do not apply to the LP
+    COPT_CCALL(COPT_SetRowLower(copy, 1, &row.index, &row.lb));
+    COPT_CCALL(COPT_SetRowUpper(copy, 1, &row.index, &row.ub));
+  }
   std::vector<char> types(n);
   std::vector<double> lb(n), ub(n);
   COPT_CCALL(COPT_GetColType(lp(), n, nullptr, types.data()));

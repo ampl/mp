@@ -77,6 +77,13 @@ public:
   ALLOW_STD_FEATURE(MULTISOL, true)
 
   /**
+  * Lazy constraints (.lazy > 0): re-added with COPT_AddLazyConstr(),
+  * the original rows are freed. COPT has no user cuts.
+  **/
+  ALLOW_STD_FEATURE(LAZY_USER_CUTS, true)
+  void MarkLazyOrUserCuts(ArrayRef<int>) override;
+
+  /**
 * Get/Set AMPL var/con statii
 **/
   ALLOW_STD_FEATURE(BASIS, true)
@@ -254,6 +261,11 @@ private:
   };
   static SensRaw ReadSensRaw(copt_prob* prob);
   SensRaw fixed_sens_;        // from the fixed LP of a MIP
+
+  /// Rows re-added as lazy constraints and freed: index, lb, ub.
+  /// The fixed LP of mip:basis restores their bounds.
+  struct FreedRow { int index; double lb, ub; };
+  std::vector<FreedRow> lazy_rows_;
 
   /// Feasibility relaxation state
   bool feasrelax_solved_ = false;
