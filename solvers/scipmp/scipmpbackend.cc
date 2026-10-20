@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include "lpi/lpi.h"
 #include "scip/cons_linear.h"
+#include "scip/cons_countsols.h"
 #include "scip/scip_iisfinder.h"
 #include "scip/pub_iisfinder.h"
 #include <vector>
@@ -187,7 +188,110 @@ void ScipBackend::Solve() {
     SCIP_CCALL( SCIPsolveConcurrent(getSCIP()) );
   else
     SCIP_CCALL( SCIPsolve(getSCIP()) );
+  if (storedOptions_.poolMode_ > 0 && need_multiple_solutions()) {
+    try {
+      EnumerateSolutions();
+    } catch (const std::exception& exc) {
+      countedSols_.clear();
+      AddWarning("POOLMODE", fmt::format("Solution counting failed ({}); "
+                 "reporting the solutions found during the search", exc.what()));
+    }
+  }
   WindupSCIPSolve();
+}
+
+/// Fixed continuous variables (e.g., objective constants) do not
+/// hinder counting
+bool ScipBackend::AllVarsInteger() const {
+  for (int j = 0; j < NumVars(); ++j) {
+    auto* var = getPROBDATA()->vars[j];
+    if (SCIP_VARTYPE_CONTINUOUS == SCIPvarGetType(var) &&
+        SCIPvarGetLbOriginal(var) < SCIPvarGetUbOriginal(var))
+      return false;
+  }
+  return true;
+}
+
+/// SCIP's counting works on a copy of the original problem, so the
+/// main instance keeps its status and solution. The counted (sparse)
+/// solutions live in the copy's active variables; evaluating them as
+/// SCIP solutions maps them to the copy's original variables.
+void ScipBackend::EnumerateSolutions() {
+  countedSols_.clear();
+  if (!AllVarsInteger()) {
+    AddWarning("POOLMODE", "sol:poolmode > 0 enumerates the feasible solutions "
+               "of models with integer variables only; "
+               "reporting the solutions found during the search");
+    return;
+  }
+  SCIP* copy = nullptr;
+  SCIP_CCALL( SCIPcreate(&copy) );
+  auto destroy = [](SCIP* scip) { SCIPfree(&scip); };
+  std::unique_ptr<SCIP, decltype(destroy)> guard(copy, destroy);
+  SCIP_HASHMAP* varmap = nullptr;
+  SCIP_CCALL( SCIPhashmapCreate(&varmap, SCIPblkmem(copy), NumVars()) );
+  SCIP_Bool valid = FALSE;
+  SCIP_CCALL( SCIPcopyOrig(getSCIP(), copy, varmap, nullptr, "count",
+                           FALSE, FALSE, TRUE, &valid) );
+  SCIP_CCALL( SCIPcopyParamSettings(getSCIP(), copy) );
+  SCIP_CCALL( SCIPsetParamsCountsols(copy) );
+  SCIP_CCALL( SCIPsetBoolParam(copy, "constraints/countsols/collect", TRUE) );
+  // Only fixings in presolving: every original variable then resolves
+  // to an active variable or a constant (SCIPvarGetProbvarSum)
+  SCIP_CCALL( SCIPsetBoolParam(copy, "presolving/donotaggr", TRUE) );
+  SCIP_CCALL( SCIPsetBoolParam(copy, "presolving/donotmultaggr", TRUE) );
+  if (storedOptions_.poolLimit_ >= 0)
+    SCIP_CCALL( SCIPsetLongintParam(copy, "constraints/countsols/sollimit",
+                                    storedOptions_.poolLimit_) );
+  SCIP_CCALL( SCIPcount(copy) );
+  SCIP_VAR** vars = nullptr;
+  SCIP_SPARSESOL** sols = nullptr;
+  int nvars = 0, nsols = 0;
+  SCIPgetCountedSparseSols(copy, &vars, &nvars, &sols, &nsols);
+  std::unordered_map<SCIP_VAR*, int> active;
+  for (int k = 0; k < nvars; ++k)
+    active[vars[k]] = k;
+  struct Resolved { int index; double scalar, constant; };   // x_j = scalar*v[index] + constant
+  std::vector<Resolved> resolved(NumVars());
+  for (int j = 0; j < NumVars(); ++j) {
+    auto* var = (SCIP_VAR*)SCIPhashmapGetImage(varmap, getPROBDATA()->vars[j]);
+    double scalar = 1.0, constant = 0.0;
+    SCIP_CCALL( SCIPgetProbvarSum(copy, &var, &scalar, &constant) );
+    resolved[j] = { -1, scalar, constant };
+    if (var && scalar != 0.0) {
+      auto it = active.find(var);
+      if (it == active.end())
+        MP_RAISE(fmt::format("counted solutions: variable {} is not active",
+                             SCIPvarGetName(getPROBDATA()->vars[j])));
+      resolved[j].index = it->second;
+    }
+  }
+  SCIPhashmapFree(&varmap);
+  std::vector<SCIP_Longint> values(nvars);
+  auto limit_reached = [this]() {
+    return storedOptions_.poolLimit_ >= 0 &&
+        (int)countedSols_.size() >= storedOptions_.poolLimit_;
+  };
+  for (int k = 0; k < nsols && !limit_reached(); ++k) {
+    SCIPsparseSolGetFirstSol(sols[k], values.data(), nvars);
+    do {
+      CountedSolution counted;
+      counted.x.resize(NumVars());
+      counted.obj = 0.0;
+      for (int j = 0; j < NumVars(); ++j) {
+        const auto& r = resolved[j];
+        counted.x[j] = r.constant + (r.index >= 0 ? r.scalar * values[r.index] : 0.0);
+        counted.obj += SCIPvarGetObj(getPROBDATA()->vars[j]) * counted.x[j];
+      }
+      counted.obj = SCIPgetOrigObjscale(getSCIP()) * counted.obj + SCIPgetOrigObjoffset(getSCIP());
+      countedSols_.push_back(std::move(counted));
+    } while (!limit_reached() && SCIPsparseSolGetNextSol(sols[k], values.data(), nvars));
+  }
+  bool minimize = SCIP_OBJSENSE_MINIMIZE == SCIPgetObjsense(getSCIP());
+  std::sort(countedSols_.begin(), countedSols_.end(),
+            [minimize](const CountedSolution& a, const CountedSolution& b) {
+              return minimize ? a.obj < b.obj : a.obj > b.obj;
+            });
 }
 
 ScipBackend::FixedLPResult ScipBackend::SolveFixedLP(ArrayRef<double> x) {
@@ -300,6 +404,15 @@ bool ScipBackend::AcceptPoolSolution(double obj, double best) const {
 void ScipBackend::ReportSCIPPool() {
   if (!IsMIP())
     return;
+  if (!countedSols_.empty()) {
+    double best = countedSols_[0].obj;
+    for (const auto& counted: countedSols_) {
+      if (!AcceptPoolSolution(counted.obj, best))
+        break;
+      ReportIntermediateSolution({ counted.x, {}, { counted.obj } });
+    }
+    return;
+  }
   int nsolutions = SCIPgetNSols(getSCIP());        // sorted best-first
   if (storedOptions_.poolLimit_ >= 0)
     nsolutions = std::min(nsolutions, storedOptions_.poolLimit_);
@@ -1077,9 +1190,25 @@ void ScipBackend::InitCustomOptions() {
 	///////////////////////// SOLUTION POOL ///////////////////////////////
   AddStoredOption("sol:poollimit poollimit ams_limit solnlimit",
     "Limit on the number of alternative solutions reported "
-    "(options sol:stub, sol:count); default -1: all solutions stored by "
-    "SCIP, at most lim:maxsol.",
+    "(options sol:stub, sol:count); default 10, -1: all solutions stored by "
+    "SCIP (at most lim:maxsol) or enumerated.",
     storedOptions_.poolLimit_, -1, INT_MAX);
+
+  AddStoredOption("sol:poolmode ams_mode poolmode",
+    "Search mode for alternative solutions when sol:stub/sol:count "
+    "are specified:\n"
+    "\n"
+    "  | 0 - Report the solutions found during the search (default)\n"
+    "  | 1, 2 - Enumerate the feasible solutions with SCIP's solution "
+    "counting (models with integer variables only; counting stops "
+    "after sol:poollimit solutions), report the best of them "
+    "(default 2).\n"
+    "\n"
+    "The enumeration runs on a copy of the model after the solve; "
+    "sol:poolgap, sol:poolgapabs and sol:poollimit filter the reported "
+    "solutions.",
+    storedOptions_.poolMode_, 0, 2);
+  AddOptionSynonyms_Inline_Front("ams_stub", "sol:stub");
 
   AddStoredOption("sol:poolgap poolgap ams_eps",
     "Relative tolerance for reporting alternative solutions "

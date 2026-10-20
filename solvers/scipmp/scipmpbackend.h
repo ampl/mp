@@ -161,6 +161,10 @@ protected:
   void ReportSCIPPool();
   /// Whether a pool solution passes sol:poolgap / sol:poolgapabs
   bool AcceptPoolSolution(double obj, double best) const;
+  /// sol:poolmode > 0: enumerate the feasible solutions of a
+  /// pure-integer model with SCIP's solution counting, on a copy
+  void EnumerateSolutions();
+  bool AllVarsInteger() const;
 
   std::vector<double> getPoolSolution(int i);
   double getPoolObjective(int i);
@@ -217,7 +221,8 @@ private:
     int presolve_ = 1;
     int emphasis_ = 0;
     int outlev_ = 0;
-    int poolLimit_ = -1;
+    int poolLimit_ = 10;
+    int poolMode_ = 2;
     double poolGap_ = -1.0;     // < 0: no limit
     double poolGapAbs_ = -1.0;
   };
@@ -225,6 +230,13 @@ private:
 
   /// IIS statuses of the variables and linear constraints
   std::vector<int> iisVars_, iisCons_;
+
+  /// Solutions enumerated by sol:poolmode > 0, best first
+  struct CountedSolution {
+    double obj;
+    std::vector<double> x;
+  };
+  std::vector<CountedSolution> countedSols_;
 
 
 };
