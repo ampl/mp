@@ -6,6 +6,34 @@ Summary of recent updates to COPT for AMPL
 - Emulate *mip:basis* for linear algebraic MIPs, with separate
   *mip:basis:timelimit* and *mip:basis:iterlimit* options.
 - Added option *tech:seed*.
+- Fixed the feasibility relaxation (*alg:feasrelax*): it returned the
+  infeasible model's status and a zero solution; the mode was ignored.
+  COPT does not support the squared-violation modes 2 and 5 for
+  models with integer variables.
+- Fixed the *.iis* suffixes and a spurious warning on infeasible MIPs
+  (COPT has no dual ray for them).
+- *tech:logfile* no longer echoes the log to the console unless
+  *tech:outlev* asks for it.
+- Per-objective options (*obj:N:...*) are now applied by COPT.
+- Option values outside COPT's range are rejected with
+  "Rejecting <param>=<value>; must be between L and U" instead of
+  being clamped silently.
+- New options: *alg:nlptol*, *alg:nlpmuupdate*, *alg:nlplinscale*,
+  *alg:sdpmethod*, *bar:start*, *mip:fapheurlevel*,
+  *mip:startnodelimit*, *mip:linearizeindicators*, *mip:linearizesos*,
+  *lim:multiobjtime*, *tech:writedualprob*.
+- Parameter files and native parameters: *tech:optionnativeread*,
+  *tech:optionnativewrite*, *tech:optionnative*.
+- Parameter tuning: *tech:tunebase* and the *tech:tune\** parameters.
+- Sensitivity analysis (*alg:sens*), also for the fixed LP of
+  *mip:basis*.
+- Lazy constraints (suffix *.lazy* > 0, option *mip:lazy*).
+- Solution pool options *sol:poollimit*, *sol:poolgap*,
+  *sol:poolgapabs* (and *sol:poolmode* for compatibility) filter the
+  solutions COPT found during the search.
+- Corrected option descriptions: defaults of *lim:mipnlpiterlimit*,
+  *lim:nlpiterlimit*, *lim:memlimit*; values of *pre:solve* and
+  *lp:barorder*.
 
 
 ## 20260813
