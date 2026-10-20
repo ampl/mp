@@ -5,6 +5,37 @@ Summary of recent updates to MOSEK for AMPL
 ## unreleased
 - Emulate *mip:basis* for linear algebraic MIPs, with separate
   *mip:basis:timelimit* and *mip:basis:iterlimit* options.
+- Options aligned with MOSEK 11.2.0: *alg:method* lists the MOSEK 11
+  optimizers (6 = new dual simplex, 7 = new primal simplex, 8 = primal
+  simplex), corrected defaults and ranges (*pre:folding*, *mip:symmetry*,
+  *mip:feastol*, *mip:inttol*, *mip:relgapconst*, *tech:lpseed*,
+  *lim:nodes*, *lim:sol*, *lim:time*).
+- A value rejected by MOSEK now aborts with a message naming the AMPL
+  option and the MOSEK parameter.
+- Solve results reflect the termination reason: time, iteration,
+  branch/relaxation, objective range and solution limits, interrupts,
+  stalling and numerical problems get their own codes (previously all
+  400 "feasible primal"); a feasible solution without a termination
+  reason is reported as 'solved?'.
+- Ctrl-C now interrupts MOSEK (the handler was a stub).
+- An input basis for constraints was ignored (every status was reset
+  before mapping); a starting basis or point now goes to the basic
+  solution of an LP. Simplex iteration counts include the dual
+  iterations; the node count is the number of branches.
+- *tech:logfile* without *tech:outlev* writes the standard log to the
+  file with a quiet console (the file was empty).
+- New options: *alg:feastol*, *alg:dualfeastol* (simplex tolerances;
+  the bare *feastol* keeps its meaning of *mip:feastol*),
+  *lp:primalselection*, *lp:dualselection*, *lp:hotstart*, *lp:degen*,
+  *lp:solveform*, *bar:iterlim*, *bar:pfeastol*, *bar:dfeastol*,
+  *bar:relgaptol*, *bar:copfeastol*, *bar:codfeastol*, *bar:corelgaptol*,
+  *bar:order*, *bar:solveform*, *pre:lindep*, *mip:cuts*, *cut:clique*,
+  *cut:mir*, *cut:gomory*, *cut:implied*, *cut:cover*, *cut:lipro*,
+  *mip:nodeselect*, *mip:branchdir*, *mip:probing*, *mip:rootmethod*,
+  *mip:nodemethod*, *mip:rinsmaxnodes*, *mip:restarts*,
+  *mip:rootcutrounds*, *mip:djcbigm*, *mip:symmetry* (primary name of
+  *pre:mipfolding*), *lim:iter*, *lim:miptime*, *lim:lowerobjcut*,
+  *lim:upperobjcut*, *tech:writesolution*.
 
 
 ## 20260624
