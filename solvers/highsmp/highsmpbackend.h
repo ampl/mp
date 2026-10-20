@@ -129,6 +129,15 @@ public:
   void InitCustomOptions() override;
   void FinishOptionParsing() override;
 
+  /// AddSolverOption() + remember the AMPL name of the HiGHS option
+  /// (used in rejected-value messages).
+  template <class... Args>
+  void AddHighsOption(const char* names, const char* description,
+                      const char* key, Args&&... args) {
+    RememberOptionName(key, names);
+    AddSolverOption(names, description, key, std::forward<Args>(args)...);
+  }
+
 protected:
 
   double ObjectiveValue() const;

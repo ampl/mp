@@ -5,6 +5,17 @@ Summary of recent updates to HiGHS for AMPL
 ## unreleased
 - Emulate *mip:basis* for linear algebraic MIPs, with separate
   *mip:basis:timelimit* and *mip:basis:iterlimit* options.
+- Options aligned with HiGHS 1.15.1: corrected value tables and
+  defaults of *alg:simplex* (2 = SIP, 3 = PAMI, default 1),
+  *alg:simplexscale* (0..4, default 2), *pre:pdlpscaling_mode*
+  (default 5), *iis:strategy* (4 = irreducible IIS, 8 = column
+  priority), *bar:crossover* (default on), *mip:ipmsolver*
+  (values choose/ipx/hipo); corrected ranges and descriptions
+  (*alg:kkt_tolerance* semantics, *tech:threads*, *mip:lpagelimit*,
+  scaling exponents, infinite-value thresholds).
+- A value rejected by HiGHS now aborts with a message naming the AMPL
+  option, the value and the HiGHS diagnostic (valid range);
+  *alg:method=hipo* reports clearly when the library lacks HiPO.
 
 
 ## 20260813

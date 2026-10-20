@@ -4,6 +4,7 @@
 #include <string>
 #include <memory> // For std::unique_ptr
 #include <vector>
+#include <map>
 
 extern "C" {
   #include "interfaces/highs_c_api.h"
@@ -104,13 +105,18 @@ namespace mp{
   class HighsCommon :
     public Backend2ModelAPIConnector<HighsCommonInfo> {
   public:
-    /// These methods £ess Highs options. Used by AddSolverOption()
+    /// These methods access HiGHS options. Used by AddSolverOption()
     void GetSolverOption(const char* key, int& value) const;
     void SetSolverOption(const char* key, int value);
     void GetSolverOption(const char* key, double& value) const;
     void SetSolverOption(const char* key, double value);
     void GetSolverOption(const char* key, std::string& value) const;
     void SetSolverOption(const char* key, const std::string& value);
+
+    /// Remember the AMPL option name(s) of a HiGHS option, for messages
+    void RememberOptionName(const char* key, const char* names);
+    /// AMPL option name of a HiGHS option, or the HiGHS name itself
+    std::string AmplOptionName(const char* key) const;
 
     double myinf = 0;
     double Infinity() {
@@ -120,6 +126,14 @@ namespace mp{
     double MinusInfinity() { return -Infinity(); }
 
   protected:
+    /// Report a value rejected by HiGHS: let HiGHS print its own
+    /// diagnostic (the valid range) by retrying with logging on,
+    /// then throw with the AMPL option name.
+    template <class Setter>
+    void RaiseOptionRejected(const char* key, const std::string& value,
+                             Setter retry);
+    std::map<std::string, std::string> optNames_;
+
     void LoadHighsLibrary(bool gpu);
     void OpenSolver();
     void CloseSolver();

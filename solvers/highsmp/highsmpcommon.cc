@@ -103,10 +103,35 @@ int HighsCommon::NumObjs()  {
 
 
 
-void checkOption(int retvalue, const char* key) {
-  if (retvalue != kHighsStatusOk)
-    throw std::runtime_error(fmt::format("Error while setting option '{}'", key));
-  
+void HighsCommon::RememberOptionName(const char* key, const char* names) {
+  std::string n = names;
+  auto pos = n.find(' ');
+  optNames_[key] = (pos == std::string::npos) ? n : n.substr(0, pos);
+}
+
+std::string HighsCommon::AmplOptionName(const char* key) const {
+  auto it = optNames_.find(key);
+  return it == optNames_.end() ? std::string(key) : it->second;
+}
+
+template <class Setter>
+void HighsCommon::RaiseOptionRejected(const char* key,
+                                      const std::string& value, Setter retry) {
+  // HiGHS reports the reason (e.g., the valid range) only when logging is on.
+  int out = 0, con = 0;
+  loader().Highs_getBoolOptionValue(lp(), "output_flag", &out);
+  loader().Highs_getBoolOptionValue(lp(), "log_to_console", &con);
+  if (!out || !con) {
+    loader().Highs_setBoolOptionValue(lp(), "output_flag", 1);
+    loader().Highs_setBoolOptionValue(lp(), "log_to_console", 1);
+    retry();
+    loader().Highs_setBoolOptionValue(lp(), "output_flag", out);
+    loader().Highs_setBoolOptionValue(lp(), "log_to_console", con);
+  }
+  std::string ampl = AmplOptionName(key);
+  throw std::runtime_error(fmt::format(
+      "Rejecting {}={} (HiGHS option '{}'); see the HiGHS message above",
+      ampl, value, key));
 }
 void HighsCommon::GetSolverOption(const char* key, int& value) const {
   int type;
@@ -125,7 +150,13 @@ void HighsCommon::SetSolverOption(const char* key, int value) {
     ret = loader().Highs_setBoolOptionValue(lp(), key, value);
   else
     ret = loader().Highs_setIntOptionValue(lp(), key, value);
-  checkOption(ret, key);
+  if (ret != kHighsStatusOk)
+    RaiseOptionRejected(key, std::to_string(value), [&]() {
+      if (type == kHighsOptionTypeBool)
+        loader().Highs_setBoolOptionValue(lp(), key, value);
+      else
+        loader().Highs_setIntOptionValue(lp(), key, value);
+    });
 }
 
 void HighsCommon::GetSolverOption(const char* key, double &value) const {
@@ -134,7 +165,10 @@ void HighsCommon::GetSolverOption(const char* key, double &value) const {
 
 void HighsCommon::SetSolverOption(const char* key, double value) {
   int ret = loader().Highs_setDoubleOptionValue(lp(), key, value);
-  checkOption(ret, key);
+  if (ret != kHighsStatusOk)
+    RaiseOptionRejected(key, fmt::format("{}", value), [&]() {
+      loader().Highs_setDoubleOptionValue(lp(), key, value);
+    });
 }
 
 void HighsCommon::GetSolverOption(const char* key, std::string &value) const {
@@ -145,7 +179,10 @@ void HighsCommon::GetSolverOption(const char* key, std::string &value) const {
 
 void HighsCommon::SetSolverOption(const char* key, const std::string& value) {
   int ret = loader().Highs_setStringOptionValue(lp(), key, value.c_str());
-  checkOption(ret, key);
+  if (ret != kHighsStatusOk)
+    RaiseOptionRejected(key, value, [&]() {
+      loader().Highs_setStringOptionValue(lp(), key, value.c_str());
+    });
 }
 
 

@@ -88,7 +88,14 @@ void HighsBackend::InputStartValues() {
     std::string method = storedOptions_.lpmethod_;
     if (method == "pdlp-gpu") method = "pdlp";
     else if (method == "hipdlp-gpu") method = "hipdlp";
-    SetSolverOption("solver", method);
+    try {
+      SetSolverOption("solver", method);
+    } catch (const std::exception& e) {
+      (void)e;
+      MP_RAISE(fmt::format(
+          "alg:method={} is not available in this HiGHS library build "
+          "(see the HiGHS message above)", storedOptions_.lpmethod_));
+    }
     /// Copy env/lp to ModelAPI
     copy_common_info_to_other();
     int v = -1;
@@ -610,8 +617,11 @@ std::pair<int, std::string> HighsBackend::GetSolveResult() {
     return { sol::UNBOUNDED_NO_FEAS, "unbounded problem, no solution" };
   case kHighsModelStatusUnboundedOrInfeasible:
     return { sol::LIMIT_INF_UNB, "unbounded or infeasible. "
-                                "Disable dual reductions "
-                                "or run IIS finder for definitive answer." };
+                                "Disable presolve (pre:solve=off) "
+                                "or run the IIS finder (iis:find=1) "
+                                "for a definitive answer." };
+  case kHighsModelStatusModelEmpty:
+    return { sol::SOLVED, "empty model" };
   case kHighsModelStatusModelError:
   case kHighsModelStatusLoadError:
     if (kHighsSolutionStatusInfeasible == primal_solution_status)   // HiGHS 7
@@ -662,7 +672,8 @@ static const mp::OptionValueInfo lp_values_method[] = {
   { "choose", "Automatic (default)", -1},
   { "simplex", "Simplex", 1},
   { "ipm", "Interior Point Method (automatic)", 2},
-  { "hipo", "Highs Interior point method", 2},
+  { "hipo", "HiPO interior point method (not available in every HiGHS library build; "
+            "rejected with a message if unavailable)", 2},
   { "ipx", "IPX interior point method", 2},
   { "pdlp", "cuPDLP-c solver", 3},
   { "pdlp-gpu", "cuPDLP-c solver on NVIDIA GPU. Requires CUDA, not available on MacOS", 4},
@@ -676,14 +687,14 @@ static const mp::OptionValueInfo mip_lp_solver_values[] = {
   { "choose", "Automatic (default)", -1},
   { "simplex", "Simplex", 1},
   { "ipm", "Interior Point Method (automatic)", 2},
-  { "hipo", "Highs Interior point method", 3},
+  { "hipo", "HiPO interior point method", 3},
   { "ipx", "IPX interior point method", 4 }
 };
 
 static const mp::OptionValueInfo mip_ipm_solver_values[] = {
   { "choose", "Automatic (default)", -1},
-  { "ipm", "Interior Point Method (automatic)", 2},
-  { "hipo", "Highs Interior point method", 3}
+  { "ipx", "IPX interior point method", 2},
+  { "hipo", "HiPO interior point method", 3}
 };
 
 static const mp::OptionValueInfo off_on_choose_values[] = {
@@ -701,7 +712,7 @@ static const mp::OptionValueInfo pdlperestartmethod_values[] = {
 
 static const mp::OptionValueInfo pdlp_scaling_mode_values[] = {
   { "1", "Ruiz scaling", 0},
-  { "2", "L2 (default)", 1},
+  { "2", "L2", 1},
   { "4", "PC (preconditioner-oriented)", 2},
 };
 
@@ -720,18 +731,18 @@ static const mp::OptionValueInfo pdlp_restart_strategy_values[] = {
 };
 
 static const mp::OptionValueInfo iis_strategy_values[] = {
-    {"0", "Light test", 0 },
+    {"0", "Light test only (infeasible bounds)", 0 },
     { "1", "Try dual ray", 1 },
     { "2", "Try elastic LP", 2 },
-    { "4", "Prioritise columns", 4 },
-    { "8", "Find true IIS", 8 },
-    { "16", "Find relaxation IIS for MIP", 16 }
+    { "4", "Find an irreducible (true) IIS by a deletion filter", 4 },
+    { "8", "Prioritise columns over rows in the deletion filter", 8 },
+    { "16", "Find the IIS of the LP relaxation for a MIP", 16 }
 };
 
 static const mp::OptionValueInfo run_crossover_values[] = {
   { "choose", "Run if the results of IPM without crossover is imprecise", -1},
   { "off", "Off", 1},
-  { "on", "On", 2},
+  { "on", "On (default)", 2},
 };
 
 static const mp::OptionValueInfo hipo_system_values[] = {
@@ -752,25 +763,25 @@ static const mp::OptionValueInfo hipo_ordering_values[] = {
 	{ "rcm", "Reverse Cuthill-McKee", 3}
 };
 static const mp::OptionValueInfo simplex_strategy_values_[] = {
-  { "0", "Choose automatically (default)", 0},
-  { "1", "Dual (serial)", 1},
-  { "2", "Dual ('PAMI' - Parallelization Across Multiple Iterations)", 2},
-  { "3", "Dual ('SIP' - Single Iteration Parallelism", 3},
+  { "0", "Choose automatically", 0},
+  { "1", "Dual, serial (default)", 1},
+  { "2", "Dual, 'SIP' (Single Iteration Parallelism)", 2},
+  { "3", "Dual, 'PAMI' (Parallelization Across Multiple Iterations)", 3},
   { "4", "Primal", 4}
 };
 static const mp::OptionValueInfo simplex_scale_strategy_values_[] = {
   { "0", "Off", 0},
-  { "1", "Choose automatically (default)", 1},
-  { "2", "Equilibration", 2},
+  { "1", "Choose automatically", 1},
+  { "2", "Equilibration (default)", 2},
   { "3", "Forced equilibration", 3},
-  { "4", "Max value 0", 4},
-  { "5", "Max value 1", 5}
+  { "4", "Max value", 4}
 };
 static const mp::OptionValueInfo simplex_crash_strategy_values_[] = {
   { "0", "Off (default)", 0},
   { "1", "LTSSF", 1},
   { "2", "Bixby", 2}
 };
+/// HiGHS accepts further experimental crash strategies (3..9), undocumented.
 static const mp::OptionValueInfo simplex_edge_weight_strategy_values_[] = {
   { "-1", "Choose automatically (default)", -1},
   { "0", "Dantzig", 0},
@@ -789,11 +800,11 @@ void HighsBackend::InitCustomOptions() {
     "\n"
     "  ampl: option highs_options 'mip:gap=1e-6';\n");
 
-  AddSolverOption("tech:outlev outlev",
-    "0*/1: Whether to write HighS log lines (chatter) to stdout and to file.",
+  AddHighsOption("tech:outlev outlev",
+    "0*/1: Whether to write HiGHS log lines (chatter) to stdout and to file.",
     "output_flag", 0, 1);
 
-  AddSolverOption("tech:logfile logfile",
+  AddHighsOption("tech:logfile logfile",
     "Log file name.", "log_file");
 
   std::string c;
@@ -801,205 +812,215 @@ void HighsBackend::InitCustomOptions() {
     "Which algorithm to use for non-MIP problems:\n"
     "\n.. value-table::\n", storedOptions_.lpmethod_, lp_values_method);
 
-  AddSolverOption("alg:simplex simplex simplex_strategy",
+  AddHighsOption("alg:simplex simplex simplex_strategy",
     "Strategy for simplex solver :\n"
     "\n.. value-table::\n", "simplex_strategy", simplex_strategy_values_, 0);
 
-  AddSolverOption("alg:simplexscale simplexscale simplex_scale_strategy",
+  AddHighsOption("alg:simplexscale simplexscale simplex_scale_strategy",
     "Simplex scaling strategy :\n"
     "\n.. value-table::\n", "simplex_scale_strategy",
     simplex_scale_strategy_values_, 1);
 
-  AddSolverOption("alg:simplexcrash simplexcrash simplex_crash_strategy",
+  AddHighsOption("alg:simplexcrash simplexcrash simplex_crash_strategy",
     "Simplex crash strategy :\n"
     "\n.. value-table::\n", "simplex_crash_strategy",
     simplex_crash_strategy_values_, 0);
 
-  AddSolverOption("alg:simplexdualedge simplexdualedge simplex_dual_edge_weight_strategy",
+  AddHighsOption("alg:simplexdualedge simplexdualedge simplex_dual_edge_weight_strategy",
     "Simplex dual edge weights strategy :\n"
     "\n.. value-table::\n", "simplex_dual_edge_weight_strategy",
     simplex_edge_weight_strategy_values_, 1);
 
-  AddSolverOption("alg:simplexprimaledge simplexprimaledge simplex_primal_edge_weight_strategy",
+  AddHighsOption("alg:simplexprimaledge simplexprimaledge simplex_primal_edge_weight_strategy",
     "Simplex primal edge weights strategy :\n"
     "\n.. value-table::\n", "simplex_primal_edge_weight_strategy",
     simplex_edge_weight_strategy_values_, 1);
 
-  AddSolverOption("pre:solve presolve",
+  AddHighsOption("pre:solve presolve",
     "Whether to use presolve:\n"
     "\n.. value-table::\n",
     "presolve", off_on_choose_values, c);
 
 
 
-  AddSolverOption("pre:userobjectivescale user_objective_scale userobjectivescale",
-      "Exponent of power-of-two objective scaling for model (default 0).",
-      "user_objective_scale", 0, std::numeric_limits<HighsInt>::max());
+  AddHighsOption("pre:userobjectivescale user_objective_scale userobjectivescale",
+      "Exponent of power-of-two objective scaling for model (default 0; "
+      "negative exponents allowed).",
+      "user_objective_scale", std::numeric_limits<HighsInt>::min(),
+      std::numeric_limits<HighsInt>::max());
 
 
-  AddSolverOption("pre:userboundscale user_bound_scale userboundscale",
-    "Exponent of power-of-two bound scaling for model (default 0).",
-    "user_bound_scale", 0, std::numeric_limits<HighsInt>::max());
+  AddHighsOption("pre:userboundscale user_bound_scale userboundscale",
+    "Exponent of power-of-two bound scaling for model (default 0; "
+    "negative exponents allowed).",
+    "user_bound_scale", std::numeric_limits<HighsInt>::min(),
+    std::numeric_limits<HighsInt>::max());
 
-  AddSolverOption("alg:parallel parallel",
+  AddHighsOption("alg:parallel parallel",
     "Parallel option :\n"
     "\n.. value-table::\n", "parallel", off_on_choose_values, c);
 
-  AddSolverOption("lim:time timelim timelimit time_limit",
+  AddHighsOption("lim:time timelim timelimit time_limit",
     "Limit on solve time (in seconds; default: no limit).",
     "time_limit", 0.0, DBL_MAX);
 
-  AddSolverOption("lim:simplexiterationlimit simplexiterationlimit simplex_iteration_limit",
+  AddHighsOption("lim:simplexiterationlimit simplexiterationlimit simplex_iteration_limit",
     "Limit on simplex iterations (default: no limit).",
     "simplex_iteration_limit", 0, INT_MAX);
 
-  AddSolverOption("lim:ipmiterationlimit ipmiterationlimit ipm_iteration_limit",
+  AddHighsOption("lim:ipmiterationlimit ipmiterationlimit ipm_iteration_limit",
     "Limit on IPM iterations (default: no limit).",
     "ipm_iteration_limit", 0, INT_MAX);
 
-  AddSolverOption("lim:objectivebound objective_bound objectivebound",
+  AddHighsOption("lim:objectivebound objective_bound objectivebound",
     "Objective bound for termination of the dual simplex solver (default: no limit).",
-    "objective_bound", 0.0, DBL_MAX);
+    "objective_bound", -DBL_MAX, DBL_MAX);
 
 
-  AddSolverOption("lim:objectivetarget objective_target objectivetarget",
+  AddHighsOption("lim:objectivetarget objective_target objectivetarget",
     "Objective target for termination of the MIP solver (default: no limit).",
-    "objective_target", 0.0, DBL_MAX);
+    "objective_target", -DBL_MAX, DBL_MAX);
 
   /// Not in Highs 1.14:
-  // AddSolverOption("lim:pdlpnativetermination pdlp_native_termination pdlpnativetermination",
+  // AddHighsOption("lim:pdlpnativetermination pdlp_native_termination pdlpnativetermination",
   //   "Use native termination for PDLP solver:\n"
   //   "\n.. value-table::\n", "pdlp_native_termination", values_01_noyes_0default_, 0);
 
-  AddSolverOption("pre:pdlpscaling_mode pdlp_scaling_mode",
-      "Scaling mode for PDLP solver, sum of:\n"
-      "\n.. value-table::\n", "pdlp_scaling_mode", pdlp_scaling_mode_values, 1);
+  AddHighsOption("pre:pdlpscaling_mode pdlp_scaling_mode",
+      "Scaling mode for PDLP solver (default 5 = 1 + 4), sum of:\n"
+      "\n.. value-table::\n", "pdlp_scaling_mode", pdlp_scaling_mode_values, 5);
 
-  AddSolverOption("lim:pdlp_iteration_limit pdlpiterationlimit pdlp_iteration_limit",
+  AddHighsOption("lim:pdlp_iteration_limit pdlpiterationlimit pdlp_iteration_limit",
     "Iteration limit for PDLP solver (default: no limit).",
     "pdlp_iteration_limit", 0, INT_MAX);
 
-  AddSolverOption("alg:infinitecost infinitecost infinite_cost",
-    "Limit on cost coefficient : values larger than this will be treated as infinite (default: 1e20).",
+  AddHighsOption("alg:infinitecost infinitecost infinite_cost",
+    "Limit on |cost coefficient|: values greater than or equal to this "
+    "will be treated as infinite (default: 1e20).",
     "infinite_cost", 1e15, Infinity());
 
-  AddSolverOption("alg:infinitebound infinitebound infinite_bound",
-    "Limit on |constraint bound|: values larger than this will be treated as infinite (default: 1e20).",
+  AddHighsOption("alg:infinitebound infinitebound infinite_bound",
+    "Limit on |constraint bound|: values greater than or equal to this "
+    "will be treated as infinite (default: 1e20).",
     "infinite_bound", 1e15, Infinity());
 
-  AddSolverOption("alg:infinitecoeff infinitecoeff large_matrix_value",
-    "Upper limit on |matrix entries|: values larger than this will be treated as infinite (default: 1e15).",
+  AddHighsOption("alg:infinitecoeff infinitecoeff large_matrix_value",
+    "Upper limit on |matrix entries|: values greater than or equal to this "
+    "will be treated as infinite (default: 1e15).",
     "large_matrix_value", 1.0, Infinity());
 
-  AddSolverOption("alg:zerocoeff zerocoeff small_matrix_value",
-    "Lower limit on |matrix entries|: values smaller than this will be treated as zero (default: 1e-9).",
+  AddHighsOption("alg:zerocoeff zerocoeff small_matrix_value",
+    "Lower limit on |matrix entries|: values less than or equal to this "
+    "will be treated as zero (default: 1e-9).",
     "small_matrix_value", 1e-12, Infinity());
 
-  AddSolverOption("alg:feastol feastol primal_feasibility_tolerance",
+  AddHighsOption("alg:feastol feastol primal_feasibility_tolerance",
       "Primal feasibility tolerance (default 1e-7).",
       "primal_feasibility_tolerance", 1e-10, Infinity());
 
-  AddSolverOption("alg:kkt_tolerance kkttol kkt_tolerance",
-    "KKt tolerance (default 1e-7).",
+  AddHighsOption("alg:kkt_tolerance kkttol kkt_tolerance",
+    "KKT tolerance (default 1e-7). If changed from its default, "
+    "this tolerance is used for all feasibility and optimality (KKT) "
+    "measures, overriding the individual tolerances.",
     "kkt_tolerance", 1e-10, Infinity());
 
-  AddSolverOption("alg:dualfeastol dualfeastol dual_feasibility_tolerance",
+  AddHighsOption("alg:dualfeastol dualfeastol dual_feasibility_tolerance",
     "Dual feasibility tolerance (default 1e-7).",
     "dual_feasibility_tolerance", 1e-10, Infinity());
 
-  AddSolverOption("alg:dualrestol dualrestol dual_residual_tolerance",
+  AddHighsOption("alg:dualrestol dualrestol dual_residual_tolerance",
     "Dual residual tolerance (default 1e-7).",
     "dual_residual_tolerance", 1e-10, Infinity());
 
-  AddSolverOption("alg:ipmopttol ipmopttol ipm_optimality_tolerance",
+  AddHighsOption("alg:ipmopttol ipmopttol ipm_optimality_tolerance",
     "IPM optimality tolerance (default 1e-8).",
     "ipm_optimality_tolerance", 1e-12, Infinity());
 
-  AddSolverOption("pdlp:cupdlpc_restart_method pdlpcupdlpcrestartmethod pdlp_cupdlpc_restart_method",
+  AddHighsOption("pdlp:cupdlpc_restart_method pdlpcupdlpcrestartmethod pdlp_cupdlpc_restart_method",
     "Restart mode for PDLP solver:\n"
       "\n.. value-table::\n",
     "pdlp_cupdlpc_restart_method", pdlperestartmethod_values, 1);
 
-  AddSolverOption("pdlp:restart_strategy pdlprestartstrategy pdlp_restart_strategy",
+  AddHighsOption("pdlp:restart_strategy pdlprestartstrategy pdlp_restart_strategy",
       "Restart strategy for PDLP solver:\n"
       "\n.. value-table::\n",
       "pdlp_restart_strategy", pdlp_restart_strategy_values, 1);
 
-  AddSolverOption("pdlp:step_size_strategy pdlpstepsizestrategy pdlp_step_size_strategy ",
+  AddHighsOption("pdlp:step_size_strategy pdlpstepsizestrategy pdlp_step_size_strategy ",
       "Stepsize strategy for PDLP solver:\n"
       "\n.. value-table::\n",
       "pdlp_step_size_strategy", pdlp_step_size_strategy_values, 1);
 
-  AddSolverOption("pdlp:optimality_tolerance pdlp_optimality_tolerance pdlp_opt_tol pdlpopttol",
+  AddHighsOption("pdlp:optimality_tolerance pdlp_optimality_tolerance pdlp_opt_tol pdlpopttol",
     "PDLP optimality tolerance (default 1e-7).",
     "pdlp_optimality_tolerance", 1e-12, Infinity());
 
 
-  AddSolverOption("pdlp:ruiz_iterations pdlp_ruiz_iterations ",
+  AddHighsOption("pdlp:ruiz_iterations pdlp_ruiz_iterations ",
       "Number of Ruiz scaling iterations for PDLP solver (default 10).",
       "pdlp_ruiz_iterations", 0, INT_MAX);
 
-  AddSolverOption("lim:qp_iteration_limit qp_iteration_limit qpiterationlimit",
+  AddHighsOption("lim:qp_iteration_limit qp_iteration_limit qpiterationlimit",
       "Iteration limit for QP active set method (default: no limit).",
       "qp_iteration_limit", 0, INT_MAX);
 
-  AddSolverOption("qp:nullspace_limit qp_nullspace_limit qpnullspacelimit",
-      "Nullspace limit for the active set QP solver (default: 4000  ).",
+  AddHighsOption("qp:nullspace_limit qp_nullspace_limit qpnullspacelimit",
+      "Nullspace limit for the active set QP solver (default: 4000).",
       "qp_nullspace_limit", 0, INT_MAX);
 
-  AddSolverOption("qp:regularization_value qp_regularization_value qpregularizationvalue",
+  AddHighsOption("qp:regularization_value qp_regularization_value qpregularizationvalue",
       "Regularization value added to the Hessian in the active set QP solver (default: 1e-7).",
       "qp_regularization_value", 0.0, DBL_MAX);
 
-  AddSolverOption("bar:crossover crossover run_crossover",
-    "Run crossover after IPM to get a basic solution\n"
+  AddHighsOption("bar:crossover crossover run_crossover",
+    "Run crossover after IPM to get a basic solution:\n"
       "\n.. value-table::\n", "run_crossover", run_crossover_values, c);
 
-  AddSolverOption("bar:hipo_system hipo_system",
+  AddHighsOption("bar:hipo_system hipo_system",
       "Control which Newton/KKT system is used by HiPO:\n"
       "\n.. value-table::\n",  "hipo_system", hipo_system_values , c);
 
 
-  AddSolverOption("bar:hipo_parallel_type hipo_parallel_type",
+  AddHighsOption("bar:hipo_parallel_type hipo_parallel_type",
 	  "Control the type of parallelism used by HiPO:\n"
       "\n.. value-table::\n", "hipo_parallel_type", hipo_parallel_type_values, c);
 
-  AddSolverOption("bar:hipo_ordering hipo_ordering",
+  AddHighsOption("bar:hipo_ordering hipo_ordering",
 	  "Control the ordering used by HiPO before factorization:\n"
       "\n.. value-table::\n", "hipo_ordering", hipo_ordering_values, c);
 
-  AddSolverOption("tech:threads threads",
-    "How many threads to use when using the barrier algorithm "
-    "or solving MIP problems; default 0 ==> automatic choice.",
+  AddHighsOption("tech:threads threads",
+    "Maximum number of threads used by HiGHS (parallel simplex, "
+    "IPM and MIP); default 0 ==> automatic choice.",
     "threads", 0, INT32_MAX);
-  AddSolverOption("mip:detsimmetry detsimmetry mip_detect_symmetry",
-    "Whether symmetry should be detected (default 1)",
+  AddHighsOption("mip:detsimmetry detsimmetry mip_detect_symmetry",
+    "0/1*: Whether MIP symmetry should be detected.",
     "mip_detect_symmetry", 0, 1);
 
-  AddSolverOption("mip:lifting lifting mip_lifting_for_probing",
-    "Whether lifting for probing should be used (default -1)",
+  AddHighsOption("mip:lifting lifting mip_lifting_for_probing",
+    "Level of lifting for probing that is used (default -1).",
     "mip_lifting_for_probing", -1, INT_MAX);
 
-  AddSolverOption("lim:stallnodes stallnodelim stallnodelimit mip_max_stall_nodes",
+  AddHighsOption("lim:stallnodes stallnodelim stallnodelimit mip_max_stall_nodes",
     "Maximum MIP number of nodes where estimate is above cutoff bound (default: no limit).",
     "mip_max_stall_nodes", 0, INT_MAX);
 
-  AddSolverOption("lim:leavenodes leaveslim mip_max_leaves",
+  AddHighsOption("lim:leavenodes leaveslim mip_max_leaves",
     "Maximum MIP number of leaf nodes (default: no limit).",
     "mip_max_leaves", 0, INT_MAX);
 
-  AddSolverOption("lim:nodes nodelim nodelimit mip_max_nodes",
+  AddHighsOption("lim:nodes nodelim nodelimit mip_max_nodes",
     "Maximum MIP nodes to explore (default: no limit).",
     "mip_max_nodes", 0, INT_MAX);
 
-  AddSolverOption("lim:improvingsols improvingsolslimit mip_max_improving_sols",
+  AddHighsOption("lim:improvingsols improvingsolslimit mip_max_improving_sols",
     "Maximum number of improving solutions found (default: no limit).",
     "mip_max_improving_sols", 1, INT_MAX);
 
-  AddSolverOption("mip:lpagelimit lpagelimit mip_lp_age_limit",
+  AddHighsOption("mip:lpagelimit lpagelimit mip_lp_age_limit",
     "Maximal age of dynamic LP rows before they are removed from the LP relaxation "
-    "(default 10)",
-    "mip_lp_age_limit", 0, INT_MAX);
+    "(default 10, max 32767).",
+    "mip_lp_age_limit", 0, 32767);
 
   /*
   * mip_lp_solver
@@ -1013,83 +1034,85 @@ Default: "choose"
 ipm_optimality_tolera
   */
 
-  AddSolverOption("mip:lpsolver miplpsolver mip_lp_solver",
+  AddHighsOption("mip:lpsolver miplpsolver mip_lp_solver",
       "Choose the lp solver to be used during mip solves:\n"
       "\n.. value-table::\n", "mip_lp_solver", mip_lp_solver_values, c);
 
-  AddSolverOption("mip:ipmsolver mipipmsolver mip_ipm_solver",
+  AddHighsOption("mip:ipmsolver mipipmsolver mip_ipm_solver",
       "Choose the ipm solver to be used during mip solves:\n"
       "\n.. value-table::\n", "mip_ipm_solver", mip_ipm_solver_values, c);
 
 
 
-  AddSolverOption("mip:poolsoftlimit poolsoftlimit mip_pool_soft_limit",
-    "Soft limit on the number of rows in the cutpool for dynamic age adjustment"
-    "(default 10000)",
+  AddHighsOption("mip:poolsoftlimit poolsoftlimit mip_pool_soft_limit",
+    "Soft limit on the number of rows in the cutpool for dynamic age adjustment "
+    "(default 10000).",
     "mip_pool_soft_limit", 1, INT_MAX);
 
-  AddSolverOption("mip:pscostreliability pscostreliability mip_pscost_minreliable",
-    "Minimal number of observations before pseudo costs are considered reliable"
-    "(default 8)",
+  AddHighsOption("mip:pscostreliability pscostreliability mip_pscost_minreliable",
+    "Minimal number of observations before pseudo costs are considered reliable "
+    "(default 8).",
     "mip_pscost_minreliable", 0, INT_MAX);
 
-  AddSolverOption("mip:mincliquetable mincliquetable mip_min_cliquetable_entries_for_parallelism",
-    "Minimal number of entries in the cliquetable before neighborhood queries of the conflict graph use parallel processing"
-    "(default 100000)",
+  AddHighsOption("mip:mincliquetable mincliquetable mip_min_cliquetable_entries_for_parallelism",
+    "Minimal number of entries in the cliquetable before neighborhood queries "
+    "of the conflict graph use parallel processing (default 100000).",
     "mip_min_cliquetable_entries_for_parallelism", 0, INT_MAX);
 
-  AddSolverOption("tech:miploglev miploglev mip_report_level",
+  AddHighsOption("tech:miploglev miploglev mip_report_level",
     "0/1*/2: MIP solver report level",
     "mip_report_level", 0, 2);
 
-  AddSolverOption("tech:seed seed random_seed",
+  AddHighsOption("tech:seed seed random_seed",
     "Random number seed (default 0), affecting perturbations that "
     "may influence the solution path.",
     "random_seed", 0, INT_MAX);
 
-  AddSolverOption("mip:intfeastol intfeastol inttol mip_feasibility_tolerance",
+  AddHighsOption("mip:intfeastol intfeastol inttol mip_feasibility_tolerance",
     "Feasibility tolerance for integer variables (default 1e-06).",
     "mip_feasibility_tolerance", 1e-10, Infinity());
 
-  AddSolverOption("mip:heureff heureff mip_heuristic_effort",
+  AddHighsOption("mip:heureff heureff mip_heuristic_effort",
     "Fraction of time to spend in MIP heuristics (default 0.05).",
     "mip_heuristic_effort", 0.0, 1.0);
 
-  AddSolverOption("mip:gap mipgap mip:relgaptol relgaptol mip_rel_gap",
+  AddHighsOption("mip:gap mipgap mip:relgaptol relgaptol mip_rel_gap",
     "Tolerance on relative gap, | ub - lb|/|ub | , to determine whether optimality has been reached for a MIP instance "
     "(default 1e-04).",
     "mip_rel_gap", 0.0, Infinity());
 
-  AddSolverOption("mip:gapabs mipgapabs mip:absgaptol absgaptol mip_abs_gap",
+  AddHighsOption("mip:gapabs mipgapabs mip:absgaptol absgaptol mip_abs_gap",
     "Tolerance on absolute gap of MIP, |ub-lb|, to determine whether optimality has been reached for a MIP instance "
     "(default 1e-06).",
     "mip_abs_gap", 0.0, Infinity());
 
-  AddSolverOption("pre:centring run_centring centring",
+  AddHighsOption("pre:centring run_centring centring",
     "Perform centring steps or not:\n"
     "\n.. value-table::\n", "run_centring", values_01_noyes_0default_, 0);
 
-  AddSolverOption("pre:maxcentringsteps max_centring_steps maxcentringsteps",
+  AddHighsOption("pre:maxcentringsteps max_centring_steps maxcentringsteps",
     "Maximum number of steps to use when computing the analytic centre "
     "(default 5).",
     "max_centring_steps", 0, INT_MAX);
 
-  AddSolverOption("pre:centringratiotolerance centring_ratio_tolerance centringratiotolerance",
+  AddHighsOption("pre:centringratiotolerance centring_ratio_tolerance centringratiotolerance",
     "Centring stops when the ratio max(x_j*s_j) / min(x_j*s_j) is below "
     "this tolerance (default 100).",
     "centring_ratio_tolerance", 0.0, DBL_MAX);
 
-  AddSolverOption("obj:blend blend_multi_objectives",
+  AddHighsOption("obj:blend blend_multi_objectives",
     "Whether to blend multiple objectives or apply lexicographical ordering",
     "blend_multi_objectives", values_01_noyes_1default_, 1
   );
 
-  AddSolverOption("iis:strategy iis_strategy iisstrategy",
-      "Strategy for IIS calculation (sum of):\n"
-      "\n.. value-table::\n",
+  AddHighsOption("iis:strategy iis_strategy iisstrategy",
+      "Strategy for IIS calculation (default 0), sum of:\n"
+      "\n.. value-table::\n"
+      "\nHiGHS presets: 6 = true IIS with row priority, "
+      "14 = true IIS with column priority.",
 	  "iis_strategy", iis_strategy_values, 0);
 
-  AddSolverOption("lim:iis_time_limit iis_time_limit iistimelimit",
+  AddHighsOption("lim:iis_time_limit iis_time_limit iistimelimit",
 	  "Time limit for computing IIS (default: no limit).",
 	  "iis_time_limit", 0.0, DBL_MAX);
 }
