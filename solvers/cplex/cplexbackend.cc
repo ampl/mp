@@ -1187,6 +1187,11 @@ void CplexBackend::InputCPLEXExtras() {
     if (storedOptions_.poolIntensity_ < 0) storedOptions_.poolIntensity_ = poolIntensity;
   }
   CplexPlayObjNParams();
+  if (!storedOptions_.readBasis_.empty()) {
+    if (int e = CPXreadcopybase(env(), lp(), storedOptions_.readBasis_.c_str()))
+      MP_RAISE(fmt::format("Could not read the starting basis from \"{}\" "
+                           "(CPLEX error {})", storedOptions_.readBasis_, e));
+  }
   SetSolverOption(CPX_PARAM_SOLNPOOLINTENSITY, storedOptions_.poolIntensity_ < 0 ? 0 :
                                                    storedOptions_.poolIntensity_);
 }
@@ -2974,6 +2979,11 @@ void CplexBackend::InitCustomOptions() {
   AddToOptionDescription("tech:writemodel",
     "Cplex-specific file name extensions are \".sav\", \".mps\", "
     "\".lp\", \".rmp\",  \".rew\", \".rlp\"");
+
+  AddStoredOption("alg:readbasis readbasis startbasis",
+    "BAS file containing the starting basis. It is read after any "
+    "incoming .sstatus basis (see alg:basis) and overrides it.",
+    storedOptions_.readBasis_);
 
   AddStoredOption("tech:endbasis writebas endbasis",
     "Write the final basis to the specified file (in BAS format).",

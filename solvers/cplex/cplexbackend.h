@@ -288,6 +288,7 @@ private:
     std::string logFile_;
     std::string cpuMask_;
     std::string endBasis_;
+    std::string readBasis_;
     std::string mipStart_;
 
     std::string workDir_ = "";
