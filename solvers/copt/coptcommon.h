@@ -62,6 +62,10 @@ public:
   void CheckParamRange(const char* key, int value) const;
   void CheckParamRange(const char* key, double value) const;
 
+  /// Set a parameter given as "Name value" or "Name=value",
+  /// resolving its type via COPT_Get{Int,Dbl}ParamDef()
+  void SetNativeParam(const std::string& name_value);
+
   static constexpr double Infinity() { return COPT_INFINITY; }
   static constexpr double MinusInfinity() { return -COPT_INFINITY; }
 

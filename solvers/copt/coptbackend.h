@@ -2,6 +2,7 @@
 #define MP_COPT_BACKEND_H_
 
 #include <string>
+#include <list>
 
 #include "mp/backend-mip.h"
 #include "mp/flat/backend_flat.h"
@@ -225,6 +226,8 @@ protected:
 private:
   struct Options {
     std::string logFile_;
+    std::string paramRead_, paramWrite_;
+    std::list<std::string> inlineParams_;
     int mempeak_ = 0;
     int numericalStats_ = 0;;
 

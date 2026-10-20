@@ -610,6 +610,14 @@ void CoptBackend::FinishOptionParsing() {
     COPT_CCALL(COPT_SetLogFile(lp(), storedOptions_.logFile_.data()));
   }
   set_verbose_mode(v>0);
+
+  /// Native parameters: file, then inline settings, then write
+  if (!storedOptions_.paramRead_.empty())
+    COPT_CCALL(COPT_ReadParam(lp(), storedOptions_.paramRead_.c_str()));
+  for (const auto& prm: storedOptions_.inlineParams_)
+    SetNativeParam(prm);
+  if (!storedOptions_.paramWrite_.empty())
+    COPT_CCALL(COPT_WriteParam(lp(), storedOptions_.paramWrite_.c_str()));
 }
 
 
@@ -781,6 +789,28 @@ void CoptBackend::InitCustomOptions() {
 
   AddStoredOption("tech:logfile logfile",
     "Log file name.", storedOptions_.logFile_);
+
+  AddListOption("tech:optionnative optionnative optnative tech:param param",
+    "General way to specify values of both documented and "
+    "undocumented COPT parameters; value should be a quoted "
+    "string (delimited by ' or \") containing a parameter name, a "
+    "space (or '='), and the value to be assigned to the parameter, "
+    "for example \"RelGap 0.01\".  Can appear more than once. "
+    "Cannot be used to query current parameter values.",
+    storedOptions_.inlineParams_);
+
+  AddStoredOption("tech:optionnativeread optionnativeread tech:param:read param:read",
+    "Name of a COPT parameter file to read (surrounded by 'single' or "
+    "\"double\" quotes if the name contains blanks). Each nonempty "
+    "line contains a parameter name and its value separated by blanks, "
+    "as written by tech:optionnativewrite.",
+    storedOptions_.paramRead_);
+
+  AddStoredOption("tech:optionnativewrite optionnativewrite tech:param:write param:write",
+    "Name of a COPT parameter file (surrounded by 'single' or \"double\" "
+    "quotes if the name contains blanks) to be written with the "
+    "parameters that differ from their defaults.",
+    storedOptions_.paramWrite_);
 
   AddStoredOption("tech:mempeak mempeak",
       "Return the peak memory used by the solver in the problem suffix "
