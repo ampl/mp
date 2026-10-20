@@ -502,8 +502,8 @@
       "k": 2,
       "y": 0.25,
       "demand": 3,
-      "solve_result_num": 400,
-      "Initial.node_count": 1,
+      "solve_result_num": 404,
+      "Initial.node_count": 0,
       "cost.bestbound": {
         "max": 0
       },

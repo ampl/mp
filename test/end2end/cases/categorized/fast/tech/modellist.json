@@ -193,5 +193,53 @@
       "solve_exitcode":   0,
       "solve_message": { "contains": "lim:maxsol=0" }
     }
+  },
+  {
+    "name" : "diet MOSEK LP options",
+    "tags" : ["linear", "continuous"],
+    "files" : ["diet.mod", "diet.dat"],
+    "comment": "Simplex, barrier and tolerance options of MOSEK 11.2 with their MP-style names; writes mosek_out.par",
+    "options": { "mosek_options": "alg:method=1 alg:feastol=1e-8 alg:dualfeastol=1e-8 lp:primalselection=4 lp:dualselection=3 lp:hotstart=1 lp:degen=1 lp:solveform=0 bar:iterlim=100 bar:pfeastol=1e-9 bar:dfeastol=1e-9 bar:relgaptol=1e-9 bar:order=0 pre:lindep=1 pre:solve=1 lim:iter=100000 tech:threads=1 tech:lpseed=7 param:write=mosek_out.par" },
+    "solvers": ["mosek"],
+    "objective": 88.2,
+    "values": {
+      "solve_result_num": 0
+    }
+  },
+  {
+    "name" : "knap_40 MOSEK MIP options",
+    "tags" : ["linear", "integer"],
+    "files" : ["knap_40.mod"],
+    "comment": "MIP options of MOSEK 11.2 with their MP-style names",
+    "options": { "mosek_options": "mip:gap=1e-6 mip:gapabs=0 mip:inttol=1e-7 mip:symmetry=0 mip:cuts=1 cut:gomory=0 cut:cover=1 mip:nodeselect=2 mip:branchdir=0 mip:probing=1 mip:rootmethod=1 mip:nodemethod=1 mip:restarts=0 mip:rootcutrounds=10 lim:nodes=10000 lim:sol=100 lim:miptime=100 tech:seed=7" },
+    "solvers": ["mosek"],
+    "objective": 1044,
+    "values": {
+      "solve_result_num": 0
+    }
+  },
+  {
+    "name" : "knap_40 MOSEK node limit",
+    "tags" : ["linear", "integer"],
+    "files" : ["knap_40.mod"],
+    "comment": "A branch limit reports the node-limit result code with the feasible solution",
+    "options": { "mosek_options": "lim:nodes=0 mip:heurlevel=0" },
+    "solvers": ["mosek"],
+    "values": {
+      "solve_result_num": 404
+    }
+  },
+  {
+    "name" : "Check_Rejected_Param_Value MOSEK",
+    "tags" : ["linear", "continuous"],
+    "files" : ["diet.mod", "diet.dat"],
+    "comment": "Value outside the MOSEK parameter range: abort before solving, the message names the AMPL option",
+    "options": { "mosek_options": "alg:method=9" },
+    "solvers": ["mosek"],
+    "values": {
+      "solve_result_num": 500,
+      "solve_exitcode":   0,
+      "solve_message": { "contains": "alg:method" }
+    }
   }
 ]
