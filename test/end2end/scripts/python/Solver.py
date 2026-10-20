@@ -942,7 +942,9 @@ class XpressSolver(AMPLSolver):
         return "" if method == "SIMPLEX" else "barrier"
 
     def _setTimeLimit(self, seconds):
-        return "maxtime={}".format(seconds)
+        # The ASL driver's maxtime is an integer keyword; "maxtime=5.0"
+        # leaves ".0" as an unknown keyword and aborts the solve
+        return "maxtime={}".format(int(seconds))
 
     def setLogFile(self, name):
         return f"logfile=\"{name}\""
