@@ -378,10 +378,10 @@
     }
   },
   {
-    "name" : "obj_abs_02 obj:no=2",
+    "name" : "obj_abs_02 objno=2",
     "tags" : ["linear", "integer"],
     "options": {
-      "ANYSOLVER_options": "obj:no=2"
+      "ANYSOLVER_options": "objno=2"
     },
     "objective": 13
   },

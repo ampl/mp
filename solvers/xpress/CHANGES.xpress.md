@@ -3,6 +3,29 @@ Summary of recent updates to Xpress for AMPL
 
 
 ## unreleased
+- Options generated from the Xpress parameter database are named after
+  the control with MP prefixes (e.g. *mip:backtrack*, *lp:autoperturb*,
+  *bar:algaftercrossover*, *slp:algorithm*) instead of *<topic>:xprs_<name>*;
+  the control name (*backtrack*) and *XPRS_<NAME>* are synonyms, and the
+  ASL driver's keywords (*treeoutlev*, *mipops*, *heurroot*, ...) are
+  accepted. The headers are regenerated from the SDK database at build
+  time when it is available, with the control types verified against
+  the SDK headers.
+- The vendor documentation is used for every option in the database;
+  wrong defaults in the driver's own texts are gone.
+- *qp:nonconvex* is deprecated: the convexity check is *qp:convexitychk*
+  (*convexitychk*, IFCHECKCONVEXITY). *tech:globalfilemax* and
+  *tech:globalfileloginterval* are synonyms of *lim:maxtreefilesize* and
+  *mip:treefileloginterval*. *bar:cachesize*, *bar:l1cache* and
+  *tech:sleeponthreadwait* are ignored by Xpress.
+- *heurdepth* now sets HEURDEPTH as in the ASL driver (it was a synonym
+  of *lim:heurdiveiterlimit*); *heurfreq* is no longer ambiguous.
+- Solution pool option *sol:pooldups* (duplicate policy) is set on the
+  pool object and works; *obj:multi:ops* and *obj:multi:log* added.
+- New *tech:optionnative* (*tech:param*, *param*): any Xpress control by
+  name, "NAME=value" or "NAME=?"; *alg:readbasis* (*basisin*): starting
+  basis from a .bas file. Rows are now named in the Xpress model, so
+  basis files written with *tech:writesolution* can be read back.
 - Add separate fixed-model limits *mip:basis:timelimit* and
   *mip:basis:iterlimit*.
 - Retain the MIP solution when a supplementary fixed solve reaches a limit.
