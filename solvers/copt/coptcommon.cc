@@ -60,7 +60,26 @@ void CoptCommon::GetSolverOption(const char* key, int &value) const {
   COPT_CCALL( COPT_GetIntParam(lp(), key, &value) );
 }
 
+void CoptCommon::CheckParamRange(const char* key, int value) const {
+  int lo, hi;
+  if (COPT_GetIntParamMin(lp(), key, &lo) || COPT_GetIntParamMax(lp(), key, &hi))
+    return;                      // unknown parameter: let the setter report
+  if (value < lo || value > hi)
+    MP_RAISE(fmt::format("Rejecting {}={}; must be between {} and {}",
+                         key, value, lo, hi));
+}
+
+void CoptCommon::CheckParamRange(const char* key, double value) const {
+  double lo, hi;
+  if (COPT_GetDblParamMin(lp(), key, &lo) || COPT_GetDblParamMax(lp(), key, &hi))
+    return;
+  if (value < lo || value > hi)
+    MP_RAISE(fmt::format("Rejecting {}={}; must be between {} and {}",
+                         key, value, lo, hi));
+}
+
 void CoptCommon::SetSolverOption(const char* key, int value) {
+  CheckParamRange(key, value);
   if (current_objective_options() == -1)
     COPT_CCALL(COPT_SetIntParam(lp(), key, value));
   else
@@ -72,6 +91,7 @@ void CoptCommon::GetSolverOption(const char* key, double &value) const {
 }
 
 void CoptCommon::SetSolverOption(const char* key, double value) {
+    CheckParamRange(key, value);
     if (current_objective_options() == -1)
         COPT_CCALL(COPT_SetDblParam(lp(), key, value));
     else

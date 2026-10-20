@@ -56,6 +56,12 @@ public:
   void GetSolverOption(const char* key, std::string& value) const;
   void SetSolverOption(const char* key, const std::string& value);
 
+  /// Raise "Rejecting <param>=<value>; must be between L and U"
+  /// when the value is outside the parameter's range.
+  /// COPT itself would silently clamp the value.
+  void CheckParamRange(const char* key, int value) const;
+  void CheckParamRange(const char* key, double value) const;
+
   static constexpr double Infinity() { return COPT_INFINITY; }
   static constexpr double MinusInfinity() { return -COPT_INFINITY; }
 
