@@ -2,6 +2,7 @@
 #define MP_SCIP_BACKEND_H_
 
 #include <string>
+#include <utility>
 
 #include "mp/backend-mip.h"
 #include "mp/flat/backend_flat.h"
@@ -166,6 +167,19 @@ protected:
 
 
 private:
+  /// Register a SCIP parameter as an AMPL option and remember
+  /// the AMPL name for rejection messages
+  template <class... Args>
+  void AddScipOption(const char* names, const char* descr,
+                     const char* key, Args&&... args) {
+    RecordOptionName(key, PrimaryName(names));
+    AddSolverOption(names, descr, key, std::forward<Args>(args)...);
+  }
+  static std::string PrimaryName(const char* names) {
+    std::string s(names);
+    return s.substr(0, s.find(' '));
+  }
+
   /// These options are stored in the class
   struct Options {
     std::string logFile_, paramRead_;

@@ -122,64 +122,150 @@ int ScipCommon::NumIndicatorCons() const {
   return count;
 }
 
+SCIP_PARAM* ScipCommon::Param(const char* key) const {
+  auto* param = SCIPgetParam(getSCIP(), key);
+  if (!param)
+    throw std::runtime_error(
+        fmt::format("Unknown SCIP parameter '{}'", key));
+  return param;
+}
+
+SCIP_PARAMTYPE ScipCommon::ParamType(const char* key) const {
+  return SCIPparamGetType(Param(key));
+}
+
+std::string ScipCommon::AmplOptionName(const char* key) const {
+  auto it = optNames_.find(key);
+  return it == optNames_.end() ? std::string(key) : it->second;
+}
+
+/// Valid values of a SCIP parameter, for the rejection message
+static std::string ParamRange(SCIP_PARAM* param) {
+  switch (SCIPparamGetType(param)) {
+  case SCIP_PARAMTYPE_BOOL:
+    return "0 or 1";
+  case SCIP_PARAMTYPE_INT:
+    return fmt::format("in [{}, {}]",
+                       SCIPparamGetIntMin(param), SCIPparamGetIntMax(param));
+  case SCIP_PARAMTYPE_LONGINT:
+    return fmt::format("in [{}, {}]",
+                       SCIPparamGetLongintMin(param), SCIPparamGetLongintMax(param));
+  case SCIP_PARAMTYPE_REAL:
+    return fmt::format("in [{}, {}]",
+                       SCIPparamGetRealMin(param), SCIPparamGetRealMax(param));
+  case SCIP_PARAMTYPE_CHAR:
+    if (auto* allowed = SCIPparamGetCharAllowedValues(param))
+      return fmt::format("one of '{}'", allowed);
+    return "a single character";
+  default:
+    return "a string";
+  }
+}
+
+void ScipCommon::CheckOptionSet(SCIP_RETCODE code, const char* key,
+                                const std::string& value) const {
+  if (SCIP_OKAY == code)
+    return;
+  throw std::runtime_error(fmt::format(
+      "Rejecting {}={} (SCIP parameter '{}'); the value must be {}",
+      AmplOptionName(key), value, key, ParamRange(Param(key))));
+}
+
 void ScipCommon::GetSolverOption(const char* key, int &value) const {
-  if (SCIPparamGetType(SCIPgetParam(getSCIP(), key))==SCIP_PARAMTYPE_BOOL) {
+  switch (ParamType(key)) {
+  case SCIP_PARAMTYPE_BOOL: {
     SCIP_Bool buffer;
     SCIP_CCALL( SCIPgetBoolParam(getSCIP(), key, &buffer) );
     value = (int)buffer;
+    break;
   }
-  else if (SCIPparamGetType(SCIPgetParam(getSCIP(), key))==SCIP_PARAMTYPE_LONGINT) {
+  case SCIP_PARAMTYPE_LONGINT: {
     SCIP_Longint buffer;
     SCIP_CCALL( SCIPgetLongintParam(getSCIP(), key, &buffer) );
     MP_ASSERT_ALWAYS(buffer >= INT_MIN && buffer <= INT_MAX,
                      fmt::format("Cannot represent {} as int", buffer));
     value = (int)buffer;
+    break;
   }
-  else
+  default:
     SCIP_CCALL( SCIPgetIntParam(getSCIP(), key, &value) );
+  }
 }
 
 void ScipCommon::SetSolverOption(const char* key, int value) {
-  if (SCIPparamGetType(SCIPgetParam(getSCIP(), key))==SCIP_PARAMTYPE_BOOL)
-    SCIP_CCALL( SCIPsetBoolParam(getSCIP(), key, value) );
-  else if (SCIPparamGetType(SCIPgetParam(getSCIP(), key))==SCIP_PARAMTYPE_LONGINT)
-    SCIP_CCALL( SCIPsetLongintParam(getSCIP(), key, value) );
-  else
-    SCIP_CCALL( SCIPsetIntParam(getSCIP(), key, value) );
+  SCIP_RETCODE code;
+  switch (ParamType(key)) {
+  case SCIP_PARAMTYPE_BOOL:
+    code = SCIPsetBoolParam(getSCIP(), key, value);
+    break;
+  case SCIP_PARAMTYPE_LONGINT:
+    code = SCIPsetLongintParam(getSCIP(), key, value);
+    break;
+  default:
+    code = SCIPsetIntParam(getSCIP(), key, value);
+  }
+  CheckOptionSet(code, key, std::to_string(value));
 }
 
 void ScipCommon::GetSolverOption(const char* key, SCIP_Longint &value) const {
-	SCIP_CCALL( SCIPgetLongintParam(getSCIP(), key, &value) );
+  SCIP_CCALL( SCIPgetLongintParam(getSCIP(), key, &value) );
 }
 
 void ScipCommon::SetSolverOption(const char* key, SCIP_Longint value) {
-	SCIP_CCALL( SCIPsetLongintParam(getSCIP(), key, value) );
+  CheckOptionSet(SCIPsetLongintParam(getSCIP(), key, value),
+                 key, std::to_string(value));
 }
 
 void ScipCommon::GetSolverOption(const char* key, double &value) const {
-	SCIP_CCALL( SCIPgetRealParam(getSCIP(), key, &value) );
+  SCIP_CCALL( SCIPgetRealParam(getSCIP(), key, &value) );
 }
 
 void ScipCommon::SetSolverOption(const char* key, double value) {
-	SCIP_CCALL( SCIPsetRealParam(getSCIP(), key, value) );
+  CheckOptionSet(SCIPsetRealParam(getSCIP(), key, value),
+                 key, fmt::format("{}", value));
 }
 
 void ScipCommon::GetSolverOption(const char* key, std::string &value) const {
-  char* buffer;
-  SCIP_CCALL( SCIPallocBufferArray(getSCIP(), &buffer, SCIP_MAXSTRLEN) );
-  if (SCIPparamGetType(SCIPgetParam(getSCIP(), key))==SCIP_PARAMTYPE_CHAR)
-    SCIP_CCALL( SCIPgetCharParam(getSCIP(), key, buffer) );
-  else
-    SCIP_CCALL( SCIPgetStringParam(getSCIP(), key, &buffer) );
-  value = buffer;
-  SCIPfreeBufferArray(getSCIP(), &buffer);
+  if (SCIP_PARAMTYPE_CHAR == ParamType(key)) {
+    char buffer = 0;
+    SCIP_CCALL( SCIPgetCharParam(getSCIP(), key, &buffer) );
+    value.assign(1, buffer);
+  } else {
+    char* internal = nullptr;        // SCIP's own storage, not to be freed
+    SCIP_CCALL( SCIPgetStringParam(getSCIP(), key, &internal) );
+    value = internal ? internal : "";
+  }
 }
 
 void ScipCommon::SetSolverOption(const char* key, const std::string& value) {
-  if (SCIPparamGetType(SCIPgetParam(getSCIP(), key))==SCIP_PARAMTYPE_CHAR)
-    SCIP_CCALL( SCIPsetCharParam(getSCIP(), key, value.c_str()[0]) );
+  SCIP_RETCODE code;
+  if (SCIP_PARAMTYPE_CHAR == ParamType(key))
+    code = value.size() == 1
+        ? SCIPsetCharParam(getSCIP(), key, value[0])
+        : SCIP_PARAMETERWRONGVAL;
   else
-    SCIP_CCALL( SCIPsetStringParam(getSCIP(), key, value.c_str()) );
+    code = SCIPsetStringParam(getSCIP(), key, value.c_str());
+  CheckOptionSet(code, key, value);
+}
+
+/// Set a parameter of any type from its textual value
+/// (tech:optionnative, parameter files)
+void ScipCommon::SetNativeParam(const std::string& name,
+                                const std::string& value) {
+  switch (ParamType(name.c_str())) {
+  case SCIP_PARAMTYPE_BOOL:
+  case SCIP_PARAMTYPE_INT:
+    SetSolverOption(name.c_str(), std::stoi(value));
+    break;
+  case SCIP_PARAMTYPE_LONGINT:
+    SetSolverOption(name.c_str(), (SCIP_Longint)std::stoll(value));
+    break;
+  case SCIP_PARAMTYPE_REAL:
+    SetSolverOption(name.c_str(), std::stod(value));
+    break;
+  default:
+    SetSolverOption(name.c_str(), value);
+  }
 }
 
 

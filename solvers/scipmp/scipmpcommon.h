@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include <map>
 
 #include "mp/backend-to-model-api.h"
 
@@ -50,15 +51,30 @@ private:
 class ScipCommon :
     public Backend2ModelAPIConnector<ScipCommonInfo> {
 public:
-  /// These methods access Scip options. Used by AddSolverOption()
-	void GetSolverOption(const char* key, int& value) const;
-	void SetSolverOption(const char* key, int value);
-	void GetSolverOption(const char* key, SCIP_Longint& value) const;
-	void SetSolverOption(const char* key, SCIP_Longint value);
-	void GetSolverOption(const char* key, double& value) const;
+  /// These methods access Scip options. Used by AddSolverOption().
+  /// A value rejected by SCIP raises with the AMPL option name
+  /// and the valid range.
+  void GetSolverOption(const char* key, int& value) const;
+  void SetSolverOption(const char* key, int value);
+  void GetSolverOption(const char* key, SCIP_Longint& value) const;
+  void SetSolverOption(const char* key, SCIP_Longint value);
+  void GetSolverOption(const char* key, double& value) const;
   void SetSolverOption(const char* key, double value);
   void GetSolverOption(const char* key, std::string& value) const;
   void SetSolverOption(const char* key, const std::string& value);
+
+  /// Set a parameter of any type from its textual value
+  void SetNativeParam(const std::string& name, const std::string& value);
+
+  /// Remember the AMPL option name of a SCIP parameter (for messages)
+  void RecordOptionName(const char* key, const std::string& ampl_name)
+  { optNames_[key] = ampl_name; }
+  /// The AMPL option name recorded for a SCIP parameter, or the key
+  std::string AmplOptionName(const char* key) const;
+
+  /// The SCIP parameter record; raises for an unknown key
+  SCIP_PARAM* Param(const char* key) const;
+  SCIP_PARAMTYPE ParamType(const char* key) const;
 
   /// SCIP own infinity
   double Infinity() const;
@@ -70,12 +86,19 @@ protected:
   void OpenSolver();
   void CloseSolver();
 
+  /// Raise on a failed parameter set
+  void CheckOptionSet(SCIP_RETCODE code, const char* key,
+                      const std::string& value) const;
+
   int NumLinCons() const;
   int NumVars() const;
   int NumObjs() const;
   int NumQPCons() const;
   int NumSOSCons() const;
   int NumIndicatorCons() const;
+
+private:
+  std::map<std::string, std::string> optNames_;
 };
 
 

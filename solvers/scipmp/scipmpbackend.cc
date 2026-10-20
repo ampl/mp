@@ -451,7 +451,7 @@ void ScipBackend::InitCustomOptions() {
     "0*/1: Whether to write SCIP log lines (chatter) to stdout and to file.",
     storedOptions_.outlev_);
 
-  AddSolverOption("tech:outlev-native outlev-native",
+  AddScipOption("tech:outlev-native outlev-native",
     "0*/1/2/3/4/5: Whether to write SCIP log lines (chatter) to stdout and to file (native output level of SCIP).",
     "display/verblevel", 0, 5);
 
@@ -464,11 +464,11 @@ void ScipBackend::InitCustomOptions() {
     "The suffix on a parameter file should be .set.\n",
     storedOptions_.paramRead_);
 
-  AddSolverOption("alg:method method lpmethod",
+  AddScipOption("alg:method method lpmethod",
     "LP algorithm for solving initial LP relaxations:\n"
     "\n.. value-table::\n", "lp/initalgorithm", lp_values_method, "s");
 
-  AddSolverOption("alg:remethod remethod relpmethod",
+  AddScipOption("alg:remethod remethod relpmethod",
     "LP algorithm for resolving LP relaxations if a starting basis exists:\n"
     "\n.. value-table::\n", "lp/resolvealgorithm", lp_values_method, "s");
 
@@ -480,7 +480,7 @@ void ScipBackend::InitCustomOptions() {
     storedOptions_.concurrent_, 0, 1);
 
   /////////////////////// BRANCHING ///////////////////////
-  AddSolverOption("branch:preferbinary preferbinary",
+  AddScipOption("branch:preferbinary preferbinary",
     "0/1: whether branching on binary variables should be preferred"
     "\n"
     "  | 0 - Binary variables should not be preferred on branching (default)\n"
@@ -488,68 +488,68 @@ void ScipBackend::InitCustomOptions() {
     "branching/preferbinary", 0, 1);
 
   //////////////////////// CUTS //////////////////////////
-  AddSolverOption("cut:dircutoffdistweight dircutoffdistweight",
+  AddScipOption("cut:dircutoffdistweight dircutoffdistweight",
     "Weight of directed cutoff distance in cut score calculation (default: 0.0)",
     "cutselection/hybrid/dircutoffdistweight", 0.0, SCIP_REAL_MAX);
 
-  AddSolverOption("cut:efficacyweight efficacyweight",
+  AddScipOption("cut:efficacyweight efficacyweight",
     "Weight of efficacy in cut score calculation (default: 1.0)",
     "cutselection/hybrid/efficacyweight", 0.0, SCIP_REAL_MAX);
 
-  AddSolverOption("cut:intsupportweight intsupportweight",
+  AddScipOption("cut:intsupportweight intsupportweight",
     "Weight of integral support in cut score calculation (default: 0.1)",
     "cutselection/hybrid/intsupportweight", 0.0, SCIP_REAL_MAX);
 
-  AddSolverOption("cut:minortho minortho",
+  AddScipOption("cut:minortho minortho",
     "Minimal orthogonality for a cut to enter the LP (default: 0.9)",
     "cutselection/hybrid/minortho", 0.0, SCIP_REAL_MAX);
 
-  AddSolverOption("cut:minorthoroot minorthoroot",
+  AddScipOption("cut:minorthoroot minorthoroot",
     "Minimal orthogonality for a cut to enter the LP in the root node (default: 0.1)",
     "cutselection/hybrid/minorthoroot", 0.0, SCIP_REAL_MAX);
 
-  AddSolverOption("cut:objparalweight objparalweight",
+  AddScipOption("cut:objparalweight objparalweight",
     "Weight of objective parallelism in cut score calculation (default: 0.1)",
     "cutselection/hybrid/objparalweight", 0.0, SCIP_REAL_MAX);
 
 
-  AddSolverOption("cut:maxcuts maxcuts",
+  AddScipOption("cut:maxcuts maxcuts",
     "Maximal number of cuts separated per separation round (0: disable local separation; default: 100)",
     "separating/maxcuts", 0, INT_MAX);
 
-  AddSolverOption("cut:maxcutsroot maxcutsroot",
+  AddScipOption("cut:maxcutsroot maxcutsroot",
     "Maximal number of separated cuts at the root node (0: disable root node separation; default: 5000)",
     "separating/maxcutsroot", 0, INT_MAX);
 
-  AddSolverOption("cut:maxrounds",
+  AddScipOption("cut:maxrounds",
     "Maximal number of separation rounds per node (default: -1: unlimited)",
     "separating/maxrounds", -1, INT_MAX);
 
-  AddSolverOption("cut:maxroundsroot",
+  AddScipOption("cut:maxroundsroot",
     "Maximal number of separation rounds in the root node (default: -1: unlimited)",
     "separating/maxroundsroot", -1, INT_MAX);
 
-  AddSolverOption("cut:maxstallrounds",
+  AddScipOption("cut:maxstallrounds",
     "Maximal number of consecutive separation rounds without objective or integrality improvement in local nodes (-1: no additional restriction; default: 1)",
     "separating/maxstallrounds", -1, INT_MAX);
 
-  AddSolverOption("cut:maxstallroundsroot",
+  AddScipOption("cut:maxstallroundsroot",
     "Maximal number of consecutive separation rounds without objective or integrality improvement in the root node (-1: no additional restriction; default: 10)",
     "separating/maxstallroundsroot", -1, INT_MAX);
 
-  AddSolverOption("cut:minactivityquot",
+  AddScipOption("cut:minactivityquot",
     "Minimum cut activity quotient to convert cuts into constraints during a restart (0.0: all cuts are converted; default: 0.8)",
     "separating/minactivityquot", 0.0, 1.0);
 
-  AddSolverOption("cut:minefficacy",
+  AddScipOption("cut:minefficacy",
     "Minimal efficacy for a cut to enter the LP (default: 0.0001)",
     "separating/minefficacy", 0.0, SCIP_REAL_MAX);
 
-  AddSolverOption("cut:minefficacyroot",
+  AddScipOption("cut:minefficacyroot",
     "Minimal efficacy for a cut to enter the LP in the root node (default: 0.0001)",
     "separating/minefficacyroot", 0.0, SCIP_REAL_MAX);
 
-  AddSolverOption("cut:poolfreq",
+  AddScipOption("cut:poolfreq",
     "Separation frequency for the global cut pool (-1: disable global cut pool; 0: only separate pool at the root; default: 10)",
     "separating/poolfreq", -1, SCIP_MAXTREEDEPTH);
 
@@ -573,110 +573,110 @@ void ScipBackend::InitCustomOptions() {
     storedOptions_.heuristics_, 0, 3);
 
   //////////////////////// LIMITS ////////////////////////
-  AddSolverOption("lim:absgap absgap mip:gapabs mipgapabs",
+  AddScipOption("lim:absgap absgap mip:gapabs mipgapabs",
     "Solving stops, if the absolute gap = |primalbound - dualbound| is below the given value (default: 0.0)",
     "limits/absgap", 0.0, SCIP_REAL_MAX);
 
-  AddSolverOption("lim:autorestartnodes",
+  AddScipOption("lim:autorestartnodes",
     "If solve exceeds this number of nodes for the first time, an automatic restart is triggered (default: -1: no automatic restart)",
     "limits/autorestartnodes", -1, INT_MAX);
 
-  AddSolverOption("lim:bestsol",
+  AddScipOption("lim:bestsol",
     "Solving stops, if the given number of solution improvements were found (default: -1: no limit)",
     "limits/bestsol", -1, INT_MAX);
 
-  AddSolverOption("lim:gap gap mip:gap mipgap",
+  AddScipOption("lim:gap gap mip:gap mipgap",
     "Solving stops, if the relative gap = |primal - dual|/MIN(|dual|,|primal|) is below the given value, the gap is 'Infinity', if primal and dual bound have opposite signs (default: 0.0)",
     "limits/gap", 0.0, SCIP_REAL_MAX);
 
-  AddSolverOption("lim:maxorigsol",
+  AddScipOption("lim:maxorigsol",
     "Maximal number of solutions candidates to store in the solution storage of the original problem (default: 10)",
     "limits/maxorigsol", 0, INT_MAX);
 
-  AddSolverOption("lim:maxsol",
+  AddScipOption("lim:maxsol",
     "Maximal number of solutions to store in the solution storage (default: 100)",
     "limits/maxsol", 1, INT_MAX);
 
-  AddSolverOption("lim:memory memory",
+  AddScipOption("lim:memory memory",
     "#maximal memory usage in MB; reported memory usage is lower than real memory usage! (default: 8796093022207.0)",
     "limits/memory", 0.0, (SCIP_Real)SCIP_MEM_NOLIMIT);
 
-  AddSolverOption("lim:nodes",
+  AddScipOption("lim:nodes",
     "Maximal number of nodes to process (default: -1: no limit)",
     "limits/nodes", -1, (int)SCIP_LONGINT_MAX);
 
-  AddSolverOption("lim:restarts",
+  AddScipOption("lim:restarts",
     "Solving stops, if the given number of restarts was triggered (default: -1: no limit)",
     "limits/restarts", -1, INT_MAX);
 
-  AddSolverOption("lim:softtime softtime",
+  AddScipOption("lim:softtime softtime",
     "Soft time limit which should be applied after first solution was found (default: -1.0: disabled)",
     "limits/softtime", -1.0, SCIP_REAL_MAX);
 
-  AddSolverOption("lim:solutions",
+  AddScipOption("lim:solutions",
     "Solving stops, if the given number of solutions were found (default: -1: no limit)",
     "limits/solutions", -1, INT_MAX);
 
-  AddSolverOption("lim:stallnodes",
+  AddScipOption("lim:stallnodes",
     "Solving stops, if the given number of nodes was processed since the last improvement of the primal solution value (default: -1: no limit)",
     "limits/stallnodes", -1, (int)SCIP_LONGINT_MAX);
 
-  AddSolverOption("lim:time timelim timelimit time_limit",
+  AddScipOption("lim:time timelim timelimit time_limit",
     "Limit on solve time (in seconds; default: 1e+20).",
     "limits/time", 0.0, 1e+20);
 
-  AddSolverOption("lim:totalnodes",
+  AddScipOption("lim:totalnodes",
     "Maximal number of total nodes (incl. restarts) to process (default: -1: no limit)",
     "limits/totalnodes", -1, (int)SCIP_LONGINT_MAX);
 
   ////////////////////////// LP //////////////////////////
-  AddSolverOption("lp:pricing pricing",
+  AddScipOption("lp:pricing pricing",
     "Pricing strategy:\n"
     "\n.. value-table::",
     "lp/pricing", values_pricing, "l");
 
-  AddSolverOption("lp:presolving",
+  AddScipOption("lp:presolving",
     "0/1: whether presolving of LP solver should be used"
     "\n"
     "  | 0 - Presolving of LP solver should not be used\n"
     "  | 1 - Presolving of LP solver should be used (default).",
     "lp/presolving", 0, 1);
 
-  AddSolverOption("lp:threads",
+  AddScipOption("lp:threads",
     "Number of threads used for solving the LP (default: 0: automatic)",
     "lp/threads", 0, 64);
 
-  AddSolverOption("lp:alwaysgetduals alwaysgetfarkasduals alwaysgetduals",
+  AddScipOption("lp:alwaysgetduals alwaysgetfarkasduals alwaysgetduals",
     "0/1: whether the Farkas duals should always be collected when an LP is found to be infeasible"
     "\n"
     "  | 0 - The Farkas duals should not always be collected when an LP is found to be infeasible (default)\n"
     "  | 1 - The Farkas duals should always be collected when an LP is found to be infeasible.",
     "lp/alwaysgetduals", 0, 1);
 
-  AddSolverOption("lp:solvedepth",
+  AddScipOption("lp:solvedepth",
     "Maximal depth for solving LP at the nodes (default: -1: no depth limit)",
     "lp/solvedepth", -1, SCIP_MAXTREEDEPTH);
 
-  AddSolverOption("lp:solvefreq",
+  AddScipOption("lp:solvefreq",
     "Frequency for solving LP at the nodes (-1: never; 0: only root LP; default: 1)",
     "lp/solvefreq", -1, SCIP_MAXTREEDEPTH);
 
   ///////////////////////// MISC /////////////////////////
-  AddSolverOption("misc:allowstrongdualreds allowstrongdualreds",
+  AddScipOption("misc:allowstrongdualreds allowstrongdualreds",
     "0/1: whether strong dual reductions should be allowed in propagation and presolving"
     "\n"
     "  | 0 - Strong dual reductions should not be allowed in propagation and presolving\n"
     "  | 1 - Strong dual reductions should be allowed in propagation and presolving (default).",
     "misc/allowstrongdualreds", 0, 1);
 
-  AddSolverOption("misc:allowweakdualreds allowweakdualreds",
+  AddScipOption("misc:allowweakdualreds allowweakdualreds",
     "0/1: whether weak dual reductions should be allowed in propagation and presolving"
     "\n"
     "  | 0 - Weak dual reductions should not be allowed in propagation and presolving\n"
     "  | 1 - Weak dual reductions should be allowed in propagation and presolving (default).",
     "misc/allowweakdualreds", 0, 1);
 
-  AddSolverOption("misc:scaleobj scaleobj",
+  AddScipOption("misc:scaleobj scaleobj",
     "0/1: whether the objective function should be scaled so that it is always integer"
     "\n"
     "  | 0 - The objective function should not be scaled so that it is always integer\n"
@@ -684,7 +684,7 @@ void ScipBackend::InitCustomOptions() {
     "misc/scaleobj", 0, 1);
 
   ////////////////////////// NLP /////////////////////////
-  AddSolverOption("nlp:disable",
+  AddScipOption("nlp:disable",
     "0/1: whether the NLP relaxation should be always disabled (also for NLPs/MINLPs)"
     "\n"
     "  | 0 - NLP relaxation should not be always disabled (default)\n"
@@ -692,49 +692,49 @@ void ScipBackend::InitCustomOptions() {
     "nlp/disable", 0, 1);
 
   ////////////////////// NUMERICS ////////////////////////
-  AddSolverOption("num:checkfeastolfac checkfeastolfac",
+  AddScipOption("num:checkfeastolfac checkfeastolfac",
     "Feasibility tolerance factor; for checking the feasibility of the best solution (default: 1.0)",
     "numerics/checkfeastolfac", 0.0, SCIP_REAL_MAX);
 
-  AddSolverOption("num:dualfeastol dualfeastol",
+  AddScipOption("num:dualfeastol dualfeastol",
     "Feasibility tolerance for reduced costs in LP solution (default: 1e-07)",
     "numerics/dualfeastol", SCIP_MINEPSILON*1e+03, SCIP_MAXEPSILON);
 
-  AddSolverOption("num:epsilon epsilon",
+  AddScipOption("num:epsilon epsilon",
     "Absolute values smaller than this are considered zero (default: 1e-09)",
     "numerics/epsilon", SCIP_MINEPSILON, SCIP_MAXEPSILON);
 
-  AddSolverOption("num:feastol feastol",
+  AddScipOption("num:feastol feastol",
     "Feasibility tolerance for constraints (default: 1e-06)",
     "numerics/feastol", SCIP_MINEPSILON*1e+03, SCIP_MAXEPSILON);
 
-  AddSolverOption("num:infinity infinity",
+  AddScipOption("num:infinity infinity",
     "Values larger than this are considered infinity (default: 1e+20)",
     "numerics/infinity", 1e+10, SCIP_INVALID/10.0);
 
-  AddSolverOption("num:lpfeastolfactor lpfeastolfactor",
+  AddScipOption("num:lpfeastolfactor lpfeastolfactor",
     "Factor w.r.t. primal feasibility tolerance that determines default (and maximal) primal feasibility tolerance of LP solver (default: 1.0)",
     "numerics/lpfeastolfactor", 1e-6, 1.0);
 
-  AddSolverOption("num:sumepsilon sumepsilon",
+  AddScipOption("num:sumepsilon sumepsilon",
     "Absolute values of sums smaller than this are considered (default: 1e-06)",
     "numerics/sumepsilon", SCIP_MINEPSILON*1e+03, SCIP_MAXEPSILON);
 
   //////////////////// NODESELECTION /////////////////////
-  AddSolverOption("nod:childsel",
+  AddScipOption("nod:childsel",
     "Child selection rule:\n"
     "\n.. value-table::\n", "nodeselection/childsel", childsel, "h");
 
   ////////////////////// PARALLEL ////////////////////////
-  AddSolverOption("par:maxnthreads maxnthreads",
+  AddScipOption("par:maxnthreads maxnthreads",
     "Maximum number of threads used during parallel solve (default: 8)",
     "parallel/maxnthreads", 0, 64);
 
-  AddSolverOption("par:minnthreads minnthreads",
+  AddScipOption("par:minnthreads minnthreads",
     "Minimum number of threads used during parallel solve (default: 1)",
     "parallel/minnthreads", 0, 64);
 
-  AddSolverOption("par:mode mode",
+  AddScipOption("par:mode mode",
     "0/1: Parallel optimisation mode"
     "\n"
     "  | 0 - Opportunistic\n"
@@ -742,49 +742,49 @@ void ScipBackend::InitCustomOptions() {
     "parallel/mode", 0, 1);
 
   ////////////////////// PRESOLVE ////////////////////////
-  AddSolverOption("pre:abortfac abortfac",
+  AddScipOption("pre:abortfac abortfac",
     "Abort presolve, if at most this fraction of the problem was changed in last presolve round (default: 0.0008)",
     "presolving/abortfac", 0.0, 1.0);
 
-  AddSolverOption("pre:clqtablefac clqtablefac",
+  AddScipOption("pre:clqtablefac clqtablefac",
     "Limit on number of entries in clique table relative to number of problem nonzeros (default: 2.0)",
     "presolving/clqtablefac", 0.0, SCIP_REAL_MAX);
 
-  AddSolverOption("pre:donotaggr donotaggr",
+  AddScipOption("pre:donotaggr donotaggr",
     "0/1: whether aggregation of variables should be forbidden"
     "\n"
     "  | 0 - Aggregation of variables should not be forbidden (default)\n"
     "  | 1 - Aggregation of variables should be forbidden.",
     "presolving/donotaggr", 0, 1);
 
-  AddSolverOption("pre:donotmultaggr donotmultaggr",
+  AddScipOption("pre:donotmultaggr donotmultaggr",
     "0/1: whether multi-aggregation of variables should be forbidden"
     "\n"
     "  | 0 - Multi-aggregation of variables should not be forbidden (default)\n"
     "  | 1 - Multi-aggregation of variables should be forbidden.",
     "presolving/donotmultaggr", 0, 1);
 
-  AddSolverOption("pre:immrestartfac immrestartfac",
+  AddScipOption("pre:immrestartfac immrestartfac",
     "Fraction of integer variables that were fixed in the root node triggering an immediate restart with preprocessing (default: 0.1)",
     "presolving/immrestartfac", 0.0, 1.0);
 
-  AddSolverOption("pre:restartfac restartfac",
+  AddScipOption("pre:restartfac restartfac",
     "Fraction of integer variables that were fixed in the root node triggering a restart with preprocessing after root node evaluation (default: 0.025)",
     "presolving/restartfac", 0.0, 1.0);
 
-  AddSolverOption("pre:restartminred restartminred",
+  AddScipOption("pre:restartminred restartminred",
     "Minimal fraction of integer variables removed after restart to allow for an additional restart (default: 0.1)",
     "presolving/restartminred", 0.0, 1.0);
 
-  AddSolverOption("pre:subrestartfac subrestartfac",
+  AddScipOption("pre:subrestartfac subrestartfac",
     "Fraction of integer variables that were globally fixed during the solving process triggering a restart with preprocessing (default: 1.0)",
     "presolving/subrestartfac", 0.0, 1.0);
 
-  AddSolverOption("pre:maxrestarts",
+  AddScipOption("pre:maxrestarts",
     "Maximal number of restarts (default: -1: unlimited)",
     "presolving/maxrestarts", -1, INT_MAX);
 
-  AddSolverOption("pre:maxrounds",
+  AddScipOption("pre:maxrounds",
     "Maximal number of presolving rounds (default: -1: unlimited; 0: off)",
     "presolving/maxrounds", -1, INT_MAX);
 
@@ -798,45 +798,45 @@ void ScipBackend::InitCustomOptions() {
     storedOptions_.presolvings_, 0, 3);
 
   ////////////////////// PROPAGATE ///////////////////////
-  AddSolverOption("pro:abortoncutoff",
+  AddScipOption("pro:abortoncutoff",
     "0/1: whether propagation should be aborted immediately (setting this to 0 could help conflict analysis to produce more conflict constraints)"
     "\n"
     "  | 0 - Propagation should not be aborted immediately\n"
     "  | 1 - Propagation should be aborted immediately (default).",
     "propagating/abortoncutoff", 0, 1);
 
-  AddSolverOption("pro:maxrounds",
+  AddScipOption("pro:maxrounds",
     "Maximal number of propagation rounds per node (-1: unlimited; 0: off; default: 100)",
     "propagating/maxrounds", -1, INT_MAX);
 
-  AddSolverOption("pro:maxroundsroot",
+  AddScipOption("pro:maxroundsroot",
     "Maximal number of propagation rounds in the root node (-1: unlimited; 0: off; default: 1000)",
     "propagating/maxroundsroot", -1, INT_MAX);
   
   //////////////////// RANDOMIZATION /////////////////////
-  AddSolverOption("ran:permuteconss permuteconss",
+  AddScipOption("ran:permuteconss permuteconss",
     "0/1: whether the order of constraints should be permuted (depends on permutationseed)? "
     "\n"
     "  | 0 - Order of constraints should not be permuted\n"
     "  | 1 - Order of constraints should be permuted (default).",
     "randomization/permuteconss", 0, 1);
 
-  AddSolverOption("ran:permutevars permutevars",
+  AddScipOption("ran:permutevars permutevars",
     "0/1: whether the order of variables should be permuted (depends on permutationseed)? "
     "\n"
     "  | 0 - Order of variables should not be permuted (default)\n"
     "  | 1 - Order of variables should be permuted.",
     "randomization/permutevars", 0, 1);
 
-  AddSolverOption("tech:lpseed lpseed ran:lpseed lpseed",
+  AddScipOption("tech:lpseed lpseed ran:lpseed lpseed",
     "Random seed for LP solver, e.g. for perturbations in the simplex (default: 0: LP default)",
     "randomization/lpseed", 0, INT_MAX);
 
-  AddSolverOption("tech:permseed permseed ran:permutationseed permutationseed",
+  AddScipOption("tech:permseed permseed ran:permutationseed permutationseed",
     "Seed value for permuting the problem after reading/transformation (default: 0: no permutation) ",
     "randomization/permutationseed", 0, INT_MAX);
 
-  AddSolverOption("tech:seed seed ran:randomseedshift randomseedshift",
+  AddScipOption("tech:seed seed ran:randomseedshift randomseedshift",
     "Global shift of all random seeds in the plugins and the LP random seed (default: 0) ",
     "randomization/randomseedshift", 0, INT_MAX);
 
@@ -846,11 +846,11 @@ void ScipBackend::InitCustomOptions() {
 		"constraints/countsols/sollimit", (SCIP_Longint)-1, (SCIP_Longint)9223372036854775807);
 
   ///////////////////////// TREE /////////////////////////
-  AddSolverOption("est:method",
+  AddScipOption("est:method",
     "Tree size estimation method:\n"
     "\n.. value-table::\n", "estimation/method", estimation_method, "w");
 
-  AddSolverOption("est:completiontype",
+  AddScipOption("est:completiontype",
     "Approximation of search tree completion:\n"
     "\n.. value-table::\n",
                   "estimation/completiontype", estimation_completion, "a");
