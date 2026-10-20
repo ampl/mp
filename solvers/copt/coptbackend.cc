@@ -110,14 +110,14 @@ void CoptBackend::InputExtras() {
 }
 
 void CoptBackend::InputCOPTExtras() {
-  if (feasrelax())
-    DoCOPTFeasRelax();
   if (need_ray_primal() || need_ray_dual())
     SetSolverOption(COPT_INTPARAM_REQFARKASRAY, 1);
 }
 
 ArrayRef<double> CoptBackend::GetObjectiveValues() {
   if (HasFixedLP()) return std::vector<double>{FixedLP().objective};
+  if (feasrelax_solved_)
+    return std::vector<double>{ ObjectiveValue() };
   int nobjs = NumObjs();
   if (nobjs > 1) {
     std::vector<double> v(nobjs);
@@ -178,33 +178,82 @@ void CoptBackend::SetMultiobjOptions(BasicObjOptionSetter* setter) {
     }
 }
 
+bool CoptBackend::IsMIPModel() const {
+  return getIntAttr(COPT_INTATTR_INTS) + getIntAttr(COPT_INTATTR_BINS) > 0;
+}
+
 void CoptBackend::DoCOPTFeasRelax() {
-  int copttype;
+  /// AMPL modes 1..6 -> COPT FeasRelaxMode:
+  /// 0/1 sum, 2/3 count, 4/5 squares; odd = optimize original objective
   int map[] = { 0, 4, 2, 1, 5, 3 };
-  copttype = map[feasrelax()-1];
+  feasrelax_copt_mode_ = map[feasrelax()-1];
+  if (feasrelax_copt_mode_ >= 4 && IsMIPModel())
+    MP_RAISE("COPT does not support the squared-violation feasibility "
+             "relaxation (alg:feasrelax=2 or 5) for models with integer "
+             "variables; use alg:feasrelax=1, 3, 4 or 6.");
+  if (feasrelax_copt_mode_ % 2)
+    feasrelax().flag_orig_obj_available();
+  SetSolverOption(COPT_INTPARAM_FEASRELAXMODE, feasrelax_copt_mode_);
   /// only relax linear constraints
   auto mv = GetValuePresolver().PresolveSolution({
                                               {},
                                               feasrelax().rhspen()
     });
-  const auto& rhspen = mv.GetConValues()(CG_Linear);
+  frx_rhspen_ = mv.GetConValues()(CG_Linear);
   /// Account for new variables (TODO: proper presolve)
-  std::vector<double> lbpen = feasrelax().lbpen();
-  if (lbpen.size() && lbpen.size() < (size_t)NumVars())
-    lbpen.resize(NumVars());
-  std::vector<double> ubpen = feasrelax().ubpen();
-  if (ubpen.size() && ubpen.size() < (size_t)NumVars())
-    ubpen.resize(NumVars());
+  frx_lbpen_ = feasrelax().lbpen();
+  if (frx_lbpen_.size() && frx_lbpen_.size() < (size_t)NumVars())
+    frx_lbpen_.resize(NumVars());
+  frx_ubpen_ = feasrelax().ubpen();
+  if (frx_ubpen_.size() && frx_ubpen_.size() < (size_t)NumVars())
+    frx_ubpen_.resize(NumVars());
 
+  /// NULL penalties mean "no relaxation of these bounds",
+  /// COPT_INFINITY entries block individual bounds, as in MP.
   COPT_CCALL(COPT_FeasRelax(lp(),
-    (double*)data_or_null(lbpen),
-    (double*)data_or_null(ubpen),
-    (double*)data_or_null(rhspen),
+    (double*)data_or_null(frx_lbpen_),
+    (double*)data_or_null(frx_ubpen_),
+    (double*)data_or_null(frx_rhspen_),
     NULL));
+  feasrelax_solved_ = true;
+  if (feasrelax_copt_mode_ % 2
+      && getIntAttr(COPT_INTATTR_HASFEASRELAXSOL))
+    feasrelax().orig_obj_value() = FeasRelaxViolation();
+}
+
+double CoptBackend::FeasRelaxViolation() const {
+  auto self = const_cast<CoptBackend*>(this);
+  auto clb = self->getVarInfo(COPT_DBLINFO_RELAXLB);
+  auto cub = self->getVarInfo(COPT_DBLINFO_RELAXUB);
+  auto rlb = self->getConInfo(COPT_DBLINFO_RELAXLB);
+  auto rub = self->getConInfo(COPT_DBLINFO_RELAXUB);
+  int kind = feasrelax_copt_mode_ / 2;         // 0 sum, 1 count, 2 squares
+  double total = 0.0;
+  auto acc = [&](const std::vector<double>& v, const std::vector<double>& pen) {
+    for (size_t i=0; i<v.size(); ++i) {
+      double d = std::fabs(v[i]);
+      if (d <= 1e-9)
+        continue;
+      double w = i < pen.size() ? pen[i] : 1.0;
+      if (w >= COPT_INFINITY)
+        continue;
+      total += (0==kind) ? w*d : (1==kind) ? 1.0 : w*d*d;
+    }
+  };
+  acc(clb, frx_lbpen_);
+  acc(cub, frx_ubpen_);
+  acc(rlb, frx_rhspen_);
+  acc(rub, frx_rhspen_);
+  return total;
 }
 
 ArrayRef<double> CoptBackend::PrimalSolution() {
   if (HasFixedLP()) return FixedLP().primal;
+  if (feasrelax_solved_) {
+    if (!getIntAttr(COPT_INTATTR_HASFEASRELAXSOL))
+      return {};
+    return getVarInfo(COPT_DBLINFO_RELAXVALUE);
+  }
   int num_vars = NumVars();
   int error;
   std::vector<double> x(num_vars);
@@ -236,6 +285,8 @@ ArrayRef<double> CoptBackend::DualSolution_LP() {
 }
 
 double CoptBackend::ObjectiveValue() const {
+  if (feasrelax_solved_)
+    return getDblAttr(COPT_DBLATTR_FEASRELAXOBJ);
   if (IsMIP())
     return getDblAttr(COPT_DBLATTR_BESTOBJ);
   else
@@ -306,7 +357,10 @@ void CoptBackend::SetInterrupter(mp::Interrupter *inter) {
 }
 
 void CoptBackend::Solve() {
-  COPT_CCALL(COPT_Solve(lp()));
+  if (feasrelax())
+    DoCOPTFeasRelax();
+  else
+    COPT_CCALL(COPT_Solve(lp()));
   WindupCOPTSolve();
 }
 
@@ -474,6 +528,12 @@ void CoptBackend::AddCOPTMessages() {
 
 std::pair<int, std::string> CoptBackend::GetSolveResult() {
   namespace sol = mp::sol;
+
+  if (feasrelax_solved_) {       // COPT_FeasRelax() does not set the status attributes
+    if (getIntAttr(COPT_INTATTR_HASFEASRELAXSOL))
+      return { sol::SOLVED, "feasibility relaxation solved" };
+    return { sol::FAILURE, "feasibility relaxation failed" };
+  }
 
   int solstatus = getIntAttr(COPT_INTATTR_HASSOL);
 #ifdef COPT_INTATTR_HASLPSOL
@@ -1107,6 +1167,7 @@ void CoptBackend::SetCoptBasis(
 
 SolutionBasis CoptBackend::GetBasis() {
   if (IsMIP()) return FixedLPBasis(CG_Linear);
+  if (!getIntAttr(COPT_INTATTR_HASBASIS)) return {};
   std::vector<int> varstt = VarStatii();
   std::vector<int> constt = ConStatii();
   if (varstt.size() && constt.size()) {

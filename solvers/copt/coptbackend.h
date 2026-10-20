@@ -169,7 +169,17 @@ protected:
 
   void InputCOPTExtras();
 
+  /// Whether the COPT model has integer variables
+  /// (COPT_INTATTR_MIPSTATUS is only set after solving)
+  bool IsMIPModel() const;
+
+  /// Run COPT_FeasRelax() instead of COPT_Solve().
+  /// COPT computes the relaxed solution itself and stores it
+  /// in the RelaxValue / RelaxLB / RelaxUB infos.
   void DoCOPTFeasRelax();
+  /// Weighted violation measure of the relaxed solution
+  /// (sum, count, or sum of squares, depending on the mode)
+  double FeasRelaxViolation() const;
   void WindupCOPTSolve();
 
   void ReportResults() override;
@@ -222,6 +232,11 @@ private:
 	int numericalStats() const { return numericalStats_; }
   };
   Options storedOptions_;
+
+  /// Feasibility relaxation state
+  bool feasrelax_solved_ = false;
+  int feasrelax_copt_mode_ = 0;
+  std::vector<double> frx_lbpen_, frx_ubpen_, frx_rhspen_;
 
 
 };
