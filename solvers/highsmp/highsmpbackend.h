@@ -19,6 +19,8 @@ class HighsBackend :
   /// Separate HiGHS instance holding the fixed LP of mip:basis
   /// (kept after the solve for sensitivity queries)
   void* fixed_ = nullptr;
+  /// IIS statuses in solver coordinates (AMPL .iis values)
+  std::vector<int> iisVars_, iisCons_;
   void DestroyFixedLP();
   /// Copy the user's options to the fixed-LP instance
   void CopyOptionsToFixedLP(void* fixed);
@@ -101,6 +103,13 @@ public:
   **/
   ALLOW_STD_FEATURE(RETURN_BEST_DUAL_BOUND, true)
   double BestDualBound() override;
+
+  /**
+  * Compute the IIS and obtain relevant values
+  **/
+  ALLOW_STD_FEATURE(IIS, true)
+  void ComputeIIS() override;
+  IIS GetIIS() override;
 
   /**
   * Obtain inf/unbounded rays
@@ -196,6 +205,7 @@ private:
   struct Options {
     std::string lpmethod_ = "choose";
     int mipstart_ = 1;
+    int iisStrategy_ = -1;
     bool onGPU() { return lpmethod_ == "pdlp-gpu" || lpmethod_ == "hipdlp-gpu"; }
   };
   Options storedOptions_;

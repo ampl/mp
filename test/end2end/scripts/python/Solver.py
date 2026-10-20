@@ -1378,7 +1378,7 @@ class HighsSolver(MPDirectSolver):
                  ModelTags.quadratic_obj,
 
                  ModelTags.sstatus, 
-                 ModelTags.warmstart, ModelTags.return_mipgap,
+                 ModelTags.warmstart, ModelTags.return_mipgap, ModelTags.iis,
 
                  ModelTags.writelp, ModelTags.writesol,
 

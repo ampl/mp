@@ -38,6 +38,9 @@ Summary of recent updates to HiGHS for AMPL
 - *mip:basis* emulation: the fixed LP is obtained with HiGHS's own
   Highs_getFixedLp and solved with all user options copied (tolerances,
   presolve, seed, ...), except the algorithm, limits and file output.
+- IIS computation (*iis:find=1*, suffix .iis) via HiGHS's IIS finder;
+  *iis:strategy* (default -1: true IIS, relaxation for MIPs) and
+  *lim:iistime* control it.
 
 
 ## 20260813

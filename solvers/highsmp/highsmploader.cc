@@ -122,6 +122,7 @@ bool HighsLoader::load(const char* dllPath) {
   LoadOptionalFunc(Highs_getFixedLp, "Highs_getFixedLp");
   LoadOptionalFunc(Highs_getNumOptions, "Highs_getNumOptions");
   LoadOptionalFunc(Highs_getOptionName, "Highs_getOptionName");
+  LoadOptionalFunc(Highs_getIis, "Highs_getIis");
 
   // Verify all pointers
   if (!(Highs_create && Highs_destroy &&

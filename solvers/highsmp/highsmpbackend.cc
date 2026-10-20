@@ -680,6 +680,56 @@ void HighsBackend::VarConStatii(ArrayRef<int> vst, ArrayRef<int> cst) {
   HIGHS_CCALL(loader().Highs_setBasis(lp(), stt.data(), cstt.data()));
 }
 
+void HighsBackend::ComputeIIS() {
+  if (!loader().Highs_getIis)
+    MP_RAISE("this HiGHS library lacks Highs_getIis");
+  iisVars_.clear();
+  iisCons_.clear();
+  int strategy = storedOptions_.iisStrategy_;
+  if (strategy < 0)
+    strategy = 6;                 // elastic LP + deletion filter, row priority
+  SetSolverOption("iis_strategy", strategy);
+  int n = NumVars(), m = NumLinCons();
+  int ncol = 0, nrow = 0;
+  std::vector<int> colidx(n), rowidx(m), colbnd(n), rowbnd(m);
+  // The per-column/row conflict statuses are not requested:
+  // HiGHS 1.15.1 dereferences an empty vector for them when the IIS
+  // could not be proven (status Unknown), which crashes.
+  auto res = loader().Highs_getIis(lp(), &ncol, &nrow,
+      colidx.data(), rowidx.data(), colbnd.data(), rowbnd.data(),
+      nullptr, nullptr);
+  if (kHighsStatusError == res)
+    MP_RAISE("Highs_getIis failed");
+  iisVars_.assign(n, (int)IISStatus::non);
+  iisCons_.assign(m, (int)IISStatus::non);
+  for (int k = 0; k < ncol && k < n; ++k) {
+    int j = colidx[k];
+    if (j < 0 || j >= n) continue;
+    switch (colbnd[k]) {
+    case kHighsIisBoundLower: iisVars_[j] = (int)IISStatus::low; break;
+    case kHighsIisBoundUpper: iisVars_[j] = (int)IISStatus::upp; break;
+    case kHighsIisBoundBoxed: iisVars_[j] = (int)IISStatus::fix; break;
+    default:   /* free: the column is in the IIS LP, its bounds are not */
+      break;
+    }
+  }
+  for (int k = 0; k < nrow && k < m; ++k) {
+    int i = rowidx[k];
+    if (i < 0 || i >= m) continue;
+    iisCons_[i] = (int)IISStatus::mem;
+  }
+  if (0 == ncol && 0 == nrow)
+    AddToSolverMessage("HiGHS found no IIS (see iis:strategy).\n");
+}
+
+IIS HighsBackend::GetIIS() {
+  if (iisVars_.empty() && iisCons_.empty())
+    return {};
+  auto mv = GetValuePresolver().PostsolveIIS(
+        { iisVars_, {{{ CG_Linear, iisCons_ }}} });
+  return { mv.GetVarValues()(), mv.GetConValues()() };
+}
+
 ArrayRef<double> HighsBackend::Ray() {
   HighsInt has_ray;
   std::vector<double> uray_pres(NumVars());
@@ -890,6 +940,7 @@ static const mp::OptionValueInfo mipstart_values[] = {
 };
 
 static const mp::OptionValueInfo iis_strategy_values[] = {
+    {"-1", "Automatic: 6 (default)", -1 },
     {"0", "Light test only (infeasible bounds)", 0 },
     { "1", "Try dual ray", 1 },
     { "2", "Try elastic LP", 2 },
@@ -1359,12 +1410,17 @@ ipm_optimality_tolera
     "blend_multi_objectives", values_01_noyes_1default_, 1
   );
 
-  AddHighsOption("iis:strategy iis_strategy iisstrategy",
-      "Strategy for IIS calculation (default 0), sum of:\n"
+  AddStoredOption("iis:strategy iis_strategy iisstrategy",
+      "Strategy for IIS calculation (with iis:find=1), "
+      "-1 or a sum of:\n"
       "\n.. value-table::\n"
       "\nHiGHS presets: 6 = true IIS with row priority, "
-      "14 = true IIS with column priority.",
-	  "iis_strategy", iis_strategy_values, 0);
+      "14 = true IIS with column priority. HiGHS's IIS finder is "
+      "LP-based: for a MIP, the reported rows and bounds form an "
+      "infeasible subsystem found by solving elastic MIPs, which "
+      "cannot be proven irreducible; with 16, integrality is dropped "
+      "and the IIS of the LP relaxation is sought.",
+      storedOptions_.iisStrategy_, iis_strategy_values);
 
   AddHighsOption("lim:iistime iistimelim lim:iis_time_limit iis_time_limit iistimelimit",
 	  "Time limit for computing IIS (default: no limit).",
