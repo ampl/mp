@@ -153,5 +153,17 @@
     "values": {
       "Initial.test_funcpieces_presolved": 9
     }
+  },
+  {
+    "name": "infeas_int_01 feasopt=1 feasoptobj=1 CPLEX",
+    "tags": [ "linear", "feasrelax" ],
+    "comment": "cplexasl-compatible spelling of feasrelax=1",
+    "options": {
+      "cplex_options": "feasopt=1 feasoptobj=1"
+    },
+    "solvers": ["cplex"],
+    "values": {
+      "C2.slack": -1
+    }
   }
 ]

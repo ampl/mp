@@ -335,5 +335,22 @@
       "Initial.flat0__linge": 0,
       "Initial.flat0__linrange": 1
     }
+  },
+  {
+    "name": "ellipse_max QCP options CPLEX",
+    "tags": [ "quadratic" ],
+    "objective": 1.4928017587112605,
+    "options": {
+      "cplex_options": "qcpconvergetol=1e-8 qtolin=0 miqcpstrat=1"
+    }
+  },
+  {
+    "name": "ellipse_max new MP options CPLEX",
+    "tags": [ "quadratic" ],
+    "objective": 1.4928017587112605,
+    "options": {
+      "cplex_options": "pre:folding=1 mip:dive=1 mip:cardls=1 lp:dynamicrows=0 pre:qcpduals=2 pre:qpmakepsd=0 mip:eplin=1e-4 alg:feasrelax:tol=1e-5 tech:writelevel=1 alg:siftalg=2 lim:siftiter=1000 tech:siftdisplay=1 tech:tunemeasure=2"
+    },
+    "solvers": ["cplex"]
   }
 ]

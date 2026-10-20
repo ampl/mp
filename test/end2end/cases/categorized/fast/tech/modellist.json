@@ -59,5 +59,29 @@
     "values": {
       "solve_result_num": 150
     }
+  },
+  {
+    "name" : "Check_Rejected_Param_Value CPLEX",
+    "tags" : ["linear", "continuous"],
+    "files" : ["diet.mod", "diet.dat"],
+    "comment": "Value outside the CPLEX parameter range: abort before solving",
+    "options": { "cplex_options": "netfind=5" },
+    "solvers": ["cplex"],
+    "values": {
+      "solve_result_num": 500,
+      "solve_exitcode":   0
+    }
+  },
+  {
+    "name" : "Check_Rejected_Param_Value CPLEXASL",
+    "tags" : ["linear", "continuous"],
+    "files" : ["diet.mod", "diet.dat"],
+    "comment": "Value outside the CPLEX parameter range: ASL driver reports 'Error in $cplex_options'",
+    "options": { "cplex_options": "netfind=5" },
+    "solvers": ["cplexasl"],
+    "values": {
+      "solve_result_num": 560,
+      "solve_exitcode":   0
+    }
   }
 ]

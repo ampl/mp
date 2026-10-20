@@ -4,7 +4,7 @@
     "objective": 74.273820,
     "tags": [ "linear", "continuous", "sstatus" ],
     "options": {
-      "cplex_options": "netopt=3 netdisplay=1 netfeastol=1e-5 netfind=2 netoptimality=1e-4 netpricing=2 netiterations=500 predual=1 primal primalopt dual dualopt advind=2",
+      "cplex_options": "netopt=3 netdisplay=1 netfeastol=1e-5 netfind=2 netoptimality=1e-4 netpricing=2 netiterations=500 predual=1 primal primalopt dual dualopt advind=2 markowitz=0.1 pgradient=2 refactor=50",
       "gurobi_options": "lp:warmstart=2"
     },
     "values": {
@@ -198,6 +198,42 @@
           "setup"
         ]
       }
+    }
+  },
+  {
+    "name": "dietu_stt simplex options CPLEX",
+    "objective": 74.273820,
+    "tags": [ "linear", "continuous", "sstatus" ],
+    "options": {
+      "cplex_options": "markowitz=0.1 pgradient=2 dgradient=2 pricing=5 refactor=50 singular=5 crash=0 doperturb=1 perturbation=1e-5 perturblim=100 feasibility=1e-7 optimality=1e-7 clocktype=1 parallelmode=1 datacheck=1 warninglimit=5"
+    },
+    "values": {
+      "Buy['BEEF'].sstatus": "low",
+      "Buy['MTL'].sstatus": "bas",
+      "Buy['CHK'].sstatus": "upp",
+      "Diet_Min['A'].sstatus": "bas"
+    }
+  },
+  {
+    "name": "dietu_stt barrier options CPLEX",
+    "objective": 74.273820,
+    "tags": [ "linear", "continuous", "sstatus" ],
+    "options": {
+      "cplex_options": "baropt crossover=1 ordering=1 comptol=1e-9 barcorr=2 barstart=2 dense=100 bargrowth=1e13 barobjrange=1e21 bariterlim=50"
+    },
+    "values": {
+      "Buy['BEEF'].sstatus": "low",
+      "Buy['MTL'].sstatus": "bas",
+      "Buy['CHK'].sstatus": "upp",
+      "Diet_Min['A'].sstatus": "bas"
+    }
+  },
+  {
+    "name": "dietu_stt droptol CPLEX",
+    "objective": 74.273820,
+    "tags": [ "linear", "continuous" ],
+    "options": {
+      "cplex_options": "droptol=1e-6"
     }
   }
 ]

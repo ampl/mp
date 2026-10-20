@@ -19,5 +19,20 @@
       "y.test_ini_mip": 0,
       "z.test_ini_mip": 1
     }
+  },
+  {
+    "name": "mipstart_01 mip:start:effort=4 CPLEX",
+    "tags": [ "linear", "mipstart"],
+    "options": {
+      "mp_options": "warmstart=1 debug=1",
+      "cplex_options": "mip:start:effort=4"
+    },
+    "solvers": ["cplex"],
+    "objective": 1,
+    "values": {
+      "x.test_ini_mip": 1,
+      "y.test_ini_mip": 0,
+      "z.test_ini_mip": 1
+    }
   }
 ]

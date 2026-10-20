@@ -57,5 +57,29 @@
     "values": {
       "TotalSum.npool": 3
     }
+  },
+  {
+    "name": "multi_sol_01 MIP strategy options CPLEX",
+    "tags": [ "linear"],
+    "objective": 1,
+    "options": {
+      "cplex_options": "mipcuts=1 nodes=1000 heureffort=0.5 rinsheur=20 lbheur=1 probe=1 probetime=100 symmetry=1 repeatpresolve=1 repairtries=2 submipnodelim=100 strongcand=5 strongit=10 treememory=1024 polishafter_time=1e5 polishafter_nodes=1000 mipkappa=1 miqcpstrat=1 ordertype=1 varsel=3 nodesel=2 bbinterval=5 mipemphasis=1 fpheur=1 mipsearch=1 cutpass=3 cutsfactor=5 aggcutlim=2 eachcutlim=100 fraccand=50 fracpass=2 submipalg=2 submipscale=0 submipstartalg=2 presolvenode=1 prerelax=1 prereduce=3 prereformulations=3 presos1reform=1 presos2reform=1 boundstr=1 coeffreduce=1 dependency=1 aggregate=1 agglim=5 aggtol=0.1"
+    }
+  },
+  {
+    "name": "multi_sol_01 populate=2 poolcapacity=3 CPLEX",
+    "tags": [ "linear", "multisol"],
+    "objective": 1,
+    "options": { "cplex_options": "populate=2 poolcapacity=3 poolstub=stub" },
+    "solvers": ["cplex"],
+    "values": {
+      "TotalSum.nsol": 3
+    }
+  },
+  {
+    "name": "multi_sol_01 tuning tunefix CPLEX",
+    "tags": [ "linear"],
+    "objective": 1,
+    "options": { "cplex_options": "tunetime=0.5 tunedisplay=0 tunefix=mipgap tunefile=tune_out.prm" }
   }
 ]
