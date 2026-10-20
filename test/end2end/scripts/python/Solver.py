@@ -1353,7 +1353,8 @@ class GCGSolver(MPDirectSolver):
         return ""
 
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
-        stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
+        stags = {ModelTags.continuous, ModelTags.linear,
+                 ModelTags.integer, ModelTags.binary,
                  ModelTags.return_mipgap,
 
                  ModelTags.writelp, ModelTags.writesol,

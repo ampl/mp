@@ -241,5 +241,42 @@
       "solve_exitcode":   0,
       "solve_message": { "contains": "alg:method" }
     }
+  },
+  {
+    "name" : "diet GCG LP options",
+    "tags" : ["linear", "continuous"],
+    "files" : ["diet.mod", "diet.dat"],
+    "comment": "LP and technical options of GCG 4.0.2 with their MP-style names; native parameters inline; writes gcg_out.set",
+    "options": { "gcg_options": "alg:method=d lp:pricing=s alg:feastol=1e-8 alg:dualfeastol=1e-8 lp:scaling=2 pre:solve=1 tech:seed=7 lim:iter=10000 tech:clocktype=1 tech:optionnative 'lp/checkstability=1 detection/maxrounds 1' tech:optionnativewrite=gcg_out.set" },
+    "solvers": ["gcg"],
+    "objective": 88.2,
+    "values": {
+      "solve_result_num": 0
+    }
+  },
+  {
+    "name" : "knap_40 GCG MIP options",
+    "tags" : ["linear", "integer"],
+    "files" : ["knap_40.mod"],
+    "comment": "MIP, pricing and detection options of GCG 4.0.2 with their MP-style names",
+    "options": { "gcg_options": "mip:gap=1e-6 mip:gapabs=0 lim:nodes=1000 lim:sol=100 tech:threads=2 pricing:stabilization=1 pricing:maxcolsround=50 pricing:eagerfreq=5 pricing:sorting=d det:maxnclasses=10 det:maxrounds=1 gcg:mode=0 heu:settings=1 pre:settings=0 sol:poollimit=3 tech:outlevnative=0" },
+    "solvers": ["gcg"],
+    "objective": 1044,
+    "values": {
+      "solve_result_num": 0
+    }
+  },
+  {
+    "name" : "Check_Rejected_Param_Value GCG",
+    "tags" : ["linear", "continuous"],
+    "files" : ["diet.mod", "diet.dat"],
+    "comment": "Value outside the GCG parameter range: abort before solving, the message names the AMPL option and the range",
+    "options": { "gcg_options": "lim:maxsol=0" },
+    "solvers": ["gcg"],
+    "values": {
+      "solve_result_num": 500,
+      "solve_exitcode":   0,
+      "solve_message": { "contains": "lim:maxsol=0" }
+    }
   }
 ]
