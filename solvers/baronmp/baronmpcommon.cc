@@ -427,16 +427,28 @@ void Options::initializeLPSolver() {
   }
 }
 
+/// Whether a token is a number (numeric BARON options must not be quoted)
+static bool isNumber(const std::string& token) {
+  char* end = nullptr;
+  std::strtod(token.c_str(), &end);
+  return end != token.c_str() && *end == 0;
+}
+
+/// tech:optionnative: every occurrence, "name value" or "name=value"
+/// pairs; string values are quoted, numbers are not
 void Options::appendInlineParams(fmt::MemoryWriter& m) const {
-  if (inlineparams.size() > 0) {
-    std::istringstream stream(inlineparams[0]);
-    std::vector<std::string> tokens;
-    std::string token;
-    while (stream >> token) {
-      tokens.push_back(token);
+  for (const auto& params : inlineparams) {
+    std::string pairs = params;
+    std::replace(pairs.begin(), pairs.end(), '=', ' ');
+    std::istringstream stream(pairs);
+    std::string name, value;
+    while (stream >> name) {
+      if (!(stream >> value))
+        throw std::runtime_error(fmt::format(
+            "tech:optionnative: no value for BARON option '{}'", name));
+      m << fmt::format("{}: {};\n", name,
+                       isNumber(value) ? value : ensureDoubleQuoted(value));
     }
-    for (size_t i = 0; i < tokens.size(); i += 2)
-      m << fmt::format("{}: {};\n", tokens[i], ensureDoubleQuoted(tokens[i + 1]));
   }
 }
 
