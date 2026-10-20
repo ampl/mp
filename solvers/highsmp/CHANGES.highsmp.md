@@ -23,6 +23,14 @@ Summary of recent updates to HiGHS for AMPL
   *bar:centring*, *bar:maxcentringsteps*, *bar:centringratiotol*,
   *mip:symmetry*; standard synonyms *lim:iter*, *bar:iterlim*, *lim:sol*.
   All previous spellings remain accepted.
+- New options from HiGHS 1.15.1: *alg:primalrestol*, *alg:opttol*,
+  *alg:simplexupdatelim*, *alg:simplexminconcurrency*,
+  *alg:simplexmaxconcurrency*, *mip:restart*, *mip:maxstartnodes*,
+  *mip:poolagelimit*, *mip:nodecuts*, *mip:rootpresolveonly*,
+  *mip:heur:feasjump*, *mip:heur:rins*, *mip:heur:rens*,
+  *mip:heur:rootredcost*, *mip:heur:ziround*, *mip:heur:shifting*,
+  *tech:miplogfreq*, *tech:logtoconsole*, *tech:timelesslog*,
+  *bar:hipoblocksize*, *qp:hotstart*.
 
 
 ## 20260813

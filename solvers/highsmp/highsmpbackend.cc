@@ -836,6 +836,19 @@ void HighsBackend::InitCustomOptions() {
     "\n.. value-table::\n", "simplex_primal_edge_weight_strategy",
     simplex_edge_weight_strategy_values_, 1);
 
+  AddHighsOption("alg:simplexupdatelim simplexupdatelim simplex_update_limit",
+    "Limit on the number of simplex UPDATE operations before "
+    "refactorization (default 5000).",
+    "simplex_update_limit", 0, INT_MAX);
+
+  AddHighsOption("alg:simplexminconcurrency simplexminconcurrency simplex_min_concurrency",
+    "Minimum level of concurrency in parallel simplex (1..8, default 1).",
+    "simplex_min_concurrency", 1, 8);
+
+  AddHighsOption("alg:simplexmaxconcurrency simplexmaxconcurrency simplex_max_concurrency",
+    "Maximum level of concurrency in parallel simplex (1..8, default 8).",
+    "simplex_max_concurrency", 1, 8);
+
   AddHighsOption("pre:solve presolve",
     "Whether to use presolve:\n"
     "\n.. value-table::\n",
@@ -929,6 +942,14 @@ void HighsBackend::InitCustomOptions() {
     "Dual feasibility tolerance (default 1e-7).",
     "dual_feasibility_tolerance", 1e-10, Infinity());
 
+  AddHighsOption("alg:primalrestol primalrestol primal_residual_tolerance",
+    "Primal residual tolerance (default 1e-7).",
+    "primal_residual_tolerance", 1e-10, Infinity());
+
+  AddHighsOption("alg:opttol opttol optimality_tolerance",
+    "Optimality tolerance (default 1e-7).",
+    "optimality_tolerance", 1e-10, Infinity());
+
   AddHighsOption("alg:dualrestol dualrestol dual_residual_tolerance",
     "Dual residual tolerance (default 1e-7).",
     "dual_residual_tolerance", 1e-10, Infinity());
@@ -990,6 +1011,14 @@ void HighsBackend::InitCustomOptions() {
 	  "Control the ordering used by HiPO before factorization:\n"
       "\n.. value-table::\n", "hipo_ordering", hipo_ordering_values, c);
 
+  AddHighsOption("bar:hipoblocksize hipoblocksize hipo_block_size",
+    "Block size for dense linear algebra within HiPO (default 128).",
+    "hipo_block_size", 0, INT_MAX);
+
+  AddHighsOption("qp:hotstart qphotstart qp_allow_hot_start",
+    "0*/1: Allow the active set QP solver to hot start.",
+    "qp_allow_hot_start", 0, 1);
+
   AddHighsOption("tech:threads threads",
     "Maximum number of threads used by HiGHS (parallel simplex, "
     "IPM and MIP); default 0 ==> automatic choice.",
@@ -997,6 +1026,52 @@ void HighsBackend::InitCustomOptions() {
   AddHighsOption("mip:symmetry symmetry mip:detsimmetry detsimmetry mip_detect_symmetry",
     "0/1*: Whether MIP symmetry should be detected.",
     "mip_detect_symmetry", 0, 1);
+
+  AddHighsOption("mip:restart miprestart mip_allow_restart",
+    "0/1*: Whether MIP restart is permitted.",
+    "mip_allow_restart", 0, 1);
+
+  AddHighsOption("mip:maxstartnodes maxstartnodes mip_max_start_nodes",
+    "Maximum number of MIP nodes when completing a partial MIP start "
+    "(default 500). See mip:start.",
+    "mip_max_start_nodes", 0, INT_MAX);
+
+  AddHighsOption("mip:poolagelimit poolagelimit mip_pool_age_limit",
+    "Maximal age of rows in the MIP cutpool before they are deleted "
+    "(default 30, max 1000).",
+    "mip_pool_age_limit", 0, 1000);
+
+  AddHighsOption("mip:nodecuts nodecuts mip_allow_cut_separation_at_nodes",
+    "0/1*: Whether cut separation at nodes other than the root is permitted.",
+    "mip_allow_cut_separation_at_nodes", 0, 1);
+
+  AddHighsOption("mip:rootpresolveonly rootpresolveonly mip_root_presolve_only",
+    "0*/1: Whether MIP presolve is only applied at the root node.",
+    "mip_root_presolve_only", 0, 1);
+
+  AddHighsOption("mip:heur:feasjump heurfeasjump mip_heuristic_run_feasibility_jump",
+    "0/1*: Use the feasibility jump heuristic.",
+    "mip_heuristic_run_feasibility_jump", 0, 1);
+
+  AddHighsOption("mip:heur:rins heurrins mip_heuristic_run_rins",
+    "0/1*: Use the RINS heuristic.",
+    "mip_heuristic_run_rins", 0, 1);
+
+  AddHighsOption("mip:heur:rens heurrens mip_heuristic_run_rens",
+    "0/1*: Use the RENS heuristic.",
+    "mip_heuristic_run_rens", 0, 1);
+
+  AddHighsOption("mip:heur:rootredcost heurrootredcost mip_heuristic_run_root_reduced_cost",
+    "0/1*: Use the root reduced cost heuristic.",
+    "mip_heuristic_run_root_reduced_cost", 0, 1);
+
+  AddHighsOption("mip:heur:ziround heurziround mip_heuristic_run_zi_round",
+    "0*/1: Use the ZI Round heuristic.",
+    "mip_heuristic_run_zi_round", 0, 1);
+
+  AddHighsOption("mip:heur:shifting heurshifting mip_heuristic_run_shifting",
+    "0*/1: Use the Shifting heuristic.",
+    "mip_heuristic_run_shifting", 0, 1);
 
   AddHighsOption("mip:lifting lifting mip_lifting_for_probing",
     "Level of lifting for probing that is used (default -1).",
@@ -1064,6 +1139,19 @@ ipm_optimality_tolera
   AddHighsOption("tech:miploglev miploglev mip_report_level",
     "0/1*/2: MIP solver report level",
     "mip_report_level", 0, 2);
+
+  AddHighsOption("tech:miplogfreq miplogfreq mip_min_logging_interval",
+    "Minimum interval between MIP log lines, in seconds (default 5).",
+    "mip_min_logging_interval", 0.0, DBL_MAX);
+
+  AddHighsOption("tech:logtoconsole logtoconsole log_to_console",
+    "0/1*: Whether HiGHS log lines go to the console "
+    "(with tech:outlev=1; set 0 to log only to tech:logfile).",
+    "log_to_console", 0, 1);
+
+  AddHighsOption("tech:timelesslog timelesslog timeless_log",
+    "0*/1: Suppress time-based data in the HiGHS log.",
+    "timeless_log", 0, 1);
 
   AddHighsOption("tech:seed seed random_seed",
     "Random number seed (default 0), affecting perturbations that "
