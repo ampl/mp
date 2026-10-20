@@ -572,11 +572,10 @@ CoptBackend::SensRaw CoptBackend::ReadSensRaw(copt_prob* prob) {
   return raw;
 }
 
-/// Follows the Gurobi driver: variable ranges come from the column
-/// infos; range constraints were converted to equalities with slack
-/// variables, whose sensitivities the value presolver propagates back
-/// to the constraints; rhs ranges of one-sided rows come from the
-/// row infos.
+/// Variable ranges come from the column infos. COPT receives range
+/// constraints natively (lb <= body <= ub), so the bound ranges of
+/// every row come from the row infos; the side a one-sided row does
+/// not have is reported as unbounded, as the Gurobi driver does.
 SensRanges CoptBackend::GetSensRanges() {
   SensRanges sensr;
   SensRaw raw;
@@ -593,23 +592,6 @@ SensRanges CoptBackend::GetSensRanges() {
     return sensr;
   }
   const double inf = 1e100;
-  /// Select the rhs range of each row: lb for >= and ==, ub for <=
-  size_t m = raw.rowlb.size();
-  std::vector<double> rhs_raw(m), rhslo_raw(m), rhshi_raw(m);
-  std::vector<int> sense_raw(m);                   // 0: ==, 1: <=, 2: >=
-  for (size_t i=0; i<m; ++i) {
-    bool lbfin = raw.rowlb[i] > -COPT_INFINITY, ubfin = raw.rowub[i] < COPT_INFINITY;
-    if (lbfin && ubfin && raw.rowlb[i] == raw.rowub[i]) {
-      sense_raw[i] = 0; rhs_raw[i] = raw.rowlb[i];
-      rhslo_raw[i] = raw.rowlblo[i]; rhshi_raw[i] = raw.rowlbhi[i];
-    } else if (ubfin) {
-      sense_raw[i] = 1; rhs_raw[i] = raw.rowub[i];
-      rhslo_raw[i] = raw.rowublo[i]; rhshi_raw[i] = raw.rowubhi[i];
-    } else {
-      sense_raw[i] = 2; rhs_raw[i] = raw.rowlb[i];
-      rhslo_raw[i] = raw.rowlblo[i]; rhshi_raw[i] = raw.rowlbhi[i];
-    }
-  }
   auto clip = [&](std::vector<double>& v) {
     for (auto& x: v) {
       if (x <= -COPT_INFINITY) x = -inf;
@@ -617,92 +599,52 @@ SensRanges CoptBackend::GetSensRanges() {
     }
   };
   clip(raw.objlo); clip(raw.objhi); clip(raw.lblo); clip(raw.lbhi);
-  clip(raw.ublo); clip(raw.ubhi); clip(rhslo_raw); clip(rhshi_raw);
-  clip(raw.lb); clip(raw.ub);
+  clip(raw.ublo); clip(raw.ubhi); clip(raw.lb); clip(raw.ub);
 
-  auto mvlbhi = GetValuePresolver().PostsolveGenericDbl( { {raw.lbhi} } );
-  auto mvlblo = GetValuePresolver().PostsolveGenericDbl( { {raw.lblo} } );
-  auto mvubhi = GetValuePresolver().PostsolveGenericDbl( { {raw.ubhi} } );
-  auto mvublo = GetValuePresolver().PostsolveGenericDbl( { {raw.ublo} } );
-  auto mvobjhi = GetValuePresolver().PostsolveGenericDbl( { {raw.objhi} } );
-  auto mvobjlo = GetValuePresolver().PostsolveGenericDbl( { {raw.objlo} } );
-  auto mvrhshi = GetValuePresolver().PostsolveGenericDbl(
-        { {}, {{{ CG_Linear, rhshi_raw }}} } );
-  auto mvrhslo = GetValuePresolver().PostsolveGenericDbl(
-        { {}, {{{ CG_Linear, rhslo_raw }}} } );
-
-  sensr.varlbhi = mvlbhi.GetVarValues()();
-  sensr.varlblo = mvlblo.GetVarValues()();
-  sensr.varubhi = mvubhi.GetVarValues()();
-  sensr.varublo = mvublo.GetVarValues()();
-  sensr.varobjhi = mvobjhi.GetVarValues()();
-  sensr.varobjlo = mvobjlo.GetVarValues()();
-  sensr.conrhshi = mvrhshi.GetConValues()();
-  sensr.conrhslo = mvrhslo.GetConValues()();
-
-  /// For range constraints, their slacks' sensitivities were
-  /// propagated into the following ValueNodes:
-  const auto& conlbhi = mvlbhi.GetConValues()();
-  const auto& conlblo = mvlblo.GetConValues()();
-  const auto& conubhi = mvubhi.GetConValues()();
-  const auto& conublo = mvublo.GetConValues()();
-
-  auto mv_rhs = GetValuePresolver().PostsolveGenericDbl(
-        { {}, {{{ CG_Linear, rhs_raw }}} } );
-  const auto& rhs = mv_rhs.GetConValues()();
-  auto mv_sense = GetValuePresolver().PostsolveGenericInt(
-        { {}, {{{ CG_Linear, sense_raw }}} } );
-  const auto& sense = mv_sense.GetConValues()();
-
-  sensr.conrhs = rhs;
-  {
-    auto mv = GetValuePresolver().PostsolveGenericDbl({ { raw.obj } });
-    sensr.varobj = mv.GetVarValues()();
-  }{
-    auto mv = GetValuePresolver().PostsolveGenericDbl({ { raw.lb } });
-    sensr.varlb = mv.GetVarValues()();
-  }
-  auto mv_varub = GetValuePresolver().PostsolveGenericDbl({ { raw.ub } });
-  sensr.varub = mv_varub.GetVarValues()();
-  const auto& conslackub = mv_varub.GetConValues()();
-
-  // Reconstruct values for ranges
-  if (rhs.size()==sensr.conrhshi.size() &&
-      rhs.size()==sense.size() &&
-      rhs.size()==conlbhi.size() &&
-      rhs.size()==conlblo.size() &&
-      rhs.size()==conubhi.size() &&
-      rhs.size()==conublo.size() ) {
-    sensr.conlbhi = sensr.conlb = sensr.conlblo
-        = sensr.conubhi = sensr.conub = sensr.conublo = rhs;
-    for (auto i=rhs.size(); i--; ) {
-      if (conubhi[i] != conlblo[i]) {                 // anything propagated?
-        sensr.conlblo[i] -= conubhi[i];               // then it's a range constraint
-        sensr.conlb[i] = rhs[i] - conslackub[i];
-        sensr.conlbhi[i] -= conublo[i];
-        sensr.conublo[i] -= conlbhi[i];
-        sensr.conub[i] = rhs[i];
-        sensr.conubhi[i] -= conlblo[i];
-      } else {                                        // non-range constraints
-        sensr.conlblo[i] = -inf;
-        sensr.conlb[i] = -inf;
-        sensr.conlbhi[i] = inf;
-        sensr.conublo[i] = -inf;
-        sensr.conub[i] = inf;
-        sensr.conubhi[i] = inf;
-        if (sense[i] != 2) {                          // not >=
-          sensr.conublo[i] = sensr.conrhslo[i];
-          sensr.conub[i] = rhs[i];
-          sensr.conubhi[i] = sensr.conrhshi[i];
-        }
-        if (sense[i] != 1) {                          // not <=
-          sensr.conlblo[i] = sensr.conrhslo[i];
-          sensr.conlb[i] = rhs[i];
-          sensr.conlbhi[i] = sensr.conrhshi[i];
-        }
-      }
+  size_t m = raw.rowlb.size();
+  std::vector<double> lb(m), ub(m), lblo(m), lbhi(m), ublo(m), ubhi(m),
+      rhs(m), rhslo(m), rhshi(m);
+  for (size_t i=0; i<m; ++i) {
+    bool lbfin = raw.rowlb[i] > -COPT_INFINITY, ubfin = raw.rowub[i] < COPT_INFINITY;
+    lb[i] = lbfin ? raw.rowlb[i] : -inf;
+    ub[i] = ubfin ? raw.rowub[i] : inf;
+    lblo[i] = lbfin ? raw.rowlblo[i] : -inf;
+    lbhi[i] = lbfin ? raw.rowlbhi[i] : inf;
+    ublo[i] = ubfin ? raw.rowublo[i] : -inf;
+    ubhi[i] = ubfin ? raw.rowubhi[i] : inf;
+    if (ubfin && !(lbfin && raw.rowlb[i] == raw.rowub[i])) {   // <= and ranges: ub side
+      rhs[i] = ub[i]; rhslo[i] = ublo[i]; rhshi[i] = ubhi[i];
+    } else {                                                   // >= and ==: lb side
+      rhs[i] = lb[i]; rhslo[i] = lblo[i]; rhshi[i] = lbhi[i];
     }
   }
+  clip(lblo); clip(lbhi); clip(ublo); clip(ubhi); clip(rhslo); clip(rhshi);
+
+  auto vars = [&](const std::vector<double>& v) {
+    return GetValuePresolver().PostsolveGenericDbl( { {v} } ).GetVarValues()();
+  };
+  auto cons = [&](const std::vector<double>& v) {
+    return GetValuePresolver().PostsolveGenericDbl(
+          { {}, {{{ CG_Linear, v }}} } ).GetConValues()();
+  };
+  sensr.varobj = vars(raw.obj);
+  sensr.varlb = vars(raw.lb);
+  sensr.varub = vars(raw.ub);
+  sensr.varobjlo = vars(raw.objlo);
+  sensr.varobjhi = vars(raw.objhi);
+  sensr.varlblo = vars(raw.lblo);
+  sensr.varlbhi = vars(raw.lbhi);
+  sensr.varublo = vars(raw.ublo);
+  sensr.varubhi = vars(raw.ubhi);
+  sensr.conlb = cons(lb);
+  sensr.conub = cons(ub);
+  sensr.conlblo = cons(lblo);
+  sensr.conlbhi = cons(lbhi);
+  sensr.conublo = cons(ublo);
+  sensr.conubhi = cons(ubhi);
+  sensr.conrhs = cons(rhs);
+  sensr.conrhslo = cons(rhslo);
+  sensr.conrhshi = cons(rhshi);
   return sensr;
 }
 
