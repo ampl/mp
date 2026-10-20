@@ -794,6 +794,8 @@ const CplexBackend::CutInfo CplexBackend::Cut_Info[] = {
     { 0, 0 } };
 
 void CplexBackend::WindupCPLEXSolve() { 
+  if (storedOptions_.prestats_ && !prestats_msg_.empty())
+    AddToSolverMessage(prestats_msg_);
   if (storedOptions_.cutstats_ && IsMIP())
   {
       int j;
@@ -1978,6 +1980,11 @@ void CplexBackend::FinishOptionParsing() {
       SetSolverOption(CPX_PARAM_BARDISPLAY, bar);
     // SetSolverOption(CPXPARAM_MultiObjective_Display, mo);
     // SetSolverOption(CPX_PARAM_NETDISPLAY, netw);
+    if (storedOptions_.prestats_) {   // need presolve log lines
+      if (lp < 1) SetSolverOption(CPX_PARAM_SIMDISPLAY, 1);
+      if (mip < 1) SetSolverOption(CPX_PARAM_MIPDISPLAY, 1);
+      if (bar < 1) SetSolverOption(CPX_PARAM_BARDISPLAY, 1);
+    }
     if (lp || mip || bar
         // || mo || netw  -- no they are >0
         ) {
@@ -2720,6 +2727,11 @@ void CplexBackend::InitCustomOptions() {
     "If droptol > 0 is specified, linear constraint and objective coefficients "
     "less than droptol in magnitude are treated as zero.",
     storedOptions_.dropTol_);
+
+  AddStoredOption("tech:prestats prestats",
+    "0*/1: Whether to include CPLEX's presolve statistics (aggregator and "
+    "presolve log lines) in the solve_message.",
+    storedOptions_.prestats_, values_01_noyes_0default_);
 
   AddStoredOption("tech:numcores numcores",
     "Write number of logical cores to stdout:\n"

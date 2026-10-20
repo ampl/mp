@@ -2,6 +2,7 @@
 #define MP_CPLEX_BACKEND_H_
 
 #include <string>
+#include <cstring>
 
 #include "mp/backend-mip.h"
 #include "mp/flat/backend_flat.h"
@@ -254,9 +255,28 @@ private:
   
   void mymsgfunc(const char* msg, const char* )
   {
+    if (storedOptions_.prestats_)
+      CapturePresolveStats(msg);
     if (!silenceOutput_)
       fmt::print("{}", msg);
   }
+  /// Collect presolve log lines for tech:prestats
+  void CapturePresolveStats(const char* msg) {
+    static const char* const prefixes[] = {
+      "Tried aggregator", "Aggregator did", "Aggregator has done",
+      "LP Presolve", "MIP Presolve", "QP Presolve", "QCP Presolve",
+      "Presolve time", "Reduced LP", "Reduced MIP", "Reduced QP",
+      "Reduced QCP", "All rows and columns eliminated", "No presolve"
+    };
+    for (auto pf : prefixes)
+      if (0 == std::strncmp(msg, pf, std::strlen(pf))) {
+        prestats_msg_ += msg;
+        if (prestats_msg_.empty() || prestats_msg_.back() != '\n')
+          prestats_msg_ += '\n';
+        break;
+      }
+  }
+  std::string prestats_msg_;
   void RedirectOutput();
 
   int hasSolution_ = -1;
@@ -320,6 +340,7 @@ private:
 
     int cuts_ = -2;
     int cutstats_ = 0;
+    int prestats_ = 0;
 
     int numcores_ = 0;
 	bool dualprob_ = false;
