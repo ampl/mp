@@ -202,6 +202,8 @@ protected:
   void ReportCOPTResults();
 
   void ReportCOPTPool();
+  /// Is a pool solution within sol:poolgap / sol:poolgapabs of the best?
+  bool IsWithinPoolGap(double obj, double best) const;
 
   std::vector<double> getPoolSolution(int i);
   double getPoolObjective(int i);
@@ -244,6 +246,10 @@ private:
     std::string paramRead_, paramWrite_;
     std::list<std::string> inlineParams_;
     std::string tunebase_;
+    int nbest_ = 10;                // sol:poollimit
+    int nPoolMode_ = 2;             // sol:poolmode (compatibility only)
+    double poolGap_ = 1e100;        // sol:poolgap, relative
+    double poolGapAbs_ = 1e100;     // sol:poolgapabs
     int mempeak_ = 0;
     int numericalStats_ = 0;;
 

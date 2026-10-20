@@ -1,4 +1,5 @@
 #include <vector>
+#include <algorithm>
 #include <climits>
 #include <cfloat>
 
@@ -765,19 +766,38 @@ double CoptBackend::getPoolObjective(int i)
   COPT_CCALL(COPT_GetPoolObjVal(lp(), i, &obj));
   return obj;
 }
+bool CoptBackend::IsWithinPoolGap(double obj, double best) const {
+  double worsening = (obj - best)
+      * (getIntAttr(COPT_INTATTR_OBJSENSE) == COPT_MAXIMIZE ? -1 : 1);
+  return worsening <= storedOptions_.poolGapAbs_
+      && worsening <= storedOptions_.poolGap_ * std::fabs(best);
+}
+
+/// Report the pool solutions found during the search, best first,
+/// within sol:poolgap / sol:poolgapabs and up to sol:poollimit of them
 void CoptBackend::ReportCOPTPool() {
   if (!IsMIP())
     return;
-  int iPoolSolution = -1;
-  int nsolutions;
-  
-  while (++iPoolSolution < getIntAttr(COPT_INTATTR_POOLSOLS)) {
+  int nPool = getIntAttr(COPT_INTATTR_POOLSOLS);
+  std::vector<std::pair<double, int> > sols;      // (objective, index)
+  for (int i=0; i<nPool; ++i)
+    sols.emplace_back(getPoolObjective(i), i);
+  if (getIntAttr(COPT_INTATTR_OBJSENSE) == COPT_MAXIMIZE)
+    std::sort(sols.rbegin(), sols.rend());
+  else
+    std::sort(sols.begin(), sols.end());
+  int nReported = 0;
+  for (const auto& sol: sols) {
+    if (nReported >= std::max(1, storedOptions_.nbest_)
+        || !IsWithinPoolGap(sol.first, sols.front().first))
+      break;
     auto mv = GetValuePresolver().PostsolveSolution(  // only single-objective with pool
-          { { getPoolSolution(iPoolSolution) },
+          { { getPoolSolution(sol.second) },
             {},                                       // no duals
-            std::vector<double>{ getPoolObjective(iPoolSolution) } } );
+            std::vector<double>{ sol.first } } );
     ReportIntermediateSolution(
           { mv.GetVarValues()(), mv.GetConValues()(), mv.GetObjValues()() });
+    ++nReported;
   }
 }
 
@@ -1044,6 +1064,15 @@ static const mp::OptionValueInfo values_tuneoutlev[] = {
   {"3", "Detailed log of each attempt", 3}
 };
 
+static const mp::OptionValueInfo values_pool_mode[] = {
+  { "0", "Just collect solutions during normal solve", 0},
+  { "1", "Make some effort at finding additional solutions "
+         "(not supported by COPT; same as 0)", 1},
+  { "2", "Seek \"poollimit\" best solutions (default; not supported "
+         "by COPT, same as 0). The solutions reported are limited by "
+         "poolgap and poolgapabs.", 2}
+};
+
 static const mp::OptionValueInfo miprepair_values_[] = {
   {"-1", "Only when time left (default)", -1},
   {"0", "Off", 0},
@@ -1166,6 +1195,33 @@ void CoptBackend::InitCustomOptions() {
     "Amount of tuning output when tunebase is specified:\n"
     "\n.. value-table::\n", COPT_INTPARAM_TUNEOUTPUTLEVEL,
     values_tuneoutlev, 2);
+
+  AddOptionSynonyms_Inline_Front("ams_stub", "sol:stub");
+
+  AddStoredOption("sol:poollimit ams_limit poollimit poolnbest solnlimit",
+    "Limit on the number of alternative MIP solutions reported "
+    "(see sol:stub, sol:count). Default 10. COPT reports the "
+    "solutions found during the search and cannot look for more.",
+    storedOptions_.nbest_);
+
+  AddStoredOption("sol:poolmode ams_mode poolmode",
+    "Search mode for MIP solutions when sol:stub/sol:count are specified "
+    "to request finding several alternative solutions. COPT only "
+    "collects the solutions found during the search, so all values "
+    "behave alike; the option is accepted for compatibility:\n"
+    "\n.. value-table::\n",
+    storedOptions_.nPoolMode_, values_pool_mode);
+
+  AddStoredOption("sol:poolgap ams_eps poolgap",
+    "Relative tolerance for reporting alternate MIP solutions "
+    "(default: no limit): a solution is reported if its objective "
+    "is within poolgap * |best objective| of the best one.",
+    storedOptions_.poolGap_);
+
+  AddStoredOption("sol:poolgapabs ams_epsabs poolgapabs",
+    "Absolute tolerance for reporting alternate MIP solutions "
+    "(default: no limit).",
+    storedOptions_.poolGapAbs_);
 
   AddSolverOption("lp:dualprice dualprice",
     "Specifies the dual simplex pricing algorithm:\n"
