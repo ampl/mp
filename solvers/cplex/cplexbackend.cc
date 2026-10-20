@@ -1904,7 +1904,7 @@ void CplexBackend::InitCustomOptions() {
 
 
   // Solution method
-  AddStoredOption("alg:method method lpmethod qpmethod simplex mip:method mipstartalg",
+  AddStoredOption("alg:method method lpmethod qpmethod simplex mip:method mipstartalg startalg startalgorithm",
                   "Which algorithm to use for non-MIP problems or for the root node "
                   "of MIP problems:\n"
                   "\n.. value-table::\n"
@@ -1930,11 +1930,11 @@ void CplexBackend::InitCustomOptions() {
     "Solve (MIP node) LP/QPs by barrier method.",
     storedOptions_.fBarrier_);
 
-	AddStoredOption("alg:primalopt alg:primal primalopt",
+	AddStoredOption("alg:primalopt alg:primal primalopt optimize",
     "Solve (MIP node) LPs by primal simplex method.",
     storedOptions_.fPrimal_);
 
-	AddStoredOption("alg:dualopt alg:dual dualopt",
+	AddStoredOption("alg:dualopt alg:dual dualopt tranopt",
     "Solve (MIP node) LPs by dual simplex method.",
     storedOptions_.fDual_);
 
@@ -2021,7 +2021,7 @@ void CplexBackend::InitCustomOptions() {
     CPXPARAM_Benders_Strategy,
     values_benders_strategy, 0);
 
-  AddSolverOption("alg:feastol feastol",
+  AddSolverOption("alg:feastol feastol feasibility",
     "Primal feasibility tolerance (default 1e-6, possible "
     "values are between 1e-9 and 0.1).",
     CPXPARAM_Simplex_Tolerances_Feasibility, 1e-9, 1e-1);
@@ -2042,19 +2042,20 @@ void CplexBackend::InitCustomOptions() {
     CPXPARAM_Simplex_DGradient, 
     values_dgradient, 0);
 
-  AddSolverOption("lp:doperturb doperturb",
-    "Decides whether to perturb problems when using simplex, setting it "
-    "to 1 is occasionally helpful for highly degenerate problems.:\n"
+  AddSolverOption("lp:doperturb doperturb perturb",
+    "Whether to perturb the problem initially when using simplex "
+    "(by the amount given by lp:perturb); setting it "
+    "to 1 is occasionally helpful for highly degenerate problems:\n"
     "\n.. value-table::\n",
     CPXPARAM_Simplex_Perturbation_Indicator,
     values_01_noyes_0default_, 0);
 
-  AddSolverOption("lp:perturblim perturblim perturblimit",
+  AddSolverOption("lp:perturblim perturblim perturblimit limitperturb",
     "Number of stalled simplex iterations before the "
     "problem is perturbed; default=0 => automatic.",
     CPXPARAM_Simplex_Limits_Perturbation, 0, CPXINT_MAX);
 
-  AddSolverOption("lp:perturb perturb",
+  AddSolverOption("lp:perturb perturbation perturbconst",
     "Amount by which to perturb variable bounds when "
     "perturbing problems (see \"lp:doperturb\"); default=1e-6, "
     "must be in [1e-8, 1e75].",
@@ -2076,7 +2077,7 @@ void CplexBackend::InitCustomOptions() {
     "It seldom needs fiddling.  Default = .05; must be in [1e-10, .99].",
     CPX_PARAM_EPSAGG, 1e-10, .99);
 
-  AddSolverOption("cut:aggforcut aggforcut",
+  AddSolverOption("cut:aggforcut aggforcut aggcutlim",
     "Bound on the number of constraints aggregated to generate flow-cover "
     "and mixed-integer-rounding cuts (default 3).",
     CPXPARAM_MIP_Limits_AggForCut, 0, CPXINT_MAX);
@@ -2087,7 +2088,7 @@ void CplexBackend::InitCustomOptions() {
     "MIQP problems, choices as for \"cut:cuts\".",
     CPXPARAM_MIP_Cuts_BQP, values_bqpcuts, 0);
 
-  AddSolverOption("cut:clique cliquecuts",
+  AddSolverOption("cut:clique cliquecuts cliques",
     "Whether to use clique cuts in solving MIPs, choices as for \"cut:cuts\".",
     CPXPARAM_MIP_Cuts_Cliques, values_bqpcuts, 0);
 
@@ -2136,7 +2137,7 @@ void CplexBackend::InitCustomOptions() {
     "Whether to use implied cuts in solving MIPs, choices as for \"cut:flowcover\".",
     CPXPARAM_MIP_Cuts_Implied, values_cuts2, 0);
 
-  AddSolverOption("cut:liftandproject liftandproject liftandprojectcuts",
+  AddSolverOption("cut:liftandproject liftandproject liftandprojectcuts splitcuts",
     "Whether to use lift and project cuts in solving MIPs, choices as for \"cut:cuts\".",
     CPXPARAM_MIP_Cuts_LiftProj, values_bqpcuts, 0);
 
@@ -2144,8 +2145,9 @@ void CplexBackend::InitCustomOptions() {
     "Whether to use locally valid implied cuts in solving MIPs, choices as for \"cut:cuts\".",
     CPXPARAM_MIP_Cuts_LocalImplied, values_bqpcuts, 0);
 
-  AddSolverOption("cut:mfc mfccuts",
-    "Whether to use multi-commodity flow (MCF) cuts in solving MIPs, choices as for \"cut:flowcover\".",
+  AddSolverOption("cut:mcf mcfcuts cut:mfc mfccuts",
+    "Whether to use multi-commodity flow (MCF) cuts in solving MIPs, choices as for \"cut:flowcover\". "
+    "(cut:mfc/mfccuts are legacy spellings.)",
     CPXPARAM_MIP_Cuts_MCFCut, values_cuts2, 0);
 
   AddSolverOption("cut:mir mircuts",
@@ -2169,7 +2171,7 @@ void CplexBackend::InitCustomOptions() {
     "Global cut generation control, applied to all cut families "
     "(cut:bqp, cut:clique, cut:cover, cut:disj, cut:flowcover, cut:frac, "
     "cut:gubcover, cut:implied, cut:liftandproject, cut:localimplied, "
-    "cut:mfc, cut:mir, cut:node, cut:flowpath, cut:rlt, cut:zerohalf) "
+    "cut:mcf, cut:mir, cut:node, cut:flowpath, cut:rlt, cut:zerohalf) "
     "unless overridden by the individual cut-type controls; "
     "value 3 is reduced to 2 for families accepting at most 2:\n"
     "\n.. value-table::\n",
@@ -2315,7 +2317,7 @@ void CplexBackend::InitCustomOptions() {
     CPXPARAM_MIP_SubMIP_StartAlg, values_nodemethod, 0);
 
 
-  AddStoredOption("mip:nodemethod nodemethod mipalg mipalgorithm",
+  AddStoredOption("mip:nodemethod nodemethod mipalg mipalgorithm mipsubalg subalg subalgorithm",
     "Algorithm used to solve relaxed MIP node problems "
                   "(after the initial relaxation); for MIQP problems "
     "(quadratic objective, linear constraints), settings other than 3 and 5 " 
@@ -2420,6 +2422,7 @@ void CplexBackend::InitCustomOptions() {
     "\n.. value-table::\n",
     storedOptions_.nPoolMode_, values_pool_mode);
   AddOptionSynonyms_Inline_Front("ams_stub", "sol:stub");
+  AddOptionSynonyms_Inline_Front("poolstub", "sol:stub");
 
   AddSolverOption("sol:poollimit ams_limit poolcapacity poollimit solnlimit",
     "Limit on the number of alternate MIP solutions written. Default: 2100000000.",
@@ -2549,7 +2552,7 @@ void CplexBackend::InitCustomOptions() {
 
 
 
-  AddSolverOption("lim:iter iterlim iterlimit iterations",
+  AddSolverOption("lim:iter iterlim iterlimit iterations lpiterlim",
     "LP iteration limit (default:  large).",
     CPXPARAM_Simplex_Limits_Iterations, 0, CPXINT_MAX);
 
@@ -2557,7 +2560,7 @@ void CplexBackend::InitCustomOptions() {
     "Limit on network simplex iterations (default: large).",
     CPXPARAM_Network_Iterations, 0, CPXINT_MAX);
 
-  AddSolverOption("lim:nodes node nodelim nodelimit",
+  AddSolverOption("lim:nodes nodes node nodelim nodelimit",
     "Maximum MIP nodes to explore (default: no limit).",
     CPX_PARAM_NODELIM, 0, CPXINT_MAX);
 
@@ -2565,12 +2568,12 @@ void CplexBackend::InitCustomOptions() {
     "Time limit in platform-dependent \"ticks\".",
     CPXPARAM_DetTimeLimit, 0.0, DBL_MAX);
 
-  AddSolverOption("lim:sol sollimit solutionlimit mipsolutions",
+  AddSolverOption("lim:sol sollimit solutionlimit mipsolutions solutionlim",
     "Limit the number of feasible MIP solutions found, causing early "
     "termination if exceeded; must be >= 1; default = no limit.",
     CPXPARAM_MIP_Limits_Solutions , 1, CPXINT_MAX);
 
-  AddSolverOption("lim:time timelim timelimit time",
+  AddSolverOption("lim:time timelim timelimit time lptimelim",
                   "Limit on solve time (in seconds; default: no limit).",
                   CPXPARAM_TimeLimit, 0.0, DBL_MAX);
 
@@ -2621,7 +2624,7 @@ void CplexBackend::InitCustomOptions() {
                   "See lim:uppercutoff.",
                   CPXPARAM_MIP_Tolerances_LowerCutoff, -DBL_MAX, DBL_MAX);
 
-  AddSolverOption("mip:objdiff objdiff objdif",
+  AddSolverOption("mip:objdiff objdiff objdif objdifference",
       "Used to update the cutoff each time a solution is found. "
       "This absolute value is subtracted from (added to) the newly "
       "found integer objective value when minimizing (maximizing). "
@@ -2666,7 +2669,7 @@ void CplexBackend::InitCustomOptions() {
     "\n.. value-table::\n",
     CPXPARAM_Preprocessing_Presolve, values_01_noyes_1default_, 1);
 
-	AddStoredOption("pre:dual predual",
+	AddStoredOption("pre:dual predual presolvedual",
 		"Whether CPLEX' presolve phase should present the "
     "CPLEX solution algorithm with the primal(-1) or "
     "dual(1) problem or (default = 0) should decide "
@@ -2711,7 +2714,7 @@ void CplexBackend::InitCustomOptions() {
     "\n.. value-table::\n",
     CPXPARAM_Preprocessing_Reformulations, values_prereformulations, 3);
 
-  AddSolverOption("pre:relax prerelax",
+  AddSolverOption("pre:relax prerelax relaxpresolve relpresolve",
     "Whether to use CPLEX's presolve on the initial LP relaxation of a MIP: \n"
     "\n.. value-table::\n",
     CPXPARAM_Preprocessing_Relax, values_autonoyes_, 0);
@@ -2738,7 +2741,7 @@ void CplexBackend::InitCustomOptions() {
     storedOptions_.noSolve_);
 
 
-    AddStoredOption("tech:pretunefileprm pretunefileprm",
+    AddStoredOption("tech:pretunefileprm pretunefileprm pretunefile",
       "File to which nondefault keyword settings are written "
     "in CPLEX PRM format before tuning.",
       storedOptions_.pretunefileprm);
