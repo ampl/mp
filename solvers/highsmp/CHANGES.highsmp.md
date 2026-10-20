@@ -48,6 +48,8 @@ Summary of recent updates to HiGHS for AMPL
   penalties from *alg:lbpen/ubpen/rhspen* or suffixes .lbpen/.ubpen/.rhspen,
   negative = no violation allowed) via Highs_feasibilityRelaxation;
   the other modes are not available in HiGHS and are rejected.
+- Option *obj:blend* removed: it had no effect because HiGHS's native
+  multi-objective handling is not used (MP emulates multiple objectives).
 
 
 ## 20260813

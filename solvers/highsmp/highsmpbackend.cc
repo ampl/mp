@@ -1554,11 +1554,6 @@ ipm_optimality_tolera
     "this tolerance (default 100).",
     "centring_ratio_tolerance", 0.0, DBL_MAX);
 
-  AddHighsOption("obj:blend blend_multi_objectives",
-    "Whether to blend multiple objectives or apply lexicographical ordering",
-    "blend_multi_objectives", values_01_noyes_1default_, 1
-  );
-
   AddStoredOption("iis:strategy iis_strategy iisstrategy",
       "Strategy for IIS calculation (with iis:find=1), "
       "-1 or a sum of:\n"
