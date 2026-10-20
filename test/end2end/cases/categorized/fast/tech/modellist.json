@@ -278,5 +278,41 @@
       "solve_exitcode":   0,
       "solve_message": { "contains": "lim:maxsol=0" }
     }
+  },
+  {
+    "name" : "knap_40 BARON ASL options",
+    "tags" : ["linear", "integer"],
+    "files" : ["knap_40.mod"],
+    "comment": "BARON options written to the OPTIONS block by the ASL driver, incl. the generic param keyword",
+    "options": { "baron_options": "epsa=1e-7 epsr=1e-7 absconfeastol=1e-7 absintfeastol=1e-6 nodesel=1 brvarstra=1 pdo=0 numloc=0 cutoff=600 maxiter=1000 maxtime=100 param=DeltaTerm=0 param=NOutIter:3 threads=1 seed=7" },
+    "solvers": ["baronasl"],
+    "objective": 1044,
+    "values": {
+      "solve_result_num": 0
+    }
+  },
+  {
+    "name" : "knap_40 BARONMP options",
+    "tags" : ["linear", "integer"],
+    "files" : ["knap_40.mod"],
+    "comment": "Documented BARON options with their MP-style names, and a native parameter",
+    "options": { "baronmp_options": "alg:epsa=1e-7 alg:epsr=1e-7 alg:feastol=1e-7 mip:intfeastol=1e-6 mip:nodesel=1 branch:var=1 pre:pdo=0 alg:numloc=0 alg:cutoff=600 lim:iter=1000 lim:time=100 tech:optionnative 'DeltaTerm 0' tech:threads=1 tech:seed=7" },
+    "solvers": ["baronmp"],
+    "objective": 1044,
+    "values": {
+      "solve_result_num": 0
+    }
+  },
+  {
+    "name" : "knap_40 BARONMP numsol best solution",
+    "tags" : ["linear", "integer"],
+    "files" : ["knap_40.mod"],
+    "comment": "With several solutions requested, the best one is reported (BARON lists them in its own order)",
+    "options": { "baronmp_options": "tech:numsol=3" },
+    "solvers": ["baronmp"],
+    "objective": 1044,
+    "values": {
+      "solve_result_num": 0
+    }
   }
 ]
