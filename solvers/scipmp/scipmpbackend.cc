@@ -451,7 +451,7 @@ void ScipBackend::InitCustomOptions() {
     "0*/1: Whether to write SCIP log lines (chatter) to stdout and to file.",
     storedOptions_.outlev_);
 
-  AddScipOption("tech:outlev-native outlev-native",
+  AddScipOption("tech:outlevnative outlevnative tech:outlev-native outlev-native",
     "0*/1/2/3/4/5: Native SCIP verbosity level (display/verblevel; the SCIP "
     "default is 4, the driver's is 0). tech:outlev=1 selects 4.",
     "display/verblevel", 0, 5);
@@ -574,7 +574,7 @@ void ScipBackend::InitCustomOptions() {
     storedOptions_.heuristics_, 0, 3);
 
   //////////////////////// LIMITS ////////////////////////
-  AddScipOption("lim:absgap absgap mip:gapabs mipgapabs",
+  AddScipOption("mip:gapabs mipgapabs lim:absgap absgap",
     "Solving stops, if the absolute gap = |primalbound - dualbound| is below the given value (default: 0.0)",
     "limits/absgap", 0.0, SCIP_REAL_MAX);
 
@@ -586,7 +586,7 @@ void ScipBackend::InitCustomOptions() {
     "Solving stops, if the given number of solution improvements were found (default: -1: no limit)",
     "limits/bestsol", -1, INT_MAX);
 
-  AddScipOption("lim:gap gap mip:gap mipgap",
+  AddScipOption("mip:gap mipgap lim:gap gap",
     "Solving stops, if the relative gap = |primal - dual|/MIN(|dual|,|primal|) is below the given value, the gap is 'Infinity', if primal and dual bound have opposite signs (default: 0.0)",
     "limits/gap", 0.0, SCIP_REAL_MAX);
 
@@ -598,11 +598,11 @@ void ScipBackend::InitCustomOptions() {
     "Maximal number of solutions to store in the solution storage (default: 100)",
     "limits/maxsol", 1, INT_MAX);
 
-  AddScipOption("lim:memory memory",
+  AddScipOption("lim:memory memory memlim",
     "#maximal memory usage in MB; reported memory usage is lower than real memory usage! (default: 8796093022207.0)",
     "limits/memory", 0.0, (SCIP_Real)SCIP_MEM_NOLIMIT);
 
-  AddScipOption("lim:nodes",
+  AddScipOption("lim:nodes nodelim nodelimit",
     "Maximal number of nodes to process (default: -1: no limit)",
     "limits/nodes", -1, INT_MAX);
 
@@ -614,7 +614,7 @@ void ScipBackend::InitCustomOptions() {
     "Soft time limit which should be applied after first solution was found (default: -1.0: disabled)",
     "limits/softtime", -1.0, SCIP_REAL_MAX);
 
-  AddScipOption("lim:solutions",
+  AddScipOption("lim:sol sollim solutionlimit lim:solutions",
     "Solving stops, if the given number of solutions were found; this limit is first checked in presolving (default: -1: no limit)",
     "limits/solutions", -1, INT_MAX);
 
@@ -697,7 +697,7 @@ void ScipBackend::InitCustomOptions() {
     "Feasibility tolerance factor; for checking the feasibility of the best solution (default: 1.0)",
     "numerics/checkfeastolfac", 0.0, SCIP_REAL_MAX);
 
-  AddScipOption("num:dualfeastol dualfeastol",
+  AddScipOption("alg:dualfeastol dualfeastol num:dualfeastol",
     "Feasibility tolerance for reduced costs in LP solution (default: 1e-07)",
     "numerics/dualfeastol", SCIP_MINEPSILON*1e+03, SCIP_MAXEPSILON);
 
@@ -705,7 +705,7 @@ void ScipBackend::InitCustomOptions() {
     "Absolute values smaller than this are considered zero (default: 1e-09)",
     "numerics/epsilon", SCIP_MINEPSILON, SCIP_MAXEPSILON);
 
-  AddScipOption("num:feastol feastol",
+  AddScipOption("alg:feastol feastol num:feastol",
     "Feasibility tolerance for constraints (default: 1e-06)",
     "numerics/feastol", SCIP_MINEPSILON*1e+03, SCIP_MAXEPSILON);
 
@@ -829,7 +829,7 @@ void ScipBackend::InitCustomOptions() {
     "  | 1 - Order of variables should be permuted.",
     "randomization/permutevars", 0, 1);
 
-  AddScipOption("tech:lpseed lpseed ran:lpseed lpseed",
+  AddScipOption("tech:lpseed lpseed ran:lpseed",
     "Random seed for LP solver, e.g. for perturbations in the simplex (default: 0: LP default)",
     "randomization/lpseed", 0, INT_MAX);
 
