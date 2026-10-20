@@ -144,5 +144,54 @@
       "solve_exitcode":   0,
       "solve_message": { "contains": "alg:simplexscale=5" }
     }
+  },
+  {
+    "name" : "diet SCIP LP options",
+    "tags" : ["linear", "continuous"],
+    "files" : ["diet.mod", "diet.dat"],
+    "comment": "LP and technical options of SCIP 10.0.2 with their MP-style names; native parameters inline; writes scip_out.set",
+    "options": { "scip_options": "alg:method=d alg:remethod=p lp:pricing=s alg:feastol=1e-8 alg:dualfeastol=1e-8 lp:scaling=2 pre:solve=1 tech:threads=1 tech:seed=7 lim:iter=10000 lim:rootiter=10000 tech:clocktype=1 tech:optionnative 'lp/checkstability=1 display/verblevel 0' tech:optionnativewrite=scip_out.set" },
+    "solvers": ["scip"],
+    "objective": 88.2,
+    "values": {
+      "solve_result_num": 0
+    }
+  },
+  {
+    "name" : "knap_40 SCIP MIP options",
+    "tags" : ["linear", "integer"],
+    "files" : ["knap_40.mod"],
+    "comment": "MIP options of SCIP 10.0.2 with their MP-style names",
+    "options": { "scip_options": "mip:gap=1e-6 mip:gapabs=0 mip:symmetry=0 lim:nodes=1000 lim:sol=100 cut:gomory=5 cut:cover=-1 cut:clique=0 alg:emphasis=5 heu:settings=1 pre:settings=0 sol:poollimit=3 lim:bestbndstop=2000 tech:outlevnative=0" },
+    "solvers": ["scip"],
+    "objective": 1044,
+    "values": {
+      "solve_result_num": 0
+    }
+  },
+  {
+    "name" : "knap_40 SCIP concurrent",
+    "tags" : ["linear", "integer"],
+    "files" : ["knap_40.mod"],
+    "comment": "tech:threads > 1 runs SCIP's concurrent solve",
+    "options": { "scip_options": "tech:threads=2 tech:logfile=scip_knap.log" },
+    "solvers": ["scip"],
+    "objective": 1044,
+    "values": {
+      "solve_result_num": 0
+    }
+  },
+  {
+    "name" : "Check_Rejected_Param_Value SCIP",
+    "tags" : ["linear", "continuous"],
+    "files" : ["diet.mod", "diet.dat"],
+    "comment": "Value outside the SCIP parameter range: abort before solving, the message names the AMPL option and the range",
+    "options": { "scip_options": "lim:maxsol=0" },
+    "solvers": ["scip"],
+    "values": {
+      "solve_result_num": 500,
+      "solve_exitcode":   0,
+      "solve_message": { "contains": "lim:maxsol=0" }
+    }
   }
 ]

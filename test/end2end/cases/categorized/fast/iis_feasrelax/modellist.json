@@ -137,7 +137,7 @@
       "highs_options": "iis=1 cvt:bigM=1e6 iis:strategy=22"
     },
     "values": {
-      "Flow4['ELLY', 2].iis": ["mem", "upp"]
+      "Flow4['ELLY', 2].iis": ["mem", "upp", "fix"]
     }
   },
   {

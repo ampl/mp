@@ -1324,7 +1324,8 @@ class SCIPSolver(MPDirectSolver):
         return ""
 
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
-        stags = {ModelTags.fixmodel, ModelTags.continuous, ModelTags.integer, ModelTags.binary,
+        stags = {ModelTags.fixmodel, ModelTags.continuous, ModelTags.linear,
+                 ModelTags.integer, ModelTags.binary,
                  ModelTags.quadratic,
                  ModelTags.quadratic_obj,
                  ModelTags.quadratic_obj_nonconvex,
@@ -1335,6 +1336,8 @@ class SCIPSolver(MPDirectSolver):
                  ModelTags.log,
                  ModelTags.trigonometric,
                  ModelTags.return_mipgap,
+                 ModelTags.multisol, ModelTags.iis,
+                 ModelTags.warmstart, ModelTags.mipstart,
 
                  ModelTags.writelp, ModelTags.writesol,
 
