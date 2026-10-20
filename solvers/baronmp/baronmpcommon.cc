@@ -273,6 +273,8 @@ void BaronmpCommon::initDirectories(const std::string& stub,
   if (!scratch.empty()) {
 
     fs::path scratch_path(scratch);
+    if (scratch != "local" && scratch_path.is_relative())
+      scratch_path = fs::path(initialDir) / scratch_path;
     if (scratch == "local")
     {
       scratch_path = nlfile_path.parent_path() / (nlfile_path.filename().string() + "_baron");

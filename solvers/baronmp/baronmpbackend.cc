@@ -116,8 +116,12 @@ BaronmpBackend::SolutionStats() {
     return stats;
 }
 
+bool BaronmpBackend::IsMaximize() const {
+  return lp()->obj_sense == mp::obj::MAX;
+}
+
 ArrayRef<double> BaronmpBackend::PrimalSolution() {
-  auto vec = resFileData_.PrimalSolution();
+  auto vec = resFileData_.PrimalSolution(IsMaximize());
   int num_vars = vec.size();
   std::vector<double> x(num_vars);
   for (int i = 0; i < num_vars; i++)
@@ -134,7 +138,7 @@ ArrayRef<double> BaronmpBackend::DualSolution_LP() {
 }
 
 double BaronmpBackend::ObjectiveValue() const {
-  return resFileData_.ObjectiveValue();
+  return resFileData_.ObjectiveValue(IsMaximize());
 }
 
 double BaronmpBackend::NodeCount() const {
@@ -181,7 +185,9 @@ void BaronmpBackend::Solve() {
 void BaronmpBackend::WindupBARONMPSolve() {
   timFileData_ = TimFileData::fromFile(BARON_TIM);
   resFileData_ = ResFileData::fromFile(BARON_RES, timFileData_.nodeopt);
-
+  // Back to the original directory: files written from now on
+  // (sol:stub, tech:writesolution) belong there, not in the scratch dir
+  changeDirectory(initialDir);
 }
 
 void BaronmpBackend::ReportResults() {
@@ -197,12 +203,10 @@ void BaronmpBackend::ReportBARONMPResults() {
 }
 
 void BaronmpBackend::ReportBARONMPPool() {
-  for(int i=0; i<resFileData_.NumSol();  i++)
-  for(const auto &sol : resFileData_.PrimalSolutions()){
-    ReportIntermediateSolution(
-      { resFileData_.PrimalSolutions()[i],
-        {}, {  resFileData_.Objectives()[i]}});
-      }
+  const auto& solutions = resFileData_.PrimalSolutions();
+  const auto& objectives = resFileData_.Objectives();
+  for (size_t i = 0; i < solutions.size() && i < objectives.size(); ++i)
+    ReportIntermediateSolution({ solutions[i], {}, { objectives[i] } });
 }
 
 void BaronmpBackend::AddBARONMPMessages() {
@@ -216,6 +220,7 @@ std::pair<int, std::string> BaronmpBackend::GetSolveResult() {
 
   if(errorLevel == -1) // could not call Baron process
     return { sol::UNKNOWN, "not solved, could not call Baron process" };
+  bool has_solution = resFileData_.HasSolution();
   switch (timFileData_.modelstatus) {
   case 1:
     return { sol::SOLVED, "optimal solution" };
@@ -229,18 +234,25 @@ std::pair<int, std::string> BaronmpBackend::GetSolveResult() {
   default:
     ;
   }
+  // A limit: BARON's model status 4 means an intermediate feasible solution
+  auto limit = [has_solution](int feas, int nofeas, const char* text) {
+    return std::pair<int, std::string>{ has_solution ? feas : nofeas,
+      std::string(text) + (has_solution ? ", feasible solution" : ", without a feasible solution") };
+  };
   switch (timFileData_.barstatus)
   {
   case 2:
-    return { sol::LIMIT_NO_FEAS_NODES, "node limit, without a feasible solution" };
+    return limit(sol::LIMIT_FEAS_NODES, sol::LIMIT_NO_FEAS_NODES, "node limit");
   case 3:
-    return { sol::LIMIT_NO_FEAS_ITER, "iteration limit, without a feasible solution" };
+    return limit(sol::LIMIT_FEAS_ITER, sol::LIMIT_NO_FEAS_ITER, "iteration limit");
   case 4:
-    return { sol::LIMIT_NO_FEAS_TIME, "time limit, without a feasible solution" };
+    return limit(sol::LIMIT_FEAS_TIME, sol::LIMIT_NO_FEAS_TIME, "time limit");
   case 5:
+    if (has_solution)
+      return { sol::UNCERTAIN, "numerical difficulties, feasible solution" };
     return { sol::NUMERIC, "terminated due to unrecoverable numerical issues" };
   case 6:
-    return { sol::LIMIT_NO_FEAS_INTERRUPT, "interrupted, no feasible solution" };
+    return limit(sol::LIMIT_FEAS_INTERRUPT, sol::LIMIT_NO_FEAS_INTERRUPT, "interrupted");
   case 7:
     return { sol::FAILURE+2, "too little memory" };
   case 9:
@@ -248,7 +260,7 @@ std::pair<int, std::string> BaronmpBackend::GetSolveResult() {
   case 10:
     return { sol::FAILURE, "licensing error" };
   case 11:
-    return { sol::LIMIT_NO_FEAS_INTERRUPT, "interrupted by Control-C" };
+    return limit(sol::LIMIT_FEAS_INTERRUPT, sol::LIMIT_NO_FEAS_INTERRUPT, "interrupted by Control-C");
   }
   return { sol::UNKNOWN, fmt::format("Unknown solution status: {}", timFileData_.barstatus) };
 }
@@ -313,6 +325,30 @@ void BaronmpBackend::InitCustomOptions() {
   ADDALGOPTION(epsr);
   ADDALGOPTION(firstfeas);
   ADDALGOPTION(firstloc);
+
+  ADDOPTION(absconfeastol, "alg:feastol feastol absconfeastol");
+  ADDOPTION(absintfeastol, "mip:intfeastol intfeastol absintfeastol");
+  ADDALGOPTION(boxtol);
+  ADDALGOPTION(cutoff);
+  ADDALGOPTION(isoltol);
+  ADDOPTION(relconfeastol, "alg:relfeastol relconfeastol");
+  ADDOPTION(relintfeastol, "mip:relintfeastol relintfeastol");
+  ADDOPTION(brptstra, "branch:point brptstra");
+  ADDOPTION(brvarstra, "branch:var brvarstra");
+  ADDALGOPTION(dolocal);
+  ADDOPTION(lbttdo, "pre:lbttdo lbttdo");
+  ADDOPTION(lpalg, "lp:alg lpalg");
+  ADDOPTION(mdo, "pre:mdo mdo");
+  ADDOPTION(nodesel, "mip:nodesel nodesel");
+  ADDALGOPTION(nouter1);
+  ADDALGOPTION(noutiter);
+  ADDALGOPTION(noutpervar);
+  ADDALGOPTION(numloc);
+  ADDOPTION(obttdo, "pre:obttdo obttdo");
+  ADDALGOPTION(outgrid);
+  ADDOPTION(pdo, "pre:pdo pdo");
+  ADDOPTION(tdo, "pre:tdo tdo");
+  ADDALGOPTION(wantdual);
 
   // ADDALGOPTION(iisint);
   // ADDALGOPTION(iismethod);

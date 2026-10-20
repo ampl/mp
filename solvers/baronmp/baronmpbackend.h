@@ -165,6 +165,7 @@ protected:
   ArrayRef<double> DualSolution_LP();
 
   void WindupBARONMPSolve();
+  bool IsMaximize() const;
 
   void ReportResults() override;
   void ReportBARONMPResults();

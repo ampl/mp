@@ -66,6 +66,31 @@ namespace mp {
     int firstfeas = 0;
     int firstloc = 0;
 
+    // Documented BARON options, written when they differ from BARON's default
+    double absconfeastol = 1e-6;
+    double absintfeastol = 1e-5;
+    double boxtol = 1e-8;
+    double cutoff = INFINITY;         // written only when set
+    double isoltol = 1e-4;
+    double relconfeastol = 0.0;
+    double relintfeastol = 0.0;
+    int brptstra = 0;
+    int brvarstra = 0;
+    int dolocal = 1;
+    int lbttdo = 1;
+    int lpalg = 0;
+    int mdo = 1;
+    int nodesel = 0;
+    int nouter1 = 4;
+    int noutiter = 4;
+    int noutpervar = 4;
+    int numloc = -2;
+    int obttdo = 1;
+    int outgrid = 20;
+    int pdo = -2;
+    int tdo = 1;
+    int wantdual = 0;
+
     int iismethod = 0;
     int iisint = 0;
     int iisorder = 0;
@@ -129,6 +154,83 @@ namespace mp {
         {"alg:firstloc firstloc", {"FirstLoc", "If set to 1, BARON will terminate once it finds "
             "a local optimum, irrespective of solution quality. Default is 0, "
             "meaning that BARON will search for the best numsol feasible solutions.", 0}},
+        {"alg:feastol feastol absconfeastol", {"AbsConFeasTol",
+            "Absolute constraint and bound feasibility tolerance (default 1e-6, min 1e-12).", 1e-6}},
+        {"mip:intfeastol intfeastol absintfeastol", {"AbsIntFeasTol",
+            "Absolute integer feasibility tolerance (default 1e-5, min 1e-12).", 1e-5}},
+        {"alg:boxtol boxtol", {"BoxTol",
+            "Boxes smaller than this are eliminated (default 1e-8, min 1e-12).", 1e-8}},
+        {"alg:cutoff cutoff", {"CutOff",
+            "Ignore solutions that are no better than this value (default: no cutoff).", INFINITY}},
+        {"alg:isoltol isoltol", {"ISolTol",
+            "Feasible solutions closer than this are considered identical (default 1e-4).", 1e-4}},
+        {"alg:relfeastol relconfeastol", {"RelConFeasTol",
+            "Relative constraint feasibility tolerance (default 0, max 0.1).", 0.0}},
+        {"mip:relintfeastol relintfeastol", {"RelIntFeasTol",
+            "Relative integer feasibility tolerance (default 0, max 0.1).", 0.0}},
+        {"branch:point brptstra", {"BrPtStra",
+            "Branching point selection strategy:\n"
+            "\n"
+            "  | 0 - Dynamic (default)\n"
+            "  | 1 - Omega-branching\n"
+            "  | 2 - Bisection\n"
+            "  | 3 - Convex combination.", 0}},
+        {"branch:var brvarstra", {"BrVarStra",
+            "Branching variable selection strategy:\n"
+            "\n"
+            "  | 0 - Dynamic (default)\n"
+            "  | 1 - Largest violation\n"
+            "  | 2 - Longest edge.", 0}},
+        {"alg:dolocal dolocal", {"DoLocal",
+            "0/1: whether to use local search during upper bounding (default 1).", 1}},
+        {"pre:lbttdo lbttdo", {"LBTTDo",
+            "0/1: linear-feasibility-based range reduction (default 1).", 1}},
+        {"lp:alg lpalg", {"LPAlg",
+            "LP algorithm when CPLEX is the LP solver:\n"
+            "\n"
+            "  | 0 - Automatic (default)\n"
+            "  | 1 - Primal simplex\n"
+            "  | 2 - Dual simplex\n"
+            "  | 3 - Barrier.", 0}},
+        {"pre:mdo mdo", {"MDo",
+            "0/1: marginals-based range reduction (default 1).", 1}},
+        {"mip:nodesel nodesel", {"NodeSel",
+            "Node selection strategy:\n"
+            "\n"
+            "  | 0 - Mixed (default)\n"
+            "  | 1 - Best bound\n"
+            "  | 2 - LIFO\n"
+            "  | 3 - Minimum infeasibilities.", 0}},
+        {"alg:nouter1 nouter1", {"NOuter1",
+            "Number of outer approximators of convex univariate functions (default 4).", 4}},
+        {"alg:noutiter noutiter", {"NOutIter",
+            "Number of rounds of cutting-plane generation at each node (default 4).", 4}},
+        {"alg:noutpervar noutpervar", {"NOutPerVar",
+            "Number of outer approximators per variable for convex multivariate "
+            "functions (default 4).", 4}},
+        {"alg:numloc numloc", {"NumLoc",
+            "Number of local searches in preprocessing:\n"
+            "\n"
+            "  | -2 - Automatic (default)\n"
+            "  | -1 - Until global optimality is proven or the time limit is reached\n"
+            "  | n>=0 - n local searches.", -2}},
+        {"pre:obttdo obttdo", {"OBTTDo",
+            "0/1: optimality-based range tightening (default 1).", 1}},
+        {"alg:outgrid outgrid", {"OutGrid",
+            "Number of grid points per variable for the outer approximators of "
+            "convex multivariate functions (default 20).", 20}},
+        {"pre:pdo pdo", {"PDo",
+            "Number of probing problems in range reduction:\n"
+            "\n"
+            "  | -2 - Automatic (default)\n"
+            "  | -1 - All\n"
+            "  | 0 - None\n"
+            "  | n>0 - n problems.", -2}},
+        {"pre:tdo tdo", {"TDo",
+            "0/1: nonlinear-feasibility-based range reduction (default 1).", 1}},
+        {"alg:wantdual wantdual", {"WantDual",
+            "0/1: whether BARON computes dual values for the best solution (default 0).", 0}},
+
        // TODO
        /* {"alg:iisint iisint", {"IISint", "Whether to include integer variables in an IIS:\n\n.. value-table::\n",0}},
         {"alg:iismethod iismethod", {"CompIIS", "Which method to use when finding an IIS (irreducible infeasible "
@@ -224,6 +326,29 @@ namespace mp {
       ADDALGSER(epsr);
       ADDALGSER(firstfeas);
       ADDALGSER(firstloc);
+      ADDSER(absconfeastol, "alg:feastol feastol absconfeastol");
+      ADDSER(absintfeastol, "mip:intfeastol intfeastol absintfeastol");
+      ADDALGSER(boxtol);
+      ADDALGSER(cutoff);
+      ADDALGSER(isoltol);
+      ADDSER(relconfeastol, "alg:relfeastol relconfeastol");
+      ADDSER(relintfeastol, "mip:relintfeastol relintfeastol");
+      ADDSER(brptstra, "branch:point brptstra");
+      ADDSER(brvarstra, "branch:var brvarstra");
+      ADDALGSER(dolocal);
+      ADDSER(lbttdo, "pre:lbttdo lbttdo");
+      ADDSER(lpalg, "lp:alg lpalg");
+      ADDSER(mdo, "pre:mdo mdo");
+      ADDSER(nodesel, "mip:nodesel nodesel");
+      ADDALGSER(nouter1);
+      ADDALGSER(noutiter);
+      ADDALGSER(noutpervar);
+      ADDALGSER(numloc);
+      ADDSER(obttdo, "pre:obttdo obttdo");
+      ADDALGSER(outgrid);
+      ADDSER(pdo, "pre:pdo pdo");
+      ADDSER(tdo, "pre:tdo tdo");
+      ADDALGSER(wantdual);
      /* ADDALGSER(iisint);
       ADDALGSER(iismethod);
       ADDALGSER(iisorder);*/
@@ -440,12 +565,21 @@ public:
   const std::vector<double>& Objectives() { return objective_values; }
 
 
-  double ObjectiveValue() const {
-    
-    if(objective_values.size() == 0)
-    return 0;
-    return objective_values[objective_values.size() - 1];
+  /// Index of the best of the reported solutions (BARON lists the
+  /// NumSol solutions it found, not necessarily best first)
+  int BestSolutionIndex(bool maximize) const {
+    int best = -1;
+    for (int i = 0; i < (int)objective_values.size(); ++i)
+      if (best < 0 || (maximize ? objective_values[i] > objective_values[best]
+                                : objective_values[i] < objective_values[best]))
+        best = i;
+    return best;
   }
+  double ObjectiveValue(bool maximize) const {
+    int best = BestSolutionIndex(maximize);
+    return best < 0 ? 0.0 : objective_values[best];
+  }
+  bool HasSolution() const { return !objective_values.empty(); }
 
   const std::vector<std::vector<double>>& PrimalSolutions() {
     return primal_solutions;
@@ -453,9 +587,10 @@ public:
   const std::vector<std::vector<double>>& DualSolutions() {
     return dual_solutions;
   }
-  const std::vector<double>& PrimalSolution() {
-    if (primal_solutions.size() > 0)
-      return primal_solutions[primal_solutions.size() - 1];
+  const std::vector<double>& PrimalSolution(bool maximize) {
+    int best = BestSolutionIndex(maximize);
+    if (best >= 0 && best < (int)primal_solutions.size())
+      return primal_solutions[best];
     else
     {
       primal_solutions.push_back(std::vector<double>());
