@@ -2,6 +2,8 @@
 #include <climits>
 #include <cfloat>
 #include <cmath>
+#include <cstring>
+#include <cstdlib>
 #include <algorithm>
 
 #include "mp/env.h"
@@ -49,7 +51,85 @@ HighsBackend::HighsBackend() {
 }
 
 HighsBackend::~HighsBackend() {
+  DestroyFixedLP();
   CloseSolver();
+}
+
+void HighsBackend::DestroyFixedLP() {
+  if (fixed_) {
+    loader().Highs_destroy(fixed_);
+    fixed_ = nullptr;
+  }
+}
+
+void HighsBackend::CopyOptionsToFixedLP(void* fixed) {
+  // Options not copied: the algorithm (always simplex, to obtain a basis),
+  // limits (mip:basis:timelimit/iterlimit apply instead) and file output.
+  static const char* const skip[] = {
+    "solver", "time_limit", "simplex_iteration_limit", "ipm_iteration_limit",
+    "pdlp_iteration_limit", "qp_iteration_limit",
+    "objective_bound", "objective_target",
+    "write_model_to_file", "write_presolved_model_to_file",
+    "write_solution_to_file", "write_model_file", "solution_file",
+    "write_basis_file", "write_presolved_model_file", "write_iis_model_file",
+    "read_solution_file", "read_basis_file",
+    "mip_improving_solution_save", "mip_improving_solution_file",
+    "mip_debug_solution_file"
+  };
+  if (!loader().Highs_getNumOptions || !loader().Highs_getOptionName) {
+    int output = 0, threads = 0;
+    GetSolverOption("output_flag", output);
+    GetSolverOption("threads", threads);
+    loader().Highs_setBoolOptionValue(fixed, "output_flag", output);
+    loader().Highs_setIntOptionValue(fixed, "threads", threads);
+    return;
+  }
+  int nopt = loader().Highs_getNumOptions(lp());
+  char sval[kHighsMaximumStringLength];
+  for (int i = 0; i < nopt; ++i) {
+    char* pname = nullptr;       // allocated by HiGHS, freed here
+    if (kHighsStatusOk != loader().Highs_getOptionName(lp(), i, &pname)
+        || !pname) {
+      std::free(pname);
+      continue;
+    }
+    std::string name_str(pname);
+    std::free(pname);
+    const char* name = name_str.c_str();
+    bool skipit = false;
+    for (auto sk : skip)
+      if (0 == std::strcmp(sk, name)) { skipit = true; break; }
+    if (skipit)
+      continue;
+    int type = -1;
+    loader().Highs_getOptionType(lp(), name, &type);
+    switch (type) {
+    case kHighsOptionTypeBool: {
+      int v = 0;
+      if (kHighsStatusOk == loader().Highs_getBoolOptionValue(lp(), name, &v))
+        loader().Highs_setBoolOptionValue(fixed, name, v);
+      break;
+    }
+    case kHighsOptionTypeInt: {
+      int v = 0;
+      if (kHighsStatusOk == loader().Highs_getIntOptionValue(lp(), name, &v))
+        loader().Highs_setIntOptionValue(fixed, name, v);
+      break;
+    }
+    case kHighsOptionTypeDouble: {
+      double v = 0;
+      if (kHighsStatusOk == loader().Highs_getDoubleOptionValue(lp(), name, &v))
+        loader().Highs_setDoubleOptionValue(fixed, name, v);
+      break;
+    }
+    case kHighsOptionTypeString:
+      if (kHighsStatusOk == loader().Highs_getStringOptionValue(lp(), name, sval))
+        loader().Highs_setStringOptionValue(fixed, name, sval);
+      break;
+    default:
+      break;
+    }
+  }
 }
 
 
@@ -255,8 +335,10 @@ void HighsBackend::Solve() {
 }
 
 HighsBackend::FixedLPResult HighsBackend::SolveFixedLP(ArrayRef<double> x) {
-  if (!loader().Highs_getLp || !loader().Highs_passLp || !loader().Highs_getNumNz)
+  if (!loader().Highs_passLp || !loader().Highs_getNumNz ||
+      !(loader().Highs_getFixedLp || loader().Highs_getLp))
     MP_RAISE("HiGHS library lacks fixed-model LP API");
+  DestroyFixedLP();
   int feasible = 0;
   HIGHS_CCALL(loader().Highs_getIntInfoValue(lp(), "primal_solution_status", &feasible));
   if (feasible != kHighsSolutionStatusFeasible)
@@ -269,43 +351,56 @@ HighsBackend::FixedLPResult HighsBackend::SolveFixedLP(ArrayRef<double> x) {
   GetSolverOption("mip_feasibility_tolerance", tol);
   std::vector<double> cost(n), lb(n), ub(n), lhs(m), rhs(m), val(nz);
   std::vector<int> start(n+1), index(nz), integrality(n);
-  HIGHS_CCALL(loader().Highs_getLp(lp(), kHighsMatrixFormatColwise,
-      &nc, &nr, &nnz, &sense, &offset, cost.data(), lb.data(), ub.data(),
-      lhs.data(), rhs.data(), start.data(), index.data(), val.data(), integrality.data()));
+  /// Original bounds, to validate the incumbent's integer values
+  std::vector<double> ocost(n), olb(n), oub(n);
+  int ncols = 0, nnz0 = 0;
+  HIGHS_CCALL(loader().Highs_getColsByRange(lp(), 0, n-1, &ncols,
+      ocost.data(), olb.data(), oub.data(), &nnz0, NULL, NULL, NULL));
+  if (loader().Highs_getFixedLp) {
+    // HiGHS fixes the discrete columns at the incumbent (a warning
+    // reports fractional values; they are validated below)
+    if (kHighsStatusError == loader().Highs_getFixedLp(
+          lp(), kHighsMatrixFormatColwise,
+          &nc, &nr, &nnz, &sense, &offset, cost.data(), lb.data(), ub.data(),
+          lhs.data(), rhs.data(), start.data(), index.data(), val.data()))
+      MP_RAISE("Highs_getFixedLp failed");
+    for (int j = 0; j < n; ++j)
+      HIGHS_CCALL(loader().Highs_getColIntegrality(lp(), j, &integrality[j]));
+  } else {
+    HIGHS_CCALL(loader().Highs_getLp(lp(), kHighsMatrixFormatColwise,
+        &nc, &nr, &nnz, &sense, &offset, cost.data(), lb.data(), ub.data(),
+        lhs.data(), rhs.data(), start.data(), index.data(), val.data(),
+        integrality.data()));
+  }
   for (int j = 0; j < n; ++j) {
     if (integrality[j] == kHighsVarTypeInteger)
-      lb[j] = ub[j] = FixedIntegerValue(x[j], lb[j], ub[j], tol);
+      lb[j] = ub[j] = FixedIntegerValue(x[j], olb[j], oub[j], tol);
     else if (integrality[j] != kHighsVarTypeContinuous)
       MP_RAISE("unsupported semi-continuous/semi-integer variable");
   }
-  auto destroy = [this](void* model) { loader().Highs_destroy(model); };
-  std::unique_ptr<void, decltype(destroy)> fixed(loader().Highs_create(), destroy);
-  if (!fixed) MP_RAISE("cannot create fixed LP");
-  int output = 0, threads = 0;
-  GetSolverOption("output_flag", output);
-  GetSolverOption("threads", threads);
-  HIGHS_CCALL(loader().Highs_setBoolOptionValue(fixed.get(), "output_flag", output));
-  HIGHS_CCALL(loader().Highs_setIntOptionValue(fixed.get(), "threads", threads));
-  HIGHS_CCALL(loader().Highs_setStringOptionValue(fixed.get(), "solver", "simplex"));
+  fixed_ = loader().Highs_create();
+  if (!fixed_) MP_RAISE("cannot create fixed LP");
+  CopyOptionsToFixedLP(fixed_);
+  HIGHS_CCALL(loader().Highs_setStringOptionValue(fixed_, "solver", "simplex"));
   if (fixed_model_time_limit() >= 0)
-    HIGHS_CCALL(loader().Highs_setDoubleOptionValue(fixed.get(), "time_limit", fixed_model_time_limit()));
+    HIGHS_CCALL(loader().Highs_setDoubleOptionValue(fixed_, "time_limit", fixed_model_time_limit()));
   if (fixed_model_iter_limit() >= 0)
-    HIGHS_CCALL(loader().Highs_setIntOptionValue(fixed.get(), "simplex_iteration_limit", fixed_model_iter_limit()));
-  HIGHS_CCALL(loader().Highs_passLp(fixed.get(), n, m, nz,
+    HIGHS_CCALL(loader().Highs_setIntOptionValue(fixed_, "simplex_iteration_limit", fixed_model_iter_limit()));
+  HIGHS_CCALL(loader().Highs_passLp(fixed_, n, m, nz,
       kHighsMatrixFormatColwise, sense, offset, cost.data(), lb.data(), ub.data(),
       lhs.data(), rhs.data(), start.data(), index.data(), val.data()));
-  HIGHS_CCALL(loader().Highs_run(fixed.get()));
-  int status = loader().Highs_getModelStatus(fixed.get());
+  HIGHS_CCALL(loader().Highs_run(fixed_));
+  int status = loader().Highs_getModelStatus(fixed_);
   if (status != kHighsModelStatusOptimal)
     MP_RAISE(fmt::format("fixed LP not optimal (HiGHS status {})", status));
   FixedLPResult result;
-  result.objective = loader().Highs_getObjectiveValue(fixed.get());
+  result.objective = loader().Highs_getObjectiveValue(fixed_);
   result.primal.resize(n);
   result.dual.resize(m);
   result.varstt.resize(n);
   result.constt.resize(m);
-  HIGHS_CCALL(loader().Highs_getSolution(fixed.get(), result.primal.data(), nullptr, nullptr, result.dual.data()));
-  HIGHS_CCALL(loader().Highs_getBasis(fixed.get(), result.varstt.data(), result.constt.data()));
+  HIGHS_CCALL(loader().Highs_getSolution(fixed_, result.primal.data(), nullptr, nullptr, result.dual.data()));
+  HIGHS_CCALL(loader().Highs_getBasis(fixed_, result.varstt.data(), result.constt.data()));
   auto convert = [](int status) {
     switch (status) {
     case kHighsBasisStatusBasic: return (int)BasicStatus::bas;
@@ -318,7 +413,7 @@ HighsBackend::FixedLPResult HighsBackend::SolveFixedLP(ArrayRef<double> x) {
   };
   for (auto& status : result.varstt) status = convert(status);
   for (auto& status : result.constt) status = convert(status);
-  HIGHS_CCALL(loader().Highs_getIntInfoValue(fixed.get(), "simplex_iteration_count", &result.iterations));
+  HIGHS_CCALL(loader().Highs_getIntInfoValue(fixed_, "simplex_iteration_count", &result.iterations));
   return result;
 }
 
@@ -1277,18 +1372,18 @@ ipm_optimality_tolera
 }
 
 double HighsBackend::MIPGap() {
-  if (BarrierIterations() == 0)
+  if (!IsMIP())
     return 0;
   return getDblAttr("mip_gap");
 }
 double HighsBackend::BestDualBound() {
-  if (BarrierIterations() == 0)
+  if (!IsMIP())
     return 0;
   return getDblAttr("mip_dual_bound");
 }
 
 double HighsBackend::MIPGapAbs() {
-  if (BarrierIterations() == 0)
+  if (!IsMIP())
     return 0;
   return std::fabs(
     ObjectiveValue() - BestDualBound());

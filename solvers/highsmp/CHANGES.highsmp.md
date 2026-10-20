@@ -35,6 +35,9 @@ Summary of recent updates to HiGHS for AMPL
   them by a limited MIP search (*mip:maxstartnodes*); *mip:start=2*
   selects the previous driver-side completion by fixing and solving.
   A start rejected by HiGHS gives a warning instead of aborting.
+- *mip:basis* emulation: the fixed LP is obtained with HiGHS's own
+  Highs_getFixedLp and solved with all user options copied (tolerances,
+  presolve, seed, ...), except the algorithm, limits and file output.
 
 
 ## 20260813

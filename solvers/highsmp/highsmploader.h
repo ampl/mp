@@ -145,6 +145,9 @@ namespace mp {
     decltype(&::Highs_passLp) Highs_passLp = nullptr;
     decltype(&::Highs_getNumNz) Highs_getNumNz = nullptr;
     decltype(&::Highs_setSparseSolution) Highs_setSparseSolution = nullptr;
+    decltype(&::Highs_getFixedLp) Highs_getFixedLp = nullptr;
+    decltype(&::Highs_getNumOptions) Highs_getNumOptions = nullptr;
+    decltype(&::Highs_getOptionName) Highs_getOptionName = nullptr;
 
     // Solve
     Highs_run_Func Highs_run;

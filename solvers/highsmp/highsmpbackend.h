@@ -16,6 +16,12 @@ class HighsBackend :
   using BaseBackend = FlatBackend< MIPBackend<HighsBackend> >;
 
   std::vector<int> conStatiii_;
+  /// Separate HiGHS instance holding the fixed LP of mip:basis
+  /// (kept after the solve for sensitivity queries)
+  void* fixed_ = nullptr;
+  void DestroyFixedLP();
+  /// Copy the user's options to the fixed-LP instance
+  void CopyOptionsToFixedLP(void* fixed);
   //////////////////// [[ The public interface ]] //////////////////////
 public:
   HighsBackend();
