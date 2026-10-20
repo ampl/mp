@@ -6,6 +6,41 @@ Summary of recent updates to CPLEX for AMPL
 - Add separate fixed-model limits *mip:basis:timelimit* and
   *mip:basis:iterlimit*.
 - Retain the MIP solution when a supplementary fixed solve reaches a limit.
+- Option fixes: *cut:cuts* had no effect; *bar:growth*, *bar:objrange*,
+  *tech:workfilelim* were rejected by CPLEX (wrong value type);
+  *alg:droptol* was truncated to an integer; *pre:reformulations* set the
+  wrong parameter (new *pre:reduce* for primal/dual reductions);
+  *alg:netfind* values are 1/2/3 as in CPLEX; *pre:node* accepts 2 and 3;
+  the primalopt/dualopt/barrier/network/sifting flags also select the
+  MIP node algorithm.
+- Rejected parameter values now abort with
+  "Rejecting <parameter>=<value>; must be between L and U"
+  instead of being silently ignored.
+- *bar:crossover* defaults to automatic crossover, so the barrier
+  method returns a basic LP solution as the ASL driver does.
+- Alignment with the ASL driver: many keyword synonyms
+  (cliques, feasibility, nodes, startalg, subalg, solutionlim, ...);
+  *perturb* is now a synonym of *lp:doperturb* (the perturbation constant
+  is *lp:perturb* with synonyms *perturbation*, *perturbconst*);
+  *cut:mfc* renamed to *cut:mcf* (old spelling kept).
+- New options for CPLEX parameters previously only in the ASL driver
+  (*lp:markowitz*, *lp:pgradient*, *lp:pricing*, *lp:refactor*,
+  *lp:singular*, *mip:heurfreq*, *mip:heureffort*, *mip:rinsheur*,
+  *mip:lbheur*, *mip:probe*, *mip:symmetry*, *pre:repeat*,
+  *mip:repairtries*, *mip:submipnodelim*, *mip:strongcand*, *mip:strongit*,
+  *lim:treememory*, *mip:polishafter:\**, *mip:kappastats*,
+  *mip:miqcpstrat*, *mip:ordertype*, *bar:ordering*, *bar:qcpcomptol*,
+  *pre:qtolin*, *tech:clocktype*, *tech:parallelmode*, *tech:datacheck*,
+  *tech:warninglimit*, *tech:record*) and further CPLEX parameters
+  (*pre:folding*, *mip:dive*, *mip:cardls*, *lp:dynamicrows*,
+  *pre:qcpduals*, *pre:qpmakepsd*, *mip:eplin*, *alg:feasrelax:tol*,
+  *tech:writelevel*, *tech:intsolfileprefix*, *tech:mpslong*,
+  *tech:clonelog*, *tech:tunemeasure*, *alg:siftalg*, *lim:siftiter*,
+  *tech:siftdisplay*).
+- New driver features from the ASL driver: *tech:tunefix*,
+  *tech:tunefixfile*, *mip:start:effort* (mipstartvalue),
+  *sol:poolpopulate=2*, *mip:basis:method* (finalmipalg), *alg:readbasis*,
+  *alg:concurrent*, *alg:feasopt*/*alg:feasoptobj*, *tech:prestats*.
 
 
 ## 20260720
