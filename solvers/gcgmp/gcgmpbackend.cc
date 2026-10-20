@@ -373,8 +373,8 @@ static const mp::OptionValueInfo lp_values_method[] = {
   { "s", "automatic simplex (default)", -1},
   { "p", "primal simplex", 0},
   { "d", "dual simplex", 1},
-  { "b", "barrier", 2},
-  { "c", "barrier with crossover", 3},
+  { "b", "barrier (SoPlex has none: runs the dual simplex)", 2},
+  { "c", "barrier with crossover (SoPlex: dual simplex)", 3},
 };
 
 static const mp::OptionValueInfo values_pricing[] = {
@@ -409,6 +409,13 @@ static const mp::OptionValueInfo scoretype[] = {
   { "strong", "strong decomposition score", "strong"}
 };
 
+static const mp::OptionValueInfo values_pricing_sorting[] = {
+  { "i", "indices", 0},
+  { "d", "dual solutions of the convexity constraints", 1},
+  { "r", "reliability (default)", 2},
+  { "l", "last pricing results", 3}
+};
+
 static const mp::OptionValueInfo mode[] = {
   { "0", "Dantzig-Wolfe (default)", 0},
   { "1", "Benders' decomposition", 1},
@@ -430,8 +437,9 @@ void GcgBackend::InitCustomOptions() {
     "0*/1: Whether to write GCG log lines (chatter) to stdout and to file.",
     storedOptions_.outlev_);
 
-  AddGcgOption("tech:outlev-native outlev-native",
-    "0*/1/2/3/4/5: Whether to write GCG log lines (chatter) to stdout and to file (native output level of SCIP).",
+  AddGcgOption("tech:outlevnative outlevnative tech:outlev-native outlev-native",
+    "0*/1/2/3/4/5: Native SCIP verbosity level (display/verblevel; the SCIP "
+    "default is 4, the driver's is 0). tech:outlev=1 selects 4.",
     "display/verblevel", 0, 5);
 
   AddStoredOption("tech:logfile logfile",
@@ -487,12 +495,12 @@ void GcgBackend::InitCustomOptions() {
     "cutselection/hybrid/intsupportweight", 0.0, SCIP_REAL_MAX);
 
   AddGcgOption("cut:minortho minortho",
-    "Minimal orthogonality for a cut to enter the LP (default: 0.9)",
-    "cutselection/hybrid/minortho", 0.0, SCIP_REAL_MAX);
+    "Minimal orthogonality for a cut to enter the LP (0..1; default: 0.9)",
+    "cutselection/hybrid/minortho", 0.0, 1.0);
 
   AddGcgOption("cut:minorthoroot minorthoroot",
-    "Minimal orthogonality for a cut to enter the LP in the root node (default: 0.1)",
-    "cutselection/hybrid/minorthoroot", 0.0, SCIP_REAL_MAX);
+    "Minimal orthogonality for a cut to enter the LP in the root node (0..1; default: 0.9)",
+    "cutselection/hybrid/minorthoroot", 0.0, 1.0);
 
   AddGcgOption("cut:objparalweight objparalweight",
     "Weight of objective parallelism in cut score calculation (default: 0.1)",
@@ -504,7 +512,7 @@ void GcgBackend::InitCustomOptions() {
     "separating/maxcuts", 0, INT_MAX);
 
   AddGcgOption("cut:maxcutsroot maxcutsroot",
-    "Maximal number of separated cuts at the root node (0: disable root node separation; default: 2000)",
+    "Maximal number of separated cuts per separation round at the root node (0: disable root node separation; default: 2000)",
     "separating/maxcutsroot", 0, INT_MAX);
 
   AddGcgOption("cut:maxrounds",
@@ -559,7 +567,7 @@ void GcgBackend::InitCustomOptions() {
     storedOptions_.heuristics_, 0, 3);
 
   //////////////////////// LIMITS ////////////////////////
-  AddGcgOption("lim:absgap absgap",
+  AddGcgOption("mip:gapabs mipgapabs lim:absgap absgap",
     "Solving stops, if the absolute gap = |primalbound - dualbound| is below the given value (default: 0.0)",
     "limits/absgap", 0.0, SCIP_REAL_MAX);
 
@@ -567,11 +575,24 @@ void GcgBackend::InitCustomOptions() {
     "If solve exceeds this number of nodes for the first time, an automatic restart is triggered (default: -1: no automatic restart)",
     "limits/autorestartnodes", -1, INT_MAX);
 
+  AddGcgOption("lim:bestbndstop bestbndstop lim:dual",
+    "Solving stops, if the dual bound is at least as good as this value (default: no limit)",
+    "limits/dual", -SCIP_REAL_MAX, SCIP_REAL_MAX);
+
+  AddGcgOption("lim:bestobjstop bestobjstop lim:primal",
+    "Solving stops, if the primal bound is at least as good as this value (default: no limit)",
+    "limits/primal", -SCIP_REAL_MAX, SCIP_REAL_MAX);
+
+  AddGcgOption("lim:iter iterlim lp:iterlim",
+    "Iteration limit for each single LP solve of the original problem "
+    "(default: -1: no limit). Not a total limit.",
+    "lp/iterlim", -1, INT_MAX);
+
   AddGcgOption("lim:bestsol",
     "Solving stops, if the given number of solution improvements were found (default: -1: no limit)",
     "limits/bestsol", -1, INT_MAX);
 
-  AddGcgOption("lim:gap gap",
+  AddGcgOption("mip:gap mipgap lim:gap gap",
     "Solving stops, if the relative gap = |primal - dual|/MIN(|dual|,|primal|) is below the given value, the gap is 'Infinity', if primal and dual bound have opposite signs (default: 0.0)",
     "limits/gap", 0.0, SCIP_REAL_MAX);
 
@@ -583,25 +604,25 @@ void GcgBackend::InitCustomOptions() {
     "Maximal number of solutions to store in the solution storage (default: 100)",
     "limits/maxsol", 1, INT_MAX);
 
-  AddGcgOption("lim:memory memory",
+  AddGcgOption("lim:memory memory memlim",
     "#maximal memory usage in MB; reported memory usage is lower than real memory usage! (default: 8796093022207.0)",
     "limits/memory", 0.0, (SCIP_Real)SCIP_MEM_NOLIMIT);
 
-  AddGcgOption("lim:nodes",
+  AddGcgOption("lim:nodes nodelim nodelimit",
     "Maximal number of nodes to process (default: -1: no limit)",
-    "limits/nodes", -1, (int)SCIP_LONGINT_MAX);
+    "limits/nodes", -1, INT_MAX);
 
   AddGcgOption("lim:restarts",
     "Solving stops, if the given number of restarts was triggered (default: -1: no limit)",
     "limits/restarts", -1, INT_MAX);
 
-  AddGcgOption("lim:solutions",
+  AddGcgOption("lim:sol sollim solutionlimit lim:solutions",
     "Solving stops, if the given number of solutions were found (default: -1: no limit)",
     "limits/solutions", -1, INT_MAX);
 
   AddGcgOption("lim:stallnodes",
     "Solving stops, if the given number of nodes was processed since the last improvement of the primal solution value (default: -1: no limit)",
-    "limits/stallnodes", -1, (int)SCIP_LONGINT_MAX);
+    "limits/stallnodes", -1, INT_MAX);
 
   AddGcgOption("lim:time timelim timelimit time_limit",
     "Limit on solve time (in seconds; default: 1e+20).",
@@ -609,7 +630,7 @@ void GcgBackend::InitCustomOptions() {
 
   AddGcgOption("lim:totalnodes",
     "Maximal number of total nodes (incl. restarts) to process (default: -1: no limit)",
-    "limits/totalnodes", -1, (int)SCIP_LONGINT_MAX);
+    "limits/totalnodes", -1, INT_MAX);
 
   ////////////////////////// LP //////////////////////////
   AddGcgOption("lp:pricing pricing",
@@ -623,6 +644,10 @@ void GcgBackend::InitCustomOptions() {
     "  | 0 - Presolving of LP solver should not be used\n"
     "  | 1 - Presolving of LP solver should be used (default).",
     "lp/presolving", 0, 1);
+
+  AddGcgOption("lp:scaling pre:scale scale",
+    "LP scaling: 0 none, 1 normal (default), 2 aggressive.",
+    "lp/scaling", 0, 2);
 
   AddGcgOption("lp:threads",
     "Number of threads used for solving the LP (default: 0: automatic)",
@@ -640,7 +665,7 @@ void GcgBackend::InitCustomOptions() {
     "lp/solvedepth", -1, SCIP_MAXTREEDEPTH);
 
   AddGcgOption("lp:solvefreq",
-    "Frequency for solving LP at the nodes (-1: never; 0: only root LP; default: 0)",
+    "Frequency for solving LP at the nodes (-1: never; 0: only root LP; default: 1)",
     "lp/solvefreq", -1, SCIP_MAXTREEDEPTH);
 
   ///////////////////////// SOLUTION POOL /////////////////////////
@@ -688,7 +713,7 @@ void GcgBackend::InitCustomOptions() {
     "Feasibility tolerance factor; for checking the feasibility of the best solution (default: 1.0)",
     "numerics/checkfeastolfac", 0.0, SCIP_REAL_MAX);
 
-  AddGcgOption("num:dualfeastol dualfeastol",
+  AddGcgOption("alg:dualfeastol dualfeastol num:dualfeastol",
     "Feasibility tolerance for reduced costs in LP solution (default: 1e-07)",
     "numerics/dualfeastol", SCIP_MINEPSILON*1e+03, SCIP_MAXEPSILON);
 
@@ -696,7 +721,7 @@ void GcgBackend::InitCustomOptions() {
     "Absolute values smaller than this are considered zero (default: 1e-09)",
     "numerics/epsilon", SCIP_MINEPSILON, SCIP_MAXEPSILON);
 
-  AddGcgOption("num:feastol feastol",
+  AddGcgOption("alg:feastol feastol num:feastol",
     "Feasibility tolerance for constraints (default: 1e-06)",
     "numerics/feastol", SCIP_MINEPSILON*1e+03, SCIP_MAXEPSILON);
 
@@ -709,7 +734,7 @@ void GcgBackend::InitCustomOptions() {
     "numerics/lpfeastolfactor", 1e-6, 1.0);
 
   AddGcgOption("num:sumepsilon sumepsilon",
-    "Absolute values of sums smaller than this are considered (default: 1e-06)",
+    "Absolute values of sums smaller than this are considered zero (default: 1e-06)",
     "numerics/sumepsilon", SCIP_MINEPSILON*1e+03, SCIP_MAXEPSILON);
 
   //////////////////// NODESELECTION /////////////////////
@@ -757,7 +782,7 @@ void GcgBackend::InitCustomOptions() {
     "presolving/donotmultaggr", 0, 1);
 
   AddGcgOption("pre:immrestartfac immrestartfac",
-    "Fraction of integer variables that were fixed in the root node triggering an immediate restart with preprocessing (default: 0.1)",
+    "Fraction of integer variables that were fixed in the root node triggering an immediate restart with preprocessing (default: 0.05)",
     "presolving/immrestartfac", 0.0, 1.0);
 
   AddGcgOption("pre:restartfac restartfac",
@@ -765,7 +790,7 @@ void GcgBackend::InitCustomOptions() {
     "presolving/restartfac", 0.0, 1.0);
 
   AddGcgOption("pre:restartminred restartminred",
-    "Minimal fraction of integer variables removed after restart to allow for an additional restart (default: 0.1)",
+    "Minimal fraction of integer variables removed after restart to allow for an additional restart (default: 0.05)",
     "presolving/restartminred", 0.0, 1.0);
 
   AddGcgOption("pre:subrestartfac subrestartfac",
@@ -825,18 +850,102 @@ void GcgBackend::InitCustomOptions() {
     "  | 1 - Order of variables should be permuted.",
     "randomization/permutevars", 0, 1);
 
-  AddGcgOption("ran:lpseed lpseed",
+  AddGcgOption("tech:lpseed lpseed ran:lpseed",
     "Random seed for LP solver, e.g. for perturbations in the simplex (default: 0: LP default)",
     "randomization/lpseed", 0, INT_MAX);
 
-  AddGcgOption("ran:permutationseed permutationseed",
+  AddGcgOption("tech:permseed permseed ran:permutationseed permutationseed",
     "Seed value for permuting the problem after reading/transformation (default: 0: no permutation) ",
     "randomization/permutationseed", 0, INT_MAX);
 
-  AddGcgOption("ran:randomseedshift randomseedshift",
+  AddGcgOption("tech:seed seed ran:randomseedshift randomseedshift",
     "Global shift of all random seeds in the plugins and the LP random seed (default: 0) ",
     "randomization/randomseedshift", 0, INT_MAX);
 
+
+  AddGcgOption("tech:clocktype clocktype",
+    "Clock type for time limits and reporting: 1 CPU user seconds, "
+    "2 wall clock time (default).",
+    "timing/clocktype", 1, 2);
+
+  ///////////////////////// PRICING //////////////////////
+  AddGcgOption("tech:threads threads pricing:threads",
+    "Maximum number of threads used to parallelize pricing "
+    "(default 1; 0: automatic, at most 8). The branch-and-price itself "
+    "is sequential.",
+    "pricing/masterpricer/nthreads", 0, 8);
+
+  AddGcgOption("pricing:stabilization stabilization",
+    "0/1: whether dual value stabilization should be performed in "
+    "pricing (default 1).",
+    "pricing/masterpricer/stabilization", 0, 1);
+
+  AddGcgOption("pricing:stabilizationtree stabilizationtree",
+    "0/1: whether stabilization should also be performed in the tree, "
+    "in nodes other than the root (default 0).",
+    "pricing/masterpricer/stabilizationtree", 0, 1);
+
+  // pricing/masterpricer/usecolpool is not exposed: GCG 4.0.2 crashes
+  // with usecolpool=FALSE (segmentation fault in pricing).
+
+  AddGcgOption("pricing:artificialvars useartificialvars",
+    "0/1: whether artificial variables are used to make the restricted "
+    "master feasible instead of Farkas pricing (default 0).",
+    "pricing/masterpricer/useartificialvars", 0, 1);
+
+  AddGcgOption("pricing:maxcolsround maxcolsroundredcost",
+    "Maximal number of columns per reduced cost pricing round (default 100)",
+    "pricing/masterpricer/maxcolsroundredcost", 0, INT_MAX);
+
+  AddGcgOption("pricing:maxcolsroundroot maxcolsroundredcostroot",
+    "Maximal number of columns per reduced cost pricing round at the "
+    "root node (default 100)",
+    "pricing/masterpricer/maxcolsroundredcostroot", 0, INT_MAX);
+
+  AddGcgOption("pricing:maxcolsprob maxcolsprobredcost",
+    "Maximal number of columns per pricing problem per reduced cost "
+    "pricing round (default 10)",
+    "pricing/masterpricer/maxcolsprobredcost", 0, INT_MAX);
+
+  AddGcgOption("pricing:maxrounds maxroundsredcost",
+    "Maximal number of pricing rounds per node after the root node "
+    "(default: no limit)",
+    "pricing/masterpricer/maxroundsredcost", 0, INT_MAX);
+
+  AddGcgOption("pricing:eagerfreq eagerfreq",
+    "Frequency at which all pricing problems are solved (default 10; "
+    "0: disabled)",
+    "pricing/masterpricer/eagerfreq", 0, INT_MAX);
+
+  AddGcgOption("pricing:heuriters heurpricingiters",
+    "Maximum number of heuristic pricing iterations per pricing call and "
+    "problem (default 1)",
+    "pricing/masterpricer/heurpricingiters", 0, INT_MAX);
+
+  AddGcgOption("pricing:maxheurdepth maxheurdepth",
+    "Maximum depth at which heuristic pricing is performed "
+    "(default -1: no limit)",
+    "pricing/masterpricer/maxheurdepth", -1, INT_MAX);
+
+  AddGcgOption("pricing:sorting sorting",
+    "Order in which the pricing problems are solved:\n"
+    "\n.. value-table::\n",
+    "pricing/masterpricer/sorting", values_pricing_sorting, "r");
+
+  AddGcgOption("pricing:dispinfos pricingdispinfos",
+    "0/1: whether additional information on the pricing process is "
+    "displayed (default 0).",
+    "pricing/masterpricer/dispinfos", 0, 1);
+
+  AddGcgOption("gcg:dispinfos dispinfos",
+    "0/1: whether additional information about the blocks is displayed "
+    "(default 0).",
+    "relaxing/gcg/dispinfos", 0, 1);
+
+  AddGcgOption("gcg:enforceproper enforceproper",
+    "0/1: whether propagated bound changes in the original problem are "
+    "enforced in the master (only proper variables; default 1).",
+    "relaxing/gcg/enforceproper", 0, 1);
 
   ////////////////////// DETECTION ///////////////////////
   AddGcgOption("det:enabled",
@@ -857,6 +966,11 @@ void GcgBackend::InitCustomOptions() {
     "Maximum number of detection loop rounds (default: 1) ",
     "detection/maxrounds", 0, INT_MAX);
 
+  AddGcgOption("det:maxnclasses maxnclasses",
+    "Maximum number of classes a partition can use for voting on the "
+    "number of blocks (default 18)",
+    "detection/blocknrcandidates/maxnclasses", 0, INT_MAX);
+
   AddGcgOption("det:maxtime",
     "Maximum detection time in seconds (default: 600) ",
     "detection/maxtime", 0, INT_MAX);
@@ -866,21 +980,21 @@ void GcgBackend::InitCustomOptions() {
     "\n.. value-table::\n", "detection/scores/selected", scoretype,
     "spfwh");
 
-  AddGcgOption("det:origprob-classificationenabled origprob-classificationenabled",
+  AddGcgOption("det:origprobclassification det:origprob-classificationenabled origprob-classificationenabled",
     "0/1: whether classification for the original problem should be enabled? "
     "\n"
     "  | 0 - Classification for the original problem not enabled\n"
     "  | 1 - Classification for the original problem enabled (default).",
     "detection/origprob/classificationenabled", 0, 1);
 
-  AddGcgOption("det:origprob-enabled origprob-enabled",
+  AddGcgOption("det:origprob det:origprob-enabled origprob-enabled",
     "0/1: whether detection for the original problem should be enabled? "
     "\n"
     "  | 0 - Detection for the original problem not enabled\n"
     "  | 1 - Detection for the original problem enabled (default).",
     "detection/origprob/enabled", 0, 1);
 
-  AddGcgOption("det:classification-enabled classification-enabled",
+  AddGcgOption("det:classification det:classification-enabled classification-enabled",
     "0/1: whether classification should be enabled? "
     "\n"
     "  | 0 - Classification not enabled\n"
@@ -895,21 +1009,21 @@ void GcgBackend::InitCustomOptions() {
     "Maximum number of classes per partition for large problems (nconss + nvars >= 50000) (default: 5)",
     "detection/classification/maxnclassesperpartitionforlargeprobs", 0, INT_MAX);
   
-  AddGcgOption("det:benders-enabled benders-enabled",
+  AddGcgOption("det:benders det:benders-enabled benders-enabled",
     "0/1: whether benders detection should be enabled? "
     "\n"
     "  | 0 - Benders detection not enabled (default)\n"
     "  | 1 - Benders detection enabled.",
     "detection/benders/enabled", 0, 1);
 
-  AddGcgOption("det:benders-onlybinmaster benders-onlybinmaster",
+  AddGcgOption("det:bendersonlybinmaster det:benders-onlybinmaster benders-onlybinmaster",
     "0/1: whether only decomposition with only binary variables in the master are searched? "
     "\n"
     "  | 0 - Not only decomposition with only binary variables in the master are searched (default)\n"
     "  | 1 - Only decomposition with only binary variables in the master are searched.",
     "detection/benders/onlybinmaster", 0, 1);
 
-  AddGcgOption("det:benders-onlycontsubpr benders-onlycontsubpr",
+  AddGcgOption("det:bendersonlycontsubpr det:benders-onlycontsubpr benders-onlycontsubpr",
     "0/1: whether only decomposition with only continiuous variables in the subproblems are searched? "
     "\n"
     "  | 0 - Not only decomposition with only continiuous variables in the subproblems are searched (default)\n"
