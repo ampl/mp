@@ -20,8 +20,12 @@ Summary of recent updates to Xpress for AMPL
   *tech:sleeponthreadwait* are ignored by Xpress.
 - *heurdepth* now sets HEURDEPTH as in the ASL driver (it was a synonym
   of *lim:heurdiveiterlimit*); *heurfreq* is no longer ambiguous.
-- Solution pool option *sol:pooldups* (duplicate policy) is set on the
-  pool object and works; *obj:multi:ops* and *obj:multi:log* added.
+- Solution pool: *sol:pooldups* (duplicate policy) is set on the pool
+  object and works, and distinct solutions are the default (the pool
+  used to report duplicates up to the limit); new *sol:poolgap*,
+  *sol:poolgapabs* and *sol:poolmode* with the same meaning as in the
+  Gurobi and CPLEX drivers; *sol:poollimit* defaults to 10 as
+  documented; *obj:multi:ops* and *obj:multi:log* added.
 - New *tech:optionnative* (*tech:param*, *param*): any Xpress control by
   name, "NAME=value" or "NAME=?"; *alg:readbasis* (*basisin*): starting
   basis from a .bas file. Rows are now named in the Xpress model, so

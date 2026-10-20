@@ -192,6 +192,12 @@ protected:
 
   /// Attach the solution pool to the problem and prepare the enumerator
   void CreateSolutionPoolEnvironment();
+  /// Enumerate the sol:poollimit best solutions into the pool
+  void EnumerateSolutions();
+  /// Pool solution ids, best objective first
+  std::vector<int> PoolSolutionIdsBestFirst();
+  /// Is a pool solution within sol:poolgap / sol:poolgapabs of the best?
+  bool IsWithinPoolGap(double obj, double best) const;
   /// Apply the tech:optionnative entries ("NAME=value", "NAME=?")
   void ApplyNativeOptions();
   void ApplyNativeOption(const std::string& name, const std::string& value);
@@ -261,11 +267,12 @@ private:
 
   /// These options are stored in the class
   struct Options {
-    int nbest_ = 0;
+    int nbest_ = 10;                // sol:poollimit
     int pooldualred_;
     int pooldupcol_;
-    int poollimit_ = 10;
-    int nPoolMode_ = 0;
+    int nPoolMode_ = 2;             // sol:poolmode
+    double poolGap_ = 1e100;        // sol:poolgap, relative
+    double poolGapAbs_ = 1e100;     // sol:poolgapabs
     int nonconvex_ = -1;            // deprecated qp:nonconvex, -1: unset
     bool fBarrier_ = 0;
     bool fPrimal_ = 0;

@@ -81,6 +81,10 @@ void XpressmpBackend::OpenSolver() {
   model_fixed_ = lp();
   XPRESSMP_CCALL(XPRS_msp_create(&msp_));
   XPRESSMP_CCALL(XPRS_mse_create(&mse_));
+  // Distinct MIP solutions: compare the discrete variables only
+  // (the documented default; a fresh pool object keeps duplicates)
+  XPRESSMP_CCALL(XPRS_msp_setintcontrol(
+      msp_, XPRS_MSP_DUPLICATESOLUTIONSPOLICY, 3));
   copy_common_info_to_other();
 }
 
@@ -380,22 +384,18 @@ void XpressmpBackend::Solve() {
   
   auto flags = XPRESSSolveFlags();
   int solvest=0, solst=0;
-  if (IsMIP()) {
-    if (need_multiple_solutions() || storedOptions_.nbest_ > 1) {
-      if (storedOptions_.nbest_ == 0) {
-        storedOptions_.nbest_ = 20;
-      }
-      XPRESSMP_CCALL(XPRS_mse_opt(mse_, lp(),
-        msp_, XPRS_mse_defaulthandler, 0,
-        &storedOptions_.nbest_));
-    }
-    else
-      XPRESSMP_CCALL(XPRSoptimize(lp(), flags.c_str(), &solvest, &solst));
-  }
-  else
-      XPRESSMP_CCALL(XPRSoptimize(lp(), flags.c_str(), &solvest, &solst));
+  if (IsMIP() && need_multiple_solutions() && storedOptions_.nPoolMode_)
+    EnumerateSolutions();
+  else      // with sol:poolmode=0 the attached pool collects the solutions found
+    XPRESSMP_CCALL(XPRSoptimize(lp(), flags.c_str(), &solvest, &solst));
 
   WindupXPRESSMPSolve();
+}
+
+void XpressmpBackend::EnumerateSolutions() {
+  int nMaxSols = std::max(1, storedOptions_.nbest_);
+  XPRESSMP_CCALL(XPRS_mse_opt(mse_, lp(), msp_,
+                              XPRS_mse_defaulthandler, 0, &nMaxSols));
 }
 
 std::string XpressmpBackend::XPRESSSolveFlags() {
@@ -523,25 +523,44 @@ std::string XpressmpBackend::DoXpressFixedModel()
     XPRS_msp_getdblattribprobsol(msp_, lp(), id, &j, XPRS_MSP_SOLPRB_OBJ, &obj);
     return obj;
   }
+  std::vector<int> XpressmpBackend::PoolSolutionIdsBestFirst() {
+    int nPool = 0;
+    XPRESSMP_CCALL(XPRS_msp_getintattrib(msp_, XPRS_MSP_SOLUTIONS, &nPool));
+    std::vector<int> ids(nPool);
+    int nReturned = 0, nSols = 0;
+    if (nPool) {
+      bool ascending = getDblAttr(XPRS_OBJSENSE) >= 0;    // minimization
+      XPRESSMP_CCALL(XPRS_msp_getsollist(msp_, lp(), XPRS_MSP_SOLPRB_OBJ,
+                                         ascending, 1, nPool,
+                                         ids.data(), &nReturned, &nSols));
+    }
+    ids.resize(nReturned);
+    return ids;
+  }
+
+  bool XpressmpBackend::IsWithinPoolGap(double obj, double best) const {
+    double worsening = (obj - best) * (getDblAttr(XPRS_OBJSENSE) >= 0 ? 1 : -1);
+    return worsening <= storedOptions_.poolGapAbs_
+        && worsening <= storedOptions_.poolGap_ * std::fabs(best);
+  }
+
+  /// Report the pool solutions, best first, within the pool gaps
+  /// and up to sol:poollimit of them
   void XpressmpBackend::ReportXPRESSMPPool() {
     if (!IsMIP())
       return;
-    int iPoolSolution = -1;
-    int nPool;
-    XPRS_msp_getintattrib(msp_, XPRS_MSP_SOLUTIONS, &nPool);
-    auto sid = std::vector<int>(nPool);
-    int nret, nsols;
-    XPRS_msp_getsollist(msp_, 0, 0, 0, 1, nPool, sid.data(),
-      &nret, &nsols);
-    nPool = nret;
-    int id;
-    for (int i = 0; i < nPool; i++) {
-      id = sid[i];
+    auto ids = PoolSolutionIdsBestFirst();
+    int nReported = 0;
+    for (int id: ids) {
+      double obj = getPoolObjective(id);
+      if (nReported >= std::max(1, storedOptions_.nbest_)
+          || !IsWithinPoolGap(obj, getPoolObjective(ids.front())))
+        break;
       auto mv = GetValuePresolver().PostsolveSolution({
             getPoolSolution(id) });
       ReportIntermediateSolution(
-        { mv.GetVarValues()(), mv.GetConValues()(),
-          { getPoolObjective(id) } });   // not when multiobj
+        { mv.GetVarValues()(), mv.GetConValues()(), { obj } });   // not when multiobj
+      ++nReported;
     }
   }
 
@@ -902,6 +921,12 @@ std::string XpressmpBackend::DoXpressFixedModel()
     { "536870912 = 2^29", "No dual reduction on globals", XPRS_PRESOLVEOPS_NODUALREDONGLOBALS},
   };
 
+  static const mp::OptionValueInfo values_pool_mode[] = {
+    { "0", "Just collect the solutions found during the normal solve", 0},
+    { "1", "Same as 2", 1},
+    { "2", "Seek \"poollimit\" best solutions (default); "
+           "the solutions reported are limited by poolgap and poolgapabs", 2}
+  };
   static const mp::OptionValueInfo pooldups_values_[] = {
     { "0", "Retain all duplicates", 0},
     { "1", "Discard exact matches", 1},
@@ -1192,11 +1217,27 @@ void XpressmpBackend::InitCustomOptions() {
 
   AddOptionSynonyms_Inline_Front("ams_stub", "sol:stub");
 
-	AddStoredOption("sol:poollimit poollimit poolnbest",
-    "When poollimit = n > 1, the "
-    "solution pool (see sol:stub) is allowed to keep n best solutions. "
-                  "Default 10.",
+  AddStoredOption("sol:poollimit ams_limit poollimit poolnbest solnlimit",
+    "Limit on the number of alternative MIP solutions kept in the "
+    "solution pool (see sol:stub, sol:count). Default 10.",
     storedOptions_.nbest_);
+
+  AddStoredOption("sol:poolmode ams_mode poolmode",
+    "Search mode for MIP solutions when sol:stub/sol:count are specified "
+    "to request finding several alternative solutions:\n"
+    "\n.. value-table::\n",
+    storedOptions_.nPoolMode_, values_pool_mode);
+
+  AddStoredOption("sol:poolgap ams_eps poolgap",
+    "Relative tolerance for reporting alternate MIP solutions "
+    "(default: no limit): a solution is reported if its objective "
+    "is within poolgap * |best objective| of the best one.",
+    storedOptions_.poolGap_);
+
+  AddStoredOption("sol:poolgapabs ams_epsabs poolgapabs",
+    "Absolute tolerance for reporting alternate MIP solutions "
+    "(default: no limit).",
+    storedOptions_.poolGapAbs_);
 
     AddSolverOption("lim:mipsol",
       "",
