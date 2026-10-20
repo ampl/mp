@@ -247,6 +247,7 @@ private:
     int pooldupcol_;
     int poollimit_ = 10;
     int nPoolMode_ = 0;
+    int nonconvex_ = -1;            // deprecated qp:nonconvex, -1: unset
     bool fBarrier_ = 0;
     bool fPrimal_ = 0;
     bool fDual_ = 0;
