@@ -91,29 +91,89 @@ int GcgCommon::NumIndicatorCons() const {
 }
 
 
+SCIP_PARAM* GcgCommon::Param(const char* key) const {
+  auto* param = SCIPgetParam(getSCIP(), key);
+  if (!param)
+    throw std::runtime_error(
+        fmt::format("Unknown GCG/SCIP parameter '{}'", key));
+  return param;
+}
+
+SCIP_PARAMTYPE GcgCommon::ParamType(const char* key) const {
+  return SCIPparamGetType(Param(key));
+}
+
+std::string GcgCommon::AmplOptionName(const char* key) const {
+  auto it = optNames_.find(key);
+  return it == optNames_.end() ? std::string(key) : it->second;
+}
+
+/// Valid values of a parameter, for the rejection message
+static std::string ParamRange(SCIP_PARAM* param) {
+  switch (SCIPparamGetType(param)) {
+  case SCIP_PARAMTYPE_BOOL:
+    return "0 or 1";
+  case SCIP_PARAMTYPE_INT:
+    return fmt::format("in [{}, {}]",
+                       SCIPparamGetIntMin(param), SCIPparamGetIntMax(param));
+  case SCIP_PARAMTYPE_LONGINT:
+    return fmt::format("in [{}, {}]",
+                       SCIPparamGetLongintMin(param), SCIPparamGetLongintMax(param));
+  case SCIP_PARAMTYPE_REAL:
+    return fmt::format("in [{}, {}]",
+                       SCIPparamGetRealMin(param), SCIPparamGetRealMax(param));
+  case SCIP_PARAMTYPE_CHAR:
+    if (auto* allowed = SCIPparamGetCharAllowedValues(param))
+      return fmt::format("one of '{}'", allowed);
+    return "a single character";
+  default:
+    return "a string";
+  }
+}
+
+void GcgCommon::CheckOptionSet(SCIP_RETCODE code, const char* key,
+                               const std::string& value) const {
+  if (SCIP_OKAY == code)
+    return;
+  throw std::runtime_error(fmt::format(
+      "Rejecting {}={} (GCG parameter '{}'); the value must be {}",
+      AmplOptionName(key), value, key, ParamRange(Param(key))));
+}
+
 void GcgCommon::GetSolverOption(const char* key, int &value) const {
-  if (SCIPparamGetType(SCIPgetParam(getSCIP(), key))==SCIP_PARAMTYPE_BOOL) {
+  switch (ParamType(key)) {
+  case SCIP_PARAMTYPE_BOOL: {
     SCIP_Bool buffer;
     GCG_CCALL( SCIPgetBoolParam(getSCIP(), key, &buffer) );
     value = (int)buffer;
+    break;
   }
-  else if (SCIPparamGetType(SCIPgetParam(getSCIP(), key))==SCIP_PARAMTYPE_LONGINT) {
+  case SCIP_PARAMTYPE_LONGINT: {
     SCIP_Longint buffer;
     GCG_CCALL( SCIPgetLongintParam(getSCIP(), key, &buffer) );
     MP_ASSERT_ALWAYS(buffer >= INT_MIN && buffer <= INT_MAX,
                      fmt::format("Cannot represent {} as int", buffer));
     value = (int)buffer;
-  }  else
+    break;
+  }
+  default:
     GCG_CCALL( SCIPgetIntParam(getSCIP(), key, &value) );
+  }
 }
 
 void GcgCommon::SetSolverOption(const char* key, int value) {
-  if (SCIPparamGetType(SCIPgetParam(getSCIP(), key))==SCIP_PARAMTYPE_BOOL)
-    GCG_CCALL( SCIPsetBoolParam(getSCIP(), key, value) );
-  else if (SCIPparamGetType(SCIPgetParam(getSCIP(), key))==SCIP_PARAMTYPE_LONGINT)
-    GCG_CCALL( SCIPsetLongintParam(getSCIP(), key, value) );
-  else
-    GCG_CCALL( SCIPsetIntParam(getSCIP(), key, value) );
+  SCIP_RETCODE code;
+  switch (ParamType(key)) {
+  case SCIP_PARAMTYPE_BOOL:
+    code = SCIPsetBoolParam(getSCIP(), key, value);
+    break;
+  case SCIP_PARAMTYPE_LONGINT:
+    code = SCIPsetLongintParam(getSCIP(), key, value);
+    break;
+  default:
+    code = SCIPsetIntParam(getSCIP(), key, value);
+  }
+  CheckOptionSet(code, key, std::to_string(value));
 }
 
 void GcgCommon::GetSolverOption(const char* key, double &value) const {
@@ -121,25 +181,51 @@ void GcgCommon::GetSolverOption(const char* key, double &value) const {
 }
 
 void GcgCommon::SetSolverOption(const char* key, double value) {
-  GCG_CCALL( SCIPsetRealParam(getSCIP(), key, value) );
+  CheckOptionSet(SCIPsetRealParam(getSCIP(), key, value),
+                 key, fmt::format("{}", value));
 }
 
 void GcgCommon::GetSolverOption(const char* key, std::string &value) const {
-  char* buffer;
-  GCG_CCALL( SCIPallocBufferArray(getSCIP(), &buffer, SCIP_MAXSTRLEN) );
-  if (SCIPparamGetType(SCIPgetParam(getSCIP(), key))==SCIP_PARAMTYPE_CHAR)
-    GCG_CCALL( SCIPgetCharParam(getSCIP(), key, buffer) );
-  else
-    GCG_CCALL( SCIPgetStringParam(getSCIP(), key, &buffer) );
-  value = buffer;
-  SCIPfreeBufferArray(getSCIP(), &buffer);
+  if (SCIP_PARAMTYPE_CHAR == ParamType(key)) {
+    char buffer = 0;
+    GCG_CCALL( SCIPgetCharParam(getSCIP(), key, &buffer) );
+    value.assign(1, buffer);
+  } else {
+    char* internal = nullptr;        // SCIP's own storage, not to be freed
+    GCG_CCALL( SCIPgetStringParam(getSCIP(), key, &internal) );
+    value = internal ? internal : "";
+  }
 }
 
 void GcgCommon::SetSolverOption(const char* key, const std::string& value) {
-  if (SCIPparamGetType(SCIPgetParam(getSCIP(), key))==SCIP_PARAMTYPE_CHAR)
-    GCG_CCALL( SCIPsetCharParam(getSCIP(), key, value.c_str()[0]) );
+  SCIP_RETCODE code;
+  if (SCIP_PARAMTYPE_CHAR == ParamType(key))
+    code = value.size() == 1
+        ? SCIPsetCharParam(getSCIP(), key, value[0])
+        : SCIP_PARAMETERWRONGVAL;
   else
-    GCG_CCALL( SCIPsetStringParam(getSCIP(), key, value.c_str()) );
+    code = SCIPsetStringParam(getSCIP(), key, value.c_str());
+  CheckOptionSet(code, key, value);
+}
+
+/// Set a parameter of any type from its textual value
+/// (tech:optionnative)
+void GcgCommon::SetNativeParam(const std::string& name,
+                               const std::string& value) {
+  switch (ParamType(name.c_str())) {
+  case SCIP_PARAMTYPE_BOOL:
+  case SCIP_PARAMTYPE_INT:
+    SetSolverOption(name.c_str(), std::stoi(value));
+    break;
+  case SCIP_PARAMTYPE_LONGINT:
+    SetSolverOption(name.c_str(), std::stoi(value));
+    break;
+  case SCIP_PARAMTYPE_REAL:
+    SetSolverOption(name.c_str(), std::stod(value));
+    break;
+  default:
+    SetSolverOption(name.c_str(), value);
+  }
 }
 
 
