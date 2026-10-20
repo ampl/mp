@@ -1048,14 +1048,43 @@ protected:
     { }
   };
 
-  /// Merge solver option
+  /// Merge a generated option into the existing option for the same
+  /// solver parameter: the unprefixed generated names that are still free
+  /// become synonyms, the generated (vendor) description replaces the
+  /// existing one, and the existing text, if any, is kept as a trailing
+  /// note (use it for driver-specific remarks only).
   void MergeSolverOption(
       std::string name0, const char* name_list1, const char* descr) {
     auto posspace = name0.find(' ');
     if (std::string::npos != posspace)
       name0.resize(posspace);
-    AddOptionSynonyms_Inline_Back(name_list1, name0.c_str());
+    auto synonyms = UnregisteredNames(name_list1, false, true);
+    if (synonyms.size())
+      AddOptionSynonyms_Inline_Back(synonyms.c_str(), name0.c_str());
+    std::string note = FindOption(name0.c_str())->description();
     ReplaceOptionDescription(name0.c_str(), descr);
+    if (note.size())
+      AddToOptionDescription(name0.c_str(), note.c_str());
+  }
+
+  /// The names of \a name_list that are not registered yet
+  /// @param keep_first: keep the first name even if registered
+  ///   (the primary name of a new option)
+  /// @param unprefixed_only: skip names containing ':'
+  std::string UnregisteredNames(
+      const char* name_list, bool keep_first, bool unprefixed_only) {
+    std::string result;
+    for (const auto& name: split_string(name_list)) {
+      bool keep = (keep_first && result.empty())
+          || ((!unprefixed_only || std::string::npos == name.find(':'))
+              && !FindOption(name.c_str()));
+      if (keep) {
+        if (result.size())
+          result += ' ';
+        result += name;
+      }
+    }
+    return result;
   }
 
 
@@ -1067,7 +1096,8 @@ public:
     if (const auto name_list0 = solveroptmaps_.FindOption<KeyType, ValueType>(k)) {
       MergeSolverOption(name_list0, name_list, description);
     } else {
-      AddSolverOption(name_list, description, k, vMin, args...);
+      auto names = UnregisteredNames(name_list, true, false);
+      AddSolverOption(names.c_str(), description, k, vMin, args...);
     }
   }
 
@@ -1078,7 +1108,8 @@ public:
     if (const auto name_list0 = solveroptmaps_.FindOption<KeyType, std::string>(k)) {
       MergeSolverOption(name_list0, name_list, description);
     } else {
-      AddSolverOption(name_list, description, k);
+      auto names = UnregisteredNames(name_list, true, false);
+      AddSolverOption(names.c_str(), description, k);
     }
   }
 

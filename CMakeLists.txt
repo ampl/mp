@@ -582,7 +582,7 @@ if (XPRESS_PARAMS_XML_DIR)
     COMMENT "Generating Xpress optimizer options (optprm.h)")
   add_custom_command(OUTPUT ${xpress_params_gen_dir}/nlprm.h
     COMMAND parse-xpress-options ${xpress_params_xml_nl}
-      ${xpress_params_gen_dir}/nlprm.h Nonlinear - ${xpress_params_hdrs}
+      ${xpress_params_gen_dir}/nlprm.h Nonlinear - --nonlinear ${xpress_params_hdrs}
     DEPENDS parse-xpress-options ${xpress_params_xml_nl} ${xpress_params_hdrs}
     COMMENT "Generating Xpress nonlinear options (nlprm.h)")
   # The generated headers replace the committed ones only when they differ,

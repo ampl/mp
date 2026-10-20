@@ -6,6 +6,8 @@
 #include <cstring>
 #include <map>
 #include <list>
+#include <set>
+#include <vector>
 #include <algorithm>
 #include <cmath>
 #include <climits>
@@ -34,6 +36,7 @@ namespace mp {
 class Param {
 public:
   std::string name_main_, name2_, type_;
+  std::string xml_name_;      // name as in the XML, without key prefix
   std::string descr_;
   std::string topic_;
   std::string category_;
@@ -157,6 +160,7 @@ public:
 /// Param list translator
 class ParamListTranslator {
   std::string key_prefix_;
+  bool nonlinear_;                 // nonlinearparams.xml: slp/mislp/xktr prefixes
   const HeaderControlTypes& hdr_types_;
 
   std::ofstream ofs_;
@@ -166,8 +170,10 @@ class ParamListTranslator {
   std::map<std::string, int> prefixes_;
 public:
   /// Construct
-  ParamListTranslator(const char* prefix, const HeaderControlTypes& ht)
-      : key_prefix_(prefix ? prefix : ""), hdr_types_(ht) { }
+  ParamListTranslator(const char* prefix, bool nonlinear,
+                      const HeaderControlTypes& ht)
+      : key_prefix_(prefix ? prefix : ""), nonlinear_(nonlinear),
+        hdr_types_(ht) { }
   /// Start output
   bool Start(const char* xmlfile, const char* filename, const char* classname) {
     classname_ = classname;
@@ -195,6 +201,12 @@ public:
 
   /// Add new parameter
   void AddParam(Param prm) {
+    if (kControlsNotExposed.count(prm.name_main_)) {
+      std::cerr << "NOTE: Skipping param " << prm.name_main_
+                << ": not exposed as an option" << std::endl;
+      return;
+    }
+    prm.xml_name_ = prm.name_main_;
     auto name_w_pref = key_prefix_;
     if (name_w_pref.size())
       name_w_pref += '_';
@@ -297,25 +309,18 @@ protected:
 
       auto prefix = GetOptionPrefix(prm.topic_);
       ++prefixes_[prefix];
-      os << "    MPD( AddSolverOption_MergeDuplicates(\"";
-      auto nm1 = MakeOptionName(prm.NameMain());
-      if (0 == nm1.find(prefix)) {
-        nm1 = nm1.substr(prefix.size()         // bar:alg
-                         + (nm1.size()>prefix.size()
-                            && '_'==nm1[prefix.size()])); // xktr_param..
-      }
-      os << prefix << ':' << nm1;
-      os << ' ' << (prm.NameMain());           // no prefix
-      if (prm.name2_.size())
-        os << ' ' << (prm.name2_);             // no prefix
-      os << "\",\n"
+      os << "    MPD( AddSolverOption_MergeDuplicates(\""
+         << MakeOptionNames(prm, prefix) << "\",\n"
             "      \"" << prm.descr_ << "\"\n";
       if (prm.values_.size()) {
         os << "      \"\\n\\n\"\n      \"Values (default: "
               << prm.default_ << "):\\n\"";
         for (const auto& valdescr: prm.values_) {
-          os << "\n      \"\\n- (" << valdescr.first
-             << ")  " << valdescr.second << "\"";
+          if (valdescr.first.empty())          // group heading
+            os << "\n      \"\\n\\n" << valdescr.second << "\\n\"";
+          else
+            os << "\n      \"\\n- (" << valdescr.first
+               << ")  " << valdescr.second << "\"";
         }
       } else
         os << "      \"\\n\\nDefault: " << prm.default_ << "\"";
@@ -338,6 +343,73 @@ protected:
     }
   }
 
+  /// Option names for a control:
+  /// "<prefix>:<short> <plain> <MACRO> [<name2>]", where <short> is the
+  /// lowercase XML name without the XSLP_/XKTR_PARAM_ fragments and
+  /// <plain> is the lowercase control name (the ASL keyword spelling
+  /// for optimizer controls, the lowercase macro for nonlinear ones).
+  std::string MakeOptionNames(const Param& prm, const std::string& prefix) const {
+    auto lower = MakeOptionName(prm.xml_name_);
+    auto plain = key_prefix_.size() ? lower : MakeOptionName(prm.NameMain());
+    auto shrt = lower;
+    for (const char* frag: {"xslp_", "xktr_param_"})
+      if (0 == shrt.find(frag))
+        shrt = shrt.substr(std::strlen(frag));
+    auto alias = kShortNameOverrides.find(prm.xml_name_);
+    if (kShortNameOverrides.end() != alias)
+      shrt = alias->second;
+    std::string names = prefix + ':' + shrt;
+    if (shrt != plain)
+      names += ' ' + shrt;
+    names += ' ' + plain;
+    auto legacy = kLegacyKeywords.find(prm.xml_name_);
+    if (kLegacyKeywords.end() != legacy)
+      names += ' ' + legacy->second;
+    names += ' ' + prm.name_main_;
+    if (prm.name2_.size())
+      names += ' ' + prm.name2_;
+    return names;
+  }
+
+  /// Controls present in the database that make no sense as options
+  const std::set<std::string> kControlsNotExposed { "VERSION" };
+
+  /// Short names differing from the XML name
+  /// (established AMPL keywords of the ASL driver)
+  const std::map<std::string, std::string> kShortNameOverrides {
+    {"IFCHECKCONVEXITY", "convexitychk"},
+  };
+
+  /// Keywords of the ASL driver that differ from the control name,
+  /// added as synonyms
+  const std::map<std::string, std::string> kLegacyKeywords {
+    {"EIGENVALUETOL", "eigenvaltol"},
+    {"FEASIBILITYPUMP", "feaspump"},
+    {"FEASTOLPERTURB", "feastol_perturb"},
+    {"FEASTOLTARGET", "feastol_target"},
+    {"HEURSEARCHEFFORT", "heureffort"},
+    {"HEURSEARCHFREQ", "heursearch"},
+    {"HEURSEARCHROOTSELECT", "heurroot"},
+    {"HEURSEARCHTREESELECT", "heurtree"},
+    {"HISTORYCOSTS", "pseudocost_ud"},
+    {"LPREFINEITERLIMIT", "lpref_itlim"},
+    {"MAXMEMORYSOFT", "maxmemory"},
+    {"MAXSCALEFACTOR", "maxlogscale"},
+    {"MIPCONCURRENTNODES", "mipconcurnodes"},
+    {"MIPCONCURRENTSOLVES", "mipconcursolves"},
+    {"MIPRESTARTGAPTHRESHOLD", "miprestartgaptol"},
+    {"MIPTERMINATIONMETHOD", "mipstop"},
+    {"OPTIMALITYTOLTARGET", "opttol_target"},
+    {"PRECONEDECOMP", "conedecomp"},
+    {"PRECONVERTSEPARABLE", "preconvertsep"},
+    {"QSIMPLEXOPS", "mipops"},
+    {"TREECOMPRESSION", "treecompress"},
+    {"TREECUTSELECT", "treecuts"},
+    {"TREEDIAGNOSTICS", "treeoutlev"},
+    {"TREEMEMORYLIMIT", "treememlimit"},
+    {"TREEMEMORYSAVINGTARGET", "treememtarget"},
+  };
+
   std::string MakeOptionName(std::string s) const {
     std::transform(s.begin(), s.end(), s.begin(),
                    // static_cast<int(*)(int)>(std::tolower)         // wrong
@@ -348,96 +420,50 @@ protected:
     return s;
   }
 
+  /// MP option prefix for an XML topic string such as "LP, Barrier".
+  /// The first matching entry of the table wins, so specific topics
+  /// (Global, PDHG, Quadratic, Barrier, Cuts, ...) precede generic ones
+  /// (Presolve, LP, Branch and Bound). Unmatched topics (Misc, Logging,
+  /// System, Memory, Parallel, Callback, File IO, ...) go to "tech".
+  /// Nonlinear controls use the engine prefixes xktr, mislp and slp only.
   std::string GetOptionPrefix(const std::string& topic) const {
-    if (std::string::npos != topic.find("Global")) {
-      return "global";
-    }
-    if (std::string::npos != topic.find("nitro")) {
-      return "xktr";
-    }
-    if (std::string::npos != topic.find("Cuts")) {
-      return "cut";
-    }
-    if (std::string::npos != topic.find("euristic")) {
-      return "heur";
-    }
-    if (std::string::npos != topic.find("arrier")) {
-      return "bar";
-    }
-    if (std::string::npos != topic.find("resolve")) {
-      return "pre";
-    }
-    if (std::string::npos != topic.find("ropagation")) {
-      return "pre";
-    }
-    if (std::string::npos != topic.find("unction")) {
-      return "func";
-    }
-    if (std::string::npos != topic.find("uadrat")) {
-      return "qp";
-    }
-    if (std::string::npos != topic.find("erivat")) {
-      return "diff";
-    }
-    if (begins_with(topic, "MISLP")) {
-      return "mislp";
-    }
-    if (std::string::npos != topic.find("Misc")) {
-      return "tech";
-    }
-    if (std::string::npos != topic.find("ranch")) {
-      return "mip";
-    }
-    if (std::string::npos != topic.find("arallel")) {
-      return "tech";
-    }
-    if (std::string::npos != topic.find("eterminism")) {
-      return "tech";
-    }
-    if (std::string::npos != topic.find("roblem Creation")) {
-      return "prob";
-    }
-    if (std::string::npos != topic.find("File IO")) {
-      return "tech";
-    }
-    if (std::string::npos != topic.find("rocess")) {
-      return "alg";
-    }
-    if (std::string::npos != topic.find("ultistart")) {
-      return "alg";
-    }
-    if (std::string::npos != topic.find("ultiobj")) {
-      return "obj:multi";
-    }
-    if (std::string::npos != topic.find("rimal Dual")) {
-      return "pdhg";
-    }
-    if (std::string::npos != topic.find("allback")) {
-      return "tech";
-    }
-    if (std::string::npos != topic.find("ompute")) {
-      return "tech";
-    }
-    if (std::string::npos != topic.find("Tuner")) {
-      return "tech";
-    }
-    if (std::string::npos != topic.find("emory")) {
-      return "tech";
-    }
-    if (std::string::npos != topic.find("SLP")) {
-      return "slp";
-    }
-    if (std::string::npos != topic.find("LP")) {
-      return "lp";
-    }
-    if (std::string::npos != topic.find("Root")) {
-      return "mip";
-    }
-    auto p1 = topic.find_first_of(", ");
-    auto p_end = (std::string::npos!=p1) ? p1 : topic.size();
-    if (p_end>3)
-      p_end=3;
-    return MakeOptionName(topic.substr(0, p_end));
+    using Table = std::vector< std::pair<const char*, const char*> >;
+    static const Table kNonlinear {
+      {"Knitro", "xktr"},
+      {"MISLP", "mislp"},
+    };
+    static const Table kOptimizer {
+      {"Global", "global"},
+      {"Primal Dual Hybrid Gradient", "pdhg"},
+      {"Multiobjective", "obj:multi"},
+      {"Infeasibility", "iis"},
+      {"Tuner", "tech"},
+      {"Quadratic", "qp"},
+      {"Cuts", "cut"},
+      {"Barrier", "bar"},
+      {"Heuristics", "mip"},
+      {"Branching", "mip"},
+      {"Branch and Bound", "mip"},
+      {"MIP Entities", "mip"},
+      {"Root", "mip"},
+      {"Presolve", "pre"},
+      {"Propagation", "pre"},
+      {"Problem Transformation", "pre"},
+      {"Piecewise Linear", "pre"},
+      {"Simplex", "lp"},
+      {"LP", "lp"},
+      {"Limits", "lim"},
+      {"Solution Process", "alg"},
+      {"Solution Refinement", "alg"},
+      {"Numerics", "alg"},
+      {"Tolerances", "alg"},
+      {"Solution", "sol"},
+    };
+    const Table& table = nonlinear_ ? kNonlinear : kOptimizer;
+    for (const auto& entry: table)
+      if (std::string::npos != topic.find(entry.first))
+        return entry.second;
+    return nonlinear_ ? "slp" : "tech";
   }
 
   /// Print prefixes used
@@ -449,6 +475,29 @@ protected:
 };
 
 
+/// Remove HTML tags such as <b>...</b>
+std::string StripTags(const std::string& s) {
+  std::string r;
+  bool in_tag = false;
+  for (char c: s) {
+    if ('<' == c) in_tag = true;
+    else if ('>' == c) in_tag = false;
+    else if (!in_tag) r += c;
+  }
+  return r;
+}
+
+/// Collapse runs of blanks, trim both ends
+std::string CollapseBlanks(const std::string& s) {
+  std::string r;
+  for (char c: s)
+    if (' ' != c || (r.size() && ' ' != r.back()))
+      r += c;
+  while (r.size() && ' ' == r.back())
+    r.pop_back();
+  return r;
+}
+
 /// Replace line breaks
 std::string GetText(BasicTreeWalker& wlk) {
   auto txt = wlk.GetText();
@@ -457,7 +506,8 @@ std::string GetText(BasicTreeWalker& wlk) {
   // Replace all '\r' characters with spaces
   std::replace(txt.begin(), txt.end(), '\r', ' ');
   std::replace(txt.begin(), txt.end(), '"', '\'');   //  " -> '
-  return txt;
+  txt = StripTags(txt);
+  return CollapseBlanks(txt);
 }
 
 
@@ -487,9 +537,8 @@ public:
       if (!vstr)
         RAISE("For param " << prm_.NameMain()
                            << ", a value list entry has no value attr");
-      if ('\0' == *vstr) {
-        std::cerr << "WARNING: For param " << prm_.NameMain()
-                  << ", a value list entry has empty value" << std::endl;
+      if ('\0' == *vstr) {                   // a group heading
+        prm_.values_.push_back({"", GetText(wlk)});
         return;
       }
       if (prm_.values_map_.end() != prm_.values_map_.find(vstr))
@@ -594,11 +643,12 @@ public:
 int main(int argc, const char** argv) {
   if (argc<4)
     RAISE( "Usage: parse-xpress-options <params.xml> <output.h> <ClassName>"
-          " [<key prefix>|-] [<xprs.h> [<xslp.h> ...]]\n"
+          " [<key prefix>|-] [--nonlinear] [<xprs.h> [<xslp.h> ...]]\n"
           "  <params.xml>  XML parameter database from the Xpress SDK\n"
           "  <output.h>    C++ header to write (mix-in class Compiled<ClassName>Options)\n"
           "  <key prefix>  common macro prefix, e.g. XPRS for optimizerparams.xml;"
           " '-' for none\n"
+          "  --nonlinear   nonlinearparams.xml: use the slp/mislp/xktr prefixes\n"
           "  <xprs.h> ...  Xpress C headers; when given, control types are taken"
           " from them\n"
           "                and controls they declare as attributes or deprecated"
@@ -608,11 +658,15 @@ int main(int argc, const char** argv) {
             << argv[1] << "' ..." << std::endl;
 
   const char* prefix = (argc>4 && std::strcmp("-", argv[4])) ? argv[4] : nullptr;
+  bool nonlinear = false;
   mp::HeaderControlTypes hdr_types;
   for (int i=5; i<argc; ++i) {
-    if (!hdr_types.ReadFile(argv[i]))
+    if (0 == std::strcmp("--nonlinear", argv[i])) {
+      nonlinear = true;
+    } else if (!hdr_types.ReadFile(argv[i]))
       RAISE("Cannot read header file '" << argv[i] << "'");
-    std::cout << "   Control types read from '" << argv[i] << "'" << std::endl;
+    else
+      std::cout << "   Control types read from '" << argv[i] << "'" << std::endl;
   }
 
   auto pwlk = mp::MakeDefaultXMLWalker();
@@ -620,7 +674,7 @@ int main(int argc, const char** argv) {
     if ( std::strcmp("paramList", pwlk->GetName()) )
       RAISE("Unknown top-level entry: " << pwlk->GetName());
 
-    mp::ParamListTranslator plt(prefix, hdr_types);
+    mp::ParamListTranslator plt(prefix, nonlinear, hdr_types);
     if (plt.Start(argv[1], argv[2], argv[3])) {
 
       mp::ParamListHandler prmlh(plt);  // to handle individual <param>s
