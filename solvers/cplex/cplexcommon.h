@@ -40,6 +40,10 @@ public:
   void SetSolverOption(int key, double value);
   void GetSolverOption(int key, std::string& value) const;
   void SetSolverOption(int key, const std::string& value);
+  /// Hierarchical CPLEX parameter name (or "parameter <id>")
+  std::string ParamName(int key) const;
+  /// Throw on a rejected parameter value, reporting the valid range
+  void RaiseRejectedParam(int key, int status, const std::string& value) const;
 
   static constexpr double Infinity() { return CPX_INFBOUND; }
   static constexpr double MinusInfinity() { return -CPX_INFBOUND; }

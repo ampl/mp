@@ -1,4 +1,5 @@
 #include "mp/format.h"
+#include "mp/error.h"
 #include "cplexcommon.h"
 
 namespace mp {
@@ -35,29 +36,83 @@ int CplexCommon::ModelSense() const {
 }
 
 void CplexCommon::GetSolverOption(int key, int &value) const {
+  value = 0;
   CPLEX_CALL( CPXgetintparam(env(), key, &value) );
 }
 
 void CplexCommon::SetSolverOption(int key, int value) {
-  CPLEX_CALL( CPXsetintparam(env(), key, value) );
+  if (int e = CPXsetintparam(env(), key, value))
+    RaiseRejectedParam(key, e, fmt::format("{}", value));
 }
 
 void CplexCommon::GetSolverOption(int key, double &value) const {
+  value = 0.0;
   CPLEX_CALL( CPXgetdblparam(env(), key, &value) );
 }
 
 void CplexCommon::SetSolverOption(int key, double value) {
-  CPLEX_CALL( CPXsetdblparam(env(), key, value) );
+  if (int e = CPXsetdblparam(env(), key, value))
+    RaiseRejectedParam(key, e, fmt::format("{}", value));
 }
 
 void CplexCommon::GetSolverOption(int key, std::string &value) const {
-  char buffer[CPX_STR_PARAM_MAX];
+  char buffer[CPX_STR_PARAM_MAX] = "";
   CPLEX_CALL( CPXgetstrparam(env(), key, buffer) );
   value = buffer;
 }
 
 void CplexCommon::SetSolverOption(int key, const std::string& value) {
-  CPLEX_CALL( CPXsetstrparam(env(), key, value.c_str()) );
+  if (int e = CPXsetstrparam(env(), key, value.c_str()))
+    RaiseRejectedParam(key, e, value);
+}
+
+std::string CplexCommon::ParamName(int key) const {
+  char name[CPX_STR_PARAM_MAX] = "";
+  if (CPXgetparamhiername(env(), key, name) && CPXgetparamname(env(), key, name))
+    return fmt::format("parameter {}", key);
+  return name;
+}
+
+/// Raise an error for a rejected parameter value, in the style of
+/// the ASL driver: "Rejecting <name>=<value>; must be between L and U".
+void CplexCommon::RaiseRejectedParam(
+    int key, int status, const std::string& value) const {
+  std::string reason;
+  int type = CPX_PARAMTYPE_NONE;
+  CPXgetparamtype(env(), key, &type);
+  if (CPXERR_PARAM_TOO_SMALL == status || CPXERR_PARAM_TOO_BIG == status) {
+    switch (type) {
+    case CPX_PARAMTYPE_INT: {
+      CPXINT d = 0, lo = 0, hi = 0;
+      if (!CPXinfointparam(env(), key, &d, &lo, &hi))
+        reason = fmt::format("; must be between {} and {}", lo, hi);
+      break;
+    }
+    case CPX_PARAMTYPE_LONG: {
+      CPXLONG d = 0, lo = 0, hi = 0;
+      if (!CPXinfolongparam(env(), key, &d, &lo, &hi))
+        reason = fmt::format("; must be between {} and {}",
+                             (long long)lo, (long long)hi);
+      break;
+    }
+    case CPX_PARAMTYPE_DOUBLE: {
+      double d = 0, lo = 0, hi = 0;
+      if (!CPXinfodblparam(env(), key, &d, &lo, &hi))
+        reason = fmt::format("; must be between {} and {}", lo, hi);
+      break;
+    }
+    default: break;
+    }
+  }
+  if (reason.empty()) {
+    char buffer[CPXMESSAGEBUFSIZE] = "";
+    const char* msg = CPXgeterrorstring(env(), status, buffer);
+    std::string m = msg ? msg : "";
+    while (!m.empty() && (m.back() == '\n' || m.back() == ' '))
+      m.pop_back();
+    reason = fmt::format(": {}", m.empty() ? fmt::format("CPLEX error {}", status) : m);
+  }
+  MP_RAISE(fmt::format("Rejecting {}={}{}", ParamName(key), value, reason));
 }
 
 double CplexCommon::GetCPLEXDblParam(int param) {

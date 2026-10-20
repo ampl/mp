@@ -1,4 +1,5 @@
 #include <vector>
+#include <algorithm>
 #include <climits>
 #include <cfloat>
 #include <cassert>
@@ -1452,9 +1453,9 @@ static const mp::OptionValueInfo values_netdisplay[] = {
 };
 
 static const mp::OptionValueInfo values_netfind[] = {
-    { "0", "Extract pure network only", 0},
-    { "1", "(Default) try reflection scaling", 1},
-    { "2", "Try general scaling", 2}
+    { "1", "Extract pure network only", 1},
+    { "2", "Try reflection scaling (default)", 2},
+    { "3", "Try general scaling", 3}
 };
 
 static const mp::OptionValueInfo values_netpricing[] = {
@@ -1479,16 +1480,6 @@ static const mp::OptionValueInfo values_fpheur[] = {
   { "2", "Yes, focus on finding a good objective value at a feasible solution", 2}
 };
 
-static const mp::OptionValueInfo values_submipstartalg[] = {
-  { "0", "Automatic (default)",0},
-  { "1", "Primal simplex", 1},
-  { "2", "Dual simplex", 2},
-  { "3", "Network simplex", 3},
-  { "4", "Barrier", 4},
-  { "5", "Sifting", 5},
-  { "6", "Concurrent (dual, barrier and primal in opportunistic mode; "
-         "dual and barrier in deterministic mode; 4 is used for MIPQs).", 6}
-};
 
 static const mp::OptionValueInfo values_dgradient[] = {
   { "0", "Automatic (default)",0},
@@ -1545,10 +1536,25 @@ static const mp::OptionValueInfo values_barstart[] = {
 };
 
 
+static const mp::OptionValueInfo values_presolvenode[] = {
+  { "-1", "No node presolve", -1},
+  { "0", "Automatic (default)", 0},
+  { "1", "Always apply presolve at nodes", 1},
+  { "2", "Probing on integer-infeasible variables", 2},
+  { "3", "Aggressive node probing", 3}
+};
+
+static const mp::OptionValueInfo values_prereduce[] = {
+  { "0", "No primal or dual reductions", 0},
+  { "1", "Only primal reductions", 1},
+  { "2", "Only dual reductions", 2},
+  { "3", "Both primal and dual reductions (default)", 3}
+};
+
 static const mp::OptionValueInfo values_prereformulations[] = {
   { "0", "None", 0},
-  { "1", "Allow reformulations that interphere with crushing forms", 1},
-  { "2", "Allow reformulations that interphere with uncrushing forms", 2},
+  { "1", "Allow reformulations that interfere with crushing forms", 1},
+  { "2", "Allow reformulations that interfere with uncrushing forms", 2},
   { "3", "All reformulations (default)", 3}
 };
 
@@ -1690,27 +1696,29 @@ void CplexBackend::setSolutionMethod() {
   if (nFlags>= 2) 
     AddWarning("Ambiguous solving method",
       "Only one of barrier/primalopt/dualopt/network/sifting/benders should be specified.");
+  int flagMethod = CPX_ALG_AUTOMATIC;   // the flags apply to root and nodes
   if (nFlags >= 1)                  // 2nd-lowest priority
   {
     if (storedOptions_.fPrimal_)
-      storedOptions_.cpxMethod_ = CPX_ALG_PRIMAL;
+      flagMethod = CPX_ALG_PRIMAL;
     if (storedOptions_.fDual_)
-      storedOptions_.cpxMethod_ = CPX_ALG_DUAL;
+      flagMethod = CPX_ALG_DUAL;
     if (storedOptions_.fBarrier_)
-      storedOptions_.cpxMethod_ = CPX_ALG_BARRIER;
+      flagMethod = CPX_ALG_BARRIER;
     if (storedOptions_.fNetwork_)
-      storedOptions_.cpxMethod_ = CPX_ALG_NET;
+      flagMethod = CPX_ALG_NET;
     if (storedOptions_.fSifting_)
-      storedOptions_.cpxMethod_ = CPX_ALG_SIFTING;
+      flagMethod = CPX_ALG_SIFTING;
+    storedOptions_.cpxMethod_ = flagMethod;
   }
   if (storedOptions_.algMethod_)   // Highest priority
     storedOptions_.cpxMethod_ = storedOptions_.algMethod_;
-  auto nodeMethod = storedOptions_.cpxMethod_;
+  auto nodeMethod = flagMethod;
   if (storedOptions_.nodeMethod_)  // Highest priority
     nodeMethod = storedOptions_.nodeMethod_;
   if (IsMIP()) {
     SetSolverOption(CPX_PARAM_STARTALG, storedOptions_.cpxMethod_);
-    SetSolverOption(CPX_PARAM_SUBALG, storedOptions_.nodeMethod_);
+    SetSolverOption(CPX_PARAM_SUBALG, nodeMethod);
   }
   else if (IsQP())
     SetSolverOption(CPX_PARAM_QPMETHOD, storedOptions_.cpxMethod_);
@@ -1792,9 +1800,11 @@ void CplexBackend::FinishOptionParsing() {
     set_verbose_mode(storedOptions_.outlev_ > 0);
   }
 
-  // Apply to all cuts when not overriden
-  if (storedOptions_.cuts_ != 2) {
-    static int op[] = {
+  // Global cut control (cut:cuts): apply to every cut family
+  // which the user has not set individually (i.e., still at default 0).
+  // Families whose maximum is 2 receive min(cuts, 2).
+  if (storedOptions_.cuts_ != -2) {
+    static const int op[] = {
       CPXPARAM_MIP_Cuts_BQP,
       CPXPARAM_MIP_Cuts_Cliques,
       CPXPARAM_MIP_Cuts_Covers,
@@ -1812,13 +1822,14 @@ void CplexBackend::FinishOptionParsing() {
       CPXPARAM_MIP_Cuts_RLT,
       CPXPARAM_MIP_Cuts_ZeroHalfCut
     };
-    int f;
-    int local;
-    for (f = 0; f < sizeof(op) / sizeof(int); f++)
-    {
+    for (size_t f = 0; f < sizeof(op) / sizeof(int); f++) {
+      int local = 0;
       CPXgetintparam(env(), op[f], &local);
-      if(local!=0)
-        CPXsetintparam(env(), op[f], storedOptions_.cuts_);
+      if (0 == local) {
+        CPXINT dflt = 0, vmin = -1, vmax = 3;
+        CPXinfointparam(env(), op[f], &dflt, &vmin, &vmax);
+        SetSolverOption(op[f], std::min(storedOptions_.cuts_, (int)vmax));
+      }
     }
   }
 
@@ -1962,7 +1973,7 @@ void CplexBackend::InitCustomOptions() {
                   "Level of network extraction for network simplex optimization:\n"
                   "\n.. value-table::\n",
                   CPXPARAM_Network_NetFind,
-                  values_netfind, 1);
+                  values_netfind, 2);
 
   AddSolverOption("alg:netoptimality netoptimality",
                   "Specifies the optimality tolerance for network optimization; "
@@ -1994,15 +2005,15 @@ void CplexBackend::InitCustomOptions() {
 
   AddSolverOption("alg:benders_feascuttol benders_feascut_tol",
     "Tolerance for violations of feasibility cuts in Benders "
-    "algorithm(default 1e-6).",
-    CPXPARAM_Benders_Tolerances_feasibilitycut,
-    1e-9, 1.0);
+    "algorithm (default 1e-6; must be in [1e-9, 0.1]).",
+    CPXPARAM_Benders_Tolerances_FeasibilityCut,
+    1e-9, 0.1);
 
   AddSolverOption("alg:benders_optcut_tol benders_optcut_tol",
     "Tolerance for violations of optimality cuts in Benders "
-    "algorithm(default 1e-6).",
-    CPXPARAM_Benders_Tolerances_optimalitycut,
-    1e-9, 1.0);
+    "algorithm (default 1e-6; must be in [1e-9, 0.1]).",
+    CPXPARAM_Benders_Tolerances_OptimalityCut,
+    1e-9, 0.1);
 
   AddSolverOption("alg:benders_strategy benders_strategy",
     "How to decompose the problem for Benders algorithm:\n"
@@ -2045,8 +2056,8 @@ void CplexBackend::InitCustomOptions() {
 
   AddSolverOption("lp:perturb perturb",
     "Amount by which to perturb variable bounds when "
-    "perturbing problems (see \"perturb\"); default=1e-6, "
-    "must be positive.",
+    "perturbing problems (see \"lp:doperturb\"); default=1e-6, "
+    "must be in [1e-8, 1e75].",
     CPXPARAM_Simplex_Perturbation_Constant, 1e-8, DBL_MAX);
 
   AddSolverOption("lp:opttol optimality opttol optimalitytolerance",
@@ -2061,8 +2072,8 @@ void CplexBackend::InitCustomOptions() {
   // Hidden param
   #define CPX_PARAM_EPSAGG 1055
   AddSolverOption("cut:aggtol aggtol",
-    "Pivot tolerance for aggregating.  It seldom needs "
-		"fiddling.  Default = .05; must be in [1e-10, .99].",
+    "Pivot tolerance for aggregating (undocumented CPLEX parameter 1055).  "
+    "It seldom needs fiddling.  Default = .05; must be in [1e-10, .99].",
     CPX_PARAM_EPSAGG, 1e-10, .99);
 
   AddSolverOption("cut:aggforcut aggforcut",
@@ -2089,7 +2100,7 @@ void CplexBackend::InitCustomOptions() {
     CPXPARAM_MIP_Cuts_Disjunctive, values_bqpcuts, 0);
 
   AddSolverOption("cut:eachcutlim eachcutlim",
-    "Limit on the number of cuts of each time; default=2100000000.", 
+    "Limit on the number of cuts of each type; default=2100000000.", 
     CPXPARAM_MIP_Limits_EachCutLimit, 0, CPXINT_MAX);
 
   AddSolverOption("cut:flowcover flowcovercuts flowcuts",
@@ -2138,7 +2149,7 @@ void CplexBackend::InitCustomOptions() {
     CPXPARAM_MIP_Cuts_MCFCut, values_cuts2, 0);
 
   AddSolverOption("cut:mir mircuts",
-    "Whether to use MIP roundind cuts in solving MIPs, choices as for \"cut:flowcover\".",
+    "Whether to use mixed-integer rounding (MIR) cuts in solving MIPs, choices as for \"cut:flowcover\".",
     CPXPARAM_MIP_Cuts_MIRCut, values_cuts2, 0);
 
   AddSolverOption("cut:node nodecuts",
@@ -2155,8 +2166,12 @@ void CplexBackend::InitCustomOptions() {
     CPXPARAM_MIP_Cuts_ZeroHalfCut, values_cuts2, 0);
 
   AddStoredOption("cut:cuts cuts mipcuts",
-    "Global cut generation control, valid unless overridden "
-    "by individual cut-type controls:\n"
+    "Global cut generation control, applied to all cut families "
+    "(cut:bqp, cut:clique, cut:cover, cut:disj, cut:flowcover, cut:frac, "
+    "cut:gubcover, cut:implied, cut:liftandproject, cut:localimplied, "
+    "cut:mfc, cut:mir, cut:node, cut:flowpath, cut:rlt, cut:zerohalf) "
+    "unless overridden by the individual cut-type controls; "
+    "value 3 is reduced to 2 for families accepting at most 2:\n"
     "\n.. value-table::\n",
     storedOptions_.cuts_, values_bqpcuts);
 
@@ -2243,12 +2258,12 @@ void CplexBackend::InitCustomOptions() {
 
 
   AddSolverOption("mip:gapabs mipgapabs absmipgap",
-    "Max. absolute MIP optimality gap (default 1e-6).",
-    CPXPARAM_MIP_Tolerances_AbsMIPGap, 0.0, DBL_MAX);
+    "Max. absolute MIP optimality gap (default 1e-6; must be in [0, 1e20]).",
+    CPXPARAM_MIP_Tolerances_AbsMIPGap, 0.0, 1e20);
 
   AddSolverOption("mip:gap mipgap",
-    "Max. relative MIP optimality gap (default 1e-4).",
-    CPXPARAM_MIP_Tolerances_MIPGap, 1e-9, 1.0);
+    "Max. relative MIP optimality gap (default 1e-4; must be in [0, 1]).",
+    CPXPARAM_MIP_Tolerances_MIPGap, 0.0, 1.0);
 
 
   AddSolverOption("mip:fpheur fpheur",
@@ -2294,9 +2309,10 @@ void CplexBackend::InitCustomOptions() {
 
   AddSolverOption("mip:submipstartalg submipstartalg",
     "Rarely used choice of algorithm for the initial relaxation of a "
-    "subMIP (described with \"submipalg\"):\n"
+    "subMIP (described with \"submipalg\"); for MIQPs, 5 is treated as 0; "
+    "only 0 is allowed for MIQCPs:\n"
     "\n.. value-table::\n",
-    CPXPARAM_MIP_SubMIP_StartAlg, values_submipstartalg, 0);
+    CPXPARAM_MIP_SubMIP_StartAlg, values_nodemethod, 0);
 
 
   AddStoredOption("mip:nodemethod nodemethod mipalg mipalgorithm",
@@ -2356,17 +2372,17 @@ void CplexBackend::InitCustomOptions() {
   AddSolverOption("bar:growth bargrowth growth",
     "Tolerance for detecting unbounded faces in the barrier algorithm: "
     "higher values make the test for unbounded faces harder to satisfy "
-		"(default 1e12).",
-    CPXPARAM_Barrier_Limits_Growth, 1, CPXINT_MAX);
+    "(default 1e12; must be >= 1).",
+    CPXPARAM_Barrier_Limits_Growth, 1.0, 1e75);
 
   AddSolverOption("bar:iterlim bariterlim",
-    "Maximum barrier iterations allowed (default 9223372036800000000).",
+    "Maximum barrier iterations allowed (default: no limit).",
     CPXPARAM_Barrier_Limits_Iteration, 0, CPXINT_MAX);
 
   AddSolverOption("bar:objrange barobjrange",
     "Limit on the absolute objective value before the barrier algorithm "
     "considers the problem unbounded (default 1e20).",
-    CPXPARAM_Barrier_Limits_ObjRange, 0, CPXINT_MAX);
+    CPXPARAM_Barrier_Limits_ObjRange, 0.0, 1e75);
 
   AddSolverOption("bar:start barstart barstartalg",
     "Barrier starting-point algorithm:"
@@ -2412,7 +2428,7 @@ void CplexBackend::InitCustomOptions() {
   AddSolverOption("sol:poolpopulatelim populatelim",
     "Limit on number of solutions added to the solution pool by the populate algorithm. "
     "Default: 20.",
-    CPX_PARAM_POPULATELIM, 1, 20);
+    CPX_PARAM_POPULATELIM, 1, CPXINT_MAX);
 
   AddSolverOption("sol:poolreplace poolreplace",
     "Policy for replacing solutions in the solution pool if "
@@ -2515,8 +2531,9 @@ void CplexBackend::InitCustomOptions() {
     CPX_PARAM_RANDOMSEED, 0, CPXINT_MAX);
 
   AddSolverOption("tech:threads threads",
-      "How many threads to use when using the barrier algorithm\n"
-      "or solving MIP problems; default 0 ==> automatic choice.",
+      "Default maximum number of threads for any of the parallel CPLEX "
+      "optimizers (simplex, barrier, MIP, concurrent); default 0 ==> "
+      "automatic choice (maximum available, subject to the license).",
       CPXPARAM_Threads, 0, CPXINT_MAX);
 
   AddStoredOption("tech:workdir nodefiledir workfiledir workdir",
@@ -2526,8 +2543,9 @@ void CplexBackend::InitCustomOptions() {
   );
 
   AddSolverOption("tech:workfilelim workfilelim",
-    "Maximum size in megabytes for in-core work \"files\". Default 2048.",
-    CPX_PARAM_WORKMEM, 2048, 2048);
+    "Maximum size in megabytes for in-core work \"files\" "
+    "(central memory used before node files are written); default 2048.",
+    CPX_PARAM_WORKMEM, 0.0, 1e75);
 
 
 
@@ -2540,7 +2558,7 @@ void CplexBackend::InitCustomOptions() {
     CPXPARAM_Network_Iterations, 0, CPXINT_MAX);
 
   AddSolverOption("lim:nodes node nodelim nodelimit",
-    "Maximum MIP nodes to explore (default: 2^31 - 1).",
+    "Maximum MIP nodes to explore (default: no limit).",
     CPX_PARAM_NODELIM, 0, CPXINT_MAX);
 
   AddSolverOption("lim:dettime dettimelim",
@@ -2549,8 +2567,8 @@ void CplexBackend::InitCustomOptions() {
 
   AddSolverOption("lim:sol sollimit solutionlimit mipsolutions",
     "Limit the number of feasible MIP solutions found, causing early "
-    "termination if exceeded; default = 2e31-1",
-    CPXPARAM_MIP_Limits_Solutions , 0, 2000000000);
+    "termination if exceeded; must be >= 1; default = no limit.",
+    CPXPARAM_MIP_Limits_Solutions , 1, CPXINT_MAX);
 
   AddSolverOption("lim:time timelim timelimit time",
                   "Limit on solve time (in seconds; default: no limit).",
@@ -2674,7 +2692,7 @@ void CplexBackend::InitCustomOptions() {
   AddSolverOption("pre:node presolvenode",
     "Whether to run presolve at each node of the MIP branch-and-bound:\n"
     "\n.. value-table::\n",
-    CPXPARAM_MIP_Strategy_PresolveNode, values_noautoyes_, 0);
+    CPXPARAM_MIP_Strategy_PresolveNode, values_presolvenode, 0);
 
   AddSolverOption("pre:passes prepasses prepass",
     "Limit on the number of CPLEX presolve passes:\n"
@@ -2683,10 +2701,15 @@ void CplexBackend::InitCustomOptions() {
     "| n>=0 - At most n passes.",
     CPXPARAM_Preprocessing_NumPass, -1, CPXINT_MAX);
 
-  AddSolverOption("pre:reformulations prereformulations",
-    "Kinds of reductions permitted during CPLEX presolve: \n"
+  AddSolverOption("pre:reduce prereduce",
+    "Kinds of reductions permitted during CPLEX presolve:\n"
     "\n.. value-table::\n",
-    CPXPARAM_Preprocessing_Reduce, values_prereformulations, 3);
+    CPXPARAM_Preprocessing_Reduce, values_prereduce, 3);
+
+  AddSolverOption("pre:reformulations prereformulations",
+    "Reformulations applied during CPLEX presolve:\n"
+    "\n.. value-table::\n",
+    CPXPARAM_Preprocessing_Reformulations, values_prereformulations, 3);
 
   AddSolverOption("pre:relax prerelax",
     "Whether to use CPLEX's presolve on the initial LP relaxation of a MIP: \n"
@@ -2722,14 +2745,14 @@ void CplexBackend::InitCustomOptions() {
 
 
     AddSolverOption("tech:tunedisplay tunedisplay",
-        "How much to print during tunin:\n"
+        "How much to print during tuning:\n"
         "\n.. value-table::\n",
         CPXPARAM_Tune_Display, values_tunedisplay_, 1);
 
 
   AddSolverOption("tech:tunerepeat tunerepeat",
       "How many times to perturb the problem during tuning (default = 1).",
-      CPXPARAM_Tune_Repeat, 1, 100);
+      CPXPARAM_Tune_Repeat, 1, CPXINT_MAX);
 
 
 

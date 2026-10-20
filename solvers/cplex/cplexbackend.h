@@ -285,10 +285,10 @@ private:
     int algMethod_ = CPX_ALG_AUTOMATIC;
     int nodeMethod_ = CPX_ALG_AUTOMATIC;
     int cpxMethod_ = CPX_ALG_AUTOMATIC; // to store actual method
-    int crossover_ = 0;
+    int crossover_ = -1;
     int solutionType_ = 0;
     int bestnode_ = 0;
-    int dropTol_ = 0;
+    double dropTol_ = 0.0;
 
     bool fBarrier_ = false;
     bool fPrimal_ = false;
