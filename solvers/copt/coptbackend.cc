@@ -709,6 +709,41 @@ static const mp::OptionValueInfo values_crossover[] = {
 };
 
 
+static const mp::OptionValueInfo values_nlpmuupdate[] = {
+  {"-1", "Automatic (default)", -1},
+  {"0", "Monotonically decreasing", 0},
+  {"1", "Adaptive adjustment", 1}
+};
+
+static const mp::OptionValueInfo values_nlplinscale[] = {
+  {"-1", "Automatic (default)", -1},
+  {"0", "No scaling", 0},
+  {"1", "Always scale", 1}
+};
+
+static const mp::OptionValueInfo values_sdpmethod[] = {
+  {"-1", "Automatic (default)", -1},
+  {"0", "Primal-dual method", 0},
+  {"1", "ADMM", 1},
+  {"2", "Dual method", 2}
+};
+
+static const mp::OptionValueInfo values_barstart[] = {
+  {"-1", "Automatic (default)", -1},
+  {"0", "Simple starting point", 0},
+  {"1", "Mehrotra starting point", 1},
+  {"2", "Modified Mehrotra starting point", 2}
+};
+
+static const mp::OptionValueInfo values_level_heavy[] = {
+  { "-1", "Automatic (default)", -1},
+  { "0", "Off", 0},
+  { "1", "Fast", 1},
+  { "2", "Normal", 2},
+  { "3", "Aggressive", 3},
+  { "4", "Heavy", 4}
+};
+
 static const mp::OptionValueInfo miprepair_values_[] = {
   {"-1", "Only when time left (default)", -1},
   {"0", "Off", 0},
@@ -773,6 +808,11 @@ void CoptBackend::InitCustomOptions() {
     "Whether to use homogeneous self-dual form in barrier:\n"
     "\n.. value-table::\n", COPT_INTPARAM_BARHOMOGENEOUS,
     values_autonoyes_, -1);
+
+  AddSolverOption("bar:start barstart",
+    "Algorithm for the barrier starting point:\n"
+    "\n.. value-table::\n", COPT_INTPARAM_BARSTART,
+    values_barstart, -1);
 
   AddSolverOption("lp:barorder barorder",
     "Barrier ordering algorithm:\n"
@@ -853,6 +893,28 @@ void CoptBackend::InitCustomOptions() {
                   "(for hierarchical multi-objective models), but the "
                   "8.0.6 library limits the value to 2.", COPT_INTPARAM_MIPSTARTMODE,
                   mip_start_values_, -1);
+
+  AddSolverOption("mip:fapheurlevel fapheurlevel",
+    "Level of fix-and-propagate heuristics:\n"
+    "\n.. value-table::\n", COPT_INTPARAM_FAPHEURLEVEL,
+    values_level_heavy, -1);
+
+  AddSolverOption("mip:startnodelimit mipstartnodelimit",
+    "Node limit for the sub-MIPs completing partial MIP starts "
+    "(see mip:startmode); default -1 ==> automatic.",
+    COPT_INTPARAM_MIPSTARTNODELIMIT, -1, INT_MAX);
+
+  AddSolverOption("mip:linearizeindicators linearizeindicators",
+    "Whether to force the linearization of indicator constraints "
+    "into equivalent linear constraints:\n"
+    "\n.. value-table::\n", COPT_INTPARAM_LINEARIZEINDICATORS,
+    values_01_noyes_0default_, 0);
+
+  AddSolverOption("mip:linearizesos linearizesos",
+    "Whether to force the linearization of SOS constraints "
+    "into equivalent linear constraints:\n"
+    "\n.. value-table::\n", COPT_INTPARAM_LINEARIZESOS,
+    values_01_noyes_0default_, 0);
 
   AddSolverOption("mip:submipheurlevel submipheurlevel",
     "Level of Sub-MIP heuristics:\n"
@@ -947,6 +1009,11 @@ void CoptBackend::InitCustomOptions() {
     "Maximum MIP nodes to explore; default -1 (no limit).",
     COPT_INTPARAM_NODELIMIT, -1, INT_MAX);
 
+  AddSolverOption("lim:multiobjtime multiobjtimelim multiobjtimelimit obj:multi:timelimit",
+    "Time limit (in seconds) for the whole multi-objective solve "
+    "(default: no limit).",
+    COPT_DBLPARAM_MULTIOBJTIMELIMIT, 0.0, 1e20);
+
   AddSolverOption("lim:memlimit memlimit",
       "Soft limit (number of MB) on memory allocated; "
       "default 1e20 (no limit).",
@@ -986,6 +1053,25 @@ void CoptBackend::InitCustomOptions() {
                   "\n.. value-table::\n",
                   COPT_INTPARAM_NONCONVEX, values_nonconvex, -1);
 
+  AddSolverOption("alg:nlptol nlptol",
+    "Convergence tolerance of the nonlinear solver (default 1e-8).",
+    COPT_DBLPARAM_NLPTOL, 1e-13, 1e-3);
+
+  AddSolverOption("alg:nlpmuupdate nlpmuupdate",
+    "Barrier parameter update strategy of the nonlinear solver:\n"
+    "\n.. value-table::\n", COPT_INTPARAM_NLPMUUPDATE,
+    values_nlpmuupdate, -1);
+
+  AddSolverOption("alg:nlplinscale nlplinscale",
+    "Linear system scaling strategy of the nonlinear solver:\n"
+    "\n.. value-table::\n", COPT_INTPARAM_NLPLINSCALE,
+    values_nlplinscale, -1);
+
+  AddSolverOption("alg:sdpmethod sdpmethod",
+    "Method for semidefinite programs:\n"
+    "\n.. value-table::\n", COPT_INTPARAM_SDPMETHOD,
+    values_sdpmethod, -1);
+
   AddSolverOption("alg:feastol feastol",
     "Primal feasibility tolerance (default 1e-6).",
     COPT_DBLPARAM_FEASTOL, 1e-9, 1e-4);
@@ -1000,6 +1086,12 @@ void CoptBackend::InitCustomOptions() {
     AddSolverOption("alg:qmatrixtol qmatrixtol",
         "input Q matrix coefficient tolerance (default 5e-14).",
     COPT_DBLPARAM_QMATRIXTOL, 0.0, 1e-7);
+
+  AddSolverOption("tech:writedualprob writedualprob",
+    "Whether tech:writeprob writes the dual problem instead of "
+    "the original one for LP in the LP, MPS and BIN formats:\n"
+    "\n.. value-table::\n", COPT_INTPARAM_WRITEDUALPROB,
+    values_01_noyes_0default_, 0);
 
   AddSolverOption("iis:method iismethod alg:iismethod",
     "Which method to use when finding an IIS (irreducible infeasible "
