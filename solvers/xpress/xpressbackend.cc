@@ -79,6 +79,8 @@ void XpressmpBackend::OpenSolver() {
 
   }
   model_fixed_ = lp();
+  XPRESSMP_CCALL(XPRS_msp_create(&msp_));
+  XPRESSMP_CCALL(XPRS_mse_create(&mse_));
   copy_common_info_to_other();
 }
 
@@ -102,6 +104,14 @@ void XpressmpBackend::FinishOptionParsing() {
 }
 
 void XpressmpBackend::CloseSolver() {
+  if (mse_) {
+    XPRS_mse_destroy(mse_);
+    mse_ = nullptr;
+  }
+  if (msp_) {
+    XPRS_msp_destroy(msp_);
+    msp_ = nullptr;
+  }
 
   /* Free the fixed model */
   if (lp() != nullptr && lp() != model_fixed_) {
@@ -264,6 +274,31 @@ void XpressmpBackend::DoXPRESSTune() {
   if (!tunermethodfileread().empty())
       XPRESSMP_CCALL(XPRStunerreadmethod(lp(), tunermethodfileread().c_str()));
   XPRESSMP_CCALL(XPRStune(lp(), ""));
+}
+
+void XpressmpBackend::GetSolverOption(MspControl key, int& value) const {
+  XPRESSMP_CCALL(XPRS_msp_getintcontrol(msp_, int(key), &value));
+}
+void XpressmpBackend::SetSolverOption(MspControl key, int value) {
+  XPRESSMP_CCALL(XPRS_msp_setintcontrol(msp_, int(key), value));
+}
+void XpressmpBackend::GetSolverOption(MspControl key, double& value) const {
+  XPRESSMP_CCALL(XPRS_msp_getdblcontrol(msp_, int(key), &value));
+}
+void XpressmpBackend::SetSolverOption(MspControl key, double value) {
+  XPRESSMP_CCALL(XPRS_msp_setdblcontrol(msp_, int(key), value));
+}
+void XpressmpBackend::GetSolverOption(MseControl key, int& value) const {
+  XPRESSMP_CCALL(XPRS_mse_getintcontrol(mse_, int(key), &value));
+}
+void XpressmpBackend::SetSolverOption(MseControl key, int value) {
+  XPRESSMP_CCALL(XPRS_mse_setintcontrol(mse_, int(key), value));
+}
+void XpressmpBackend::GetSolverOption(MseControl key, double& value) const {
+  XPRESSMP_CCALL(XPRS_mse_getdblcontrol(mse_, int(key), &value));
+}
+void XpressmpBackend::SetSolverOption(MseControl key, double value) {
+  XPRESSMP_CCALL(XPRS_mse_setdblcontrol(mse_, int(key), value));
 }
 
 void XpressmpBackend::Solve() {
@@ -661,16 +696,9 @@ std::string XpressmpBackend::DoXpressFixedModel()
 
 
   void XpressmpBackend::CreateSolutionPoolEnvironment() {
-    // Solution pool must be created in all cases we specify a stub
-    XPRESSMP_CCALL(XPRS_msp_create(&msp_));
     XPRESSMP_CCALL(XPRS_msp_probattach(msp_, lp()));
-
-    // Create solutions enumerator only if explicitly needed
-    if (storedOptions_.nbest_ >= 0) {
-      XPRESSMP_CCALL(XPRS_mse_create(&mse_));
-      if (outlev_ > 0)
-        XPRESSMP_CCALL(XPRS_mse_addcbmsghandler(mse_, xp_mse_display, NULL, 0));
-    }
+    if (outlev_ > 0)
+      XPRESSMP_CCALL(XPRS_mse_addcbmsghandler(mse_, xp_mse_display, NULL, 0));
 
     //SetSolverOption(XPRS_HEURSTRATEGY, 0);
     SetSolverOption(XPRS_MIPDUALREDUCTIONS, 2);
@@ -1084,26 +1112,12 @@ void XpressmpBackend::InitCustomOptions() {
     "\n.. value-table::\n",
     storedOptions_.pooldupcol_, pool_values_);
 
-  /// turning off 2026-06-22:
-  /// requires XPRS_MST_getinticontrol(mse_, ...)
-  // AddSolverOption("sol:pooldups pooldups",
-  //   "How poolstub should handle duplicate solutions:\n"
-  //   "\n.. value-table::\nRounding of discrete variables is affected by"
-  //   "poolmiptol and poolfeastol",
-  //   XPRS_MSP_DUPLICATESOLUTIONSPOLICY, pooldups_values_, 3);
+  AddSolverOption("sol:pooldups pooldups",
+    "How the solution pool handles duplicate solutions:\n"
+    "\n.. value-table::\n",
+    MspControl{XPRS_MSP_DUPLICATESOLUTIONSPOLICY}, pooldups_values_, 3);
 
   AddOptionSynonyms_Inline_Front("ams_stub", "sol:stub");
-
-  /// same
-  // AddSolverOption("sol:poolfeastol poolfeastol",
-  //   "Zero tolerance for discrete variables in the solution "
-  //   "pool (default 1e-6)",
-  //   XPRS_MSP_SOL_FEASTOL, 0, 1);
-
-  // AddSolverOption("sol:poolmiptol poolmiptol",
-  //   "Error (nonintegrality) allowed in discrete variables "
-  //   "in the solution pool (default 5e-6)",
-  //   XPRS_MSP_SOL_MIPTOL, 0, 1);
 
 	AddStoredOption("sol:poollimit poollimit poolnbest",
     "When poollimit = n > 1, the "

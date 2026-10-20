@@ -147,6 +147,18 @@ public:
   //////////////////// [[ Implementation details ]] //////////////////////
   ///////////////////////////////////////////////////////////////////////////////
 public:  // public for static polymorphism
+  /// Solution pool and enumerator controls, see MspControl / MseControl
+  using XpressmpCommon::GetSolverOption;
+  using XpressmpCommon::SetSolverOption;
+  void GetSolverOption(MspControl key, int& value) const;
+  void SetSolverOption(MspControl key, int value);
+  void GetSolverOption(MspControl key, double& value) const;
+  void SetSolverOption(MspControl key, double value);
+  void GetSolverOption(MseControl key, int& value) const;
+  void SetSolverOption(MseControl key, int value);
+  void GetSolverOption(MseControl key, double& value) const;
+  void SetSolverOption(MseControl key, double value);
+
 
   // Overriding the initialization to make sure a problem is created
   // even for -v command line switch, as we need it to get the version number
@@ -177,6 +189,7 @@ protected:
   pre::ValueMapDbl DualSolution() override;
   ArrayRef<double> DualSolution_LP();
 
+  /// Attach the solution pool to the problem and prepare the enumerator
   void CreateSolutionPoolEnvironment();
 
   std::string XPRESSSolveFlags();
@@ -262,7 +275,8 @@ private:
   bool msgCallbackSet_ = false;
   Options storedOptions_;
   
-  // For multisol
+  /// Solution pool and enumerator, created with the problem;
+  /// the pool is attached to the problem only for multi-solution runs
   XPRSmipsolpool msp_;
   XPRSmipsolenum mse_;
 };
