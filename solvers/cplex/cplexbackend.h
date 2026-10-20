@@ -303,6 +303,7 @@ private:
     int solutionType_ = 0;
     int bestnode_ = 0;
     int mipStartEffort_ = 1;
+    int fixedModelMethod_ = CPX_ALG_AUTOMATIC;
     double dropTol_ = 0.0;
 
     bool fBarrier_ = false;

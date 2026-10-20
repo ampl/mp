@@ -1283,10 +1283,15 @@ std::string CplexBackend::DoCplexFixedModel() {
   double old_time_limit;
   CPXLONG old_iteration_limit;
   int old_barrier_limit;
+  const int method_param = (CPXPROB_MIQP == original_model_type_)
+      ? CPXPARAM_QPMethod : CPXPARAM_LPMethod;
+  int old_method = 0;
+  CPLEX_CALL(CPXgetintparam(env(), method_param, &old_method));
   CPLEX_CALL(CPXgetdblparam(env(), CPXPARAM_TimeLimit, &old_time_limit));
   CPLEX_CALL(CPXgetlongparam(env(), CPXPARAM_Simplex_Limits_Iterations, &old_iteration_limit));
   CPLEX_CALL(CPXgetintparam(env(), CPXPARAM_Barrier_Limits_Iteration, &old_barrier_limit));
   auto restore_limits = [&](void*) {
+    CPXsetintparam(env(), method_param, old_method);
     CPXsetdblparam(env(), CPXPARAM_TimeLimit, old_time_limit);
     CPXsetlongparam(env(), CPXPARAM_Simplex_Limits_Iterations, old_iteration_limit);
     CPXsetintparam(env(), CPXPARAM_Barrier_Limits_Iteration, old_barrier_limit);
@@ -1298,6 +1303,8 @@ std::string CplexBackend::DoCplexFixedModel() {
       fixed_model_iter_limit() < 0 ? CPX_BIGLONG : fixed_model_iter_limit()));
   CPLEX_CALL(CPXsetintparam(env(), CPXPARAM_Barrier_Limits_Iteration,
       fixed_model_iter_limit() < 0 ? INT_MAX : fixed_model_iter_limit()));
+  if (storedOptions_.fixedModelMethod_)
+    SetSolverOption(method_param, storedOptions_.fixedModelMethod_);
   CPLEX_CALL(Contopt(env(), lp()));
 
   int optimstatus = CPXgetstat(env(), lp());
@@ -2375,6 +2382,12 @@ void CplexBackend::InitCustomOptions() {
     "best - estimate node, every bbinterval iterations (default 7); "
     "0 means always use the best-estimate node.",
     CPXPARAM_MIP_Strategy_BBInterval, 0, CPXINT_MAX);
+
+  AddStoredOption("mip:basis:method finalmipalg mip:fixmethod",
+    "Algorithm for the fixed (continuous) model solved to obtain duals "
+    "and a basis for MIP models (see mip:basis):\n"
+    "\n.. value-table::\n",
+    storedOptions_.fixedModelMethod_, values_method);
 
   AddStoredOption("mip:bestnode bestnode",
     "Request return of suffix .bestnode on the objective and problem for the "
