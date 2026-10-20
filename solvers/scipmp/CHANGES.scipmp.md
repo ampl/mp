@@ -2,6 +2,43 @@ Summary of recent updates to SCIP for AMPL
 ==========================================
 
 
+## unreleased
+- Options aligned with SCIP 10.0.2: corrected defaults and ranges
+  (*cut:maxcutsroot* 2000, *cut:minortho*/*cut:minorthoroot* in 0..1
+  with default 0.9, *pre:immrestartfac* and *pre:restartminred* 0.05),
+  texts, and the value tables of *alg:method*/*alg:remethod*
+  (SoPlex has no barrier) and *est:method*.
+- A value rejected by SCIP now aborts with a message naming the AMPL
+  option, the value and the valid range or character set.
+- MP-standard names with the previous spellings as synonyms:
+  *mip:gap*, *mip:gapabs*, *alg:feastol*, *alg:dualfeastol*, *lim:sol*,
+  *tech:outlevnative*; synonyms *nodelim*, *sollim*, *memlim*.
+- New options: *tech:threads* (concurrent solve with that many threads),
+  *alg:concurrent* default -1 (on with *tech:threads* > 1),
+  *alg:emphasis*, *pre:solve*, *lp:scaling* (*pre:scale*),
+  *mip:symmetry*, *tech:clocktype*, *lim:iter* (per LP solve),
+  *lim:rootiter*, *lim:bestobjstop*, *lim:bestbndstop*,
+  cut family frequencies *cut:gomory*, *cut:gomorymi*, *cut:strongcg*,
+  *cut:mir*, *cut:flowcover*, *cut:cover*, *cut:clique*, *cut:zerohalf*,
+  *cut:implied*, *cut:aggregation*, *cut:oddcycle*, *cut:mcf*,
+  *cut:disjunctive*, *cut:rlt*; *tech:optionnative* (any SCIP parameter
+  inline), *tech:optionnativewrite*, *tech:writesolution*.
+- Alternative solutions: *sol:poollimit* was ignored (it set SCIP's
+  counting limit); it now caps the reported pool (default 10).
+  *sol:poolmode* (default 2) enumerates the feasible solutions of
+  integer models with SCIP's solution counting; *sol:poolgap*,
+  *sol:poolgapabs* filter the reported solutions; *ams_stub* accepted.
+- IIS computation (*iis:find*) with the SCIP 10 IIS finder; options
+  *iis:bounds*, *iis:irreducible*, *lim:iistime*, *lim:iisnodes*.
+- *tech:logfile* without *tech:outlev* now writes the full log to the
+  file with a quiet console; the console is quiet whenever the SCIP
+  verbosity is 0 (the concurrent solve printed regardless).
+- Unavailable LP duals (after SCIP presolving) are reported as absent
+  instead of zeros; SCIP's reason is shown with *tech:outlev=1*.
+- Solve results for the primal and dual bound limits (SCIP statuses
+  PRIMALLIMIT, DUALLIMIT).
+
+
 ## 20260624
 - Changes in MP, in particular:
   - Option *cvt:pow2_as_qp* prefers quadratization
