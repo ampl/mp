@@ -3,6 +3,7 @@
 
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "mp/backend-mip.h"
 #include "mp/flat/backend_flat.h"
@@ -60,28 +61,18 @@ public:
   ALLOW_STD_FEATURE(MULTISOL, true)
 
   /**
-  * Get/Set AMPL var/con statii
+  * EXPORT PROBLEM / SOLUTION
   **/
-  ALLOW_STD_FEATURE(BASIS, true)
-  // TODO If getting/setting a basis is supported, implement the 
-  // accessor and the setter below
-  SolutionBasis GetBasis() override;
-  void SetBasis(SolutionBasis) override;
+  ALLOW_STD_FEATURE(WRITE_PROBLEM, true)
+  void DoWriteProblem(const std::string& name) override;
+  ALLOW_STD_FEATURE(WRITE_SOLUTION, true)
+  void DoWriteSolution(const std::string& name) override;
 
-  /**
-  * MIP warm start
-  **/
-  // TODO If MIP warm start is supported, implement the function below
-  // to set a non-presolved starting solution
-  ALLOW_STD_FEATURE(MIPSTART, false)
-  void AddMIPStart(ArrayRef<double> x0,
-									 ArrayRef<int> sparsity) override;
-
+  /// No basis statuses: GCG solves the master problem (BASIS not allowed)
 
  /**
   * Get MIP Gap
   **/
-  // TODO Implement to return MIP gap
   // (adds option mip:return_gap)
   ALLOW_STD_FEATURE(RETURN_MIP_GAP, true)
   double MIPGap() override;
@@ -89,19 +80,9 @@ public:
   /**
   * Get MIP dual bound
   **/
-  // TODO Implement to return the best dual bound value
   // (adds option mip:bestbound)
   ALLOW_STD_FEATURE(RETURN_BEST_DUAL_BOUND, true)
   double BestDualBound() override;
-
-  /**
-  * Compute the IIS and obtain relevant values
-  **/
-  ALLOW_STD_FEATURE(IIS, false)
-  /// Compute IIS
-  void ComputeIIS() override;
-  /// Retrieve IIS elements
-  IIS GetIIS() override;
 
   /////////////////////////// Model attributes /////////////////////////
   bool IsMIP() const override;
@@ -141,6 +122,15 @@ protected:
   void ReportGCGResults();
 
   void ReportGCGPool();
+  /// Whether a pool solution passes sol:poolgap / sol:poolgapabs
+  bool AcceptPoolSolution(double obj, double best) const;
+
+  /// tech:optionnative: "name=value" or "name value" pairs
+  void ApplyInlineParams();
+  /// tech:outlev, tech:logfile: verbosity and log file
+  void SetUpLogging();
+  /// heu/cut/pre:settings, pre:solve
+  void ApplyParamSettings();
 
   std::vector<double> getPoolSolution(int i);
   double getPoolObjective(int i);
@@ -155,13 +145,7 @@ protected:
   std::pair<int, std::string> GetSolveResult() override;
   void AddGCGMessages();
 
-  ArrayRef<int> VarStatii();
-  ArrayRef<int> ConStatii();
-  void VarStatii(ArrayRef<int>);
-  void ConStatii(ArrayRef<int>);
 
-  ArrayRef<int> VarsIIS();
-  pre::ValueMapInt ConsIIS();
 
 
 private:
@@ -182,11 +166,16 @@ private:
   
   /// These options are stored in the class
   struct Options {
-    std::string exportFile_, logFile_, paramRead_;
+    std::string logFile_, paramRead_, paramWrite_;
+    std::vector<std::string> inlineParams_;
     int heuristics_ = 0;
     int cuts_ = 0;
     int presolvings_ = 0;
+    int presolve_ = 1;
     int outlev_ = 0;
+    int poolLimit_ = 10;
+    double poolGap_ = -1.0;     // < 0: no limit
+    double poolGapAbs_ = -1.0;
   };
   Options storedOptions_;
 

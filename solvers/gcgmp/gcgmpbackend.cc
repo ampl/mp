@@ -1,3 +1,7 @@
+#include <algorithm>
+#include <cstdio>
+#include <memory>
+#include <sstream>
 #include <vector>
 #include <climits>
 #include <cfloat>
@@ -88,10 +92,12 @@ bool GcgBackend::IsQCP() const {
 
 ArrayRef<double> GcgBackend::PrimalSolution() {
   SCIP* scip = getSCIP();
+  auto sol = SCIPgetBestSol(scip);
+  if (!sol)
+    return {};
   int num_vars = NumVars();
   std::vector<double> x(num_vars);
-  for (int i = 0; i < num_vars; i++)
-    x[i] = SCIPgetSolVal(scip, SCIPgetBestSol(scip), getPROBDATA()->vars[i]);
+  GCG_CCALL( SCIPgetSolVals(scip, sol, num_vars, getPROBDATA()->vars, x.data()) );
   return x;
 }
 
@@ -100,12 +106,13 @@ pre::ValueMapDbl GcgBackend::DualSolution() {
 }
 
 ArrayRef<double> GcgBackend::DualSolution_LP() {
+  // SCIP prints the reason (presolving performed, ...) if asked
+  if (IsMIP() || !SCIPisDualSolAvailable(getSCIP(), verbose_mode()))
+    return {};
   int num_cons = NumLinCons();
   std::vector<double> pi(num_cons);
-  if (SCIPisDualSolAvailable(getSCIP(), TRUE)) {
-    for (int i=0; i < num_cons; i++)
-      GCG_CCALL( SCIPgetDualSolVal(getSCIP(), getPROBDATA()->linconss[i], pi.data() + i, NULL) );
-  }
+  for (int i=0; i < num_cons; i++)
+    GCG_CCALL( SCIPgetDualSolVal(getSCIP(), getPROBDATA()->linconss[i], pi.data() + i, NULL) );
   return pi;
 }
 
@@ -139,6 +146,17 @@ void GcgBackend::ExportModel(const std::string &file) {
   GCG_CCALL( SCIPwriteOrigProblem(getSCIP(), file.data(), NULL, FALSE) );
 }
 
+void GcgBackend::DoWriteProblem(const std::string& name) {
+  ExportModel(name);
+}
+
+void GcgBackend::DoWriteSolution(const std::string& name) {
+  std::unique_ptr<FILE, int(*)(FILE*)> file(std::fopen(name.c_str(), "w"), std::fclose);
+  if (!file)
+    MP_RAISE(fmt::format("Cannot open '{}' for writing the solution", name));
+  GCG_CCALL( SCIPprintBestSol(getSCIP(), file.get(), FALSE) );
+}
+
 
 void GcgBackend::SetInterrupter(mp::Interrupter *inter) {
   inter->SetHandler(InterruptGcg, getSCIP());
@@ -146,24 +164,24 @@ void GcgBackend::SetInterrupter(mp::Interrupter *inter) {
   //GCG_CCALL( CPXsetterminate (env(), &terminate_flag) );
 }
 
-void GcgBackend::Solve() {
-  InputDecomposition();
-
-  if (!storedOptions_.exportFile_.empty())
-    ExportModel(storedOptions_.exportFile_);
-  if (!storedOptions_.paramRead_.empty())
-    GCG_CCALL( SCIPreadParams(getSCIP(), storedOptions_.paramRead_.c_str()) );
-  if (!storedOptions_.logFile_.empty())
-    SCIPsetMessagehdlrLogfile(getSCIP(), storedOptions_.logFile_.c_str());
+void GcgBackend::ApplyParamSettings() {
+  auto* scip = getSCIP();
   if (storedOptions_.heuristics_ != 0)
-    GCG_CCALL( SCIPsetHeuristics(getSCIP(), (SCIP_PARAMSETTING)storedOptions_.heuristics_, TRUE) );
+    GCG_CCALL( SCIPsetHeuristics(scip, (SCIP_PARAMSETTING)storedOptions_.heuristics_, TRUE) );
   if (storedOptions_.cuts_ != 0)
-    GCG_CCALL( SCIPsetSeparating(getSCIP(), (SCIP_PARAMSETTING)storedOptions_.cuts_, TRUE) );
+    GCG_CCALL( SCIPsetSeparating(scip, (SCIP_PARAMSETTING)storedOptions_.cuts_, TRUE) );
   if (storedOptions_.presolvings_ != 0)
-    GCG_CCALL( SCIPsetSeparating(getSCIP(), (SCIP_PARAMSETTING)storedOptions_.presolvings_, TRUE) );
-  
-  GCG_CCALL(GCGsolve(getGCG()));
+    GCG_CCALL( SCIPsetPresolving(scip, (SCIP_PARAMSETTING)storedOptions_.presolvings_, TRUE) );
+  if (0 == storedOptions_.presolve_)
+    GCG_CCALL( SCIPsetPresolving(scip, SCIP_PARAMSETTING_OFF, TRUE) );
+}
 
+void GcgBackend::Solve() {
+  ApplyParamSettings();
+  InputDecomposition();
+  if (!storedOptions_.paramWrite_.empty())
+    GCG_CCALL( SCIPwriteParams(getSCIP(), storedOptions_.paramWrite_.c_str(), FALSE, FALSE) );
+  GCG_CCALL(GCGsolve(getGCG()));
   WindupGCGSolve();
 }
 
@@ -196,16 +214,27 @@ double GcgBackend::getPoolObjective(int i)
   obj = SCIPgetSolOrigObj(getSCIP(), SCIPgetSols(getSCIP())[i]);
   return obj;
 }
+bool GcgBackend::AcceptPoolSolution(double obj, double best) const {
+  double gap = std::fabs(obj - best);
+  if (storedOptions_.poolGapAbs_ >= 0.0 && gap > storedOptions_.poolGapAbs_)
+    return false;
+  if (storedOptions_.poolGap_ >= 0.0 && gap > storedOptions_.poolGap_ * std::fabs(best))
+    return false;
+  return true;
+}
+
 void GcgBackend::ReportGCGPool() {
   if (!IsMIP())
     return;
-  int iPoolSolution = -1;
-  int nsolutions = SCIPgetNSols(getSCIP());
-  
-  while (++iPoolSolution < nsolutions) {
-    ReportIntermediateSolution(
-      { getPoolSolution(iPoolSolution),
-        {}, { getPoolObjective(iPoolSolution) } });
+  int nsolutions = SCIPgetNSols(getSCIP());        // sorted best-first
+  if (storedOptions_.poolLimit_ >= 0)
+    nsolutions = std::min(nsolutions, storedOptions_.poolLimit_);
+  double best = nsolutions ? getPoolObjective(0) : 0.0;
+  for (int i = 0; i < nsolutions; ++i) {
+    double obj = getPoolObjective(i);
+    if (!AcceptPoolSolution(obj, best))
+      break;                                       // sorted: the rest is worse
+    ReportIntermediateSolution({ getPoolSolution(i), {}, { obj } });
   }
 }
 
@@ -261,6 +290,12 @@ std::pair<int, std::string> GcgBackend::GetSolveResult() {
     return { sol::LIMIT_NO_FEAS_SOFTMEM, "memory limit, no solution" };
   case SCIP_STATUS_GAPLIMIT:
     return { sol::LIMIT_FEAS_GAP, "gap limit" };
+  case SCIP_STATUS_PRIMALLIMIT:
+    return { sol::LIMIT_FEAS_BESTOBJ, "primal bound limit (lim:bestobjstop)" };
+  case SCIP_STATUS_DUALLIMIT:
+    if (hasSol)
+      return { sol::LIMIT_FEAS_BESTBND, "dual bound limit (lim:bestbndstop), feasible solution" };
+    return { sol::LIMIT_NO_FEAS_BESTBND, "dual bound limit (lim:bestbndstop), no solution" };
   case SCIP_STATUS_SOLLIMIT:
     return { sol::LIMIT_FEAS_NUMSOLS, "solution limit" };
   case SCIP_STATUS_BESTSOLLIMIT:
@@ -295,11 +330,41 @@ std::pair<int, std::string> GcgBackend::GetSolveResult() {
 
 
 void GcgBackend::FinishOptionParsing() {
+  if (!storedOptions_.paramRead_.empty())
+    GCG_CCALL( SCIPreadParams(getSCIP(), storedOptions_.paramRead_.c_str()) );
+  ApplyInlineParams();
+  SetUpLogging();
+}
+
+void GcgBackend::ApplyInlineParams() {
+  for (const auto& text: storedOptions_.inlineParams_) {
+    std::string pairs = text;
+    std::replace(pairs.begin(), pairs.end(), '=', ' ');
+    std::istringstream in(pairs);
+    std::string name, value;
+    while (in >> name) {
+      if (!(in >> value))
+        MP_RAISE(fmt::format(
+            "tech:optionnative: no value for GCG parameter '{}'", name));
+      SetNativeParam(name, value);
+    }
+  }
+}
+
+void GcgBackend::SetUpLogging() {
   if (storedOptions_.outlev_ == 1)
-     SetSolverOption("display/verblevel", 4);
-  int v=-1;
-  GetSolverOption("display/verblevel", v);
-  set_verbose_mode(v>0);
+    SetSolverOption("display/verblevel", 4);
+  int verblevel = 0;
+  GetSolverOption("display/verblevel", verblevel);
+  bool console_log = verblevel > 0;
+  if (!storedOptions_.logFile_.empty()) {
+    SCIPsetMessagehdlrLogfile(getSCIP(), storedOptions_.logFile_.c_str());
+    if (!console_log)             // log file only: full log, quiet console
+      SetSolverOption("display/verblevel", 4);
+  }
+  // Quiet also hides GCG's detection messages at verblevel 0
+  SCIPsetMessagehdlrQuiet(getSCIP(), !console_log);
+  set_verbose_mode(console_log);
 }
 
 
@@ -369,20 +434,28 @@ void GcgBackend::InitCustomOptions() {
     "0*/1/2/3/4/5: Whether to write GCG log lines (chatter) to stdout and to file (native output level of SCIP).",
     "display/verblevel", 0, 5);
 
-  AddStoredOption("tech:exportfile writeprob writemodel",
-    "Specifies the name of a file where to export the model before "
-    "solving it. This file name can have extension ``.lp``, ``.mps``, etc. "
-    "Default = \"\" (don't export the model).",
-    storedOptions_.exportFile_);
-
   AddStoredOption("tech:logfile logfile",
-    "Log file name.",
+    "Log file name. Without tech:outlev=1 the log goes to the file only.",
     storedOptions_.logFile_);
 
   AddStoredOption("tech:optionnativeread optionnativeread tech:param:read param:read",
     "Filename of GCG parameter file (as path)."
     "The suffix on a parameter file should be .set.\n",
     storedOptions_.paramRead_);
+
+  AddStoredOption("tech:optionnativewrite optionnativewrite tech:param:write param:write",
+    "Name of a GCG parameter file (.set) to write before solving, "
+    "with all parameters of the original problem.",
+    storedOptions_.paramWrite_);
+
+  AddListOption("tech:optionnative optionnative optnative tech:param param",
+    "General way to set any GCG/SCIP parameter of the original problem; "
+    "the value should be a quoted string (delimited by ' or \") containing "
+    "one or more 'name=value' or 'name value' pairs separated by spaces, "
+    "for example 'pricing/masterpricer/eagerfreq=5 detection/maxrounds 2'. "
+    "Can appear more than once. Cannot be used to query current "
+    "parameter values.",
+    storedOptions_.inlineParams_);
 
   AddGcgOption("alg:method method lpmethod",
     "LP algorithm for solving initial LP relaxations:\n"
@@ -570,6 +643,24 @@ void GcgBackend::InitCustomOptions() {
     "Frequency for solving LP at the nodes (-1: never; 0: only root LP; default: 0)",
     "lp/solvefreq", -1, SCIP_MAXTREEDEPTH);
 
+  ///////////////////////// SOLUTION POOL /////////////////////////
+  AddStoredOption("sol:poollimit poollimit ams_limit solnlimit",
+    "Limit on the number of alternative solutions reported "
+    "(options sol:stub, sol:count); default 10, -1: all solutions stored "
+    "by GCG (at most lim:maxsol).",
+    storedOptions_.poolLimit_, -1, INT_MAX);
+
+  AddStoredOption("sol:poolgap poolgap ams_eps",
+    "Relative tolerance for reporting alternative solutions "
+    "(default: no limit).",
+    storedOptions_.poolGap_, -1.0, SCIP_REAL_MAX);
+
+  AddStoredOption("sol:poolgapabs poolgapabs ams_epsabs",
+    "Absolute tolerance for reporting alternative solutions "
+    "(default: no limit).",
+    storedOptions_.poolGapAbs_, -1.0, SCIP_REAL_MAX);
+  AddOptionSynonyms_Inline_Front("ams_stub", "sol:stub");
+
   ///////////////////////// MISC /////////////////////////
   AddGcgOption("misc:allowstrongdualreds allowstrongdualreds",
     "0/1: whether strong dual reductions should be allowed in propagation and presolving"
@@ -635,8 +726,8 @@ void GcgBackend::InitCustomOptions() {
     "Minimum number of threads used during parallel solve (default: 1)",
     "parallel/minnthreads", 0, 64);
 
-  AddGcgOption("par:mode mode",
-    "0/1: Parallel optimisation mode"
+  AddGcgOption("par:mode parallelmode",
+    "0/1: Parallel optimisation mode (SCIP's concurrent solve, not used by GCG)"
     "\n"
     "  | 0 - Opportunistic\n"
     "  | 1 - Deterministic (default)",
@@ -688,6 +779,11 @@ void GcgBackend::InitCustomOptions() {
   AddGcgOption("pre:maxrounds",
     "Maximal number of presolving rounds (default: -1: unlimited; 0: off)",
     "presolving/maxrounds", -1, INT_MAX);
+
+  AddStoredOption("pre:solve presolve",
+    "0/1: whether to use SCIP presolving on the original problem "
+    "(default 1); 0 is the same as pre:settings=3.",
+    storedOptions_.presolve_, 0, 1);
 
   AddStoredOption("pre:settings",
     "0/1/2/3: sets presolvings settings"
@@ -755,7 +851,7 @@ void GcgBackend::InitCustomOptions() {
     "\n"
     "  | 0 - Postprocessing of complete decompositions not enabled\n"
     "  | 1 - Postprocessing of complete decompositions enabled (default).",
-    "detection/detectors/postprocess/enabled", 0, 1);
+    "detection/postprocess", 0, 1);
 
   AddGcgOption("det:maxrounds",
     "Maximum number of detection loop rounds (default: 1) ",
@@ -932,203 +1028,6 @@ double GcgBackend::BestDualBound() {
 double GcgBackend::MIPGapAbs() {
   double gapabs = std::fabs(ObjectiveValue() - BestDualBound());
   return gapabs<Infinity() ? gapabs : AMPLInf();
-}
-
-
-ArrayRef<int> GcgBackend::VarStatii() {
-  
-  std::vector<int> vars(NumVars());
-  /*
-  GCG_GetBasis(lp(), vars.data(), NULL);
-  for (auto& s : vars) {
-    switch (s) {
-    case GCG_BASIS_BASIC:
-      s = (int)BasicStatus::bas;
-      break;
-    case GCG_BASIS_LOWER:
-      s = (int)BasicStatus::low;
-      break;
-    case GCG_BASIS_UPPER:
-      s = (int)BasicStatus::upp;
-      break;
-    case GCG_BASIS_SUPERBASIC:
-      s = (int)BasicStatus::sup;
-      break;
-    case GCG_BASIS_FIXED:
-      s = (int)BasicStatus::equ;
-      break;
-    default:
-      MP_RAISE(fmt::format("Unknown Gcg VBasis value: {}", s));
-    }
-  }
-  */
-  return vars;
-}
-
-ArrayRef<int> GcgBackend::ConStatii() {
-
-  std::vector<int> cons(NumLinCons());
-  /*
-  GCG_GetBasis(lp(), NULL, cons.data());
-  for (auto& s : cons) {
-    switch (s) {
-    case GCG_BASIS_BASIC:
-      s = (int)BasicStatus::bas;
-      break;
-    case GCG_BASIS_LOWER:
-      s = (int)BasicStatus::low;
-      break;
-    case GCG_BASIS_UPPER:
-      s = (int)BasicStatus::upp;
-      break;
-    case GCG_BASIS_SUPERBASIC:
-      s = (int)BasicStatus::sup;
-      break;
-    case GCG_BASIS_FIXED:
-      s = (int)BasicStatus::equ;
-      break;
-    default:
-      MP_RAISE(fmt::format("Unknown Gcg VBasis value: {}", s));
-    }
-  }*/
-  return cons;
-}
-
-void GcgBackend::VarStatii(ArrayRef<int> vst) {
-  int index[1];
-  std::vector<int> stt(vst.data(), vst.data() + vst.size());
-  /*
-  for (auto j = stt.size(); j--; ) {
-    auto& s = stt[j];
-    switch ((BasicStatus)s) {
-    case BasicStatus::bas:
-      s = GCG_BASIS_BASIC;
-      break;
-    case BasicStatus::low:
-      s = GCG_BASIS_LOWER;
-      break;
-    case BasicStatus::equ:
-      s = GCG_BASIS_FIXED;
-      break;
-    case BasicStatus::upp:
-      s = GCG_BASIS_UPPER;
-      break;
-    case BasicStatus::sup:
-    case BasicStatus::btw:
-      s = GCG_BASIS_SUPERBASIC;
-      break;
-    case BasicStatus::none:
-      /// 'none' is assigned to new variables. Compute low/upp/sup:
-      /// Depending on where 0.0 is between bounds
-      double lb, ub;
-      index[0] = (int)j;
-      if(!GCG_GetColInfo(lp(), GCG_DBLINFO_LB, 1, index, &lb) && 
-        !GCG_GetColInfo(lp(), GCG_DBLINFO_UB, 1, index, &ub))
-      { 
-        if (lb >= -1e-6)
-          s = -1;
-        else if (ub <= 1e-6)
-          s = -2;
-        else
-          s = -3;  // or, leave at 0?
-      }
-      break;
-    default:
-      MP_RAISE(fmt::format("Unknown AMPL var status value: {}", s));
-    }
-  }
-  GCG_SetBasis(lp(), stt.data(), NULL);
-  */
-}
-
-void GcgBackend::ConStatii(ArrayRef<int> cst) {
-  /*
-  std::vector<int> stt(cst.data(), cst.data() + cst.size());
-  for (auto& s : stt) {
-    switch ((BasicStatus)s) {
-    case BasicStatus::bas:
-      s = GCG_BASIS_BASIC;
-      break;
-    case BasicStatus::none:   // for 'none', which is the status
-    case BasicStatus::upp:    // assigned to new rows, it seems good to guess
-    case BasicStatus::sup:    // a valid status.
-    case BasicStatus::low:    // 
-    case BasicStatus::equ:    // For active constraints, it is usually 'sup'.
-    case BasicStatus::btw:    // We could compute slack to decide though.
-      s = GCG_BASIS_SUPERBASIC;
-      break;
-    default:
-      MP_RAISE(fmt::format("Unknown AMPL con status value: {}", s));
-    }
-  }
-  GCG_SetBasis(lp(), NULL, stt.data());
-  */
-}
-
-SolutionBasis GcgBackend::GetBasis() {
-  std::vector<int> varstt = VarStatii();
-  std::vector<int> constt = ConStatii();
-  if (varstt.size() && constt.size()) {
-    auto mv = GetValuePresolver().PostsolveBasis(
-      { std::move(varstt),
-        {{{ CG_Linear, std::move(constt) }}} });
-    varstt = mv.GetVarValues()();
-    constt = mv.GetConValues()();
-    assert(varstt.size());
-  }
-  return { std::move(varstt), std::move(constt) };
-}
-
-void GcgBackend::SetBasis(SolutionBasis basis) {
-  auto mv = GetValuePresolver().PresolveBasis(
-    { basis.varstt, basis.constt });
-  auto varstt = mv.GetVarValues()();
-  auto constt = mv.GetConValues()(CG_Linear);
-  assert(varstt.size());
-  assert(constt.size());
-  VarStatii(varstt);
-  ConStatii(constt);
-}
-
-
-void GcgBackend::ComputeIIS() {
-  //GCG_CCALL(GCG_ComputeIIS(lp()));
-  SetStatus(GetSolveResult());   // could be new information
-}
-
-IIS GcgBackend::GetIIS() {
-  auto variis = VarsIIS();
-  auto coniis = ConsIIS();
-  auto mv = GetValuePresolver().PostsolveIIS(
-    { variis, coniis });
-  return { mv.GetVarValues()(), mv.GetConValues()() };
-}
-
-ArrayRef<int> GcgBackend::VarsIIS() {
-  return ArrayRef<int>();
-//  return getIIS(lp(), NumVars(), GCG_GetColLowerIIS, GCG_GetColUpperIIS);
-}
-pre::ValueMapInt GcgBackend::ConsIIS() {
-  /*auto iis_lincon = getIIS(lp(), NumLinCons(), GCG_GetRowLowerIIS, GCG_GetRowUpperIIS);
-
-  std::vector<int> iis_soscon(NumSOSCons());
-  GCG_GetSOSIIS(lp(), NumSOSCons(), NULL, iis_soscon.data());
-  ConvertIIS2AMPL(iis_soscon);
-
-  std::vector<int> iis_indicon(NumIndicatorCons());
-  GCG_GetIndicatorIIS(lp(), NumIndicatorCons(), NULL, iis_indicon.data());
-  ConvertIIS2AMPL(iis_indicon);
-
-  return { {{ CG_Linear, iis_lincon },
-      { CG_SOS, iis_soscon },
-      { CG_Logical, iis_indicon }} };
-      */
-  return { {{ 0, std::vector<int>()}} };
-}
-
-void GcgBackend::AddMIPStart(ArrayRef<double> x0, ArrayRef<int> sparsity) {
-  //GCG_CCALL(GCG_AddMipStart(lp(), NumVars(), NULL, const_cast<double*>(x0.data())));
-
 }
 
 
