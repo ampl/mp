@@ -730,6 +730,92 @@ IIS HighsBackend::GetIIS() {
   return { mv.GetVarValues()(), mv.GetConValues()() };
 }
 
+SensRangesPresolved HighsBackend::GetSensRangesPresolved() {
+  if (!loader().Highs_getRanging || !loader().Highs_getRowsByRange) {
+    AddWarning("SENS", "this HiGHS library lacks Highs_getRanging");
+    return {};
+  }
+  void* h = HasFixedLP() ? fixed_ : (IsMIP() ? nullptr : lp());
+  if (!h)
+    return {};
+  int n = NumVars(), m = NumLinCons();
+  std::vector<double> cup(n), cdn(n), bup(n), bdn(n), rup(m), rdn(m);
+  auto res = loader().Highs_getRanging(h,
+      cup.data(), nullptr, nullptr, nullptr,
+      cdn.data(), nullptr, nullptr, nullptr,
+      bup.data(), nullptr, nullptr, nullptr,
+      bdn.data(), nullptr, nullptr, nullptr,
+      rup.data(), nullptr, nullptr, nullptr,
+      rdn.data(), nullptr, nullptr, nullptr);
+  if (kHighsStatusError == res) {
+    AddWarning("SENS", "HiGHS could not compute sensitivity ranges "
+                       "(an optimal basic solution is required)");
+    return {};
+  }
+  const double inf = Infinity();
+  std::vector<double> cost(n), lb(n), ub(n), rlb(m), rub(m), x(n), act(m);
+  std::vector<int> cstt(n), rstt(m);
+  int ncols = 0, nnz = 0, nrows = 0;
+  HIGHS_CCALL(loader().Highs_getColsByRange(h, 0, n-1, &ncols,
+      cost.data(), lb.data(), ub.data(), &nnz, NULL, NULL, NULL));
+  if (m > 0)
+    HIGHS_CCALL(loader().Highs_getRowsByRange(h, 0, m-1, &nrows,
+        rlb.data(), rub.data(), &nnz, NULL, NULL, NULL));
+  HIGHS_CCALL(loader().Highs_getSolution(h, x.data(), NULL, act.data(), NULL));
+  HIGHS_CCALL(loader().Highs_getBasis(h, cstt.data(), rstt.data()));
+  /// Ranges of a bound: the active bound's range is reported by HiGHS;
+  /// an inactive finite bound can move up to the current value;
+  /// an infinite bound has an infinite range (as in the other drivers).
+  auto ranges = [inf](int stt, double lb, double ub, double val,
+                      double dn, double up,
+                      double& lblo, double& lbhi, double& ublo, double& ubhi) {
+    switch (stt) {
+    case kHighsBasisStatusLower:          // active lower bound
+      lblo = dn;   lbhi = up;
+      ublo = val;  ubhi = inf;
+      break;
+    case kHighsBasisStatusUpper:          // active upper bound
+      lblo = -inf; lbhi = val;
+      ublo = dn;   ubhi = up;
+      break;
+    default:                              // basic / free: inactive bounds
+      lblo = -inf; lbhi = val;
+      ublo = val;  ubhi = inf;
+      break;
+    }
+    if (lb <= -inf) { lblo = -inf; lbhi = inf; }
+    if (ub >= inf)  { ublo = -inf; ubhi = inf; }
+  };
+  std::vector<double> lblo(n), lbhi(n), ublo(n), ubhi(n);
+  for (int j = 0; j < n; ++j)
+    ranges(cstt[j], lb[j], ub[j], x[j], bdn[j], bup[j],
+           lblo[j], lbhi[j], ublo[j], ubhi[j]);
+  std::vector<double> clblo(m), clbhi(m), cublo(m), cubhi(m), rhslo(m), rhshi(m);
+  for (int i = 0; i < m; ++i) {
+    ranges(rstt[i], rlb[i], rub[i], act[i], rdn[i], rup[i],
+           clblo[i], clbhi[i], cublo[i], cubhi[i]);
+    /// The rhs is the finite side (the upper for equalities and ranges)
+    bool lbfin = rlb[i] > -inf, ubfin = rub[i] < inf;
+    if (lbfin && !ubfin) { rhslo[i] = clblo[i]; rhshi[i] = clbhi[i]; }
+    else                 { rhslo[i] = cublo[i]; rhshi[i] = cubhi[i]; }
+  }
+  SensRangesPresolved sensr;
+  sensr.varlbhi = { {lbhi} };
+  sensr.varlblo = { {lblo} };
+  sensr.varubhi = { {ubhi} };
+  sensr.varublo = { {ublo} };
+  sensr.varobjhi = { {cup} };
+  sensr.varobj = { {cost} };
+  sensr.varobjlo = { {cdn} };
+  sensr.conlbhi = { {}, {{{CG_Linear, clbhi}}} };
+  sensr.conlblo = { {}, {{{CG_Linear, clblo}}} };
+  sensr.conubhi = { {}, {{{CG_Linear, cubhi}}} };
+  sensr.conublo = { {}, {{{CG_Linear, cublo}}} };
+  sensr.conrhshi = { {}, {{{CG_Linear, rhshi}}} };
+  sensr.conrhslo = { {}, {{{CG_Linear, rhslo}}} };
+  return sensr;
+}
+
 ArrayRef<double> HighsBackend::Ray() {
   HighsInt has_ray;
   std::vector<double> uray_pres(NumVars());

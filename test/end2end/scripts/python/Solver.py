@@ -1379,6 +1379,7 @@ class HighsSolver(MPDirectSolver):
 
                  ModelTags.sstatus, 
                  ModelTags.warmstart, ModelTags.return_mipgap, ModelTags.iis,
+                 ModelTags.sens,
 
                  ModelTags.writelp, ModelTags.writesol,
 

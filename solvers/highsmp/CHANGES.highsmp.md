@@ -41,6 +41,9 @@ Summary of recent updates to HiGHS for AMPL
 - IIS computation (*iis:find=1*, suffix .iis) via HiGHS's IIS finder;
   *iis:strategy* (default -1: true IIS, relaxation for MIPs) and
   *lim:iistime* control it.
+- Sensitivity analysis (*alg:sens=1*, suffixes .sensobjlo/hi, .senslblo/hi,
+  .sensublo/hi, .sensrhslo/hi) via HiGHS ranging, for LPs solved to an
+  optimal basis and for the fixed LP of *mip:basis*.
 
 
 ## 20260813

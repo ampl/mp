@@ -112,6 +112,12 @@ public:
   IIS GetIIS() override;
 
   /**
+  * Sensitivity analysis (LP, or the fixed LP of mip:basis)
+  **/
+  ALLOW_STD_FEATURE(SENSITIVITY_ANALYSIS, true)
+  SensRangesPresolved GetSensRangesPresolved() override;
+
+  /**
   * Obtain inf/unbounded rays
   **/
   ALLOW_STD_FEATURE(RAYS, true)

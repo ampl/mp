@@ -149,6 +149,8 @@ namespace mp {
     decltype(&::Highs_getNumOptions) Highs_getNumOptions = nullptr;
     decltype(&::Highs_getOptionName) Highs_getOptionName = nullptr;
     decltype(&::Highs_getIis) Highs_getIis = nullptr;
+    decltype(&::Highs_getRanging) Highs_getRanging = nullptr;
+    decltype(&::Highs_getRowsByRange) Highs_getRowsByRange = nullptr;
 
     // Solve
     Highs_run_Func Highs_run;
