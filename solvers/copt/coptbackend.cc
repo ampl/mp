@@ -359,11 +359,37 @@ void CoptBackend::SetInterrupter(mp::Interrupter *inter) {
 }
 
 void CoptBackend::Solve() {
+  if (!storedOptions_.tunebase_.empty())
+    DoCOPTTune();
   if (feasrelax())
     DoCOPTFeasRelax();
   else
     COPT_CCALL(COPT_Solve(lp()));
   WindupCOPTSolve();
+}
+
+void CoptBackend::DoCOPTTune() {
+  COPT_CCALL(COPT_Tune(lp()));
+  int n_results = getIntAttr(COPT_INTATTR_TUNERESULTS);
+  if (n_results <= 0) {
+    AddWarning("TUNING", "No tuning results: COPT found no parameter "
+               "settings improving on the defaults.");
+    return;
+  }
+  auto tbc = storedOptions_.tunebase_;
+  if (tbc.size()>=4 && 0==tbc.compare(tbc.size()-4, 4, ".par"))
+    tbc.resize(tbc.size()-4);
+  tbc += "_{}_";
+  tbc += ".par";
+  std::string tfn;
+  for (int k=n_results; k--; ) {   // result 0 is the best one
+    tfn = fmt::format(tbc.c_str(), k+1);
+    COPT_CCALL(COPT_WriteTuneParam(lp(), k, tfn.c_str()));
+  }
+  COPT_CCALL(COPT_LoadTuneParam(lp(), 0));      // solve with the best set
+  AddToSolverMessage(
+        fmt::format("Tuning: wrote {} parameter files, best file: '{}'\n",
+                    n_results, tfn));
 }
 
 const char* CoptBackend::FixedModelIterationLimitHelp() const {
@@ -752,6 +778,33 @@ static const mp::OptionValueInfo values_level_heavy[] = {
   { "4", "Heavy", 4}
 };
 
+static const mp::OptionValueInfo values_tunemethod[] = {
+  {"-1", "Automatic (default)", -1},
+  {"0", "Greedy search", 0},
+  {"1", "Broader search", 1}
+};
+
+static const mp::OptionValueInfo values_tunemode[] = {
+  {"-1", "Automatic (default)", -1},
+  {"0", "Solving time", 0},
+  {"1", "Optimality gap reached", 1},
+  {"2", "Objective value", 2},
+  {"3", "Objective bound", 3}
+};
+
+static const mp::OptionValueInfo values_tunemeasure[] = {
+  {"-1", "Automatic (default)", -1},
+  {"0", "Average over the permutations", 0},
+  {"1", "Maximum over the permutations", 1}
+};
+
+static const mp::OptionValueInfo values_tuneoutlev[] = {
+  {"0", "No tuning log", 0},
+  {"1", "Summary of improved parameter sets only", 1},
+  {"2", "Summary of each attempt (default)", 2},
+  {"3", "Detailed log of each attempt", 3}
+};
+
 static const mp::OptionValueInfo miprepair_values_[] = {
   {"-1", "Only when time left (default)", -1},
   {"0", "Off", 0},
@@ -822,6 +875,58 @@ void CoptBackend::InitCustomOptions() {
       "maxqlelem, minqrhs, maxqrhs, minqcost, maxqcost. See CHANGES.copt.md for details. "
       "Default = 0 (do not return).", 
       storedOptions_.numericalStats_);
+
+  AddStoredOption("tech:tunebase tunebase",
+    "Base name for results of running COPT's search for best "
+    "parameter settings.  The search is run only when tunebase "
+    "is specified.  Results are written to files with names derived "
+    "from tunebase by appending \".par\" if \".par\" does not occur in "
+    "tunebase and inserting _1_, _2_, ... (for the first, second, "
+    "... set of parameter settings) before the right-most \".par\". "
+    "The file with _1_ inserted is the best set and the solve "
+    "results returned are for this set.  In a subsequent \"solve;\", "
+    "you can use \"tech:optionnativeread=...\" to apply the settings "
+    "in results file ... .",
+    storedOptions_.tunebase_);
+
+  AddSolverOption("tech:tunetimelim tunetimelim lim:tunetime",
+    "Time limit (in seconds) on tuning when tunebase is specified; "
+    "default 0 ==> chosen by COPT.",
+    COPT_DBLPARAM_TUNETIMELIMIT, 0.0, 1e20);
+
+  AddSolverOption("tech:tunetargettime tunetargettime",
+    "Target solve time (in seconds) for tuning: the tuner stops "
+    "once a parameter set reaches it (default 0.01).",
+    COPT_DBLPARAM_TUNETARGETTIME, 0.0, DBL_MAX);
+
+  AddSolverOption("tech:tunetargetrelgap tunetargetrelgap",
+    "Target relative MIP gap for tuning (default 1e-4).",
+    COPT_DBLPARAM_TUNETARGETRELGAP, 0.0, DBL_MAX);
+
+  AddSolverOption("tech:tunemethod tunemethod",
+    "Tuning method:\n"
+    "\n.. value-table::\n", COPT_INTPARAM_TUNEMETHOD,
+    values_tunemethod, -1);
+
+  AddSolverOption("tech:tunemode tunemode",
+    "Tuning criterion:\n"
+    "\n.. value-table::\n", COPT_INTPARAM_TUNEMODE,
+    values_tunemode, -1);
+
+  AddSolverOption("tech:tunemeasure tunemeasure",
+    "How tuning results over several permutations are aggregated:\n"
+    "\n.. value-table::\n", COPT_INTPARAM_TUNEMEASURE,
+    values_tunemeasure, -1);
+
+  AddSolverOption("tech:tunepermutes tunepermutes",
+    "Number of permutations of the model tried for each parameter set; "
+    "default 0 ==> chosen by COPT.",
+    COPT_INTPARAM_TUNEPERMUTES, 0, INT_MAX);
+
+  AddSolverOption("tech:tuneoutlev tuneoutlev tuneoutput",
+    "Amount of tuning output when tunebase is specified:\n"
+    "\n.. value-table::\n", COPT_INTPARAM_TUNEOUTPUTLEVEL,
+    values_tuneoutlev, 2);
 
   AddSolverOption("lp:dualprice dualprice",
     "Specifies the dual simplex pricing algorithm:\n"

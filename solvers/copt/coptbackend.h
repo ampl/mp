@@ -178,6 +178,8 @@ protected:
   /// COPT computes the relaxed solution itself and stores it
   /// in the RelaxValue / RelaxLB / RelaxUB infos.
   void DoCOPTFeasRelax();
+  /// Parameter tuning (tech:tunebase)
+  void DoCOPTTune();
   /// Weighted violation measure of the relaxed solution
   /// (sum, count, or sum of squares, depending on the mode)
   double FeasRelaxViolation() const;
@@ -228,6 +230,7 @@ private:
     std::string logFile_;
     std::string paramRead_, paramWrite_;
     std::list<std::string> inlineParams_;
+    std::string tunebase_;
     int mempeak_ = 0;
     int numericalStats_ = 0;;
 
