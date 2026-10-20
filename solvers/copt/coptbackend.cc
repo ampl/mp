@@ -112,6 +112,8 @@ void CoptBackend::InputExtras() {
 void CoptBackend::InputCOPTExtras() {
   if (need_ray_primal() || need_ray_dual())
     SetSolverOption(COPT_INTPARAM_REQFARKASRAY, 1);
+  if (sensitivity())
+    SetSolverOption(COPT_INTPARAM_REQSENSITIVITY, 1);
 }
 
 ArrayRef<double> CoptBackend::GetObjectiveValues() {
@@ -435,6 +437,8 @@ CoptBackend::FixedLPResult CoptBackend::SolveFixedLP(ArrayRef<double> x) {
   COPT_CCALL(COPT_SetIntParam(copy, COPT_INTPARAM_LPMETHOD, fixed_model_iter_limit() < 0 ? 1 : 2));
   COPT_CCALL(COPT_SetIntParam(copy, COPT_INTPARAM_CROSSOVER, 1));
   COPT_CCALL(COPT_SetIntParam(copy, COPT_INTPARAM_BARITERLIMIT, barrier_iterations));
+  if (sensitivity())
+    COPT_CCALL(COPT_SetIntParam(copy, COPT_INTPARAM_REQSENSITIVITY, 1));
   COPT_CCALL(COPT_Solve(copy));
   int status = 0, basis = 0;
   COPT_CCALL(COPT_GetIntAttr(copy, COPT_INTATTR_LPSTATUS, &status));
@@ -463,7 +467,179 @@ CoptBackend::FixedLPResult CoptBackend::SolveFixedLP(ArrayRef<double> x) {
   for (auto& status : result.constt) status = convert(status);
   COPT_CCALL(COPT_GetIntAttr(copy, fixed_model_iter_limit() < 0 ?
       COPT_INTATTR_SIMPLEXITER : COPT_INTATTR_BARRIERITER, &result.iterations));
+  if (sensitivity())
+    fixed_sens_ = ReadSensRaw(copy);
   return result;
+}
+
+CoptBackend::SensRaw CoptBackend::ReadSensRaw(copt_prob* prob) {
+  SensRaw raw;
+  int has = 0;
+  COPT_CCALL(COPT_GetIntAttr(prob, COPT_INTATTR_HASSENSITIVITY, &has));
+  if (!has)
+    return raw;
+  int n = 0, m = 0;
+  COPT_CCALL(COPT_GetIntAttr(prob, COPT_INTATTR_COLS, &n));
+  COPT_CCALL(COPT_GetIntAttr(prob, COPT_INTATTR_ROWS, &m));
+  auto col = [&](const char* info, std::vector<double>& v) {
+    v.resize(n);
+    COPT_CCALL(COPT_GetColInfo(prob, info, n, NULL, v.data()));
+  };
+  auto row = [&](const char* info, std::vector<double>& v) {
+    v.resize(m);
+    COPT_CCALL(COPT_GetRowInfo(prob, info, m, NULL, v.data()));
+  };
+  col(COPT_DBLINFO_OBJ, raw.obj);
+  col(COPT_DBLINFO_LB, raw.lb);
+  col(COPT_DBLINFO_UB, raw.ub);
+  col(COPT_DBLINFO_SAOBJLOW, raw.objlo);
+  col(COPT_DBLINFO_SAOBJUP, raw.objhi);
+  col(COPT_DBLINFO_SALBLOW, raw.lblo);
+  col(COPT_DBLINFO_SALBUP, raw.lbhi);
+  col(COPT_DBLINFO_SAUBLOW, raw.ublo);
+  col(COPT_DBLINFO_SAUBUP, raw.ubhi);
+  row(COPT_DBLINFO_LB, raw.rowlb);
+  row(COPT_DBLINFO_UB, raw.rowub);
+  row(COPT_DBLINFO_SALBLOW, raw.rowlblo);
+  row(COPT_DBLINFO_SALBUP, raw.rowlbhi);
+  row(COPT_DBLINFO_SAUBLOW, raw.rowublo);
+  row(COPT_DBLINFO_SAUBUP, raw.rowubhi);
+  raw.valid = true;
+  return raw;
+}
+
+/// Follows the Gurobi driver: variable ranges come from the column
+/// infos; range constraints were converted to equalities with slack
+/// variables, whose sensitivities the value presolver propagates back
+/// to the constraints; rhs ranges of one-sided rows come from the
+/// row infos.
+SensRanges CoptBackend::GetSensRanges() {
+  SensRanges sensr;
+  SensRaw raw;
+  if (IsMIP()) {
+    if (!HasFixedLP())
+      return sensr;
+    raw = fixed_sens_;
+  } else
+    raw = ReadSensRaw(lp());
+  if (!raw.valid) {
+    AddWarning("SENSITIVITY",
+               "COPT did not provide sensitivity information "
+               "(no optimal basis, e.g., barrier without crossover)");
+    return sensr;
+  }
+  const double inf = 1e100;
+  /// Select the rhs range of each row: lb for >= and ==, ub for <=
+  size_t m = raw.rowlb.size();
+  std::vector<double> rhs_raw(m), rhslo_raw(m), rhshi_raw(m);
+  std::vector<int> sense_raw(m);                   // 0: ==, 1: <=, 2: >=
+  for (size_t i=0; i<m; ++i) {
+    bool lbfin = raw.rowlb[i] > -COPT_INFINITY, ubfin = raw.rowub[i] < COPT_INFINITY;
+    if (lbfin && ubfin && raw.rowlb[i] == raw.rowub[i]) {
+      sense_raw[i] = 0; rhs_raw[i] = raw.rowlb[i];
+      rhslo_raw[i] = raw.rowlblo[i]; rhshi_raw[i] = raw.rowlbhi[i];
+    } else if (ubfin) {
+      sense_raw[i] = 1; rhs_raw[i] = raw.rowub[i];
+      rhslo_raw[i] = raw.rowublo[i]; rhshi_raw[i] = raw.rowubhi[i];
+    } else {
+      sense_raw[i] = 2; rhs_raw[i] = raw.rowlb[i];
+      rhslo_raw[i] = raw.rowlblo[i]; rhshi_raw[i] = raw.rowlbhi[i];
+    }
+  }
+  auto clip = [&](std::vector<double>& v) {
+    for (auto& x: v) {
+      if (x <= -COPT_INFINITY) x = -inf;
+      else if (x >= COPT_INFINITY) x = inf;
+    }
+  };
+  clip(raw.objlo); clip(raw.objhi); clip(raw.lblo); clip(raw.lbhi);
+  clip(raw.ublo); clip(raw.ubhi); clip(rhslo_raw); clip(rhshi_raw);
+  clip(raw.lb); clip(raw.ub);
+
+  auto mvlbhi = GetValuePresolver().PostsolveGenericDbl( { {raw.lbhi} } );
+  auto mvlblo = GetValuePresolver().PostsolveGenericDbl( { {raw.lblo} } );
+  auto mvubhi = GetValuePresolver().PostsolveGenericDbl( { {raw.ubhi} } );
+  auto mvublo = GetValuePresolver().PostsolveGenericDbl( { {raw.ublo} } );
+  auto mvobjhi = GetValuePresolver().PostsolveGenericDbl( { {raw.objhi} } );
+  auto mvobjlo = GetValuePresolver().PostsolveGenericDbl( { {raw.objlo} } );
+  auto mvrhshi = GetValuePresolver().PostsolveGenericDbl(
+        { {}, {{{ CG_Linear, rhshi_raw }}} } );
+  auto mvrhslo = GetValuePresolver().PostsolveGenericDbl(
+        { {}, {{{ CG_Linear, rhslo_raw }}} } );
+
+  sensr.varlbhi = mvlbhi.GetVarValues()();
+  sensr.varlblo = mvlblo.GetVarValues()();
+  sensr.varubhi = mvubhi.GetVarValues()();
+  sensr.varublo = mvublo.GetVarValues()();
+  sensr.varobjhi = mvobjhi.GetVarValues()();
+  sensr.varobjlo = mvobjlo.GetVarValues()();
+  sensr.conrhshi = mvrhshi.GetConValues()();
+  sensr.conrhslo = mvrhslo.GetConValues()();
+
+  /// For range constraints, their slacks' sensitivities were
+  /// propagated into the following ValueNodes:
+  const auto& conlbhi = mvlbhi.GetConValues()();
+  const auto& conlblo = mvlblo.GetConValues()();
+  const auto& conubhi = mvubhi.GetConValues()();
+  const auto& conublo = mvublo.GetConValues()();
+
+  auto mv_rhs = GetValuePresolver().PostsolveGenericDbl(
+        { {}, {{{ CG_Linear, rhs_raw }}} } );
+  const auto& rhs = mv_rhs.GetConValues()();
+  auto mv_sense = GetValuePresolver().PostsolveGenericInt(
+        { {}, {{{ CG_Linear, sense_raw }}} } );
+  const auto& sense = mv_sense.GetConValues()();
+
+  sensr.conrhs = rhs;
+  {
+    auto mv = GetValuePresolver().PostsolveGenericDbl({ { raw.obj } });
+    sensr.varobj = mv.GetVarValues()();
+  }{
+    auto mv = GetValuePresolver().PostsolveGenericDbl({ { raw.lb } });
+    sensr.varlb = mv.GetVarValues()();
+  }
+  auto mv_varub = GetValuePresolver().PostsolveGenericDbl({ { raw.ub } });
+  sensr.varub = mv_varub.GetVarValues()();
+  const auto& conslackub = mv_varub.GetConValues()();
+
+  // Reconstruct values for ranges
+  if (rhs.size()==sensr.conrhshi.size() &&
+      rhs.size()==sense.size() &&
+      rhs.size()==conlbhi.size() &&
+      rhs.size()==conlblo.size() &&
+      rhs.size()==conubhi.size() &&
+      rhs.size()==conublo.size() ) {
+    sensr.conlbhi = sensr.conlb = sensr.conlblo
+        = sensr.conubhi = sensr.conub = sensr.conublo = rhs;
+    for (auto i=rhs.size(); i--; ) {
+      if (conubhi[i] != conlblo[i]) {                 // anything propagated?
+        sensr.conlblo[i] -= conubhi[i];               // then it's a range constraint
+        sensr.conlb[i] = rhs[i] - conslackub[i];
+        sensr.conlbhi[i] -= conublo[i];
+        sensr.conublo[i] -= conlbhi[i];
+        sensr.conub[i] = rhs[i];
+        sensr.conubhi[i] -= conlblo[i];
+      } else {                                        // non-range constraints
+        sensr.conlblo[i] = -inf;
+        sensr.conlb[i] = -inf;
+        sensr.conlbhi[i] = inf;
+        sensr.conublo[i] = -inf;
+        sensr.conub[i] = inf;
+        sensr.conubhi[i] = inf;
+        if (sense[i] != 2) {                          // not >=
+          sensr.conublo[i] = sensr.conrhslo[i];
+          sensr.conub[i] = rhs[i];
+          sensr.conubhi[i] = sensr.conrhshi[i];
+        }
+        if (sense[i] != 1) {                          // not <=
+          sensr.conlblo[i] = sensr.conrhslo[i];
+          sensr.conlb[i] = rhs[i];
+          sensr.conlbhi[i] = sensr.conrhshi[i];
+        }
+      }
+    }
+  }
+  return sensr;
 }
 
 void CoptBackend::WindupCOPTSolve() { }

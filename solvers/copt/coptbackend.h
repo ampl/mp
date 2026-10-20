@@ -131,6 +131,12 @@ public:
   **/
   ALLOW_STD_FEATURE(FEAS_RELAX, true)
 
+  /**
+  * Sensitivity analysis (LP, or the fixed LP of a MIP)
+  **/
+  ALLOW_STD_FEATURE(SENSITIVITY_ANALYSIS, true)
+  SensRanges GetSensRanges() override;
+
   /////////////////////////// Model attributes /////////////////////////
   bool IsMIP() const override;
   bool IsQCP() const override;
@@ -238,6 +244,16 @@ private:
 	int numericalStats() const { return numericalStats_; }
   };
   Options storedOptions_;
+
+  /// Raw sensitivity information of a solved COPT LP
+  struct SensRaw {
+    bool valid = false;
+    std::vector<double> obj, lb, ub, rowlb, rowub,
+        objlo, objhi, lblo, lbhi, ublo, ubhi,
+        rowlblo, rowlbhi, rowublo, rowubhi;
+  };
+  static SensRaw ReadSensRaw(copt_prob* prob);
+  SensRaw fixed_sens_;        // from the fixed LP of a MIP
 
   /// Feasibility relaxation state
   bool feasrelax_solved_ = false;
