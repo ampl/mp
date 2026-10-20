@@ -549,6 +549,10 @@ TEST_F(IlogCPTest, NumberOfMap) {
 
 class MockSolutionHandler : public mp::SolutionHandler {
  public:
+  MOCK_METHOD5(HandleFeasibleSolution,
+               void (int solve_code, fmt::CStringRef message,
+                     const double *values, const double *dual_values,
+                     double obj_value));
   MOCK_METHOD4(HandleFeasibleSolution,
                void (fmt::CStringRef message, const double *values,
                      const double *dual_values, double obj_value));
@@ -678,12 +682,15 @@ TEST_F(IlogCPTest, CPSearchTypeOption) {
       {"multipoint", IloCP::MultiPoint},
       #if CPX_VERSION >= 12090000
       {"iterativediving", IloCP::IterativeDiving},
-      #endif    
+      #endif
+      #if CPX_VERSION >= 22010000
+      {"neighborhood", IloCP::Neighborhood},
+      #endif
       {0,            IloCP::Off}
   };
   CheckIntCPOption("searchtype", IloCP::SearchType,
-      0, 2 + CPX_VERSION >= 12090000, IloCP::DepthFirst, 
-    CPX_VERSION > 1220, types);
+      0, 2 + (CPX_VERSION >= 12090000) + (CPX_VERSION >= 22010000),
+      IloCP::DepthFirst, CPX_VERSION > 1220, types);
 }
 
 TEST_F(IlogCPTest, CPTimeModeOption) {
@@ -803,7 +810,8 @@ TEST_F(NLSolverTest, InterruptCP) {
   TestInterrupter interrupter(solver_);
   TestSolutionHandler sh;
   solver_.Solve(pb, sh);
-  EXPECT_EQ(600, sh.status());
+  // LIMIT_FEAS_INTERRUPT or LIMIT_NO_FEAS_INTERRUPT
+  EXPECT_TRUE(sh.status() == 401 || sh.status() == 471) << sh.status();
   EXPECT_TRUE(sh.message().find("interrupted") != std::string::npos);
 }
 
@@ -814,6 +822,7 @@ TEST_F(NLSolverTest, InterruptCPLEX) {
   TestInterrupter interrupter(solver_);
   TestSolutionHandler sh;
   solver_.Solve(pb, sh);
-  EXPECT_EQ(600, sh.status());
+  // LIMIT_FEAS_INTERRUPT or LIMIT_NO_FEAS_INTERRUPT
+  EXPECT_TRUE(sh.status() == 401 || sh.status() == 471) << sh.status();
   EXPECT_TRUE(sh.message().find("interrupted") != std::string::npos);
 }

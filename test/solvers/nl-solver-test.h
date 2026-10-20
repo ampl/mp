@@ -103,7 +103,7 @@ class NLSolverTest : public ::testing::Test {
   }
 
   void SetInfo(ProblemBuilder &pb) {
-    auto info = mp::ProblemInfo();
+    auto info = mp::NLProblemInfo();
     info.num_vars = info.num_nl_integer_vars_in_objs = 1;
     info.num_objs = info.num_nl_objs = 1;
     pb.SetInfo(info);
@@ -352,7 +352,7 @@ class NLSolverTest : public ::testing::Test {
       handler.AddArg(args[i]);
   }
 
-  virtual void SetInfo(ProblemBuilder &pb, mp::ProblemInfo &info) {
+  virtual void SetInfo(ProblemBuilder &pb, mp::NLProblemInfo &info) {
     pb.SetInfo(info);
   }
 
@@ -390,7 +390,7 @@ EvalResult NLSolverTest::Solve(
     const LogicalExprFactory &factory,
     int var1, int var2, int var3, bool need_result) {
   ProblemBuilder pb(solver_);
-  auto info = mp::ProblemInfo();
+  auto info = mp::NLProblemInfo();
   info.num_vars = info.num_nl_integer_vars_in_cons = 4;
   info.num_logical_cons = 1;
   pb.SetInfo(info);
@@ -407,7 +407,7 @@ EvalResult NLSolverTest::Solve(
 EvalResult NLSolverTest::Eval(
     const NumericExprFactory &factory, int var1, int var2, int var3) {
   ProblemBuilder pb(solver_);
-  auto info = mp::ProblemInfo();
+  auto info = mp::NLProblemInfo();
   info.num_vars = info.num_nl_integer_vars_in_cons = 4;
   info.num_algebraic_cons = info.num_nl_cons = 1;
   info.num_con_nonzeros = 1;
@@ -466,7 +466,7 @@ TEST_F(NLSolverTest, Maximize) {
 template <typename ProblemBuilder>
 void MakeTSP(ProblemBuilder &pb) {
   int n = MP_TSP_SIZE;
-  auto info = mp::ProblemInfo();
+  auto info = mp::NLProblemInfo();
   info.num_vars = info.num_linear_binary_vars = n * n;
   info.num_objs = 1;
   info.num_algebraic_cons = 2 * n;
@@ -526,7 +526,7 @@ TEST_F(NLSolverTest, NumericConstant) {
 
 TEST_F(NLSolverTest, Variable) {
   ProblemBuilder pb(solver_);
-  auto info = mp::ProblemInfo();
+  auto info = mp::NLProblemInfo();
   info.num_vars = info.num_nl_integer_vars_in_objs = 1;
   info.num_objs = info.num_nl_objs = 1;
   pb.SetInfo(info);
@@ -866,7 +866,7 @@ TEST_F(NLSolverTest, PLTerm) {
 
 TEST_F(NLSolverTest, Call) {
   ProblemBuilder pb(solver_);
-  auto info = mp::ProblemInfo();
+  auto info = mp::NLProblemInfo();
   info.num_vars = info.num_linear_integer_vars = 1;
   info.num_objs = info.num_nl_objs = 1;
   info.num_funcs = 2;
@@ -1201,7 +1201,7 @@ TEST_F(NLSolverTest, LinearCommonExpr) {
 
 TEST_F(NLSolverTest, OptimalSolveCode) {
   ProblemBuilder pb(solver_);
-  auto info = mp::ProblemInfo();
+  auto info = mp::NLProblemInfo();
   info.num_vars = info.num_linear_integer_vars = info.num_objs = 1;
   info.num_obj_nonzeros = 1;
   pb.SetInfo(info);
@@ -1213,7 +1213,7 @@ TEST_F(NLSolverTest, OptimalSolveCode) {
 
 TEST_F(NLSolverTest, FeasibleSolveCode) {
   ProblemBuilder pb(solver_);
-  auto info = mp::ProblemInfo();
+  auto info = mp::NLProblemInfo();
   info.num_vars = info.num_linear_integer_vars = info.num_algebraic_cons = 1;
   pb.SetInfo(info);
   pb.AddVar(0, 0, mp::var::INTEGER);
@@ -1223,7 +1223,7 @@ TEST_F(NLSolverTest, FeasibleSolveCode) {
 
 TEST_F(NLSolverTest, InfeasibleSolveCode) {
   ProblemBuilder pb(solver_);
-  auto info = mp::ProblemInfo();
+  auto info = mp::NLProblemInfo();
   info.num_vars = info.num_linear_integer_vars = info.num_algebraic_cons = 1;
   pb.SetInfo(info);
   pb.AddVar(0, 0, mp::var::INTEGER);
@@ -1284,7 +1284,9 @@ TEST_F(NLSolverTest, Interrupt) {
   TestInterrupter interrupter(solver_);
   TestSolutionHandler sh;
   solver_.Solve(pb.problem(), sh);
-  EXPECT_EQ(600, sh.status());
+  // 600: legacy interrupt code; 401/471: MP LIMIT_*_INTERRUPT
+  int status = sh.status();
+  EXPECT_TRUE(status == 600 || status == 401 || status == 471) << status;
   EXPECT_TRUE(sh.message().find("interrupted") != std::string::npos);
 }
 
@@ -1335,7 +1337,7 @@ struct SolutionCounter : TestSolutionHandler {
 // Makes a test problem with a single constraint alldiff(x0, x1, x2).
 template <typename ProblemBuilder>
 void MakeAllDiffProblem(ProblemBuilder &pb) {
-  auto info = mp::ProblemInfo();
+  auto info = mp::NLProblemInfo();
   info.num_vars = info.num_nl_integer_vars_in_cons = 3;
   info.num_logical_cons = 1;
   pb.SetInfo(info);
@@ -1451,7 +1453,7 @@ TEST_F(NLSolverTest, IgnoreObjNo) {
 template <typename Solver>
 EvalResult SolveMultiObjTestProblem(Solver &solver, bool multiobj = false) {
   typename Solver::ProblemBuilder pb(solver);
-  auto info = mp::ProblemInfo();
+  auto info = mp::NLProblemInfo();
   info.num_vars = info.num_nl_integer_vars_in_objs = 1;
   info.num_objs = info.num_nl_objs = multiobj ? 2 : 1;
   pb.SetInfo(info);
@@ -1481,7 +1483,7 @@ struct TestOutputHandler : public mp::OutputHandler {
 // Test that providing an initial dual value doesn't cause an error.
 TEST_F(NLSolverTest, InitialDualValue) {
   ProblemBuilder pb(solver_);
-  auto info = mp::ProblemInfo();
+  auto info = mp::NLProblemInfo();
   info.num_vars = info.num_algebraic_cons = 1;
   pb.SetInfo(info);
   auto con = pb.AddCon(0, 0);
@@ -1492,7 +1494,7 @@ TEST_F(NLSolverTest, InitialDualValue) {
 TEST_F(NLSolverTest, ZeroUB) {
   if (!HasFeature(feature::FLOAT_CONST)) return;
   ProblemBuilder pb(solver_);
-  auto info = mp::ProblemInfo();
+  auto info = mp::NLProblemInfo();
   info.num_vars = info.num_objs = 1;
   pb.SetInfo(info);
   pb.AddVar(-INFINITY, 0, var::CONTINUOUS);
