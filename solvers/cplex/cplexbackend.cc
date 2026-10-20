@@ -1536,6 +1536,92 @@ static const mp::OptionValueInfo values_barstart[] = {
 };
 
 
+static const mp::OptionValueInfo values_pgradient[] = {
+  { "-1", "Reduced-cost pricing", -1},
+  { "0", "Hybrid reduced-cost and devex pricing (default)", 0},
+  { "1", "Devex pricing", 1},
+  { "2", "Steepest-edge pricing", 2},
+  { "3", "Steepest-edge pricing with slack initial norms", 3},
+  { "4", "Full pricing", 4}
+};
+static const mp::OptionValueInfo values_probe[] = {
+  { "-1", "No probing", -1},
+  { "0", "Automatic (default)", 0},
+  { "1", "Moderate probing", 1},
+  { "2", "Aggressive probing", 2},
+  { "3", "Very aggressive probing", 3}
+};
+static const mp::OptionValueInfo values_symmetry[] = {
+  { "-1", "Automatic (default)", -1},
+  { "0", "Off", 0},
+  { "1", "Moderate symmetry breaking", 1},
+  { "2", "Aggressive", 2},
+  { "3", "Very aggressive", 3},
+  { "4", "Highly aggressive", 4},
+  { "5", "Extremely aggressive", 5}
+};
+static const mp::OptionValueInfo values_repeatpresolve[] = {
+  { "-1", "Automatic (default)", -1},
+  { "0", "Off", 0},
+  { "1", "Repeat presolve without cuts", 1},
+  { "2", "Repeat presolve with cuts", 2},
+  { "3", "Repeat presolve with cuts and allow new root cuts", 3}
+};
+static const mp::OptionValueInfo values_kappastats[] = {
+  { "-1", "No MIP kappa statistics", -1},
+  { "0", "Automatic (default): compute for a sample of subproblems "
+         "when alg:numericalemphasis is on", 0},
+  { "1", "Compute for a sample of subproblems", 1},
+  { "2", "Compute for all subproblems (possibly expensive)", 2}
+};
+static const mp::OptionValueInfo values_miqcpstrat[] = {
+  { "0", "Automatic (default)", 0},
+  { "1", "Solve a QCP relaxation at each node", 1},
+  { "2", "Solve an LP relaxation at each node", 2}
+};
+static const mp::OptionValueInfo values_ordertype[] = {
+  { "0", "Do not generate priorities (default)", 0},
+  { "1", "Use decreasing costs", 1},
+  { "2", "Use increasing bound range", 2},
+  { "3", "Use coefficient count", 3}
+};
+static const mp::OptionValueInfo values_barorder[] = {
+  { "0", "Automatic (default)", 0},
+  { "1", "Approximate minimum degree (AMD)", 1},
+  { "2", "Approximate minimum fill (AMF)", 2},
+  { "3", "Nested dissection (ND)", 3}
+};
+static const mp::OptionValueInfo values_clocktype[] = {
+  { "0", "Automatic", 0},
+  { "1", "CPU time", 1},
+  { "2", "Wall clock time (default)", 2}
+};
+static const mp::OptionValueInfo values_parallelmode[] = {
+  { "-1", "Opportunistic", -1},
+  { "0", "Automatic (default)", 0},
+  { "1", "Deterministic", 1}
+};
+static const mp::OptionValueInfo values_datacheck[] = {
+  { "0", "Off (default)", 0},
+  { "1", "Check data consistency and issue warnings", 1},
+  { "2", "Also offer modeling assistance (warnings about bad scaling etc.)", 2}
+};
+static const mp::OptionValueInfo values_heurfreq[] = {
+  { "-1", "Never", -1},
+  { "0", "Automatic (default)", 0},
+  { "n > 0", "Every n nodes", 1}
+};
+static const mp::OptionValueInfo values_rinsheur[] = {
+  { "-1", "Never", -1},
+  { "0", "Automatic (default)", 0},
+  { "n > 0", "Every n nodes", 1}
+};
+static const mp::OptionValueInfo values_repairtries[] = {
+  { "-1", "None", -1},
+  { "0", "Automatic (default)", 0},
+  { "n > 0", "That many times", 1}
+};
+
 static const mp::OptionValueInfo values_presolvenode[] = {
   { "-1", "No node presolve", -1},
   { "0", "Automatic (default)", 0},
@@ -2793,6 +2879,197 @@ void CplexBackend::InitCustomOptions() {
 
 
  
+
+  // --------- Parameters known from the cplexasl driver ---------
+  AddSolverOption("lp:markowitz markowitz",
+    "Markowitz pivot tolerance; default = 0.01; must be between "
+    "1e-4 and 0.99999.  Bigger values may improve numerical properties "
+    "of the solution (and may take more time).",
+    CPXPARAM_Simplex_Tolerances_Markowitz, 1e-4, 0.99999);
+
+  AddSolverOption("lp:pgradient pgradient",
+    "Pricing algorithm for primal simplex (default 0):\n"
+    "\n.. value-table::\n",
+    CPXPARAM_Simplex_PGradient, values_pgradient, 0);
+
+  AddSolverOption("lp:pricing pricing",
+    "Size of the pricing candidate list for partial pricing; "
+    "default 0 ==> automatic choice.",
+    CPXPARAM_Simplex_Pricing, 0, CPXINT_MAX);
+
+  AddSolverOption("lp:refactor refactor",
+    "LP iterations between refactorizing the basis; "
+    "default 0 ==> automatic choice; maximum 10000.",
+    CPXPARAM_Simplex_Refactor, 0, 10000);
+
+  AddSolverOption("lp:singular singular singularlim",
+    "Maximum number of times CPLEX tries to repair the basis "
+    "when it encounters singularities; default 10.",
+    CPXPARAM_Simplex_Limits_Singularity, 0, CPXINT_MAX);
+
+  AddSolverOption("alg:siftsimplex simplexsifting",
+    "0/1*: Whether the simplex algorithm may use sifting when appropriate.",
+    CPXPARAM_Sifting_Simplex, 0, 1);
+
+  AddSolverOption("mip:heurfreq heurfreq heuristicfreq",
+    "How often to apply the periodic (node) heuristic for MIPs:\n"
+    "\n.. value-table::\n",
+    CPXPARAM_MIP_Strategy_HeuristicFreq, values_heurfreq, 0);
+
+  AddSolverOption("mip:heureffort heureffort",
+    "Effort spent on MIP heuristics: 0 disables them, values < 1 "
+    "reduce and values > 1 increase the effort; default 1. "
+    "Do not combine with a non-default mip:heurfreq.",
+    CPXPARAM_MIP_Strategy_HeuristicEffort, 0.0, 1e75);
+
+  AddSolverOption("mip:rinsheur rinsheur",
+    "Frequency of the relaxation induced neighborhood search (RINS) "
+    "heuristic:\n"
+    "\n.. value-table::\n",
+    CPXPARAM_MIP_Strategy_RINSHeur, values_rinsheur, 0);
+
+  AddSolverOption("mip:lbheur lbheur",
+    "0*/1: Whether to use a local branching heuristic to try to improve "
+    "new incumbents found during a MIP search.",
+    CPXPARAM_MIP_Strategy_LBHeur, 0, 1);
+
+  AddSolverOption("mip:probe probe",
+    "How much variable probing to do before MIP branching (sometimes "
+    "dramatically affects performance, for better or worse):\n"
+    "\n.. value-table::\n",
+    CPXPARAM_MIP_Strategy_Probe, values_probe, 0);
+
+  AddSolverOption("lim:probetime probetime",
+    "Limit in seconds on time spent probing; default 1e75.",
+    CPXPARAM_MIP_Limits_ProbeTime, 0.0, 1e75);
+
+  AddSolverOption("lim:probetimedet probetimedet",
+    "Limit in \"ticks\" on time spent probing; default 1e75.",
+    CPXPARAM_MIP_Limits_ProbeDetTime, 0.0, 1e75);
+
+  AddSolverOption("mip:symmetry symmetry",
+    "Whether to break symmetry during preprocessing of MIP problems:\n"
+    "\n.. value-table::\n",
+    CPXPARAM_Preprocessing_Symmetry, values_symmetry, -1);
+
+  AddSolverOption("pre:repeat repeatpresolve",
+    "Whether to repeat CPLEX's presolve after root processing:\n"
+    "\n.. value-table::\n",
+    CPXPARAM_Preprocessing_RepeatPresolve, values_repeatpresolve, -1);
+
+  AddSolverOption("mip:repairtries repairtries",
+    "How many times to try to repair an infeasible MIP start:\n"
+    "\n.. value-table::\n",
+    CPXPARAM_MIP_Limits_RepairTries, values_repairtries, 0);
+
+  AddSolverOption("mip:submipnodelim submipnodelim",
+    "Limit on nodes explored when CPLEX solves a subMIP (RINS, "
+    "solution polishing, MIP start processing); default 500.",
+    CPXPARAM_MIP_SubMIP_NodeLimit, 1, CPXINT_MAX);
+
+  AddSolverOption("mip:strongcand strongcand",
+    "Length of the candidate list for strong branching; default 10.",
+    CPXPARAM_MIP_Limits_StrongCand, 1, CPXINT_MAX);
+
+  AddSolverOption("mip:strongit strongit",
+    "Number of simplex iterations on each variable in the candidate list "
+    "during strong branching; default 0 ==> automatic choice.",
+    CPXPARAM_MIP_Limits_StrongIt, 0, CPXINT_MAX);
+
+  AddSolverOption("lim:treememory treememory treelimit treememlim",
+    "Maximum megabytes of memory for the branch-and-bound tree "
+    "(default 1e75 ==> no limit).",
+    CPXPARAM_MIP_Limits_TreeMemory, 0.0, 1e75);
+
+  AddSolverOption("mip:polishafter:absgap polishafter_absmipgap",
+    "Start polishing integer solutions after the absolute MIP gap "
+    "is at most this value; default 0.",
+    CPXPARAM_MIP_PolishAfter_AbsMIPGap, 0.0, 1e20);
+
+  AddSolverOption("mip:polishafter:gap polishafter_mipgap",
+    "Start polishing integer solutions after the relative MIP gap "
+    "is at most this value; default 0.",
+    CPXPARAM_MIP_PolishAfter_MIPGap, 0.0, 1.0);
+
+  AddSolverOption("mip:polishafter:nodes polishafter_nodes",
+    "Start polishing integer solutions after processing this many nodes; "
+    "default: no limit.",
+    CPXPARAM_MIP_PolishAfter_Nodes, 0, CPXINT_MAX);
+
+  AddSolverOption("mip:polishafter:sols polishafter_intsol",
+    "Start polishing integer solutions after finding this many "
+    "integer-feasible solutions; default: no limit.",
+    CPXPARAM_MIP_PolishAfter_Solutions, 1, CPXINT_MAX);
+
+  AddSolverOption("mip:polishafter:time polishafter_time",
+    "Start polishing integer solutions after finding at least one "
+    "integer-feasible solution and spending this many seconds; "
+    "default 1e75.",
+    CPXPARAM_MIP_PolishAfter_Time, 0.0, 1e75);
+
+  AddSolverOption("mip:polishafter:dettime polishafter_timedet",
+    "Start polishing integer solutions after finding at least one "
+    "integer-feasible solution and spending this many \"ticks\"; "
+    "default 1e75.",
+    CPXPARAM_MIP_PolishAfter_DetTime, 0.0, 1e75);
+
+  AddSolverOption("mip:kappastats mipkappa",
+    "Whether to compute MIP kappa statistics, which summarize the "
+    "condition numbers of the optimal bases seen while solving:\n"
+    "\n.. value-table::\n",
+    CPXPARAM_MIP_Strategy_KappaStats, values_kappastats, 0);
+
+  AddSolverOption("mip:miqcpstrat miqcpstrat",
+    "Strategy for solving quadratically-constrained MIPs (MIQCP):\n"
+    "\n.. value-table::\n",
+    CPXPARAM_MIP_Strategy_MIQCPStrat, values_miqcpstrat, 0);
+
+  AddSolverOption("mip:ordertype ordertype mipordertype",
+    "How to generate default priorities for integer variables "
+    "when no priority order is given:\n"
+    "\n.. value-table::\n",
+    CPXPARAM_MIP_OrderType, values_ordertype, 0);
+
+  AddSolverOption("bar:ordering ordering",
+    "Ordering algorithm used by the barrier algorithm:\n"
+    "\n.. value-table::\n",
+    CPXPARAM_Barrier_Ordering, values_barorder, 0);
+
+  AddSolverOption("bar:qcpcomptol qcpconvergetol qcpcomptol",
+    "Convergence tolerance on relative complementarity for problems "
+    "with quadratic constraints; default 1e-7.",
+    CPXPARAM_Barrier_QCPConvergeTol, 1e-12, 1e75);
+
+  AddSolverOption("pre:qtolin qtolin",
+    "Whether to linearize products of bounded variables in quadratic "
+    "objectives during preprocessing:\n"
+    "\n.. value-table::\n",
+    CPXPARAM_Preprocessing_QToLin, values_autonoyes_, -1);
+
+  AddSolverOption("tech:clocktype clocktype",
+    "Kind of times CPLEX reports and uses for time limits:\n"
+    "\n.. value-table::\n",
+    CPXPARAM_ClockType, values_clocktype, 2);
+
+  AddSolverOption("tech:parallelmode parallelmode",
+    "Parallel optimization mode:\n"
+    "\n.. value-table::\n",
+    CPXPARAM_Parallel, values_parallelmode, 0);
+
+  AddSolverOption("tech:datacheck datacheck",
+    "Data consistency checking and modeling assistance:\n"
+    "\n.. value-table::\n",
+    CPXPARAM_Read_DataCheck, values_datacheck, 0);
+
+  AddSolverOption("tech:warninglimit warninglimit",
+    "Limit on the number of warnings per issue given when "
+    "tech:datacheck=2; default 10.",
+    CPXPARAM_Read_WarningLimit, 0, CPXINT_MAX);
+
+  AddSolverOption("tech:record record",
+    "0*/1: Whether to record CPLEX library calls for debugging use by IBM "
+    "in a file with an automatically chosen name of the form cplexXXXXXXX.db.",
+    CPXPARAM_Record, 0, 1);
 
   /// Custom solve results here'...
   //  AddSolveResults({
