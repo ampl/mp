@@ -100,7 +100,7 @@ public:
 #endif  // ifdef XPRS_BACKGROUNDMAXTHREADS
 
 #ifdef XPRS_BACKGROUNDSELECT
-    MPD( AddSolverOption_MergeDuplicates("mip:backgroundselect backgroundselect XPRS_BACKGROUNDSELECT",
+    MPD( AddSolverOption_MergeDuplicates("mip:backgroundselect heur:backgroundselect backgroundselect XPRS_BACKGROUNDSELECT",
       "Bit-vector control (see Section Bit-vector controls) to select which tasks to run in background jobs (for example in parallel to the root cut loop)."
       "\n\n"
       "Values (default: -1):\n"
@@ -1047,7 +1047,7 @@ public:
 #endif  // ifdef XPRS_EXTRASETS
 
 #ifdef XPRS_FEASIBILITYJUMP
-    MPD( AddSolverOption_MergeDuplicates("mip:feasibilityjump feasibilityjump XPRS_FEASIBILITYJUMP",
+    MPD( AddSolverOption_MergeDuplicates("mip:feasibilityjump heur:feasibilityjump feasibilityjump XPRS_FEASIBILITYJUMP",
       "MIP: Decides if the Feasibility Jump heuristic should be run. The value for this control is either -1 (let Xpress decide), 0 (off) or a value that indicates for which type of models the heuristic should be run."
       "\n\n"
       "Values (default: -1):\n"
@@ -1060,7 +1060,7 @@ public:
 #endif  // ifdef XPRS_FEASIBILITYJUMP
 
 #ifdef XPRS_FEASIBILITYPUMP
-    MPD( AddSolverOption_MergeDuplicates("mip:feasibilitypump feasibilitypump feaspump XPRS_FEASIBILITYPUMP",
+    MPD( AddSolverOption_MergeDuplicates("mip:feasibilitypump heur:feasibilitypump feasibilitypump feaspump XPRS_FEASIBILITYPUMP",
       "Branch and Bound: Decides if the Feasibility Pump heuristic should be run at the root node."
       "\n\n"
       "Values (default: -1):\n"
@@ -1245,7 +1245,7 @@ public:
 #endif  // ifdef XPRS_GPUPLATFORM
 
 #ifdef XPRS_HEURBEFORELP
-    MPD( AddSolverOption_MergeDuplicates("mip:heurbeforelp heurbeforelp XPRS_HEURBEFORELP",
+    MPD( AddSolverOption_MergeDuplicates("mip:heurbeforelp heur:heurbeforelp heurbeforelp XPRS_HEURBEFORELP",
       "Branch and Bound: Determines whether primal heuristics should be run before the initial LP relaxation has been solved."
       "\n\n"
       "Values (default: -1):\n"
@@ -1256,14 +1256,14 @@ public:
 #endif  // ifdef XPRS_HEURBEFORELP
 
 #ifdef XPRS_HEURDEPTH
-    MPD( AddSolverOption_MergeDuplicates("mip:heurdepth heurdepth XPRS_HEURDEPTH",
+    MPD( AddSolverOption_MergeDuplicates("mip:heurdepth heur:heurdepth heurdepth XPRS_HEURDEPTH",
       "Branch and Bound: Sets the maximum depth in the tree search at which heuristics will be used to find MIP solutions. It may be worth stopping the heuristic search for solutions after a certain depth in the tree search. A value of 0 signifies that heuristics will not be used. This control no longer has any effect and will be removed from future releases."
       "\n\nDefault: -1",
       XPRS_HEURDEPTH, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_HEURDEPTH
 
 #ifdef XPRS_HEURDIVEITERLIMIT
-    MPD( AddSolverOption_MergeDuplicates("mip:heurdiveiterlimit heurdiveiterlimit XPRS_HEURDIVEITERLIMIT",
+    MPD( AddSolverOption_MergeDuplicates("mip:heurdiveiterlimit heur:heurdiveiterlimit heurdiveiterlimit XPRS_HEURDIVEITERLIMIT",
       "Branch and Bound: Simplex iteration limit for reoptimizing during the diving heuristic."
       "\n\n"
       "Values (default: -1):\n"
@@ -1274,7 +1274,7 @@ public:
 #endif  // ifdef XPRS_HEURDIVEITERLIMIT
 
 #ifdef XPRS_HEURDIVERANDOMIZE
-    MPD( AddSolverOption_MergeDuplicates("mip:heurdiverandomize heurdiverandomize XPRS_HEURDIVERANDOMIZE",
+    MPD( AddSolverOption_MergeDuplicates("mip:heurdiverandomize heur:heurdiverandomize heurdiverandomize XPRS_HEURDIVERANDOMIZE",
       "The level of randomization to apply in the diving heuristic. The diving heuristic uses priority weights on rows and columns to determine the order in which to e.g. round fractional columns, or the direction in which to round them. This control determines by how large a random factor these weights should be changed."
       "\n\n"
       "Values (default: 0.0):\n"
@@ -1283,7 +1283,7 @@ public:
 #endif  // ifdef XPRS_HEURDIVERANDOMIZE
 
 #ifdef XPRS_HEURDIVESOFTROUNDING
-    MPD( AddSolverOption_MergeDuplicates("mip:heurdivesoftrounding heurdivesoftrounding XPRS_HEURDIVESOFTROUNDING",
+    MPD( AddSolverOption_MergeDuplicates("mip:heurdivesoftrounding heur:heurdivesoftrounding heurdivesoftrounding XPRS_HEURDIVESOFTROUNDING",
       "Branch and Bound: Enables a more cautious strategy for the diving heuristic, where it tries to push binaries and integer variables to their bounds using the objective, instead of directly fixing them. This can be useful when the default diving heuristics fail to find any feasible solutions."
       "\n\n"
       "Values (default: -1):\n"
@@ -1295,7 +1295,7 @@ public:
 #endif  // ifdef XPRS_HEURDIVESOFTROUNDING
 
 #ifdef XPRS_HEURDIVESPEEDUP
-    MPD( AddSolverOption_MergeDuplicates("mip:heurdivespeedup heurdivespeedup XPRS_HEURDIVESPEEDUP",
+    MPD( AddSolverOption_MergeDuplicates("mip:heurdivespeedup heur:heurdivespeedup heurdivespeedup XPRS_HEURDIVESPEEDUP",
       "Branch and Bound: Changes the emphasis of the diving heuristic from solution quality to diving speed."
       "\n\n"
       "Values (default: -1):\n"
@@ -1306,7 +1306,7 @@ public:
 #endif  // ifdef XPRS_HEURDIVESPEEDUP
 
 #ifdef XPRS_HEURDIVESTRATEGY
-    MPD( AddSolverOption_MergeDuplicates("mip:heurdivestrategy heurdivestrategy XPRS_HEURDIVESTRATEGY",
+    MPD( AddSolverOption_MergeDuplicates("mip:heurdivestrategy heur:heurdivestrategy heurdivestrategy XPRS_HEURDIVESTRATEGY",
       "Branch and Bound: Chooses the strategy for the diving heuristic."
       "\n\n"
       "Values (default: -1):\n"
@@ -1317,7 +1317,7 @@ public:
 #endif  // ifdef XPRS_HEURDIVESTRATEGY
 
 #ifdef XPRS_HEUREMPHASIS
-    MPD( AddSolverOption_MergeDuplicates("mip:heuremphasis heuremphasis XPRS_HEUREMPHASIS",
+    MPD( AddSolverOption_MergeDuplicates("mip:heuremphasis heur:heuremphasis heuremphasis XPRS_HEUREMPHASIS",
       "Branch and Bound: This control specifies an emphasis for the search w.r.t. primal heuristics and other procedures that affect the speed of convergence of the primal-dual gap. For problems where the goal is to achieve a small gap but not neccessarily solving them to optimality, it is recommended to set HEUREMPHASIS to 1. This setting triggers many additional heuristic calls, aiming for reducing the gap at the beginning of the search, typically at the expense of an increased time for proving optimality."
       "\n\n"
       "Values (default: -1):\n"
@@ -1329,7 +1329,7 @@ public:
 #endif  // ifdef XPRS_HEUREMPHASIS
 
 #ifdef XPRS_HEURFORCESPECIALOBJ
-    MPD( AddSolverOption_MergeDuplicates("mip:heurforcespecialobj heurforcespecialobj XPRS_HEURFORCESPECIALOBJ",
+    MPD( AddSolverOption_MergeDuplicates("mip:heurforcespecialobj heur:heurforcespecialobj heurforcespecialobj XPRS_HEURFORCESPECIALOBJ",
       "Branch and Bound: This specifies whether local search heuristics without objective or with an auxiliary objective should always be used, despite the automatic selection of the Optimiezr. Deactivated by default."
       "\n\n"
       "Values (default: 0):\n"
@@ -1339,28 +1339,28 @@ public:
 #endif  // ifdef XPRS_HEURFORCESPECIALOBJ
 
 #ifdef XPRS_HEURFREQ
-    MPD( AddSolverOption_MergeDuplicates("mip:heurfreq heurfreq XPRS_HEURFREQ",
+    MPD( AddSolverOption_MergeDuplicates("mip:heurfreq heur:heurfreq heurfreq XPRS_HEURFREQ",
       "Branch and Bound: This specifies the frequency at which heuristics are used in the tree search. Heuristics will only be used at a node if the depth of the node is a multiple of HEURFREQ."
       "\n\nDefault: -1",
       XPRS_HEURFREQ, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_HEURFREQ
 
 #ifdef XPRS_HEURMAXSOL
-    MPD( AddSolverOption_MergeDuplicates("mip:heurmaxsol heurmaxsol XPRS_HEURMAXSOL",
+    MPD( AddSolverOption_MergeDuplicates("mip:heurmaxsol heur:heurmaxsol heurmaxsol XPRS_HEURMAXSOL",
       "Branch and Bound: This specifies the maximum number of heuristic solutions that will be found in the tree search. This control no longer has any effect and will be removed from future releases."
       "\n\nDefault: -1",
       XPRS_HEURMAXSOL, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_HEURMAXSOL
 
 #ifdef XPRS_HEURNODES
-    MPD( AddSolverOption_MergeDuplicates("mip:heurnodes heurnodes XPRS_HEURNODES",
+    MPD( AddSolverOption_MergeDuplicates("mip:heurnodes heur:heurnodes heurnodes XPRS_HEURNODES",
       "Branch and Bound: This specifies the maximum number of nodes at which heuristics are used in the tree search. This control no longer has any effect and will be removed from future releases."
       "\n\nDefault: -1",
       XPRS_HEURNODES, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_HEURNODES
 
 #ifdef XPRS_HEURSEARCHBACKGROUNDSELECT
-    MPD( AddSolverOption_MergeDuplicates("mip:heursearchbackgroundselect heursearchbackgroundselect XPRS_HEURSEARCHBACKGROUNDSELECT",
+    MPD( AddSolverOption_MergeDuplicates("mip:heursearchbackgroundselect heur:heursearchbackgroundselect heursearchbackgroundselect XPRS_HEURSEARCHBACKGROUNDSELECT",
       "Bit-vector control (see Section Bit-vector controls) to select which large neighborhood searches to run in the background (for example in parallel to the root cut loop)."
       "\n\n"
       "Values (default: -1):\n"
@@ -1369,7 +1369,7 @@ public:
 #endif  // ifdef XPRS_HEURSEARCHBACKGROUNDSELECT
 
 #ifdef XPRS_HEURSEARCHCOPYCONTROLS
-    MPD( AddSolverOption_MergeDuplicates("mip:heursearchcopycontrols heursearchcopycontrols XPRS_HEURSEARCHCOPYCONTROLS",
+    MPD( AddSolverOption_MergeDuplicates("mip:heursearchcopycontrols heur:heursearchcopycontrols heursearchcopycontrols XPRS_HEURSEARCHCOPYCONTROLS",
       "Select how user-set controls should affect local search heuristics."
       "\n\n"
       "Values (default: 1):\n"
@@ -1380,14 +1380,14 @@ public:
 #endif  // ifdef XPRS_HEURSEARCHCOPYCONTROLS
 
 #ifdef XPRS_HEURSEARCHEFFORT
-    MPD( AddSolverOption_MergeDuplicates("mip:heursearcheffort heursearcheffort heureffort XPRS_HEURSEARCHEFFORT",
+    MPD( AddSolverOption_MergeDuplicates("mip:heursearcheffort heur:heursearcheffort heursearcheffort heureffort XPRS_HEURSEARCHEFFORT",
       "Adjusts the overall level of the local search heuristics."
       "\n\nDefault: 1.0",
       XPRS_HEURSEARCHEFFORT, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_HEURSEARCHEFFORT
 
 #ifdef XPRS_HEURSEARCHFREQ
-    MPD( AddSolverOption_MergeDuplicates("mip:heursearchfreq heursearchfreq heursearch XPRS_HEURSEARCHFREQ",
+    MPD( AddSolverOption_MergeDuplicates("mip:heursearchfreq heur:heursearchfreq heursearchfreq heursearch XPRS_HEURSEARCHFREQ",
       "Branch and Bound: This specifies how often the local search heuristic should be run in the tree."
       "\n\n"
       "Values (default: -1):\n"
@@ -1398,7 +1398,7 @@ public:
 #endif  // ifdef XPRS_HEURSEARCHFREQ
 
 #ifdef XPRS_HEURSEARCHROOTCUTFREQ
-    MPD( AddSolverOption_MergeDuplicates("mip:heursearchrootcutfreq heursearchrootcutfreq XPRS_HEURSEARCHROOTCUTFREQ",
+    MPD( AddSolverOption_MergeDuplicates("mip:heursearchrootcutfreq heur:heursearchrootcutfreq heursearchrootcutfreq XPRS_HEURSEARCHROOTCUTFREQ",
       "How frequently to run the local search heuristic during root cutting. This is given as how many cut rounds to perform between runs of the heuristic. Set to zero to avoid applying the heuristic during root cutting. Branch and Bound: This specifies how often the local search heuristic should be run in the tree."
       "\n\n"
       "Values (default: -1):\n"
@@ -1409,7 +1409,7 @@ public:
 #endif  // ifdef XPRS_HEURSEARCHROOTCUTFREQ
 
 #ifdef XPRS_HEURSEARCHROOTSELECT
-    MPD( AddSolverOption_MergeDuplicates("mip:heursearchrootselect heursearchrootselect heurroot XPRS_HEURSEARCHROOTSELECT",
+    MPD( AddSolverOption_MergeDuplicates("mip:heursearchrootselect heur:heursearchrootselect heursearchrootselect heurroot XPRS_HEURSEARCHROOTSELECT",
       "A bit-vector control (see Section Bit-vector controls) for selecting which local search heuristics to apply on the root node of a MIP solve. Use HEURSEARCHTREESELECT to control local search heuristics during the tree search."
       "\n\n"
       "Values (default: 117):\n"
@@ -1424,7 +1424,7 @@ public:
 #endif  // ifdef XPRS_HEURSEARCHROOTSELECT
 
 #ifdef XPRS_HEURSEARCHTREESELECT
-    MPD( AddSolverOption_MergeDuplicates("mip:heursearchtreeselect heursearchtreeselect heurtree XPRS_HEURSEARCHTREESELECT",
+    MPD( AddSolverOption_MergeDuplicates("mip:heursearchtreeselect heur:heursearchtreeselect heursearchtreeselect heurtree XPRS_HEURSEARCHTREESELECT",
       "A bit-vector control (see Section Bit-vector controls) for selecting which local search heuristics to apply during the tree search of a MIP solve. Use HEURSEARCHROOTSELECT to control local search heuristics on the root node."
       "\n\n"
       "Values (default: 17):\n"
@@ -1439,7 +1439,7 @@ public:
 #endif  // ifdef XPRS_HEURSEARCHTREESELECT
 
 #ifdef XPRS_HEURSHIFTPROP
-    MPD( AddSolverOption_MergeDuplicates("mip:heurshiftprop heurshiftprop XPRS_HEURSHIFTPROP",
+    MPD( AddSolverOption_MergeDuplicates("mip:heurshiftprop heur:heurshiftprop heurshiftprop XPRS_HEURSHIFTPROP",
       "Determines whether the Shift-and-propagate primal heuristic should be executed. If enabled, Shift-and-propagate is an LP-free primal heuristic that is executed immediately after presolve."
       "\n\n"
       "Values (default: -1):\n"
@@ -1450,7 +1450,7 @@ public:
 #endif  // ifdef XPRS_HEURSHIFTPROP
 
 #ifdef XPRS_HEURTHREADS
-    MPD( AddSolverOption_MergeDuplicates("mip:heurthreads heurthreads XPRS_HEURTHREADS",
+    MPD( AddSolverOption_MergeDuplicates("mip:heurthreads heur:heurthreads heurthreads XPRS_HEURTHREADS",
       "Branch and Bound: The number of threads to dedicate to running heuristics during the root solve."
       "\n\n"
       "Values (default: 0):\n"
@@ -2554,7 +2554,7 @@ public:
 #endif  // ifdef XPRS_PREPROTECTDUAL
 
 #ifdef XPRS_PREROOTEFFORT
-    MPD( AddSolverOption_MergeDuplicates("mip:prerooteffort prerooteffort XPRS_PREROOTEFFORT",
+    MPD( AddSolverOption_MergeDuplicates("mip:prerooteffort heur:prerooteffort prerooteffort XPRS_PREROOTEFFORT",
       "Dial for the work spent during the Pre-root parallel heuristic phase. A positive value sets a suitable work limit that is dependent on problem-characteristics. Changing the value up/or down dials the work spent in this phase up or down. This control also enables/disables Pre-root parallel heuristics."
       "\n\n"
       "Values (default: -1):\n"
@@ -2566,7 +2566,7 @@ public:
 #endif  // ifdef XPRS_PREROOTEFFORT
 
 #ifdef XPRS_PREROOTTHREADS
-    MPD( AddSolverOption_MergeDuplicates("mip:prerootthreads prerootthreads XPRS_PREROOTTHREADS",
+    MPD( AddSolverOption_MergeDuplicates("mip:prerootthreads heur:prerootthreads prerootthreads XPRS_PREROOTTHREADS",
       "Specifies an explicit number of threads that should be used for the Pre-root parallel heuristic phase. By default, this phase will use all threads available to the solver (as governed by the control THREADS)."
       "\n\n"
       "Values (default: -1):\n"
@@ -2577,7 +2577,7 @@ public:
 #endif  // ifdef XPRS_PREROOTTHREADS
 
 #ifdef XPRS_PREROOTWORKLIMIT
-    MPD( AddSolverOption_MergeDuplicates("mip:prerootworklimit prerootworklimit XPRS_PREROOTWORKLIMIT",
+    MPD( AddSolverOption_MergeDuplicates("mip:prerootworklimit heur:prerootworklimit prerootworklimit XPRS_PREROOTWORKLIMIT",
       "Set an explicit work limit in work units for the Pre-root parallel heuristic phase. Any positive value also enables this phase and runs it until the PREROOTWORKLIMIT units of work are hit."
       "\n\n"
       "Values (default: -1):\n"
@@ -3287,7 +3287,7 @@ public:
 #endif  // ifdef XPRS_TUNERVERBOSE
 
 #ifdef XPRS_USERSOLHEURISTIC
-    MPD( AddSolverOption_MergeDuplicates("mip:usersolheuristic usersolheuristic XPRS_USERSOLHEURISTIC",
+    MPD( AddSolverOption_MergeDuplicates("mip:usersolheuristic heur:usersolheuristic usersolheuristic XPRS_USERSOLHEURISTIC",
       "Determines how much effort to put into running a local search heuristic to find a feasible integer solution from a partial or infeasible user solution."
       "\n\n"
       "Values (default: -1):\n"

@@ -159,6 +159,12 @@ public:
 
 /// Param list translator
 class ParamListTranslator {
+  /// Option prefixes for a topic: the MP prefix and, for topics whose
+  /// prefix changed, the former one kept as a synonym
+  struct Prefixes {
+    std::string main, legacy;
+  };
+
   std::string key_prefix_;
   bool nonlinear_;                 // nonlinearparams.xml: slp/mislp/xktr prefixes
   const HeaderControlTypes& hdr_types_;
@@ -308,7 +314,7 @@ protected:
       os << "#ifdef " << prm.NameMain() << "\n";
 
       auto prefix = GetOptionPrefix(prm.topic_);
-      ++prefixes_[prefix];
+      ++prefixes_[prefix.main];
       os << "    MPD( AddSolverOption_MergeDuplicates(\""
          << MakeOptionNames(prm, prefix) << "\",\n"
             "      \"" << prm.descr_ << "\"\n";
@@ -348,7 +354,7 @@ protected:
   /// lowercase XML name without the XSLP_/XKTR_PARAM_ fragments and
   /// <plain> is the lowercase control name (the ASL keyword spelling
   /// for optimizer controls, the lowercase macro for nonlinear ones).
-  std::string MakeOptionNames(const Param& prm, const std::string& prefix) const {
+  std::string MakeOptionNames(const Param& prm, const Prefixes& prefix) const {
     auto lower = MakeOptionName(prm.xml_name_);
     auto plain = key_prefix_.size() ? lower : MakeOptionName(prm.NameMain());
     auto shrt = lower;
@@ -358,7 +364,9 @@ protected:
     auto alias = kShortNameOverrides.find(prm.xml_name_);
     if (kShortNameOverrides.end() != alias)
       shrt = alias->second;
-    std::string names = prefix + ':' + shrt;
+    std::string names = prefix.main + ':' + shrt;
+    if (prefix.legacy.size())
+      names += ' ' + prefix.legacy + ':' + shrt;
     if (shrt != plain)
       names += ' ' + shrt;
     names += ' ' + plain;
@@ -426,44 +434,45 @@ protected:
   /// (Presolve, LP, Branch and Bound). Unmatched topics (Misc, Logging,
   /// System, Memory, Parallel, Callback, File IO, ...) go to "tech".
   /// Nonlinear controls use the engine prefixes xktr, mislp and slp only.
-  std::string GetOptionPrefix(const std::string& topic) const {
-    using Table = std::vector< std::pair<const char*, const char*> >;
+  Prefixes GetOptionPrefix(const std::string& topic) const {
+    struct Entry { const char* topic; const char* prefix; const char* legacy; };
+    using Table = std::vector<Entry>;
     static const Table kNonlinear {
-      {"Knitro", "xktr"},
-      {"MISLP", "mislp"},
+      {"Knitro", "xktr", ""},
+      {"MISLP", "mislp", ""},
     };
     static const Table kOptimizer {
-      {"Global", "global"},
-      {"Primal Dual Hybrid Gradient", "pdhg"},
-      {"Multiobjective", "obj:multi"},
-      {"Infeasibility", "iis"},
-      {"Tuner", "tech"},
-      {"Quadratic", "qp"},
-      {"Cuts", "cut"},
-      {"Barrier", "bar"},
-      {"Heuristics", "mip"},
-      {"Branching", "mip"},
-      {"Branch and Bound", "mip"},
-      {"MIP Entities", "mip"},
-      {"Root", "mip"},
-      {"Presolve", "pre"},
-      {"Propagation", "pre"},
-      {"Problem Transformation", "pre"},
-      {"Piecewise Linear", "pre"},
-      {"Simplex", "lp"},
-      {"LP", "lp"},
-      {"Limits", "lim"},
-      {"Solution Process", "alg"},
-      {"Solution Refinement", "alg"},
-      {"Numerics", "alg"},
-      {"Tolerances", "alg"},
-      {"Solution", "sol"},
+      {"Global", "global", ""},
+      {"Primal Dual Hybrid Gradient", "pdhg", ""},
+      {"Multiobjective", "obj:multi", ""},
+      {"Infeasibility", "iis", ""},
+      {"Tuner", "tech", ""},
+      {"Quadratic", "qp", ""},
+      {"Cuts", "cut", ""},
+      {"Barrier", "bar", ""},
+      {"Heuristics", "mip", "heur"},
+      {"Branching", "mip", ""},
+      {"Branch and Bound", "mip", ""},
+      {"MIP Entities", "mip", ""},
+      {"Root", "mip", ""},
+      {"Presolve", "pre", ""},
+      {"Propagation", "pre", ""},
+      {"Problem Transformation", "pre", ""},
+      {"Piecewise Linear", "pre", ""},
+      {"Simplex", "lp", ""},
+      {"LP", "lp", ""},
+      {"Limits", "lim", ""},
+      {"Solution Process", "alg", ""},
+      {"Solution Refinement", "alg", ""},
+      {"Numerics", "alg", ""},
+      {"Tolerances", "alg", ""},
+      {"Solution", "sol", ""},
     };
     const Table& table = nonlinear_ ? kNonlinear : kOptimizer;
     for (const auto& entry: table)
-      if (std::string::npos != topic.find(entry.first))
-        return entry.second;
-    return nonlinear_ ? "slp" : "tech";
+      if (std::string::npos != topic.find(entry.topic))
+        return {entry.prefix, entry.legacy};
+    return {nonlinear_ ? "slp" : "tech", ""};
   }
 
   /// Print prefixes used
