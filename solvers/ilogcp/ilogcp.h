@@ -87,6 +87,7 @@ class IlogCPSolver : public SolverImpl<Problem> {
     DEBUGEXPR,
     USENUMBEROF,
     SOLUTION_LIMIT,
+    IIS_FIND,
     NUM_OPTIONS
   };
 
@@ -108,6 +109,21 @@ class IlogCPSolver : public SolverImpl<Problem> {
   };
 
   std::string filenames_[NUM_FILES];
+
+  // CP Optimizer defaults of the parameters shared with the CPLEX path,
+  // recorded at construction: only changed values are forwarded to CPLEX.
+  struct CPDefaults {
+    IloNum opttol, relopttol;
+    IloInt seed;
+  } cp_defaults_;
+
+  // Apply the options that have a CPLEX counterpart to the CPLEX optimizer.
+  void ApplyCommonOptionsToCPLEX();
+  // Run the conflict refiner of the given optimizer and report the IIS
+  // through suffixes and the message writer.
+  template <typename Alg>
+  void ReportConflict(Problem &p, Alg alg, const MPToConcertConverter &converter,
+                      fmt::MemoryWriter &writer, bool with_var_bounds);
 
   std::string GetOptimizer(const SolverOption &) const;
   void SetOptimizer(const SolverOption &opt, fmt::StringRef value);

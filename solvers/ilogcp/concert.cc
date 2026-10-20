@@ -110,7 +110,8 @@ IloIntVar MPToConcertConverter::ConvertArg(
 }
 
 MPToConcertConverter::MPToConcertConverter(IloEnv env, unsigned flags)
-: env_(env), model_(env), vars_(env), cons_(env), flags_(flags), objs_(env),
+: env_(env), model_(env), vars_(env), cons_(env), lcons_(env), flags_(flags),
+  objs_(env),
   nNumberofsFinalized_(0), numberofs_(CreateVar(env)) {
 }
 
@@ -408,6 +409,7 @@ void MPToConcertConverter::AddLogicalConstraint(Problem::LogicalCon lcon) {
     }
     cons = Visit(expr);
   } while(0);
+  lcons_.add(cons);
   model_.add(cons);
 }
 

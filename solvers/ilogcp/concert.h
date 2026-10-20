@@ -152,6 +152,7 @@ class MPToConcertConverter : public ExprVisitor<MPToConcertConverter, IloExpr> {
   IloModel model_;
   IloNumVarArray vars_;
   IloRangeArray cons_;
+  IloConstraintArray lcons_;   // logical constraints, in AMPL order
   std::vector<IloExpr> common_exprs_;
   unsigned flags_;
 
@@ -285,6 +286,7 @@ class MPToConcertConverter : public ExprVisitor<MPToConcertConverter, IloExpr> {
   IloModel model() const { return model_; }
   IloNumVarArray vars() const { return vars_; }
   IloRangeArray cons() const { return cons_; }
+  IloConstraintArray lcons() const { return lcons_; }
 
   IloExpr Visit(NumericExpr e) {
     if ((flags_ & DEBUG) != 0)

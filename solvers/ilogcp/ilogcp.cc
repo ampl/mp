@@ -74,7 +74,17 @@ const mp::OptionValueInfo SEARCH_TYPES[] = {
   #if CPX_VERSION >= 12090000
   ,{"iterativediving", 0, IloCP::IterativeDiving}
   #endif
+  #if CPX_VERSION >= 22010000
+  ,{"neighborhood", "(beta in CP Optimizer 22.1)", IloCP::Neighborhood}
+  #endif
 };
+
+#if CPX_VERSION >= 12090000
+const mp::OptionValueInfo KPI_DISPLAYS[] = {
+  {"singleline",    "all KPIs on one line (default)", IloCP::SingleLine},
+  {"multiplelines", "one line per KPI", IloCP::MultipleLines}
+};
+#endif
 
 const mp::OptionValueInfo VERBOSITIES[] = {
   {"quiet",   0, IloCP::Quiet  },
@@ -114,8 +124,8 @@ mp::OptionError GetOptionValueError(
       "Can't get value of option {}: {}", opt.name(), message));
 }
 
-// An integer option.
-class IntOption : public mp::TypedSolverOption<int> {
+// An integer option (64-bit, as CP Optimizer's IloInt parameters).
+class IntOption : public mp::TypedSolverOption<fmt::LongLong> {
  private:
   IloCP cp_;
   IloCP::IntParam param_;
@@ -123,7 +133,8 @@ class IntOption : public mp::TypedSolverOption<int> {
  public:
   IntOption(const char *name, const char *description,
       IloCP cp, IloCP::IntParam p)
-  : mp::TypedSolverOption<int>(name, description), cp_(cp), param_(p) {}
+  : mp::TypedSolverOption<fmt::LongLong>(name, description),
+    cp_(cp), param_(p) {}
 
   void GetValue(fmt::LongLong &value) const;
   void SetValue(fmt::LongLong value);
@@ -131,7 +142,7 @@ class IntOption : public mp::TypedSolverOption<int> {
 
 void IntOption::GetValue(fmt::LongLong &value) const {
   try {
-    value = static_cast<int>(cp_.getParameter(param_));
+    value = cp_.getParameter(param_);   // IloInt is 64-bit: no truncation
   } catch (const IloException &e) {
     throw GetOptionValueError(*this, e.getMessage());
   }
@@ -139,10 +150,7 @@ void IntOption::GetValue(fmt::LongLong &value) const {
 
 void IntOption::SetValue(fmt::LongLong value) {
   try {
-    IloInt ilo_value = static_cast<IloInt>(value);
-    if (ilo_value != value)
-      throw mp::InvalidOptionValue(name(), value);
-    cp_.setParameter(param_, ilo_value);
+    cp_.setParameter(param_, static_cast<IloInt>(value));
   } catch (const IloException &) {
     throw mp::InvalidOptionValue(name(), value);
   }
@@ -196,6 +204,16 @@ void EnumOption::SetValue(fmt::StringRef value) {
     if (!*end) {
       if (intval != -1 || !accepts_auto_)
         intval += start_;
+      // With a full value table, accept only the listed values
+      // (the library may silently accept undocumented ones).
+      if (values().size() > 1) {
+        bool known = accepts_auto_ && intval == IloCP::Auto;
+        for (mp::ValueArrayRef::iterator
+            i = values().begin(), e = values().end(); !known && i != e; ++i)
+          known = std::get<intptr_t>(i->data) == (intptr_t)intval;
+        if (!known)
+          throw mp::InvalidOptionValue(name(), value);
+      }
       cp_.setParameter(param_, intval);
       return;
     }
@@ -226,42 +244,195 @@ bool HasNonlinearObj(const mp::Problem &p) {
   return expr && !mp::Cast<mp::NumericConstant>(expr);
 }
 
-std::string ConvertSolutionStatus(
-    IloAlgorithm alg, const mp::Interrupter &interrupter, int &solve_code) {
+// Driver-specific solve result codes (see mp::sol for the standard ones).
+enum IlogCPResultCode {
+  LIMIT_FEAS_FAIL        = mp::sol::LIMIT_FEAS_NEW,        // 430
+  LIMIT_FEAS_BRANCH      = mp::sol::LIMIT_FEAS_NEW + 1,    // 431
+  LIMIT_FEAS_CHOICEPOINT = mp::sol::LIMIT_FEAS_NEW + 2,    // 432
+  LIMIT_NO_FEAS_FAIL        = mp::sol::LIMIT_NO_FEAS_NEW,      // 490
+  LIMIT_NO_FEAS_BRANCH      = mp::sol::LIMIT_NO_FEAS_NEW + 1,  // 491
+  LIMIT_NO_FEAS_CHOICEPOINT = mp::sol::LIMIT_NO_FEAS_NEW + 2   // 492
+};
+
+struct LimitKind {
+  int code_feas, code_nofeas;
+  const char *name;
+};
+
+// Determine which CP Optimizer limit stopped the search.
+LimitKind DetectCPLimit(IloCP cp) {
   namespace sol = mp::sol;
-  switch (alg.getStatus()) {
-  default:
-    // Fall through.
-  case IloAlgorithm::Unknown:
-    if (interrupter.Stop()) {
-      solve_code = 600;
-      return "interrupted";
-    }
-    solve_code = sol::FAILURE + 1;
-    return "unknown solution status";
-  case IloAlgorithm::Feasible:
-    if (interrupter.Stop()) {
-      solve_code = 600;
-      return "interrupted";
-    }
-    solve_code = sol::UNCERTAIN;
-    return "feasible solution";
+  if (cp.getInfo(IloCP::NumberOfFails) >= cp.getParameter(IloCP::FailLimit))
+    return {LIMIT_FEAS_FAIL, LIMIT_NO_FEAS_FAIL, "fail limit"};
+  if (cp.getInfo(IloCP::NumberOfBranches) >= cp.getParameter(IloCP::BranchLimit))
+    return {LIMIT_FEAS_BRANCH, LIMIT_NO_FEAS_BRANCH, "branch limit"};
+  if (cp.getInfo(IloCP::NumberOfChoicePoints)
+      >= cp.getParameter(IloCP::ChoicePointLimit))
+    return {LIMIT_FEAS_CHOICEPOINT, LIMIT_NO_FEAS_CHOICEPOINT,
+            "choice point limit"};
+  if (cp.getParameter(IloCP::TimeLimit) < IloInfinity)
+    return {sol::LIMIT_FEAS_TIME, sol::LIMIT_NO_FEAS_TIME, "time limit"};
+  return {sol::LIMIT_FEAS, sol::LIMIT_NO_FEAS, "limit"};
+}
+
+std::string LimitMessage(const char *name, bool has_sol) {
+  return fmt::format("{}, {}feasible solution", name, has_sol ? "" : "no ");
+}
+
+// Convert the CP Optimizer status to an MP solve result code.
+std::string ConvertCPStatus(IloCP cp, const mp::Interrupter &interrupter,
+                            bool has_obj, bool has_sol, int &solve_code) {
+  namespace sol = mp::sol;
+  switch (cp.getStatus()) {
   case IloAlgorithm::Optimal:
     solve_code = sol::SOLVED;
     return "optimal solution";
+  case IloAlgorithm::Feasible:
+    if (!has_obj) {   // satisfaction problem: a solution is the answer
+      solve_code = sol::SOLVED;
+      return "feasible solution";
+    }
+    break;
   case IloAlgorithm::Infeasible:
     solve_code = sol::INFEASIBLE;
     return "infeasible problem";
   case IloAlgorithm::Unbounded:
-    solve_code = sol::UNBOUNDED;
+    solve_code = has_sol ? sol::UNBOUNDED_FEAS : sol::UNBOUNDED_NO_FEAS;
     return "unbounded problem";
   case IloAlgorithm::InfeasibleOrUnbounded:
-    solve_code = sol::INFEASIBLE + 1;
+    solve_code = sol::LIMIT_INF_UNB;
     return "infeasible or unbounded problem";
   case IloAlgorithm::Error:
     solve_code = sol::FAILURE;
     return "error";
+  default:
+    break;
   }
+  // Feasible with an objective (optimality not proven) or Unknown.
+  IloInt fail_status = cp.getInfo(IloCP::FailStatus);
+  if (interrupter.Stop() || fail_status == IloCP::SearchStoppedByAbort) {
+    solve_code = has_sol ? sol::LIMIT_FEAS_INTERRUPT : sol::LIMIT_NO_FEAS_INTERRUPT;
+    return LimitMessage("interrupted", has_sol);
+  }
+  if (fail_status == IloCP::SearchStoppedByLimit) {
+    LimitKind lim = DetectCPLimit(cp);
+    solve_code = has_sol ? lim.code_feas : lim.code_nofeas;
+    return LimitMessage(lim.name, has_sol);
+  }
+  if (has_sol) {
+    solve_code = sol::UNCERTAIN;
+    return "feasible solution, optimality not proven";
+  }
+  solve_code = sol::FAILURE + 1;
+  return "unknown solution status";
+}
+
+// Convert the CPLEX status to an MP solve result code.
+std::string ConvertCPLEXStatus(IloCplex cplex, const mp::Interrupter &interrupter,
+                               bool has_sol, int &solve_code) {
+  namespace sol = mp::sol;
+  auto limit = [&](int code_feas, int code_nofeas, const char *name) {
+    solve_code = has_sol ? code_feas : code_nofeas;
+    return LimitMessage(name, has_sol);
+  };
+  switch (cplex.getCplexStatus()) {
+  case IloCplex::Optimal:
+  case IloCplex::OptimalTol:
+  case IloCplex::OptimalPopulated:
+  case IloCplex::OptimalPopulatedTol:
+  case IloCplex::MultiObjOptimal:
+    solve_code = sol::SOLVED;
+    return "optimal solution";
+  case IloCplex::OptimalInfeas:
+    solve_code = sol::UNCERTAIN + 10;
+    return "optimal with unscaled infeasibilities";
+  case IloCplex::FirstOrder:
+    solve_code = sol::OPTIMAL_LOCALLY;
+    return "first-order optimal solution";
+  case IloCplex::NumBest:
+    solve_code = sol::UNCERTAIN;
+    return "feasible solution, numerical difficulties";
+  case IloCplex::Feasible:
+  case IloCplex::MultiObjNonOptimal:
+    solve_code = sol::UNCERTAIN;
+    return "feasible solution, optimality not proven";
+  case IloCplex::Infeasible:
+  case IloCplex::MultiObjInfeasible:
+    solve_code = sol::INFEASIBLE;
+    return "infeasible problem";
+  case IloCplex::Unbounded:
+  case IloCplex::MultiObjUnbounded:
+  case IloCplex::RelaxationUnbounded:
+    solve_code = has_sol ? sol::UNBOUNDED_FEAS : sol::UNBOUNDED_NO_FEAS;
+    return "unbounded problem";
+  case IloCplex::InfOrUnbd:
+  case IloCplex::MultiObjInfOrUnbd:
+    solve_code = sol::LIMIT_INF_UNB;
+    return "infeasible or unbounded problem";
+  case IloCplex::AbortTimeLim:
+  case IloCplex::AbortDetTimeLim:
+    return limit(sol::LIMIT_FEAS_TIME, sol::LIMIT_NO_FEAS_TIME, "time limit");
+  case IloCplex::AbortItLim:
+    return limit(sol::LIMIT_FEAS_ITER, sol::LIMIT_NO_FEAS_ITER, "iteration limit");
+  case IloCplex::NodeLimFeas:
+  case IloCplex::NodeLimInfeas:
+    return limit(sol::LIMIT_FEAS_NODES, sol::LIMIT_NO_FEAS_NODES, "node limit");
+  case IloCplex::SolLim:
+  case IloCplex::PopulateSolLim:
+    solve_code = sol::LIMIT_FEAS_NUMSOLS;
+    return "solution limit";
+  case IloCplex::AbortObjLim:
+  case IloCplex::AbortPrimObjLim:
+  case IloCplex::AbortDualObjLim:
+    return limit(sol::LIMIT_FEAS_BESTOBJ, sol::LIMIT_NO_FEAS_CUTOFF, "objective limit");
+  case IloCplex::MemLimFeas:
+  case IloCplex::MemLimInfeas:
+  case IloCplex::FailFeasNoTree:
+  case IloCplex::FailInfeasNoTree:
+    return limit(sol::LIMIT_FEAS_SOFTMEM, sol::LIMIT_NO_FEAS_SOFTMEM, "memory limit");
+  case IloCplex::AbortUser:
+  case IloCplex::MultiObjStopped:
+    if (interrupter.Stop())
+      return limit(sol::LIMIT_FEAS_INTERRUPT, sol::LIMIT_NO_FEAS_INTERRUPT, "interrupted");
+    return limit(sol::LIMIT_FEAS, sol::LIMIT_NO_FEAS, "stopped");
+  case IloCplex::FailFeas:
+    solve_code = sol::LIMIT_FEAS_FAILURE;
+    return "failure, feasible solution";
+  case IloCplex::FailInfeas:
+    solve_code = sol::FAILURE;
+    return "failure";
+  default:
+    break;
+  }
+  if (interrupter.Stop())
+    return limit(sol::LIMIT_FEAS_INTERRUPT, sol::LIMIT_NO_FEAS_INTERRUPT, "interrupted");
+  if (has_sol) {
+    solve_code = sol::UNCERTAIN;
+    return "feasible solution, unknown status";
+  }
+  solve_code = sol::FAILURE + 1;
+  return "unknown solution status";
+}
+
+// IIS suffix values (same table as the MP backends).
+enum IISValue {
+  IIS_NON = 0, IIS_LOW = 1, IIS_FIX = 2, IIS_UPP = 3, IIS_MEM = 4, IIS_PMEM = 5
+};
+
+const char IIS_TABLE[] =
+    "\n"
+    "0\tnon\tnot in the iis\n"
+    "1\tlow\tlower bound in the iis\n"
+    "2\tfix\tboth bounds in the iis\n"
+    "3\tupp\tupper bound in the iis\n"
+    "4\tmem\tmember\n"
+    "5\tpmem\tpossible member\n"
+    "6\tplow\tpossibly lower bound\n"
+    "7\tpupp\tpossibly upper bound\n";
+
+template <typename Status>
+int IISValueFromConflict(Status s, Status member, Status possible) {
+  return s == member ? IIS_MEM : s == possible ? IIS_PMEM : IIS_NON;
 }
 
 bool InterruptCP(void *cp) {
@@ -290,6 +461,20 @@ IlogCPSolver::IlogCPSolver() :
   options_[DEBUGEXPR] = false;
   options_[USENUMBEROF] = true;
   options_[SOLUTION_LIMIT] = -1;
+  options_[IIS_FIND] = 0;
+
+  cp_defaults_.opttol = cp_.getParameter(IloCP::OptimalityTolerance);
+  cp_defaults_.relopttol = cp_.getParameter(IloCP::RelativeOptimalityTolerance);
+  cp_defaults_.seed = cp_.getParameter(IloCP::RandomSeed);
+
+  AddSolveResults({
+    { LIMIT_FEAS_FAIL, "fail limit, feasible solution" },
+    { LIMIT_FEAS_BRANCH, "branch limit, feasible solution" },
+    { LIMIT_FEAS_CHOICEPOINT, "choice point limit, feasible solution" },
+    { LIMIT_NO_FEAS_FAIL, "fail limit, no feasible solution" },
+    { LIMIT_NO_FEAS_BRANCH, "branch limit, no feasible solution" },
+    { LIMIT_NO_FEAS_CHOICEPOINT, "choice point limit, no feasible solution" }
+  });
 
   set_long_name(fmt::format("ilogcp {}.{}.{}",
       IloConcertVersion::_ILO_MAJOR_VERSION,
@@ -312,7 +497,7 @@ IlogCPSolver::IlogCPSolver() :
       "  ampl: option ilogcp_options 'optimalitytolerance=1e-6 "
       "searchtype=restart';\n");
 
-  AddStrOption("optimizer",
+  AddStrOption("tech:optimizer optimizer",
       "Specifies which optimizer to use. Possible values:\n"
       "\n"
       ".. value-table::\n"
@@ -324,7 +509,7 @@ IlogCPSolver::IlogCPSolver() :
 
   // The following options are not implemented because corresponding
   // constraints are never generated by the driver:
-  // - CountInferenceLevel
+  // - CountInferenceLevel, CountDifferentInferenceLevel
   // - SequenceInferenceLevel
   // - AllMinDistanceInferenceLevel
   // - PrecedenceInferenceLevel
@@ -333,46 +518,46 @@ IlogCPSolver::IlogCPSolver() :
   // - CumulFunctionInferenceLevel
   // - StateFunctionInferenceLevel
 
-  AddOption(OptionPtr(new EnumOption("alldiffinferencelevel",
+  AddOption(OptionPtr(new EnumOption("cp:alldiffinferencelevel alldiffinferencelevel",
       "Inference level for ``alldiff`` constraints. Possible values:\n"
       "\n"
       ".. value-table::\n"
       "\n"
       "The default value is ``default``, which allows the inference "
       "strength of all ``alldiff`` constraints to be controlled via "
-      "``defaultinferencelevel``.",
+      "``cp:defaultinferencelevel``.",
       cp_, IloCP::AllDiffInferenceLevel, IloCP::Default, INFERENCE_LEVELS)));
 
-  AddOption(OptionPtr(new IntOption("branchlimit",
+  AddOption(OptionPtr(new IntOption("lim:branch branchlimit",
       "Limit on the number of branches made before "
       "terminating a search. Default = no limit.",
       cp_, IloCP::BranchLimit)));
 
-  AddOption(OptionPtr(new IntOption("choicepointlimit",
+  AddOption(OptionPtr(new IntOption("lim:choicepoint choicepointlimit",
       "Limit on the number of choice points created "
       "before terminating a search. Default = no limit.",
       cp_, IloCP::ChoicePointLimit)));
- 
+
 #if CPX_VERSION >= 12080000
   // Changed behaviour:
   // https://www.ibm.com/support/knowledgecenter/en/SSSA5P_12.8.0/ilog.odms.studio.help/CP_Optimizer/Release_notes/topics/relnotes_V1280_changes_api.html
-  AddOption(OptionPtr(new EnumOption("cppresolve",
-	  "0 or 1 (default 1):  Whether to activate presolve on the CP optimizer.",
-	  cp_, IloCP::IntParam::Presolve, IloCP::Off,
-	  ValueArrayRef(FLAGS, 1))));
+  AddOption(OptionPtr(new EnumOption("pre:solve cppresolve presolve",
+      "0 or 1 (default 1):  Whether to activate presolve on the CP optimizer.",
+      cp_, IloCP::IntParam::Presolve, IloCP::Off,
+      ValueArrayRef(FLAGS, 1))));
 #else
-  AddOption(OptionPtr(new EnumOption("constraintaggregation",
-	  "0 or 1 (default 1):  Whether to aggregate basic constraints.",
-	  cp_, IloCP::ConstraintAggregation, IloCP::Off,
-	  ValueArrayRef(FLAGS, 1))));
+  AddOption(OptionPtr(new EnumOption("pre:aggregate constraintaggregation",
+      "0 or 1 (default 1):  Whether to aggregate basic constraints.",
+      cp_, IloCP::ConstraintAggregation, IloCP::Off,
+      ValueArrayRef(FLAGS, 1))));
 #endif
 
-  AddIntOption("debugexpr",
+  AddIntOption("tech:debugexpr debugexpr",
       "0 or 1 (default 0):  Whether to print debugging "
       "information for expression trees.",
       &IlogCPSolver::DoGetIntOption, &IlogCPSolver::SetBoolOption, DEBUGEXPR);
 
-  AddOption(OptionPtr(new EnumOption("defaultinferencelevel",
+  AddOption(OptionPtr(new EnumOption("cp:defaultinferencelevel defaultinferencelevel",
       "Inference level for constraints that have inference level set to "
       "``default``. Possible values:\n"
       "\n"
@@ -382,7 +567,7 @@ IlogCPSolver::IlogCPSolver() :
       cp_, IloCP::DefaultInferenceLevel, IloCP::Default,
       ValueArrayRef(INFERENCE_LEVELS, 1))));
 
-  AddOption(OptionPtr(new EnumOption("distributeinferencelevel",
+  AddOption(OptionPtr(new EnumOption("cp:distributeinferencelevel distributeinferencelevel",
       "Inference level for aggregated ``numberof`` (``IloDistribute``) "
       "constraints. Possible values:\n"
       "\n"
@@ -390,10 +575,10 @@ IlogCPSolver::IlogCPSolver() :
       "\n"
       "The default value is ``default``, which allows the inference "
       "strength of all aggregated ``numberof`` constraints to be controlled "
-      "via ``defaultinferencelevel``.",
+      "via ``cp:defaultinferencelevel``.",
       cp_, IloCP::DistributeInferenceLevel, IloCP::Default, INFERENCE_LEVELS)));
 
-  AddOption(OptionPtr(new EnumOption("dynamicprobing",
+  AddOption(OptionPtr(new EnumOption("cp:dynamicprobing dynamicprobing",
       "Use probing during search. Possible values:\n"
       "\n"
       ".. value-table::\n"
@@ -401,13 +586,14 @@ IlogCPSolver::IlogCPSolver() :
       "The default value is ``auto``.",
       cp_, IloCP::DynamicProbing, IloCP::Off, FLAGS, true)));
 
-  AddDblOption("dynamicprobingstrength",
+  AddDblOption("cp:dynamicprobingstrength dynamicprobingstrength",
       "Effort dedicated to dynamic probing as a factor "
-      "of the total search effort. Default = 0.03.",
+      "of the total search effort. Default = 0.03; "
+      "must be between 0.001 and 1000.",
       &IlogCPSolver::GetCPOption<double>, &IlogCPSolver::SetCPOption<double>,
       IloCP::DynamicProbingStrength);
 
-  AddOption(OptionPtr(new EnumOption("elementinferencelevel",
+  AddOption(OptionPtr(new EnumOption("cp:elementinferencelevel elementinferencelevel",
       "Inference level for ``element`` (``IloElement``) constraints. "
       "Possible values:\n"
       "\n"
@@ -415,44 +601,45 @@ IlogCPSolver::IlogCPSolver() :
       "\n"
       "The default value is ``default``, which allows the inference "
       "strength of all ``element`` constraints to be controlled via "
-      "``defaultinferencelevel``.",
+      "``cp:defaultinferencelevel``.",
       cp_, IloCP::ElementInferenceLevel, IloCP::Default, INFERENCE_LEVELS)));
 
-  AddOption(OptionPtr(new IntOption("faillimit",
+  AddOption(OptionPtr(new IntOption("lim:fail faillimit",
       "Limit on the number of failures allowed before terminating a search. "
       "Default = no limit.",
       cp_, IloCP::FailLimit)));
 
-  AddOption(OptionPtr(new IntOption("logperiod",
-      "Specifies how often the information in the search log is displayed.",
+  AddOption(OptionPtr(new IntOption("tech:logperiod logperiod",
+      "Specifies how often (in branches) the information in the search log "
+      "is displayed. Default = 1000.",
       cp_, IloCP::LogPeriod)));
 
-  AddOption(OptionPtr(new EnumOption("logverbosity",
+  AddOption(OptionPtr(new EnumOption("tech:outlev outlev logverbosity",
       "Verbosity of the search log. Possible values:\n"
       "\n"
       ".. value-table::\n"
       "\n"
-      "The default value is ``quiet``.",
+      "The default value is ``quiet``. With the CPLEX optimizer, values "
+      "other than ``quiet`` turn on the CPLEX log (see tech:mipdisplay).",
       cp_, IloCP::LogVerbosity, IloCP::Quiet, VERBOSITIES)));
 
-  AddOption(OptionPtr(new IntOption("multipointnumberofsearchpoints",
+  AddOption(OptionPtr(new IntOption(
+      "cp:multipointnumberofsearchpoints multipointnumberofsearchpoints",
       "Number of solutions for the multi-point search "
       "algorithm. Default = 30.",
       cp_, IloCP::MultiPointNumberOfSearchPoints)));
 
-  AddDblOption("optimalitytolerance",
-      "Absolute tolerance on the objective value. Default = 0.",
+  AddDblOption("mip:gapabs optimalitytolerance absmipgap",
+      "Absolute tolerance on the objective value. Default = 1e-9 "
+      "(CP Optimizer); with the CPLEX optimizer, a non-default value "
+      "is applied as the absolute MIP gap.",
       &IlogCPSolver::GetCPOption<double>, &IlogCPSolver::SetCPOption<double>,
       IloCP::OptimalityTolerance);
-
-  AddOption(OptionPtr(new EnumOption("outlev",
-      "Synonym for ``logverbosity``.",
-      cp_, IloCP::LogVerbosity, IloCP::Quiet, VERBOSITIES)));
 
 #if CPX_VERSION < 12080000
   // Not available in 12.8, documented only in the Java docs
   // https://www.ibm.com/support/knowledgecenter/en/SSSA5P_12.8.0/ilog.odms.studio.help/CP_Optimizer/Release_notes/topics/relnotes_V1280_changes_java.html
-  AddOption(OptionPtr(new EnumOption("propagationlog",
+  AddOption(OptionPtr(new EnumOption("tech:propagationlog propagationlog",
       "Level of propagation trace reporting. Possible values:\n"
       "\n"
       ".. value-table::\n"
@@ -461,26 +648,31 @@ IlogCPSolver::IlogCPSolver() :
       cp_, IloCP::PropagationLog, IloCP::Quiet, VERBOSITIES)));
 #endif
 
-  AddOption(OptionPtr(new IntOption("randomseed",
-      "Seed for the random number generator. Default = 0.",
+  AddOption(OptionPtr(new IntOption("tech:seed randomseed seed",
+      "Seed for the random number generator. Default = 0. "
+      "With the CPLEX optimizer, a non-default value is applied as the "
+      "CPLEX random seed.",
       cp_, IloCP::RandomSeed)));
 
-  AddDblOption("relativeoptimalitytolerance",
-      "Relative tolerance on the objective value. Default = 1e-4.",
+  AddDblOption("mip:gap relativeoptimalitytolerance mipgap",
+      "Relative tolerance on the objective value. Default = 1e-4; "
+      "with the CPLEX optimizer, a non-default value is applied as the "
+      "relative MIP gap.",
       &IlogCPSolver::GetCPOption<double>, &IlogCPSolver::SetCPOption<double>,
       IloCP::RelativeOptimalityTolerance);
 
-  AddOption(OptionPtr(new IntOption("restartfaillimit",
-      "Number of failures allowed before restarting  search. Default = 100.",
+  AddOption(OptionPtr(new IntOption("cp:restartfaillimit restartfaillimit",
+      "Number of failures allowed before restarting search "
+      "(``cp:searchtype=restart``). Default = 100.",
       cp_, IloCP::RestartFailLimit)));
 
-  AddDblOption("restartgrowthfactor",
+  AddDblOption("cp:restartgrowthfactor restartgrowthfactor",
       "Increase of the number of allowed failures "
-      "before restarting search. Default = 1.05.",
+      "before restarting search. Default = 1.15; must be >= 1.",
       &IlogCPSolver::GetCPOption<double>, &IlogCPSolver::SetCPOption<double>,
       IloCP::RestartGrowthFactor);
 
-  AddOption(OptionPtr(new EnumOption("searchtype",
+  AddOption(OptionPtr(new EnumOption("cp:searchtype searchtype",
       "Type of search used for solving a problem. Possible values:\n"
       "\n"
       ".. value-table::\n"
@@ -488,97 +680,182 @@ IlogCPSolver::IlogCPSolver() :
       "The default value is ``auto``.",
       cp_, IloCP::SearchType, IloCP::DepthFirst, SEARCH_TYPES, true)));
 
-  AddIntOption("solutionlimit",
+  AddIntOption("lim:sol solutionlimit sollimit",
       "Limit on the number of feasible solutions found before terminating "
       "a search. Leaving the solution limit unspecified will make the "
       "optimizer search for an optimal solution if there is an objective "
-      "function or for a feasible solution otherwise.",
+      "function or for a feasible solution otherwise. "
+      "Also applied to the CPLEX optimizer.",
       &IlogCPSolver::DoGetIntOption, &IlogCPSolver::DoSetIntOption,
       IlogCPSolver::SOLUTION_LIMIT);
 
-  AddOption(OptionPtr(new EnumOption("temporalrelaxation",
-      "0 or 1 (default 1):  Whether to use temporal relaxation.",
-      cp_, IloCP::TemporalRelaxation, IloCP::Off, FLAGS)));
+  AddOption(OptionPtr(new EnumOption("cp:temporalrelaxation temporalrelaxation",
+      "Whether to use the internal temporal relaxation. Possible values:\n"
+      "\n"
+      ".. value-table::\n"
+      "\n"
+      "The default value is ``auto``.",
+      cp_, IloCP::TemporalRelaxation, IloCP::Off, FLAGS, true)));
 
-  AddDblOption("timelimit",
-      "Limit on the CPU time spent solving before "
-      "terminating a search. Default = no limit.",
+  AddDblOption("lim:time timelimit timelim",
+      "Limit on the time (measured as specified by tech:timemode, "
+      "elapsed time by default) spent solving before terminating a search. "
+      "Default = no limit. Also applied to the CPLEX optimizer.",
       &IlogCPSolver::GetCPOption<double>, &IlogCPSolver::SetCPOption<double>,
       IloCP::TimeLimit);
 
-  AddOption(OptionPtr(new EnumOption("timemode",
+  AddOption(OptionPtr(new EnumOption("tech:timemode timemode",
       "Specifies how the time is measured in CP Optimizer. Possible values:\n"
       "\n"
       ".. value-table::\n"
       "\n"
-      "The default value is ``cputime``.",
+      "The default value is ``elapsedtime``.",
       cp_, IloCP::TimeMode, IloCP::CPUTime, TIME_MODES)));
 
-  AddIntOption("usenumberof",
+  AddIntOption("cvt:usenumberof usenumberof",
       "0 or 1 (default 1):  Whether to aggregate ``numberof`` expressions "
       "by use of ``IloDistribute`` constraints.",
       &IlogCPSolver::DoGetIntOption, &IlogCPSolver::SetBoolOption,
       IlogCPSolver::USENUMBEROF);
 
-  AddOption(OptionPtr(new EnumOption("workers",
+  AddOption(OptionPtr(new EnumOption("tech:threads workers threads",
       "Number of workers to run in parallel to solve a problem. "
       "In addition to numeric values this option accepts the value "
-      "``auto`` since CP Optimizer version 12.3. Default = ``auto``.",
+      "``auto``. Default = ``auto`` (one worker per CPU core). "
+      "Also applied as the number of threads of the CPLEX optimizer.",
       cp_, IloCP::Workers, 0, AUTO_VALUE, true)));
 
 #if CPX_VERSION >= 12060100
-  AddDblOption("failuredirectedsearchemphasis",
+  AddDblOption("cp:fdsemphasis failuredirectedsearchemphasis",
       "Specifies the number of workers that use failure-directed search once "
       "it has started. The value does not have to be integer. For example, "
       "value 1.5 means that first worker spends 100% of the time by "
       "failure-directed search, second worker 50% and remaining workers 0%. "
-      "Default = auto (depends on actual performance of the failure-directed "
-      "search).",
+      "Default = auto (-1; depends on actual performance of the "
+      "failure-directed search).",
       &IlogCPSolver::GetCPOption<double>, &IlogCPSolver::SetCPOption<double>,
       IloCP::FailureDirectedSearchEmphasis);
 
-  AddStrOption("dumpfile",
+  AddStrOption("tech:dumpfile dumpfile",
       "Specifies the name of a file where to dump the model before "
       "solving it. This file name must have extension ``.cpo``. "
       "Default = \"\" (don't dump the model).",
       &IlogCPSolver::GetFile, &IlogCPSolver::SetFile, DUMP_FILE);
 
-  AddStrOption("exportfile",
+  AddStrOption("tech:writemodel exportfile writeprob writemodel",
       "Specifies the name of a file where to export the model before "
-      "solving it. This file name must have extension ``.cpo``. "
+      "solving it. With CP Optimizer this file name must have extension "
+      "``.cpo``; with the CPLEX optimizer the usual CPLEX formats "
+      "(``.lp``, ``.mps``, ``.sav``) can be used. "
       "Default = \"\" (don't export the model).",
       &IlogCPSolver::GetFile, &IlogCPSolver::SetFile, EXPORT_FILE);
 #endif
 
 #if CPX_VERSION >= 12060200
-  AddIntOption("warninglevel",
+  AddIntOption("tech:warninglevel warninglevel",
       "Specifies the highest warning level to be displayed, all warnings "
       "higher than this level are masked. CP Optimizer warning levels run "
-      "from 1 to 4, so setting this option to 0 turns off all warnings. "
+      "from 1 to 3, so setting this option to 0 turns off all warnings. "
       "Warnings issued may indicate potential errors or inefficiencies in "
       "your model. Default = 2.",
       &IlogCPSolver::GetCPOption<int>, &IlogCPSolver::SetCPOption<int>,
       IloCP::WarningLevel);
 #endif
 
+#if CPX_VERSION >= 12090000
+  AddOption(OptionPtr(new EnumOption("tech:kpidisplay kpidisplay",
+      "How KPIs are displayed in the CP Optimizer log. Possible values:\n"
+      "\n"
+      ".. value-table::\n",
+      cp_, IloCP::KPIDisplay, IloCP::SingleLine, KPI_DISPLAYS)));
+
+  AddOption(OptionPtr(new EnumOption("tech:printmodeldetails printmodeldetailsinmessages",
+      "0 or 1 (default 1):  Whether CP Optimizer prints relevant model "
+      "fragments in error and warning messages.",
+      cp_, IloCP::PrintModelDetailsInMessages, IloCP::Off,
+      ValueArrayRef(FLAGS, 1))));
+
+  AddOption(OptionPtr(new EnumOption("tech:modelanonymizer modelanonymizer",
+      "0 or 1 (default 0):  Whether to anonymize names in models written "
+      "by tech:dumpfile.",
+      cp_, IloCP::ModelAnonymizer, IloCP::Off, ValueArrayRef(FLAGS, 1))));
+
+  AddOption(OptionPtr(new EnumOption("tech:usefilelocations usefilelocations",
+      "0 or 1 (default 1):  Whether source file locations are processed "
+      "and exported by CP Optimizer.",
+      cp_, IloCP::UseFileLocations, IloCP::Off, ValueArrayRef(FLAGS, 1))));
+
+  AddOption(OptionPtr(new EnumOption("tech:logsearchtags logsearchtags",
+      "0 or 1 (default 0):  Whether to display failure tags "
+      "in the CP Optimizer log.",
+      cp_, IloCP::LogSearchTags, IloCP::Off, ValueArrayRef(FLAGS, 1))));
+
+  AddOption(OptionPtr(new EnumOption("cp:fds failuredirectedsearch",
+      "0 or 1 (default 1):  Whether to use failure-directed search.",
+      cp_, IloCP::FailureDirectedSearch, IloCP::Off, ValueArrayRef(FLAGS, 1))));
+
+  AddOption(OptionPtr(new IntOption("cp:fdsmaxmemory failuredirectedsearchmaxmemory",
+      "Maximum memory in bytes available to failure-directed search. "
+      "Default = 104857600 (100 MB).",
+      cp_, IloCP::FailureDirectedSearchMaxMemory)));
+
+  // Conflict refiner (IIS):
+
+  AddIntOption("iis:find iisfind iis",
+      "0 or 1 (default 0):  Whether to run the conflict refiner when the "
+      "problem is infeasible and return an IIS in suffix .iis "
+      "(``mem`` = member, ``pmem`` = possible member, ``non`` = not in the "
+      "IIS) on constraints and, with CP Optimizer, on variables. "
+      "Members among logical constraints are counted in the solve message.",
+      &IlogCPSolver::DoGetIntOption, &IlogCPSolver::SetBoolOption,
+      IlogCPSolver::IIS_FIND);
+
+  AddDblOption("lim:conflicttime conflictrefinertimelimit",
+      "Time limit in seconds for the CP Optimizer conflict refiner. "
+      "Default = no limit.",
+      &IlogCPSolver::GetCPOption<double>, &IlogCPSolver::SetCPOption<double>,
+      IloCP::ConflictRefinerTimeLimit);
+
+  AddOption(OptionPtr(new IntOption("lim:conflictiter conflictrefineriterationlimit",
+      "Limit on the number of iterations of the CP Optimizer conflict "
+      "refiner. Default = no limit.",
+      cp_, IloCP::ConflictRefinerIterationLimit)));
+
+  AddOption(OptionPtr(new IntOption("lim:conflictbranch conflictrefinerbranchlimit",
+      "Limit on the total number of branches of the CP Optimizer conflict "
+      "refiner. Default = no limit.",
+      cp_, IloCP::ConflictRefinerBranchLimit)));
+
+  AddOption(OptionPtr(new IntOption("lim:conflictfail conflictrefinerfaillimit",
+      "Limit on the total number of failures of the CP Optimizer conflict "
+      "refiner. Default = no limit.",
+      cp_, IloCP::ConflictRefinerFailLimit)));
+
+  AddOption(OptionPtr(new EnumOption("iis:onvariables conflictrefineronvariables",
+      "0 or 1 (default 0):  Whether the CP Optimizer conflict refiner "
+      "also refines variable domains.",
+      cp_, IloCP::ConflictRefinerOnVariables, IloCP::Off,
+      ValueArrayRef(FLAGS, 1))));
+#endif
+
   // CPLEX options:
 
-  AddIntOption<IlogCPSolver, int>("mipdisplay",
+  AddIntOption<IlogCPSolver, int>("tech:mipdisplay mipdisplay",
       "Frequency of displaying branch-and-bound information "
-      "(for optimizing integer variables):\n"
+      "(for optimizing integer variables with the CPLEX optimizer):\n"
       "\n"
       "| 0 (default) - never\n"
       "| 1 - each integer feasible solution\n"
-      "| 2 - every ``mipinterval`` nodes\n"
-      "| 3 - every ``mipinterval`` nodes plus information on LP relaxations "
-      "(as controlled by ``display``)\n"
-      "| 4 - same as 2, plus LP relaxation info.\n"
-      "| 5 - same as 2, plus LP subproblem info.\n",
+      "| 2 - every ``tech:mipinterval`` nodes\n"
+      "| 3 - every ``tech:mipinterval`` nodes plus cutting planes info\n"
+      "| 4 - same as 3, plus LP relaxation info\n"
+      "| 5 - same as 4, plus LP subproblem info.\n",
       &IlogCPSolver::GetCPLEXIntOption, &IlogCPSolver::SetCPLEXIntOption,
       IloCplex::MIPDisplay);
 
-  AddIntOption<IlogCPSolver, int>("mipinterval",
-      "Frequency of node logging for mipdisplay 2 or 3. Default = 0.",
+  AddIntOption<IlogCPSolver, int>("tech:mipinterval mipinterval",
+      "Frequency of node logging for tech:mipdisplay >= 2. Default = 0 "
+      "(automatic).",
       &IlogCPSolver::GetCPLEXIntOption, &IlogCPSolver::SetCPLEXIntOption,
       IloCplex::MIPInterval);
 }
@@ -661,6 +938,9 @@ void IlogCPSolver::SetCPLEXIntOption(
     throw InvalidOptionValue(opt, value);
 }
 
+void ReportVariableConflict(Problem &p, IloCP cp, IloNumVarArray vars,
+                            fmt::MemoryWriter &writer);
+
 void IlogCPSolver::SolveWithCP(
     Problem &p, const MPToConcertConverter &converter,
     Stats &stats, SolutionHandler &sh) {
@@ -724,7 +1004,7 @@ void IlogCPSolver::SolveWithCP(
     }
     if (++num_solutions >= solution_limit) {
       if (num_objs > 0) {
-        solve_code = 403;
+        solve_code = sol::LIMIT_FEAS_NUMSOLS;
         status = "solution limit";
       }
       break;
@@ -733,17 +1013,14 @@ void IlogCPSolver::SolveWithCP(
   cp_.endSearch();
   stats.solution_time = GetTimeAndReset(stats.time);
 
+  IloAlgorithm::Status cpstatus = cp_.getStatus();
+  bool has_sol = cpstatus == IloAlgorithm::Feasible
+      || cpstatus == IloAlgorithm::Optimal;
+
   // Convert solution status.
-  if (solve_code == -1) {
-    status = ConvertSolutionStatus(cp_, *interrupter(), solve_code);
-    if (num_objs > 0) {
-      if (cp_.getInfo(IloCP::FailStatus) == IloCP::SearchStoppedByLimit) {
-        solve_code = sol::LIMIT;
-        status = "limit";
-      }
-    } else if (solve_code == sol::UNCERTAIN)
-      solve_code = 0;
-  }
+  if (solve_code == -1)
+    status = ConvertCPStatus(cp_, *interrupter(), num_objs > 0, has_sol,
+                             solve_code);
 
   fmt::MemoryWriter writer;
   writer.write("{}: {}\n", long_name(), status);
@@ -751,8 +1028,7 @@ void IlogCPSolver::SolveWithCP(
   writer.write("{} choice points, {} fails",
       cp_.getInfo(IloCP::NumberOfChoicePoints),
       cp_.getInfo(IloCP::NumberOfFails));
-  IloAlgorithm::Status cpstatus = cp_.getStatus();
-  if (cpstatus == IloAlgorithm::Feasible || cpstatus == IloAlgorithm::Optimal) {
+  if (has_sol) {
     GetSolution(cp_, vars, solution);
     if (num_objs > 0) {
       obj_value = cp_.getObjValue();
@@ -761,8 +1037,148 @@ void IlogCPSolver::SolveWithCP(
   } else {
     solution.clear();
   }
+  if (GetOption(IIS_FIND) != 0 &&
+      (solve_code == sol::INFEASIBLE || solve_code == sol::LIMIT_INF_UNB)) {
+    ReportConflict(p, cp_, converter, writer, false);
+    ReportVariableConflict(p, cp_, vars, writer);
+  }
   sh.HandleSolution(solve_code, writer.c_str(),
       solution.empty() ? 0 : &solution[0], 0, obj_value);
+}
+
+// Run the conflict refiner of the optimizer and report the result.
+template <typename Alg>
+void IlogCPSolver::ReportConflict(
+    Problem &p, Alg alg, const MPToConcertConverter &converter,
+    fmt::MemoryWriter &writer, bool with_var_bounds) {
+  typedef typename Alg::ConflictStatus Status;
+  IloRangeArray cons = converter.cons();
+  IloConstraintArray lcons = converter.lcons();
+  IloNumVarArray vars = converter.vars();
+  IloConstraintArray all(env_);
+  for (IloInt i = 0, n = cons.getSize(); i < n; ++i)
+    all.add(cons[i]);
+  for (IloInt i = 0, n = lcons.getSize(); i < n; ++i)
+    all.add(lcons[i]);
+  // Variable bounds as explicit constraints (used with CPLEX, whose
+  // conflict refiner reports constraints only).
+  int num_vars = p.num_vars();
+  std::vector<IloInt> lb_index(num_vars, -1), ub_index(num_vars, -1);
+  IloConstraintArray bound_cons(env_);
+  IloModel model = converter.model();
+  if (with_var_bounds) {
+    for (int i = 0; i < num_vars; ++i) {
+      if (!alg.isExtracted(vars[i])) continue;
+      double lb = vars[i].getLB(), ub = vars[i].getUB();
+      if (lb > -IloInfinity) {
+        lb_index[i] = all.getSize();
+        IloConstraint c = (vars[i] >= lb);
+        bound_cons.add(c);
+        all.add(c);
+      }
+      if (ub < IloInfinity) {
+        ub_index[i] = all.getSize();
+        IloConstraint c = (vars[i] <= ub);
+        bound_cons.add(c);
+        all.add(c);
+      }
+    }
+    // The refiner only considers extracted constraints:
+    // add the bound constraints to the model temporarily.
+    model.add(bound_cons);
+  }
+  IloNumArray prefs(env_, all.getSize());
+  for (IloInt i = 0, n = all.getSize(); i < n; ++i)
+    prefs[i] = 1.0;
+  bool found = false;
+  try {
+    found = alg.refineConflict(all, prefs) != IloFalse;
+  } catch (const IloException &e) {
+    writer.write("\nConflict refiner failed: {}", e.getMessage());
+    found = false;
+  }
+  if (!found) {
+    writer.write("\nConflict refiner did not find a conflict");
+    if (with_var_bounds) model.remove(bound_cons);
+    bound_cons.endElements();
+    bound_cons.end();
+    all.end();
+    prefs.end();
+    return;
+  }
+  // Suffix .iis on constraints covers algebraic then logical constraints.
+  int num_con = p.num_algebraic_cons(), num_lcon = p.num_logical_cons();
+  int num_lcon_mem = 0, num_con_mem = 0;
+  std::vector<int> con_iis(num_con + num_lcon, IIS_NON);
+  for (int i = 0; i < num_con && i < cons.getSize(); ++i) {
+    con_iis[i] = IISValueFromConflict<Status>(alg.getConflict(cons[i]),
+        Alg::ConflictMember, Alg::ConflictPossibleMember);
+    if (con_iis[i] != IIS_NON) ++num_con_mem;
+  }
+  for (int i = 0; i < num_lcon && i < lcons.getSize(); ++i) {
+    con_iis[num_con + i] = IISValueFromConflict<Status>(
+        alg.getConflict(lcons[i]), Alg::ConflictMember, Alg::ConflictPossibleMember);
+    if (con_iis[num_con + i] != IIS_NON) ++num_lcon_mem;
+  }
+  writer.write("\nIIS: {} algebraic and {} logical constraints in conflict",
+               num_con_mem, num_lcon_mem);
+  try {
+    MutIntSuffix suf = p.suffixes(suf::CON).template Add<int>(
+          "iis", suf::CON | suf::OUTPUT, num_con + num_lcon, IIS_TABLE);
+    for (int i = 0; i < num_con + num_lcon; ++i)
+      suf.set_value(i, con_iis[i]);
+  } catch (const Error &e) {
+    writer.write("\nCannot return suffix .iis on constraints: {}", e.what());
+  }
+  if (with_var_bounds) {
+    int num_var_mem = 0;
+    std::vector<int> var_iis(num_vars, IIS_NON);
+    for (int i = 0; i < num_vars; ++i) {
+      bool lb_in = lb_index[i] >= 0
+          && alg.getConflict(all[lb_index[i]]) != Alg::ConflictExcluded;
+      bool ub_in = ub_index[i] >= 0
+          && alg.getConflict(all[ub_index[i]]) != Alg::ConflictExcluded;
+      var_iis[i] = lb_in && ub_in ? IIS_FIX : lb_in ? IIS_LOW
+                                           : ub_in ? IIS_UPP : IIS_NON;
+      if (var_iis[i] != IIS_NON) ++num_var_mem;
+    }
+    writer.write(", {} variable bounds", num_var_mem);
+    try {
+      MutIntSuffix suf = p.suffixes(suf::VAR).template Add<int>(
+            "iis", suf::VAR | suf::OUTPUT, num_vars, IIS_TABLE);
+      for (int i = 0; i < num_vars; ++i)
+        suf.set_value(i, var_iis[i]);
+    } catch (const Error &e) {
+      writer.write("\nCannot return suffix .iis on variables: {}", e.what());
+    }
+  }
+  if (with_var_bounds) model.remove(bound_cons);
+  bound_cons.endElements();
+  bound_cons.end();
+  all.end();
+  prefs.end();
+}
+
+// Variable conflicts are available from CP Optimizer only.
+void ReportVariableConflict(Problem &p, IloCP cp, IloNumVarArray vars,
+                            fmt::MemoryWriter &writer) {
+  int num_vars = p.num_vars(), num_mem = 0;
+  std::vector<int> var_iis(num_vars, IIS_NON);
+  for (int i = 0; i < num_vars; ++i) {
+    if (!cp.isExtracted(vars[i])) continue;
+    var_iis[i] = IISValueFromConflict<IloCP::ConflictStatus>(
+        cp.getConflict(vars[i]), IloCP::ConflictMember, IloCP::ConflictPossibleMember);
+    if (var_iis[i] != IIS_NON) ++num_mem;
+  }
+  writer.write(", {} variables", num_mem);
+  try {
+    MutIntSuffix suf = p.suffixes(suf::VAR).Add<int>(
+          "iis", suf::VAR | suf::OUTPUT, num_vars, IIS_TABLE);
+    for (int i = 0; i < num_vars; ++i)
+      suf.set_value(i, var_iis[i]);
+  } catch (const Error &e) {
+    writer.write("\nCannot return suffix .iis on variables: {}", e.what());
+  }
 }
 
 void IlogCPSolver::SolveWithCPLEX(
@@ -775,20 +1191,25 @@ void IlogCPSolver::SolveWithCPLEX(
   if (!filenames_[EXPORT_FILE].empty())
     cplex_.exportModel(filenames_[EXPORT_FILE].c_str());
 
+  ApplyCommonOptionsToCPLEX();
+
   stats.setup_time = GetTimeAndReset(stats.time);
   cplex_.solve();
   stats.solution_time = GetTimeAndReset(stats.time);
 
   // Convert solution status.
+  IloAlgorithm::Status cpxstatus = cplex_.getStatus();
+  bool has_sol = cpxstatus == IloAlgorithm::Feasible
+      || cpxstatus == IloAlgorithm::Optimal;
   int solve_code = 0;
   std::string status =
-      ConvertSolutionStatus(cplex_, *interrupter(), solve_code);
+      ConvertCPLEXStatus(cplex_, *interrupter(), has_sol, solve_code);
 
   fmt::MemoryWriter writer;
   writer.write("{}: {}\n", long_name(), status);
   double obj_value = std::numeric_limits<double>::quiet_NaN();
   vector<double> solution, dual_solution;
-  if (solve_code < sol::INFEASIBLE) {
+  if (has_sol) {
     int num_vars = p.num_vars();
     solution.resize(num_vars);
     IloNumVarArray vars = converter.vars();
@@ -813,9 +1234,43 @@ void IlogCPSolver::SolveWithCPLEX(
       writer.write(", objective {}", FormatObjValue(obj_value));
     }
   }
+  if (GetOption(IIS_FIND) != 0 &&
+      (solve_code == sol::INFEASIBLE || solve_code == sol::LIMIT_INF_UNB))
+    ReportConflict(p, cplex_, converter, writer, true);
   sh.HandleSolution(solve_code, writer.c_str(),
       solution.empty() ? 0 : solution.data(),
       dual_solution.empty() ? 0 : dual_solution.data(), obj_value);
+}
+
+void IlogCPSolver::ApplyCommonOptionsToCPLEX() {
+  CPXENVptr env = cplex_.getImpl()->getCplexEnv();
+  IloNum time_limit = cp_.getParameter(IloCP::TimeLimit);
+  if (time_limit < IloInfinity)
+    CPXsetdblparam(env, CPXPARAM_TimeLimit, time_limit);
+  int solution_limit = GetOption(SOLUTION_LIMIT);
+  if (solution_limit > 0)
+    CPXsetintparam(env, CPXPARAM_MIP_Limits_Solutions, solution_limit);
+  IloInt workers = cp_.getParameter(IloCP::Workers);
+  if (workers > 0)
+    CPXsetintparam(env, CPXPARAM_Threads, static_cast<int>(workers));
+  IloInt seed = cp_.getParameter(IloCP::RandomSeed);
+  if (seed != cp_defaults_.seed)
+    CPXsetintparam(env, CPXPARAM_RandomSeed, static_cast<int>(seed));
+  IloNum opttol = cp_.getParameter(IloCP::OptimalityTolerance);
+  if (opttol != cp_defaults_.opttol)
+    CPXsetdblparam(env, CPXPARAM_MIP_Tolerances_AbsMIPGap, opttol);
+  IloNum relopttol = cp_.getParameter(IloCP::RelativeOptimalityTolerance);
+  if (relopttol != cp_defaults_.relopttol)
+    CPXsetdblparam(env, CPXPARAM_MIP_Tolerances_MIPGap, relopttol);
+  if (cp_.getParameter(IloCP::LogVerbosity) != IloCP::Quiet) {
+    int level = cp_.getParameter(IloCP::LogVerbosity) >= IloCP::Normal ? 2 : 1;
+    int mip_display = 0;
+    CPXgetintparam(env, CPXPARAM_MIP_Display, &mip_display);
+    if (mip_display == 0)
+      CPXsetintparam(env, CPXPARAM_MIP_Display, level);
+    CPXsetintparam(env, CPXPARAM_Simplex_Display, level);
+    CPXsetintparam(env, CPXPARAM_Barrier_Display, level);
+  }
 }
 
 void IlogCPSolver::Solve(Problem &p, SolutionHandler &sh) {
