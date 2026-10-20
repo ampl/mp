@@ -1866,10 +1866,11 @@ void CplexBackend::setSolutionMethod() {
     + bool(storedOptions_.fDual_)
     + bool(storedOptions_.fBenders_)
     + bool(storedOptions_.fNetwork_)
-    + bool(storedOptions_.fSifting_);
+    + bool(storedOptions_.fSifting_)
+    + bool(storedOptions_.fConcurrent_);
   if (nFlags>= 2) 
     AddWarning("Ambiguous solving method",
-      "Only one of barrier/primalopt/dualopt/network/sifting/benders should be specified.");
+      "Only one of barrier/primalopt/dualopt/network/sifting/concurrent/benders should be specified.");
   int flagMethod = CPX_ALG_AUTOMATIC;   // the flags apply to root and nodes
   if (nFlags >= 1)                  // 2nd-lowest priority
   {
@@ -1883,11 +1884,15 @@ void CplexBackend::setSolutionMethod() {
       flagMethod = CPX_ALG_NET;
     if (storedOptions_.fSifting_)
       flagMethod = CPX_ALG_SIFTING;
+    if (storedOptions_.fConcurrent_)
+      flagMethod = CPX_ALG_CONCURRENT;
     storedOptions_.cpxMethod_ = flagMethod;
   }
   if (storedOptions_.algMethod_)   // Highest priority
     storedOptions_.cpxMethod_ = storedOptions_.algMethod_;
   auto nodeMethod = flagMethod;
+  if (CPX_ALG_CONCURRENT == nodeMethod)   // not allowed for nodes
+    nodeMethod = CPX_ALG_AUTOMATIC;
   if (storedOptions_.nodeMethod_)  // Highest priority
     nodeMethod = storedOptions_.nodeMethod_;
   if (IsMIP()) {
@@ -2087,7 +2092,7 @@ void CplexBackend::InitCustomOptions() {
                   "constraints), all settings are treated as 4. See also mip:nodemethod."
                   "\n"
                   "Overrides netopt option and "
-                  "primalopt/dualopt/barrier/network/sifting flags.",
+                  "primalopt/dualopt/barrier/network/sifting/concurrent flags.",
                   storedOptions_.algMethod_, values_method);
 
   AddToOptionDescription("alg:start",
@@ -2118,6 +2123,11 @@ void CplexBackend::InitCustomOptions() {
 	AddStoredOption("alg:dualopt alg:dual dualopt tranopt",
     "Solve (MIP node) LPs by dual simplex method.",
     storedOptions_.fDual_);
+
+  AddStoredOption("alg:concurrent concurrentopt concurrent",
+    "Solve LPs and MIP root relaxations with the concurrent optimizer "
+    "(several algorithms in parallel). Synonym for alg:method=6.",
+    storedOptions_.fConcurrent_);
 
   AddStoredOption("alg:sifting sifting siftopt siftingopt",
     "Solve (MIP node) LPs by sifting method.",

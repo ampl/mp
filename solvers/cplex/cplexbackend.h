@@ -313,6 +313,7 @@ private:
     bool fNetwork_ = false;
     int netopt_ = 0;
     bool fSifting_ = false;
+    bool fConcurrent_ = false;
     bool fBenders_ = false;
 
     int cuts_ = -2;
