@@ -5,6 +5,8 @@
 
 #include "gcgmpcommon.h"
 #include "gcg/gcgplugins.h"
+#include "gcg/struct_gcg.h"      // GCGgetOrigprob() is a macro in release
+                                 // builds only; the library exports no function
 
 static
 SCIP_DECL_PROBDELORIG(probdataDelOrigNl)
@@ -40,7 +42,7 @@ void GcgCommon::OpenSolver() {
   // initialize SCIP
   status = GCGcreate(&gcg);
   setGCG(gcg);
-  scip = GCGgetOrigprob(gcg);
+  scip = gcg->origprob;
   setSCIP(scip); // Assign it
 
   // include default GCG plugins
