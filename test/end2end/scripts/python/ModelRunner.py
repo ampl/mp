@@ -194,7 +194,7 @@ class ModelRunner(object):
                       if EFM in stats:
                         if EM in stats:
                             stats.setdefault(EFM, []).append( stats[EM] )
-                      if keep_output:
+                      if keep_output and hasattr(r, "get_output"):
                          stats["output"]=r.get_output()
                       self._runs[i][-1] = stats
                       if exporter:
