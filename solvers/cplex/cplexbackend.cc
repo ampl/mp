@@ -3,7 +3,9 @@
 #include <climits>
 #include <cfloat>
 #include <cassert>
-#include <fstream> 
+#include <fstream>
+#include <cctype>
+#include <iterator>
 
 #include "mp/env.h"
 #include "mp/flat/model_api_base.h"
@@ -2060,7 +2062,7 @@ void CplexBackend::InitCustomOptions() {
   AddToOptionDescription("alg:start",
                          "For IBM ILOG CPLEX, choices can be refined via alg:start:advance.");
 
-  AddSolverOption("alg:start:advance alg:start:advanced advance advind",
+  AddCplexParamOption("alg:start:advance alg:start:advanced advance advind",
                   "If set to 1 or 2, this parameter specifies that CPLEX should use advanced "
                   "starting information when it initiates optimization. "
                   "Exact meaning differs by problem type. Here for LP:"
@@ -2098,25 +2100,25 @@ void CplexBackend::InitCustomOptions() {
                   "\n.. value-table::\n",
                   storedOptions_.netopt_, values_netopt);
 
-  AddSolverOption("tech:netdisplay netdisplay",
+  AddCplexParamOption("tech:netdisplay netdisplay",
                   "Decides what CPLEX reports to the screen during network optimization:\n"
                   "\n.. value-table::\n",
                   CPXPARAM_Network_Display,
                   values_netdisplay, 2);
 
-  AddSolverOption("alg:netfeasibility netfeasibility netfeastol",
+  AddCplexParamOption("alg:netfeasibility netfeasibility netfeastol",
                   "Feasibility tolerance for network primal optimization. "
                   "Can be any number from 1e-11 to 1e-1; default: 1e-6.",
                   CPXPARAM_Network_Tolerances_Feasibility,
                   1e-11, 1e-1);
 
-  AddSolverOption("alg:netfind netfind netfinder",
+  AddCplexParamOption("alg:netfind netfind netfinder",
                   "Level of network extraction for network simplex optimization:\n"
                   "\n.. value-table::\n",
                   CPXPARAM_Network_NetFind,
                   values_netfind, 2);
 
-  AddSolverOption("alg:netoptimality netoptimality",
+  AddCplexParamOption("alg:netoptimality netoptimality",
                   "Specifies the optimality tolerance for network optimization; "
                   "that is, the amount a reduced cost may violate the criterion "
                   "for an optimal solution. "
@@ -2124,7 +2126,7 @@ void CplexBackend::InitCustomOptions() {
                   CPXPARAM_Network_Tolerances_Optimality,
                   1e-11, 1e-1);
 
-  AddSolverOption("alg:netpricing netpricing",
+  AddCplexParamOption("alg:netpricing netpricing",
                   "Pricing algorithm for network simplex optimization:\n"
                   "\n.. value-table::\n",
                   CPXPARAM_Network_Pricing,
@@ -2137,32 +2139,32 @@ void CplexBackend::InitCustomOptions() {
     storedOptions_.fBenders_);
   
 
-  AddSolverOption("alg:benders_worker benders_worker",
+  AddCplexParamOption("alg:benders_worker benders_worker",
     "Designate the algorithm that CPLEX applies to solve the "
     "subproblems when using Benders decomposition:\n"
     "\n.. value-table::\n",
     CPXPARAM_Benders_WorkerAlgorithm,
     values_nodemethod, 0);
 
-  AddSolverOption("alg:benders_feascuttol benders_feascut_tol",
+  AddCplexParamOption("alg:benders_feascuttol benders_feascut_tol",
     "Tolerance for violations of feasibility cuts in Benders "
     "algorithm (default 1e-6; must be in [1e-9, 0.1]).",
     CPXPARAM_Benders_Tolerances_FeasibilityCut,
     1e-9, 0.1);
 
-  AddSolverOption("alg:benders_optcut_tol benders_optcut_tol",
+  AddCplexParamOption("alg:benders_optcut_tol benders_optcut_tol",
     "Tolerance for violations of optimality cuts in Benders "
     "algorithm (default 1e-6; must be in [1e-9, 0.1]).",
     CPXPARAM_Benders_Tolerances_OptimalityCut,
     1e-9, 0.1);
 
-  AddSolverOption("alg:benders_strategy benders_strategy",
+  AddCplexParamOption("alg:benders_strategy benders_strategy",
     "How to decompose the problem for Benders algorithm:\n"
     "\n.. value-table::\n",
     CPXPARAM_Benders_Strategy,
     values_benders_strategy, 0);
 
-  AddSolverOption("alg:feastol feastol feasibility",
+  AddCplexParamOption("alg:feastol feastol feasibility",
     "Primal feasibility tolerance (default 1e-6, possible "
     "values are between 1e-9 and 0.1).",
     CPXPARAM_Simplex_Tolerances_Feasibility, 1e-9, 1e-1);
@@ -2170,20 +2172,20 @@ void CplexBackend::InitCustomOptions() {
 
 
 
-  AddSolverOption("lp:crash crash",
+  AddCplexParamOption("lp:crash crash",
     "Crash strategy (used to obtain starting basis in simplex); "
     "possible values = -1, 0, 1; default = 1. "
     "The best setting is problem-dependent and can only be found "
     "by experimentation. 0 completely ignores the objective.",
     CPXPARAM_Simplex_Crash, -1, 1);
 
-  AddSolverOption("lp:dgradient dgradient",
+  AddCplexParamOption("lp:dgradient dgradient",
     "Pricing algorithm for dual simplex (default 0):\n"
     "\n.. value-table::\n",
     CPXPARAM_Simplex_DGradient, 
     values_dgradient, 0);
 
-  AddSolverOption("lp:doperturb doperturb perturb",
+  AddCplexParamOption("lp:doperturb doperturb perturb",
     "Whether to perturb the problem initially when using simplex "
     "(by the amount given by lp:perturb); setting it "
     "to 1 is occasionally helpful for highly degenerate problems:\n"
@@ -2191,18 +2193,18 @@ void CplexBackend::InitCustomOptions() {
     CPXPARAM_Simplex_Perturbation_Indicator,
     values_01_noyes_0default_, 0);
 
-  AddSolverOption("lp:perturblim perturblim perturblimit limitperturb",
+  AddCplexParamOption("lp:perturblim perturblim perturblimit limitperturb",
     "Number of stalled simplex iterations before the "
     "problem is perturbed; default=0 => automatic.",
     CPXPARAM_Simplex_Limits_Perturbation, 0, CPXINT_MAX);
 
-  AddSolverOption("lp:perturb perturbation perturbconst",
+  AddCplexParamOption("lp:perturb perturbation perturbconst",
     "Amount by which to perturb variable bounds when "
     "perturbing problems (see \"lp:doperturb\"); default=1e-6, "
     "must be in [1e-8, 1e75].",
     CPXPARAM_Simplex_Perturbation_Constant, 1e-8, DBL_MAX);
 
-  AddSolverOption("lp:opttol optimality opttol optimalitytolerance",
+  AddCplexParamOption("lp:opttol optimality opttol optimalitytolerance",
     "Dual optimality tolerance: simplex will stop when all "
     "reduced costs are smaller than this value in the improving "
     "direction; default=1e-6.",
@@ -2213,98 +2215,98 @@ void CplexBackend::InitCustomOptions() {
   
   // Hidden param
   #define CPX_PARAM_EPSAGG 1055
-  AddSolverOption("cut:aggtol aggtol",
+  AddCplexParamOption("cut:aggtol aggtol",
     "Pivot tolerance for aggregating (undocumented CPLEX parameter 1055).  "
     "It seldom needs fiddling.  Default = .05; must be in [1e-10, .99].",
     CPX_PARAM_EPSAGG, 1e-10, .99);
 
-  AddSolverOption("cut:aggforcut aggforcut aggcutlim",
+  AddCplexParamOption("cut:aggforcut aggforcut aggcutlim",
     "Bound on the number of constraints aggregated to generate flow-cover "
     "and mixed-integer-rounding cuts (default 3).",
     CPXPARAM_MIP_Limits_AggForCut, 0, CPXINT_MAX);
 
 
-  AddSolverOption("cut:bqp bqpcuts",
+  AddCplexParamOption("cut:bqp bqpcuts",
     "Whether to enable Boolean Quadric Polytope cut generation for nonconvex QP and "
     "MIQP problems, choices as for \"cut:cuts\".",
     CPXPARAM_MIP_Cuts_BQP, values_bqpcuts, 0);
 
-  AddSolverOption("cut:clique cliquecuts cliques",
+  AddCplexParamOption("cut:clique cliquecuts cliques",
     "Whether to use clique cuts in solving MIPs, choices as for \"cut:cuts\".",
     CPXPARAM_MIP_Cuts_Cliques, values_bqpcuts, 0);
 
-  AddSolverOption("cut:cover covercuts covers",
+  AddCplexParamOption("cut:cover covercuts covers",
     "Whether to use cover cuts in solving MIPs, choices as for \"cut:cuts\".",
     CPXPARAM_MIP_Cuts_Covers, values_bqpcuts, 0);
 
-  AddSolverOption("cut:disj disjcuts",
+  AddCplexParamOption("cut:disj disjcuts",
     "Whether to use disjunctive cuts in solving MIPs, choices as for \"cut:cuts\".",
     CPXPARAM_MIP_Cuts_Disjunctive, values_bqpcuts, 0);
 
-  AddSolverOption("cut:eachcutlim eachcutlim",
+  AddCplexParamOption("cut:eachcutlim eachcutlim",
     "Limit on the number of cuts of each type; default=2100000000.", 
     CPXPARAM_MIP_Limits_EachCutLimit, 0, CPXINT_MAX);
 
-  AddSolverOption("cut:flowcover flowcovercuts flowcuts",
+  AddCplexParamOption("cut:flowcover flowcovercuts flowcuts",
     "Whether to use flowcover cuts in solving MIPs:\n"
     "\n.. value-table::\n", 
     CPXPARAM_MIP_Cuts_FlowCovers, values_cuts2, 0);
 
 
-  AddSolverOption("cut:flowpath flowpathcuts",
+  AddCplexParamOption("cut:flowpath flowpathcuts",
     "Whether to use flow path cuts in solving MIPs, choices as for \"cut:flowcover\".",
     CPXPARAM_MIP_Cuts_PathCut, values_cuts2, 0);
 
-  AddSolverOption("cut:frac gomory fraccuts",
+  AddCplexParamOption("cut:frac gomory fraccuts",
     "Whether to use fractional Gomory cuts in solving MIPs, choices as for \"cut:flowcover\".",
     CPXPARAM_MIP_Cuts_Gomory, values_cuts2, 0);
 
-  AddSolverOption("cut:fracpass fracpass gomorypass fractionalcuts",
+  AddCplexParamOption("cut:fracpass fracpass gomorypass fractionalcuts",
     "Limit on number of passes to generate MIP fractional Gomory cuts, default=0 => automatic choice, "
     "positive = at most that many passes.",
     CPXPARAM_MIP_Limits_GomoryPass, 0, CPXINT_MAX);
 
-  AddSolverOption("cut:fraccand fraccand gomorycand",
+  AddCplexParamOption("cut:fraccand fraccand gomorycand",
     "Limit on number of candidate variables when generating Gomory cuts "
     "for MIP problems; default=200.",
     CPXPARAM_MIP_Limits_GomoryCand, 1, CPXINT_MAX);
 
 
-  AddSolverOption("cut:gubcover gubcover gubcuts",
+  AddCplexParamOption("cut:gubcover gubcover gubcuts",
     "Whether to use fractional GUB cuts in solving MIPs, choices as for \"cut:flowcover\".",
     CPXPARAM_MIP_Cuts_GUBCovers, values_cuts2, 0);
 
-  AddSolverOption("cut:implied implied impliedcuts",
+  AddCplexParamOption("cut:implied implied impliedcuts",
     "Whether to use implied cuts in solving MIPs, choices as for \"cut:flowcover\".",
     CPXPARAM_MIP_Cuts_Implied, values_cuts2, 0);
 
-  AddSolverOption("cut:liftandproject liftandproject liftandprojectcuts splitcuts",
+  AddCplexParamOption("cut:liftandproject liftandproject liftandprojectcuts splitcuts",
     "Whether to use lift and project cuts in solving MIPs, choices as for \"cut:cuts\".",
     CPXPARAM_MIP_Cuts_LiftProj, values_bqpcuts, 0);
 
-  AddSolverOption("cut:localimplied localimplied localimpliedcuts",
+  AddCplexParamOption("cut:localimplied localimplied localimpliedcuts",
     "Whether to use locally valid implied cuts in solving MIPs, choices as for \"cut:cuts\".",
     CPXPARAM_MIP_Cuts_LocalImplied, values_bqpcuts, 0);
 
-  AddSolverOption("cut:mcf mcfcuts cut:mfc mfccuts",
+  AddCplexParamOption("cut:mcf mcfcuts cut:mfc mfccuts",
     "Whether to use multi-commodity flow (MCF) cuts in solving MIPs, choices as for \"cut:flowcover\". "
     "(cut:mfc/mfccuts are legacy spellings.)",
     CPXPARAM_MIP_Cuts_MCFCut, values_cuts2, 0);
 
-  AddSolverOption("cut:mir mircuts",
+  AddCplexParamOption("cut:mir mircuts",
     "Whether to use mixed-integer rounding (MIR) cuts in solving MIPs, choices as for \"cut:flowcover\".",
     CPXPARAM_MIP_Cuts_MIRCut, values_cuts2, 0);
 
-  AddSolverOption("cut:node nodecuts",
+  AddCplexParamOption("cut:node nodecuts",
     "Decides whether or not cutting planes are separated at the nodes of the branch-and-bound tree, "
     "choices as for \"cut:cuts\".",
     CPXPARAM_MIP_Cuts_Nodecuts, values_bqpcuts, 0);
 
-  AddSolverOption("cut:rlt rltcuts",
+  AddCplexParamOption("cut:rlt rltcuts",
     "Whether to use the Relaxation Linearization Technique (RLT) to generate cuts in solving MIPs, choices as for \"cut:cuts\".",
     CPXPARAM_MIP_Cuts_RLT, values_bqpcuts, 0);
 
-  AddSolverOption("cut:zerohalf zerohalfcuts",
+  AddCplexParamOption("cut:zerohalf zerohalfcuts",
     "Whether to use zero-half cuts in solving MIPs, choices as for \"cut:flowcover\".",
     CPXPARAM_MIP_Cuts_ZeroHalfCut, values_cuts2, 0);
 
@@ -2318,12 +2320,12 @@ void CplexBackend::InitCustomOptions() {
     "\n.. value-table::\n",
     storedOptions_.cuts_, values_bqpcuts);
 
-  AddSolverOption("cut:factor cutsfactor cutfactor",
+  AddCplexParamOption("cut:factor cutsfactor cutfactor",
     " Limit on MIP cuts added:\n"
     "\n.. value-table::\n",
     CPXPARAM_MIP_Limits_CutsFactor, values_cutsfactor, 0);
 
-  AddSolverOption("cut:passes cutpasses cutpass",
+  AddCplexParamOption("cut:passes cutpasses cutpass",
     "Maximum number of cutting-plane passes during root-cut generation:\n"
     "\n.. value-table::\n", 
     CPXPARAM_MIP_Limits_CutPasses, values_cutpasses, 0);
@@ -2335,14 +2337,14 @@ void CplexBackend::InitCustomOptions() {
 
   // MIP related options
 
-  AddSolverOption("mip:backtrack backtrack",
+  AddCplexParamOption("mip:backtrack backtrack",
     "Tolerance (>0, default 0.9999) for when to backtrack during "
     "branch & bound.  Low values tend to pure best-bound search. "
     "High values(~1) tend to pure depth-first search. Values less "
     "than the default are often good when subproblems are expensive.",
     CPXPARAM_MIP_Strategy_Backtrack, 0.0, 1.0);
 
-  AddSolverOption("mip:bbinterval bbinterval",
+  AddCplexParamOption("mip:bbinterval bbinterval",
     "For nodeselect = 2, select the best-bound node, rather than the "
     "best - estimate node, every bbinterval iterations (default 7); "
     "0 means always use the best-estimate node.",
@@ -2356,18 +2358,18 @@ void CplexBackend::InitCustomOptions() {
     "for maximization problems.",
     storedOptions_.bestnode_, 0, 1);
 
-  AddSolverOption("mip:boundstr boundstr bndstrenind",
+  AddCplexParamOption("mip:boundstr boundstr bndstrenind",
     "Whether to apply bound strengthening in mixed integer programs (MIPs):\n"
     "\n.. value-table::\n",
     CPXPARAM_Preprocessing_BoundStrength, 
     values_autonoyes_, -1);
 
-  AddSolverOption("mip:branchdir branchdir branch",
+  AddCplexParamOption("mip:branchdir branchdir branch",
     "Which child node to explore first when branching:\n"
     "\n.. value-table::",
     CPXPARAM_MIP_Strategy_Branch, values_branchdir, 0);
 
-  AddSolverOption("mip:emphasis mipemphasis mip:focus mipfocus",
+  AddCplexParamOption("mip:emphasis mipemphasis mip:focus mipfocus",
     "MIP solution strategy:\n" "\n.. value-table::\n",
     CPXPARAM_Emphasis_MIP, values_mipemphasis, 0);
 
@@ -2386,13 +2388,13 @@ void CplexBackend::InitCustomOptions() {
                   "values are written.",
                   storedOptions_.paramWrite_);
 
-  AddSolverOption("tech:memoryemphasis memoryemphasis",
+  AddCplexParamOption("tech:memoryemphasis memoryemphasis",
                   "0*/1: Whether to compress data to reduce the memory used, "
                   "which may make some information (e.g., basis condition) "
                   "unavailable.",
                   CPXPARAM_Emphasis_Memory, 0, 1);
 
-  AddSolverOption(
+  AddCplexParamOption(
       "alg:numericalemphasis numfocus numericemphasis numericalemphasis "
       "alg:numericfocus numericfocus",
       "0*/1: Whether to try to improve numerical accuracy (at a "
@@ -2400,40 +2402,40 @@ void CplexBackend::InitCustomOptions() {
       CPXPARAM_Emphasis_Numerical, 0, 1);
 
 
-  AddSolverOption("mip:gapabs mipgapabs absmipgap",
+  AddCplexParamOption("mip:gapabs mipgapabs absmipgap",
     "Max. absolute MIP optimality gap (default 1e-6; must be in [0, 1e20]).",
     CPXPARAM_MIP_Tolerances_AbsMIPGap, 0.0, 1e20);
 
-  AddSolverOption("mip:gap mipgap",
+  AddCplexParamOption("mip:gap mipgap",
     "Max. relative MIP optimality gap (default 1e-4; must be in [0, 1]).",
     CPXPARAM_MIP_Tolerances_MIPGap, 0.0, 1.0);
 
 
-  AddSolverOption("mip:fpheur fpheur",
+  AddCplexParamOption("mip:fpheur fpheur",
     "Whether to use the feasibility pump heuristic on MIP "
     "problems:\n\n.. value-table::\n",
     CPXPARAM_MIP_Strategy_FPHeur, values_fpheur, 0);
 
-  AddSolverOption("mip:inttol inttol intfeastol integrality",
+  AddCplexParamOption("mip:inttol inttol intfeastol integrality",
     "Feasibility tolerance for integer variables (default 1e-05, "
     "must be in [0.0, 0.5])",
     CPXPARAM_MIP_Tolerances_Integrality, 0.0, 0.5);
 
 
-  AddSolverOption("mip:nodefile nodefile",
+  AddCplexParamOption("mip:nodefile nodefile",
     "Whether to save node information in a temporary file:\n"
     "\n.. value-table::\n", CPXPARAM_MIP_Strategy_File, 
     values_nodefile, 0);
 
 
 
-  AddSolverOption("mip:search mipsearch",
+  AddCplexParamOption("mip:search mipsearch",
     "Search strategy for mixed-integer problems:\n"
     "\n.. value-table::\n",
     CPXPARAM_MIP_Strategy_Search, values_mipsearch, 0);
   
 
-  AddSolverOption("mip:submipalg submipalg",
+  AddCplexParamOption("mip:submipalg submipalg",
     "Choice of algorithm used to solve the subproblems of a subMIP: "
     "not a subproblem, but an auxiliary MIP that CPLEX sometimes forms "
     "and solves, e.g., when dealing with a partial MIP start, "
@@ -2443,14 +2445,14 @@ void CplexBackend::InitCustomOptions() {
     "\n.. value-table::\n",
     CPXPARAM_MIP_SubMIP_SubAlg, values_nodemethod, 0);
 
-  AddSolverOption("mip:submipscale submipscale",
+  AddCplexParamOption("mip:submipscale submipscale",
     "Rarely used choice of scaling for auxiliary subMIPs "
     "(described with \"submipalg\"):\n"
     "\n.. value-table::\n", 
     CPXPARAM_MIP_SubMIP_Scale, values_prescale, 0);
 
 
-  AddSolverOption("mip:submipstartalg submipstartalg",
+  AddCplexParamOption("mip:submipstartalg submipstartalg",
     "Rarely used choice of algorithm for the initial relaxation of a "
     "subMIP (described with \"submipalg\"); for MIQPs, 5 is treated as 0; "
     "only 0 is allowed for MIQCPs:\n"
@@ -2470,22 +2472,22 @@ void CplexBackend::InitCustomOptions() {
                   "primalopt/dualopt/barrier/network/sifting flags.",
                   storedOptions_.nodeMethod_, values_nodemethod);
 
-  AddSolverOption("mip:nodesel nodesel nodeselect",
+  AddCplexParamOption("mip:nodesel nodesel nodeselect",
     "Strategy for choosing next node while optimizing\n\
 		integer variables:\n\n.. value-table::",
     CPXPARAM_MIP_Strategy_NodeSelect, values_nodeselect, 0);
 
-  AddSolverOption("mip:varbranch varbranch varsel varselect" ,
+  AddCplexParamOption("mip:varbranch varbranch varsel varselect" ,
     "MIP branch variable selection strategy:\n"
     "\n.. value-table::\n", 
     CPXPARAM_MIP_Strategy_VariableSelect, values_varselect, 0);
 
-  AddSolverOption("bar:baralg baralg",
+  AddCplexParamOption("bar:baralg baralg",
     "How to start the barrier algorithm:"
     "\n\n.. value-table::\n",
     CPXPARAM_Barrier_Algorithm, values_baralg, 0);
 
-  AddSolverOption("bar:comptol comptol",
+  AddCplexParamOption("bar:comptol comptol",
     "Convergence tolerance for barrier algorithm: "
 		"the algorithm stops when the relative "
 		"complementarity is < bartol (default 1e-8).",
@@ -2495,39 +2497,39 @@ void CplexBackend::InitCustomOptions() {
     "How to transform a barrier solution to a basic one:\n"
    "\n.. value-table::\n", storedOptions_.crossover_, values_barcrossover);
 
-  AddSolverOption("bar:corrections barcorr barmaxcor",
+  AddCplexParamOption("bar:corrections barcorr barmaxcor",
     "Limit on centering corrections in each iteration of the barrier algorithm:"
     "\n\n.. value-table::\n",
     CPXPARAM_Barrier_Limits_Corrections, values_barmaxcor, -1);
 
-  AddSolverOption("bar:dense bar:densecol dense densecol",
+  AddCplexParamOption("bar:dense bar:densecol dense densecol",
     "If positive, minimum nonzeros in a column for the barrier algorithm "
     "to consider the column dense. If 0 (default), this tolerance is "
     "selected automatically.", 
     CPXPARAM_Barrier_ColNonzeros, 0, INT_MAX);
 
 
-  AddSolverOption("tech:modisplay modisplay multiobjdisplay",
+  AddCplexParamOption("tech:modisplay modisplay multiobjdisplay",
     "Level of display during multiobjective optimization:"
     "\n\n.. value-table::\n",
     CPXPARAM_MultiObjective_Display, values_modisplay, 1);
 
-  AddSolverOption("bar:growth bargrowth growth",
+  AddCplexParamOption("bar:growth bargrowth growth",
     "Tolerance for detecting unbounded faces in the barrier algorithm: "
     "higher values make the test for unbounded faces harder to satisfy "
     "(default 1e12; must be >= 1).",
     CPXPARAM_Barrier_Limits_Growth, 1.0, 1e75);
 
-  AddSolverOption("bar:iterlim bariterlim",
+  AddCplexParamOption("bar:iterlim bariterlim",
     "Maximum barrier iterations allowed (default: no limit).",
     CPXPARAM_Barrier_Limits_Iteration, 0, CPXINT_MAX);
 
-  AddSolverOption("bar:objrange barobjrange",
+  AddCplexParamOption("bar:objrange barobjrange",
     "Limit on the absolute objective value before the barrier algorithm "
     "considers the problem unbounded (default 1e20).",
     CPXPARAM_Barrier_Limits_ObjRange, 0.0, 1e75);
 
-  AddSolverOption("bar:start barstart barstartalg",
+  AddCplexParamOption("bar:start barstart barstartalg",
     "Barrier starting-point algorithm:"
     "\n\n.. value-table::\n",
     CPXPARAM_Barrier_StartAlg, values_barstart, 1);
@@ -2537,10 +2539,10 @@ void CplexBackend::InitCustomOptions() {
     "\n.. value-table::\n", storedOptions_.solutionType_, values_solutiontype);
 
   // Solution pool controls
-  AddSolverOption("sol:poolgap ams_eps poolgap",
+  AddCplexParamOption("sol:poolgap ams_eps poolgap",
     "Relative tolerance for reporting alternate MIP solutions "
     "(default: 1e75).", CPX_PARAM_SOLNPOOLGAP, 0.0, DBL_MAX);
-  AddSolverOption("sol:poolgapabs ams_epsabs poolagap poolgapabs",
+  AddCplexParamOption("sol:poolgapabs ams_epsabs poolagap poolgapabs",
     "Absolute tolerance for reporting alternate MIP solutions "
     "(default: 1e75).",CPX_PARAM_SOLNPOOLAGAP, 0.0, DBL_MAX);
 
@@ -2565,16 +2567,16 @@ void CplexBackend::InitCustomOptions() {
   AddOptionSynonyms_Inline_Front("ams_stub", "sol:stub");
   AddOptionSynonyms_Inline_Front("poolstub", "sol:stub");
 
-  AddSolverOption("sol:poollimit ams_limit poolcapacity poollimit solnlimit",
+  AddCplexParamOption("sol:poollimit ams_limit poolcapacity poollimit solnlimit",
     "Limit on the number of alternate MIP solutions written. Default: 2100000000.",
     CPX_PARAM_SOLNPOOLCAPACITY, 1, 2100000000);
 
-  AddSolverOption("sol:poolpopulatelim populatelim",
+  AddCplexParamOption("sol:poolpopulatelim populatelim",
     "Limit on number of solutions added to the solution pool by the populate algorithm. "
     "Default: 20.",
     CPX_PARAM_POPULATELIM, 1, CPXINT_MAX);
 
-  AddSolverOption("sol:poolreplace poolreplace",
+  AddCplexParamOption("sol:poolreplace poolreplace",
     "Policy for replacing solutions in the solution pool if "
     "more than poolcapacity solutions are generated:\n"
     "\n.. value-table::\n",
@@ -2595,7 +2597,7 @@ void CplexBackend::InitCustomOptions() {
     "sol:pool... parameters. Value 1 implied by sol:stub.");
   // end solution pool controls
 
-  AddSolverOption("tech:auxrootthreads auxrootthreads",
+  AddCplexParamOption("tech:auxrootthreads auxrootthreads",
     "Controls the number of threads used for auxiliary chores when solving "
     "the root node of a MIP problem. When N threads are available (possibly "
     "limited by \"threads\"), auxrootthreads must be less than N.\n"
@@ -2603,7 +2605,7 @@ void CplexBackend::InitCustomOptions() {
     CPXPARAM_MIP_Limits_AuxRootThreads, auxrootthreads_values_, 0);
 
   
-  AddSolverOption("alg:conflictalg conflictalg",
+  AddCplexParamOption("alg:conflictalg conflictalg",
     "Choice of algorithm used by the CPLEX's conflict "
 		"refiner:\n"
     "\n.. value-table::\n"
@@ -2614,7 +2616,7 @@ void CplexBackend::InitCustomOptions() {
     "constraints).",
     CPXPARAM_Conflict_Algorithm, conflictalg_values, 0);
 
-  AddSolverOption("tech:conflictdisplay conflictdisplay",
+  AddCplexParamOption("tech:conflictdisplay conflictdisplay",
     "What to report when the conflict finder is working:\n"
     "\n.. value-table::\n",
     CPXPARAM_Conflict_Display, conflictdisplay_values, 0);
@@ -2645,22 +2647,22 @@ void CplexBackend::InitCustomOptions() {
     "\n.. value-table::\n",
     storedOptions_.outlev_, outlev_values_);
 
-  AddSolverOption("tech:bardisplay bardisplay",
+  AddCplexParamOption("tech:bardisplay bardisplay",
     "Specifies how much the barrier algorithm chatters:\n"
     "\n.. value-table::\n",
     CPX_PARAM_BARDISPLAY, bardisplay_values_, 0);
 
-  AddSolverOption("tech:lpdisplay display lpdisplay",
+  AddCplexParamOption("tech:lpdisplay display lpdisplay",
     "Frequency of displaying LP progress information:\n"
     "\n.. value-table::\n",
     CPX_PARAM_SIMDISPLAY, display_values_, 0);
 
-  AddSolverOption("tech:mipdisplay mipdisplay",
+  AddCplexParamOption("tech:mipdisplay mipdisplay",
     "Frequency of displaying branch-and-bound information:\n"
     "\n.. value-table::\n",
     CPX_PARAM_MIPDISPLAY, mipdisplay_values_, 0);
 
-    AddSolverOption("tech:mipinterval mipinterval",
+    AddCplexParamOption("tech:mipinterval mipinterval",
       "Frequency of node logging for \"tech::mipdisplay\" >=2:\n"
       "\n.. value-table::\n",
       CPX_PARAM_MIPINTERVAL, mipinterval_values_, 0);
@@ -2668,13 +2670,13 @@ void CplexBackend::InitCustomOptions() {
   AddStoredOption("tech:logfile logfile",
     "Log file name.", storedOptions_.logFile_);
 
-  AddSolverOption("tech:seed seed",
+  AddCplexParamOption("tech:seed seed",
     "Seed for random number generator used internally "
     "by CPLEX. Use \"seed=?\" to see the default, which "
     "depends on the CPLEX release.",
     CPX_PARAM_RANDOMSEED, 0, CPXINT_MAX);
 
-  AddSolverOption("tech:threads threads",
+  AddCplexParamOption("tech:threads threads",
       "Default maximum number of threads for any of the parallel CPLEX "
       "optimizers (simplex, barrier, MIP, concurrent); default 0 ==> "
       "automatic choice (maximum available, subject to the license).",
@@ -2686,39 +2688,39 @@ void CplexBackend::InitCustomOptions() {
     storedOptions_.workDir_
   );
 
-  AddSolverOption("tech:workfilelim workfilelim",
+  AddCplexParamOption("tech:workfilelim workfilelim",
     "Maximum size in megabytes for in-core work \"files\" "
     "(central memory used before node files are written); default 2048.",
     CPX_PARAM_WORKMEM, 0.0, 1e75);
 
 
 
-  AddSolverOption("lim:iter iterlim iterlimit iterations lpiterlim",
+  AddCplexParamOption("lim:iter iterlim iterlimit iterations lpiterlim",
     "LP iteration limit (default:  large).",
     CPXPARAM_Simplex_Limits_Iterations, 0, CPXINT_MAX);
 
-  AddSolverOption("lim:netiterations netiterations netiter",
+  AddCplexParamOption("lim:netiterations netiterations netiter",
     "Limit on network simplex iterations (default: large).",
     CPXPARAM_Network_Iterations, 0, CPXINT_MAX);
 
-  AddSolverOption("lim:nodes nodes node nodelim nodelimit",
+  AddCplexParamOption("lim:nodes nodes node nodelim nodelimit",
     "Maximum MIP nodes to explore (default: no limit).",
     CPX_PARAM_NODELIM, 0, CPXINT_MAX);
 
-  AddSolverOption("lim:dettime dettimelim",
+  AddCplexParamOption("lim:dettime dettimelim",
     "Time limit in platform-dependent \"ticks\".",
     CPXPARAM_DetTimeLimit, 0.0, DBL_MAX);
 
-  AddSolverOption("lim:sol sollimit solutionlimit mipsolutions solutionlim",
+  AddCplexParamOption("lim:sol sollimit solutionlimit mipsolutions solutionlim",
     "Limit the number of feasible MIP solutions found, causing early "
     "termination if exceeded; must be >= 1; default = no limit.",
     CPXPARAM_MIP_Limits_Solutions , 1, CPXINT_MAX);
 
-  AddSolverOption("lim:time timelim timelimit time lptimelim",
+  AddCplexParamOption("lim:time timelim timelimit time lptimelim",
                   "Limit on solve time (in seconds; default: no limit).",
                   CPXPARAM_TimeLimit, 0.0, DBL_MAX);
 
-  AddSolverOption("lim:upperobj upperobjlim upperobj",
+  AddCplexParamOption("lim:upperobj upperobjlim upperobj",
                   "Sets an upper limit on the value of the objective "
                   "function in the simplex algorithms. Setting an upper "
                   "objective function limit causes CPLEX to halt the "
@@ -2728,11 +2730,11 @@ void CplexBackend::InitCustomOptions() {
                   "in maximization problems. Default: 1e+75.",
                   CPXPARAM_Simplex_Limits_UpperObj, -DBL_MAX, DBL_MAX);
 
-  AddSolverOption("lim:lowerobj lowerobjlim lowerobj",
+  AddCplexParamOption("lim:lowerobj lowerobjlim lowerobj",
                   "See lim:upperobjlim.",
                   CPXPARAM_Simplex_Limits_LowerObj, -DBL_MAX, DBL_MAX);
 
-  AddSolverOption("lim:upperobjstop upperobjstop mip:upperobj",
+  AddCplexParamOption("lim:upperobjstop upperobjstop mip:upperobj",
                   "In a maximization MILP or MIQP, the solver will abort "
                   "the optimization process as soon it finds a solution "
                   "of value greater than or equal to the specified value. "
@@ -2740,11 +2742,11 @@ void CplexBackend::InitCustomOptions() {
                   "Default: 1e+75.",
                   CPXPARAM_MIP_Limits_UpperObjStop, -DBL_MAX, DBL_MAX);
 
-  AddSolverOption("lim:lowerobjstop lowerobjstop mip:lowerobj",
+  AddCplexParamOption("lim:lowerobjstop lowerobjstop mip:lowerobj",
                   "See lim:upperobjstop.",
                   CPXPARAM_MIP_Limits_LowerObjStop, -DBL_MAX, DBL_MAX);
 
-  AddSolverOption("lim:uppercutoff uppercutoff mip:uppercutoff",
+  AddCplexParamOption("lim:uppercutoff uppercutoff mip:uppercutoff",
                   "Sets the upper cutoff tolerance. When the problem is "
                   "a minimization problem, CPLEX cuts off or discards "
                   "any solutions that are greater than the specified "
@@ -2761,11 +2763,11 @@ void CplexBackend::InitCustomOptions() {
                   "for example, in a mixed integer program (MIP).",
                   CPXPARAM_MIP_Tolerances_UpperCutoff, -DBL_MAX, DBL_MAX);
 
-  AddSolverOption("lim:lowercutoff lowercutoff mip:lowercutoff",
+  AddCplexParamOption("lim:lowercutoff lowercutoff mip:lowercutoff",
                   "See lim:uppercutoff.",
                   CPXPARAM_MIP_Tolerances_LowerCutoff, -DBL_MAX, DBL_MAX);
 
-  AddSolverOption("mip:objdiff objdiff objdif objdifference",
+  AddCplexParamOption("mip:objdiff objdiff objdif objdifference",
       "Used to update the cutoff each time a solution is found. "
       "This absolute value is subtracted from (added to) the newly "
       "found integer objective value when minimizing (maximizing). "
@@ -2776,37 +2778,37 @@ void CplexBackend::InitCustomOptions() {
       "to be missed.", CPXPARAM_MIP_Tolerances_ObjDifference,
       0.0, DBL_MAX);
 
-  AddSolverOption("mip:relobjdiff relobjdiff relobjdif",
+  AddCplexParamOption("mip:relobjdiff relobjdiff relobjdif",
       "If objdiff parameter is 0, relobjdiff times the absolute "
       "value is used as a cutoff (see objdiff)", 
       CPXPARAM_MIP_Tolerances_RelObjDifference, 0.0, DBL_MAX);
 
-  AddSolverOption("qp:target optimalitytarget",
+  AddCplexParamOption("qp:target optimalitytarget",
     "Type of solution to compute for a (MI)QP (not QCP) problem:"
                   "\n\n.. value-table::\n",
     CPXPARAM_OptimalityTarget, optimalitytarget_values_, 0);
 
   
-  AddSolverOption("pre:aggfill aggfill agglim",
+  AddCplexParamOption("pre:aggfill aggfill agglim",
     "Variables that appear in more than agglim rows (default 10) "
     "will not be substituted away by the aggregator.",
     CPXPARAM_Preprocessing_Fill, 0, CPXINT_MAX);
 
-  AddSolverOption("pre:aggregate aggregate",
+  AddCplexParamOption("pre:aggregate aggregate",
     "Whether to make substitutions to reduce the number of "
 		"rows:\n\n.. value-table::\n",
     CPXPARAM_Preprocessing_Aggregator, values_preaggregator, -1);
 
-  AddSolverOption("pre:coeffreduce coeffreduce",
+  AddCplexParamOption("pre:coeffreduce coeffreduce",
     "Whether to use coefficient reduction when "
     "preprocessing MIPS\n\n.. value-table::\n",
     CPXPARAM_Preprocessing_CoeffReduce, values_precoeffreduce, -1);
 
-  AddSolverOption("pre:dependency dependency",
+  AddCplexParamOption("pre:dependency dependency",
     "Whether to use CPLEX's presolve dependency checker:\n\n.. value-table::\n",
     CPXPARAM_Preprocessing_Dependency, values_predependency, -1);
 
-  AddSolverOption("pre:solve presolve", "Whether to use CPLEX's presolve:\n"
+  AddCplexParamOption("pre:solve presolve", "Whether to use CPLEX's presolve:\n"
     "\n.. value-table::\n",
     CPXPARAM_Preprocessing_Presolve, values_01_noyes_1default_, 1);
 
@@ -2833,46 +2835,46 @@ void CplexBackend::InitCustomOptions() {
                   "Compatibility option with the legacy cplexasl driver. No effect.",
 									storedOptions_.primalprob_dummy_);
 
-  AddSolverOption("pre:node presolvenode",
+  AddCplexParamOption("pre:node presolvenode",
     "Whether to run presolve at each node of the MIP branch-and-bound:\n"
     "\n.. value-table::\n",
     CPXPARAM_MIP_Strategy_PresolveNode, values_presolvenode, 0);
 
-  AddSolverOption("pre:passes prepasses prepass",
+  AddCplexParamOption("pre:passes prepasses prepass",
     "Limit on the number of CPLEX presolve passes:\n"
     "\n"
     "| -1 - Automatic choice (default)\n"
     "| n>=0 - At most n passes.",
     CPXPARAM_Preprocessing_NumPass, -1, CPXINT_MAX);
 
-  AddSolverOption("pre:reduce prereduce",
+  AddCplexParamOption("pre:reduce prereduce",
     "Kinds of reductions permitted during CPLEX presolve:\n"
     "\n.. value-table::\n",
     CPXPARAM_Preprocessing_Reduce, values_prereduce, 3);
 
-  AddSolverOption("pre:reformulations prereformulations",
+  AddCplexParamOption("pre:reformulations prereformulations",
     "Reformulations applied during CPLEX presolve:\n"
     "\n.. value-table::\n",
     CPXPARAM_Preprocessing_Reformulations, values_prereformulations, 3);
 
-  AddSolverOption("pre:relax prerelax relaxpresolve relpresolve",
+  AddCplexParamOption("pre:relax prerelax relaxpresolve relpresolve",
     "Whether to use CPLEX's presolve on the initial LP relaxation of a MIP: \n"
     "\n.. value-table::\n",
     CPXPARAM_Preprocessing_Relax, values_autonoyes_, 0);
 
 
-  AddSolverOption("pre:scale scale",
+  AddCplexParamOption("pre:scale scale",
     "How to scale the problem:\n"
     "\n.. value-table::\n",
     CPXPARAM_Read_Scale, values_prescale, 0);
 
-  AddSolverOption("pre:sos1enc presos1enc presos1reform",
+  AddCplexParamOption("pre:sos1enc presos1enc presos1reform",
     "Encoding used for SOS1 reformulation:\n"
     "\n.. value-table::\n",
     CPXPARAM_Preprocessing_SOS1Reform, values_presosenc, 0);
 
 
-  AddSolverOption("pre:sos2enc presos2enc presos2reform",
+  AddCplexParamOption("pre:sos2enc presos2enc presos2reform",
     "Encoding used for SOS2 reformulation, see pre:sos1enc.",
     CPXPARAM_Preprocessing_SOS2Reform, -1, 1);
 
@@ -2888,26 +2890,37 @@ void CplexBackend::InitCustomOptions() {
       storedOptions_.pretunefileprm);
 
 
-    AddSolverOption("tech:tunedisplay tunedisplay",
+    AddCplexParamOption("tech:tunedisplay tunedisplay",
         "How much to print during tuning:\n"
         "\n.. value-table::\n",
         CPXPARAM_Tune_Display, values_tunedisplay_, 1);
 
 
-  AddSolverOption("tech:tunerepeat tunerepeat",
+  AddCplexParamOption("tech:tunerepeat tunerepeat",
       "How many times to perturb the problem during tuning (default = 1).",
       CPXPARAM_Tune_Repeat, 1, CPXINT_MAX);
 
 
 
-  AddSolverOption("tech:tunetimelim tunetimelim tunetime",
+  AddCplexParamOption("tech:tunetimelim tunetimelim tunetime",
       "Limit (in seconds) on tuning time; meaningful if < time (default = 1e75)",
       CPXPARAM_Tune_TimeLimit, 0.0, DBL_MAX);
 
-  AddSolverOption("tech:tunetimedet tunetimedet",
+  AddCplexParamOption("tech:tunetimedet tunetimedet",
       "Limit (in \"ticks\") on tuning time; meaningful if < time (default = 1e75)",
       CPXPARAM_Tune_DetTimeLimit, 0.0, DBL_MAX);
 
+
+  AddStoredOption("tech:tunefix tunefix",
+      "List of option names not to tune (their current values are kept), "
+      "separated by commas or white space; enclose in quotes if the list "
+      "contains white space.",
+      storedOptions_.tunefix);
+
+  AddStoredOption("tech:tunefixfile tunefixfile",
+      "Name of a file containing option names not to tune, merged with "
+      "tech:tunefix.",
+      storedOptions_.tunefixfile);
 
   AddStoredOption("tech:tunefile tunefile tunefileprm tech:tunebase tunebase",
       "Name of file for tuning results in CPLEX PRM format. "
@@ -2936,274 +2949,274 @@ void CplexBackend::InitCustomOptions() {
  
 
   // --------- Parameters known from the cplexasl driver ---------
-  AddSolverOption("lp:markowitz markowitz",
+  AddCplexParamOption("lp:markowitz markowitz",
     "Markowitz pivot tolerance; default = 0.01; must be between "
     "1e-4 and 0.99999.  Bigger values may improve numerical properties "
     "of the solution (and may take more time).",
     CPXPARAM_Simplex_Tolerances_Markowitz, 1e-4, 0.99999);
 
-  AddSolverOption("lp:pgradient pgradient",
+  AddCplexParamOption("lp:pgradient pgradient",
     "Pricing algorithm for primal simplex (default 0):\n"
     "\n.. value-table::\n",
     CPXPARAM_Simplex_PGradient, values_pgradient, 0);
 
-  AddSolverOption("lp:pricing pricing",
+  AddCplexParamOption("lp:pricing pricing",
     "Size of the pricing candidate list for partial pricing; "
     "default 0 ==> automatic choice.",
     CPXPARAM_Simplex_Pricing, 0, CPXINT_MAX);
 
-  AddSolverOption("lp:refactor refactor",
+  AddCplexParamOption("lp:refactor refactor",
     "LP iterations between refactorizing the basis; "
     "default 0 ==> automatic choice; maximum 10000.",
     CPXPARAM_Simplex_Refactor, 0, 10000);
 
-  AddSolverOption("lp:singular singular singularlim",
+  AddCplexParamOption("lp:singular singular singularlim",
     "Maximum number of times CPLEX tries to repair the basis "
     "when it encounters singularities; default 10.",
     CPXPARAM_Simplex_Limits_Singularity, 0, CPXINT_MAX);
 
-  AddSolverOption("alg:siftsimplex simplexsifting",
+  AddCplexParamOption("alg:siftsimplex simplexsifting",
     "0/1*: Whether the simplex algorithm may use sifting when appropriate.",
     CPXPARAM_Sifting_Simplex, 0, 1);
 
-  AddSolverOption("mip:heurfreq heurfreq heuristicfreq",
+  AddCplexParamOption("mip:heurfreq heurfreq heuristicfreq",
     "How often to apply the periodic (node) heuristic for MIPs:\n"
     "\n.. value-table::\n",
     CPXPARAM_MIP_Strategy_HeuristicFreq, values_heurfreq, 0);
 
-  AddSolverOption("mip:heureffort heureffort",
+  AddCplexParamOption("mip:heureffort heureffort",
     "Effort spent on MIP heuristics: 0 disables them, values < 1 "
     "reduce and values > 1 increase the effort; default 1. "
     "Do not combine with a non-default mip:heurfreq.",
     CPXPARAM_MIP_Strategy_HeuristicEffort, 0.0, 1e75);
 
-  AddSolverOption("mip:rinsheur rinsheur",
+  AddCplexParamOption("mip:rinsheur rinsheur",
     "Frequency of the relaxation induced neighborhood search (RINS) "
     "heuristic:\n"
     "\n.. value-table::\n",
     CPXPARAM_MIP_Strategy_RINSHeur, values_rinsheur, 0);
 
-  AddSolverOption("mip:lbheur lbheur",
+  AddCplexParamOption("mip:lbheur lbheur",
     "0*/1: Whether to use a local branching heuristic to try to improve "
     "new incumbents found during a MIP search.",
     CPXPARAM_MIP_Strategy_LBHeur, 0, 1);
 
-  AddSolverOption("mip:probe probe",
+  AddCplexParamOption("mip:probe probe",
     "How much variable probing to do before MIP branching (sometimes "
     "dramatically affects performance, for better or worse):\n"
     "\n.. value-table::\n",
     CPXPARAM_MIP_Strategy_Probe, values_probe, 0);
 
-  AddSolverOption("lim:probetime probetime",
+  AddCplexParamOption("lim:probetime probetime",
     "Limit in seconds on time spent probing; default 1e75.",
     CPXPARAM_MIP_Limits_ProbeTime, 0.0, 1e75);
 
-  AddSolverOption("lim:probetimedet probetimedet",
+  AddCplexParamOption("lim:probetimedet probetimedet",
     "Limit in \"ticks\" on time spent probing; default 1e75.",
     CPXPARAM_MIP_Limits_ProbeDetTime, 0.0, 1e75);
 
-  AddSolverOption("mip:symmetry symmetry",
+  AddCplexParamOption("mip:symmetry symmetry",
     "Whether to break symmetry during preprocessing of MIP problems:\n"
     "\n.. value-table::\n",
     CPXPARAM_Preprocessing_Symmetry, values_symmetry, -1);
 
-  AddSolverOption("pre:repeat repeatpresolve",
+  AddCplexParamOption("pre:repeat repeatpresolve",
     "Whether to repeat CPLEX's presolve after root processing:\n"
     "\n.. value-table::\n",
     CPXPARAM_Preprocessing_RepeatPresolve, values_repeatpresolve, -1);
 
-  AddSolverOption("mip:repairtries repairtries",
+  AddCplexParamOption("mip:repairtries repairtries",
     "How many times to try to repair an infeasible MIP start:\n"
     "\n.. value-table::\n",
     CPXPARAM_MIP_Limits_RepairTries, values_repairtries, 0);
 
-  AddSolverOption("mip:submipnodelim submipnodelim",
+  AddCplexParamOption("mip:submipnodelim submipnodelim",
     "Limit on nodes explored when CPLEX solves a subMIP (RINS, "
     "solution polishing, MIP start processing); default 500.",
     CPXPARAM_MIP_SubMIP_NodeLimit, 1, CPXINT_MAX);
 
-  AddSolverOption("mip:strongcand strongcand",
+  AddCplexParamOption("mip:strongcand strongcand",
     "Length of the candidate list for strong branching; default 10.",
     CPXPARAM_MIP_Limits_StrongCand, 1, CPXINT_MAX);
 
-  AddSolverOption("mip:strongit strongit",
+  AddCplexParamOption("mip:strongit strongit",
     "Number of simplex iterations on each variable in the candidate list "
     "during strong branching; default 0 ==> automatic choice.",
     CPXPARAM_MIP_Limits_StrongIt, 0, CPXINT_MAX);
 
-  AddSolverOption("lim:treememory treememory treelimit treememlim",
+  AddCplexParamOption("lim:treememory treememory treelimit treememlim",
     "Maximum megabytes of memory for the branch-and-bound tree "
     "(default 1e75 ==> no limit).",
     CPXPARAM_MIP_Limits_TreeMemory, 0.0, 1e75);
 
-  AddSolverOption("mip:polishafter:absgap polishafter_absmipgap",
+  AddCplexParamOption("mip:polishafter:absgap polishafter_absmipgap",
     "Start polishing integer solutions after the absolute MIP gap "
     "is at most this value; default 0.",
     CPXPARAM_MIP_PolishAfter_AbsMIPGap, 0.0, 1e20);
 
-  AddSolverOption("mip:polishafter:gap polishafter_mipgap",
+  AddCplexParamOption("mip:polishafter:gap polishafter_mipgap",
     "Start polishing integer solutions after the relative MIP gap "
     "is at most this value; default 0.",
     CPXPARAM_MIP_PolishAfter_MIPGap, 0.0, 1.0);
 
-  AddSolverOption("mip:polishafter:nodes polishafter_nodes",
+  AddCplexParamOption("mip:polishafter:nodes polishafter_nodes",
     "Start polishing integer solutions after processing this many nodes; "
     "default: no limit.",
     CPXPARAM_MIP_PolishAfter_Nodes, 0, CPXINT_MAX);
 
-  AddSolverOption("mip:polishafter:sols polishafter_intsol",
+  AddCplexParamOption("mip:polishafter:sols polishafter_intsol",
     "Start polishing integer solutions after finding this many "
     "integer-feasible solutions; default: no limit.",
     CPXPARAM_MIP_PolishAfter_Solutions, 1, CPXINT_MAX);
 
-  AddSolverOption("mip:polishafter:time polishafter_time",
+  AddCplexParamOption("mip:polishafter:time polishafter_time",
     "Start polishing integer solutions after finding at least one "
     "integer-feasible solution and spending this many seconds; "
     "default 1e75.",
     CPXPARAM_MIP_PolishAfter_Time, 0.0, 1e75);
 
-  AddSolverOption("mip:polishafter:dettime polishafter_timedet",
+  AddCplexParamOption("mip:polishafter:dettime polishafter_timedet",
     "Start polishing integer solutions after finding at least one "
     "integer-feasible solution and spending this many \"ticks\"; "
     "default 1e75.",
     CPXPARAM_MIP_PolishAfter_DetTime, 0.0, 1e75);
 
-  AddSolverOption("mip:kappastats mipkappa",
+  AddCplexParamOption("mip:kappastats mipkappa",
     "Whether to compute MIP kappa statistics, which summarize the "
     "condition numbers of the optimal bases seen while solving:\n"
     "\n.. value-table::\n",
     CPXPARAM_MIP_Strategy_KappaStats, values_kappastats, 0);
 
-  AddSolverOption("mip:miqcpstrat miqcpstrat",
+  AddCplexParamOption("mip:miqcpstrat miqcpstrat",
     "Strategy for solving quadratically-constrained MIPs (MIQCP):\n"
     "\n.. value-table::\n",
     CPXPARAM_MIP_Strategy_MIQCPStrat, values_miqcpstrat, 0);
 
-  AddSolverOption("mip:ordertype ordertype mipordertype",
+  AddCplexParamOption("mip:ordertype ordertype mipordertype",
     "How to generate default priorities for integer variables "
     "when no priority order is given:\n"
     "\n.. value-table::\n",
     CPXPARAM_MIP_OrderType, values_ordertype, 0);
 
-  AddSolverOption("bar:ordering ordering",
+  AddCplexParamOption("bar:ordering ordering",
     "Ordering algorithm used by the barrier algorithm:\n"
     "\n.. value-table::\n",
     CPXPARAM_Barrier_Ordering, values_barorder, 0);
 
-  AddSolverOption("bar:qcpcomptol qcpconvergetol qcpcomptol",
+  AddCplexParamOption("bar:qcpcomptol qcpconvergetol qcpcomptol",
     "Convergence tolerance on relative complementarity for problems "
     "with quadratic constraints; default 1e-7.",
     CPXPARAM_Barrier_QCPConvergeTol, 1e-12, 1e75);
 
-  AddSolverOption("pre:qtolin qtolin",
+  AddCplexParamOption("pre:qtolin qtolin",
     "Whether to linearize products of bounded variables in quadratic "
     "objectives during preprocessing:\n"
     "\n.. value-table::\n",
     CPXPARAM_Preprocessing_QToLin, values_autonoyes_, -1);
 
-  AddSolverOption("tech:clocktype clocktype",
+  AddCplexParamOption("tech:clocktype clocktype",
     "Kind of times CPLEX reports and uses for time limits:\n"
     "\n.. value-table::\n",
     CPXPARAM_ClockType, values_clocktype, 2);
 
-  AddSolverOption("tech:parallelmode parallelmode",
+  AddCplexParamOption("tech:parallelmode parallelmode",
     "Parallel optimization mode:\n"
     "\n.. value-table::\n",
     CPXPARAM_Parallel, values_parallelmode, 0);
 
-  AddSolverOption("tech:datacheck datacheck",
+  AddCplexParamOption("tech:datacheck datacheck",
     "Data consistency checking and modeling assistance:\n"
     "\n.. value-table::\n",
     CPXPARAM_Read_DataCheck, values_datacheck, 0);
 
-  AddSolverOption("tech:warninglimit warninglimit",
+  AddCplexParamOption("tech:warninglimit warninglimit",
     "Limit on the number of warnings per issue given when "
     "tech:datacheck=2; default 10.",
     CPXPARAM_Read_WarningLimit, 0, CPXINT_MAX);
 
-  AddSolverOption("tech:record record",
+  AddCplexParamOption("tech:record record",
     "0*/1: Whether to record CPLEX library calls for debugging use by IBM "
     "in a file with an automatically chosen name of the form cplexXXXXXXX.db.",
     CPXPARAM_Record, 0, 1);
 
   // --------- Parameters in neither driver before ---------
-  AddSolverOption("pre:folding folding",
+  AddCplexParamOption("pre:folding folding",
     "Whether to try LP folding during preprocessing:\n"
     "\n.. value-table::\n",
     CPXPARAM_Preprocessing_Folding, values_folding, -1);
 
-  AddSolverOption("mip:dive dive",
+  AddCplexParamOption("mip:dive dive",
     "MIP dive strategy (how to choose between child nodes):\n"
     "\n.. value-table::\n",
     CPXPARAM_MIP_Strategy_Dive, values_dive, 0);
 
-  AddSolverOption("mip:cardls cardls",
+  AddCplexParamOption("mip:cardls cardls",
     "Cardinality local search heuristic:\n"
     "\n.. value-table::\n",
     CPXPARAM_MIP_Strategy_CardLs, values_cardls, 0);
 
-  AddSolverOption("lp:dynamicrows dynamicrows",
+  AddCplexParamOption("lp:dynamicrows dynamicrows",
     "Whether CPLEX manages the rows of the basis matrix dynamically "
     "during dual simplex:\n"
     "\n.. value-table::\n",
     CPXPARAM_Simplex_DynamicRows, values_autonoyes_, -1);
 
-  AddSolverOption("pre:qcpduals qcpduals",
+  AddCplexParamOption("pre:qcpduals qcpduals",
     "Whether to compute dual values for quadratically constrained "
     "problems:\n"
     "\n.. value-table::\n",
     CPXPARAM_Preprocessing_QCPDuals, values_qcpduals, 1);
 
-  AddSolverOption("pre:qpmakepsd qpmakepsd",
+  AddCplexParamOption("pre:qpmakepsd qpmakepsd",
     "0/1*: Whether to reformulate a binary-only MIQP or MIQCP so that "
     "its quadratic matrix becomes positive semi-definite.",
     CPXPARAM_Preprocessing_QPMakePSD, 0, 1);
 
-  AddSolverOption("mip:eplin eplin",
+  AddCplexParamOption("mip:eplin eplin",
     "Epsilon used in CPLEX's linearization of logical constraints, "
     "e.g., x < a becomes x <= a - eplin; default 1e-3.",
     CPXPARAM_MIP_Tolerances_Linearization, 0.0, 1e75);
 
-  AddSolverOption("alg:feasrelax:tol feasopttol",
+  AddCplexParamOption("alg:feasrelax:tol feasopttol",
     "Tolerance for constraint violations in the relaxed problem of "
     "alg:feasrelax; default 1e-6.",
     CPXPARAM_Feasopt_Tolerance, 0.0, 1e20);
 
-  AddSolverOption("tech:writelevel writelevel",
+  AddCplexParamOption("tech:writelevel writelevel",
     "Level of detail written to SOL and MST files "
     "(tech:writesolution, tech:writemipstart):\n"
     "\n.. value-table::\n",
     CPXPARAM_Output_WriteLevel, values_writelevel, 0);
 
-  AddSolverOption("tech:intsolfileprefix intsolfileprefix",
+  AddCplexParamOption("tech:intsolfileprefix intsolfileprefix",
     "If set, CPLEX writes every MIP integer solution it finds to a file "
     "whose name starts with this prefix.",
     CPXPARAM_Output_IntSolFilePrefix);
 
-  AddSolverOption("tech:mpslong mpslong",
+  AddCplexParamOption("tech:mpslong mpslong",
     "0/1*: Whether to write numbers with full precision to MPS and REW files.",
     CPXPARAM_Output_MPSLong, 0, 1);
 
-  AddSolverOption("tech:clonelog clonelog",
+  AddCplexParamOption("tech:clonelog clonelog",
     "Whether clone log files are created during parallel optimization:\n"
     "\n.. value-table::\n",
     CPXPARAM_Output_CloneLog, values_clonelog, 0);
 
-  AddSolverOption("tech:tunemeasure tunemeasure",
+  AddCplexParamOption("tech:tunemeasure tunemeasure",
     "How tuning compares parameter sets across models:\n"
     "\n.. value-table::\n",
     CPXPARAM_Tune_Measure, values_tunemeasure, 1);
 
-  AddSolverOption("alg:siftalg siftalg",
+  AddCplexParamOption("alg:siftalg siftalg",
     "Algorithm for sifting subproblems:\n"
     "\n.. value-table::\n",
     CPXPARAM_Sifting_Algorithm, values_siftalg, 0);
 
-  AddSolverOption("lim:siftiter siftiterations siftiter",
+  AddCplexParamOption("lim:siftiter siftiterations siftiter",
     "Limit on sifting iterations (default: no limit).",
     CPXPARAM_Sifting_Iterations, 0, CPXINT_MAX);
 
-  AddSolverOption("tech:siftdisplay siftdisplay",
+  AddCplexParamOption("tech:siftdisplay siftdisplay",
     "How much the sifting algorithm reports:\n"
     "\n.. value-table::\n",
     CPXPARAM_Sifting_Display, values_siftdisplay, 1);
@@ -3381,18 +3394,102 @@ void CplexBackend::CplexPlayObjNParams() {
   DoPlayCplexObjNParams(objnparam_int_, lp(), env());
   DoPlayCplexObjNParams(objnparam_dbl_, lp(), env());
 }
+void CplexBackend::RecordCplexParamNames(const char* name_list, int key) {
+  std::string names(name_list);
+  size_t pos = 0;
+  while (pos < names.size()) {
+    auto end = names.find(' ', pos);
+    if (std::string::npos == end)
+      end = names.size();
+    if (end > pos)
+      cplexParamOfOption_[names.substr(pos, end - pos)] = key;
+    pos = end + 1;
+  }
+}
+
+/// Resolve the option names in tech:tunefix / tech:tunefixfile
+/// to CPLEX parameters with their current values.
+void CplexBackend::CollectTuneFixed(const std::string& list, const char* what,
+                                    std::vector<int>& intnum, std::vector<int>& intval,
+                                    std::vector<int>& dblnum, std::vector<double>& dblval) {
+  size_t pos = 0;
+  while (pos < list.size()) {
+    while (pos < list.size() && (std::isspace((unsigned char)list[pos]) || list[pos] == ','))
+      ++pos;
+    auto end = pos;
+    while (end < list.size() && !std::isspace((unsigned char)list[end]) && list[end] != ',')
+      ++end;
+    if (end == pos)
+      break;
+    auto name = list.substr(pos, end - pos);
+    pos = end;
+    auto it = cplexParamOfOption_.find(name);
+    if (cplexParamOfOption_.end() == it)
+      MP_RAISE(fmt::format("Unrecognized option \"{}\" in {}", name, what));
+    int key = it->second, type = CPX_PARAMTYPE_NONE;
+    CPXgetparamtype(env(), key, &type);
+    switch (type) {
+    case CPX_PARAMTYPE_INT:
+    case CPX_PARAMTYPE_LONG: {
+      if (std::find(intnum.begin(), intnum.end(), key) == intnum.end()) {
+        int v = 0;
+        CPXgetintparam(env(), key, &v);
+        intnum.push_back(key);
+        intval.push_back(v);
+      }
+      break;
+    }
+    case CPX_PARAMTYPE_DOUBLE: {
+      if (std::find(dblnum.begin(), dblnum.end(), key) == dblnum.end()) {
+        double v = 0.0;
+        CPXgetdblparam(env(), key, &v);
+        dblnum.push_back(key);
+        dblval.push_back(v);
+      }
+      break;
+    }
+    default:
+      MP_RAISE(fmt::format("Option \"{}\" in {} is not a tunable "
+                           "numeric parameter", name, what));
+    }
+  }
+}
+
 void CplexBackend::DoCPLEXTune() {
-    
-    int status;
+  int status = 0;
 
-    if (!storedOptions_.pretunefileprm.empty())
-        CPXwriteparam(env(), storedOptions_.pretunefileprm.c_str());
+  if (!storedOptions_.pretunefileprm.empty())
+    CPXwriteparam(env(), storedOptions_.pretunefileprm.c_str());
 
-    int res = CPXtuneparam(env(), lp(), 0, nullptr, nullptr, 0, nullptr, nullptr, 0, nullptr, nullptr, &status);
+  std::vector<int> intnum, intval, dblnum;
+  std::vector<double> dblval;
+  if (!storedOptions_.tunefix.empty())
+    CollectTuneFixed(storedOptions_.tunefix, "tech:tunefix",
+                     intnum, intval, dblnum, dblval);
+  if (!storedOptions_.tunefixfile.empty()) {
+    std::ifstream f(storedOptions_.tunefixfile);
+    if (!f)
+      MP_RAISE(fmt::format("Could not open tech:tunefixfile \"{}\"",
+                           storedOptions_.tunefixfile));
+    std::string contents((std::istreambuf_iterator<char>(f)),
+                         std::istreambuf_iterator<char>());
+    CollectTuneFixed(contents, "tech:tunefixfile",
+                     intnum, intval, dblnum, dblval);
+  }
 
-    if (!storedOptions_.tunefileprm.empty())
-        CPXwriteparam(env(), storedOptions_.tunefileprm.c_str());
+  int res = CPXtuneparam(env(), lp(),
+                         (int)intnum.size(), intnum.data(), intval.data(),
+                         (int)dblnum.size(), dblnum.data(), dblval.data(),
+                         0, nullptr, nullptr, &status);
+  if (res)
+    AddWarning("TuneFailed",
+               fmt::format("CPXtuneparam returned error {}", res));
+  else if (status)
+    AddToSolverMessage(fmt::format(
+        "Tuning stopped early (tuning status {}).\n", status));
 
+  if (!storedOptions_.tunefileprm.empty())
+    CPXwriteparam(env(), storedOptions_.tunefileprm.c_str());
 }
 
 } // namespace mp

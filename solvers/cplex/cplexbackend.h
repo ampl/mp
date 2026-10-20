@@ -7,6 +7,8 @@
 #include "mp/flat/backend_flat.h"
 #include "cplexcommon.h"
 #include <map>
+#include <utility>
+#include <vector>
 
 namespace mp {
 
@@ -186,6 +188,18 @@ private:
 
 public:  // public for static polymorphism
   void InitCustomOptions() override;
+  /// Register a CPLEX parameter option and remember
+  /// which parameter each option name refers to
+  template <class... Args>
+  void AddCplexParamOption(const char* name_list, const char* description,
+                           int key, Args&&... args) {
+    AddSolverOption(name_list, description, key, std::forward<Args>(args)...);
+    RecordCplexParamNames(name_list, key);
+  }
+  void RecordCplexParamNames(const char* name_list, int key);
+  void CollectTuneFixed(const std::string& list, const char* what,
+                        std::vector<int>& intnum, std::vector<int>& intval,
+                        std::vector<int>& dblnum, std::vector<double>& dblval);
   /// Chance to consider options immediately (for certain stored options)
   void FinishOptionParsing() override;
 protected:
@@ -307,11 +321,13 @@ private:
 	bool primalprob_dummy_ = false;
 
     std::string pretunefileprm, tunefile,
-        tunefileprm;
+        tunefileprm, tunefix, tunefixfile;
 
 
 	};
   Options storedOptions_;
+  /// Option name (incl. synonyms) -> CPLEX parameter id
+  std::map<std::string, int> cplexParamOfOption_;
   // to store IIS
   std::vector<int> iisColIndices, iisColValues,
                     iisRowIndices, iisRowValues;
