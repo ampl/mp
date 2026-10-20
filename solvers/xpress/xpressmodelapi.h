@@ -130,6 +130,8 @@ public:
   void AddConstraint(const QuadConEQ& qc);
   ACCEPT_CONSTRAINT(QuadConGE, Recommended, CG_Algebraic)
   void AddConstraint(const QuadConGE& qc);
+  /// Name the row added last (names are needed for basis files)
+  void NameLastRow(const char* name);
   void AddLinTerms(XPRSprob lp, const LinTerms& lt, double rhsc, const char typec); // for quadratics
 
   /// Linear indicator constraints can be used as

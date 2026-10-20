@@ -120,26 +120,25 @@ void XpressmpModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective&
   }
 }
 
+void XpressmpModelAPI::NameLastRow(const char* name) {
+  if (name && *name) {
+    auto nm = sanitizeName(name, "");
+    int row = NumLinCons() - 1;
+    XPRESSMP_CCALL(XPRSaddnames(lp(), 1, nm.c_str(), row, row));
+  }
+}
+
 void XpressmpModelAPI::AddConstraint(const LinConLE& lc) {
-  char type[] = { 'L' };
-  double rhs[] = { lc.rhs() };
-  int start[] = { 0 };
-  XPRESSMP_CCALL(XPRSaddrows(lp(), 1, lc.coefs().size(), type,
-    rhs, NULL, start, lc.pvars(), lc.pcoefs()));
+  AddLinTerms(lp(), lc.GetLinTerms(), lc.rhs(), 'L');
+  NameLastRow(lc.name());
 }
 void XpressmpModelAPI::AddConstraint(const LinConEQ& lc) {
-  char type[] = { 'E' };
-  double rhs[] = { lc.rhs() };
-  int start[] = { 0 };
-  XPRESSMP_CCALL(XPRSaddrows(lp(), 1, lc.coefs().size(), type,
-    rhs, NULL, start, lc.pvars(), lc.pcoefs()));
+  AddLinTerms(lp(), lc.GetLinTerms(), lc.rhs(), 'E');
+  NameLastRow(lc.name());
 }
 void XpressmpModelAPI::AddConstraint(const LinConGE& lc) {
-  char type[] = { 'G' };
-  double rhs[] = { lc.rhs() };
-  int start[] = { 0 };
-  XPRESSMP_CCALL(XPRSaddrows(lp(), 1, lc.coefs().size(), type,
-    rhs, NULL, start, lc.pvars(), lc.pcoefs()));
+  AddLinTerms(lp(), lc.GetLinTerms(), lc.rhs(), 'G');
+  NameLastRow(lc.name());
 }
 
 // Workaround as mp does not distinguish binary variables and
@@ -174,6 +173,7 @@ void XpressmpModelAPI::AddLinTerms(
 #define addqp(type)    numQuadCons(numQuadCons()+1);\
 const auto& lt = qc.GetLinTerms();\
 AddLinTerms(lp(), lt, qc.rhs(), type); \
+NameLastRow(qc.name()); \
 const auto& qt = qc.GetQPTerms();\
   int row = NumLinCons() - 1;\
   for (int i = 0; i < qt.size(); i++)\

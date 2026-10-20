@@ -17,6 +17,7 @@
 #endif
 
 #include <string>
+#include <list>
 #include <variant>
 
 #include "mp/backend-mip.h"
@@ -191,6 +192,11 @@ protected:
 
   /// Attach the solution pool to the problem and prepare the enumerator
   void CreateSolutionPoolEnvironment();
+  /// Apply the tech:optionnative entries ("NAME=value", "NAME=?")
+  void ApplyNativeOptions();
+  void ApplyNativeOption(const std::string& name, const std::string& value);
+  /// Load the basis file given by alg:readbasis
+  void ReadBasisFile();
 
   std::string XPRESSSolveFlags();
   void WindupXPRESSMPSolve();
@@ -270,6 +276,8 @@ private:
     std::string tunermethodfilewrite_;
     std::string tunename_;
     std::string logFile_;
+    std::string readBasis_;
+    std::list<std::string> nativeOptions_;   // "NAME=value" entries
   };
   
   bool msgCallbackSet_ = false;

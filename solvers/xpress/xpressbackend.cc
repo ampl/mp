@@ -84,7 +84,78 @@ void XpressmpBackend::OpenSolver() {
   copy_common_info_to_other();
 }
 
+void XpressmpBackend::ApplyNativeOptions() {
+  for (const auto& entry: storedOptions_.nativeOptions_) {
+    auto sep = entry.find_first_of("= ");
+    if (std::string::npos == sep)
+      MP_RAISE(fmt::format(
+          "tech:optionnative: expected \"NAME=value\", got \"{}\"", entry));
+    auto value = entry.substr(sep+1);
+    auto vstart = value.find_first_not_of(" ");
+    ApplyNativeOption(entry.substr(0, sep),
+                      std::string::npos == vstart ? "" : value.substr(vstart));
+  }
+}
+
+void XpressmpBackend::ApplyNativeOption(
+    const std::string& name, const std::string& value) {
+  int id = 0, type = XPRS_TYPE_NOTDEFINED;
+  if (XPRSgetcontrolinfo(lp(), name.c_str(), &id, &type)
+      || XPRS_TYPE_NOTDEFINED == type)
+    MP_RAISE(fmt::format("Unknown Xpress control \"{}\"", name));
+  bool query = ("?" == value);
+  auto bad_value = [&]() {
+    MP_RAISE(fmt::format("Invalid value \"{}\" for Xpress control \"{}\"",
+                         value, name));
+  };
+  switch (type) {
+  case XPRS_TYPE_INT:
+  case XPRS_TYPE_INT64: {
+    int v = 0;
+    if (query) GetSolverOption(id, v);
+    else {
+      std::size_t pos = 0;
+      try { v = std::stoi(value, &pos); } catch (const std::exception&) { bad_value(); }
+      if (pos != value.size()) bad_value();
+      SetSolverOption(id, v);
+    }
+    if (query) Print("{}={}\n", name, v);
+    break;
+  }
+  case XPRS_TYPE_DOUBLE: {
+    double v = 0.0;
+    if (query) GetSolverOption(id, v);
+    else {
+      std::size_t pos = 0;
+      try { v = std::stod(value, &pos); } catch (const std::exception&) { bad_value(); }
+      if (pos != value.size()) bad_value();
+      SetSolverOption(id, v);
+    }
+    if (query) Print("{}={}\n", name, v);
+    break;
+  }
+  case XPRS_TYPE_STRING: {
+    std::string v;
+    if (query) GetSolverOption(id, v);
+    else SetSolverOption(id, v = value);
+    if (query) Print("{}={}\n", name, v);
+    break;
+  }
+  default:
+    MP_RAISE(fmt::format("Xpress control \"{}\" has unsupported type {}",
+                         name, type));
+  }
+}
+
+void XpressmpBackend::ReadBasisFile() {
+  const auto& file = storedOptions_.readBasis_;
+  if (XPRSreadbasis(lp(), file.c_str(), ""))
+    MP_RAISE(fmt::format("Could not read the starting basis from \"{}\":\n{}",
+                         file, getErr()));
+}
+
 void XpressmpBackend::FinishOptionParsing() {
+  ApplyNativeOptions();
   if (storedOptions_.nonconvex_ >= 0)        // deprecated qp:nonconvex
     SetSolverOption(XPRS_IFCHECKCONVEXITY,
                     2 == storedOptions_.nonconvex_ ? 0 : storedOptions_.nonconvex_);
@@ -730,6 +801,8 @@ std::string XpressmpBackend::DoXpressFixedModel()
   void XpressmpBackend::InputXPRESSExtras() {
     if (need_multiple_solutions())
       CreateSolutionPoolEnvironment();
+    if (!storedOptions_.readBasis_.empty())
+      ReadBasisFile();
   }
 
   ArrayRef<double> XpressmpBackend::GetObjectiveValues()
@@ -2015,6 +2088,20 @@ AddSolverOption("mip:varselection",
   //endqp
 
 
+
+  AddStoredOption("alg:readbasis readbasis startbasis basisin",
+    "File with the starting basis (Xpress .bas format, see "
+    "tech:writesolution). It is read after any incoming .sstatus basis "
+    "(see alg:basis) and overrides it. Xpress matches the basis by row "
+    "and column names, so the model must be passed with names "
+    "(AMPL option auxfiles rc).",
+    storedOptions_.readBasis_);
+
+  AddListOption("tech:optionnative optionnative optnative tech:param param",
+    "Xpress control by name: a quoted string \"NAME=value\" or "
+    "\"NAME value\", for documented and undocumented controls; "
+    "can be repeated. \"NAME=?\" prints the current value.",
+    storedOptions_.nativeOptions_);
 
   AddStoredOption("tech:tunebase tunerdir tunebase",
     "Base name for results of running XPRESS's search for best "
