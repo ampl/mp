@@ -170,6 +170,10 @@ protected:
   // utility function used to decide which solution to fetch after optimization
   // sets member solToFetch_ as side effect
   MSKsoltypee GetSolutionTypeToFetch();
+  /// The solution to receive a starting basis / point
+  MSKsoltypee GetSolutionTypeForStart();
+  /// Result for a termination code (limit, interrupt, numerical trouble)
+  std::pair<int, std::string> GetLimitResult(bool has_solution);
 
 private:
   /// Register a MOSEK parameter as an AMPL option and remember

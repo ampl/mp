@@ -1,3 +1,4 @@
+#include <atomic>
 #include <vector>
 #include <climits>
 #include <cfloat>
@@ -13,10 +14,18 @@ extern "C" {
 
 namespace {
 
+/// Set by the AMPL interrupt handler, polled by MOSEK's callback
+std::atomic<bool> interrupt_requested{false};
 
-bool InterruptMosek(void* prob) {
-  // TODO
+bool InterruptMosek(void*) {
+  interrupt_requested = true;
   return true;
+}
+
+/// MOSEK progress callback: a nonzero return stops the optimizer
+int MSKAPI MosekProgressCallback(MSKtask_t, MSKuserhandle_t, MSKcallbackcodee,
+                                 const MSKrealt*, const MSKint32t*, const MSKint64t*) {
+  return interrupt_requested ? 1 : 0;
 }
 
 }  // namespace {}
@@ -98,6 +107,8 @@ void MosekBackend::OpenSolver() {
   // Register callback for console logging (controlled by the outlev param
   // in all AMPL solver drivers)
   MSK_linkfunctotaskstream(lp(), MSK_STREAM_LOG, NULL, printstr);
+  // Progress callback, for interrupts (Ctrl-C)
+  MOSEK_CCALL(MSK_putcallbackfunc(lp(), MosekProgressCallback, nullptr));
 
 }
 
@@ -126,9 +137,9 @@ bool MosekBackend::IsMIP() const {
 }
 
 bool MosekBackend::IsQCP() const {
-  // TODO
-// return getIntAttr(MOSEK_INTATTR_QELEMS) > 0;
-  return false;
+  MSKproblemtypee type;
+  MOSEK_CCALL(MSK_getprobtype(lp(), &type));
+  return MSK_PROBTYPE_QCQO == type;
 }
 
 ArrayRef<double> MosekBackend::PrimalSolution() {
@@ -184,11 +195,11 @@ double MosekBackend::ObjectiveValue() const {
 }
 
 int MosekBackend::NodeCount() const {
-  return getIntAttr(MSK_IINF_MIO_NUM_ACTIVE_NODES); // TODO check
+  return getIntAttr(MSK_IINF_MIO_NUM_BRANCH);
 }
 
 int MosekBackend::SimplexIterations() const {
-  return getIntAttr(MSK_IINF_SIM_PRIMAL_ITER);
+  return getIntAttr(MSK_IINF_SIM_PRIMAL_ITER) + getIntAttr(MSK_IINF_SIM_DUAL_ITER);
 }
 
 int MosekBackend::BarrierIterations() const {
@@ -211,7 +222,15 @@ void MosekBackend::DoWriteProblem(const std::string &file) {
 
 void MosekBackend::SetInterrupter(mp::Interrupter *inter) {
   inter->SetHandler(InterruptMosek, lp());
-  // TODO Check interrupter
+}
+
+/// The solution whose values and status keys start the optimizer
+MSKsoltypee MosekBackend::GetSolutionTypeForStart() {
+  if (IsMIP())
+    return MSK_SOL_ITG;
+  MSKproblemtypee type;
+  MOSEK_CCALL(MSK_getprobtype(lp(), &type));
+  return MSK_PROBTYPE_LO == type ? MSK_SOL_BAS : MSK_SOL_ITR;
 }
 
 MSKsoltypee MosekBackend::GetSolutionTypeToFetch() {
@@ -371,21 +390,63 @@ void MosekBackend::AddMOSEKMessages() {
           fmt::format("{} branching nodes\n", nnd));
 }
 
+/// Result for a termination code (limit, interrupt, numerical trouble)
+std::pair<int, std::string> MosekBackend::GetLimitResult(bool has_solution) {
+  namespace sol = mp::sol;
+  auto result = [has_solution](int feas, int nofeas, const std::string& text) {
+    return std::pair<int, std::string>{
+      has_solution ? feas : nofeas,
+      text + (has_solution ? ", feasible solution" : ", no solution") };
+  };
+  switch (termCode_) {
+  case MSK_RES_TRM_MAX_ITERATIONS:
+    return result(sol::LIMIT_FEAS_ITER, sol::LIMIT_NO_FEAS_ITER, "iteration limit");
+  case MSK_RES_TRM_MAX_TIME:
+  case MSK_RES_TRM_SERVER_MAX_TIME:
+    return result(sol::LIMIT_FEAS_TIME, sol::LIMIT_NO_FEAS_TIME, "time limit");
+  case MSK_RES_TRM_OBJECTIVE_RANGE:
+    return result(sol::LIMIT_FEAS_BESTOBJ, sol::LIMIT_NO_FEAS_CUTOFF,
+                  "objective range (lim:bestobjstop, lim:bestbndstop)");
+  case MSK_RES_TRM_MIO_NUM_BRANCHES:
+    return result(sol::LIMIT_FEAS_NODES, sol::LIMIT_NO_FEAS_NODES, "branch limit");
+  case MSK_RES_TRM_MIO_NUM_RELAXS:
+    return result(sol::LIMIT_FEAS_NODES, sol::LIMIT_NO_FEAS_NODES, "relaxation limit");
+  case MSK_RES_TRM_NUM_MAX_NUM_INT_SOLUTIONS:
+    return result(sol::LIMIT_FEAS_NUMSOLS, sol::LIMIT_NO_FEAS, "solution limit");
+  case MSK_RES_TRM_USER_CALLBACK:
+    return result(sol::LIMIT_FEAS_INTERRUPT, sol::LIMIT_NO_FEAS_INTERRUPT, "interrupted");
+  case MSK_RES_TRM_SERVER_MAX_MEMORY:
+    return result(sol::LIMIT_FEAS_SOFTMEM, sol::LIMIT_NO_FEAS_SOFTMEM, "memory limit");
+  case MSK_RES_TRM_STALL:
+    return result(sol::UNCERTAIN, sol::NUMERIC, "stalling");
+  case MSK_RES_TRM_NUMERICAL_PROBLEM:
+  case MSK_RES_TRM_MAX_NUM_SETBACKS:
+    return result(sol::UNCERTAIN, sol::NUMERIC, "numerical problems");
+  default:
+    return result(sol::LIMIT_FEAS, sol::LIMIT_NO_FEAS,
+                  "termination code " + std::to_string(termCode_));
+  }
+}
+
 std::pair<int, std::string> MosekBackend::GetSolveResult() {
   namespace sol = mp::sol;
   std::string term_info = ConvertMOSEKTermStatus();
-  // TODO Keep result code registry in AddOptons() up2date.
-  // See guidelines in mp::sol.
+  bool has_solution = MSK_SOL_STA_PRIM_FEAS == solSta_ ||
+      MSK_SOL_STA_PRIM_AND_DUAL_FEAS == solSta_ ||
+      MSK_SOL_STA_OPTIMAL == solSta_ || MSK_SOL_STA_INTEGER_OPTIMAL == solSta_;
   switch (solSta_) {
   case MSK_SOL_STA_OPTIMAL:
   case MSK_SOL_STA_INTEGER_OPTIMAL:
     return { sol::SOLVED, "optimal" + term_info };
   case MSK_SOL_STA_PRIM_FEAS:
-    return { sol::LIMIT_FEAS, "feasible primal" + term_info };
-  case MSK_SOL_STA_DUAL_FEAS:
-    return { sol::UNCERTAIN, "feasible dual" + term_info };
   case MSK_SOL_STA_PRIM_AND_DUAL_FEAS:
-    return { sol::LIMIT_FEAS, "primal and dual feasible" + term_info };
+    if (MSK_RES_OK != termCode_)
+      return GetLimitResult(true);
+    return { sol::UNCERTAIN, "feasible, not proven optimal" + term_info };
+  case MSK_SOL_STA_DUAL_FEAS:
+    if (MSK_RES_OK != termCode_)
+      return GetLimitResult(false);
+    return { sol::UNCERTAIN, "feasible dual" + term_info };
   case MSK_SOL_STA_PRIM_INFEAS_CER:
     return { sol::INFEASIBLE,
           "the solution is a primal infeasibility certificate" + term_info };
@@ -421,11 +482,8 @@ std::pair<int, std::string> MosekBackend::GetSolveResult() {
       return { sol::INF_OR_UNB, "infeasible or unbounded" + term_info };
     case MSK_PRO_STA_UNKNOWN:
     default:
-      if (PrimalSolution().size() || DualSolution_LP().size())
-        return { sol::UNCERTAIN,
-                "solved? (solution status: " + std::to_string(solSta_)
-                    + ", problem status: " + std::to_string(proSta_)
-                    + ")" + term_info };
+      if (MSK_RES_OK != termCode_)
+        return GetLimitResult(has_solution);
       return { sol::UNKNOWN,
             "unknown status (solution status: " + std::to_string(solSta_)
             + ", problem status: " + std::to_string(proSta_)
@@ -456,6 +514,17 @@ std::string MosekBackend::ConvertMOSEKTermStatus() {
     return { ", branch limit hit" };
   case MSK_RES_TRM_NUM_MAX_NUM_INT_SOLUTIONS:
     return { ", solution limit hit" };
+  case MSK_RES_TRM_USER_CALLBACK:
+    return { ", interrupted" };
+  case MSK_RES_TRM_LOST_RACE:
+    return { ", lost race" };
+  case MSK_RES_TRM_INTERNAL:
+  case MSK_RES_TRM_INTERNAL_STOP:
+    return { ", internal stop" };
+  case MSK_RES_TRM_SERVER_MAX_TIME:
+    return { ", server time limit" };
+  case MSK_RES_TRM_SERVER_MAX_MEMORY:
+    return { ", server memory limit" };
   default:
     return { ", termination code "
           + std::to_string(termCode_) };
@@ -1072,7 +1141,6 @@ void MosekBackend::ConStatii(ArrayRef<int> cst) {
   // The slack is defined as: l <= a'x <= u rewritten as a'x - s = 0, l <= s <= u.
 	for (size_t j = 0; j < skc.size(); j++)
   {
-    skc[j] = MSK_SK_UNK;
     switch ((BasicStatus)skc[j])
     {
       case BasicStatus::bas:
@@ -1131,7 +1199,7 @@ SolutionBasis MosekBackend::GetBasis() {
 }
 
 void MosekBackend::SetBasis(SolutionBasis basis) {
-  solToFetch_ = GetSolutionTypeToFetch();
+  solToFetch_ = GetSolutionTypeForStart();
   auto mv = GetValuePresolver().PresolveBasis(
     { basis.varstt, basis.constt });
   auto varstt = mv.GetVarValues()();
@@ -1144,7 +1212,7 @@ void MosekBackend::SetBasis(SolutionBasis basis) {
 
 void MosekBackend::AddPrimalDualStart(Solution sol)
 {
-  solToFetch_ = GetSolutionTypeToFetch();
+  solToFetch_ = GetSolutionTypeForStart();
   auto mv = GetValuePresolver().PresolveSolution(
         { sol.primal, sol.dual } );
   auto x0 = mv.GetVarValues()();
