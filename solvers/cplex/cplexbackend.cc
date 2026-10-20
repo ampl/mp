@@ -2396,9 +2396,9 @@ void CplexBackend::InitCustomOptions() {
     storedOptions_.cuts_, values_bqpcuts);
 
   AddCplexParamOption("cut:factor cutsfactor cutfactor",
-    " Limit on MIP cuts added:\n"
+    "Limit on MIP cuts added (a real number):\n"
     "\n.. value-table::\n",
-    CPXPARAM_MIP_Limits_CutsFactor, values_cutsfactor, 0);
+    CPXPARAM_MIP_Limits_CutsFactor, values_cutsfactor, -1.0);
 
   AddCplexParamOption("cut:passes cutpasses cutpass",
     "Maximum number of cutting-plane passes during root-cut generation:\n"

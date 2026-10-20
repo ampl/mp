@@ -7,7 +7,7 @@ Summary of recent updates to CPLEX for AMPL
   *mip:basis:iterlimit*.
 - Retain the MIP solution when a supplementary fixed solve reaches a limit.
 - Option fixes: *cut:cuts* had no effect; *bar:growth*, *bar:objrange*,
-  *tech:workfilelim* were rejected by CPLEX (wrong value type);
+  *tech:workfilelim*, *cut:factor* were rejected by CPLEX (wrong value type);
   *alg:droptol* was truncated to an integer; *pre:reformulations* set the
   wrong parameter (new *pre:reduce* for primal/dual reductions);
   *alg:netfind* values are 1/2/3 as in CPLEX; *pre:node* accepts 2 and 3;
