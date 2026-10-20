@@ -864,11 +864,12 @@ void HighsBackend::InitCustomOptions() {
     "Limit on solve time (in seconds; default: no limit).",
     "time_limit", 0.0, DBL_MAX);
 
-  AddHighsOption("lim:simplexiterationlimit simplexiterationlimit simplex_iteration_limit",
-    "Limit on simplex iterations (default: no limit).",
+  AddHighsOption("lim:iter iterlim lim:simplexiterationlimit simplexiterationlimit simplex_iteration_limit",
+    "Limit on simplex iterations when solving LPs, not counting "
+    "MIP subproblems (default: no limit).",
     "simplex_iteration_limit", 0, INT_MAX);
 
-  AddHighsOption("lim:ipmiterationlimit ipmiterationlimit ipm_iteration_limit",
+  AddHighsOption("bar:iterlim bariterlim lim:ipmiterationlimit ipmiterationlimit ipm_iteration_limit",
     "Limit on IPM iterations (default: no limit).",
     "ipm_iteration_limit", 0, INT_MAX);
 
@@ -886,11 +887,11 @@ void HighsBackend::InitCustomOptions() {
   //   "Use native termination for PDLP solver:\n"
   //   "\n.. value-table::\n", "pdlp_native_termination", values_01_noyes_0default_, 0);
 
-  AddHighsOption("pre:pdlpscaling_mode pdlp_scaling_mode",
+  AddHighsOption("pdlp:scaling pdlpscaling pre:pdlpscaling_mode pdlp_scaling_mode",
       "Scaling mode for PDLP solver (default 5 = 1 + 4), sum of:\n"
       "\n.. value-table::\n", "pdlp_scaling_mode", pdlp_scaling_mode_values, 5);
 
-  AddHighsOption("lim:pdlp_iteration_limit pdlpiterationlimit pdlp_iteration_limit",
+  AddHighsOption("lim:pdlpiter pdlpiterlim lim:pdlp_iteration_limit pdlpiterationlimit pdlp_iteration_limit",
     "Iteration limit for PDLP solver (default: no limit).",
     "pdlp_iteration_limit", 0, INT_MAX);
 
@@ -918,7 +919,7 @@ void HighsBackend::InitCustomOptions() {
       "Primal feasibility tolerance (default 1e-7).",
       "primal_feasibility_tolerance", 1e-10, Infinity());
 
-  AddHighsOption("alg:kkt_tolerance kkttol kkt_tolerance",
+  AddHighsOption("alg:kkttol kkttol alg:kkt_tolerance kkt_tolerance",
     "KKT tolerance (default 1e-7). If changed from its default, "
     "this tolerance is used for all feasibility and optimality (KKT) "
     "measures, overriding the individual tolerances.",
@@ -936,39 +937,39 @@ void HighsBackend::InitCustomOptions() {
     "IPM optimality tolerance (default 1e-8).",
     "ipm_optimality_tolerance", 1e-12, Infinity());
 
-  AddHighsOption("pdlp:cupdlpc_restart_method pdlpcupdlpcrestartmethod pdlp_cupdlpc_restart_method",
+  AddHighsOption("pdlp:restartmethod pdlprestartmethod pdlp:cupdlpc_restart_method pdlpcupdlpcrestartmethod pdlp_cupdlpc_restart_method",
     "Restart mode for PDLP solver:\n"
       "\n.. value-table::\n",
     "pdlp_cupdlpc_restart_method", pdlperestartmethod_values, 1);
 
-  AddHighsOption("pdlp:restart_strategy pdlprestartstrategy pdlp_restart_strategy",
+  AddHighsOption("pdlp:restart pdlprestart pdlp:restart_strategy pdlprestartstrategy pdlp_restart_strategy",
       "Restart strategy for PDLP solver:\n"
       "\n.. value-table::\n",
       "pdlp_restart_strategy", pdlp_restart_strategy_values, 1);
 
-  AddHighsOption("pdlp:step_size_strategy pdlpstepsizestrategy pdlp_step_size_strategy ",
+  AddHighsOption("pdlp:stepsize pdlpstepsize pdlp:step_size_strategy pdlpstepsizestrategy pdlp_step_size_strategy",
       "Stepsize strategy for PDLP solver:\n"
       "\n.. value-table::\n",
       "pdlp_step_size_strategy", pdlp_step_size_strategy_values, 1);
 
-  AddHighsOption("pdlp:optimality_tolerance pdlp_optimality_tolerance pdlp_opt_tol pdlpopttol",
+  AddHighsOption("pdlp:opttol pdlpopttol pdlp:optimality_tolerance pdlp_optimality_tolerance pdlp_opt_tol",
     "PDLP optimality tolerance (default 1e-7).",
     "pdlp_optimality_tolerance", 1e-12, Infinity());
 
 
-  AddHighsOption("pdlp:ruiz_iterations pdlp_ruiz_iterations ",
+  AddHighsOption("pdlp:ruiziter pdlpruiziter pdlp:ruiz_iterations pdlp_ruiz_iterations",
       "Number of Ruiz scaling iterations for PDLP solver (default 10).",
       "pdlp_ruiz_iterations", 0, INT_MAX);
 
-  AddHighsOption("lim:qp_iteration_limit qp_iteration_limit qpiterationlimit",
+  AddHighsOption("lim:qpiter qpiterlim lim:qp_iteration_limit qp_iteration_limit qpiterationlimit",
       "Iteration limit for QP active set method (default: no limit).",
       "qp_iteration_limit", 0, INT_MAX);
 
-  AddHighsOption("qp:nullspace_limit qp_nullspace_limit qpnullspacelimit",
+  AddHighsOption("qp:nullspacelim qpnullspacelim qp:nullspace_limit qp_nullspace_limit qpnullspacelimit",
       "Nullspace limit for the active set QP solver (default: 4000).",
       "qp_nullspace_limit", 0, INT_MAX);
 
-  AddHighsOption("qp:regularization_value qp_regularization_value qpregularizationvalue",
+  AddHighsOption("qp:regularization qpregularization qp:regularization_value qp_regularization_value qpregularizationvalue",
       "Regularization value added to the Hessian in the active set QP solver (default: 1e-7).",
       "qp_regularization_value", 0.0, DBL_MAX);
 
@@ -976,16 +977,16 @@ void HighsBackend::InitCustomOptions() {
     "Run crossover after IPM to get a basic solution:\n"
       "\n.. value-table::\n", "run_crossover", run_crossover_values, c);
 
-  AddHighsOption("bar:hipo_system hipo_system",
+  AddHighsOption("bar:hiposystem hiposystem bar:hipo_system hipo_system",
       "Control which Newton/KKT system is used by HiPO:\n"
       "\n.. value-table::\n",  "hipo_system", hipo_system_values , c);
 
 
-  AddHighsOption("bar:hipo_parallel_type hipo_parallel_type",
+  AddHighsOption("bar:hipoparallel hipoparallel bar:hipo_parallel_type hipo_parallel_type",
 	  "Control the type of parallelism used by HiPO:\n"
       "\n.. value-table::\n", "hipo_parallel_type", hipo_parallel_type_values, c);
 
-  AddHighsOption("bar:hipo_ordering hipo_ordering",
+  AddHighsOption("bar:hipoordering hipoordering bar:hipo_ordering hipo_ordering",
 	  "Control the ordering used by HiPO before factorization:\n"
       "\n.. value-table::\n", "hipo_ordering", hipo_ordering_values, c);
 
@@ -993,7 +994,7 @@ void HighsBackend::InitCustomOptions() {
     "Maximum number of threads used by HiGHS (parallel simplex, "
     "IPM and MIP); default 0 ==> automatic choice.",
     "threads", 0, INT32_MAX);
-  AddHighsOption("mip:detsimmetry detsimmetry mip_detect_symmetry",
+  AddHighsOption("mip:symmetry symmetry mip:detsimmetry detsimmetry mip_detect_symmetry",
     "0/1*: Whether MIP symmetry should be detected.",
     "mip_detect_symmetry", 0, 1);
 
@@ -1013,8 +1014,9 @@ void HighsBackend::InitCustomOptions() {
     "Maximum MIP nodes to explore (default: no limit).",
     "mip_max_nodes", 0, INT_MAX);
 
-  AddHighsOption("lim:improvingsols improvingsolslimit mip_max_improving_sols",
-    "Maximum number of improving solutions found (default: no limit).",
+  AddHighsOption("lim:sol sollim lim:improvingsols improvingsolslimit mip_max_improving_sols",
+    "Stop the MIP solver after this many improving solutions "
+    "have been found (default: no limit).",
     "mip_max_improving_sols", 1, INT_MAX);
 
   AddHighsOption("mip:lpagelimit lpagelimit mip_lp_age_limit",
@@ -1086,16 +1088,16 @@ ipm_optimality_tolera
     "(default 1e-06).",
     "mip_abs_gap", 0.0, Infinity());
 
-  AddHighsOption("pre:centring run_centring centring",
+  AddHighsOption("bar:centring centring pre:centring run_centring",
     "Perform centring steps or not:\n"
     "\n.. value-table::\n", "run_centring", values_01_noyes_0default_, 0);
 
-  AddHighsOption("pre:maxcentringsteps max_centring_steps maxcentringsteps",
+  AddHighsOption("bar:maxcentringsteps maxcentringsteps pre:maxcentringsteps max_centring_steps",
     "Maximum number of steps to use when computing the analytic centre "
     "(default 5).",
     "max_centring_steps", 0, INT_MAX);
 
-  AddHighsOption("pre:centringratiotolerance centring_ratio_tolerance centringratiotolerance",
+  AddHighsOption("bar:centringratiotol centringratiotol pre:centringratiotolerance centring_ratio_tolerance centringratiotolerance",
     "Centring stops when the ratio max(x_j*s_j) / min(x_j*s_j) is below "
     "this tolerance (default 100).",
     "centring_ratio_tolerance", 0.0, DBL_MAX);
@@ -1112,7 +1114,7 @@ ipm_optimality_tolera
       "14 = true IIS with column priority.",
 	  "iis_strategy", iis_strategy_values, 0);
 
-  AddHighsOption("lim:iis_time_limit iis_time_limit iistimelimit",
+  AddHighsOption("lim:iistime iistimelim lim:iis_time_limit iis_time_limit iistimelimit",
 	  "Time limit for computing IIS (default: no limit).",
 	  "iis_time_limit", 0.0, DBL_MAX);
 }

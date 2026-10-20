@@ -16,6 +16,13 @@ Summary of recent updates to HiGHS for AMPL
 - A value rejected by HiGHS now aborts with a message naming the AMPL
   option, the value and the HiGHS diagnostic (valid range);
   *alg:method=hipo* reports clearly when the library lacks HiPO.
+- MP-style option names: *alg:kkttol*, *pdlp:scaling*, *pdlp:restart*,
+  *pdlp:restartmethod*, *pdlp:stepsize*, *pdlp:opttol*, *pdlp:ruiziter*,
+  *lim:pdlpiter*, *lim:qpiter*, *qp:nullspacelim*, *qp:regularization*,
+  *bar:hiposystem*, *bar:hipoparallel*, *bar:hipoordering*, *lim:iistime*,
+  *bar:centring*, *bar:maxcentringsteps*, *bar:centringratiotol*,
+  *mip:symmetry*; standard synonyms *lim:iter*, *bar:iterlim*, *lim:sol*.
+  All previous spellings remain accepted.
 
 
 ## 20260813
