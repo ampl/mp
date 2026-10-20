@@ -378,13 +378,18 @@ void HighsBackend::AddPrimalDualStart(Solution sol0_unpres) {
   auto x0 = mv.GetVarValues()();
   auto s0 = ms.GetVarValues()();
   auto pi0 = mv.GetConValues()(CG_Linear);
-  /// If all variables provided or all missing are continuous,
-  /// set warmstart, otherwise fix, solve, unfix, set warmstart
   if (s0.size() < (size_t)NumVars())
     s0.resize(NumVars());
+  if (x0.size() < (size_t)NumVars())
+    x0.resize(NumVars());
+  /// Partial start: if all missing values belong to continuous variables,
+  /// pass the start as is; otherwise either let HiGHS complete it
+  /// (mip:start=1, mip:maxstartnodes) or complete it here (mip:start=2).
   if (0==*std::min_element(s0.begin(), s0.end())) {
     bool fAllMissingAreRealVars = true;
     for (auto j=s0.size(); j--; ) {
+      if (s0[j])
+        continue;
       int integr;
       auto res = loader().Highs_getColIntegrality(lp(), j, &integr);
       if (kHighsStatusOk != res)
@@ -395,19 +400,70 @@ void HighsBackend::AddPrimalDualStart(Solution sol0_unpres) {
       }
     }
     if (!fAllMissingAreRealVars) {
-      std::vector<double> costs(NumVars());
-      std::vector<double> lb(NumVars());
-      std::vector<double> ub(NumVars());
-      int numnz, ncols;
-      loader().Highs_getColsByRange(lp(), 0, NumVars()-1, &ncols,
-        costs.data(), lb.data(), ub.data(), &numnz, NULL, NULL, NULL);
-      loader().Highs_changeColsBoundsByMask(lp(), s0.data(), x0.data(), x0.data());
-      loader().Highs_run(lp());
-      x0 = PrimalSolution();         // get new solution
-      loader().Highs_changeColsBoundsByMask(lp(), s0.data(), lb.data(), ub.data());
+      if (2 == storedOptions_.mipstart_ || !loader().Highs_setSparseSolution) {
+        if (!CompleteStartByFixing(x0, s0))
+          return;
+      } else {
+        std::vector<int> idx;
+        std::vector<double> val;
+        for (size_t j = 0; j < s0.size(); ++j)
+          if (s0[j]) {
+            idx.push_back((int)j);
+            val.push_back(x0[j]);
+          }
+        auto res = loader().Highs_setSparseSolution(
+              lp(), (int)idx.size(), idx.data(), val.data());
+        if (kHighsStatusError == res)
+          AddWarning("MIPSTART",
+                     "HiGHS rejected the partial MIP start "
+                     "(a value may be outside the variable bounds)");
+        return;
+      }
     }
   }
-  HIGHS_CCALL(loader().Highs_setSolution(lp(), x0.data(), NULL, NULL, pi0.data()));
+  auto res = loader().Highs_setSolution(lp(), x0.data(), NULL, NULL,
+                                        pi0.empty() ? NULL : pi0.data());
+  if (kHighsStatusError == res)
+    AddWarning("WARMSTART",
+               "HiGHS rejected the starting point "
+               "(a value may be outside the variable bounds)");
+}
+
+bool HighsBackend::CompleteStartByFixing(std::vector<double>& x0,
+                                         const std::vector<int>& s0) {
+  std::vector<double> costs(NumVars());
+  std::vector<double> lb(NumVars());
+  std::vector<double> ub(NumVars());
+  int numnz, ncols;
+  HIGHS_CCALL(loader().Highs_getColsByRange(lp(), 0, NumVars()-1, &ncols,
+    costs.data(), lb.data(), ub.data(), &numnz, NULL, NULL, NULL));
+  HIGHS_CCALL(loader().Highs_changeColsBoundsByMask(
+                lp(), s0.data(), x0.data(), x0.data()));
+  bool ok = false;
+  try {
+    auto run = loader().Highs_run(lp());
+    int primal_status = kHighsSolutionStatusNone;
+    loader().Highs_getIntInfoValue(lp(), "primal_solution_status", &primal_status);
+    if (kHighsStatusError != run && kHighsSolutionStatusFeasible == primal_status) {
+      std::vector<double> x(NumVars());
+      if (kHighsStatusError !=
+          loader().Highs_getSolution(lp(), x.data(), NULL, NULL, NULL)) {
+        x0 = std::move(x);
+        ok = true;
+      }
+    }
+  } catch (...) {
+    HIGHS_CCALL(loader().Highs_changeColsBoundsByMask(
+                  lp(), s0.data(), lb.data(), ub.data()));
+    throw;
+  }
+  HIGHS_CCALL(loader().Highs_changeColsBoundsByMask(
+                lp(), s0.data(), lb.data(), ub.data()));
+  if (!ok)
+    AddWarning("MIPSTART",
+               "Could not complete the partial MIP start by fixing "
+               "the provided integer values; start ignored");
+  return ok;
 }
 
 
@@ -730,6 +786,14 @@ static const mp::OptionValueInfo pdlp_restart_strategy_values[] = {
   {"3", "Halpern", 3}
 };
 
+static const mp::OptionValueInfo mipstart_values[] = {
+  { "1", "Pass the provided values to HiGHS, which completes a partial "
+         "start itself by a limited MIP search (see mip:maxstartnodes; default)", 1},
+  { "2", "Complete a partial start in the driver: fix the provided values "
+         "of integer variables, solve, unfix, and pass the complete solution "
+         "(legacy behavior)", 2}
+};
+
 static const mp::OptionValueInfo iis_strategy_values[] = {
     {"0", "Light test only (infeasible bounds)", 0 },
     { "1", "Try dual ray", 1 },
@@ -1030,6 +1094,11 @@ void HighsBackend::InitCustomOptions() {
   AddHighsOption("mip:restart miprestart mip_allow_restart",
     "0/1*: Whether MIP restart is permitted.",
     "mip_allow_restart", 0, 1);
+
+  AddStoredOption("mip:start mipstart",
+    "How a partial MIP start (initial values for some integer variables, "
+    "with alg:start>0) is completed:\n"
+    "\n.. value-table::\n", storedOptions_.mipstart_, mipstart_values);
 
   AddHighsOption("mip:maxstartnodes maxstartnodes mip_max_start_nodes",
     "Maximum number of MIP nodes when completing a partial MIP start "

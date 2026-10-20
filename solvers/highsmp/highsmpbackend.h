@@ -176,6 +176,11 @@ protected:
   std::pair<int, std::string> GetSolveResult() override;
   void AddHIGHSMessages();
   
+  /// Legacy completion of a partial MIP start: fix the provided
+  /// integer values, solve, unfix. Returns false if no solution resulted.
+  bool CompleteStartByFixing(std::vector<double>& x0,
+                             const std::vector<int>& s0);
+
   ArrayRef<int> VarStatii();
   ArrayRef<int> ConStatii();
   void VarConStatii(ArrayRef<int>, ArrayRef<int>);
@@ -184,6 +189,7 @@ private:
   /// These options are stored in the class
   struct Options {
     std::string lpmethod_ = "choose";
+    int mipstart_ = 1;
     bool onGPU() { return lpmethod_ == "pdlp-gpu" || lpmethod_ == "hipdlp-gpu"; }
   };
   Options storedOptions_;

@@ -31,6 +31,10 @@ Summary of recent updates to HiGHS for AMPL
   *mip:heur:rootredcost*, *mip:heur:ziround*, *mip:heur:shifting*,
   *tech:miplogfreq*, *tech:logtoconsole*, *tech:timelesslog*,
   *bar:hipoblocksize*, *qp:hotstart*.
+- Partial MIP starts are passed to HiGHS natively, which completes
+  them by a limited MIP search (*mip:maxstartnodes*); *mip:start=2*
+  selects the previous driver-side completion by fixing and solving.
+  A start rejected by HiGHS gives a warning instead of aborting.
 
 
 ## 20260813
