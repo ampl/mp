@@ -302,6 +302,7 @@ private:
     int crossover_ = -1;
     int solutionType_ = 0;
     int bestnode_ = 0;
+    int mipStartEffort_ = 1;
     double dropTol_ = 0.0;
 
     bool fBarrier_ = false;

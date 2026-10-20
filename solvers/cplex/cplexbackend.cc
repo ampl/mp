@@ -356,6 +356,10 @@ namespace mp {
   void CplexBackend::AddMIPStart(
     ArrayRef<double> x0_unpres, ArrayRef<int> sparsity_unpres) {
     if (!IsMIP()) return;
+    if (0 == storedOptions_.mipStartEffort_) return;   // mip:start:effort=0
+    int effort = CPX_MIPSTART_AUTO;
+    if (storedOptions_.mipStartEffort_ >= 3)   // 3..7 as in cplexasl
+      effort = storedOptions_.mipStartEffort_ - 2;
     auto mv = GetValuePresolver().PresolveSolution({ x0_unpres });
     auto ms = GetValuePresolver().PresolveGenericInt({ sparsity_unpres });
     auto& x0 = mv.GetVarValues()();
@@ -371,7 +375,7 @@ namespace mp {
       }
     }
     int beg[2] = { 0, static_cast<int>(val.size()) };
-    CPLEX_CALL(CPXaddmipstarts(env(), lp(), 1, val.size(), beg, idx.data(), val.data(), 0, nullptr));
+    CPLEX_CALL(CPXaddmipstarts(env(), lp(), 1, val.size(), beg, idx.data(), val.data(), &effort, nullptr));
   }
 
 ArrayRef<double> CplexBackend::PrimalSolution() {
@@ -533,6 +537,8 @@ void CplexBackend::Solve() {
     {
       if (storedOptions_.cpxMethod_ == CPX_ALG_BENDERS)
         CPLEX_CALL(CPXbendersopt(env(), lp()));
+      else if (2 == storedOptions_.populate_)
+        CPLEX_CALL(CPXpopulate(env(), lp()));
       else
         CPLEX_CALL(CPXmipopt(env(), lp()));
     }
@@ -1406,6 +1412,7 @@ static const mp::OptionValueInfo values_pool_mode[] = {
 static const mp::OptionValueInfo values_populate[] = {
   { "0", "no; just keep solutions found during the initial solve", 0},
   { "1", "run \"populate\" after finding a MIP solution" , 1},
+  { "2", "run \"populate\" instead of seeking a single best solution", 2}
 };
 
 static const mp::OptionValueInfo values_poolintensity[] = {
@@ -1677,6 +1684,18 @@ static const mp::OptionValueInfo values_clonelog[] = {
   { "-1", "No clone logs", -1},
   { "0", "Automatic (default)", 0},
   { "1", "Write clone logs for parallel optimization", 1}
+};
+
+static const mp::OptionValueInfo values_mipstarteffort[] = {
+  { "0", "Do not pass the MIP start to CPLEX", 0},
+  { "1", "Automatic choice of effort level (default)", 1},
+  { "2", "Withdrawn; treated as 1", 2},
+  { "3", "CPX_MIPSTART_CHECKFEAS: fail if the start is infeasible", 3},
+  { "4", "CPX_MIPSTART_SOLVEFIXED: solve the problem fixed at the start", 4},
+  { "5", "CPX_MIPSTART_SOLVEMIP: solve a subMIP (see mip:submipnodelim)", 5},
+  { "6", "CPX_MIPSTART_REPAIR: try to repair an infeasible start "
+         "(see mip:repairtries)", 6},
+  { "7", "CPX_MIPSTART_NOCHECK: assume the start is feasible", 7}
 };
 
 static const mp::OptionValueInfo values_presolvenode[] = {
@@ -2060,7 +2079,14 @@ void CplexBackend::InitCustomOptions() {
                   storedOptions_.algMethod_, values_method);
 
   AddToOptionDescription("alg:start",
-                         "For IBM ILOG CPLEX, choices can be refined via alg:start:advance.");
+                         "For IBM ILOG CPLEX, choices can be refined via alg:start:advance "
+                         "and, for MIP starts, mip:start:effort.");
+
+  AddStoredOption("mip:start:effort mipstartvalue mipstart:effort",
+                  "Effort level CPLEX applies to the MIP start passed from "
+                  "the incoming variable values (see alg:start):\n"
+                  "\n.. value-table::\n",
+                  storedOptions_.mipStartEffort_, values_mipstarteffort);
 
   AddCplexParamOption("alg:start:advance alg:start:advanced advance advind",
                   "If set to 1 or 2, this parameter specifies that CPLEX should use advanced "
