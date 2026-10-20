@@ -61,6 +61,9 @@ public:
   // Export problem
   ALLOW_STD_FEATURE(WRITE_PROBLEM, true)
   void DoWriteProblem(const std::string& name) override;
+  // Export solution
+  ALLOW_STD_FEATURE(WRITE_SOLUTION, true)
+  void DoWriteSolution(const std::string& name) override;
 
   // LP basis info, status keys
   ALLOW_STD_FEATURE(BASIS, true)

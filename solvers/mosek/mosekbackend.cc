@@ -219,6 +219,10 @@ void MosekBackend::DoWriteProblem(const std::string &file) {
   MOSEK_CCALL(MSK_writedata(lp(), file.data()));
 }
 
+void MosekBackend::DoWriteSolution(const std::string& name) {
+  MOSEK_CCALL(MSK_writesolution(lp(), solToFetch_, name.c_str()));
+}
+
 
 void MosekBackend::SetInterrupter(mp::Interrupter *inter) {
   inter->SetHandler(InterruptMosek, lp());
@@ -406,7 +410,7 @@ std::pair<int, std::string> MosekBackend::GetLimitResult(bool has_solution) {
     return result(sol::LIMIT_FEAS_TIME, sol::LIMIT_NO_FEAS_TIME, "time limit");
   case MSK_RES_TRM_OBJECTIVE_RANGE:
     return result(sol::LIMIT_FEAS_BESTOBJ, sol::LIMIT_NO_FEAS_CUTOFF,
-                  "objective range (lim:bestobjstop, lim:bestbndstop)");
+                  "objective range (lim:lowerobjcut, lim:upperobjcut)");
   case MSK_RES_TRM_MIO_NUM_BRANCHES:
     return result(sol::LIMIT_FEAS_NODES, sol::LIMIT_NO_FEAS_NODES, "branch limit");
   case MSK_RES_TRM_MIO_NUM_RELAXS:
@@ -634,6 +638,102 @@ static const mp::OptionValueInfo values_mip_presolve_dual_ray[] = {
   { "2", "Higher amount of analysis", 2}
 };
 
+static const mp::OptionValueInfo values_mio_optimizer[] = {
+  { "0", "Optimizer for conic constraints", MSK_OPTIMIZER_CONIC},
+  { "1", "Dual simplex", MSK_OPTIMIZER_DUAL_SIMPLEX},
+  { "2", "Automatic (default)", MSK_OPTIMIZER_FREE},
+  { "3", "Free simplex", MSK_OPTIMIZER_FREE_SIMPLEX},
+  { "4", "Interior-point method", MSK_OPTIMIZER_INTPNT},
+  { "6", "New dual simplex", MSK_OPTIMIZER_NEW_DUAL_SIMPLEX},
+  { "7", "New primal simplex", MSK_OPTIMIZER_NEW_PRIMAL_SIMPLEX},
+  { "8", "Primal simplex", MSK_OPTIMIZER_PRIMAL_SIMPLEX}
+};
+
+static const mp::OptionValueInfo values_mio_nodeselect[] = {
+  { "0", "Automatic (default)", MSK_MIO_NODE_SELECTION_FREE},
+  { "1", "Depth first (first)", MSK_MIO_NODE_SELECTION_FIRST},
+  { "2", "Best bound", MSK_MIO_NODE_SELECTION_BEST},
+  { "3", "Best estimate using pseudo costs", MSK_MIO_NODE_SELECTION_PSEUDO}
+};
+
+static const mp::OptionValueInfo values_mio_branchdir[] = {
+  { "0", "Automatic (default)", MSK_BRANCH_DIR_FREE},
+  { "1", "Up", MSK_BRANCH_DIR_UP},
+  { "2", "Down", MSK_BRANCH_DIR_DOWN},
+  { "3", "Nearest integer", MSK_BRANCH_DIR_NEAR},
+  { "4", "Farthest integer", MSK_BRANCH_DIR_FAR},
+  { "5", "Towards the root LP value", MSK_BRANCH_DIR_ROOT_LP},
+  { "6", "Guided by the incumbent", MSK_BRANCH_DIR_GUIDED},
+  { "7", "By pseudo costs", MSK_BRANCH_DIR_PSEUDOCOST}
+};
+
+static const mp::OptionValueInfo values_mio_cutselection[] = {
+  { "-1", "Automatic (default)", -1},
+  { "0", "Generated cuts are less likely to be added", 0},
+  { "1", "Cuts are selected more aggressively", 1}
+};
+
+static const mp::OptionValueInfo values_mio_probing[] = {
+  { "-1", "Automatic (default)", -1},
+  { "0", "Disabled", 0},
+  { "1", "Low amount of probing", 1},
+  { "2", "Medium amount of probing", 2},
+  { "3", "High amount of probing", 3}
+};
+
+static const mp::OptionValueInfo values_sim_selection[] = {
+  { "0", "Automatic (default)", MSK_SIM_SELECTION_FREE},
+  { "1", "Full pricing", MSK_SIM_SELECTION_FULL},
+  { "2", "Approximate steepest edge", MSK_SIM_SELECTION_ASE},
+  { "3", "Devex pricing", MSK_SIM_SELECTION_DEVEX},
+  { "4", "Steepest edge", MSK_SIM_SELECTION_SE},
+  { "5", "Partial pricing", MSK_SIM_SELECTION_PARTIAL}
+};
+
+static const mp::OptionValueInfo values_sim_hotstart[] = {
+  { "0", "No hot start", MSK_SIM_HOTSTART_NONE},
+  { "1", "Automatic (default)", MSK_SIM_HOTSTART_FREE},
+  { "2", "Hot start from the status keys only", MSK_SIM_HOTSTART_STATUS_KEYS}
+};
+
+static const mp::OptionValueInfo values_sim_degen[] = {
+  { "0", "No degeneration handling", MSK_SIM_DEGEN_NONE},
+  { "1", "Automatic (default)", MSK_SIM_DEGEN_FREE},
+  { "2", "Aggressive", MSK_SIM_DEGEN_AGGRESSIVE},
+  { "3", "Moderate", MSK_SIM_DEGEN_MODERATE},
+  { "4", "Minimum", MSK_SIM_DEGEN_MINIMUM}
+};
+
+static const mp::OptionValueInfo values_solve_form[] = {
+  { "0", "Automatic (default)", MSK_SOLVE_FREE},
+  { "1", "Solve the primal problem", MSK_SOLVE_PRIMAL},
+  { "2", "Solve the dual problem", MSK_SOLVE_DUAL}
+};
+
+static const mp::OptionValueInfo values_bar_order[] = {
+  { "0", "Automatic (default)", MSK_ORDER_METHOD_FREE},
+  { "1", "Approximate minimum local fill-in", MSK_ORDER_METHOD_APPMINLOC},
+  { "2", "Experimental", MSK_ORDER_METHOD_EXPERIMENTAL},
+  { "3", "Try graph partitioning", MSK_ORDER_METHOD_TRY_GRAPHPAR},
+  { "4", "Force graph partitioning", MSK_ORDER_METHOD_FORCE_GRAPHPAR},
+  { "5", "No ordering", MSK_ORDER_METHOD_NONE}
+};
+
+/// MIP cut families, on/off
+struct MosekCutFamily {
+  const char* names;
+  MSKiparame key;
+  const char* descr;
+};
+static const MosekCutFamily mosek_cut_families[] = {
+  { "cut:clique cliquecuts", MSK_IPAR_MIO_CUT_CLIQUE, "clique cuts (default 1)" },
+  { "cut:mir mircuts cut:cmir", MSK_IPAR_MIO_CUT_CMIR, "complemented mixed-integer rounding cuts (default 1)" },
+  { "cut:gomory gomorycuts cut:gmi", MSK_IPAR_MIO_CUT_GMI, "Gomory mixed-integer cuts (default 1)" },
+  { "cut:implied impliedcuts cut:impliedbound", MSK_IPAR_MIO_CUT_IMPLIED_BOUND, "implied bound cuts (default 1)" },
+  { "cut:cover covercuts cut:knapsackcover", MSK_IPAR_MIO_CUT_KNAPSACK_COVER, "knapsack cover cuts (default 1)" },
+  { "cut:lipro liprocuts", MSK_IPAR_MIO_CUT_LIPRO, "lift-and-project cuts (default 0)" }
+};
+
 static const mp::OptionValueInfo values_bar_presolve_scaling[] = {
   {"0", "Mosek chooses scaling heuristic (default)", MSK_SCALING_FREE},
   {"1", "No scaling.", MSK_SCALING_NONE},
@@ -654,6 +754,87 @@ void MosekBackend::InitCustomOptions() {
   AddMosekOption("alg:method method lpmethod simplex",
                   "Which algorithm to use for non-MIP problems or for the root node of MIP problems:\n"
                   "\n.. value-table::\n", MSK_IPAR_OPTIMIZER, alg_values_method, 2);
+
+  AddMosekOption("alg:feastol basistolx",
+                 "Primal feasibility tolerance of the simplex optimizers "
+                 "(MSK_DPAR_BASIS_TOL_X, min 1e-9, default 1e-6).",
+                 MSK_DPAR_BASIS_TOL_X, 1e-9, Infinity());
+
+  AddMosekOption("alg:dualfeastol basistols",
+                 "Dual feasibility tolerance of the simplex optimizers "
+                 "(MSK_DPAR_BASIS_TOL_S, min 1e-9, default 1e-6).",
+                 MSK_DPAR_BASIS_TOL_S, 1e-9, Infinity());
+
+  // ********** SIMPLEX OPTIONS **********
+  AddMosekOption("lp:primalselection primalselection",
+    "Pricing strategy of the primal simplex optimizer:\n"
+    "\n.. value-table::\n",
+    MSK_IPAR_SIM_PRIMAL_SELECTION, values_sim_selection, 0);
+
+  AddMosekOption("lp:dualselection dualselection",
+    "Pricing strategy of the dual simplex optimizer:\n"
+    "\n.. value-table::\n",
+    MSK_IPAR_SIM_DUAL_SELECTION, values_sim_selection, 0);
+
+  AddMosekOption("lp:hotstart simhotstart",
+    "Hot start of the simplex optimizers:\n"
+    "\n.. value-table::\n",
+    MSK_IPAR_SIM_HOTSTART, values_sim_hotstart, 1);
+
+  AddMosekOption("lp:degen simdegen",
+    "Degeneration handling of the simplex optimizers:\n"
+    "\n.. value-table::\n",
+    MSK_IPAR_SIM_DEGEN, values_sim_degen, 1);
+
+  AddMosekOption("lp:solveform simsolveform",
+    "Whether the simplex optimizers solve the primal or the dual problem:\n"
+    "\n.. value-table::\n",
+    MSK_IPAR_SIM_SOLVE_FORM, values_solve_form, 0);
+
+  // ********** BARRIER OPTIONS **********
+  AddMosekOption("bar:iterlim bariterlim",
+                 "Interior-point iteration limit (default 400).",
+                 MSK_IPAR_INTPNT_MAX_ITERATIONS, 0, INT_MAX);
+
+  AddMosekOption("bar:pfeastol intpnttolpfeas",
+                 "Primal feasibility tolerance of the interior-point optimizer "
+                 "for linear problems (0..1, default 1e-8).",
+                 MSK_DPAR_INTPNT_TOL_PFEAS, 0.0, 1.0);
+
+  AddMosekOption("bar:dfeastol intpnttoldfeas",
+                 "Dual feasibility tolerance of the interior-point optimizer "
+                 "for linear problems (0..1, default 1e-8).",
+                 MSK_DPAR_INTPNT_TOL_DFEAS, 0.0, 1.0);
+
+  AddMosekOption("bar:relgaptol intpnttolrelgap",
+                 "Relative gap termination tolerance of the interior-point "
+                 "optimizer for linear problems (min 1e-14, default 1e-8).",
+                 MSK_DPAR_INTPNT_TOL_REL_GAP, 1e-14, Infinity());
+
+  AddMosekOption("bar:copfeastol intpntcotolpfeas",
+                 "Primal feasibility tolerance of the interior-point optimizer "
+                 "for conic problems (0..1, default 1e-8).",
+                 MSK_DPAR_INTPNT_CO_TOL_PFEAS, 0.0, 1.0);
+
+  AddMosekOption("bar:codfeastol intpntcotoldfeas",
+                 "Dual feasibility tolerance of the interior-point optimizer "
+                 "for conic problems (0..1, default 1e-8).",
+                 MSK_DPAR_INTPNT_CO_TOL_DFEAS, 0.0, 1.0);
+
+  AddMosekOption("bar:corelgaptol intpntcotolrelgap",
+                 "Relative gap termination tolerance of the interior-point "
+                 "optimizer for conic problems (0..1, default 1e-8).",
+                 MSK_DPAR_INTPNT_CO_TOL_REL_GAP, 0.0, 1.0);
+
+  AddMosekOption("bar:order intpntordermethod",
+    "Ordering method of the interior-point optimizer:\n"
+    "\n.. value-table::\n",
+    MSK_IPAR_INTPNT_ORDER_METHOD, values_bar_order, 0);
+
+  AddMosekOption("bar:solveform intpntsolveform",
+    "Whether the interior-point optimizer solves the primal or the dual problem:\n"
+    "\n.. value-table::\n",
+    MSK_IPAR_INTPNT_SOLVE_FORM, values_solve_form, 0);
 
   // ********** PRESOLVER OPTIONS **********
   AddMosekOption("pre:aggregate aggregate", 
@@ -677,6 +858,10 @@ void MosekBackend::InitCustomOptions() {
     "Controls the amount of dual ray analysis employed by the mixed-integer optimizer:\n"
     "\n.. value-table::\n",
     MSK_IPAR_MIO_DUAL_RAY_ANALYSIS_LEVEL, values_mip_presolve_dual_ray, -1);
+
+  AddMosekOption("pre:lindep lindep",
+    "0/1: whether presolve removes linearly dependent rows (default 1).",
+    MSK_IPAR_PRESOLVE_LINDEP_USE, 0, 1);
 
   AddMosekOption("pre:folding folding foldinguse",
     "Whether to use folding in presolve (for MIP problems use mip:symmetry):\n"
@@ -750,6 +935,59 @@ void MosekBackend::InitCustomOptions() {
                   MSK_IPAR_MIO_CONIC_OUTER_APPROXIMATION, 0, 1);
 
 
+  AddMosekOption("mip:cuts cuts mip:cutselection",
+    "Cut selection level of the mixed-integer optimizer:\n"
+    "\n.. value-table::\n",
+    MSK_IPAR_MIO_CUT_SELECTION_LEVEL, values_mio_cutselection, -1);
+
+  for (const auto& family: mosek_cut_families)
+    AddMosekOption(family.names,
+      fmt::format("0/1: whether to generate {}", family.descr).c_str(),
+      family.key, 0, 1);
+
+  AddMosekOption("mip:nodeselect nodeselect mip:nodeselection",
+    "Node selection strategy of the mixed-integer optimizer:\n"
+    "\n.. value-table::\n",
+    MSK_IPAR_MIO_NODE_SELECTION, values_mio_nodeselect, 0);
+
+  AddMosekOption("mip:branchdir branchdir",
+    "Branching direction of the mixed-integer optimizer:\n"
+    "\n.. value-table::\n",
+    MSK_IPAR_MIO_BRANCH_DIR, values_mio_branchdir, 0);
+
+  AddMosekOption("mip:probing probing",
+    "Amount of probing in the presolve of the mixed-integer optimizer:\n"
+    "\n.. value-table::\n",
+    MSK_IPAR_MIO_PROBING_LEVEL, values_mio_probing, -1);
+
+  AddMosekOption("mip:rootmethod rootmethod mip:rootoptimizer",
+    "Optimizer for the root relaxation of a mixed-integer problem:\n"
+    "\n.. value-table::\n",
+    MSK_IPAR_MIO_ROOT_OPTIMIZER, values_mio_optimizer, 2);
+
+  AddMosekOption("mip:nodemethod nodemethod mip:nodeoptimizer",
+    "Optimizer for the node relaxations of a mixed-integer problem:\n"
+    "\n.. value-table::\n",
+    MSK_IPAR_MIO_NODE_OPTIMIZER, values_mio_optimizer, 2);
+
+  AddMosekOption("mip:rinsmaxnodes rinsmaxnodes",
+    "Maximal number of nodes in each RINS heuristic run "
+    "(-1: automatic, default; 0: RINS off).",
+    MSK_IPAR_MIO_RINS_MAX_NODES, -1, INT_MAX);
+
+  AddMosekOption("mip:restarts maxrestarts",
+    "Maximal number of restarts of the mixed-integer optimizer (default 10).",
+    MSK_IPAR_MIO_MAX_NUM_RESTARTS, 0, INT_MAX);
+
+  AddMosekOption("mip:rootcutrounds rootcutrounds",
+    "Maximal number of cut separation rounds at the root node (default 100).",
+    MSK_IPAR_MIO_MAX_NUM_ROOT_CUT_ROUNDS, 0, INT_MAX);
+
+  AddMosekOption("mip:djcbigm djcmaxbigm",
+    "Maximal big-M value used when disjunctive constraints are "
+    "reformulated by the mixed-integer optimizer (default 1e6).",
+    MSK_DPAR_MIO_DJC_MAX_BIGM, 0.0, DBL_MAX);
+
   AddMosekOption("mip:varselection varselection",
     "Controls the variable selection strategy employed by the mixed-integer optimizer:\n"
     "\n.. value-table::\n",
@@ -820,6 +1058,27 @@ void MosekBackend::InitCustomOptions() {
   AddMosekOption("lim:time timelim timelimit time_limit",
     "Limit on solve time (in seconds; default -1: no limit).",
     MSK_DPAR_OPTIMIZER_MAX_TIME, -1.0, DBL_MAX);
+
+  AddMosekOption("lim:iter iterlim simmaxiterations",
+    "Simplex iteration limit (default 10000000).",
+    MSK_IPAR_SIM_MAX_ITERATIONS, 0, INT_MAX);
+
+  AddMosekOption("lim:miptime miptimelim",
+    "Time limit for the mixed-integer optimizer in seconds "
+    "(MSK_DPAR_MIO_MAX_TIME; default -1: no limit; lim:time applies too).",
+    MSK_DPAR_MIO_MAX_TIME, -1.0, DBL_MAX);
+
+  AddMosekOption("lim:lowerobjcut lowerobjcut",
+    "Lower objective cut: MOSEK stops when it proves that the optimal "
+    "objective value is below this (default -infinity). "
+    "With lim:upperobjcut this is MOSEK's objective range, reported as "
+    "'objective range' (solve_result 406).",
+    MSK_DPAR_LOWER_OBJ_CUT, -DBL_MAX, DBL_MAX);
+
+  AddMosekOption("lim:upperobjcut upperobjcut",
+    "Upper objective cut: MOSEK stops when it proves that the optimal "
+    "objective value is above this (default +infinity).",
+    MSK_DPAR_UPPER_OBJ_CUT, -DBL_MAX, DBL_MAX);
 
   AddMosekOption("lim:nodes nodelim nodelimit",
     "Limit on the number of MIP branches (MSK_IPAR_MIO_MAX_NUM_BRANCHES; "
