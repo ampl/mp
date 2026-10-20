@@ -390,8 +390,8 @@ static const mp::OptionValueInfo lp_values_method[] = {
   { "s", "automatic simplex (default)", -1},
   { "p", "primal simplex", 0},
   { "d", "dual simplex", 1},
-  { "b", "barrier", 2},
-  { "c", "barrier with crossover", 3},
+  { "b", "barrier (SoPlex has none: runs the dual simplex)", 2},
+  { "c", "barrier with crossover (SoPlex: dual simplex)", 3},
 };
 
 static const mp::OptionValueInfo values_pricing[] = {
@@ -413,7 +413,7 @@ static const mp::OptionValueInfo estimation_method[] = {
   { "w", "tree weight (default)", 5},
   { "s", "ssg", 6},
   { "t", "tree profile", 7},
-  { "b", "wbe ", 8}
+  { "b", "weighted backtrack estimate (wbe)", 8}
 };
 
 static const mp::OptionValueInfo estimation_completion[] = {
@@ -452,7 +452,8 @@ void ScipBackend::InitCustomOptions() {
     storedOptions_.outlev_);
 
   AddScipOption("tech:outlev-native outlev-native",
-    "0*/1/2/3/4/5: Whether to write SCIP log lines (chatter) to stdout and to file (native output level of SCIP).",
+    "0*/1/2/3/4/5: Native SCIP verbosity level (display/verblevel; the SCIP "
+    "default is 4, the driver's is 0). tech:outlev=1 selects 4.",
     "display/verblevel", 0, 5);
 
   AddStoredOption("tech:logfile logfile",
@@ -501,12 +502,12 @@ void ScipBackend::InitCustomOptions() {
     "cutselection/hybrid/intsupportweight", 0.0, SCIP_REAL_MAX);
 
   AddScipOption("cut:minortho minortho",
-    "Minimal orthogonality for a cut to enter the LP (default: 0.9)",
-    "cutselection/hybrid/minortho", 0.0, SCIP_REAL_MAX);
+    "Minimal orthogonality for a cut to enter the LP (0..1; default: 0.9)",
+    "cutselection/hybrid/minortho", 0.0, 1.0);
 
   AddScipOption("cut:minorthoroot minorthoroot",
-    "Minimal orthogonality for a cut to enter the LP in the root node (default: 0.1)",
-    "cutselection/hybrid/minorthoroot", 0.0, SCIP_REAL_MAX);
+    "Minimal orthogonality for a cut to enter the LP in the root node (0..1; default: 0.9)",
+    "cutselection/hybrid/minorthoroot", 0.0, 1.0);
 
   AddScipOption("cut:objparalweight objparalweight",
     "Weight of objective parallelism in cut score calculation (default: 0.1)",
@@ -518,7 +519,7 @@ void ScipBackend::InitCustomOptions() {
     "separating/maxcuts", 0, INT_MAX);
 
   AddScipOption("cut:maxcutsroot maxcutsroot",
-    "Maximal number of separated cuts at the root node (0: disable root node separation; default: 5000)",
+    "Maximal number of separated cuts per separation round at the root node (0: disable root node separation; default: 2000)",
     "separating/maxcutsroot", 0, INT_MAX);
 
   AddScipOption("cut:maxrounds",
@@ -603,7 +604,7 @@ void ScipBackend::InitCustomOptions() {
 
   AddScipOption("lim:nodes",
     "Maximal number of nodes to process (default: -1: no limit)",
-    "limits/nodes", -1, (int)SCIP_LONGINT_MAX);
+    "limits/nodes", -1, INT_MAX);
 
   AddScipOption("lim:restarts",
     "Solving stops, if the given number of restarts was triggered (default: -1: no limit)",
@@ -614,12 +615,12 @@ void ScipBackend::InitCustomOptions() {
     "limits/softtime", -1.0, SCIP_REAL_MAX);
 
   AddScipOption("lim:solutions",
-    "Solving stops, if the given number of solutions were found (default: -1: no limit)",
+    "Solving stops, if the given number of solutions were found; this limit is first checked in presolving (default: -1: no limit)",
     "limits/solutions", -1, INT_MAX);
 
   AddScipOption("lim:stallnodes",
     "Solving stops, if the given number of nodes was processed since the last improvement of the primal solution value (default: -1: no limit)",
-    "limits/stallnodes", -1, (int)SCIP_LONGINT_MAX);
+    "limits/stallnodes", -1, INT_MAX);
 
   AddScipOption("lim:time timelim timelimit time_limit",
     "Limit on solve time (in seconds; default: 1e+20).",
@@ -627,7 +628,7 @@ void ScipBackend::InitCustomOptions() {
 
   AddScipOption("lim:totalnodes",
     "Maximal number of total nodes (incl. restarts) to process (default: -1: no limit)",
-    "limits/totalnodes", -1, (int)SCIP_LONGINT_MAX);
+    "limits/totalnodes", -1, INT_MAX);
 
   ////////////////////////// LP //////////////////////////
   AddScipOption("lp:pricing pricing",
@@ -717,7 +718,7 @@ void ScipBackend::InitCustomOptions() {
     "numerics/lpfeastolfactor", 1e-6, 1.0);
 
   AddScipOption("num:sumepsilon sumepsilon",
-    "Absolute values of sums smaller than this are considered (default: 1e-06)",
+    "Absolute values of sums smaller than this are considered zero (default: 1e-06)",
     "numerics/sumepsilon", SCIP_MINEPSILON*1e+03, SCIP_MAXEPSILON);
 
   //////////////////// NODESELECTION /////////////////////
@@ -765,7 +766,7 @@ void ScipBackend::InitCustomOptions() {
     "presolving/donotmultaggr", 0, 1);
 
   AddScipOption("pre:immrestartfac immrestartfac",
-    "Fraction of integer variables that were fixed in the root node triggering an immediate restart with preprocessing (default: 0.1)",
+    "Fraction of integer variables that were fixed in the root node triggering an immediate restart with preprocessing (default: 0.05)",
     "presolving/immrestartfac", 0.0, 1.0);
 
   AddScipOption("pre:restartfac restartfac",
@@ -773,7 +774,7 @@ void ScipBackend::InitCustomOptions() {
     "presolving/restartfac", 0.0, 1.0);
 
   AddScipOption("pre:restartminred restartminred",
-    "Minimal fraction of integer variables removed after restart to allow for an additional restart (default: 0.1)",
+    "Minimal fraction of integer variables removed after restart to allow for an additional restart (default: 0.05)",
     "presolving/restartminred", 0.0, 1.0);
 
   AddScipOption("pre:subrestartfac subrestartfac",
