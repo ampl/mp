@@ -2,6 +2,36 @@ Summary of recent updates to GCG for AMPL
 =========================================
 
 
+## unreleased
+- Debug builds link again (the GCG 4 release library exports
+  GCGgetOrigprob only as a macro).
+- Options aligned with GCG 4.0.2 / SCIP 10.0.2: corrected defaults,
+  ranges and texts; *det:postprocess* now sets detection/postprocess
+  (it set the postprocess detector); *pre:settings* applied the cut
+  settings instead of presolving.
+- A value rejected by GCG now aborts with a message naming the AMPL
+  option, the value and the valid range.
+- MP-standard names with the previous spellings as synonyms:
+  *mip:gap*, *mip:gapabs*, *alg:feastol*, *alg:dualfeastol*, *lim:sol*,
+  *tech:seed*, *tech:lpseed*, *tech:permseed*, *tech:outlevnative*,
+  *det:origprob*, *det:classification*, *det:benders*, ...; the bare
+  *mode* synonym belongs to *gcg:mode* only.
+- *tech:writeprob* uses MP's standard write feature (*writeprobindex*
+  etc.), *tech:writesolution*, *tech:optionnative*,
+  *tech:optionnativewrite*, *pre:solve*, *lp:scaling*, *tech:clocktype*,
+  *lim:iter*, *lim:bestobjstop*, *lim:bestbndstop*, *tech:threads*
+  (parallel pricing) and the pricing options *pricing:stabilization*,
+  *pricing:maxcolsround*, *pricing:eagerfreq*, *pricing:sorting*, ...,
+  *gcg:dispinfos*, *gcg:enforceproper*, *det:maxnclasses*.
+- Alternative solutions: *sol:poollimit* (default 10), *sol:poolgap*,
+  *sol:poolgapabs*, *ams_stub*.
+- *tech:logfile* without *tech:outlev* writes the full log to the file
+  with a quiet console. No primal values are reported without an
+  incumbent; duals are absent for MIPs and after SCIP presolving.
+- Result codes for SCIP's primal and dual bound limits.
+- The inert *alg:basis* (BASIS) feature is removed.
+
+
 ## 20260624
 - Option updates for GCG 4.0.2.
 
