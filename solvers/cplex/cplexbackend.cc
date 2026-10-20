@@ -1622,6 +1622,61 @@ static const mp::OptionValueInfo values_repairtries[] = {
   { "n > 0", "That many times", 1}
 };
 
+static const mp::OptionValueInfo values_folding[] = {
+  { "-1", "Automatic (default)", -1},
+  { "0", "Off", 0},
+  { "1", "Moderate folding", 1},
+  { "2", "Aggressive", 2},
+  { "3", "Very aggressive", 3},
+  { "4", "Highly aggressive", 4},
+  { "5", "Extremely aggressive", 5}
+};
+static const mp::OptionValueInfo values_dive[] = {
+  { "0", "Automatic (default)", 0},
+  { "1", "Traditional dive (never probing dives)", 1},
+  { "2", "Probing dive (look ahead at both children)", 2},
+  { "3", "Guided dive (explore solutions similar to the incumbent)", 3}
+};
+static const mp::OptionValueInfo values_cardls[] = {
+  { "-1", "Off", -1},
+  { "0", "Automatic (default)", 0},
+  { "1, 2", "Apply with increasing effort", 1}
+};
+static const mp::OptionValueInfo values_qcpduals[] = {
+  { "0", "Do not calculate dual values for QCPs", 0},
+  { "1", "Calculate them unless this interferes with presolve reductions (default)", 1},
+  { "2", "Calculate them, disabling interfering presolve reductions", 2}
+};
+static const mp::OptionValueInfo values_writelevel[] = {
+  { "0", "Automatic (default): all variables in SOL files, "
+         "discrete variables in MST files", 0},
+  { "1", "All variables", 1},
+  { "2", "Discrete variables only", 2},
+  { "3", "Variables with nonzero values only", 3},
+  { "4", "Discrete variables with nonzero values only", 4}
+};
+static const mp::OptionValueInfo values_tunemeasure[] = {
+  { "1", "Mean time over the models (default)", 1},
+  { "2", "Minmax approach", 2}
+};
+static const mp::OptionValueInfo values_siftalg[] = {
+  { "0", "Automatic (default)", 0},
+  { "1", "Primal simplex", 1},
+  { "2", "Dual simplex", 2},
+  { "3", "Network simplex", 3},
+  { "4", "Barrier", 4}
+};
+static const mp::OptionValueInfo values_siftdisplay[] = {
+  { "0", "No display", 0},
+  { "1", "Display major iterations (default)", 1},
+  { "2", "Display LP subproblem information", 2}
+};
+static const mp::OptionValueInfo values_clonelog[] = {
+  { "-1", "No clone logs", -1},
+  { "0", "Automatic (default)", 0},
+  { "1", "Write clone logs for parallel optimization", 1}
+};
+
 static const mp::OptionValueInfo values_presolvenode[] = {
   { "-1", "No node presolve", -1},
   { "0", "Automatic (default)", 0},
@@ -3070,6 +3125,88 @@ void CplexBackend::InitCustomOptions() {
     "0*/1: Whether to record CPLEX library calls for debugging use by IBM "
     "in a file with an automatically chosen name of the form cplexXXXXXXX.db.",
     CPXPARAM_Record, 0, 1);
+
+  // --------- Parameters in neither driver before ---------
+  AddSolverOption("pre:folding folding",
+    "Whether to try LP folding during preprocessing:\n"
+    "\n.. value-table::\n",
+    CPXPARAM_Preprocessing_Folding, values_folding, -1);
+
+  AddSolverOption("mip:dive dive",
+    "MIP dive strategy (how to choose between child nodes):\n"
+    "\n.. value-table::\n",
+    CPXPARAM_MIP_Strategy_Dive, values_dive, 0);
+
+  AddSolverOption("mip:cardls cardls",
+    "Cardinality local search heuristic:\n"
+    "\n.. value-table::\n",
+    CPXPARAM_MIP_Strategy_CardLs, values_cardls, 0);
+
+  AddSolverOption("lp:dynamicrows dynamicrows",
+    "Whether CPLEX manages the rows of the basis matrix dynamically "
+    "during dual simplex:\n"
+    "\n.. value-table::\n",
+    CPXPARAM_Simplex_DynamicRows, values_autonoyes_, -1);
+
+  AddSolverOption("pre:qcpduals qcpduals",
+    "Whether to compute dual values for quadratically constrained "
+    "problems:\n"
+    "\n.. value-table::\n",
+    CPXPARAM_Preprocessing_QCPDuals, values_qcpduals, 1);
+
+  AddSolverOption("pre:qpmakepsd qpmakepsd",
+    "0/1*: Whether to reformulate a binary-only MIQP or MIQCP so that "
+    "its quadratic matrix becomes positive semi-definite.",
+    CPXPARAM_Preprocessing_QPMakePSD, 0, 1);
+
+  AddSolverOption("mip:eplin eplin",
+    "Epsilon used in CPLEX's linearization of logical constraints, "
+    "e.g., x < a becomes x <= a - eplin; default 1e-3.",
+    CPXPARAM_MIP_Tolerances_Linearization, 0.0, 1e75);
+
+  AddSolverOption("alg:feasrelax:tol feasopttol",
+    "Tolerance for constraint violations in the relaxed problem of "
+    "alg:feasrelax; default 1e-6.",
+    CPXPARAM_Feasopt_Tolerance, 0.0, 1e20);
+
+  AddSolverOption("tech:writelevel writelevel",
+    "Level of detail written to SOL and MST files "
+    "(tech:writesolution, tech:writemipstart):\n"
+    "\n.. value-table::\n",
+    CPXPARAM_Output_WriteLevel, values_writelevel, 0);
+
+  AddSolverOption("tech:intsolfileprefix intsolfileprefix",
+    "If set, CPLEX writes every MIP integer solution it finds to a file "
+    "whose name starts with this prefix.",
+    CPXPARAM_Output_IntSolFilePrefix);
+
+  AddSolverOption("tech:mpslong mpslong",
+    "0/1*: Whether to write numbers with full precision to MPS and REW files.",
+    CPXPARAM_Output_MPSLong, 0, 1);
+
+  AddSolverOption("tech:clonelog clonelog",
+    "Whether clone log files are created during parallel optimization:\n"
+    "\n.. value-table::\n",
+    CPXPARAM_Output_CloneLog, values_clonelog, 0);
+
+  AddSolverOption("tech:tunemeasure tunemeasure",
+    "How tuning compares parameter sets across models:\n"
+    "\n.. value-table::\n",
+    CPXPARAM_Tune_Measure, values_tunemeasure, 1);
+
+  AddSolverOption("alg:siftalg siftalg",
+    "Algorithm for sifting subproblems:\n"
+    "\n.. value-table::\n",
+    CPXPARAM_Sifting_Algorithm, values_siftalg, 0);
+
+  AddSolverOption("lim:siftiter siftiterations siftiter",
+    "Limit on sifting iterations (default: no limit).",
+    CPXPARAM_Sifting_Iterations, 0, CPXINT_MAX);
+
+  AddSolverOption("tech:siftdisplay siftdisplay",
+    "How much the sifting algorithm reports:\n"
+    "\n.. value-table::\n",
+    CPXPARAM_Sifting_Display, values_siftdisplay, 1);
 
   /// Custom solve results here'...
   //  AddSolveResults({
