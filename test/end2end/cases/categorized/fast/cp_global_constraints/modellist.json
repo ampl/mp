@@ -3,6 +3,9 @@
     "name" : "assign1 [if, alldiff]",
     "files": ["assign1.mod", "assign.dat"],
     "tags" : ["logical"],
+    "options": {
+      "ilogcp_options": "cp:searchtype=restart lim:fail=100000 tech:threads=1 cp:alldiffinferencelevel=extended"
+    },
     "objective" : 6
   },
   {
@@ -80,6 +83,9 @@
     "name" : "sched1 [count, if]",
     "files": ["sched1.mod", "sched.dat"],
     "tags" : ["logical"],
+    "options": {
+      "ilogcp_options": "cp:searchtype=depthfirst cp:defaultinferencelevel=medium tech:logperiod=100"
+    },
     "objective" : 5
   },
   {
@@ -130,6 +136,9 @@
     "name" : "sudoku easy [alldiff, repeated vars in LinCon]",
     "files": ["sudoku.mod", "sudokuVeryEasy.dat"],
     "tags" : ["logical"],
+    "options": {
+      "ilogcp_options": "cp:dynamicprobing=on tech:seed=7 tech:threads=2"
+    },
     "values": {
       "X[1, 1]": 6
     }
@@ -150,6 +159,19 @@
     "tags" : ["logical"],
     "values": {
       "x[1,1,1,3]": 1
+    }
+  },
+  {
+    "name" : "assign1 [if, alldiff] lim:fail=1 ILOGCP",
+    "files": ["assign1.mod", "assign.dat"],
+    "tags" : ["logical"],
+    "comment": "CP Optimizer fail limit reached before any solution: result code 490",
+    "options": {
+      "ilogcp_options": "tech:threads=1 lim:fail=1"
+    },
+    "solvers": ["ilogcp"],
+    "values": {
+      "solve_result_num": 490
     }
   }
 ]

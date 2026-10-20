@@ -1157,6 +1157,41 @@ class GurobiDirectSolver(MPDirectSolver):
                 }
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
+class IlogCPSolver(MPDirectSolver):
+    """IBM ILOG CP Optimizer driver (ilogcp), old MP framework;
+    uses CPLEX for problems without logical/nonlinear constraints."""
+    def _getAMPLOptionsName(self):
+        return "ilogcp"
+
+    def _setLPMethod(self, method : str):
+        return ""
+
+    def _setNLPMethod(self, method: str):
+        return ""
+
+    def _setTimeLimit(self, seconds):
+        return "timelimit={}".format(seconds)
+
+    def _setNThreads(self, threads):
+        return "workers={}".format(threads)
+
+    def setLogFile(self, name):
+        return ""
+
+    def _setExportLP(self, name: str):
+        return f"exportfile={name}"
+
+    def __init__(self, exeName, timeout=None, nthreads=None,
+                 otherOptions=None):
+        stags = {
+                 ModelTags.continuous, ModelTags.integer, ModelTags.binary,
+                 ModelTags.linear, ModelTags.logical,
+                 ModelTags.quadratic, ModelTags.quadratic_obj,
+                 ModelTags.multisol, ModelTags.multiobj,
+                 ModelTags.iis,
+                 }
+        super().__init__(exeName, timeout, nthreads, otherOptions, stags)
+
 class CPLEXDirectSolver(MPDirectSolver):
     def _getAMPLOptionsName(self):
         return "cplex"

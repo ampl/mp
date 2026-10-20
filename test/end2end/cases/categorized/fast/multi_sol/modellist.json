@@ -2,6 +2,9 @@
   {
     "name": "multi_sol_01",
     "tags": [ "linear"],
+    "options": {
+      "ilogcp_options": "tech:optimizer=cplex lim:time=1 tech:threads=1 mip:gap=1e-5"
+    },
     "objective": 1
   },
   {
