@@ -623,7 +623,7 @@ static const mp::OptionValueInfo lp_values_method[] = {
   { "3", "Crossover", 3},
   { "4", "Concurrent (simplex and barrier simultaneously)", 4},
   { "5", "Choose between simplex and barrier automatically", 5},
-  { "6", "First-order method (PDLP). See also alg:gpumode."}
+  { "6", "First-order method (PDLP). See also alg:gpumode.", 6}
 };
 
 static const mp::OptionValueInfo concurrentlpmode_values[] = {
@@ -658,7 +658,17 @@ static const mp::OptionValueInfo alg_values_level[] = {
   { "1", "Fast", 1},
   { "2", "Normal", 2},
   { "3", "Aggressive", 3}
-}; 
+};
+
+static const mp::OptionValueInfo pre_values_presolve[] = {
+  { "-1", "Automatic (default)", -1},
+  { "0", "Off", 0},
+  { "1", "Fast", 1},
+  { "2", "Normal", 2},
+  { "3", "Aggressive", 3},
+  { "4", "No limitations: presolve until the model cannot be "
+         "modified any more (may be very time-consuming)", 4}
+};
 
 static const mp::OptionValueInfo lp_dualprices_values_[] = {
   { "-1", "Choose automatically (default)", -1},
@@ -675,7 +685,8 @@ static const mp::OptionValueInfo values_loglevel_[] = {
 static const mp::OptionValueInfo lp_barorder_values_[] = {
   { "-1", "Choose automatically (default)", -1},
   { "0", "Approximate Minimum Degree (AMD)", 0},
-  { "1", "Nested Dissection (ND)", 1}
+  { "1", "Nested Dissection (ND1)", 1},
+  { "2", "Modified Nested Dissection (ND2)", 2}
 };
 
 static const mp::OptionValueInfo values_nonconvex[] = {
@@ -769,12 +780,13 @@ void CoptBackend::InitCustomOptions() {
     lp_barorder_values_, -1);
 
   AddSolverOption("tech:seed seed",
-                  "Random number seed, can influence the solution path. "
+                  "Random number seed, can influence the solution path "
+                  "(COPT parameter RandSeed, not in the vendor documentation). "
                   "Default -1.", "RandSeed",
-                  INT_MIN, INT_MAX);
+                  -1, INT_MAX);
 
   
-  AddSolverOption("bar:iterlim BarIterLimit",
+  AddSolverOption("bar:iterlim bariterlim BarIterLimit",
     "Limit on the number of barrier iterations (default 500).",
     COPT_INTPARAM_BARITERLIMIT, 0, INT_MAX);
 
@@ -836,7 +848,10 @@ void CoptBackend::InitCustomOptions() {
 
   AddSolverOption("mip:startmode mipstartmode",
                   "Mode of MIP starts:\n"
-                  "\n.. value-table::\n", COPT_INTPARAM_MIPSTARTMODE,
+                  "\n.. value-table::\n"
+                  "COPT 8.0 also documents 3 = accept all starts "
+                  "(for hierarchical multi-objective models), but the "
+                  "8.0.6 library limits the value to 2.", COPT_INTPARAM_MIPSTARTMODE,
                   mip_start_values_, -1);
 
   AddSolverOption("mip:submipheurlevel submipheurlevel",
@@ -870,8 +885,8 @@ void CoptBackend::InitCustomOptions() {
 
   AddSolverOption("pre:solve presolve",
     "Level of presolving to perform before solving the problem:\n"
-    "\n.. value-table::\n", COPT_INTPARAM_PRESOLVE, 
-    alg_values_level, -1);
+    "\n.. value-table::\n", COPT_INTPARAM_PRESOLVE,
+    pre_values_presolve, -1);
 
   AddSolverOption("pre:scale scale",
     "Whether to scale the problem:\n"
@@ -905,17 +920,18 @@ void CoptBackend::InitCustomOptions() {
 
 
   AddSolverOption("tech:miptasks miptasks",
-    "Number of MIP tasks in parallel;\n"
+    "Number of MIP tasks in parallel (at most 256);\n"
     "default -1 ==> automatic.",
-    COPT_INTPARAM_MIPTASKS, -1, 255);
+    COPT_INTPARAM_MIPTASKS, -1, 256);
 
   
   AddSolverOption("lim:mipnlpiterlimit mipnlpiterlimit",
-      "Iteration limit for solving NLP problem(s) within the MIP solver (default: no limit).",
-      COPT_INTPARAM_MIPNLPITERLIMIT, 0, INT_MAX);
+      "Iteration limit for solving NLP problem(s) within the MIP solver; "
+      "-1 = no limit. Default 100.",
+      COPT_INTPARAM_MIPNLPITERLIMIT, -1, INT_MAX);
 
   AddSolverOption("lim:nlpiterlimit nlpiterlimit",
-    "Iteration limit for the nonlinear solver (default: no limit).",
+    "Iteration limit for the nonlinear solver (default 10000).",
 	  COPT_INTPARAM_NLPITERLIMIT, 0, INT_MAX);
 
   AddSolverOption("lim:time timelim timelimit",
@@ -928,12 +944,12 @@ void CoptBackend::InitCustomOptions() {
     COPT_DBLPARAM_SOLTIMELIMIT, 0.0, DBL_MAX);
 
   AddSolverOption("lim:nodes nodelim nodelimit",
-    "Maximum MIP nodes to explore (default: no limit).",
-    COPT_INTPARAM_NODELIMIT, 0, INT_MAX);
+    "Maximum MIP nodes to explore; default -1 (no limit).",
+    COPT_INTPARAM_NODELIMIT, -1, INT_MAX);
 
   AddSolverOption("lim:memlimit memlimit",
       "Soft limit (number of MB) on memory allocated; "
-      "default = 0 (no limit)",
+      "default 1e20 (no limit).",
       COPT_DBLPARAM_MEMLIMIT, 0.0, Infinity());
 
 
@@ -948,7 +964,7 @@ void CoptBackend::InitCustomOptions() {
                   "and GPU usage and "
       "device selection are fully controlled by this parameter.",
                   COPT_INTPARAM_CONCURRENTLPMODE,
-      concurrentlpmode_values, 0);
+      concurrentlpmode_values, -1);
 
   AddSolverOption("alg:gpumode gpumode lp:pdlpgpumode pdlpgpumode bar:gpumode",
     "Whether to use GPU or CPU for barrier and PDLP methods. Note that CUDA "
@@ -962,8 +978,8 @@ void CoptBackend::InitCustomOptions() {
     COPT_INTPARAM_GPUDEVICE, -1, INT_MAX);
 
   AddSolverOption("lp:pdlptol pdlptol",
-    "Convergence tolerance for PDLP (default 1e-6)",
-    COPT_DBLPARAM_PDLPTOL, 1e-6, 1e-4);
+    "Convergence tolerance for PDLP (default 1e-6).",
+    COPT_DBLPARAM_PDLPTOL, 1e-12, 1e-4);
 
   AddSolverOption("alg:nonconvex nonconvex",
                   "Strategy for continuous nonconvex models (default -1):\n"
@@ -1007,6 +1023,8 @@ void CoptBackend::InitCustomOptions() {
     "original objective, subject to the violation "
     "objective being minimized.\n"
     "\n"
+    "COPT does not support modes 2 and 5 (squared violations) "
+    "for models with integer variables. "
     "Weights are given by suffixes .lbpen and .ubpen on variables "
     "and .rhspen on constraints (when nonnegative), else by keywords "
     "alg:lbpen, alg:ubpen, and alg:rhspen, respectively (default values = 1). "
