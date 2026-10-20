@@ -598,15 +598,16 @@ std::pair<int, std::string> CoptBackend::GetSolveResult() {
 
 void CoptBackend::FinishOptionParsing() {
   int v = 1;
+  GetSolverOption(COPT_INTPARAM_LOGGING, v);       // tech:outlev
   if (!storedOptions_.logFile_.empty())
   {
+    /// The log file needs Logging=1; keep the console quiet
+    /// unless tech:outlev asked for output
+    SetSolverOption(COPT_INTPARAM_LOGTOCONSOLE, v);
     SetSolverOption(COPT_INTPARAM_LOGGING, 1);
     COPT_CCALL(COPT_SetLogFile(lp(), storedOptions_.logFile_.data()));
   }
-  else
-    GetSolverOption(COPT_INTPARAM_LOGGING, v);
   set_verbose_mode(v>0);
-  
 }
 
 
@@ -1259,6 +1260,8 @@ pre::ValueMapInt CoptBackend::ConsIIS() {
 
 
 ArrayRef<double> CoptBackend::Ray() {
+  if (!getIntAttr(COPT_INTATTR_HASPRIMALRAY))   // e.g., for MIP
+    return {};
   auto uray_pres = getVarInfo(COPT_DBLINFO_PRIMALRAY);
   auto mv = GetValuePresolver().PostsolveSolution({ uray_pres });
   auto uray = mv.GetVarValues()();
@@ -1266,6 +1269,8 @@ ArrayRef<double> CoptBackend::Ray() {
 }
 
 ArrayRef<double> CoptBackend::DRay() {
+  if (!getIntAttr(COPT_INTATTR_HASDUALFARKAS))  // e.g., for MIP
+    return {};
   auto fd = getConInfo(COPT_DBLINFO_DUALFARKAS);
   auto vm = GetValuePresolver().PostsolveSolution({
                                                {},
