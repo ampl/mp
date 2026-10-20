@@ -172,6 +172,8 @@ void CoptBackend::ObjRelTol(ArrayRef<double> values) {
 
 void CoptBackend::SetMultiobjOptions(BasicObjOptionSetter* setter) {
     auto passes = setter->GetPassesWithOptions();
+    if (!passes.empty())   // COPT applies per-objective parameters only in this mode
+      SetSolverOption(COPT_INTPARAM_MULTIOBJPARAMMODE, 1);
     for (auto pass : passes) {
         set_current_objective_options(pass);
         setter->SetOptionsForMultiobjPass(pass);
