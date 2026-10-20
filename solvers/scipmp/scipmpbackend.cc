@@ -1,3 +1,7 @@
+#include <algorithm>
+#include <cstdio>
+#include <memory>
+#include <sstream>
 #include <unordered_map>
 #include "lpi/lpi.h"
 #include "scip/cons_linear.h"
@@ -110,12 +114,13 @@ pre::ValueMapDbl ScipBackend::DualSolution() {
 
 ArrayRef<double> ScipBackend::DualSolution_LP() {
   if (IsMIP()) return HasFixedLP() ? ArrayRef<double>(FixedLP().dual) : ArrayRef<double>{};
+  // SCIP prints the reason (presolving performed, ...) if asked
+  if (!SCIPisDualSolAvailable(getSCIP(), verbose_mode()))
+    return {};
   int num_cons = NumLinCons();
   std::vector<double> pi(num_cons);
-  if (SCIPisDualSolAvailable(getSCIP(), TRUE)) {
-    for (int i=0; i < num_cons; i++)
-      SCIP_CCALL( SCIPgetDualSolVal(getSCIP(), getPROBDATA()->linconss[i], pi.data() + i, NULL) );
-  }
+  for (int i=0; i < num_cons; i++)
+    SCIP_CCALL( SCIPgetDualSolVal(getSCIP(), getPROBDATA()->linconss[i], pi.data() + i, NULL) );
   return pi;
 }
 
@@ -152,31 +157,34 @@ void ScipBackend::SetInterrupter(mp::Interrupter *inter) {
   inter->SetHandler(InterruptScip, getSCIP());
 }
 
-void ScipBackend::Solve() {
-  if (!storedOptions_.paramRead_.empty())
-    SCIP_CCALL( SCIPreadParams(getSCIP(), storedOptions_.paramRead_.c_str()) );
-  if (!storedOptions_.logFile_.empty())
-    SCIPsetMessagehdlrLogfile(getSCIP(), storedOptions_.logFile_.c_str());
+void ScipBackend::ApplyParamSettings() {
+  auto* scip = getSCIP();
+  if (storedOptions_.emphasis_ != 0)
+    SCIP_CCALL( SCIPsetEmphasis(scip, (SCIP_PARAMEMPHASIS)storedOptions_.emphasis_, TRUE) );
   if (storedOptions_.heuristics_ != 0)
-    SCIP_CCALL( SCIPsetHeuristics(getSCIP(), (SCIP_PARAMSETTING)storedOptions_.heuristics_, TRUE) );
+    SCIP_CCALL( SCIPsetHeuristics(scip, (SCIP_PARAMSETTING)storedOptions_.heuristics_, TRUE) );
   if (storedOptions_.cuts_ != 0)
-    SCIP_CCALL( SCIPsetSeparating(getSCIP(), (SCIP_PARAMSETTING)storedOptions_.cuts_, TRUE) );
+    SCIP_CCALL( SCIPsetSeparating(scip, (SCIP_PARAMSETTING)storedOptions_.cuts_, TRUE) );
   if (storedOptions_.presolvings_ != 0)
-    SCIP_CCALL( SCIPsetPresolving(getSCIP(), (SCIP_PARAMSETTING)storedOptions_.presolvings_, TRUE) );
-	if (need_multiple_solutions()) {
-//		SCIP_CCALL( SCIPsetParamsCountsols(getSCIP()) );     - does not collect
-//		SCIP_CCALL( SCIPsetEmphasis(getSCIP(), SCIP_PARAMEMPHASIS_COUNTER, FALSE) );
-		SCIP_CCALL( SCIPsetBoolParam(getSCIP(), "constraints/countsols/collect", TRUE) );
-//		SCIP_CCALL( SCIPcount(getSCIP()) );
-	}
-//	else  // TODO uncomment the above and implement reporting of collected pool
-	// see https://www.scipopt.org/doc/html/COUNTER.php#COLLECTALLFEASEBLES
-	{
-		if (storedOptions_.concurrent_)
-			SCIP_CCALL( SCIPsolveConcurrent(getSCIP()) );
-		else
-			SCIP_CCALL( SCIPsolve(getSCIP()) );
-	}
+    SCIP_CCALL( SCIPsetPresolving(scip, (SCIP_PARAMSETTING)storedOptions_.presolvings_, TRUE) );
+  if (0 == storedOptions_.presolve_)
+    SCIP_CCALL( SCIPsetPresolving(scip, SCIP_PARAMSETTING_OFF, TRUE) );
+}
+
+bool ScipBackend::UseConcurrentSolve() const {
+  if (storedOptions_.concurrent_ < 0)
+    return storedOptions_.threads_ > 1;
+  return storedOptions_.concurrent_ > 0;
+}
+
+void ScipBackend::Solve() {
+  ApplyParamSettings();
+  if (!storedOptions_.paramWrite_.empty())
+    SCIP_CCALL( SCIPwriteParams(getSCIP(), storedOptions_.paramWrite_.c_str(), FALSE, FALSE) );
+  if (UseConcurrentSolve())
+    SCIP_CCALL( SCIPsolveConcurrent(getSCIP()) );
+  else
+    SCIP_CCALL( SCIPsolve(getSCIP()) );
   WindupSCIPSolve();
 }
 
@@ -278,16 +286,27 @@ double ScipBackend::getPoolObjective(int i)
   obj = SCIPgetSolOrigObj(getSCIP(), SCIPgetSols(getSCIP())[i]);
   return obj;
 }
+bool ScipBackend::AcceptPoolSolution(double obj, double best) const {
+  double gap = std::fabs(obj - best);
+  if (storedOptions_.poolGapAbs_ >= 0.0 && gap > storedOptions_.poolGapAbs_)
+    return false;
+  if (storedOptions_.poolGap_ >= 0.0 && gap > storedOptions_.poolGap_ * std::fabs(best))
+    return false;
+  return true;
+}
+
 void ScipBackend::ReportSCIPPool() {
   if (!IsMIP())
     return;
-  int iPoolSolution = -1;
-  int nsolutions = SCIPgetNSols(getSCIP());
-  
-  while (++iPoolSolution < nsolutions) {
-    ReportIntermediateSolution(
-      { getPoolSolution(iPoolSolution),
-        {}, { getPoolObjective(iPoolSolution) } });
+  int nsolutions = SCIPgetNSols(getSCIP());        // sorted best-first
+  if (storedOptions_.poolLimit_ >= 0)
+    nsolutions = std::min(nsolutions, storedOptions_.poolLimit_);
+  double best = nsolutions ? getPoolObjective(0) : 0.0;
+  for (int i = 0; i < nsolutions; ++i) {
+    double obj = getPoolObjective(i);
+    if (!AcceptPoolSolution(obj, best))
+      break;                                       // sorted: the rest is worse
+    ReportIntermediateSolution({ getPoolSolution(i), {}, { obj } });
   }
 }
 
@@ -343,6 +362,12 @@ std::pair<int, std::string> ScipBackend::GetSolveResult() {
     return { sol::LIMIT_NO_FEAS_SOFTMEM, "memory limit, no solution" };
   case SCIP_STATUS_GAPLIMIT:
     return { sol::LIMIT_FEAS_GAP, "gap limit" };
+  case SCIP_STATUS_PRIMALLIMIT:
+    return { sol::LIMIT_FEAS_BESTOBJ, "primal bound limit (lim:bestobjstop)" };
+  case SCIP_STATUS_DUALLIMIT:
+    if (hasSol)
+      return { sol::LIMIT_FEAS_BESTBND, "dual bound limit (lim:bestbndstop), feasible solution" };
+    return { sol::LIMIT_NO_FEAS_BESTBND, "dual bound limit (lim:bestbndstop), no solution" };
   case SCIP_STATUS_SOLLIMIT:
     return { sol::LIMIT_FEAS_NUMSOLS, "solution limit" };
   case SCIP_STATUS_BESTSOLLIMIT:
@@ -377,11 +402,50 @@ std::pair<int, std::string> ScipBackend::GetSolveResult() {
 
 
 void ScipBackend::FinishOptionParsing() {
+  if (!storedOptions_.paramRead_.empty())
+    SCIP_CCALL( SCIPreadParams(getSCIP(), storedOptions_.paramRead_.c_str()) );
+  ApplyInlineParams();
+  ApplyThreads();
+  SetUpLogging();
+}
+
+void ScipBackend::ApplyInlineParams() {
+  for (const auto& text: storedOptions_.inlineParams_) {
+    std::string pairs = text;
+    std::replace(pairs.begin(), pairs.end(), '=', ' ');
+    std::istringstream in(pairs);
+    std::string name, value;
+    while (in >> name) {
+      if (!(in >> value))
+        MP_RAISE(fmt::format(
+            "tech:optionnative: no value for SCIP parameter '{}'", name));
+      SetNativeParam(name, value);
+    }
+  }
+}
+
+void ScipBackend::ApplyThreads() {
+  if (storedOptions_.threads_ <= 0)
+    return;
+  SetSolverOption("parallel/maxnthreads", storedOptions_.threads_);
+  SetSolverOption("lp/threads", storedOptions_.threads_);
+}
+
+void ScipBackend::SetUpLogging() {
   if (storedOptions_.outlev_ == 1)
     SetSolverOption("display/verblevel", 4);
-  int v=-1;
-  GetSolverOption("display/verblevel", v);
-  set_verbose_mode(v>0);
+  int verblevel = 0;
+  GetSolverOption("display/verblevel", verblevel);
+  bool console_log = verblevel > 0;
+  if (!storedOptions_.logFile_.empty()) {
+    SCIPsetMessagehdlrLogfile(getSCIP(), storedOptions_.logFile_.c_str());
+    if (!console_log)             // log file only: full log, quiet console
+      SetSolverOption("display/verblevel", 4);
+  }
+  // Quiet also hides messages ignoring verblevel (concurrent solve);
+  // errors go to stderr regardless.
+  SCIPsetMessagehdlrQuiet(getSCIP(), !console_log);
+  set_verbose_mode(console_log);
 }
 
 
@@ -425,6 +489,80 @@ static const mp::OptionValueInfo estimation_completion[] = {
   { "s", "ssg", 5}
 };
 
+static const mp::OptionValueInfo values_lpscaling[] = {
+  { "0", "none", 0},
+  { "1", "normal (default)", 1},
+  { "2", "aggressive", 2}
+};
+
+static const mp::OptionValueInfo values_symmetry[] = {
+  { "0", "off", 0},
+  { "1", "constraint-based (orbitopes, symresacks; lexicographic and orbitopal reduction if dynamic)", 1},
+  { "2", "orbital reduction", 2},
+  { "3", "orbitopes and symresacks, and lexicographic/orbital reduction", 3},
+  { "4", "Schreier Sims cuts", 4},
+  { "5", "Schreier Sims cuts, orbitopes, symresacks, and/or lexicographic reduction", 5},
+  { "6", "Schreier Sims cuts, orbital reduction", 6},
+  { "7", "Schreier Sims cuts, orbitopes, symresacks, and/or lexicographic/orbital reduction (default)", 7}
+};
+
+static const mp::OptionValueInfo values_clocktype[] = {
+  { "1", "CPU user seconds", 1},
+  { "2", "wall clock time (default)", 2}
+};
+
+static const mp::OptionValueInfo values_emphasis[] = {
+  { "0", "default settings (default)", 0},
+  { "1", "cpsolver: CP-like search (e.g., no LP relaxation)", 1},
+  { "2", "easycip: solve easy problems fast", 2},
+  { "3", "feasibility: detect feasibility fast", 3},
+  { "4", "hardlp: be capable to handle hard LPs", 4},
+  { "5", "optimality: prove optimality fast", 5},
+  { "6", "counter: feasible and fast counting process", 6},
+  { "7", "phasefeas: feasibility phase of the 3-phase approach", 7},
+  { "8", "phaseimprove: improvement phase of the 3-phase approach", 8},
+  { "9", "phaseproof: proof phase of the 3-phase approach", 9},
+  { "10", "numerics: increased numerical safety", 10},
+  { "11", "benchmark: do not try to avoid running into the memory limit", 11}
+};
+
+/// Cut families exposed as cut:<family> = separation frequency
+struct CutFamily {
+  const char* names;
+  const char* key;
+  const char* descr;
+};
+static const CutFamily cut_families[] = {
+  { "cut:gomory gomorycuts", "separating/gomory/freq",
+    "Frequency of Gomory mixed-integer cuts (default 10)" },
+  { "cut:gomorymi gomorymicuts", "separating/gomorymi/freq",
+    "Frequency of Gomory mixed-integer cuts from the LP tableau (default 10)" },
+  { "cut:strongcg strongcgcuts", "separating/strongcg/freq",
+    "Frequency of strong Chvatal-Gomory cuts (default 10)" },
+  { "cut:mir mircuts cut:cmir", "separating/cmir/freq",
+    "Frequency of complemented mixed-integer rounding (c-MIR) cuts (default 10)" },
+  { "cut:flowcover flowcovercuts", "separating/flowcover/freq",
+    "Frequency of flow cover cuts (default 10)" },
+  { "cut:cover covercuts cut:knapsackcover", "separating/knapsackcover/freq",
+    "Frequency of knapsack cover cuts (default 10)" },
+  { "cut:clique cliquecuts", "separating/clique/freq",
+    "Frequency of clique cuts (default 0: root node only)" },
+  { "cut:zerohalf zerohalfcuts", "separating/zerohalf/freq",
+    "Frequency of {0,1/2}-cuts (default 10)" },
+  { "cut:implied impliedcuts cut:impliedbounds", "separating/impliedbounds/freq",
+    "Frequency of implied bound cuts (default 10)" },
+  { "cut:aggregation aggregationcuts", "separating/aggregation/freq",
+    "Frequency of aggregated (c-MIR and flow cover) cuts (default 10)" },
+  { "cut:oddcycle oddcyclecuts", "separating/oddcycle/freq",
+    "Frequency of odd cycle cuts (default -1: off)" },
+  { "cut:mcf mcfcuts", "separating/mcf/freq",
+    "Frequency of multi-commodity-flow network cuts (default 0: root node only)" },
+  { "cut:disjunctive disjunctivecuts", "separating/disjunctive/freq",
+    "Frequency of disjunctive cuts (default 0: root node only)" },
+  { "cut:rlt rltcuts", "separating/rlt/freq",
+    "Frequency of reformulation-linearization-technique cuts (default 0: root node only)" }
+};
+
 static const mp::OptionValueInfo childsel[] = {
   { "d", "down", 0},
   { "u", "up", 1},
@@ -465,6 +603,32 @@ void ScipBackend::InitCustomOptions() {
     "The suffix on a parameter file should be .set.\n",
     storedOptions_.paramRead_);
 
+  AddStoredOption("tech:optionnativewrite optionnativewrite tech:param:write param:write",
+    "Name of a SCIP parameter file (.set) to write before solving, "
+    "with all parameters.",
+    storedOptions_.paramWrite_);
+
+  AddListOption("tech:optionnative optionnative optnative tech:param param",
+    "General way to set any SCIP parameter; the value should be a quoted "
+    "string (delimited by ' or \") containing one or more "
+    "'name=value' or 'name value' pairs separated by spaces, for example "
+    "'separating/maxrounds=5 heuristics/rins/freq -1'. Can appear more "
+    "than once. Cannot be used to query current parameter values.",
+    storedOptions_.inlineParams_);
+
+  AddStoredOption("tech:threads threads",
+    "Number of threads to use (default 0: SCIP defaults). A value > 1 "
+    "runs SCIP's concurrent solve with at most this many threads "
+    "(unless alg:concurrent=0) and sets lp:threads for a multi-threaded "
+    "LP solver; the bundled SoPlex is single-threaded. "
+    "SCIP's branch-and-bound itself is sequential.",
+    storedOptions_.threads_, 0, 64);
+
+  AddScipOption("tech:clocktype clocktype",
+    "Clock type for time limits and reporting:\n"
+    "\n.. value-table::\n",
+    "timing/clocktype", values_clocktype, 2);
+
   AddScipOption("alg:method method lpmethod",
     "LP algorithm for solving initial LP relaxations:\n"
     "\n.. value-table::\n", "lp/initalgorithm", lp_values_method, "s");
@@ -474,11 +638,20 @@ void ScipBackend::InitCustomOptions() {
     "\n.. value-table::\n", "lp/resolvealgorithm", lp_values_method, "s");
 
   AddStoredOption("alg:concurrent concurrent",
-    "0/1: whether to solve the problem using concurrent solvers"
+    "-1/0/1: whether to solve the problem using concurrent solvers "
+    "(several SCIP instances with different settings, "
+    "options par:*, tech:threads)"
     "\n"
-    "  | 0 - No concurrent solvers are used to solve the problem (default)\n"
-    "  | 1 - Concurrent solvers are used to solve the problem.",
-    storedOptions_.concurrent_, 0, 1);
+    "  | -1 - Concurrent solvers are used if tech:threads > 1 (default)\n"
+    "  |  0 - No concurrent solvers\n"
+    "  |  1 - Concurrent solvers are used, par:maxnthreads at most.",
+    storedOptions_.concurrent_, -1, 1);
+
+  AddStoredOption("alg:emphasis emphasis",
+    "Predefined parameter settings (SCIPsetEmphasis), applied before "
+    "solving, after individual parameter settings:\n"
+    "\n.. value-table::\n",
+    storedOptions_.emphasis_, values_emphasis);
 
   /////////////////////// BRANCHING ///////////////////////
   AddScipOption("branch:preferbinary preferbinary",
@@ -554,6 +727,12 @@ void ScipBackend::InitCustomOptions() {
     "Separation frequency for the global cut pool (-1: disable global cut pool; 0: only separate pool at the root; default: 10)",
     "separating/poolfreq", -1, SCIP_MAXTREEDEPTH);
 
+  for (const auto& family: cut_families)
+    AddScipOption(family.names,
+      fmt::format("{}: separation frequency (-1: off, 0: root node only, "
+                  "n: every n-th depth level)", family.descr).c_str(),
+      family.key, -1, SCIP_MAXTREEDEPTH);
+
   AddStoredOption("cut:settings",
     "0/1/2/3: sets cuts settings"
     "\n"
@@ -581,6 +760,23 @@ void ScipBackend::InitCustomOptions() {
   AddScipOption("lim:autorestartnodes",
     "If solve exceeds this number of nodes for the first time, an automatic restart is triggered (default: -1: no automatic restart)",
     "limits/autorestartnodes", -1, INT_MAX);
+
+  AddScipOption("lim:bestbndstop bestbndstop lim:dual",
+    "Solving stops, if the dual bound is at least as good as this value (default: no limit)",
+    "limits/dual", -SCIP_REAL_MAX, SCIP_REAL_MAX);
+
+  AddScipOption("lim:bestobjstop bestobjstop lim:primal",
+    "Solving stops, if the primal bound is at least as good as this value (default: no limit)",
+    "limits/primal", -SCIP_REAL_MAX, SCIP_REAL_MAX);
+
+  AddScipOption("lim:iter iterlim lp:iterlim",
+    "Iteration limit for each single LP solve (default: -1: no limit). "
+    "Unlike in other solvers, this is not a total limit.",
+    "lp/iterlim", -1, INT_MAX);
+
+  AddScipOption("lim:rootiter rootiterlim lp:rootiterlim",
+    "Iteration limit for the initial root LP solve (default: -1: no limit)",
+    "lp/rootiterlim", -1, INT_MAX);
 
   AddScipOption("lim:bestsol",
     "Solving stops, if the given number of solution improvements were found (default: -1: no limit)",
@@ -643,6 +839,11 @@ void ScipBackend::InitCustomOptions() {
     "  | 1 - Presolving of LP solver should be used (default).",
     "lp/presolving", 0, 1);
 
+  AddScipOption("lp:scaling pre:scale scale",
+    "LP scaling:\n"
+    "\n.. value-table::\n",
+    "lp/scaling", values_lpscaling, 1);
+
   AddScipOption("lp:threads",
     "Number of threads used for solving the LP (default: 0: automatic)",
     "lp/threads", 0, 64);
@@ -683,6 +884,11 @@ void ScipBackend::InitCustomOptions() {
     "  | 0 - The objective function should not be scaled so that it is always integer\n"
     "  | 1 - The objective function should be scaled so that it is always integer (default).",
     "misc/scaleobj", 0, 1);
+
+  AddScipOption("mip:symmetry symmetry misc:usesymmetry",
+    "Bitset describing the symmetry handling techniques:\n"
+    "\n.. value-table::\n",
+    "misc/usesymmetry", values_symmetry, 7);
 
   ////////////////////////// NLP /////////////////////////
   AddScipOption("nlp:disable",
@@ -798,6 +1004,11 @@ void ScipBackend::InitCustomOptions() {
     "  | 3 - Sets presolvings off.",
     storedOptions_.presolvings_, 0, 3);
 
+  AddStoredOption("pre:solve presolve",
+    "0/1: whether to use SCIP presolving (default 1); "
+    "0 is the same as pre:settings=3.",
+    storedOptions_.presolve_, 0, 1);
+
   ////////////////////// PROPAGATE ///////////////////////
   AddScipOption("pro:abortoncutoff",
     "0/1: whether propagation should be aborted immediately (setting this to 0 could help conflict analysis to produce more conflict constraints)"
@@ -842,9 +1053,21 @@ void ScipBackend::InitCustomOptions() {
     "randomization/randomseedshift", 0, INT_MAX);
 
 	///////////////////////// SOLUTION POOL ///////////////////////////////
-	AddSolverOption("sol:poollimit poollimit",
-		"Soft limit on the number of alternative solutions (option sol:stub).",
-		"constraints/countsols/sollimit", (SCIP_Longint)-1, (SCIP_Longint)9223372036854775807);
+  AddStoredOption("sol:poollimit poollimit ams_limit solnlimit",
+    "Limit on the number of alternative solutions reported "
+    "(options sol:stub, sol:count); default -1: all solutions stored by "
+    "SCIP, at most lim:maxsol.",
+    storedOptions_.poolLimit_, -1, INT_MAX);
+
+  AddStoredOption("sol:poolgap poolgap ams_eps",
+    "Relative tolerance for reporting alternative solutions "
+    "(default: no limit).",
+    storedOptions_.poolGap_, -1.0, SCIP_REAL_MAX);
+
+  AddStoredOption("sol:poolgapabs poolgapabs ams_epsabs",
+    "Absolute tolerance for reporting alternative solutions "
+    "(default: no limit).",
+    storedOptions_.poolGapAbs_, -1.0, SCIP_REAL_MAX);
 
   ///////////////////////// TREE /////////////////////////
   AddScipOption("est:method",
@@ -1066,6 +1289,13 @@ void ScipBackend::AddMIPStart(ArrayRef<double> x0, ArrayRef<int> sparsity) {
 
 void ScipBackend::DoWriteProblem(const std::string& name) {
   ExportModel(name);
+}
+
+void ScipBackend::DoWriteSolution(const std::string& name) {
+  std::unique_ptr<FILE, int(*)(FILE*)> file(std::fopen(name.c_str(), "w"), std::fclose);
+  if (!file)
+    MP_RAISE(fmt::format("Cannot open '{}' for writing the solution", name));
+  SCIP_CCALL( SCIPprintBestSol(getSCIP(), file.get(), FALSE) );
 }
 
 } // namespace mp

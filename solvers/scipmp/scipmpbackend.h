@@ -3,6 +3,7 @@
 
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "mp/backend-mip.h"
 #include "mp/flat/backend_flat.h"
@@ -90,6 +91,11 @@ public:
   **/
   ALLOW_STD_FEATURE(WRITE_PROBLEM, true)
   void DoWriteProblem(const std::string& name) override;
+  /**
+  * EXPORT SOLUTION
+  **/
+  ALLOW_STD_FEATURE(WRITE_SOLUTION, true)
+  void DoWriteSolution(const std::string& name) override;
 
 
  /**
@@ -146,9 +152,21 @@ protected:
   void ReportSCIPResults();
 
   void ReportSCIPPool();
+  /// Whether a pool solution passes sol:poolgap / sol:poolgapabs
+  bool AcceptPoolSolution(double obj, double best) const;
 
   std::vector<double> getPoolSolution(int i);
   double getPoolObjective(int i);
+
+  /// tech:optionnative: "name=value" or "name value" pairs
+  void ApplyInlineParams();
+  /// tech:threads: concurrent solve and LP threads
+  void ApplyThreads();
+  /// tech:outlev, tech:logfile: verbosity and log file
+  void SetUpLogging();
+  /// alg:emphasis, heu/cut/pre:settings, pre:solve
+  void ApplyParamSettings();
+  bool UseConcurrentSolve() const;
 
   /// Solution attributes
   int NodeCount() const;
@@ -182,12 +200,19 @@ private:
 
   /// These options are stored in the class
   struct Options {
-    std::string logFile_, paramRead_;
-    int concurrent_ = 0;
+    std::string logFile_, paramRead_, paramWrite_;
+    std::vector<std::string> inlineParams_;
+    int threads_ = 0;
+    int concurrent_ = -1;       // -1: with tech:threads > 1
     int heuristics_ = 0;
     int cuts_ = 0;
     int presolvings_ = 0;
+    int presolve_ = 1;
+    int emphasis_ = 0;
     int outlev_ = 0;
+    int poolLimit_ = -1;
+    double poolGap_ = -1.0;     // < 0: no limit
+    double poolGapAbs_ = -1.0;
   };
   Options storedOptions_;
 
