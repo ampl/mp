@@ -216,6 +216,12 @@ MosekBackend::SolutionStats() {
 }
 
 void MosekBackend::DoWriteProblem(const std::string &file) {
+  // Without names (default), the LP/MPS writers need generic ones
+  int namelen = 0;
+  if (NumVars() > 0)
+    MOSEK_CCALL(MSK_getvarnamelen(lp(), 0, &namelen));
+  if (0 == namelen)
+    MOSEK_CCALL(MSK_putintparam(lp(), MSK_IPAR_WRITE_GENERIC_NAMES, MSK_ON));
   MOSEK_CCALL(MSK_writedata(lp(), file.data()));
 }
 
@@ -1487,7 +1493,8 @@ void MosekBackend::AddPrimalDualStart(Solution sol)
   auto x0 = mv.GetVarValues()();
 	auto pi0 = mv.GetConValues()(CG_Algebraic);
   MOSEK_CCALL(MSK_putxx(lp(), solToFetch_, (MSKrealt *)x0.data()));
-  MOSEK_CCALL(MSK_puty(lp(), solToFetch_, (MSKrealt *)pi0.data()));
+  if (MSK_SOL_ITG != solToFetch_)        // the integer solution has no duals
+    MOSEK_CCALL(MSK_puty(lp(), solToFetch_, (MSKrealt *)pi0.data()));
 }
 
 void MosekBackend::AddMIPStart(
