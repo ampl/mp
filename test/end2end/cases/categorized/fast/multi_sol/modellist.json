@@ -81,5 +81,33 @@
     "tags": [ "linear"],
     "objective": 1,
     "options": { "cplex_options": "tunetime=0.5 tunedisplay=0 tunefix=mipgap tunefile=tune_out.prm" }
+  },
+  {
+    "name": "multi_sol_01 COPT pool options",
+    "tags": [ "linear"],
+    "comment": "COPT only reports the solutions found during the search",
+    "objective": 1,
+    "options": { "copt_options": "sol:count=1 poolgap=0.1 poolgapabs=0.5 poollimit=2 poolmode=2" },
+    "solvers": ["copt"],
+    "values": {
+      "Initial.nsol": { "min": 1, "max": 2 }
+    }
+  },
+  {
+    "name": "multi_sol_01 COPT solutionstub",
+    "tags": [ "linear"],
+    "objective": 1,
+    "options": { "copt_options": "solutionstub=stub poollimit=2" },
+    "solvers": ["copt"],
+    "values": {
+      "TotalSum.npool": { "min": 1, "max": 2 }
+    }
+  },
+  {
+    "name": "multi_sol_01 COPT tuning",
+    "tags": [ "linear"],
+    "objective": 1,
+    "options": { "copt_options": "tech:tunebase=copt_tune.par tech:tunetimelim=1 tech:tuneoutlev=0" },
+    "solvers": ["copt"]
   }
 ]

@@ -217,9 +217,23 @@
       "mp_options": "debug=1",
       "mp2nl_options": "debug=1 solver_options='debug=1'"
     },
+    "solvers_exclude": ["copt"],
     "objective": 1,
     "values": {
       "Initial.test_quad_constr_lazy": 2
+    }
+  },
+  {
+    "name": "mip_lazy_01 COPT linear lazy",
+    "tags": [ "linear", "integer", "lazy_user_cuts" ],
+    "comment": "COPT marks only linear constraints lazy",
+    "options": {
+      "copt_options": "debug=1"
+    },
+    "solvers": ["copt"],
+    "objective": 1,
+    "values": {
+      "Initial.test_lin_constr_lazy": 1
     }
   },
   {

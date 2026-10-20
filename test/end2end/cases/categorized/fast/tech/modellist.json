@@ -83,5 +83,29 @@
       "solve_result_num": 560,
       "solve_exitcode":   0
     }
+  },
+  {
+    "name" : "Check_Rejected_Param_Value COPT",
+    "tags" : ["linear", "continuous"],
+    "files" : ["diet.mod", "diet.dat"],
+    "comment": "Value outside the COPT parameter range (COPT itself would clamp it): abort before solving",
+    "options": { "copt_options": "threads=5000" },
+    "solvers": ["copt"],
+    "values": {
+      "solve_result_num": 500,
+      "solve_exitcode":   0
+    }
+  },
+  {
+    "name" : "diet COPT options",
+    "tags" : ["linear", "continuous"],
+    "files" : ["diet.mod", "diet.dat"],
+    "comment": "New COPT options and native parameters; writes copt_out.par",
+    "options": { "copt_options": "alg:nlptol=1e-9 bar:start=1 lp:barorder=2 pre:solve=4 mip:fapheurlevel=2 mip:startnodelimit=10 lim:multiobjtime=100 tech:optionnative 'Presolve 1' tech:optionnative 'RelGap=0.001' param:write=copt_out.par" },
+    "solvers": ["copt"],
+    "objective": 88.2,
+    "values": {
+      "solve_result_num": 0
+    }
   }
 ]

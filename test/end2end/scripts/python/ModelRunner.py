@@ -170,7 +170,8 @@ class ModelRunner(object):
                         ss = r
                     if not m.isSubsetOfTags(ss.getSupportedTags()) or \
                             m.hasAnyTag(ss.getUnsupportedTags()) or \
-                            (m.hasSolvers() and ss.getName() not in m.getSolvers()):
+                            (m.hasSolvers() and ss.getName() not in m.getSolvers()) or \
+                            (m.hasSolversExcluded() and ss.getName() in m.getSolversExcluded()):
                         self._runs[i][-1]["outmsg"] = "Skipped, unsupported tags or solver restriction"
                         self._runs[i][-1]["solver"] = ss
                         if r.isBenchmark:

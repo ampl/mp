@@ -66,6 +66,7 @@ class ModelTags(enum.Enum):
     iis = 40013
     iisforce = 40014
     feasrelax = 40100
+    feasrelax_squared = 40101    # squared-violation modes 2 and 5
 
     writelp = 45000              # writeprob=...lp (for Mosek, .jtask)
     writesol = 45010             # writesol=...sol
@@ -140,6 +141,13 @@ class Model(object):
 
     def getSolvers(self):
         return self._description["solvers"]
+
+    def hasSolversExcluded(self):
+        return (self._description is not None) and \
+            ("solvers_exclude" in self._description)
+
+    def getSolversExcluded(self):
+        return self._description["solvers_exclude"]
 
     def hasOptions(self):
         return (self._description is not None) and \

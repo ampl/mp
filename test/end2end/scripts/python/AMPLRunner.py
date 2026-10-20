@@ -425,6 +425,17 @@ class AMPLRunner(object):
         if isinstance(expval, str):
             if expval == "_anyvalue":
                 return
+        if isinstance(expval, list):       ## any of the listed values
+            for ev in expval:
+                if isinstance(ev, (int, float)) and isinstance(val, (int, float)):
+                    if math.isclose(ev, val, rel_tol=1e-5, abs_tol=1e-5):
+                        return
+                elif ev == val:
+                    return
+            self.stats.setdefault("eval_fail_msg", []).append(msg + \
+                ": value " + str(val) + \
+                ", expected one of " + str(expval))
+            return
         b1 = isinstance(expval, (int, float))
         b2 = isinstance(val, (int, float))
         uneq = not \

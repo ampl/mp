@@ -19,12 +19,13 @@
     "options": {
         "ANYSOLVER_options": "iisfind=1"
     },
+    "comment": "COPT reports the violated side of a constraint (low/upp) instead of mem",
     "values": {
       "x.iis": "non",
       "y.iis": "non",
-      "C1.iis": "mem",
-      "C2.iis": "mem",
-      "C3.iis": "mem"
+      "C1.iis": ["mem", "low"],
+      "C2.iis": ["mem", "upp"],
+      "C3.iis": ["mem", "upp"]
     }
   },
   {
@@ -38,8 +39,8 @@
     "values": {
       "x.iis": "upp",
       "y.iis": "non",
-      "C1.iis": "mem",
-      "C2.iis": "mem",
+      "C1.iis": ["mem", "low"],
+      "C2.iis": ["mem", "upp"],
       "C3.iis": "non"
     }
   },
@@ -68,7 +69,7 @@
   },
   {
     "name": "infeas_int_01 feasrelax=5",
-    "tags": [ "linear", "feasrelax"],
+    "tags": [ "linear", "feasrelax", "feasrelax_squared"],
     "options": {
         "ANYSOLVER_options": "feasrelax=5"
     },
@@ -80,7 +81,8 @@
     "options": {
         "ANYSOLVER_options": "feasrelax=6"
     },
-    "objective": -9.534910000000e+05
+    "comment": "Unbounded below once C1 is relaxed; the value depends on the solver's relaxation bound (Gurobi -953491, COPT -9.53e7)",
+    "objective": { "max": -9.0e+05 }
   },
 
   {
@@ -89,9 +91,11 @@
     "options": {
       "ANYSOLVER_options": "feasrelax=1"
     },
+    "comment": "C2 may not be relaxed; Gurobi relaxes C1 by 2, COPT relaxes C3 by 1",
     "values": {
-      "C1.slack": -2,
-      "C2.slack": 1
+      "C1.slack": [-2, 18],
+      "C2.slack": [1, 2],
+      "C3.slack": [20, -1]
     }
   },
   {
@@ -111,7 +115,7 @@
       "ANYSOLVER_options": "iis=1"
     },
     "values": {
-      "C2_lcon.iis": "mem"
+      "C2_lcon.iis": ["mem", "upp"]
     }
   },
   {
@@ -131,7 +135,7 @@
       "ANYSOLVER_options": "iis=1"
     },
     "values": {
-      "Flow4['ELLY', 2].iis": "mem"
+      "Flow4['ELLY', 2].iis": ["mem", "upp"]
     }
   },
   {

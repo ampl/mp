@@ -681,7 +681,7 @@ class CPLEXSolver(AMPLSolver):
                  ModelTags.multisol,
                  ModelTags.multiobj,
                  ModelTags.iis,
-                 ModelTags.feasrelax}
+                 ModelTags.feasrelax, ModelTags.feasrelax_squared}
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
     def _doParseSolution(self, st, stdout=None):
@@ -1129,7 +1129,7 @@ class GurobiDirectSolver(MPDirectSolver):
 
                  ModelTags.multiobj, ModelTags.obj_priority,
                  ModelTags.multisol, ModelTags.sstatus, ModelTags.fixmodel,
-                 ModelTags.iis, ModelTags.iisforce, ModelTags.feasrelax,
+                 ModelTags.iis, ModelTags.iisforce, ModelTags.feasrelax, ModelTags.feasrelax_squared,
 
                  ModelTags.writelp, ModelTags.writesol,
 
@@ -1179,7 +1179,7 @@ class CPLEXDirectSolver(MPDirectSolver):
                  ModelTags.relax, ModelTags.warmstart, ModelTags.mipstart,
                  ModelTags.multiobj, ModelTags.obj_priority,
                  ModelTags.multisol, ModelTags.sstatus, 
-                 ModelTags.iis, ModelTags.feasrelax, ModelTags.fixmodel,
+                 ModelTags.iis, ModelTags.feasrelax, ModelTags.feasrelax_squared, ModelTags.fixmodel,
                  ModelTags.writelp, ModelTags.writesol,
 
                  ModelTags.check_pl2sos2,
@@ -1379,7 +1379,7 @@ class HighsSolver(MPDirectSolver):
 
                  ModelTags.sstatus, 
                  ModelTags.warmstart, ModelTags.return_mipgap, ModelTags.iis,
-                 ModelTags.sens, ModelTags.feasrelax,
+                 ModelTags.sens, ModelTags.feasrelax, ModelTags.feasrelax_squared,
 
                  ModelTags.writelp, ModelTags.writesol,
 
@@ -1427,6 +1427,11 @@ class COPTSolver(MPDirectSolver):
 
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
         stags = {ModelTags.fixmodel, ModelTags.continuous, ModelTags.integer, ModelTags.binary,
+                 ModelTags.sstatus, ModelTags.return_mipgap, ModelTags.sens,
+                 ModelTags.relax, ModelTags.warmstart, ModelTags.mipstart,
+                 ModelTags.sos, ModelTags.lazy_user_cuts,
+                 ModelTags.iis, ModelTags.feasrelax,
+                 ModelTags.writesol,
                  ModelTags.quadratic, ModelTags.quadratic_obj,
                  ModelTags.quadraticnonconvex,
                  ModelTags.formulas,
