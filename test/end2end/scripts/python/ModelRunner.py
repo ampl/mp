@@ -128,6 +128,9 @@ class ModelRunner(object):
                 keep_output=True
         except:
             pass
+        # Also needed to check the "output" field of a case run via AMPL
+        if any(m.hasExpectedOutput() for m in modelList if not m.isNL()):
+            keep_output=True
         
         for m in modelList:
             folder = m.getCaseDir() or ""

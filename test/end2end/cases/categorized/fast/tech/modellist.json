@@ -107,5 +107,42 @@
     "values": {
       "solve_result_num": 0
     }
+  },
+  {
+    "name" : "diet HiGHS LP options",
+    "tags" : ["linear", "continuous"],
+    "files" : ["diet.mod", "diet.dat"],
+    "comment": "Simplex and tolerance options of HiGHS 1.15.1 with their MP-style names",
+    "options": { "highs_options": "alg:simplex=4 alg:simplexscale=3 alg:simplexcrash=2 alg:simplexdualedge=1 alg:simplexprimaledge=1 alg:simplexupdatelim=1000 alg:feastol=1e-8 alg:dualfeastol=1e-8 alg:opttol=1e-8 pre:solve=on tech:threads=1 tech:seed=7 lim:iter=10000" },
+    "solvers": ["highs"],
+    "objective": 88.2,
+    "values": {
+      "solve_result_num": 0
+    }
+  },
+  {
+    "name" : "knap_40 HiGHS MIP options",
+    "tags" : ["linear", "integer"],
+    "files" : ["knap_40.mod"],
+    "comment": "MIP options of HiGHS 1.15.1 with their MP-style names",
+    "options": { "highs_options": "mip:gap=1e-6 mip:gapabs=0 mip:intfeastol=1e-7 mip:heureff=0.1 mip:symmetry=0 lim:nodes=1000 lim:sol=100 mip:lpsolver=simplex mip:heur:rins=0 mip:heur:feasjump=0 mip:restart=0 mip:nodecuts=1 mip:poolagelimit=20 tech:miplogfreq=1" },
+    "solvers": ["highs"],
+    "objective": 1044,
+    "values": {
+      "solve_result_num": 0
+    }
+  },
+  {
+    "name" : "Check_Rejected_Param_Value HiGHS",
+    "tags" : ["linear", "continuous"],
+    "files" : ["diet.mod", "diet.dat"],
+    "comment": "Value outside the HiGHS option range: abort before solving, the message names the AMPL option",
+    "options": { "highs_options": "alg:simplexscale=5" },
+    "solvers": ["highs"],
+    "values": {
+      "solve_result_num": 500,
+      "solve_exitcode":   0,
+      "solve_message": { "contains": "alg:simplexscale=5" }
+    }
   }
 ]

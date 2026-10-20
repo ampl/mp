@@ -61,7 +61,7 @@
   },
   {
     "name": "infeas_int_02_vars feasrelax=4 ubpen=300",
-    "tags": [ "linear", "feasrelax"],
+    "tags": [ "linear", "feasrelax", "feasrelax_modes"],
     "options": {
         "ANYSOLVER_options": "feasrelax=4 ubpen=300"
     },
@@ -69,7 +69,7 @@
   },
   {
     "name": "infeas_int_01 feasrelax=5",
-    "tags": [ "linear", "feasrelax", "feasrelax_squared"],
+    "tags": [ "linear", "feasrelax", "feasrelax_squared", "feasrelax_modes"],
     "options": {
         "ANYSOLVER_options": "feasrelax=5"
     },
@@ -77,7 +77,7 @@
   },
   {
     "name": "infeas_int_01 feasrelax=6",
-    "tags": [ "linear", "feasrelax"],
+    "tags": [ "linear", "feasrelax", "feasrelax_modes"],
     "options": {
         "ANYSOLVER_options": "feasrelax=6"
     },
@@ -104,8 +104,9 @@
     "options": {
       "ANYSOLVER_options": "feasrelax=1"
     },
+    "comment": "Minimal total violation is 1; Gurobi relaxes C2, HiGHS C3",
     "values": {
-      "C2.slack": -1
+      "-min(0, C1.slack) - min(0, C2.slack) - min(0, C3.slack)": 1
     }
   },
   {
@@ -132,7 +133,8 @@
     "name": "infeas_lcon_05 .iis OUT",
     "tags": [ "logical", "nonlinear", "iis" ],
     "options": {
-      "ANYSOLVER_options": "iis=1"
+      "ANYSOLVER_options": "iis=1",
+      "highs_options": "iis=1 cvt:bigM=1e6"
     },
     "values": {
       "Flow4['ELLY', 2].iis": ["mem", "upp"]
@@ -168,6 +170,22 @@
     "solvers": ["cplex"],
     "values": {
       "C2.slack": -1
+    }
+  },
+  {
+    "name": "infeas_lp_01 iisfind=1 presolve 0",
+    "tags": [ "linear", "continuous", "iis"],
+    "options": {
+        "ANYSOLVER_options": "iisfind=1",
+        "presolve": 0,
+        "comment": "LP whose IIS consists of a variable bound (x <= 0) and two rows"
+    },
+    "values": {
+      "x.iis": "upp",
+      "y.iis": "non",
+      "C1.iis": "mem",
+      "C2.iis": "mem",
+      "C3.iis": "non"
     }
   }
 ]

@@ -34,5 +34,43 @@
       "y.test_ini_mip": 0,
       "z.test_ini_mip": 1
     }
+  },
+  {
+    "name": "knap_40_pstart partial MIP start native",
+    "tags": [ "linear", "integer", "mipstart"],
+    "comment": "HiGHS completes the partial start itself (mip:start=1); with lim:nodes=0 the completed start (766) stays the incumbent",
+    "solvers": ["highs"],
+    "options": {
+      "mp_options": "warmstart=1 lim:nodes=0 mip:heureff=0 pre:solve=off",
+      "highs_options": "mip:start=1 tech:outlev=1"
+    },
+    "objective": 766,
+    "output": [ "MIP start solution is feasible, objective value is 766" ]
+  },
+  {
+    "name": "knap_40_pstart partial MIP start legacy",
+    "tags": [ "linear", "integer", "mipstart"],
+    "comment": "Driver-side completion (mip:start=2): fix the given values, solve, unfix, pass the complete start; no node limit because the completion sub-solve inherits it",
+    "solvers": ["highs"],
+    "options": {
+      "mp_options": "warmstart=1 mip:heureff=0 pre:solve=off",
+      "highs_options": "mip:start=2 tech:outlev=1"
+    },
+    "objective": 1044,
+    "output": [ "MIP start solution is feasible, objective value is 766" ]
+  },
+  {
+    "name": "knap_40_pstart partial MIP start maxstartnodes=0",
+    "tags": [ "linear", "integer", "mipstart"],
+    "comment": "The start cannot be completed within 0 nodes and is dropped; with lim:nodes=0 no incumbent results",
+    "solvers": ["highs"],
+    "options": {
+      "mp_options": "warmstart=1 lim:nodes=0 mip:heureff=0 pre:solve=off",
+      "highs_options": "mip:start=1 mip:maxstartnodes=0"
+    },
+    "values": {
+      "solve_result": "limit",
+      "solve_message": { "contains": "no solution" }
+    }
   }
 ]

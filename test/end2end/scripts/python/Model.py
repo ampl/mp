@@ -67,6 +67,7 @@ class ModelTags(enum.Enum):
     iisforce = 40014
     feasrelax = 40100
     feasrelax_squared = 40101    # squared-violation modes 2 and 5
+    feasrelax_modes = 40102      # modes 3, 4 and 6: violation count / original objective after relaxation
 
     writelp = 45000              # writeprob=...lp (for Mosek, .jtask)
     writesol = 45010             # writesol=...sol

@@ -341,7 +341,8 @@
       "sens"
     ],
     "solvers": [
-      "mosek"
+      "mosek",
+      "highs"
     ],
     "objective": 14.75,
     "options": {

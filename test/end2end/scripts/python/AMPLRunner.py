@@ -408,9 +408,12 @@ class AMPLRunner(object):
                     self.stats.setdefault("eval_fail_msg", []).append( \
                         "error retrieving '{}'".format(name))
         if model.hasExpectedOutput():
+            output = str(self.stats.get("outmsg", ""))
+            if self._outputHandler.is_recording_output():
+                output += self.get_output()
             for oitem in model.getExpectedOutput():
                 self.stats["eval_done"] = True
-                if str(oitem) not in output:       ## Add solver message or is it in?
+                if str(oitem) not in output:
                     self.stats.setdefault("eval_fail_msg", []).append( \
                     "string  '" + str(oitem) + \
                     "'  is not found in the output")
