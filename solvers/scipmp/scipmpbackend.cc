@@ -5,6 +5,8 @@
 #include <unordered_map>
 #include "lpi/lpi.h"
 #include "scip/cons_linear.h"
+#include "scip/scip_iisfinder.h"
+#include "scip/pub_iisfinder.h"
 #include <vector>
 #include <climits>
 #include <cfloat>
@@ -769,6 +771,14 @@ void ScipBackend::InitCustomOptions() {
     "Solving stops, if the primal bound is at least as good as this value (default: no limit)",
     "limits/primal", -SCIP_REAL_MAX, SCIP_REAL_MAX);
 
+  AddScipOption("lim:iisnodes iisnodes",
+    "Maximal number of branch-and-bound nodes for the IIS finders (default: -1: no limit)",
+    "iis/nodes", -1, INT_MAX);
+
+  AddScipOption("lim:iistime iistime",
+    "Maximal time in seconds for the IIS finders (default: 1e+20)",
+    "iis/time", 0.0, 1e+20);
+
   AddScipOption("lim:iter iterlim lp:iterlim",
     "Iteration limit for each single LP solve (default: -1: no limit). "
     "Unlike in other solvers, this is not a total limit.",
@@ -825,6 +835,18 @@ void ScipBackend::InitCustomOptions() {
   AddScipOption("lim:totalnodes",
     "Maximal number of total nodes (incl. restarts) to process (default: -1: no limit)",
     "limits/totalnodes", -1, INT_MAX);
+
+  ///////////////////////// IIS //////////////////////////
+  AddScipOption("iis:bounds iisbounds",
+    "0/1: whether variable bounds take part in the IIS analysis "
+    "(SCIP parameter iis/removebounds; driver default 1: a variable in "
+    "the IIS gets .iis = low/upp/fix, with 0 all stay non)",
+    "iis/removebounds", 0, 1);
+
+  AddScipOption("iis:irreducible iisirreducible",
+    "0/1: whether the infeasible subsystem should be irreducible "
+    "(an IIS, default 1) rather than any infeasible subsystem",
+    "iis/irreducible", 0, 1);
 
   ////////////////////////// LP //////////////////////////
   AddScipOption("lp:pricing pricing",
@@ -1285,6 +1307,61 @@ void ScipBackend::AddMIPStart(ArrayRef<double> x0, ArrayRef<int> sparsity) {
       SCIP_CCALL(SCIPsetSolVal(getSCIP(), solution, getPROBDATA()->vars[j], x[j]));
   SCIP_Bool stored;
   SCIP_CCALL(SCIPaddSolFree(getSCIP(), &solution, &stored));
+}
+
+/// The IIS finder leaves a copy of the infeasible subsystem,
+/// with the surviving constraints and bounds under their original names.
+void ScipBackend::ComputeIIS() {
+  iisVars_.clear();
+  iisCons_.clear();
+  if (SCIPparamIsDefault(Param("iis/removebounds")))   // driver default: analyze bounds
+    SetSolverOption("iis/removebounds", 1);
+  SCIP_CCALL( SCIPgenerateIIS(getSCIP()) );
+  SCIP_IIS* iis = SCIPgetIIS(getSCIP());
+  SCIP* sub = iis ? SCIPiisGetSubscip(iis) : nullptr;
+  if (!sub || !SCIPiisIsSubscipInfeasible(iis)) {
+    AddToSolverMessage("SCIP found no infeasible subsystem (see lim:iistime, lim:iisnodes).\n");
+    return;
+  }
+  std::unordered_map<std::string, int> conIndex, varIndex;
+  for (int i = 0; i < NumLinCons(); ++i)
+    conIndex[SCIPconsGetName(getPROBDATA()->linconss[i])] = i;
+  for (int j = 0; j < NumVars(); ++j)
+    varIndex[SCIPvarGetName(getPROBDATA()->vars[j])] = j;
+  iisVars_.assign(NumVars(), (int)IISStatus::non);
+  iisCons_.assign(NumLinCons(), (int)IISStatus::non);
+  int ncons = 0, nbounds = 0;
+  for (int i = 0; i < SCIPgetNOrigConss(sub); ++i) {
+    auto it = conIndex.find(SCIPconsGetName(SCIPgetOrigConss(sub)[i]));
+    if (it != conIndex.end()) {
+      iisCons_[it->second] = (int)IISStatus::mem;
+      ++ncons;
+    }
+  }
+  for (int k = 0; k < SCIPgetNOrigVars(sub); ++k) {
+    auto* var = SCIPgetOrigVars(sub)[k];
+    auto it = varIndex.find(SCIPvarGetName(var));
+    if (it == varIndex.end())
+      continue;
+    bool lb = !SCIPisInfinity(sub, -SCIPvarGetLbOriginal(var));
+    bool ub = !SCIPisInfinity(sub, SCIPvarGetUbOriginal(var));
+    if (lb || ub)
+      ++nbounds;
+    iisVars_[it->second] = (int)(lb && ub ? IISStatus::fix
+                                 : lb ? IISStatus::low
+                                 : ub ? IISStatus::upp : IISStatus::non);
+  }
+  AddToSolverMessage(fmt::format(
+      "IIS with {} constraints and {} variable bounds{}.\n", ncons, nbounds,
+      SCIPiisIsSubscipIrreducible(iis) ? "" : " (not proven irreducible)"));
+}
+
+IIS ScipBackend::GetIIS() {
+  if (iisVars_.empty() && iisCons_.empty())
+    return {};
+  auto mv = GetValuePresolver().PostsolveIIS(
+        { iisVars_, {{{ CG_Linear, iisCons_ }}} });
+  return { mv.GetVarValues()(), mv.GetConValues()() };
 }
 
 void ScipBackend::DoWriteProblem(const std::string& name) {

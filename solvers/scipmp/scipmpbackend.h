@@ -64,6 +64,13 @@ public:
   ALLOW_STD_FEATURE(MULTISOL, true)
 
   /**
+  * Compute IIS (SCIP 10 IIS finder)
+  **/
+  ALLOW_STD_FEATURE(IIS, true)
+  void ComputeIIS() override;
+  IIS GetIIS() override;
+
+  /**
   * Get/Set AMPL var/con statii
   **/
   ALLOW_STD_FEATURE(BASIS, false)
@@ -215,6 +222,9 @@ private:
     double poolGapAbs_ = -1.0;
   };
   Options storedOptions_;
+
+  /// IIS statuses of the variables and linear constraints
+  std::vector<int> iisVars_, iisCons_;
 
 
 };

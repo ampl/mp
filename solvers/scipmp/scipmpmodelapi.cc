@@ -86,8 +86,11 @@ void ScipModelAPI::linearHelper(const int* pvars, const double* pcoefs, const si
   for (size_t i = 0; i < size; i++)
     vars[i] = getPROBDATA()->vars[pvars[i]];
 
+  // Unique names let the IIS subsystem be mapped back (see ComputeIIS)
+  std::string unique_name = (name && *name)
+      ? name : fmt::format("_lcon{}_", getPROBDATA()->i);
   SCIP_CONS* cons;
-  SCIP_CCALL( SCIPcreateConsBasicLinear(getSCIP(), &cons, name, (int)size, vars, (double*)pcoefs, lb, ub) );
+  SCIP_CCALL( SCIPcreateConsBasicLinear(getSCIP(), &cons, unique_name.c_str(), (int)size, vars, (double*)pcoefs, lb, ub) );
   SCIP_CCALL( SCIPaddCons(getSCIP(), cons) );
   getPROBDATA()->linconss[getPROBDATA()->i] = cons;
   getPROBDATA()->i++;
