@@ -151,6 +151,8 @@ namespace mp {
     decltype(&::Highs_getIis) Highs_getIis = nullptr;
     decltype(&::Highs_getRanging) Highs_getRanging = nullptr;
     decltype(&::Highs_getRowsByRange) Highs_getRowsByRange = nullptr;
+    decltype(&::Highs_feasibilityRelaxation) Highs_feasibilityRelaxation = nullptr;
+    decltype(&::Highs_getObjectiveOffset) Highs_getObjectiveOffset = nullptr;
 
     // Solve
     Highs_run_Func Highs_run;

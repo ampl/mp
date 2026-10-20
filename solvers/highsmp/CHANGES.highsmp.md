@@ -44,6 +44,10 @@ Summary of recent updates to HiGHS for AMPL
 - Sensitivity analysis (*alg:sens=1*, suffixes .sensobjlo/hi, .senslblo/hi,
   .sensublo/hi, .sensrhslo/hi) via HiGHS ranging, for LPs solved to an
   optimal basis and for the fixed LP of *mip:basis*.
+- Feasibility relaxation *alg:feasrelax=1* (weighted sum of violations,
+  penalties from *alg:lbpen/ubpen/rhspen* or suffixes .lbpen/.ubpen/.rhspen,
+  negative = no violation allowed) via Highs_feasibilityRelaxation;
+  the other modes are not available in HiGHS and are rejected.
 
 
 ## 20260813

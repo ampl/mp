@@ -176,6 +176,10 @@ void HighsBackend::InputStartValues() {
           "alg:method={} is not available in this HiGHS library build "
           "(see the HiGHS message above)", storedOptions_.lpmethod_));
     }
+    if (feasrelax() && 1 != feasrelax())
+      MP_RAISE(fmt::format(
+          "alg:feasrelax={}: HiGHS supports only mode 1 "
+          "(minimize the weighted sum of violations)", (int)feasrelax()));
     /// Copy env/lp to ModelAPI
     copy_common_info_to_other();
     int v = -1;
@@ -191,7 +195,10 @@ bool HighsBackend::IsQCP() const {
 
 ArrayRef<double> HighsBackend::PrimalSolution() {
   if (HasFixedLP()) return FixedLP().primal;
-  if (IsMIP() && getIntAttr("primal_solution_status") != kHighsSolutionStatusFeasible)
+  // A feasibility relaxation's point is infeasible for the original
+  // model, so HiGHS marks it infeasible: return it anyway.
+  if (IsMIP() && !feasrelaxDone_ &&
+      getIntAttr("primal_solution_status") != kHighsSolutionStatusFeasible)
     return {};
   int num_vars = NumVars();
   std::vector<double> x(num_vars);
@@ -324,7 +331,54 @@ void HighsBackend::DoPlateauCallback(
 }
 
 
+void HighsBackend::DoHighsFeasRelax() {
+  if (!loader().Highs_feasibilityRelaxation)
+    MP_RAISE("this HiGHS library lacks Highs_feasibilityRelaxation");
+  int n = NumVars(), m = NumLinCons();
+  /// Penalties: suffix-based vectors (in solver coordinates), or the
+  /// global values. Auxiliary variables get the global value.
+  auto mv = GetValuePresolver().PresolveSolution({ {}, feasrelax().rhspen() });
+  std::vector<double> rhspen = mv.GetConValues()(CG_Linear);
+  std::vector<double> lbpen = feasrelax().lbpen();
+  std::vector<double> ubpen = feasrelax().ubpen();
+  if (lbpen.size() && lbpen.size() < (size_t)n) lbpen.resize(n, this->lbpen());
+  if (ubpen.size() && ubpen.size() < (size_t)n) ubpen.resize(n, this->ubpen());
+  if (rhspen.size() && rhspen.size() < (size_t)m) rhspen.resize(m, this->rhspen());
+  auto res = loader().Highs_feasibilityRelaxation(lp(),
+      this->lbpen(), this->ubpen(), this->rhspen(),
+      lbpen.empty() ? nullptr : lbpen.data(),
+      ubpen.empty() ? nullptr : ubpen.data(),
+      rhspen.empty() ? nullptr : rhspen.data());
+  if (kHighsStatusError == res)
+    MP_RAISE("HiGHS feasibility relaxation failed");
+  feasrelaxDone_ = true;
+  /// Original objective value at the relaxed solution
+  int pst = kHighsSolutionStatusNone;
+  loader().Highs_getIntInfoValue(lp(), "primal_solution_status", &pst);
+  if (kHighsSolutionStatusNone != pst) {
+    std::vector<double> x(n), cost(n), lb(n), ub(n);
+    int ncols = 0, nnz = 0;
+    double offset = 0.0;
+    if (kHighsStatusError != loader().Highs_getSolution(lp(), x.data(), NULL, NULL, NULL)
+        && kHighsStatusError != loader().Highs_getColsByRange(lp(), 0, n-1, &ncols,
+              cost.data(), lb.data(), ub.data(), &nnz, NULL, NULL, NULL)) {
+      if (loader().Highs_getObjectiveOffset)
+        loader().Highs_getObjectiveOffset(lp(), &offset);
+      double obj = offset;
+      for (int j = 0; j < n; ++j)
+        obj += cost[j] * x[j];
+      feasrelax().flag_orig_obj_available();
+      feasrelax().orig_obj_value() = obj;
+    }
+  }
+}
+
 void HighsBackend::Solve() {
+  if (feasrelax()) {
+    DoHighsFeasRelax();
+    WindupHIGHSSolve();
+    return;
+  }
   int status = loader().Highs_run(lp());
   if (status != kHighsStatusOk && status != kHighsStatusWarning)
     throw std::runtime_error(fmt::format("  Error {} while solving with HiGHS").c_str());
@@ -886,6 +940,15 @@ HighsBackend::SolutionStats() {
 
 std::pair<int, std::string> HighsBackend::GetSolveResult() {
   namespace sol = mp::sol;
+  if (feasrelaxDone_) {
+    // HiGHS restores the model status from before the relaxation;
+    // judge by the solution it left.
+    int pst = kHighsSolutionStatusNone;
+    loader().Highs_getIntInfoValue(lp(), "primal_solution_status", &pst);
+    if (kHighsSolutionStatusNone != pst)   // the point violates the original model
+      return { sol::SOLVED, "feasibility relaxation solved" };
+    return { sol::FAILURE, "feasibility relaxation found no solution" };
+  }
   int optstatus = loader().Highs_getModelStatus(lp());
   auto obj = loader().Highs_getObjectiveValue(lp());
   auto inf = loader().Highs_getInfinity(lp());

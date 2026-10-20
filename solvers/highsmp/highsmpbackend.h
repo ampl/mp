@@ -21,6 +21,8 @@ class HighsBackend :
   void* fixed_ = nullptr;
   /// IIS statuses in solver coordinates (AMPL .iis values)
   std::vector<int> iisVars_, iisCons_;
+  /// Whether the solve was a feasibility relaxation
+  bool feasrelaxDone_ = false;
   void DestroyFixedLP();
   /// Copy the user's options to the fixed-LP instance
   void CopyOptionsToFixedLP(void* fixed);
@@ -116,6 +118,13 @@ public:
   **/
   ALLOW_STD_FEATURE(SENSITIVITY_ANALYSIS, true)
   SensRangesPresolved GetSensRangesPresolved() override;
+
+  /**
+  * Feasibility relaxation (alg:feasrelax=1 only:
+  * weighted sum of violations, via Highs_feasibilityRelaxation)
+  **/
+  ALLOW_STD_FEATURE(FEAS_RELAX, true)
+  void DoHighsFeasRelax();
 
   /**
   * Obtain inf/unbounded rays
