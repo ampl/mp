@@ -41,7 +41,9 @@ enum Disj2IndFlags {
   D2I_LINEAR = 1,       ///< linear conditional comparisons
   D2I_QUADRATIC = 2,    ///< quadratic conditional comparisons
   D2I_TWO_CHAINS = 4,   ///< both disjuncts absorbable: absorb one
-  D2I_UENC = 8          ///< x==k subject to the unary encoding decision
+  D2I_UENC = 8,         ///< x==k subject to the unary encoding decision
+  D2I_AND_POS = 16,     ///< And of comparisons in positive context
+  D2I_DISTRIBUTE = 32   ///< static l1 || .. || (y1 && ..): clauses li || yj
 };
 
 /// Linear conditional comparisons which can be absorbed
@@ -90,6 +92,7 @@ constexpr bool IsDisj2IndItem()
 struct Disj2IndLeaf {
   int res_ {-1};        ///< its result variable, -1 if none
   bool neg_ {false};    ///< under Not: imply its negation
+  bool literal_ {false};  ///< And member kept as a literal: imply res_==1
 };
 
 /// Analysis of a disjunction l || C
@@ -165,10 +168,16 @@ public:
         "indicator on the other's result (if-else shape, "
         "complementarity)\n"
         "|  8 - Comparisons x==k awaiting the unary encoding decision "
-        "for x (absorbed only if no encoding is chosen).\n"
+        "for x (absorbed only if no encoding is chosen)\n"
+        "| 16 - Any AND of such comparisons (used only there) in positive "
+        "context, e.g., a disjunct (C1 && C2) of a multi-term "
+        "disjunction: indicators on the AND's result variable\n"
+        "| 32 - Static disjunctions l1 || .. || lm || (y1 && .. && yk) "
+        "with the AND used only there: clauses l1 || .. || lm || yj, "
+        "without the AND's result variable.\n"
         "\n"
         "Requires cvt:pre:all=1. Default 11.",
-        disj2ind_flags_, 0, 15);
+        disj2ind_flags_, 0, 63);
   }
 
   /// Hook: record \a con as the parent of its arguments
@@ -190,13 +199,19 @@ public:
     return false;
   }
 
-  /// Hook: convert an accepted disjunction if absorbable
+  /// Hook: convert an accepted disjunction or conjunction
+  /// if absorbable
   template <class Con>
   bool IfNeedsCvtForParent(const Con& con, int ) {
     if constexpr (std::is_same_v<Con, OrConstraint>)
       return IfDisj2Ind()
+          && (Disj2IndChain::State::Ready
+              == AnalyzeChain(con.GetResultVar()).state_
+              || FindDistributableAnd(con) >= 0);
+    if constexpr (std::is_same_v<Con, AndConstraint>)
+      return IfDisj2Ind()
           && Disj2IndChain::State::Ready
-             == AnalyzeChain(con.GetResultVar()).state_;
+             == AnalyzeConjunction(con.GetResultVar()).state_;
     return false;
   }
 
@@ -204,9 +219,27 @@ public:
   /// convert (absorb) its disjunction if ready
   template <class Con>
   bool TryConvertParentFirst(const Con& con, int ) {
-    if constexpr (IsDisj2IndMember<Con>())
-      return IfDisj2Ind() && ConvertTopOrIfReady(con.GetResultVar());
+    if constexpr (IsDisj2IndMember<Con>()) {
+      if (!IfDisj2Ind())
+        return false;
+      if (ConvertTopOrIfReady(con.GetResultVar()))
+        return true;
+      if constexpr (std::is_same_v<Con, AndConstraint>)
+        return ConvertDistributingOr(con.GetResultVar());
+      else
+        return ConvertParentAndIfReady(con.GetResultVar());
+    }
     return false;
+  }
+
+  /// Absorb the comparisons of conjunction \a conj into indicators
+  /// on its result, if possible (D2I_AND_POS).
+  /// Called by AndConverter_MIP::Convert().
+  /// @return whether absorbed
+  bool AbsorbConjunction(const AndConstraint& conj) {
+    if (!IfDisj2Ind())
+      return false;
+    return EmitIfReady(AnalyzeConjunction(conj.GetResultVar()));
   }
 
   /// Absorb disjunction \a disj into indicators, if possible.
@@ -215,12 +248,8 @@ public:
   bool AbsorbDisjunction(const OrConstraint& disj) {
     if (!IfDisj2Ind())
       return false;
-    const auto chain = AnalyzeChain(disj.GetResultVar());
-    if (Disj2IndChain::State::Ready != chain.state_)
-      return false;
-    for (const auto& leaf: chain.leaves_)
-      EmitLeaf(leaf, chain.lit_);
-    return true;
+    return EmitIfReady(AnalyzeChain(disj.GetResultVar()))
+        || DistributeOverAnd(disj);
   }
 
 
@@ -376,7 +405,8 @@ protected:
   /// (other than the trigger)?
   bool IsBlocked(const Disj2IndChain& chain) {
     for (const auto& leaf: chain.leaves_)
-      if (leaf.res_ != trigger_ && IsLeafDelayed(leaf.res_))
+      if (!leaf.literal_ && leaf.res_ != trigger_
+          && IsLeafDelayed(leaf.res_))
         return true;
     return false;
   }
@@ -418,25 +448,150 @@ protected:
 
   /// If \a x = And(...) of absorbable members, their comparisons
   /// (all or nothing)
+  /// If \a x = And(...), its members: absorbable comparisons,
+  /// and other arguments as literals (implied by clauses).
+  /// Empty if no member is an absorbable comparison.
   std::vector<Disj2IndLeaf> AndLeaves(int x) {
     const auto* pAnd =
         MC().template GetActiveInitExpressionOfType<AndConstraint>(x);
     if (!pAnd)
       return {};
     std::vector<Disj2IndLeaf> leaves;
+    bool f_any_comparison = false;
     for (auto y: pAnd->GetArguments()) {
-      const auto leaf = IsSingleUseFree(y) ? MemberLeaf(y) : Disj2IndLeaf{};
+      auto leaf = IsSingleUseFree(y) ? MemberLeaf(y) : Disj2IndLeaf{};
+      f_any_comparison = f_any_comparison || leaf.res_ >= 0;
       if (leaf.res_ < 0)
-        return {};
+        leaf = { y, false, true };
       leaves.push_back(leaf);
     }
-    return leaves;
+    return f_any_comparison ? leaves : std::vector<Disj2IndLeaf>{};
   }
 
   /// Is \a x used once and not fixed?
   /// (A fixed result would carry meaning beyond this chain.)
   bool IsSingleUseFree(int x) {
     return 1 == MC().VarUsage(x) && !MC().is_fixed(x);
+  }
+
+
+  /// Analyze And \a and_res for absorption into indicators
+  /// (and_res == 1) ==> each comparison: it must be in positive
+  /// context and not fixed, with all arguments absorbable.
+  Disj2IndChain AnalyzeConjunction(int and_res) {
+    Disj2IndChain chain;
+    if (!(Disj2IndFlags() & D2I_AND_POS) || !IsPositiveFreeAnd(and_res))
+      return chain;
+    chain.leaves_ = AndLeaves(and_res);
+    chain.lit_ = { and_res, 1 };
+    if (chain.HasLeaves())
+      chain.state_ = IsBlocked(chain)
+          ? Disj2IndChain::State::Blocked : Disj2IndChain::State::Ready;
+    return chain;
+  }
+
+  /// Is \a v the result of an active And in positive context,
+  /// not fixed?
+  bool IsPositiveFreeAnd(int v) {
+    const auto* pAnd =
+        MC().template GetActiveInitExpressionOfType<AndConstraint>(v);
+    return pAnd && pAnd->GetContext().IsPositive() && !MC().is_fixed(v);
+  }
+
+  /// The And above comparison result \a v (directly, or via Not
+  /// for an equality), or -1
+  int FindParentAnd(int v) {
+    for (int depth=0; depth<2 && v>=0; ++depth) {
+      v = GetParent(v);
+      if (v >= 0
+          && MC().template GetActiveInitExpressionOfType<AndConstraint>(v))
+        return v;
+    }
+    return -1;
+  }
+
+  /// If the And above \a v can absorb its comparisons,
+  /// convert it, with \a v as the trigger.
+  /// @return whether converted
+  bool ConvertParentAndIfReady(int v) {
+    const int and_res = FindParentAnd(v);
+    if (and_res < 0)
+      return false;
+    TriggerScope trigger_scope(trigger_, v);
+    if (Disj2IndChain::State::Ready != AnalyzeConjunction(and_res).state_)
+      return false;
+    MC().GetConstraintKeeper((AndConstraint*)nullptr).ConvertConstraintStd(
+          MC().GetInitExpression(and_res).GetIndex());
+    return true;
+  }
+
+  ////////////////////////// Distribution over And //////////////////////////
+
+  /// Static disjunction \a disj with a distributable And argument
+  /// (D2I_DISTRIBUTE): add a clause per And argument instead.
+  /// @return whether distributed
+  bool DistributeOverAnd(const OrConstraint& disj) {
+    const int x = FindDistributableAnd(disj);
+    if (x < 0)
+      return false;
+    std::vector<int> others;
+    for (auto v: disj.GetArguments())
+      if (v != x)
+        others.push_back(v);
+    for (auto y: MC().template GetActiveInitExpressionOfType<AndConstraint>(x)
+         ->GetArguments())
+      AddClause(others, y);
+    return true;
+  }
+
+  /// The first And argument of static \a disj used only there,
+  /// positive and not fixed, or -1
+  int FindDistributableAnd(const OrConstraint& disj) {
+    if (!(Disj2IndFlags() & D2I_DISTRIBUTE)
+        || !IsStatic(disj.GetResultVar()))
+      return -1;
+    for (auto v: disj.GetArguments())
+      if (IsSingleUseFree(v) && IsPositiveFreeAnd(v))
+        return v;
+    return -1;
+  }
+
+  /// Is \a v fixed to 1?
+  bool IsStatic(int v) {
+    return MC().is_fixed(v) && 1.0 == MC().fixed_value(v);
+  }
+
+  /// Add the static clause  others || y
+  void AddClause(std::vector<int> others, int y) {
+    others.push_back(y);
+    MC().FixAsTrue( MC().AssignResultVar2Args(
+                      OrConstraint{ std::move(others) } ) );
+  }
+
+  /// If the static Or above And \a and_res distributes over it,
+  /// convert the Or first.
+  /// @return whether converted
+  bool ConvertDistributingOr(int and_res) {
+    const int or_res = GetParent(and_res);
+    const auto* pOr = or_res >= 0
+        ? MC().template GetActiveInitExpressionOfType<OrConstraint>(or_res)
+        : nullptr;
+    if (!pOr || FindDistributableAnd(*pOr) != and_res)
+      return false;
+    MC().GetConstraintKeeper((OrConstraint*)nullptr).ConvertConstraintStd(
+          MC().GetInitExpression(or_res).GetIndex());
+    return true;
+  }
+
+
+  /// Emit the indicators of \a chain if it is ready.
+  /// @return whether emitted
+  bool EmitIfReady(const Disj2IndChain& chain) {
+    if (Disj2IndChain::State::Ready != chain.state_)
+      return false;
+    for (const auto& leaf: chain.leaves_)
+      EmitLeaf(leaf, chain.lit_);
+    return true;
   }
 
 
@@ -547,9 +702,20 @@ protected:
 
   /// Add the indicator for comparison \a leaf triggered by \a lit
   void EmitLeaf(const Disj2IndLeaf& leaf, CondLiteral lit) {
+    if (leaf.literal_)
+      return AddImpliedLiteral(lit, leaf.res_);
     VisitLeaf(leaf.res_, [this, &leaf, lit](const auto& cc, int ) {
       AddLeafAsIndicator(this->MC(), cc, lit, leaf.neg_);
     });
+  }
+
+  /// Add (lit) ==> y==1 as the clause row
+  /// [lit does not trigger] + y >= 1
+  void AddImpliedLiteral(CondLiteral lit, int y) {
+    auto row = NonTriggerExpr(lit);
+    row.add_term(1.0, y);
+    MC().AddConstraint( LinConGE( std::move(row.GetBody()),
+                                  1.0 - row.constant_term() ) );
   }
 
   /// Sets the trigger variable for the scope

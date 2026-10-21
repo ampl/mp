@@ -20,6 +20,15 @@ public:
   /// Converted item type
   using ItemType = AndConstraint;
 
+  /// Convert. A conjunction of comparisons in positive context
+  /// can become indicators on its result (cvt:pre:disj2ind bit 16),
+  /// otherwise convert by context.
+  Context Convert(const ItemType& conj, int i) {
+    if (GetMC().AbsorbConjunction(conj))
+      return conj.GetContext();
+    return Base::Convert(conj, i);
+  }
+
   /// Convert in positive context
   void ConvertCtxPos(const ItemType& conj, int ) {
     std::array<double, 2> coefs{-1.0, 1.0};
