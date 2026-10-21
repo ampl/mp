@@ -20,6 +20,15 @@ public:
   /// Converted item type
   using ItemType = OrConstraint;
 
+  /// Convert. A static disjunction l || C can be absorbed
+  /// into indicator(s) !l ==> C (cvt:pre:disj2ind),
+  /// otherwise convert by context.
+  Context Convert(const ItemType& disj, int i) {
+    if (GetMC().AbsorbDisjunction(disj))
+      return disj.GetContext();
+    return Base::Convert(disj, i);
+  }
+
   /// Convert in positive context
   void ConvertCtxPos(const ItemType& disj, int ) {
     const auto& args = disj.GetArguments();

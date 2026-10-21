@@ -6,6 +6,7 @@
 #include "mp/flat/converter.h"
 #include "mp/flat/redef/MIP/redefs_mip_std.h"
 #include "mp/flat/redef/encodings.h"
+#include "mp/flat/redef/MIP/disj2ind.h"
 
 namespace mp {
 
@@ -13,7 +14,8 @@ namespace mp {
 template <class Impl, class ModelAPI,
           class Model = FlatModel< > >
 class MIPFlatConverter
-    : public FlatConverter<Impl, ModelAPI, Model>
+    : public FlatConverter<Impl, ModelAPI, Model>,
+      public Disj2IndMixin<Impl>
 {
 public:
   /// Class name for diagnostics
@@ -24,6 +26,15 @@ public:
 
   /// Constructor
   MIPFlatConverter(Env& e) : BaseConverter(e) {  }
+
+  /// Disjunction absorption mix-in
+  using Disj2Ind = Disj2IndMixin<Impl>;
+
+  /// Hooks: from the mix-in, hiding the empty defaults
+  using Disj2Ind::NoteConstraintAdded;
+  using Disj2Ind::IfNeedsCvtForParent;
+  using Disj2Ind::IfDelayCvtForParent;
+  using Disj2Ind::TryConvertParentFirst;
 
 
   ///////////////////// MIP CONSTRAINT CONVERTERS ///////////////////////
@@ -341,7 +352,7 @@ protected:
     // Make sure IfMightUseEqualityEncoding() returns false.
     for (const auto& el: map) {
       if (!ck.IsRedundant(el.second)) {
-        ck.ConvertConstraint(el.second);
+        ck.ConvertConstraintStd(el.second);  // might absorb its disjunction
       }
     }
     // 2. Initiate possible conversions into big-M's
@@ -462,6 +473,7 @@ private:
   };
 
   void InitOwnOptions() {
+    this->InitDisj2IndOptions();
     this->GetEnv().AddOption("cvt:mip:eps cvt:cmp:eps cmp:eps",
                        "Tolerance for strict comparison of continuous variables for MIP. "
                              "Applies to <, >, and != operators. "
