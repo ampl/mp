@@ -3,6 +3,8 @@ Summary of recent updates to CPLEX for AMPL
 
 
 ## unreleased
+- Option *obj:multi:stats=1* reports multi-objective pass
+  statistics in native mode (*obj:multi=1*).
 - Add separate fixed-model limits *mip:basis:timelimit* and
   *mip:basis:iterlimit*.
 - Retain the MIP solution when a supplementary fixed solve reaches a limit.

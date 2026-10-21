@@ -64,6 +64,7 @@ public:
   void ObjWeights(ArrayRef<double>) override;
   void ObjAbsTol(ArrayRef<double>) override;
   void ObjRelTol(ArrayRef<double>) override;
+  MultiobjPassStats GetMultiobjPassStats() override;
 
   /**
  * Get MIP Gap
@@ -232,6 +233,9 @@ protected:
       SolutionStats() override;
 
   std::pair<int, std::string> GetSolveResult() override;
+  /// Solve result for a given CPLEX status,
+  /// e.g., of a multiobjective subproblem
+  std::pair<int, std::string> GetSolveResult(int optimstatus);
   void AddCPLEXMessages();
   void ReportCPLEXPool();
 

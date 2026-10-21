@@ -573,6 +573,64 @@ ArrayRef<double> CplexBackend::GetObjectiveValues()
   }
 } 
 
+MultiobjPassStats CplexBackend::GetMultiobjPassStats() {
+  MultiobjPassStats stats;
+  const auto nobj = NumObjs();
+  const auto nsolves = std::max(0, CPXmultiobjgetnumsolves(env(), lp()));
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+  auto get_dbl = [this,nan](int subprob, int what) {
+    double v {};
+    return CPXmultiobjgetdblinfo(env(), lp(), subprob, &v, what) ? nan : v;
+  };
+  auto get_long = [this,nan](int subprob, int what) {
+    CPXLONG v {};
+    return CPXmultiobjgetlonginfo(env(), lp(), subprob, &v, what)
+        ? nan : (double)v;
+  };
+  // Subproblems (passes) are identified by priority
+  std::vector<int> subprob_prio(nsolves);
+  for (int s=0; s<nsolves; ++s)
+    if (CPXmultiobjgetintinfo(env(), lp(), s,
+                              &subprob_prio[s], CPX_MULTIOBJ_PRIORITY))
+      subprob_prio[s] = std::numeric_limits<int>::min();
+  for (int i=0; i<nobj; ++i) {
+    int prio {};
+    int s = -1;
+    if (!CPXmultiobjgetobj(env(), lp(), i, NULL, 0, -1,
+                           NULL, NULL, &prio, NULL, NULL))
+      for (s=nsolves; s-- && subprob_prio[s]!=prio; ) ;
+    if (s < 0) {                                  // not solved
+      stats.objpass_.push_back(0);
+      stats.objpass_result_.push_back(sol::UNKNOWN);
+      for (auto* pv: {&stats.objpass_mipgap_, &stats.objpass_objval_,
+                      &stats.objpass_objbound_, &stats.objpass_runtime_,
+                      &stats.objpass_work_, &stats.objpass_itercount_,
+                      &stats.objpass_nodecount_, &stats.objpass_opennodecount_})
+        pv->push_back(nan);
+      continue;
+    }
+    stats.objpass_.push_back(s+1);
+    int cpxstatus {};
+    stats.objpass_result_.push_back(
+        CPXmultiobjgetintinfo(env(), lp(), s, &cpxstatus, CPX_MULTIOBJ_STATUS)
+            ? sol::UNKNOWN : GetSolveResult(cpxstatus).first);
+    const auto objval = get_dbl(s, CPX_MULTIOBJ_OBJVAL);
+    const auto objbound = get_dbl(s, CPX_MULTIOBJ_BESTOBJVAL);
+    stats.objpass_objval_.push_back(objval);
+    stats.objpass_objbound_.push_back(objbound);
+    // As CPXgetmiprelgap()
+    stats.objpass_mipgap_.push_back(
+        std::fabs(objval - objbound) / (1e-10 + std::fabs(objval)));
+    stats.objpass_runtime_.push_back(get_dbl(s, CPX_MULTIOBJ_TIME));
+    stats.objpass_work_.push_back(get_dbl(s, CPX_MULTIOBJ_DETTIME));
+    stats.objpass_itercount_.push_back(get_long(s, CPX_MULTIOBJ_ITCNT));
+    stats.objpass_nodecount_.push_back(get_long(s, CPX_MULTIOBJ_NODECNT));
+    stats.objpass_opennodecount_.push_back(
+        get_long(s, CPX_MULTIOBJ_NODELEFTCNT));
+  }
+  return stats;
+}
+
 void CplexBackend::ObjPriorities(ArrayRef<int> priority) {
   for (int i = 0; i < (int)priority.size(); ++i) {
     CPXmultiobjchgattribs(env(), lp(), i,
@@ -873,8 +931,11 @@ void CplexBackend::AddCPLEXMessages() {
 }
 
 std::pair<int, std::string> CplexBackend::GetSolveResult() {
+  return GetSolveResult(CPXgetstat(env(), lp()));
+}
+
+std::pair<int, std::string> CplexBackend::GetSolveResult(int optimstatus) {
   namespace sol = mp::sol;
-  int optimstatus = CPXgetstat(env(), lp());
   switch (optimstatus) {
   default:
     int solcount;

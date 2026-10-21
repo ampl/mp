@@ -176,16 +176,25 @@ Objectives blended into the same pass receive the same values.
 
 In Gurobi native mode (`obj:multi=1`), the statistics are as described
 at `Gurobi multi-objective documentation <https://docs.gurobi.com/projects/optimizer/en/current/reference/attributes/multiobjective.html>`__.
+In CPLEX native mode, they are taken from CPLEX's per-subproblem information
+(`.objpass_work` is deterministic time in ticks; `.objpass_mipgap`
+is computed from the objective value and the best bound,
+NaN for continuous passes where CPLEX reports no bound).
 Other solvers with native multi-objective support
 do not provide pass statistics; use `obj:multi=2` to obtain them via emulation.
+
+In all modes, the pass objective is the weighted sum of the objectives
+of that priority level, optimized in the sense of the first objective.
+With the default `obj:multi:weight=2`, the weight of an objective
+of the opposite sense is negated; with `obj:multi:weight=1`,
+the weights are applied as given.
 
 With MP's multi-objective emulation (`obj:multi=2`, or `obj:multi=1`
 for solvers without native support), the statistics are collected
 after each pass:
 
 - `.objpass_objval` and `.objpass_objbound` refer to the pass objective,
-  i.e., the weighted blend of the pass's objectives, optimized in the sense
-  of the first objective. For example, the value of a minimization objective
+  as in the native modes. For example, the value of a minimization objective
   is negated if the first objective is maximized. The original objectives
   can be evaluated as usual after the solve;
 - `.objpass_runtime` is the wall-clock time of the pass, including
