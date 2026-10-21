@@ -138,6 +138,15 @@ are "indicator" constraints that can be handled natively by some solvers. Otherw
 they are transformed to simpler constraints that use relational operators. The other
 cases are treated similarly.
 
+AMPL transmits *binary-var* = 1 ==> *constr2* to the solver as the disjunction
+*binary-var* != 1 or *constr2*. MP recovers the indicator form: a disjunction
+*literal* or *constr2*, where *constr2* is a comparison (or a conjunction of
+comparisons) not used elsewhere, is converted into indicator(s) on the binary
+variable, saving an auxiliary binary variable and a constraint per implication,
+with the same LP relaxation. This applies when the solver does not accept
+such comparisons natively, including MP2NL with full linearization (e.g.,
+*config=knitro*). See option *cvt:pre:disj2ind*.
+
 .. code-block:: ampl
 
     subject to Multi_Min_Ship {i in ORIG, j in DEST}:

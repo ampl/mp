@@ -3,6 +3,15 @@ Summary of recent updates to the AMPL MP Library
 
 
 ## unreleased
+- Option *cvt:pre:disj2ind* (default 11): convert disjunctions
+  *literal || C* with a single-use comparison *C*, which is how AMPL
+  sends implications *b==1 ==> C*, into indicators *b==1 ==> C*,
+  without auxiliary binaries. Also for conjunctions *C1 && C2* and
+  for *x != k*; *x == k* awaiting the unary encoding decision is
+  absorbed only if no encoding is chosen.
+- Solution check: in the realistic mode, evaluate recomputed
+  conditional comparisons within *sol:chk:feastol*; recompute only
+  eliminated auxiliary variables.
 - Emulate *mip:basis* for linear algebraic MIPs in COPT, MOSEK, HiGHS,
   and SCIP. Add independent fixed-model limits *mip:basis:timelimit*
   and *mip:basis:iterlimit*, including native fixed-model paths.
