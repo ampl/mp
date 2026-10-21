@@ -218,22 +218,58 @@ endif ()
 
 
 
-# Excludes targets from the default build.
-function(exclude_from_build)
-  foreach (target ${ARGN})
-    if (TARGET ${target})
-      set_target_properties(${target} PROPERTIES
-        EXCLUDE_FROM_ALL TRUE EXCLUDE_FROM_DEFAULT_BUILD TRUE)
+# Gecode is built as an external project and linked as installed static
+# libraries: its CMake project defines a target named "gecode", which
+# would clash with the driver target under add_subdirectory().
+check_module(gecode build_gecode)
+if (build_gecode)
+  get_property(MP_BASE_DIR GLOBAL PROPERTY MP_BASE_DIR)
+  find_package(Git)
+  if (GIT_FOUND AND NOT EXISTS ${MP_BASE_DIR}/thirdparty/gecode/CMakeLists.txt)
+    execute_process(
+      COMMAND ${GIT_EXECUTABLE} submodule update --init thirdparty/gecode
+      WORKING_DIRECTORY ${MP_BASE_DIR})
+  endif ()
+  include(ExternalProject)
+  set(GECODE_PREFIX ${PROJECT_BINARY_DIR}/thirdparty/gecode)
+  set(GECODE_LIBS )
+  foreach (lib minimodel driver float set int search kernel support)
+    list(APPEND GECODE_LIBS ${GECODE_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}gecode${lib}${CMAKE_STATIC_LIBRARY_SUFFIX})
+  endforeach ()
+  set(GECODE_CMAKE_ARGS
+    -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+    -DCMAKE_INSTALL_LIBDIR=lib
+    -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+    -DGECODE_BUILD_SHARED=OFF -DGECODE_BUILD_STATIC=ON
+    -DGECODE_ENABLE_FLATZINC=OFF -DGECODE_ENABLE_EXAMPLES=OFF
+    -DGECODE_ENABLE_GIST=OFF -DGECODE_ENABLE_MPFR=OFF
+    -DGECODE_ENABLE_CPPROFILER=OFF -DBUILD_TESTING=OFF)
+  get_property(multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+  if (NOT multi_config)
+    list(APPEND GECODE_CMAKE_ARGS -DCMAKE_BUILD_TYPE=Release)
+  endif ()
+  foreach (var CMAKE_C_COMPILER CMAKE_CXX_COMPILER
+      CMAKE_C_COMPILER_LAUNCHER CMAKE_CXX_COMPILER_LAUNCHER
+      CMAKE_OSX_ARCHITECTURES CMAKE_OSX_DEPLOYMENT_TARGET
+      CMAKE_MSVC_RUNTIME_LIBRARY)
+    if (${var})
+      string(REPLACE ";" "|" value "${${var}}")
+      list(APPEND GECODE_CMAKE_ARGS "-D${var}=${value}")
     endif ()
   endforeach ()
-endfunction()
-
-set(GECODE_DISABLE_WARNINGS TRUE)
-set(GECODE_USE_QT FALSE)
-add_ampl_solver(gecode EXTERNAL LIBRARIES
-  gecodeminimodel gecodesupport gecodekernel gecodeint gecodesearch)
-# Exclude unused Gecode targets from the build.
-exclude_from_build(fzn-gecode gecodeflatzinc gecode-test)
+  find_package(Threads REQUIRED)
+  ExternalProject_Add(gecode-libs
+    SOURCE_DIR ${MP_BASE_DIR}/thirdparty/gecode
+    BINARY_DIR ${PROJECT_BINARY_DIR}/thirdparty/build/gecode
+    INSTALL_DIR ${GECODE_PREFIX}
+    LIST_SEPARATOR |
+    CMAKE_ARGS ${GECODE_CMAKE_ARGS}
+    BUILD_BYPRODUCTS ${GECODE_LIBS})
+  file(MAKE_DIRECTORY ${GECODE_PREFIX}/include)
+  add_ampl_solver(gecode INCLUDE_DIRS ${GECODE_PREFIX}/include
+    LIBRARIES ${GECODE_LIBS} Threads::Threads ADDITIONAL_DEPS gecode-libs)
+  add_dependencies(amplgecode-static gecode-libs)
+endif ()
 
 add_ampl_solver(ilogcp DLL_RUNTIME MODULE CPLEX
   concert.cc concert.h ilogcp.cc ilogcp.h
