@@ -11,6 +11,10 @@ Summary of recent updates to the AMPL MP Library
   report the statistics also when a pass stops
   the solve (*.objpass=0*, *.objpass_result=-1*
   and NaN values for the passes not run).
+- Fix multi-objective emulation when objectives of different
+  senses share a priority level: the sign of the weight was flipped
+  twice for objectives of a sense different from the first
+  objective of the level, giving wrong solutions.
 
 
 ## 20260908

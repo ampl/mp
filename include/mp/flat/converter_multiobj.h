@@ -386,14 +386,13 @@ protected:
       assert (!obj_orig_1st.HasExpr());              // should be before NL conversion
       for (auto i0i=i0_vec.size(); --i0i; ) {
         passes_reverse_.at(i0_vec[i0i]) = i_pass;
-        // Add next objective with weight and sense factor
-        double sensef
-            = (obj_orig_1st.obj_sense() == obj_orig.at(i0_vec[i0i]).obj_sense())
-                  ? 1.0 : -1.0;
+        // Add next objective with weight.
+        // The "legacy" weights already include the sense factor
+        // relative to the 1st objective, whose sense the pass uses.
         auto lt1 = obj_orig.at(i0_vec[i0i]).GetLinTerms();
-        lt1 *= sensef * objwgt.at(i0_vec[i0i]);
+        lt1 *= objwgt.at(i0_vec[i0i]);
         auto qt1 = obj_orig.at(i0_vec[i0i]).GetQPTerms();
-        qt1 *= sensef * objwgt.at(i0_vec[i0i]);
+        qt1 *= objwgt.at(i0_vec[i0i]);
         obj_new_.back().GetLinTerms().add(lt1);
         obj_new_.back().GetQPTerms().add(qt1);
         assert (!obj_orig.at(i0_vec[i0i]).HasExpr());
