@@ -1368,8 +1368,11 @@ public:
   }
 
   /// Has active or inactive init expr?
+  /// @param var: variable index, or -1 for none
+  ///   (e.g., Constraints2Expr::ConvertToNLCon() without expression)
   bool HasActiveOrInactiveInitExpression(int var) const {
-    return int(var_info_.size())>var && var_info_[var].HasId();
+    return var >= 0 && int(var_info_.size())>var
+        && var_info_[var].HasId();
   }
 
   /// Get the init expr (active or inactive)
