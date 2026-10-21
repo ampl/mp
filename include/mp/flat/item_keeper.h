@@ -68,6 +68,15 @@ public:
   /// @return whether any converted
   virtual bool ConvertAllNewWith(BasicFlatConverter& cvt) = 0;
 
+  /// Convert the items which were delayed in the main
+  /// conversion loop (Converter::IfDelayConversion()),
+  /// without delaying them again.
+  /// @return whether there were any
+  virtual bool ConvertDelayed(BasicFlatConverter& cvt) = 0;
+
+  /// Was item \a i delayed in the main conversion loop?
+  virtual bool IsDelayed(int i) const = 0;
+
   /// Mark whether we could keep result vars
   virtual void MarkExprResultVars(BasicFlatConverter& cvt) = 0;
 
@@ -475,6 +484,16 @@ public:
       for (auto& cva: conv_actions_)
         any_converted = any_converted || cva.second(cvt);
     } while (any_converted);
+  }
+
+  /// Convert the items delayed in the main conversion loop,
+  /// keeper by keeper in priority order.
+  /// @return whether there were any
+  bool ConvertDelayedItems(BasicFlatConverter& cvt) {
+    bool any_delayed = false;
+    for (auto& ck: con_keepers_)
+      any_delayed = ck.second.ConvertDelayed(cvt) || any_delayed;
+    return any_delayed;
   }
 
   /// Mark which func cons can be expressions

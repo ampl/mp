@@ -380,6 +380,7 @@ protected:
       // MP_DISPATCH( PreprocessIntermediate() );     // preprocess after each level
       constr_depth_ = 1;  // Workaround. TODO have maps as special constraints
 			MP_DISPATCH( ConvertMaps() );
+      MP_DISPATCH( ConvertDelayedItems() );           // reassess delayed items
       MP_DISPATCH( PreprocessFlatFinal() );           // final flat model prepro
       MP_DISPATCH( ConsiderEmulatingMultiobj() );     // Before NL conversion
       if constexpr (IfAcceptingNLOutput()) {
@@ -458,6 +459,22 @@ protected:
 
   /// Default map conversions. Currently empty
   void ConvertMaps() { }
+
+  /// Final reassessment: convert the items delayed
+  /// in the main loop (IfDelayConversion()), and anything new.
+  /// From here on, no delays are accepted.
+  void ConvertDelayedItems() {
+    if_final_cvt_phase_ = true;
+    while (GetModel().ConvertDelayedItems(*this))
+      MP_DISPATCH( ConvertAllConstraints() );
+  }
+
+public:
+  /// Are we in the final conversion phase
+  /// (ConvertDelayedItems()), where delays are not accepted?
+  bool IfFinalConversionPhase() const { return if_final_cvt_phase_; }
+
+protected:
 
   /// Acceptance level for all constr/expr,
   /// if provided (>=0)
@@ -558,7 +575,8 @@ public: // for ConstraintKeeper
   /// specialize IfNeedsCvt_impl instead.
   template <class Constraint>
   bool IfNeedsConversion(const Constraint& con, int i) {
-    return MPD( IfNeedsCvt_impl(con, i) );
+    return MPD( IfNeedsCvt_impl(con, i) )
+        || MPD( IfNeedsCvtForParent(con, i) );
   }
 
   /// Generic query if a constraint needs to be converted,
@@ -579,7 +597,9 @@ public: // for ConstraintKeeper
   /// specialize IfNeedsCvt_impl instead.
   template <class Constraint>
   bool IfDelayConversion(const Constraint& con, int i) {
-    return MPD( IfDelayCvt_impl(con, i) );
+    return !IfFinalConversionPhase()
+        && (MPD( IfDelayCvt_impl(con, i) )
+            || MPD( IfDelayCvtForParent(con, i) ));
   }
 
   /// Generic query if a constraint needs to be
@@ -592,6 +612,33 @@ public: // for ConstraintKeeper
   bool IfDelayCvt_impl(const Constraint& , int ) {
     return false;
   }
+
+  ////////// Hooks for reformulations spanning several items //////////
+  /// A Converter can overload these for specific types,
+  /// e.g., to reformulate a parent constraint together
+  /// with its argument's defining constraint
+  /// (see redef/MIP/disj2ind.h).
+
+  /// Hook: constraint \a con has been stored at index \a i.
+  template <class Constraint>
+  void NoteConstraintAdded(const Constraint& , int ) { }
+
+  /// Hook: should accepted constraint \a con be converted
+  /// for the sake of a reformulation involving its arguments?
+  template <class Constraint>
+  bool IfNeedsCvtForParent(const Constraint& , int ) { return false; }
+
+  /// Hook: should \a con's conversion be delayed
+  /// for the sake of a reformulation involving its parent(s)?
+  template <class Constraint>
+  bool IfDelayCvtForParent(const Constraint& , int ) { return false; }
+
+  /// Hook: before converting \a con, convert its parent,
+  /// which might make \a con unused.
+  /// Called by ConstraintKeeper::ConvertConstraintStd().
+  /// @return whether the parent was converted
+  template <class Constraint>
+  bool TryConvertParentFirst(const Constraint& , int ) { return false; }
 
 
   ////////////////// Constraint/expression accpetance ////////////////
@@ -873,6 +920,7 @@ protected:
     ConInfo ci{&ck, i};
     if (resvar>=0)
       AddInitExpression(resvar, ci);
+    MPD( NoteConstraintAdded(ck.GetConstraint(i), i) );
     /// Can also cache non-functional constraints,
     /// but then implement checking before
     if (! MP_DISPATCH( MapInsert(
@@ -2252,6 +2300,7 @@ private:
 
 	std::vector<int> refcnt_vars_;
   int constr_depth_ = 0;    // tree depth of new constraints
+  bool if_final_cvt_phase_ = false;  // see ConvertDelayedItems()
 
   /// AMPL item names
   std::vector<std::string>

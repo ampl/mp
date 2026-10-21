@@ -183,7 +183,8 @@ public:
     assert(&cvt == &GetConverter());         // Using the same Converter
     MP_UNUSED(cvt);
     try {
-      return ConvertAllFrom(i_cvt_last_);
+      const bool any_revived = ConvertRevived();
+      return ConvertAllFrom(i_cvt_last_) || any_revived;
     } catch (const std::exception& exc) {
       MP_RAISE(Converter::GetTypeName() + std::string(": ")
                              + exc.what());
@@ -407,52 +408,160 @@ protected:
     char is_expr_stored_ = false;
   };
 
-	/// Convert all new constraints of this type
+  /// How the items of this type are treated by conversion,
+  /// given the acceptance settings.
+  enum class CvtMode {
+    Skip,          ///< not accepted, but no converter: leave as is
+    Convert,       ///< not accepted: convert
+    TryConvert,    ///< accepted but not recommended: try to convert
+    IfNeeded       ///< accepted: convert only if the item needs it
+  };
+
+  /// Conversion mode for the current settings
+  CvtMode GetConversionMode() const {
+    if (IfConsiderConversion())
+      return ConvertsOr(CvtMode::Convert);
+    if (ConstraintAcceptanceLevel::AcceptedButNotRecommended
+        == GetChosenAcceptanceLevel())
+      return ConvertsOr(CvtMode::TryConvert);
+    return CvtMode::IfNeeded;
+  }
+
+  /// @return \a mode if the converter can convert this type,
+  ///   otherwise CvtMode::Skip
+  CvtMode ConvertsOr(CvtMode mode) const {
+    return IfConverterConverts(cvt_) ? mode : CvtMode::Skip;
+  }
+
+  /// Convert all new constraints of this type.
+  /// The cursor \a i_last advances item by item,
+  /// so that IsBridgingToBeConsidered() is exact
+  /// also during the loop (see MarkAsUsed(), revival).
+  /// @return whether any new items were processed
   bool ConvertAllFrom(int& i_last) {
-    int i=i_last;
-    const auto acceptanceLevel =
-        GetChosenAcceptanceLevel();
-    if (IfConsiderConversion()) {
-      if (!IfConverterConverts(GetConverter())) {
-        i = (int)cons_.size();             // skip unconverted items
-      } else {
-        for ( ; ++i!=(int)cons_.size(); ) {
-          if (!cons_[i].IsRedundant() &&
-              !GetConverter().IfDelayConversion(cons_[i].GetCon(), i)) {
-            ConvertConstraint(cons_[i], i);
-            if (-2 == GetLowLevelAcc()) {
-              GetConverter().GetEnv().warn_from_cb(GetShortTypeName());
-            }
-          }
-        }
-      }
+    const int i_start = i_last;
+    const auto mode = GetConversionMode();
+    while (i_last+1 < (int)cons_.size())
+      ConvertItemInMode(++i_last, mode, true);
+    return i_start != i_last;
+  }
+
+  /// Convert item \a i according to \a mode,
+  /// unless it is redundant or (if \a f_may_delay)
+  /// the converter asks to delay it.
+  void ConvertItemInMode(int i, CvtMode mode, bool f_may_delay) {
+    if (CvtMode::Skip == mode || cons_[i].IsRedundant())
+      return;
+    if (CvtMode::IfNeeded == mode)
+      ConvertIfNeeded(i);
+    else if (!(f_may_delay && DelayIfRequested(i)))
+      CvtMode::TryConvert == mode ? TryConvertItem(i) : ConvertItem(i);
+  }
+
+  /// Convert an accepted item if it needs conversion anyway
+  void ConvertIfNeeded(int i) {
+    if (GetConverter().IfNeedsConversion(cons_[i].GetCon(), i))
+      ConvertConstraintStd(cons_[i], i);
+  }
+
+  /// Convert a non-accepted item
+  void ConvertItem(int i) {
+    ConvertConstraintStd(cons_[i], i);
+    if (-2 == GetLowLevelAcc())
+      GetConverter().GetEnv().warn_from_cb(GetShortTypeName());
+  }
+
+  /// Try to convert an accepted, not recommended item,
+  /// allowing failure
+  void TryConvertItem(int i) {
+    try {
+      ConvertConstraintStd(cons_[i], i);
+    } catch (const ConstraintConversionGracefulFailure& ) {
+      /// nothing
+    } catch (const ConstraintConversionFailure& ccf) {
+      GetConverter().AddWarning( ccf.key(), ccf.message() );
     }
-    else if (ConstraintAcceptanceLevel::AcceptedButNotRecommended == acceptanceLevel) {
-      if (!IfConverterConverts(GetConverter())) {
-        i = (int)cons_.size();
-      } else {
-        for (; ++i != (int)cons_.size(); ) {
-          if (!cons_[i].IsRedundant() &&
-              !GetConverter().IfDelayConversion(cons_[i].GetCon(), i)) {
-            try {       // Try to convert all but allow failure
-              ConvertConstraint(cons_[i], i);
-            } catch (const ConstraintConversionGracefulFailure& ) {
-              /// nothing
-            } catch (const ConstraintConversionFailure& ccf) {
-              GetConverter().AddWarning( ccf.key(), ccf.message() );
-            }
-          }
-        }
-      }
-    } else { // Recommended == acceptanceLevel &&
-      for (; ++i != (int)cons_.size(); )
-        if (!cons_[i].IsRedundant() &&
-            GetConverter().IfNeedsConversion(cons_[i].GetCon(), i))
-          ConvertConstraint(cons_[i], i);
+  }
+
+  /// If the converter asks to delay item \a i,
+  /// record it for the final reassessment (ConvertDelayed()).
+  /// @return true iff delayed
+  bool DelayIfRequested(int i) {
+    if (!GetConverter().IfDelayConversion(cons_[i].GetCon(), i))
+      return false;
+    NoteDelayed(i);
+    return true;
+  }
+
+  /// Record delayed item \a i, once.
+  /// Storage is allocated on demand.
+  void NoteDelayed(int i) {
+    if ((int)is_delayed_.size() <= i)
+      is_delayed_.resize(cons_.size(), false);
+    if (!is_delayed_[i]) {
+      is_delayed_[i] = true;
+      delayed_.push_back(i);
     }
-    bool any_converted = i_last!=i-1;
-    i_last = i-1;
-    return any_converted;
+  }
+
+  /// Convert items revived behind the cursor (see MarkAsUsed()).
+  /// @return whether there were any
+  bool ConvertRevived() {
+    if (revived_.empty())
+      return false;
+    auto revived = std::move(revived_);
+    revived_.clear();
+    const auto mode = GetConversionMode();
+    for (auto i: revived)
+      ConvertItemInMode(i, mode, true);
+    return true;
+  }
+
+public:
+  /// Convert the items delayed in the main conversion loop,
+  /// without delaying them again.
+  /// @return whether there were any
+  bool ConvertDelayed(BasicFlatConverter& cvt) override {
+    assert(&cvt == &GetConverter());
+    MP_UNUSED(cvt);
+    if (delayed_.empty())
+      return false;
+    auto delayed = std::move(delayed_);
+    delayed_.clear();
+    const auto mode = GetConversionMode();
+    for (auto i: delayed)
+      ConvertItemInMode(i, mode, false);
+    return true;
+  }
+
+  /// Was item \a i delayed in the main conversion loop?
+  bool IsDelayed(int i) const override {
+    return i < (int)is_delayed_.size() && is_delayed_[i];
+  }
+
+  /// Would non-redundant items of this type be converted
+  /// in the current settings (unless delayed)?
+  bool IfConvertsItems() const {
+    const auto mode = GetConversionMode();
+    return CvtMode::Convert == mode || CvtMode::TryConvert == mode;
+  }
+
+  /// Standard conversion of item \a i:
+  /// give its parent chain a chance first
+  /// (Converter::TryConvertParentFirst()),
+  /// and convert the item itself if it is still needed.
+  void ConvertConstraintStd(int i) {
+    ConvertConstraintStd(cons_[i], i);
+  }
+
+protected:
+  /// Standard conversion, see ConvertConstraintStd(int).
+  /// @note The parent's conversion can make this item unused.
+  void ConvertConstraintStd(Container& cnt, int i) {
+    if (GetConverter().TryConvertParentFirst(cnt.GetCon(), i)
+        && cnt.IsRedundant())
+      return;
+    ConvertConstraint(cnt, i);
   }
 
   /// Mark final func cons as expressions if accepted so
@@ -545,13 +654,15 @@ protected:
   }
 
   /// Mark item as used
-  void MarkAsUsed(Container& cnt, int ) {
+  void MarkAsUsed(Container& cnt, int i) {
     assert(cnt.IsUnused());
     if (cnt.IsUnused()) {
       cnt.MarkAsUsed();
       GetConverter().CountArgRefs(cnt.GetCon());
       assert(!cnt.IsBridged());
       --n_unused_;
+      if (!IsBridgingToBeConsidered(i))  // behind the cursor:
+        revived_.push_back(i);           // convert in the next sweep
     }
   }
 
@@ -762,6 +873,9 @@ private:
   Converter& cvt_;
   std::deque<Container> cons_;
   int i_cvt_last_ = -1;               // Last converted constraint.
+  std::vector<int> delayed_;          // Items delayed in the main loop
+  std::vector<bool> is_delayed_;      // Delay flags, allocated on demand
+  std::vector<int> revived_;          // Items used again behind the cursor
   int n_bridged_ = 0;       // Number of converted items,
                             // they won't go to final model.
   int n_unused_ = 0;        // Number of recycled items (not those converted),
