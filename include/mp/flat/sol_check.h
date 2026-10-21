@@ -113,11 +113,16 @@ private:
 public:
   /// Recompute auxiliary variables
   /// @param is_final: if provided, which vars are final
+  /// @param f_idealistic: compare exactly
+  ///   (otherwise within the feasibility tolerance,
+  ///   as conditional comparisons are evaluated
+  ///   for the solver's solution)
   ArrayRef<double> RecomputeAuxVars(
-      ArrayRef<double> x, std::vector<bool> is_final={}) {
+      ArrayRef<double> x, std::vector<bool> is_final={},
+      bool f_idealistic=true) {
     VarInfoRecomp vir {
       MPCD( sol_feas_tol() ),
-          true,        // currently not relevant for recomputation
+          f_idealistic,
       {x, recomp_fn, is_final},
       {},              // no raw values
       MPCD( GetModel() ).var_type_vec(),

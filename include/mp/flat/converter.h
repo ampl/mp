@@ -2196,8 +2196,9 @@ protected:
     auto& xx = sol.GetVarValues()();
     if (xx.size()) {                    // solution available
       auto var_is_used = MPCD( GetVarElimFlags() );
-      var_is_used.flip();
-      xx = MPD( RecomputeAuxVars(xx, var_is_used) );
+      var_is_used.resize(xx.size(), false);   // flags only up to the last
+      var_is_used.flip();                     // eliminated variable
+      xx = MPD( RecomputeAuxVars(xx, var_is_used, false) );  // realistic
     }
   }
 

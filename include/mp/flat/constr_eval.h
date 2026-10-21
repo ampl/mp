@@ -11,6 +11,7 @@
   * extra API.
   */
 
+#include <type_traits>
 #include <cmath>
 
 #include "constr_functional.h"
@@ -294,15 +295,28 @@ double ComputeValue(
 
 
 
+/// Does the variable vector type tell idealistic vs realistic mode?
+template <class VarVec, class = void>
+struct HasIdealisticFlag : std::false_type { };
+
+/// Specialization: yes
+template <class VarVec>
+struct HasIdealisticFlag<VarVec, std::void_t<
+    decltype(std::declval<const VarVec&>().idealistic())> >
+  : std::true_type { };
+
 /// Compute result of a conditional constraint.
-/// Just return bool(viol(subcon) <= 0).
+/// For the solver's (realistic) values, the comparison holds
+/// within the feasibility tolerance; otherwise exactly.
 /// This is not used to compute violation.
 template <class Con, class VarVec>
 double ComputeValue(
     const ConditionalConstraint<Con>& con, const VarVec& x) {
-  auto viol = con.GetConstraint().ComputeViolation(x, true);
-  bool ccon_valid = viol.viol_<=0.0;
-  return ccon_valid;
+  if constexpr (HasIdealisticFlag<VarVec>::value)
+    if (!x.idealistic())
+      return con.GetConstraint().ComputeViolation(x, false).viol_
+          <= x.feastol();
+  return con.GetConstraint().ComputeViolation(x, true).viol_ <= 0.0;
 }
 
 /// Compute violation of the QuadraticCone constraint.
