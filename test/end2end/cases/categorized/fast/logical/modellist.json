@@ -705,7 +705,7 @@
     "name" : "disj2ind_01",
     "tags" : ["logical", "linear"],
     "options": {
-      "mp_options": "debug=1 acc:condlinle=0 acc:condlinlt=0 acc:condlinge=0 acc:condlingt=0 acc:condlineq=0"
+      "mp_options": "debug=1 acc:condlinle=0 acc:condlinlt=0 acc:condlinge=0 acc:condlingt=0 acc:condlineq=0 acc:or=0 acc:and=0 acc:not=0"
     },
     "objective": 10,
     "values": {
@@ -720,7 +720,7 @@
     "name" : "disj2ind_01 disj2ind=0",
     "tags" : ["logical", "linear"],
     "options": {
-      "mp_options": "debug=1 acc:condlinle=0 acc:condlinlt=0 acc:condlinge=0 acc:condlingt=0 acc:condlineq=0 cvt:pre:disj2ind=0"
+      "mp_options": "debug=1 acc:condlinle=0 acc:condlinlt=0 acc:condlinge=0 acc:condlingt=0 acc:condlineq=0 acc:or=0 acc:and=0 acc:not=0 cvt:pre:disj2ind=0"
     },
     "objective": 10,
     "values": {
@@ -735,7 +735,7 @@
     "name" : "disj2ind_02",
     "tags" : ["logical", "linear"],
     "options": {
-      "mp_options": "debug=1 acc:condlinle=0 acc:condlinlt=0 acc:condlinge=0 acc:condlingt=0 acc:condlineq=0"
+      "mp_options": "debug=1 acc:condlinle=0 acc:condlinlt=0 acc:condlinge=0 acc:condlingt=0 acc:condlineq=0 acc:or=0 acc:and=0 acc:not=0"
     },
     "objective": 16,
     "values": {
@@ -751,7 +751,7 @@
     "name" : "disj2ind_02 uenc:negctx:max=2",
     "tags" : ["logical", "linear"],
     "options": {
-      "mp_options": "debug=1 acc:condlinle=0 acc:condlinlt=0 acc:condlinge=0 acc:condlingt=0 acc:condlineq=0 uenc:negctx:max=2"
+      "mp_options": "debug=1 acc:condlinle=0 acc:condlinlt=0 acc:condlinge=0 acc:condlingt=0 acc:condlineq=0 acc:or=0 acc:and=0 acc:not=0 uenc:negctx:max=2"
     },
     "objective": 16,
     "values": {
@@ -778,7 +778,7 @@
     "name" : "disj2ind_04_uenc",
     "tags" : ["logical", "linear"],
     "options": {
-      "mp_options": "debug=1 acc:condlinle=0 acc:condlinlt=0 acc:condlinge=0 acc:condlingt=0 acc:condlineq=0"
+      "mp_options": "debug=1 acc:condlinle=0 acc:condlinlt=0 acc:condlinge=0 acc:condlingt=0 acc:condlineq=0 acc:or=0 acc:and=0 acc:not=0"
     },
     "objective": 24.99,
     "values": {
@@ -791,7 +791,7 @@
     "name" : "disj2ind_04_uenc uenc:negctx:max=2",
     "tags" : ["logical", "linear"],
     "options": {
-      "mp_options": "debug=1 acc:condlinle=0 acc:condlinlt=0 acc:condlinge=0 acc:condlingt=0 acc:condlineq=0 uenc:negctx:max=2"
+      "mp_options": "debug=1 acc:condlinle=0 acc:condlinlt=0 acc:condlinge=0 acc:condlingt=0 acc:condlineq=0 acc:or=0 acc:and=0 acc:not=0 uenc:negctx:max=2"
     },
     "objective": 24.99,
     "values": {
@@ -804,7 +804,7 @@
     "name" : "disj2ind_05_and_uenc",
     "tags" : ["logical", "linear"],
     "options": {
-      "mp_options": "debug=1 acc:condlinle=0 acc:condlinlt=0 acc:condlinge=0 acc:condlingt=0 acc:condlineq=0"
+      "mp_options": "debug=1 acc:condlinle=0 acc:condlinlt=0 acc:condlinge=0 acc:condlingt=0 acc:condlineq=0 acc:or=0 acc:and=0 acc:not=0"
     },
     "objective": 24.99,
     "values": {
@@ -817,7 +817,7 @@
     "name" : "disj2ind_05_and_uenc uenc:negctx:max=2",
     "tags" : ["logical", "linear"],
     "options": {
-      "mp_options": "debug=1 acc:condlinle=0 acc:condlinlt=0 acc:condlinge=0 acc:condlingt=0 acc:condlineq=0 uenc:negctx:max=2"
+      "mp_options": "debug=1 acc:condlinle=0 acc:condlinlt=0 acc:condlinge=0 acc:condlingt=0 acc:condlineq=0 acc:or=0 acc:and=0 acc:not=0 uenc:negctx:max=2"
     },
     "objective": 24.99,
     "values": {
@@ -831,22 +831,16 @@
     "name" : "disj2ind_06_compl",
     "tags" : ["logical", "linear", "complementarity"],
     "options": {
-      "mp_options": "debug=1 acc:condlinle=0 acc:condlinlt=0 acc:condlinge=0 acc:condlingt=0 acc:condlineq=0 cvt:bigM=1e3 acc:compl=0 cvt:pre:disj2ind=15"
+      "mp_options": "debug=1 acc:condlinle=0 acc:condlinlt=0 acc:condlinge=0 acc:condlingt=0 acc:condlineq=0 cvt:bigM=1e3 acc:compl=0 cvt:compl=0 cvt:pre:disj2ind=15"
     },
-    "objective": 11,
-    "values": {
-      "Initial.flat1__U__condlineq": 1
-    }
+    "objective": 11
   },
   {
     "name" : "disj2ind_06_compl disj2ind=11",
     "tags" : ["logical", "linear", "complementarity"],
     "options": {
-      "mp_options": "debug=1 acc:condlinle=0 acc:condlinlt=0 acc:condlinge=0 acc:condlingt=0 acc:condlineq=0 cvt:bigM=1e3 acc:compl=0"
+      "mp_options": "debug=1 acc:condlinle=0 acc:condlinlt=0 acc:condlinge=0 acc:condlingt=0 acc:condlineq=0 cvt:bigM=1e3 acc:compl=0 cvt:compl=0"
     },
-    "objective": 11,
-    "values": {
-      "Initial.flat1__U__condlineq": 2
-    }
+    "objective": 11
   }
 ]
