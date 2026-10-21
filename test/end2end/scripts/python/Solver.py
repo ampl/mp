@@ -1552,6 +1552,33 @@ class cuOptSolver(MPDirectSolver):
                  }
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
+class CpsatSolver(MPDirectSolver):
+    """OR-Tools CP-SAT: integer variables and integer coefficients only."""
+    def _setLPMethod(self, method : str):
+        return ""                               # No LP methods
+
+    def _getAMPLOptionsName(self):
+        return "cpsat"
+
+    def setLogFile(self, name):
+        return ""                               # No log file option, only outlev
+
+    def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
+        stags = {ModelTags.integer, ModelTags.binary,
+                 ModelTags.return_mipgap,
+                 }
+        super().__init__(exeName, timeout, nthreads, otherOptions, stags)
+        # MPDirectSolver adds tags for drivers with continuous variables
+        # (and for nonlinear and complementarity models reformulated to
+        # them). CP-SAT does not have them.
+        self._supportedTags = self._supportedTags - {
+            ModelTags.continuous,
+            ModelTags.complementarity,
+            ModelTags.plinear,
+            ModelTags.nonlinear,
+            ModelTags.prod_with_bin_var,
+            ModelTags.log
+        }
 class MosekSolver(MPDirectSolver):
     def _setLPMethod(self, method : str):
         m  = "1" if method == "SIMPLEX" else "4"

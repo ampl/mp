@@ -324,6 +324,13 @@ add_ampl_backend(highsmp highsmploader.h highsmploader.cc
                   DLL_RUNTIME SHARED_LIB MODULE HIGHS 
                   LIBRARIES ${HIGHS_LIBS} ${CMAKE_DL_LIBS})
 
+add_ampl_backend(cpsat DLL_RUNTIME SHARED_LIB MODULE cpsat
+  LIBRARIES ${CPSAT_LIBS} ${CMAKE_DL_LIBS})
+if (MSVC AND TARGET amplcpsat-static)
+  # OR-Tools >= 9.15: its Abseil requires C++20 with MSVC, C++17 elsewhere
+  set_property(TARGET amplcpsat-static PROPERTY CXX_STANDARD 20)
+endif ()
+
 add_ampl_backend(ortoolsmp DLL_RUNTIME SHARED_LIB MODULE ortoolsmp 
   LIBRARIES ${ortoolsmp_LIBS} ${CMAKE_DL_LIBS})
 
