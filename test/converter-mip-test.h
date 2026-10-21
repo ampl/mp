@@ -282,6 +282,17 @@ public:
 
   /// Add static logical constraint
   void Add(mp::LogicalExpr e) { this->GetModel().AddCon(e); }
+
+  /// Add linear constraint  c0*v0 + c1*v1 (in) [lb, ub]
+  void Lin2(double c0, int v0, double c1, int v1, double lb, double ub) {
+    const double coefs[] = {c0, c1};
+    const int vars[] = {v0, v1};
+    this->InputAlgebraicCon(2, coefs, vars, lb, ub);
+  }
+
+  /// Make  (a1 (k1) r1) && (a2 (k2) r2)
+  mp::LogicalExpr And2(mp::LogicalExpr a, mp::LogicalExpr b)
+  { return Bin(mp::expr::AND, a, b); }
 };
 
 } // namespace mip_converter_test

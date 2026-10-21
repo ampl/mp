@@ -21,6 +21,7 @@
  */
 
 #include <cmath>
+#include <set>
 
 #include "gtest/gtest.h"
 
@@ -286,6 +287,110 @@ TEST(Disj2IndTest, TwoConditionals__default__notAbsorbed) {
   const auto& inds = t.Backend().GetIndicatorConstraintLinLE();
   ASSERT_EQ(2u, inds.size());
   EXPECT_NE(inds[0].get_binary_var(), inds[1].get_binary_var());
+}
+
+
+/// x in {0} union [2, 10] encoded as x >= 2b, x <= 10b (b binary),
+/// as AMPL does for semicontinuous variables
+template <class Tester>
+void AddSemicontinuous(Tester& t, int x, int b) {
+  t.Lin2(1.0, x, -2.0, b, 0.0, INFINITY);
+  t.Lin2(1.0, x, -10.0, b, -INFINITY, 0.0);
+}
+
+TEST(VarBndTest, ComparisonInGap__reusesBinary) {
+  mp::Env e;
+  Disj2IndTester<true, false> t(e, "");
+  int x = t.Var(0, 10), b = t.Var(0, 1, INTEGER), a = t.Var(0, 1, INTEGER);
+  AddSemicontinuous(t, x, b);
+  t.Add( t.Bin(OR, t.Cmp(NE, a, 1), t.Cmp(GE, x, 1)) );   // a==1 ==> x>=1
+  t.Add( t.Bin(OR, t.Cmp(LE, x, 0.5), t.Cmp(NE, a, 0)) );  // a==0 ==> x<=0.5
+  t.ConvertModel();
+  EXPECT_EQ(0, t.Backend().NumIndicators());     // clauses on a, b only
+  EXPECT_EQ(0, t.template NumUsed<mp::CondLinConGE>());
+  EXPECT_EQ(0, t.template NumUsed<mp::CondLinConLE>());
+}
+
+TEST(VarBndTest, ThresholdAboveLowerBound__notDecided) {
+  mp::Env e;
+  Disj2IndTester<true, false> t(e, "");
+  int x = t.Var(0, 10), b = t.Var(0, 1, INTEGER), a = t.Var(0, 1, INTEGER);
+  AddSemicontinuous(t, x, b);
+  t.Add( t.Bin(OR, t.Cmp(NE, a, 1), t.Cmp(GE, x, 3)) );   // 3 > L=2
+  t.ConvertModel();
+  ExpectSingleIndicator(t.Backend().GetIndicatorConstraintLinGE(), a, 1, x, 3);
+}
+
+TEST(VarBndTest, OptionOff__notDecided) {
+  mp::Env e;
+  Disj2IndTester<true, false> t(e, "cvt:pre:vbnd=0 cvt:pre:disj2ind=0");
+  int x = t.Var(0, 10), b = t.Var(0, 1, INTEGER), a = t.Var(0, 1, INTEGER);
+  AddSemicontinuous(t, x, b);
+  t.Add( t.Bin(OR, t.Cmp(NE, a, 1), t.Cmp(GE, x, 1)) );
+  t.ConvertModel();
+  EXPECT_EQ(1, t.template NumUsed<mp::CondLinConGE>());
+}
+
+/// (x<=1 && y>=2) || (x>=5 && y<=0) || z>=3
+template <class Tester>
+void AddThreeTermGdp(Tester& t, int x, int y, int z) {
+  t.Add( t.Bin(OR,
+               t.Bin(OR, t.And2(t.Cmp(LE, x, 1), t.Cmp(GE, y, 2)),
+                         t.And2(t.Cmp(GE, x, 5), t.Cmp(LE, y, 0))),
+               t.Cmp(GE, z, 3)) );
+}
+
+TEST(Disj2IndTest, ThreeTermGdp__bit16__indicatorsOnDisjuncts) {
+  mp::Env e;
+  Disj2IndTester<true, false> t(e, "cvt:pre:disj2ind=27");
+  int x = t.Var(-10, 10), y = t.Var(-10, 10), z = t.Var(-10, 10);
+  AddThreeTermGdp(t, x, y, z);
+  t.ConvertModel();
+  EXPECT_EQ(5, t.Backend().NumIndicators());
+  EXPECT_EQ(0, t.template NumUsed<mp::CondLinConLE>());     // under the Ands
+  EXPECT_EQ(1, t.template NumUsed<mp::CondLinConGE>());     // z>=3 only
+  std::set<int> bins;
+  for (const auto& ind: t.Backend().GetIndicatorConstraintLinLE())
+    bins.insert(ind.get_binary_var());
+  for (const auto& ind: t.Backend().GetIndicatorConstraintLinGE())
+    bins.insert(ind.get_binary_var());
+  EXPECT_EQ(3u, bins.size());                   // one per disjunct
+}
+
+TEST(Disj2IndTest, ThreeTermGdp__default__conjunctsReified) {
+  mp::Env e;
+  Disj2IndTester<true, false> t(e, "");
+  int x = t.Var(-10, 10), y = t.Var(-10, 10), z = t.Var(-10, 10);
+  AddThreeTermGdp(t, x, y, z);
+  t.ConvertModel();
+  EXPECT_EQ(2, t.template NumUsed<mp::CondLinConLE>());
+}
+
+
+/// b==1 ==> (x1==1 && x2==1) on binaries: Or(Not(b), And(x1, x2))
+template <class Tester>
+void AddImplOfConjunction(Tester& t, int b, int x1, int x2) {
+  t.Add( t.Bin(OR, t.Cmp(NE, b, 1),
+               t.And2(t.Cmp(EQ, x1, 1), t.Cmp(EQ, x2, 1))) );
+}
+
+TEST(Disj2IndTest, OrOverAndOfBinaries__bit32__clauses) {
+  mp::Env e;
+  Disj2IndTester<true, false> t(e, "cvt:pre:disj2ind=43");
+  int b = t.Var(0, 1, INTEGER), x1 = t.Var(0, 1, INTEGER), x2 = t.Var(0, 1, INTEGER);
+  AddImplOfConjunction(t, b, x1, x2);
+  t.ConvertModel();
+  EXPECT_EQ(0, t.template NumUsed<mp::AndConstraint>());
+  EXPECT_EQ(2, t.Backend().NumLinCons());      // -b + xi >= 0
+}
+
+TEST(Disj2IndTest, OrOverAndOfBinaries__default__andKept) {
+  mp::Env e;
+  Disj2IndTester<true, false> t(e, "");
+  int b = t.Var(0, 1, INTEGER), x1 = t.Var(0, 1, INTEGER), x2 = t.Var(0, 1, INTEGER);
+  AddImplOfConjunction(t, b, x1, x2);
+  t.ConvertModel();
+  EXPECT_EQ(1, t.template NumUsed<mp::AndConstraint>());
 }
 
 }

@@ -4,7 +4,9 @@
 #   whose first conjunct x==3 awaits the unary encoding
 #   decision for x. The whole chain is delayed: absorbed
 #   into indicators on b if x is not encoded
-#   (cvt:uenc:negctx:max=2), converted as usual otherwise.
+#   (cvt:uenc:negctx:max=2); otherwise x==3 is the encoding
+#   flag, implied by b via a clause, and y<=2 still becomes
+#   an indicator on b.
 #   See option cvt:pre:disj2ind.
 # -------------------------------------------------------------
 

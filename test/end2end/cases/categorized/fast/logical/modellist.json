@@ -808,8 +808,8 @@
     },
     "objective": 24.99,
     "values": {
-      "Initial.flat1__U__and": 2,
-      "Initial.flat1__U__condlinle": 1,
+      "Initial.flat1__U__and": 1,
+      "Initial.flat1__U__condlinle": 0,
       "Initial.flat1__A__uenc": 1
     }
   },
