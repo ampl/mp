@@ -223,6 +223,7 @@ protected:
   void ConvertStandardItems() {
     ////////////////////////// Variables
     ConvertVars();
+    ScanVarBoundRows();          // before any comparison is flattened
 
     ////////////////////////// function defs
     ConvertFuncDefs();
@@ -488,6 +489,22 @@ protected:
   }
 
   /// Convert an algebraic constraint
+  /// Pass two-term linear constraints to the FlatConverter,
+  /// which records variable-bound implications (cvt:pre:vbnd).
+  /// Done before flattening, as comparisons can be flattened
+  /// earlier than such rows (e.g., in objectives).
+  void ScanVarBoundRows() {
+    for (int i = 0; i < GetModel().num_algebraic_cons(); ++i) {
+      auto con = GetModel().algebraic_con(i);
+      const auto& le = con.linear_expr();
+      if (con.nonlinear_expr() || 2 != le.num_terms())
+        continue;
+      GetFlatCvt().NoteVarBoundRow(le.coef(0), le.var_index(0),
+                                   le.coef(1), le.var_index(1),
+                                   con.lb(), con.ub());
+    }
+  }
+
   void ConvertAlgCon(int i) {
     try {
       pre::AutoLinkScope<FlatConverterType> auto_link_scope{

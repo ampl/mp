@@ -29,6 +29,7 @@
  * preprocessing for static constraints.
  */
 
+#include <type_traits>
 #include <cmath>
 #include <algorithm>
 
@@ -245,6 +246,8 @@ public:
     if (0!=MPD( IfPreproEqBinVar() ))
       if (ReuseEqualityBinaryVar(c, prepro))
         return;
+    const auto& con = c.GetConstraint();
+    IfPreprocessVarBnd<0>(con.GetBody(), con.rhs(), prepro);
   }
 
   /// See if the argument of a conditional
@@ -354,9 +357,33 @@ public:
       return;
     if (IfPreprocessNormalize(cc, prepro))
       return;
+    if (IfPreprocessVarBnd<kind>(algc.GetBody(), rhs, prepro))
+      return;
     if (IfPreprocess2BndEq(cc, prepro, bnt))
       return;
     IfPreprocess2Related(cc, prepro, bnt);
+  }
+
+  /// Comparison  a*x (kind) rhs  decided by variable-bound
+  /// constraints on x (cvt:pre:vbnd, see var_bnd_impl.h):
+  /// reuse the binary or its negation.
+  /// @return true if decided
+  template <int kind, class Body, class PreprocessInfo>
+  bool IfPreprocessVarBnd(
+      const Body& body, double rhs, PreprocessInfo& prepro) {
+    if constexpr (std::is_same_v<Body, LinTerms>) {
+      if (1 != body.size() || !MPCD( IfPreproVarBnd() ))
+        return false;
+      const int x = body.var(0);
+      const auto lit = MPCD( GetVarBinaryBounds() ).Decide(
+            x, body.coef(0), kind, rhs, MPCD( lb(x) ));
+      if (lit.var_ < 0)
+        return false;
+      prepro.set_result_var(
+            lit.val_ ? lit.var_ : MPD( MakeComplementVar(lit.var_) ));
+      return true;
+    }
+    return false;
   }
 
   /// (Non)strict inequalities

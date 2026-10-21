@@ -19,6 +19,7 @@
 #include "mp/flat/constr_std.h"
 #include "mp/flat/expr_bounds.h"
 #include "mp/flat/constr_prepro.h"
+#include "mp/flat/var_bnd_impl.h"
 #include "mp/flat/constr_prop_down.h"
 #include "mp/flat/expr_alg_inline.h"
 #include "mp/flat/converter_multiobj.h"
@@ -1669,6 +1670,7 @@ private:
     int preprocessInequalityResultBounds_ = 1;
     int preprocessIneq2BndEq_ = 1;
     int preprocessIneq2Related_ = 1;
+    int preprocessVarBnd_ = 1;
 
     int preproUnnest_ = 31;
     int preproSortUnify_  = 1;
@@ -1850,6 +1852,15 @@ private:
                        "0/1*: Unify related reified inequalities: "
                        "<=c, <c+cvt:mip:eps, >c, >=c+cvt:mip:eps.",
                        options_.preprocessIneq2Related_, 0, 1);
+
+    GetEnv().AddOption("cvt:pre:vbnd vbnd",
+                       "0/1*: Comparisons x (cmp) c decided by variable-bound "
+                       "constraints x >= L*b, x <= U*b with binary b "
+                       "(AMPL's encoding of x in {0} union interval[L, U], "
+                       "or the user's), with 0 <= c <= L, "
+                       "reuse b or its negation instead of a new "
+                       "reified comparison.",
+                       options_.preprocessVarBnd_, 0, 1);
 
     GetEnv().AddOption("cvt:pre:unnest cvt:unnest cvt:pre:inline cvt:inline",
         "Inline nested expressions. Bitwise OR of the following values:\n"
@@ -2151,6 +2162,25 @@ public:
   bool IfPreproIneq2Related() const
   { return MPCD( CanPreprocess(options_.preprocessIneq2Related_) ); }
 
+  /// Whether to decide comparisons by variable-bound constraints
+  bool IfPreproVarBnd() const
+  { return MPCD( CanPreprocess(options_.preprocessVarBnd_) ); }
+
+  /// Note linear row  c0*v0 + c1*v1 (in) [lo, up]  of the input model:
+  /// a variable-bound constraint if one variable is binary
+  /// (see var_bnd_impl.h)
+  void NoteVarBoundRow(double c0, int v0, double c1, int v1,
+                       double lo, double up) {
+    const auto& m = GetModel();
+    if (m.is_binary_var(v1) && !m.is_binary_var(v0))
+      var_bin_bnds_.NoteRow(v0, c0, v1, c1, lo, up);
+    else if (m.is_binary_var(v0) && !m.is_binary_var(v1))
+      var_bin_bnds_.NoteRow(v1, c1, v0, c0, lo, up);
+  }
+
+  /// Implications of variable-bound constraints
+  const VarBinaryBounds& GetVarBinaryBounds() const { return var_bin_bnds_; }
+
   /// Whether inline nested forall, exists, lin/quad expr
   int IfPreproUnnest() const
   { return MPCD( CanPreprocess(options_.preproUnnest_) ); }
@@ -2304,6 +2334,7 @@ private:
 	std::vector<int> refcnt_vars_;
   int constr_depth_ = 0;    // tree depth of new constraints
   bool if_final_cvt_phase_ = false;  // see ConvertDelayedItems()
+  VarBinaryBounds var_bin_bnds_;     // see NoteVarBoundRow()
 
   /// AMPL item names
   std::vector<std::string>
