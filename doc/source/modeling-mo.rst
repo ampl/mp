@@ -159,16 +159,39 @@ See
 for examples.
 
 
-Multi-objective solve statistics (experimental, Gurobi native mode only)
+Multi-objective solve statistics (experimental)
 ***********************************************************************************
 
-The following suffixes are available after a multi-objective solve:
+With option `obj:multi:stats=1`, the following suffixes are available
+after a multi-objective solve:
 
 - `.objpass`: the index of the optimization pass where this objective was optimized
-  (0 if not optimized due to a time limit etc. in previous passes);
-- `.objpass_result`: the `solve_result` value corresponding to the pass of this objective, if any;
-- `.objpass_(runtime/mipgap/...)` as described
-  at `Gurobi multi-objective documentation <https://docs.gurobi.com/projects/optimizer/en/current/reference/attributes/multiobjective.html>`__.
+  (0 if not optimized due to a time limit, infeasibility, etc. in previous passes);
+- `.objpass_result`: the `solve_result_num` value of the pass of this objective,
+  -1 if not optimized;
+- `.objpass_(runtime/mipgap/objval/objbound/work/itercount/nodecount/opennodecount)`:
+  statistics of the pass of this objective, where available from the solver.
+
+Objectives blended into the same pass receive the same values.
+
+In Gurobi native mode (`obj:multi=1`), the statistics are as described
+at `Gurobi multi-objective documentation <https://docs.gurobi.com/projects/optimizer/en/current/reference/attributes/multiobjective.html>`__.
+Other solvers with native multi-objective support
+do not provide pass statistics; use `obj:multi=2` to obtain them via emulation.
+
+With MP's multi-objective emulation (`obj:multi=2`, or `obj:multi=1`
+for solvers without native support), the statistics are collected
+after each pass:
+
+- `.objpass_objval` and `.objpass_objbound` refer to the pass objective,
+  i.e., the weighted blend of the pass's objectives, optimized in the sense
+  of the first objective. For example, the value of a minimization objective
+  is negated if the first objective is maximized. The original objectives
+  can be evaluated as usual after the solve;
+- `.objpass_runtime` is the wall-clock time of the pass, including
+  the model modifications and solution retrieval between passes;
+- numeric statistics not available for a pass, including passes
+  not run, are reported as NaN.
 
 
 

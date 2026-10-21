@@ -6,6 +6,11 @@ Summary of recent updates to the AMPL MP Library
 - Emulate *mip:basis* for linear algebraic MIPs in COPT, MOSEK, HiGHS,
   and SCIP. Add independent fixed-model limits *mip:basis:timelimit*
   and *mip:basis:iterlimit*, including native fixed-model paths.
+- *obj:multi:stats* with multi-objective emulation:
+  report *.objpass_objbound* separately from *.objpass_mipgap*;
+  report the statistics also when a pass stops
+  the solve (*.objpass=0*, *.objpass_result=-1*
+  and NaN values for the passes not run).
 
 
 ## 20260908

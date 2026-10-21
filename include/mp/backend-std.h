@@ -72,9 +72,11 @@ namespace mp {
 /// Multiobjective pass information.
 /// Every array should be either empty,
 /// or have NumObj entries.
+/// Numeric statistics are NaN for objectives
+/// that were not processed or have no such value.
 struct MultiobjPassStats {
   std::vector<int>
-      objpass_,                   // 1-base indexing
+      objpass_,                   // 1-base indexing, 0 for unprocessed
       objpass_result_;            // Should be sol::UNKNOWN for unprocessed
   std::vector<double>
       objpass_mipgap_,
@@ -355,50 +357,61 @@ protected:
   /// Record multiobjective pass results
   void RecordMOPassStats() {
     if (GetMM().IsMOEmulationOn()) {
-      mo_pass_stats__per_pass_.objpass_.push_back(i_solve_); // 1-based
-      mo_pass_stats__per_pass_.objpass_result_
-          // Should be sol::UNKNOWN for unprocessed
-          .push_back(GetSolveResult().first);
+      auto& stats = mo_pass_stats__per_pass_;
+      RecordMOPassValue(stats.objpass_, i_solve_);   // 1-based
+      RecordMOPassValue(stats.objpass_result_, GetSolveResult().first);
       auto obj_vals = GetObjectiveValues();
       if (obj_vals.size())
-        mo_pass_stats__per_pass_.objpass_objval_
-            .push_back(obj_vals[0]);
+        RecordMOPassValue(stats.objpass_objval_, obj_vals[0]);
       auto tp_new = std::chrono::steady_clock::now();
       // Important to cast
       std::chrono::duration<double> dur1 = tp_new - tp_moe_;
       double tm_diff = dur1.count();
-      mo_pass_stats__per_pass_.objpass_runtime_
-          .push_back(tm_diff);
+      RecordMOPassValue(stats.objpass_runtime_, tm_diff);
       tp_moe_ = tp_new;
 
-      RecordMOPassMIPStats(mo_pass_stats__per_pass_);
+      RecordMOPassMIPStats(stats);
 
-      ExtractStandardSolStats(mo_pass_stats__per_pass_);
+      ExtractStandardSolStats(stats);
     }
+  }
+
+  /// Record a statistic of the current MO Emulator pass.
+  /// Earlier passes without this statistic get NaN,
+  /// so that vector index == pass index.
+  template <class Value>
+  void RecordMOPassValue(std::vector<Value>& vec, Value val) {
+    assert(i_solve_ >= 1);
+    assert((int)vec.size() < i_solve_);
+    vec.resize(i_solve_-1, MOPassNoValue<Value>());
+    vec.push_back(val);
+  }
+
+  /// Value of a numeric pass statistic for passes
+  /// not run or not providing it
+  template <class Value>
+  static Value MOPassNoValue() {
+    if constexpr (std::numeric_limits<Value>::has_quiet_NaN)
+      return std::numeric_limits<Value>::quiet_NaN();
+    else
+      return 0;
   }
 
   /// MIP gap, dual bound
   virtual void RecordMOPassMIPStats(MultiobjPassStats& ) = 0;
 
+  /// Extract solver stats available for the current pass.
+  /// The set of stats can differ between passes.
   void ExtractStandardSolStats(MultiobjPassStats& stats) {
     auto sol_stats = SolutionStats();
     auto extract_val = [this,&sol_stats](
-                           const char* name, auto& vector) {
+                           const char* name, std::vector<double>& vector) {
       auto it = sol_stats.find(name);
       if (sol_stats.end() != it) {
-        if (i_solve_ > 1 && vector.empty()) {
-          assert(0 && "Solver stats has different items per iteration");
-        } else {
-          if (std::holds_alternative<int>(it->second))
-            vector.push_back(std::get<int>(it->second));
-          else if (std::holds_alternative<double>(it->second))
-            vector.push_back(std::get<double>(it->second));
-        }
-      } else {
-        if (vector.size()) {
-          assert(0 && "Solver stats has different items per iteration");
-          vector.clear();
-        }
+        if (std::holds_alternative<int>(it->second))
+          RecordMOPassValue(vector, (double)std::get<int>(it->second));
+        else if (std::holds_alternative<double>(it->second))
+          RecordMOPassValue(vector, std::get<double>(it->second));
       }
     };
     extract_val("simplex_iterations", stats.objpass_itercount_);
@@ -639,34 +652,41 @@ protected:
     report("objpass_objbound", stats.objpass_objbound_);
   }
 
-  /// Fill MO Emulator's pass stats
+  /// Fill MO Emulator's pass stats.
+  /// Objectives whose pass was not run
+  /// (e.g., after an infeasible or unbounded pass)
+  /// get .objpass=0, .objpass_result=sol::UNKNOWN,
+  /// and NaN for numeric stats.
   MultiobjPassStats GetMOEPassStats() {
     MultiobjPassStats result;
     const auto pass_map = GetMM().GetMultiobjPasses();
     const auto& stats_per_pass = mo_pass_stats__per_pass_;
 
-    auto move_values = [this,pass_map,&result,&stats_per_pass](
-                          auto MultiobjPassStats::* pMbr) {
+    auto move_values = [pass_map,&result,&stats_per_pass](
+                          auto MultiobjPassStats::* pMbr, auto no_value) {
       const auto& vec2 = stats_per_pass.*pMbr;
       if (vec2.size()) {
         auto& vec1 = result.*pMbr;
         vec1.resize(pass_map.size());
         for (auto i=vec1.size(); i--; ) {
-          vec1[i] = vec2.at(pass_map.at_checked(i));
+          auto i_pass = pass_map[i];
+          vec1[i] = (i_pass >= 0 && i_pass < (int)vec2.size())
+              ? vec2[i_pass] : no_value;
         }
       }
     };
+    const auto nan = MOPassNoValue<double>();
 
-    move_values(&MultiobjPassStats::objpass_);
-    move_values(&MultiobjPassStats::objpass_result_);
-    move_values(&MultiobjPassStats::objpass_itercount_);
-    move_values(&MultiobjPassStats::objpass_nodecount_);
-    move_values(&MultiobjPassStats::objpass_opennodecount_);
-    move_values(&MultiobjPassStats::objpass_runtime_);
-    move_values(&MultiobjPassStats::objpass_work_);
-    move_values(&MultiobjPassStats::objpass_mipgap_);
-    move_values(&MultiobjPassStats::objpass_objval_);
-    move_values(&MultiobjPassStats::objpass_objbound_);
+    move_values(&MultiobjPassStats::objpass_, 0);
+    move_values(&MultiobjPassStats::objpass_result_, (int)sol::UNKNOWN);
+    move_values(&MultiobjPassStats::objpass_itercount_, nan);
+    move_values(&MultiobjPassStats::objpass_nodecount_, nan);
+    move_values(&MultiobjPassStats::objpass_opennodecount_, nan);
+    move_values(&MultiobjPassStats::objpass_runtime_, nan);
+    move_values(&MultiobjPassStats::objpass_work_, nan);
+    move_values(&MultiobjPassStats::objpass_mipgap_, nan);
+    move_values(&MultiobjPassStats::objpass_objval_, nan);
+    move_values(&MultiobjPassStats::objpass_objbound_, nan);
 
     return result;
   }
@@ -1344,6 +1364,14 @@ protected:
                     "where this objective was solved; -1 if not\n"
                     "- .objpass_runtime, _mipgap, _objval, _objbound, "
                     "_work, _itercount, _nodecount, _opennodecount if available.\n"
+                    "\n"
+                    "With MP's emulation (obj:multi=2), _objval and _objbound "
+                    "refer to the blended pass objective in the sense "
+                    "of the first objective, and _runtime is the wall-clock "
+                    "time of the pass including model updates; "
+                    "numeric statistics are NaN if not available for a pass. "
+                    "If the solver's native multiobjective mode "
+                    "does not report pass statistics, use obj:multi=2.\n"
                     "\n"
                     "See also tech:stats.",
                     storedOptions_.report_obj_passes_);
