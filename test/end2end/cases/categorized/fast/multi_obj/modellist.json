@@ -64,6 +64,7 @@
     "name" : "dietobj_1000 multiobj=1 obj_pr_1 multiobjstats=1",
     "Comment": "Modify obj priorities and weights via suffixes in dietobj_pr_1",
     "tags" : ["linear", "continuous", "multiobj"],
+    "solvers_exclude": ["cplex", "xpress", "copt"],
     "files" : ["dietobj_1000.mod", "dietobj.dat", "dietobj_pr_1.inc"],
     "options": { "ANYSOLVER_options": "multiobj=1 multiobjstats=1" },
     "values": {
@@ -211,6 +212,7 @@
   {
     "name" : "multiobj_abstol_MIP multiobj=1 multiobjstats=1",
     "tags" : ["linear", "integer", "multiobj"],
+    "solvers_exclude": ["cplex", "xpress", "copt"],
     "options": {
       "ANYSOLVER_options": "multiobj=1 obj:multi:stats=1",
       "gurobi_options": "multiobj=1 mip:gap=0 obj:multi:stats=1",
@@ -222,6 +224,9 @@
       "_obj[1].objpass_result": 0,
       "if _obj[2].objpass_runtime<1 then 1": 1,
       "_obj[1].objpass_mipgap": 0,
+      "_obj[2].objpass_mipgap": 0,
+      "_obj[1].objpass_objbound": 3,
+      "_obj[2].objpass_objbound": -3.5,
       "_sobj[1]": 2.75,
       "_sobj[2]": 3.5
     }
@@ -240,8 +245,22 @@
       "_obj[1].objpass_result": 0,
       "if _obj[2].objpass_runtime<1 then 1": 1,
       "_obj[1].objpass_mipgap": 0,
+      "_obj[2].objpass_mipgap": 0,
+      "_obj[1].objpass_objbound": 3,
+      "_obj[2].objpass_objbound": -3.5,
       "_sobj[1]": 2.75,
       "_sobj[2]": 3.5
+    }
+  },
+  {
+    "name" : "multiobj_unbdd_stats multiobj=2 multiobjstats=1",
+    "Comment": "Stats for a pass not run after an unbounded pass",
+    "tags" : ["linear", "continuous", "multiobj"],
+    "options": { "ANYSOLVER_options": "multiobj=2 multiobjstats=1" },
+    "values": {
+      "_obj[1].objpass": 1,
+      "_obj[2].objpass": 0,
+      "_obj[2].objpass_result": -1
     }
   },
   {
