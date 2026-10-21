@@ -569,7 +569,7 @@ template <typename T>
 std::string GecodeSolver::GetEnumOption(const SolverOption &opt, T *ptr) const {
   for (mp::ValueArrayRef::iterator
       i = opt.values().begin(), e = opt.values().end(); i != e; ++i) {
-    if (*ptr == i->data)
+    if (static_cast<intptr_t>(*ptr) == std::get<intptr_t>(i->data))
       return i->value;
   }
   return fmt::format("{}", *ptr);
@@ -581,7 +581,7 @@ void GecodeSolver::SetEnumOption(
   for (mp::ValueArrayRef::iterator
       i = opt.values().begin(), e = opt.values().end(); i != e; ++i) {
     if (value == i->value) {
-      *ptr = static_cast<T>(i->data);
+      *ptr = static_cast<T>(std::get<intptr_t>(i->data));
       return;
     }
   }
