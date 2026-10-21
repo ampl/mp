@@ -145,7 +145,18 @@ comparisons) not used elsewhere, is converted into indicator(s) on the binary
 variable, saving an auxiliary binary variable and a constraint per implication,
 with the same LP relaxation. This applies when the solver does not accept
 such comparisons natively, including MP2NL with full linearization (e.g.,
-*config=knitro*). See option *cvt:pre:disj2ind*.
+*config=knitro*). See option *cvt:pre:disj2ind*. Its further bits treat
+a disjunct which is a conjunction of comparisons
+(as in *(x <= 1 and y >= 2) or (x >= 5 and y <= 0) or z >= 3*)
+with one binary variable per disjunct, as the standard big-M
+formulation of a disjunction does, and distribute a static disjunction
+over a conjunction of binary conditions.
+
+For a variable declared as *var x in {0} union interval[L, U]*, AMPL adds
+a binary variable *b* with *x >= L*b* and *x <= U*b*. A comparison of *x*
+with a threshold in *[0, L]*, such as *x >= L/2* or *x = 0*, is then decided
+by *b*, and MP uses *b* instead of a new binary variable
+(option *cvt:pre:vbnd*).
 
 .. code-block:: ampl
 
