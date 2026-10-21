@@ -1670,7 +1670,7 @@ private:
     int preprocessInequalityResultBounds_ = 1;
     int preprocessIneq2BndEq_ = 1;
     int preprocessIneq2Related_ = 1;
-    int preprocessVarBnd_ = 1;
+    int preprocessVarBnd_ = 3;
 
     int preproUnnest_ = 31;
     int preproSortUnify_  = 1;
@@ -1854,13 +1854,20 @@ private:
                        options_.preprocessIneq2Related_, 0, 1);
 
     GetEnv().AddOption("cvt:pre:vbnd vbnd",
-                       "0/1*: Comparisons x (cmp) c decided by variable-bound "
-                       "constraints x >= L*b, x <= U*b with binary b "
-                       "(AMPL's encoding of x in {0} union interval[L, U], "
-                       "or the user's), with 0 <= c <= L, "
-                       "reuse b or its negation instead of a new "
-                       "reified comparison.",
-                       options_.preprocessVarBnd_, 0, 1);
+                       "Comparisons x (cmp) c decided by the domain of x "
+                       "reuse an existing binary instead of a new reified "
+                       "comparison. Bitwise OR of the following values:\n"
+                       "\n"
+                       "| 1 - Variable-bound constraints x >= L*b, x <= U*b "
+                       "with binary b (AMPL's encoding of "
+                       "x in {0} union interval[L, U], or the user's), "
+                       "0 <= c <= L: reuse b or its negation\n"
+                       "| 2 - Root disjunctions x <= a || x >= b (e.g., "
+                       "x == 0 || x >= L for x >= 0), a < c < b: reuse "
+                       "the comparison x >= b or its negation.\n"
+                       "\n"
+                       "Default 3.",
+                       options_.preprocessVarBnd_, 0, 3);
 
     GetEnv().AddOption("cvt:pre:unnest cvt:unnest cvt:pre:inline cvt:inline",
         "Inline nested expressions. Bitwise OR of the following values:\n"
@@ -2164,7 +2171,37 @@ public:
 
   /// Whether to decide comparisons by variable-bound constraints
   bool IfPreproVarBnd() const
-  { return MPCD( CanPreprocess(options_.preprocessVarBnd_) ); }
+  { return MPCD( CanPreprocess(options_.preprocessVarBnd_) ) & 1; }
+
+  /// Whether to rewrite comparisons inside domain holes
+  /// (not while flattening a hole-defining constraint)
+  bool IfPreproHoles() const {
+    return (MPCD( CanPreprocess(options_.preprocessVarBnd_) ) & 2)
+        && !n_hole_rewrite_off_;
+  }
+
+  /// Note domain hole (a, b) of x, defined by root logical
+  /// constraint \a i_lcon (see var_bnd_impl.h)
+  void NoteDomainHole(int x, double a, double b, int i_lcon)
+  { var_holes_.NoteHole(x, a, b, i_lcon); }
+
+  /// Domain holes
+  const VarDomainHoles& GetVarDomainHoles() const { return var_holes_; }
+
+  /// Scope while flattening root logical constraint \a i_lcon:
+  /// no hole rewrites inside a hole-defining one
+  class HoleDefiningScope {
+  public:
+    /// Construct
+    HoleDefiningScope(FlatConverter& cvt, int i_lcon)
+      : cvt_(cvt), f_def_(cvt.var_holes_.IsDefining(i_lcon))
+    { cvt_.n_hole_rewrite_off_ += f_def_; }
+    /// Destruct
+    ~HoleDefiningScope() { cvt_.n_hole_rewrite_off_ -= f_def_; }
+  private:
+    FlatConverter& cvt_;
+    const int f_def_;
+  };
 
   /// Note linear row  c0*v0 + c1*v1 (in) [lo, up]  of the input model:
   /// a variable-bound constraint if one variable is binary
@@ -2335,6 +2372,8 @@ private:
   int constr_depth_ = 0;    // tree depth of new constraints
   bool if_final_cvt_phase_ = false;  // see ConvertDelayedItems()
   VarBinaryBounds var_bin_bnds_;     // see NoteVarBoundRow()
+  VarDomainHoles var_holes_;         // see NoteDomainHole()
+  int n_hole_rewrite_off_ = 0;       // see HoleDefiningScope
 
   /// AMPL item names
   std::vector<std::string>

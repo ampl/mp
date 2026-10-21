@@ -393,4 +393,33 @@ TEST(Disj2IndTest, OrOverAndOfBinaries__default__andKept) {
   EXPECT_EQ(1, t.template NumUsed<mp::AndConstraint>());
 }
 
+
+/// x == 0 || x >= 2  (x in [0, 10]): domain hole (0, 2);
+/// a==1 ==> x >= 1  and  a==0 ==> x <= 0.5
+template <class Tester>
+void AddHoleCase(Tester& t, int x, int a) {
+  t.Add( t.Bin(OR, t.Cmp(EQ, x, 0), t.Cmp(GE, x, 2)) );
+  t.Add( t.Bin(OR, t.Cmp(NE, a, 1), t.Cmp(GE, x, 1)) );
+  t.Add( t.Bin(OR, t.Cmp(LE, x, 0.5), t.Cmp(NE, a, 0)) );
+}
+
+TEST(VarBndTest, DomainHole__comparisonsShareOneBinary) {
+  mp::Env e;
+  Disj2IndTester<true, false> t(e, "");
+  int x = t.Var(0, 10), a = t.Var(0, 1, INTEGER);
+  AddHoleCase(t, x, a);
+  t.ConvertModel();
+  EXPECT_EQ(1, t.template NumUsed<mp::CondLinConGE>());    // x >= 2 only
+  EXPECT_EQ(0, t.template NumUsed<mp::CondLinConLE>());
+}
+
+TEST(VarBndTest, DomainHole__optionBitOff__separateComparisons) {
+  mp::Env e;
+  Disj2IndTester<true, false> t(e, "cvt:pre:vbnd=1 cvt:pre:disj2ind=0");
+  int x = t.Var(0, 10), a = t.Var(0, 1, INTEGER);
+  AddHoleCase(t, x, a);
+  t.ConvertModel();
+  EXPECT_EQ(2, t.template NumUsed<mp::CondLinConGE>());    // x >= 2, x >= 1
+}
+
 }

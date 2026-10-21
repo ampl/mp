@@ -9,11 +9,13 @@ Summary of recent updates to the AMPL MP Library
   without auxiliary binaries. Also for conjunctions *C1 && C2* and
   for *x != k*; *x == k* awaiting the unary encoding decision is
   absorbed only if no encoding is chosen.
-- Option *cvt:pre:vbnd* (default 1): a comparison *x (cmp) c*
-  decided by variable-bound constraints *x >= L*b*, *x <= U*b*
+- Option *cvt:pre:vbnd* (default 3): a comparison *x (cmp) c*
+  decided by the domain of *x* reuses an existing binary.
+  Bit 1: variable-bound constraints *x >= L*b*, *x <= U*b*
   (*b* binary; AMPL's encoding of *x in {0} union interval[L, U]*),
-  with *0 <= c <= L*, reuses *b* or its negation instead of
-  a new reified comparison.
+  with *0 <= c <= L*: *b* or its negation. Bit 2: root disjunctions
+  *x <= a || x >= b* (e.g., *x == 0 || x >= L*), *a < c < b*:
+  the comparison *x >= b* or its negation.
 - *cvt:pre:disj2ind* bits 16 (an AND of comparisons in positive
   context, e.g., a disjunct of a multi-term disjunction, becomes
   indicators on the AND's result) and 32 (a static disjunction

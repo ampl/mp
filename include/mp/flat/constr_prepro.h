@@ -247,7 +247,8 @@ public:
       if (ReuseEqualityBinaryVar(c, prepro))
         return;
     const auto& con = c.GetConstraint();
-    IfPreprocessVarBnd<0>(con.GetBody(), con.rhs(), prepro);
+    if (!IfPreprocessVarBnd<0>(con.GetBody(), con.rhs(), prepro))
+      IfPreprocessHole<0>(con.GetBody(), con.rhs(), prepro);
   }
 
   /// See if the argument of a conditional
@@ -357,11 +358,35 @@ public:
       return;
     if (IfPreprocessNormalize(cc, prepro))
       return;
-    if (IfPreprocessVarBnd<kind>(algc.GetBody(), rhs, prepro))
+    if (IfPreprocessVarBnd<kind>(algc.GetBody(), rhs, prepro)
+        || IfPreprocessHole<kind>(algc.GetBody(), rhs, prepro))
       return;
     if (IfPreprocess2BndEq(cc, prepro, bnt))
       return;
     IfPreprocess2Related(cc, prepro, bnt);
+  }
+
+  /// Comparison  a*x (kind) rhs  inside a domain hole of x
+  /// (cvt:pre:vbnd bit 2, see var_bnd_impl.h):
+  /// reuse the comparison x >= b or its negation.
+  /// @return true if rewritten
+  template <int kind, class Body, class PreprocessInfo>
+  bool IfPreprocessHole(
+      const Body& body, double rhs, PreprocessInfo& prepro) {
+    if constexpr (std::is_same_v<Body, LinTerms>) {
+      if (1 != body.size() || !MPCD( IfPreproHoles() ))
+        return false;
+      const int x = body.var(0);
+      const auto side = MPCD( GetVarDomainHoles() ).Classify(
+            x, body.coef(0), kind, rhs, MPCD( lb(x) ), MPCD( ub(x) ));
+      if (!side.side_)
+        return false;
+      const int r = MPD( AssignResultVar2Args(
+                           CondLinConGE{ { {{1.0}, {x}}, side.b_ } }) );
+      prepro.set_result_var(side.side_ > 0 ? r : MPD( MakeComplementVar(r) ));
+      return true;
+    }
+    return false;
   }
 
   /// Comparison  a*x (kind) rhs  decided by variable-bound

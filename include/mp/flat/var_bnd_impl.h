@@ -101,6 +101,69 @@ private:
   std::unordered_map<int, Entry> map_;
 };
 
+
+/// Domain holes from root disjunctions  x <= a || x >= b,  a < b,
+/// on a single variable, e.g.,  x == 0 || x >= L  for x >= 0
+/// (a semicontinuous variable written as a disjunction).
+/// As x is outside (a, b), a comparison with a threshold in the hole
+/// is equivalent to  x >= b  or to its negation; reusing that one
+/// comparison gives a single binary per variable.
+/// The disjunction itself must keep its own comparisons
+/// (otherwise it becomes a tautology): see IsDefining().
+class VarDomainHoles {
+public:
+  /// Classification: x >= b_ if side_ > 0, !(x >= b_) if side_ < 0
+  struct Side {
+    int side_ {0};
+    double b_ {0.0};
+  };
+
+  /// Note hole (a, b) for x, defined by root logical constraint \a i_lcon
+  void NoteHole(int x, double a, double b, int i_lcon) {
+    if (a < b && !holes_.count(x)) {
+      holes_[x] = { a, b };
+      defining_[i_lcon] = true;
+    }
+  }
+
+  /// Is root logical constraint \a i_lcon defining a hole?
+  bool IsDefining(int i_lcon) const { return defining_.count(i_lcon); }
+
+  /// Classify  coef*x (kind) rhs,  kind -2..2 for <,<=,==,>=,>
+  Side Classify(int x, double coef, int kind, double rhs,
+                double x_lb, double x_ub) const {
+    auto it = holes_.find(x);
+    if (holes_.end() == it || 0.0 == coef)
+      return {};
+    const int k = coef > 0.0 ? kind : -kind;
+    const double c = rhs / coef;
+    const int side = ClassifyNormalized(it->second, k, c, x_lb, x_ub);
+    return { side, it->second.b_ };
+  }
+
+private:
+  /// The hole (a_, b_)
+  struct Hole {
+    double a_, b_;
+  };
+
+  /// Side of  x (k) c  given hole \a h, or 0
+  static int ClassifyNormalized(const Hole& h, int k, double c,
+                                double x_lb, double x_ub) {
+    const double a = h.a_, b = h.b_;
+    if ((1 == k && a < c && c < b) || (2 == k && a <= c && c < b)
+        || (0 == k && c == b && b == x_ub))
+      return 1;
+    if ((-1 == k && a <= c && c < b) || (-2 == k && a < c && c <= b)
+        || (0 == k && c == a && a == x_lb))
+      return -1;
+    return 0;
+  }
+
+  std::unordered_map<int, Hole> holes_;
+  std::unordered_map<int, bool> defining_;
+};
+
 } // namespace mp
 
 #endif // VAR_BND_IMPL_H

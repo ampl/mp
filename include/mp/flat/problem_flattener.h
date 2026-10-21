@@ -224,6 +224,7 @@ protected:
     ////////////////////////// Variables
     ConvertVars();
     ScanVarBoundRows();          // before any comparison is flattened
+    ScanDomainHoles();
 
     ////////////////////////// function defs
     ConvertFuncDefs();
@@ -505,6 +506,52 @@ protected:
     }
   }
 
+  /// Pass root disjunctions  x <= a || x >= b  on one variable
+  /// to the FlatConverter as domain holes (cvt:pre:vbnd bit 2)
+  void ScanDomainHoles() {
+    for (int i = 0; i < GetModel().num_logical_cons(); ++i) {
+      auto e = GetModel().logical_con(i).expr();
+      if (expr::OR != e.kind())
+        continue;
+      auto disj = Cast<BinaryLogicalExpr>(e);
+      const auto s1 = HalfLine(disj.lhs()), s2 = HalfLine(disj.rhs());
+      if (s1.var_ >= 0 && s1.var_ == s2.var_ && s1.low_ != s2.low_)
+        GetFlatCvt().NoteDomainHole(s1.var_,
+                                    s1.low_ ? s1.bnd_ : s2.bnd_,
+                                    s1.low_ ? s2.bnd_ : s1.bnd_, i);
+    }
+  }
+
+  /// A half-line  x <= bnd_  (low_) or  x >= bnd_
+  struct HalfLineInfo {
+    int var_ {-1};
+    bool low_ {false};
+    double bnd_ {0.0};
+  };
+
+  /// If \a e is  x <= c,  x >= c,  or  x == c  at a bound of x,
+  /// its half-line, otherwise var_ < 0
+  HalfLineInfo HalfLine(LogicalExpr e) {
+    auto rel = Cast<RelationalExpr>(e);
+    if (!rel)
+      return {};
+    auto x = Cast<Reference>(rel.lhs());
+    auto c = Cast<NumericConstant>(rel.rhs());
+    if (!x || expr::VARIABLE != x.kind() || !c)
+      return {};
+    const int v = x.index();
+    const double val = c.value();
+    switch (rel.kind()) {
+    case expr::LE: return { v, true, val };
+    case expr::GE: return { v, false, val };
+    case expr::EQ:
+      if (val == GetFlatCvt().lb(v)) return { v, true, val };
+      if (val == GetFlatCvt().ub(v)) return { v, false, val };
+      return {};
+    default: return {};
+    }
+  }
+
   void ConvertAlgCon(int i) {
     try {
       pre::AutoLinkScope<FlatConverterType> auto_link_scope{
@@ -614,6 +661,7 @@ protected:
           Add()           // Just add next node -
       };                    // assume the constraint order in NL
       auto e = GetModel().logical_con(i);
+      typename FlatConverterType::HoleDefiningScope hds{GetFlatCvt(), i};
       const auto resvar = MP_DISPATCH( Convert2Var(e.expr()) );
       if (GetFlatCvt().is_fixed(resvar)) {
         if (0==GetFlatCvt().fixed_value(resvar)) {

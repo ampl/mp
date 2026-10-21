@@ -156,7 +156,9 @@ For a variable declared as *var x in {0} union interval[L, U]*, AMPL adds
 a binary variable *b* with *x >= L*b* and *x <= U*b*. A comparison of *x*
 with a threshold in *[0, L]*, such as *x >= L/2* or *x = 0*, is then decided
 by *b*, and MP uses *b* instead of a new binary variable
-(option *cvt:pre:vbnd*).
+(option *cvt:pre:vbnd*). The same holds for a variable restricted by
+a disjunction such as *x = 0 or x >= L*: comparisons of *x* with
+thresholds between *0* and *L* reuse the comparison *x >= L*.
 
 .. code-block:: ampl
 
