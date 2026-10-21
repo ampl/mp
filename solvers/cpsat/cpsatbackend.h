@@ -1,6 +1,7 @@
 #ifndef MP_CPSAT_BACKEND_H_
 #define MP_CPSAT_BACKEND_H_
 
+#include <atomic>
 #include <map>
 #include <string>
 #include <variant>
@@ -68,6 +69,14 @@ public:
   ALLOW_STD_FEATURE(RETURN_BEST_DUAL_BOUND, true)
   double BestDualBound() override;
 
+  /// Stop the search on a plateau (adds options mip:plateau*).
+  /// PLATEAU_STOP_BOUND is needed for mip:plateauabsgaptol/relgaptol.
+  ALLOW_STD_FEATURE(PLATEAU_STOP, true)
+  ALLOW_STD_FEATURE(PLATEAU_STOP_BOUND, true)
+  /// Nothing to register here: Solve() installs the CP-SAT callbacks
+  /// on its sat::Model.
+  void SetupPlateauCallbacks() override { }
+
   /// Model export (adds options tech:writeprob, tech:writeprobindex):
   /// the CP-SAT model in protobuf text format
   ALLOW_STD_FEATURE(WRITE_PROBLEM, true)
@@ -126,6 +135,9 @@ private:
 
   /// Improving solutions found, for MULTISOL
   std::vector< std::pair<std::vector<double>, double> > pool_;
+
+  /// Set when the last solve was stopped on a plateau
+  std::atomic<bool> plateauStopped_{false};
 };
 
 }  // namespace mp

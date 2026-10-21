@@ -5,7 +5,10 @@
 #include <cfloat>
 #include <cmath>
 #include <fstream>
+#include <functional>
 #include <limits>
+#include <mutex>
+#include <optional>
 #include <stdexcept>
 #include <thread>
 
@@ -35,23 +38,22 @@ bool InterruptCpsat(void* p) {
   return true;
 }
 
-/// While alive, stops the CP-SAT search when the interrupt flag is set.
+/// While alive, stops the CP-SAT search when the interrupt flag is set,
+/// or when the optional \a extra_stop returns true (polled likewise).
 /// A thread polls the flag because the signal handler cannot call
 /// sat::StopSearch() itself (it is not async-signal-safe).
 /// The destructor joins the thread, also when the solve throws.
-/// @note CP-SAT 9.15 did not stop on its external stop flag
-/// (TimeLimit::RegisterExternalBooleanAsLimit()), unlike 9.3;
-/// StopSearch() is its public API for this.
 class InterruptWatcher {
 public:
-  InterruptWatcher(const std::atomic<bool>& flag, sat::Model* model)
-    : thread_([this, &flag, model] {
+  InterruptWatcher(const std::atomic<bool>& flag, sat::Model* model,
+                   std::function<bool()> extra_stop = {})
+    : thread_([this, &flag, model, extra_stop = std::move(extra_stop)] {
         while (!done_.load()) {
-          if (flag.load()) {
+          if (flag.load() || (extra_stop && extra_stop())) {
             sat::StopSearch(model);
             return;
           }
-          std::this_thread::sleep_for(std::chrono::milliseconds(20));
+          std::this_thread::sleep_for(std::chrono::milliseconds(500));
         }
       }) { }
   ~InterruptWatcher() {
@@ -61,6 +63,92 @@ public:
 private:
   std::atomic<bool> done_{false};
   std::thread thread_;              // after done_: started last
+};
+
+/// Feeds CP-SAT's incumbents and bounds to MP's plateau logic, and
+/// stops the search when it reports a plateau.
+/// CP-SAT calls back from its worker threads, and the InterruptWatcher
+/// polls CheckTimeout() from yet another one, while MP's PlateauState is
+/// not thread-safe: all calls into the hooks are serialized here.
+class PlateauMonitor {
+public:
+  /// The MP plateau functions (see MIPBackend::Report*ForPlateau()),
+  /// each returning true if the plateau is reached
+  struct Hooks {
+    std::function<bool(double)> incumbent;
+    std::function<bool(double, double)> gap;   // absolute, relative
+    std::function<bool()> timeout;
+  };
+
+  /// Register the callbacks on \a model, which must outlive the solve
+  PlateauMonitor(Hooks hooks, sat::Model* model)
+    : hooks_(std::move(hooks)), model_(model) {
+    model->Add(sat::NewFeasibleSolutionObserver(
+        [this](const sat::CpSolverResponse& r) {
+      StopIf(OnIncumbent(r.objective_value()));
+    }));
+    model->Add(sat::NewBestBoundCallback([this](double bound) {
+      StopIf(OnBound(bound));
+    }));
+  }
+
+  /// For polling between callbacks: has the plateau time run out?
+  /// Does not stop the search, the caller does.
+  bool CheckTimeout() { return Locked(hooks_.timeout); }
+
+  /// Whether a plateau was reached
+  bool stopped() const { return stopped_.load(); }
+
+private:
+  bool OnIncumbent(double obj) {
+    return Locked([&] {
+      haveIncumbent_ = true;
+      incumbent_ = obj;
+      return hooks_.incumbent(obj) || ReportGap();
+    });
+  }
+
+  bool OnBound(double bound) {
+    return Locked([&] {
+      haveBound_ = true;
+      bound_ = bound;
+      return ReportGap();
+    });
+  }
+
+  /// Call with the lock held. The gap is only known once both
+  /// the incumbent and the bound have been seen.
+  bool ReportGap() {
+    if (!haveIncumbent_ || !haveBound_)
+      return false;
+    const double absgap = std::fabs(incumbent_ - bound_);
+    return hooks_.gap(
+          absgap, absgap / std::max(std::fabs(incumbent_), 1e-10));
+  }
+
+  template <class F>
+  bool Locked(F&& f) {
+    bool stop;
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      stop = f();
+    }
+    if (stop)
+      stopped_.store(true);
+    return stop;
+  }
+
+  void StopIf(bool stop) {
+    if (stop)
+      sat::StopSearch(model_);
+  }
+
+  const Hooks hooks_;
+  sat::Model* const model_;
+  std::mutex mutex_;                  // guards the hooks and the fields below
+  bool haveIncumbent_ = false, haveBound_ = false;
+  double incumbent_ = 0.0, bound_ = 0.0;
+  std::atomic<bool> stopped_{false};
 };
 
 }  // namespace {}
@@ -85,7 +173,6 @@ CreateCpsatModelMgr(CpsatCommon&, Env&, pre::BasicValuePresolver*&);
 CpsatBackend::CpsatBackend() {
   OpenSolver();
 
-  /// Create a ModelManager
   pre::BasicValuePresolver* pPre;
   auto data = CreateCpsatModelMgr(*this, *this, pPre);
   SetMM( std::move( data ) );
@@ -189,6 +276,7 @@ void CpsatBackend::SetInterrupter(mp::Interrupter *inter) {
 void CpsatBackend::Solve() {
   auto* d = data();
   pool_.clear();
+  plateauStopped_ = false;
   // Once interrupted, no further solve (there can be several, e.g.,
   // for multiple objectives): report as not solved.
   if (d->interrupted.load()) {
@@ -197,6 +285,7 @@ void CpsatBackend::Solve() {
   }
   sat::Model model;
   model.Add(sat::NewSatParameters(d->params));
+
   if (need_multiple_solutions()) {
     model.Add(sat::NewFeasibleSolutionObserver(
         [this, d](const sat::CpSolverResponse& r) {
@@ -206,8 +295,30 @@ void CpsatBackend::Solve() {
       pool_.emplace_back(std::move(x), r.objective_value());
     }));
   }
-  InterruptWatcher watcher(d->interrupted, &model);
+
+  // If we need the plateau observer, register it here
+  // Note that the callbacks are registered in CP-SAT by the constructor:
+  // PlateauMonitor(Hooks hooks, sat::Model* model)
+
+  std::optional<PlateauMonitor> plateau;
+  std::function<bool()> plateauTimeout;   // polled by the watcher, if set
+  if (plateau_active()) {
+    plateau.emplace(PlateauMonitor::Hooks{
+          [this](double obj) { return ReportIncumbentForPlateau(obj); },
+          [this](double abs, double rel) { return ReportGapForPlateau(abs, rel); },
+          [this] { return CheckTimeoutForPlateau(); } },
+        &model);
+    plateauTimeout = [&plateau] { return plateau->CheckTimeout(); };
+  }
+
+  // Other watcher that stops the search on interrupt, or when the plateau time runs
+  // out between callbacks
+  InterruptWatcher watcher(d->interrupted, &model, plateauTimeout);
+
   d->response = sat::SolveCpModel(d->builder.Build(), &model);
+
+  // If the plateau monitor was used, record whether it stopped the search
+  plateauStopped_ = plateau && plateau->stopped();
 }
 
 void CpsatBackend::ReportResults() {
@@ -233,9 +344,14 @@ void CpsatBackend::ReportCpsatPool() {
 
 void CpsatBackend::AddCpsatMessages() {
   const auto& r = data()->response;
-  AddToSolverMessage(fmt::format(
-        "{} conflicts, {} branches, {:.3f} s\n",
-        r.num_conflicts(), r.num_branches(), r.wall_time()));
+  // With several workers, CP-SAT reports no search counters in the
+  // response (they are only in the search log), so don't print zeros
+  if (r.num_booleans() > 0 || r.num_conflicts() > 0)
+    AddToSolverMessage(fmt::format(
+          "{} conflicts, {} branches, {:.3f} s\n",
+          r.num_conflicts(), r.num_branches(), r.wall_time()));
+  else
+    AddToSolverMessage(fmt::format("{:.3f} s\n", r.wall_time()));
 }
 
 std::pair<int, std::string> CpsatBackend::GetSolveResult() {
@@ -248,6 +364,10 @@ std::pair<int, std::string> CpsatBackend::GetSolveResult() {
     return d->interrupted.load()
         ? std::make_pair((int)sol::LIMIT_FEAS_INTERRUPT,
                          std::string("interrupted with a feasible solution"))
+        : plateauStopped_.load()
+        ? std::make_pair((int)sol::LIMIT_FEAS,
+                         std::string("feasible solution, stopped on a plateau "
+                                     "(mip:plateau* options)"))
         : std::make_pair((int)sol::LIMIT_FEAS,
                          std::string("feasible solution, not proven optimal "
                                      "(limit reached)"));
