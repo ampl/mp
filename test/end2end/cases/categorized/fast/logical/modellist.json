@@ -700,5 +700,153 @@
       "Initial.flat1__linle": 14,
       "Initial.flat1__linge": 1
     }
+  },
+  {
+    "name" : "disj2ind_01",
+    "tags" : ["logical", "linear"],
+    "options": {
+      "mp_options": "debug=1 acc:condlinle=0 acc:condlinlt=0 acc:condlinge=0 acc:condlingt=0 acc:condlineq=0"
+    },
+    "objective": 10,
+    "values": {
+      "Initial.flat1__U__condlinle": 0,
+      "Initial.flat1__U__condlinge": 0,
+      "Initial.flat1__U__condlineq": 0,
+      "Initial.flat1__U__and": 1,
+      "Initial.flat1__U__not": 0
+    }
+  },
+  {
+    "name" : "disj2ind_01 disj2ind=0",
+    "tags" : ["logical", "linear"],
+    "options": {
+      "mp_options": "debug=1 acc:condlinle=0 acc:condlinlt=0 acc:condlinge=0 acc:condlingt=0 acc:condlineq=0 cvt:pre:disj2ind=0"
+    },
+    "objective": 10,
+    "values": {
+      "Initial.flat1__U__condlinle": 3,
+      "Initial.flat1__U__condlinge": 4,
+      "Initial.flat1__U__condlineq": 1,
+      "Initial.flat1__U__and": 2,
+      "Initial.flat1__U__not": 5
+    }
+  },
+  {
+    "name" : "disj2ind_02",
+    "tags" : ["logical", "linear"],
+    "options": {
+      "mp_options": "debug=1 acc:condlinle=0 acc:condlinlt=0 acc:condlinge=0 acc:condlingt=0 acc:condlineq=0"
+    },
+    "objective": 16,
+    "values": {
+      "Initial.flat1__U__condlinle": 0,
+      "Initial.flat1__U__condlinlt": 0,
+      "Initial.flat1__U__condlinge": 1,
+      "Initial.flat1__U__condlineq": 2,
+      "Initial.flat1__U__not": 4,
+      "Initial.flat1__A__uenc": 1
+    }
+  },
+  {
+    "name" : "disj2ind_02 uenc:negctx:max=2",
+    "tags" : ["logical", "linear"],
+    "options": {
+      "mp_options": "debug=1 acc:condlinle=0 acc:condlinlt=0 acc:condlinge=0 acc:condlingt=0 acc:condlineq=0 uenc:negctx:max=2"
+    },
+    "objective": 16,
+    "values": {
+      "Initial.flat1__U__condlinle": 0,
+      "Initial.flat1__U__condlinge": 1,
+      "Initial.flat1__U__condlineq": 0,
+      "Initial.flat1__U__not": { "max": 1 },
+      "Initial.flat1__A__uenc": 0
+    }
+  },
+  {
+    "name" : "disj2ind_03",
+    "tags" : ["logical", "quadratic", "quadraticnonconvex"],
+    "options": {
+      "mp_options": "debug=1 acc:condquadle=0 acc:condquadlt=0"
+    },
+    "objective": 21.6,
+    "values": {
+      "Initial.flat1__U__condquadle": 0,
+      "Initial.flat1__U__condquadlt": 0
+    }
+  },
+  {
+    "name" : "disj2ind_04_uenc",
+    "tags" : ["logical", "linear"],
+    "options": {
+      "mp_options": "debug=1 acc:condlinle=0 acc:condlinlt=0 acc:condlinge=0 acc:condlingt=0 acc:condlineq=0"
+    },
+    "objective": 24.99,
+    "values": {
+      "Initial.flat1__U__condlineq": 3,
+      "Initial.flat1__U__condlinge": 0,
+      "Initial.flat1__A__uenc": 1
+    }
+  },
+  {
+    "name" : "disj2ind_04_uenc uenc:negctx:max=2",
+    "tags" : ["logical", "linear"],
+    "options": {
+      "mp_options": "debug=1 acc:condlinle=0 acc:condlinlt=0 acc:condlinge=0 acc:condlingt=0 acc:condlineq=0 uenc:negctx:max=2"
+    },
+    "objective": 24.99,
+    "values": {
+      "Initial.flat1__U__condlineq": 2,
+      "Initial.flat1__A__indeq": 1,
+      "Initial.flat1__A__uenc": 0
+    }
+  },
+  {
+    "name" : "disj2ind_05_and_uenc",
+    "tags" : ["logical", "linear"],
+    "options": {
+      "mp_options": "debug=1 acc:condlinle=0 acc:condlinlt=0 acc:condlinge=0 acc:condlingt=0 acc:condlineq=0"
+    },
+    "objective": 24.99,
+    "values": {
+      "Initial.flat1__U__and": 2,
+      "Initial.flat1__U__condlinle": 1,
+      "Initial.flat1__A__uenc": 1
+    }
+  },
+  {
+    "name" : "disj2ind_05_and_uenc uenc:negctx:max=2",
+    "tags" : ["logical", "linear"],
+    "options": {
+      "mp_options": "debug=1 acc:condlinle=0 acc:condlinlt=0 acc:condlinge=0 acc:condlingt=0 acc:condlineq=0 uenc:negctx:max=2"
+    },
+    "objective": 24.99,
+    "values": {
+      "Initial.flat1__U__and": 1,
+      "Initial.flat1__U__condlinle": 0,
+      "Initial.flat1__U__condlineq": 2,
+      "Initial.flat1__A__uenc": 0
+    }
+  },
+  {
+    "name" : "disj2ind_06_compl",
+    "tags" : ["logical", "linear", "complementarity"],
+    "options": {
+      "mp_options": "debug=1 acc:condlinle=0 acc:condlinlt=0 acc:condlinge=0 acc:condlingt=0 acc:condlineq=0 cvt:bigM=1e3 acc:compl=0 cvt:pre:disj2ind=15"
+    },
+    "objective": 11,
+    "values": {
+      "Initial.flat1__U__condlineq": 1
+    }
+  },
+  {
+    "name" : "disj2ind_06_compl disj2ind=11",
+    "tags" : ["logical", "linear", "complementarity"],
+    "options": {
+      "mp_options": "debug=1 acc:condlinle=0 acc:condlinlt=0 acc:condlinge=0 acc:condlingt=0 acc:condlineq=0 cvt:bigM=1e3 acc:compl=0"
+    },
+    "objective": 11,
+    "values": {
+      "Initial.flat1__U__condlineq": 2
+    }
   }
 ]

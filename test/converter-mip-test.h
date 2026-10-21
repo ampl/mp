@@ -160,6 +160,130 @@ protected:
   }
 };
 
+
+/// Record constraints of \a Type if \a fAccept, otherwise
+/// leave them for conversion
+#define D2I_RECORD_CONSTR(Type, fAccept) \
+public: \
+  static mp::ConstraintAcceptanceLevel \
+  AcceptanceLevel(const mp::Type*) { \
+    return (fAccept) ? mp::ConstraintAcceptanceLevel::Recommended \
+                     : mp::ConstraintAcceptanceLevel::NotAccepted; \
+  } \
+  static constexpr int GroupNumber(const mp::Type*) \
+  { return mp::CG_Default; } \
+  void AddConstraint(const mp::Type& con) \
+  { cons_ ## Type ## _.push_back(con); } \
+  const std::vector<mp::Type>& Get ## Type() const \
+  { return cons_ ## Type ## _; } \
+private: \
+  std::vector<mp::Type> cons_ ## Type ## _;
+
+
+/// A toy backend for disjunction absorption tests (cvt:pre:disj2ind).
+/// Accepts linear constraints;
+/// indicators if \a fInd (otherwise big-M);
+/// OR if \a fOr; conditional <= if \a fCond.
+template <bool fInd, bool fOr, bool fCond=false>
+class Disj2IndBackend :
+    public mp::BasicFlatModelAPI,
+    public mp::EnvKeeper
+{
+public:
+  Disj2IndBackend(mp::Env& e) : mp::EnvKeeper(e) { }
+
+  static constexpr const char* GetTypeName() { return "d2i_tester"; }
+
+  void AddVariables(const mp::VarArrayDef& v) { vars_ = v; }
+  void SetLinearObjective(int , const mp::LinearObjective& ) { }
+
+  /// Number of variables
+  int NumVars() const { return (int)vars_.size(); }
+  /// Variable bounds
+  double lb(int v) const { return vars_.plb()[v]; }
+  double ub(int v) const { return vars_.pub()[v]; }
+
+  USE_BASE_CONSTRAINT_HANDLERS(mp::BasicFlatModelAPI)
+
+  D2I_RECORD_CONSTR(LinConLE, true)
+  D2I_RECORD_CONSTR(LinConGE, true)
+  D2I_RECORD_CONSTR(LinConEQ, true)
+  D2I_RECORD_CONSTR(LinConRange, true)
+  D2I_RECORD_CONSTR(IndicatorConstraintLinLE, fInd)
+  D2I_RECORD_CONSTR(IndicatorConstraintLinGE, fInd)
+  D2I_RECORD_CONSTR(IndicatorConstraintLinEQ, fInd)
+  D2I_RECORD_CONSTR(OrConstraint, fOr)
+  D2I_RECORD_CONSTR(CondLinConLE, fCond)
+
+public:
+  /// Number of linear constraints of all kinds
+  int NumLinCons() const {
+    return int(GetLinConLE().size() + GetLinConGE().size()
+               + GetLinConEQ().size() + GetLinConRange().size());
+  }
+  /// Number of indicators of all kinds
+  int NumIndicators() const {
+    return int(GetIndicatorConstraintLinLE().size()
+               + GetIndicatorConstraintLinGE().size()
+               + GetIndicatorConstraintLinEQ().size());
+  }
+
+private:
+  mp::VarArrayDef vars_;
+};
+
+
+/// Interface (flattener + MIP converter + toy backend)
+/// for disjunction absorption tests
+template <bool fInd, bool fOr, bool fCond=false>
+class Disj2IndTester :
+    public mp::ProblemFltImpl<mp::ProblemFlattener, mp::Problem,
+      mp::FlatCvtImpl<mp::MIPFlatConverter,
+                      Disj2IndBackend<fInd, fOr, fCond> > >
+{
+  using Base = mp::ProblemFltImpl<mp::ProblemFlattener, mp::Problem,
+    mp::FlatCvtImpl<mp::MIPFlatConverter,
+                    Disj2IndBackend<fInd, fOr, fCond> > >;
+public:
+  /// Construct with solver options \a opts
+  Disj2IndTester(mp::Env& e, const char* opts) : Base(e) {
+    this->InitOptions();
+    e.ParseOptionString(opts);
+  }
+
+  /// The backend
+  const Disj2IndBackend<fInd, fOr, fCond>& Backend() {
+    return this->GetFlatCvt().GetModelAPI();
+  }
+
+  /// Number of used (active or converted) items of type \a Con
+  template <class Con>
+  int NumUsed() {
+    return this->GetFlatCvt().GetConstraintKeeper((Con*)nullptr)
+        .GetNumberOfUsed();
+  }
+
+  /// Add variable
+  int Var(double lb, double ub, mp::var::Type ty=mp::var::CONTINUOUS)
+  { return this->AddVars(1, lb, ub, ty)[0]; }
+
+  /// Make  (var (kind) value)
+  mp::LogicalExpr Cmp(mp::expr::Kind kind, int var, double value) {
+    auto& m = this->GetModel();
+    return m.MakeRelational(kind, m.MakeVariable(var),
+                            m.MakeNumericConstant(value));
+  }
+
+  /// Make  (a (kind) b)  for logical a, b
+  mp::LogicalExpr Bin(mp::expr::Kind kind,
+                      mp::LogicalExpr a, mp::LogicalExpr b) {
+    return this->GetModel().MakeBinaryLogical(kind, a, b);
+  }
+
+  /// Add static logical constraint
+  void Add(mp::LogicalExpr e) { this->GetModel().AddCon(e); }
+};
+
 } // namespace mip_converter_test
 
 
