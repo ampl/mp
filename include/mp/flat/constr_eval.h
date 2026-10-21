@@ -306,13 +306,16 @@ struct HasIdealisticFlag<VarVec, std::void_t<
   : std::true_type { };
 
 /// Compute result of a conditional constraint.
-/// For the solver's (realistic) values, the comparison holds
-/// within the feasibility tolerance; otherwise exactly.
+/// For the solver's (realistic) values, a non-strict comparison
+/// holds within the feasibility tolerance; otherwise, and for
+/// strict comparisons, exactly (a tolerance would accept
+/// x < c at x == c, see ifthen_var_01 with cmp:eps=0).
 /// This is not used to compute violation.
 template <class Con, class VarVec>
 double ComputeValue(
     const ConditionalConstraint<Con>& con, const VarVec& x) {
-  if constexpr (HasIdealisticFlag<VarVec>::value)
+  constexpr bool f_strict = (2 == Con::kind() || -2 == Con::kind());
+  if constexpr (HasIdealisticFlag<VarVec>::value && !f_strict)
     if (!x.idealistic())
       return con.GetConstraint().ComputeViolation(x, false).viol_
           <= x.feastol();
