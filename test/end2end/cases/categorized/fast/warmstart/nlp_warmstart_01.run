@@ -1,0 +1,16 @@
+## Warm start acceptance for an NLP solver with basis statuses (sstatus):
+## re-solve from the optimal point and basis with no major iterations
+## allowed.  Only a warm start that the solver accepts reports 'solved';
+## a cold start stops on the iteration limit.
+## Model: Hock-Schittkowski problem 71, optimal objective 17.0140173.
+
+var x {1..4} >= 1, <= 5;
+let x[1] := 1; let x[2] := 5; let x[3] := 5; let x[4] := 1;
+
+minimize obj: x[1]*x[4]*(x[1] + x[2] + x[3]) + x[3];
+subject to prod: x[1]*x[2]*x[3]*x[4] >= 25;
+subject to sumsq: sum {i in 1..4} x[i]^2 = 40;
+
+solve;
+option snopt777_options ($snopt777_options & ' lim:majiter=0');
+solve;

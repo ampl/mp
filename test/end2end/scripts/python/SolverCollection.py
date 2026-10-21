@@ -44,6 +44,8 @@ def addStdSolvers(solvers: SolverCollection, binPath=""):
     solvers.addSolver(Solver.LgoSolver(path.join(binPath, "lgo")))
     solvers.addSolver(Solver.IPOptSolver(path.join(binPath, "ipopt")))
     solvers.addSolver(Solver.LoqoSolver(path.join(binPath, "loqo")))
+    solvers.addSolver(Solver.SnoptSolver(path.join(binPath, "snopt")))
+    solvers.addSolver(Solver.SnoptSolver(path.join(binPath, "snopt777")))
     solvers.addSolver(Solver.XpressSolver(path.join(binPath,"xpressasl")))
     solvers.addSolver(Solver.GurobiSolver(path.join(binPath,"gurobiasl")))
     solvers.addSolver(Solver.CPLEXSolver(path.join(binPath,"cplexasl")))

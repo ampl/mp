@@ -72,5 +72,23 @@
       "solve_result": "limit",
       "solve_message": { "contains": "no solution" }
     }
+  },
+  {
+    "name": "nlp_warmstart_01",
+    "files": [ "nlp_warmstart_01.run" ],
+    "tags": [ "nonlinear", "continuous", "warmstart", "sstatus" ],
+    "comment": "The 2nd solve allows no major iterations: 'solved' only if the warm start is accepted",
+    "solvers": [ "snopt777" ],
+    "objective": 17.0140173,
+    "values": { "solve_result_num": 0 }
+  },
+  {
+    "name": "nlp_warmstart_01 cold start",
+    "files": [ "nlp_warmstart_01.run" ],
+    "tags": [ "nonlinear", "continuous", "warmstart", "sstatus" ],
+    "comment": "Negative control: without the incoming basis and point the 2nd solve hits the limit",
+    "solvers": [ "snopt777" ],
+    "options": { "snopt777_options": "alg:start=0" },
+    "values": { "if solve_result_num >= 400 and solve_result_num < 500 then 1 else 0": 1 }
   }
 ]
