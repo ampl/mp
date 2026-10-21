@@ -58,7 +58,8 @@ public:
   Backend& GetBackend(BasicFlatConverter& cvt)
   { return static_cast<Converter&>(cvt).GetModelAPI(); }
 
-  /// Add a pre-constructed constraint (or just arguments)
+  /// Add a pre-constructed constraint
+  ///   (or just arguments)
   /// @return index of the new constraint
   /// @param d: tree depth
   /// @param args: arguments for Constraint,
