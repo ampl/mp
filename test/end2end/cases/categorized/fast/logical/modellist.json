@@ -842,5 +842,35 @@
       "mp_options": "debug=1 acc:condlinle=0 acc:condlinlt=0 acc:condlinge=0 acc:condlingt=0 acc:condlineq=0 cvt:bigM=1e3 acc:compl=0 cvt:compl=0"
     },
     "objective": 11
+  },
+  {
+    "name" : "auxint_01",
+    "tags" : ["logical", "linear"],
+    "options": {
+      "mp_options": "debug=1"
+    },
+    "objective": 9600,
+    "values": {
+      "Initial.flat1_var_aux_int": 0
+    }
+  },
+  {
+    "name" : "auxint_01 auxint=1",
+    "tags" : ["logical", "linear"],
+    "options": {
+      "mp_options": "debug=1 cvt:pre:auxint=1"
+    },
+    "objective": 9600,
+    "values": {
+      "Initial.flat1_var_aux_int": 6
+    }
+  },
+  {
+    "name" : "auxint_01 bigM only",
+    "tags" : ["logical", "linear"],
+    "options": {
+      "mp_options": "debug=1 acc:indle=0 acc:indeq=0 acc:indge=0 acc:and=0 acc:or=0 acc:not=0 acc:ifthen=0 acc:count=0"
+    },
+    "objective": 9600
   }
 ]

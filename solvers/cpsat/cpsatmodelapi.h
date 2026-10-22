@@ -30,6 +30,10 @@ public:
   /// Class name
   static const char* GetTypeName() { return "CpsatModelAPI"; }
 
+  /// CP-SAT has no continuous variables:
+  /// keep implied-integer auxiliaries integer (cvt:pre:auxint)
+  static int AuxIntDefault() { return 1; }
+
   /// Called before problem input.
   void InitProblemModificationPhase(const FlatModelInfo*);
   /// After

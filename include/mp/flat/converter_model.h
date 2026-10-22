@@ -388,6 +388,32 @@ public:
   int if_make_fixed_vars_continuous() const { return if_make_fixed_vars_continuous_; }
   /// Make fixed vars continuous?
   int& if_make_fixed_vars_continuous() { return if_make_fixed_vars_continuous_; }
+  /// Submit implied-integer auxiliary variables as integer?
+  int if_submit_aux_int() const { return if_submit_aux_int_; }
+  /// Submit implied-integer auxiliary variables as integer?
+  int& if_submit_aux_int() { return if_submit_aux_int_; }
+  /// Mark \a v as an auxiliary variable whose integrality
+  /// is implied by its defining constraint (cvt:pre:auxint)
+  void MarkVarImpliedInt(int v) { SetVarFlag(var_implied_int_, v); }
+  /// Mark \a v as a variable the solver needs declared
+  /// with its type, e.g., an indicator binary
+  void MarkVarTypeRequired(int v) { SetVarFlag(var_type_required_, v); }
+  /// Is \a v marked implied-integer?
+  bool is_var_implied_int(int v) const
+  { return GetVarFlag(var_implied_int_, v); }
+  /// Is \a v marked type-required?
+  bool is_var_type_required(int v) const
+  { return GetVarFlag(var_type_required_, v); }
+  /// Submitted type (var_type() before PrepareVariables())
+  var::Type var_type_subm(int v) const {
+    assert(0<=v && v<num_vars());
+    return var_type_subm_.size() ? var_type_subm_[v] : var_type_[v];
+  }
+  /// Submitted types (var_type_vec() before PrepareVariables())
+  const VarTypeVec& var_type_subm_vec() const
+  { return var_type_subm_.size() ? var_type_subm_ : var_type_; }
+  /// Number of implied-integer variables submitted as continuous
+  int num_aux_int_relaxed() const { return n_aux_int_relaxed_; }
   /// Get obj [i]
   const QuadraticObjective& get_obj(int i) const
   { return get_objectives().at(i); }
@@ -533,7 +559,7 @@ protected:
     const auto& vub = var_ub_subm_.size() ?
                           var_ub_subm_ : var_ub_;
     for (auto i=var_lb_.size(); i--; ) {
-      bool is_int = var::Type::CONTINUOUS != var_type(i);
+      bool is_int = var::Type::CONTINUOUS != var_type_subm(i);
       if (vlb[i] < vub[i] && is_int)
         ++n;
       int index_add = 3*(!is_var_original(i));
@@ -576,6 +602,7 @@ public:
 public:
   void PrepareVariables() const {
     assert(check_vars());
+    PrepareVarTypes();
     if (if_submit_best_known_bounds()) {
       var_lb_subm_ = var_lb_best_;
       var_ub_subm_ = var_ub_best_;
@@ -606,7 +633,22 @@ public:
     if (if_make_fixed_vars_continuous())
       for (auto i=var_lb_subm_.size(); i--; ) {
         if (var_lb_subm_[i] >= var_ub_subm_[i])
-          var_type_[i] = var::CONTINUOUS;        // avoid MIP classification
+          var_type_subm_[i] = var::CONTINUOUS;   // avoid MIP classification
+      }
+  }
+
+  /// Submitted types: implied-integer auxiliaries become continuous
+  /// unless type-required or cvt:pre:auxint=1
+  void PrepareVarTypes() const {
+    var_type_subm_ = var_type_;
+    n_aux_int_relaxed_ = 0;
+    if (if_submit_aux_int())
+      return;
+    for (auto i=var_type_subm_.size(); i--; )
+      if (var::CONTINUOUS != var_type_subm_[i]
+          && is_var_implied_int(i) && !is_var_type_required(i)) {
+        var_type_subm_[i] = var::CONTINUOUS;
+        ++n_aux_int_relaxed_;
       }
   }
 
@@ -621,11 +663,12 @@ protected:
       var_names_.reserve(var_names_storage_.size());
       for (const std::string& s : var_names_storage_)
         var_names_.push_back(s.c_str());
-      backend.AddVariables({ var_lb_subm_, var_ub_subm_, var_type_, var_names_ });
+      backend.AddVariables({ var_lb_subm_, var_ub_subm_,
+                             var_type_subm_, var_names_ });
     } else {
-      backend.AddVariables({ var_lb_subm_, var_ub_subm_, var_type_ });
+      backend.AddVariables({ var_lb_subm_, var_ub_subm_, var_type_subm_ });
     }
-    ExportVars(0, var_lb_subm_, var_ub_subm_, var_type_,
+    ExportVars(0, var_lb_subm_, var_ub_subm_, var_type_subm_,
                "Updated model information.");
   }
 
@@ -684,8 +727,30 @@ private:
   int if_make_fixed_vars_continuous_ {1};
   /// Variables' submitted bounds - what goes to the solver
   mutable VarBndVec var_lb_subm_, var_ub_subm_;
-  /// Variables' types
+  /// Variables' types, as known to MP
   mutable VarTypeVec var_type_;
+  /// Variables' submitted types - what goes to the solver,
+  /// see cvt:pre:auxint
+  mutable VarTypeVec var_type_subm_;
+  /// Number of implied-integer variables submitted as continuous
+  mutable int n_aux_int_relaxed_ {0};
+  /// Auxiliary variables whose integrality is implied
+  /// by their defining constraint
+  std::vector<bool> var_implied_int_;
+  /// Variables which the solver needs declared with their type
+  std::vector<bool> var_type_required_;
+  /// Submit implied-integer auxiliaries as integer?
+  int if_submit_aux_int_ {0};
+  /// Set a per-variable flag, growing the vector on demand
+  static void SetVarFlag(std::vector<bool>& flags, int v) {
+    assert(v>=0);
+    if ((int)flags.size()<=v)
+      flags.resize(v+1);
+    flags[v] = true;
+  }
+  /// Get a per-variable flag
+  static bool GetVarFlag(const std::vector<bool>& flags, int v)
+  { return v<(int)flags.size() && flags[v]; }
   /// Whether the variable, being the result variable of a functional constraint,
   /// needs to stay a variable (vs being eliminated because the constraint
   /// is becoming an expression.)

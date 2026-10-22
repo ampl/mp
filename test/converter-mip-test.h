@@ -202,6 +202,8 @@ public:
   /// Variable bounds
   double lb(int v) const { return vars_.plb()[v]; }
   double ub(int v) const { return vars_.pub()[v]; }
+  /// Submitted variable type
+  mp::var::Type type(int v) const { return vars_.ptype()[v]; }
 
   USE_BASE_CONSTRAINT_HANDLERS(mp::BasicFlatModelAPI)
 
@@ -293,6 +295,47 @@ public:
   /// Make  (a1 (k1) r1) && (a2 (k2) r2)
   mp::LogicalExpr And2(mp::LogicalExpr a, mp::LogicalExpr b)
   { return Bin(mp::expr::AND, a, b); }
+
+  /// Variable type as known to MP (vs the submitted one)
+  mp::var::Type InternalType(int v)
+  { return this->GetFlatCvt().GetModel().var_type(v); }
+  /// Make  if (cond) then v1 else v2
+  mp::NumericExpr If(mp::LogicalExpr cond, int v1, int v2) {
+    auto& m = this->GetModel();
+    return m.MakeIf(cond, m.MakeVariable(v1), m.MakeVariable(v2));
+  }
+  /// Make  if (cond) then c1 else c2  for constants
+  mp::NumericExpr IfC(mp::LogicalExpr cond, double c1, double c2) {
+    auto& m = this->GetModel();
+    return m.MakeIf(cond, m.MakeNumericConstant(c1),
+                    m.MakeNumericConstant(c2));
+  }
+  /// Make  (e (kind) value)  for a numeric expression
+  mp::LogicalExpr CmpE(mp::expr::Kind kind, mp::NumericExpr e, double value) {
+    auto& m = this->GetModel();
+    return m.MakeRelational(kind, e, m.MakeNumericConstant(value));
+  }
+  /// Make  count(a, b)
+  mp::NumericExpr Count2(mp::LogicalExpr a, mp::LogicalExpr b) {
+    auto& m = this->GetModel();
+    auto bld = m.BeginCount(2);
+    bld.AddArg(a);
+    bld.AddArg(b);
+    return m.EndCount(bld);
+  }
+  /// Minimize expression \a e
+  void Minimize(mp::NumericExpr e)
+  { this->GetModel().AddObj(mp::obj::MIN, e); }
+  /// Number of auxiliary variables with MP type \a tint
+  /// submitted with type \a tsub
+  int NumAuxVars(mp::var::Type tint, mp::var::Type tsub) {
+    int n=0;
+    for (int v=this->GetFlatCvt().GetModel().num_vars(); v--; )
+      if (!this->GetFlatCvt().GetModel().is_var_original(v)
+          && tint == InternalType(v) && tsub == Backend().type(v))
+        ++n;
+    return n;
+  }
 };
 
 } // namespace mip_converter_test

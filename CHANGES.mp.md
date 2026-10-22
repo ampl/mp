@@ -3,6 +3,25 @@ Summary of recent updates to the AMPL MP Library
 
 
 ## unreleased
+- Option *cvt:pre:auxint* (default 0): auxiliary result variables
+  whose integrality is implied by their defining constraint
+  (if-then-else, min/max/abs, count/numberof, integer linear and
+  quadratic functions of integer arguments) are submitted as
+  continuous; MP keeps their integrality for its reformulations.
+  Results of logical constraints, indicator binaries and arguments
+  of logical constraints submitted to the solver stay integer.
+  Solvers without continuous variables (CP-SAT) default to 1.
+  Fixed variables made continuous (*cvt:pre:continuous_fixed_vars*)
+  no longer change MP's internal variable types.
+- Fix: the big-M linearization of an indicator *b==v ==> c'x >= d*
+  (or *<=*) dropped the row when *d* equalled the body's best-known
+  bound, although that bound is not submitted by default
+  (*cvt:pre:boundsbest=0*). The solver then saw, e.g., the result of
+  *if b then x else 0* without its lower bound 0, and objectives
+  containing it were underestimated. The plain row is now kept.
+- *cvt:pre:disj2ind*: a variable reused as an indicator binary
+  (an if-then-else result in {0, 1}) gets hard bounds [0, 1]
+  (Xpress: "Non binary variable used as an indicator binary").
 - Option *cvt:pre:disj2ind* (default 11): convert disjunctions
   *literal || C* with a single-use comparison *C*, which is how AMPL
   sends implications *b==1 ==> C*, into indicators *b==1 ==> C*,

@@ -152,7 +152,7 @@ protected:
       std::vector<double>& x_back,
       bool if_recomp_vals) {
     SolCheck chk(x, duals, obj, x_raw,
-                 MPCD( GetModel() ).var_type_vec(),
+                 MPCD( GetModel() ).var_type_subm_vec(),
                  MPCD( GetModel() ).var_lb_best_vec(),
                  MPCD( GetModel() ).var_ub_best_vec(),
                  MPCD( sol_feas_tol() ),
@@ -188,7 +188,7 @@ protected:
               {x - MPCD( ub(i) ), MPCD( ub(i) )},
               MPCD( sol_feas_tol() ), MPCD( sol_feas_tol_rel() ),
               MPCD( GetModel() ).var_name(i));
-        if (MPCD( is_var_integer(i) ))
+        if (var::INTEGER == MPCD( GetModel() ).var_type_subm(i))
           chk.VarViolIntty().at(aux).CheckViol(
                 { std::fabs(x - std::round(x)),
                   std::round(x) },

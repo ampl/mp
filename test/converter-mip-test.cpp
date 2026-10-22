@@ -68,6 +68,7 @@ using mp::expr::LE;
 using mp::expr::LT;
 using mp::expr::GE;
 using mp::var::INTEGER;
+using mp::var::CONTINUOUS;
 
 /// b==1 ==> x<=3, as AMPL sends it: b!=1 || x<=3
 template <class Tester>
@@ -422,4 +423,140 @@ TEST(VarBndTest, DomainHole__optionBitOff__separateComparisons) {
   EXPECT_EQ(2, t.template NumUsed<mp::CondLinConGE>());    // x >= 2, x >= 1
 }
 
+}
+
+
+/// cvt:pre:auxint: implied-integer auxiliaries submitted as continuous
+TEST(AuxIntTest, IfThenOfIntegers__continuousSubmitted_integerInside) {
+  mp::Env e;
+  Disj2IndTester<true, false> t(e, "");
+  int b = t.Var(0, 1, INTEGER), x = t.Var(0, 10, INTEGER),
+      y = t.Var(0, 10, INTEGER);
+  auto ite = t.If(t.Cmp(EQ, b, 1), x, y);
+  t.Minimize(ite);
+  t.Add( t.CmpE(GE, ite, 4.5) );        // integer result: >= 5
+  t.ConvertModel();
+  // The if-then result, and the root comparison's result fixed to 1
+  EXPECT_EQ(2, t.NumAuxVars(INTEGER, CONTINUOUS));
+  EXPECT_EQ(0, t.NumAuxVars(INTEGER, INTEGER));
+  int r = y+1;                           // the if-then result
+  EXPECT_EQ(INTEGER, t.InternalType(r));
+  EXPECT_EQ(CONTINUOUS, t.Backend().type(r));
+  int nrows = 0;
+  for (const auto& lc: t.Backend().GetLinConGE())
+    if (1 == lc.size() && r == lc.pvars()[0]) {
+      EXPECT_EQ(5.0, lc.lb() / lc.pcoefs()[0]);  // rounded as for an integer
+      ++nrows;
+    }
+  EXPECT_EQ(1, nrows);
+}
+
+TEST(AuxIntTest, OptionOn__integerSubmitted) {
+  mp::Env e;
+  Disj2IndTester<true, false> t(e, "cvt:pre:auxint=1");
+  int b = t.Var(0, 1, INTEGER), x = t.Var(0, 10, INTEGER),
+      y = t.Var(0, 10, INTEGER);
+  t.Minimize( t.If(t.Cmp(EQ, b, 1), x, y) );
+  t.ConvertModel();
+  EXPECT_EQ(0, t.NumAuxVars(INTEGER, CONTINUOUS));
+  EXPECT_EQ(1, t.NumAuxVars(INTEGER, INTEGER));
+}
+
+TEST(AuxIntTest, IfThenOfContinuous__continuous) {
+  mp::Env e;
+  Disj2IndTester<true, false> t(e, "");
+  int b = t.Var(0, 1, INTEGER), x = t.Var(0, 10), y = t.Var(0, 10, INTEGER);
+  t.Minimize( t.If(t.Cmp(EQ, b, 1), x, y) );
+  t.ConvertModel();
+  EXPECT_EQ(0, t.NumAuxVars(INTEGER, CONTINUOUS));
+  EXPECT_EQ(0, t.NumAuxVars(INTEGER, INTEGER));
+}
+
+/// redefvar_01: y <= 4 || (if b==0 then 1 else 0),
+/// the if-then result becomes an indicator binary (cvt:pre:disj2ind)
+TEST(AuxIntTest, IfThenAsIndicatorBinary__binary) {
+  mp::Env e;
+  Disj2IndTester<true, false> t(e, "");
+  int b = t.Var(0, 1, INTEGER), y = t.Var(0, 10);
+  t.Add( t.Bin(OR, t.Cmp(LE, y, 4), t.CmpE(NE, t.IfC(t.Cmp(EQ, b, 0), 1, 0), 0)) );
+  t.ConvertModel();
+  ASSERT_LE(1, t.Backend().NumIndicators());
+  for (const auto& ic: t.Backend().GetIndicatorConstraintLinLE()) {
+    auto bv = ic.get_binary_var();
+    EXPECT_EQ(INTEGER, t.Backend().type(bv));
+    EXPECT_EQ(0.0, t.Backend().lb(bv));
+    EXPECT_EQ(1.0, t.Backend().ub(bv));
+  }
+}
+
+TEST(AuxIntTest, ComparisonResults__integer) {
+  mp::Env e;
+  Disj2IndTester<false, false> t(e, "cvt:pre:disj2ind=0");
+  int x = t.Var(-10, 10);
+  t.Add( t.Bin(OR, t.Cmp(GE, x, 1), t.Cmp(LE, x, -1)) );   // big-M
+  t.ConvertModel();
+  EXPECT_EQ(2, t.NumAuxVars(INTEGER, INTEGER));       // the 2 results
+  EXPECT_EQ(1, t.NumAuxVars(INTEGER, CONTINUOUS));    // OR result, fixed
+}
+
+TEST(AuxIntTest, CountResult__continuous) {
+  mp::Env e;
+  Disj2IndTester<false, false> t(e, "");
+  int x = t.Var(-10, 10);
+  t.Minimize( t.Count2(t.Cmp(GE, x, 1), t.Cmp(LE, x, -1)) );
+  t.ConvertModel();
+  EXPECT_EQ(2, t.NumAuxVars(INTEGER, INTEGER));       // comparison results
+  EXPECT_EQ(1, t.NumAuxVars(INTEGER, CONTINUOUS));    // count
+}
+
+TEST(AuxIntTest, FixedIntVar__continuousSubmittedOnly) {
+  mp::Env e;
+  Disj2IndTester<false, false> t(e, "");
+  int x = t.Var(3, 3, INTEGER), y = t.Var(0, 10, INTEGER);
+  t.Lin2(1.0, x, 1.0, y, -INFINITY, 8.0);
+  t.ConvertModel();
+  EXPECT_EQ(CONTINUOUS, t.Backend().type(x));
+  EXPECT_EQ(INTEGER, t.InternalType(x));
+  EXPECT_EQ(INTEGER, t.Backend().type(y));
+}
+
+
+/// Big-M for  b==0 ==> y >= 0  where y's best-known lower bound is 0
+/// (unsubmitted): the row must stay, else y is free in the solver
+TEST(BigMTest, ImpliedByBestBoundsOnly__rowKept) {
+  mp::Env e;
+  Disj2IndTester<false, false> t(e, "");
+  int b = t.Var(0, 1, INTEGER), x = t.Var(50, 270, INTEGER);
+  auto& m = t.GetModel();
+  auto ite = m.MakeIf(t.Cmp(EQ, b, 1), m.MakeVariable(x),
+                      m.MakeNumericConstant(0.0));
+  t.Minimize(ite);
+  t.ConvertModel();
+  int r = -1;                                   // the if-then result:
+  for (int v=t.Backend().NumVars(); --v > x; )  // integer inside, not fixed
+    if (INTEGER == t.InternalType(v) && t.Backend().lb(v) < t.Backend().ub(v))
+      r = v;
+  ASSERT_GE(r, 0);
+  // A row bounding y from below by a constant, i.e.,
+  // its other variables (the else constant) are fixed
+  auto IsLowerRowOnR = [&t, r](const auto& lc, double sign) {
+    bool has_r = false;
+    for (size_t i=0; i<lc.size(); ++i) {
+      if (r == lc.pvars()[i]) {
+        if (sign * lc.pcoefs()[i] <= 0.0)
+          return false;
+        has_r = true;
+      } else if (t.Backend().lb(lc.pvars()[i]) != t.Backend().ub(lc.pvars()[i]))
+        return false;
+    }
+    return has_r;
+  };
+  int nrows = 0;
+  for (const auto& lc: t.Backend().GetLinConGE())
+    nrows += IsLowerRowOnR(lc, 1.0);
+  for (const auto& lc: t.Backend().GetLinConLE())
+    nrows += IsLowerRowOnR(lc, -1.0);
+  for (const auto& lc: t.Backend().GetLinConRange())
+    nrows += IsLowerRowOnR(lc, 1.0) && lc.lb() > -1e20;
+  EXPECT_EQ(1, nrows);
 }

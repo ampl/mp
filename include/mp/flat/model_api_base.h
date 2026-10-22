@@ -203,6 +203,12 @@ public:
   /// @note Option *cvt:expr:nlreif*.
   static int NLReifLevelDefault() { return 1; }
 
+  /// Default of option *cvt:pre:auxint*: whether auxiliary
+  /// variables with implied integrality (if-then-else, count, ...)
+  /// are submitted as integer. 1 for solvers without continuous
+  /// variables.
+  static int AuxIntDefault() { return 0; }
+
 
   /// Placeholder for SetQuadraticObjective()
   void SetQuadraticObjective(int , const QuadraticObjective& ) {

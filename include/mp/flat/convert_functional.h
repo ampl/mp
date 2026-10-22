@@ -99,8 +99,11 @@ public:
         type()) );
     if (GetConstraint().IsLogical())
       GetConverter().NarrowVarBounds(r, lb(), ub());  // for logical, hard bounds
-    else
+    else {
       GetConverter().NarrowVarBestBounds(r, lb(), ub());  // unless boundsbest=1
+      if (var::INTEGER == type())      // integrality implied by the args,
+        GetConverter().MarkVarImpliedInt(r);   // see cvt:pre:auxint
+    }
     SetResultVar( r );
     GetConstraint().SetResultVar( r );
 	}

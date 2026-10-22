@@ -921,6 +921,7 @@ protected:
     ConInfo ci{&ck, i};
     if (resvar>=0)
       AddInitExpression(resvar, ci);
+    MarkTypeRequiredVars(ck.GetConstraint(i));
     MPD( NoteConstraintAdded(ck.GetConstraint(i), i) );
     /// Can also cache non-functional constraints,
     /// but then implement checking before
@@ -1265,6 +1266,46 @@ public:
   void set_var_bounds_context(int var, double lb, double ub, Context ctx) {
     NarrowVarBounds(var, lb, ub);       // Because PropResult() only hint bounds
     PropagateResultOfInitExpr(var, lb, ub, ctx);
+  }
+
+  /// Mark \a var as an auxiliary variable whose integrality
+  /// is implied by its defining constraint (cvt:pre:auxint)
+  void MarkVarImpliedInt(int var) { GetModel().MarkVarImpliedInt(var); }
+
+  /// Mark \a var as needing its type in the solver
+  void MarkVarTypeRequired(int var) { GetModel().MarkVarTypeRequired(var); }
+
+  /// Make \a var a hard binary: bounds [0, 1] and type-required.
+  /// For variables used as indicator binaries.
+  void RequireVarBinary(int var) {
+    NarrowVarBounds(var, 0.0, 1.0);
+    MarkVarTypeRequired(var);
+  }
+
+  /// Mark the variables which the solver needs declared with their
+  /// type, should \a con reach it. By default none (algebraic
+  /// constraints, objectives, SOS, complementarity).
+  template <class Con>
+  void MarkTypeRequiredVars(const Con& ) { }
+  /// Indicator: the binary
+  template <class Con>
+  void MarkTypeRequiredVars(const IndicatorConstraint<Con>& ic)
+  { RequireVarBinary(ic.get_binary_var()); }
+  /// Logical constraints and count/numberof: the arguments
+  void MarkTypeRequiredVars(const AndConstraint& c) { MarkArgsTypeRequired(c); }
+  void MarkTypeRequiredVars(const OrConstraint& c) { MarkArgsTypeRequired(c); }
+  void MarkTypeRequiredVars(const NotConstraint& c) { MarkArgsTypeRequired(c); }
+  void MarkTypeRequiredVars(const AllDiffConstraint& c) { MarkArgsTypeRequired(c); }
+  void MarkTypeRequiredVars(const ImplicationConstraint& c) { MarkArgsTypeRequired(c); }
+  void MarkTypeRequiredVars(const EquivalenceConstraint& c) { MarkArgsTypeRequired(c); }
+  void MarkTypeRequiredVars(const CountConstraint& c) { MarkArgsTypeRequired(c); }
+  void MarkTypeRequiredVars(const NumberofConstConstraint& c) { MarkArgsTypeRequired(c); }
+  void MarkTypeRequiredVars(const NumberofVarConstraint& c) { MarkArgsTypeRequired(c); }
+  /// Mark all arguments of \a con
+  template <class Con>
+  void MarkArgsTypeRequired(const Con& con) {
+    for (auto v: con.GetArguments())
+      MarkVarTypeRequired(v);
   }
 
   /// Narrow "best-known" variable domain range
@@ -1955,6 +1996,28 @@ private:
                        "Note: when a variable can be fixed, the stronger bounds "
                        "are always submitted.",
                        GetModel().if_submit_best_known_bounds(), 0, 1);
+
+    GetModel().if_submit_aux_int() = ModelAPI::AuxIntDefault();
+    GetEnv().AddOption("cvt:pre:auxint auxint",
+                       ModelAPI::AuxIntDefault() ?
+                       "0/1*: Submit as integer the auxiliary result variables "
+                       "whose integrality is implied by their defining constraint "
+                       "(if-then-else, min, max, abs, count, numberof, "
+                       "integer linear and quadratic functions of integer "
+                       "arguments). 0: submit them as continuous "
+                       "(MP keeps the integrality for its reformulations). "
+                       "Variables required to have their type by a submitted "
+                       "constraint, e.g., indicator binaries, are not affected."
+                       :
+                       "0*/1: Submit as integer the auxiliary result variables "
+                       "whose integrality is implied by their defining constraint "
+                       "(if-then-else, min, max, abs, count, numberof, "
+                       "integer linear and quadratic functions of integer "
+                       "arguments). Default 0: submit them as continuous "
+                       "(MP keeps the integrality for its reformulations). "
+                       "Variables required to have their type by a submitted "
+                       "constraint, e.g., indicator binaries, are not affected.",
+                       GetModel().if_submit_aux_int(), 0, 1);
 
     GetEnv().AddOption("cvt:pre:continuous_fixed_vars continuous_fixed_vars ctg_fixed",
                        "0/1*: Make fixed variables continuous, "
