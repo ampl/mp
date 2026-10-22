@@ -1624,11 +1624,13 @@ protected:
 
   /// Map expressions from a single item info
   /// @param kind: 0 - alg con, 1 - log con, 2 - obj
+  /// @param f_count: count the expression usage
+  ///   (only the first time for an item)
   /// @note This actually adds expressions
   /// @note needs to be in .h to be instantiated/inlined,
   ///   at least for Clang 16.
   void MapExprTreeFromItemInfo(
-      int i_item, const ItemInfo& info, int kind);
+      int i_item, const ItemInfo& info, int kind, bool f_count);
 
   /// Reset objective meta info for resolve
   /// (NNZ, nlo(i), nlb(i))

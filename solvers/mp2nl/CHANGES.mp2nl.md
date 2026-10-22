@@ -2,6 +2,18 @@ Summary of recent updates to MP2NL for AMPL
 ==========================================
 
 
+## unreleased
+- Fix: in a multi-objective solve (*obj:multi*), the NL file of
+  every pass after the first had a wrong header (counts only for
+  the items added since the previous pass); the subsolver read
+  wrong data or stopped.
+- Objective suffixes (e.g., *.objpriority*) are no longer passed
+  on to the auxiliary variables and constraints of the objective's
+  conversion. Knitro 16.0.0 with *use_asl=0* misreads binary NL
+  files with any suffix, so a multi-objective solve of a model with
+  logical expressions returned a zero solution.
+
+
 ## 20260624
 - Changes in MP, in particular:
   - Option *cvt:pow2_as_qp* prefers quadratization

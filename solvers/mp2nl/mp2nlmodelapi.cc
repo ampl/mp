@@ -357,30 +357,34 @@ void MP2NLModelAPI::MapExpressions() {
   ResetObjMetaInfo();
   is_alg_con_nl_.clear();
   is_alg_con_nl_.resize(alg_con_info_.size());  // grow flags array
+  // The header data are recomputed for all items,
+  // e.g., in a new multi-objective pass,
+  // but the expression usage is counted only once
   for (int i=0; i<(int)obj_info_.size(); ++i) {
-    MapExprTreeFromItemInfo(i, obj_info_[i], 2);
+    MapExprTreeFromItemInfo(i, obj_info_[i], 2,
+                            !obj_info_[i].IsExprTreeMarked());
+    obj_info_[i].SetExprTreeMarked();
   }
   for (int i=0; i<(int)alg_con_info_.size(); ++i) {
-    if (!alg_con_info_[i].IsExprTreeMarked()) {
-      MapExprTreeFromItemInfo(i, alg_con_info_[i], 0);
-      alg_con_info_[i].SetExprTreeMarked();
-    }
+    MapExprTreeFromItemInfo(i, alg_con_info_[i], 0,
+                            !alg_con_info_[i].IsExprTreeMarked());
+    alg_con_info_[i].SetExprTreeMarked();
   }
   for (int i=0; i<(int)log_con_info_.size(); ++i) {
-    if (!log_con_info_[i].IsExprTreeMarked()) {
-      MapExprTreeFromItemInfo(i, log_con_info_[i], 1);
-      log_con_info_[i].SetExprTreeMarked();
-    }
+    MapExprTreeFromItemInfo(i, log_con_info_[i], 1,
+                            !log_con_info_[i].IsExprTreeMarked());
+    log_con_info_[i].SetExprTreeMarked();
   }
   FinishMapExpressions();
   ResetIniExprRetrievedFlags();
 }
 
 void MP2NLModelAPI::MapExprTreeFromItemInfo(
-    int i_item, const ItemInfo& info, int kind) {
+    int i_item, const ItemInfo& info, int kind, bool f_count) {
   auto mp2nlexpr        // so that AddExpression() is called
       = info.GetDispatcher().GetExpression(info.GetPItem());
-  RegisterExpression(mp2nlexpr);     // tree root
+  if (f_count)
+    RegisterExpression(mp2nlexpr);   // tree root
   if (1 != kind) {                   // alg con (0) / obj (2)
     MergeItemSparsity(info, kind, mp2nlexpr);
     UpdateAlgebraicMetaInfo(info, kind);  // nnz, colsizes, n ranges/eqns

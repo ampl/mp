@@ -299,6 +299,11 @@ public:
     else {
       assert(nd==ni);
     }
+    // An objective suffix (e.g., .objpriority) would be presolved
+    // into the auxiliary variables and constraints
+    // of the objective's conversion. Keep it on objectives.
+    const bool f_obj_only
+        = result.values_[0].empty() && result.values_[1].empty();
     // Treating all suffixes generically,
     // with range constraints this should work for .status
     auto suf_pre = be_.GetValuePresolver().PresolveGenericDbl({
@@ -306,11 +311,13 @@ public:
         result.values_[1],
         result.values_[2]
     });
-    result.values_[0] = suf_pre.GetVarValues()();
-    result.values_[1] = suf_pre.GetConValues()(CG_Algebraic);
-    const auto& suf_log = suf_pre.GetConValues()(CG_Logical);
-    result.values_[1].insert(result.values_[1].end(),
-                                    suf_log.begin(), suf_log.end());
+    if (!f_obj_only) {
+      result.values_[0] = suf_pre.GetVarValues()();
+      result.values_[1] = suf_pre.GetConValues()(CG_Algebraic);
+      const auto& suf_log = suf_pre.GetConValues()(CG_Logical);
+      result.values_[1].insert(result.values_[1].end(),
+                               suf_log.begin(), suf_log.end());
+    }
     if (be_.multiobj())   // Skip because we compress objectives
       result.values_[2].clear(); // @todo native multiobj
     else
