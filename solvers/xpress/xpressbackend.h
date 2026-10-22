@@ -197,6 +197,11 @@ protected:
   /// After enumeration, the problem holds the last solution the
   /// enumerator visited. Keep the pool's best as the primary solution.
   void TakePoolBestAsPrimary();
+  /// mip:basis in pool mode: fix the integer columns to the pool's best
+  bool FixIntegersToPoolBest();
+  /// Objective value for the MIP gap: of the last pass
+  /// in a native multi-objective solve
+  double MIPGapObjValue() const;
   /// Pool solution ids, best objective first
   std::vector<int> PoolSolutionIdsBestFirst();
   /// Is a pool solution within sol:poolgap / sol:poolgapabs of the best?

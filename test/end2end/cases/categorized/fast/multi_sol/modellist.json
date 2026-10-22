@@ -84,6 +84,18 @@
     }
   },
   {
+    "name": "multi_sol_03 poolmode=2 mip:basis=1 Xpress",
+    "tags": [ "linear", "multisol"],
+    "comment": "Duals of the fixed LP match the reported (best) solution: complementary slackness",
+    "objective": 400.6,
+    "options": { "xpress_options": "sol:poolmode=2 sol:poollimit=10 sol:poolgap=0.01 solutionstub=stub mip:basis=1" },
+    "solvers": ["xpress"],
+    "values": {
+      "sum {i in FAC: 1e-6 < over[i] < 6-1e-6} abs(Cap[i].dual + 2)": 0,
+      "sum {i in FAC: Cap[i].slack > 1e-6} abs(Cap[i].dual)": 0
+    }
+  },
+  {
     "name": "multi_sol_01 MIP strategy options CPLEX",
     "tags": [ "linear"],
     "objective": 1,

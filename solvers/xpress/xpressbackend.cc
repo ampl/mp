@@ -456,7 +456,15 @@ void XpressmpBackend::ConsiderXpressFixedModel() {
   mip_objectives_before_fixed_ = GetObjectiveValues();
   std::string msg;
   try {
-    if (XPRSfixmipentities(model_fixed_, 1))
+    if (pool_best_x_.size()) {   // the problem holds the enumerator's last
+      if (!FixIntegersToPoolBest())
+        msg = "Fixing integer columns to the pool's best";
+      else {
+        if (outlev_)
+          Print("\n\n     ======= Solving the fixed MIP =======\n\n");
+        msg = DoXpressFixedModel();
+      }
+    } else if (XPRSfixmipentities(model_fixed_, 1))
       msg = "XPRSfixmipentities()";
     else {
       if (outlev_)
@@ -471,6 +479,25 @@ void XpressmpBackend::ConsiderXpressFixedModel() {
     AddToSolverMessage(msg + " failed in DoXpressFixedModel().\n");
   }
 }
+bool XpressmpBackend::FixIntegersToPoolBest() {
+  const int n = (int)pool_best_x_.size();
+  std::vector<char> types(n);
+  if (XPRSgetcoltype(model_fixed_, types.data(), 0, n-1))
+    return false;
+  std::vector<int> cols;
+  std::vector<char> bndtypes;
+  std::vector<double> vals;
+  for (int j=0; j<n; ++j) {
+    if ('C' != types[j]) {
+      cols.push_back(j);
+      bndtypes.push_back('B');
+      vals.push_back(std::round(pool_best_x_[j]));
+    }
+  }
+  return !XPRSchgbounds(model_fixed_, (int)cols.size(),
+                        cols.data(), bndtypes.data(), vals.data());
+}
+
 std::string XpressmpBackend::DoXpressFixedModel()
 {
   double old_time_limit;
@@ -2231,7 +2258,15 @@ AddSolverOption("mip:varselection",
 
 double XpressmpBackend::MIPGap() {
   // implementation taken from ASL driver for consistency
-  return MIPGapAbs() / (1e-10 + std::abs(ObjectiveValue()));
+  return MIPGapAbs() / (1e-10 + std::abs(MIPGapObjValue()));
+}
+
+double XpressmpBackend::MIPGapObjValue() const {
+  // Native multi-objective: the bound is that of the last pass,
+  // ObjectiveValue() is the 1st objective's value
+  if (multiobj() && NumObjs() > 1 && !pool_best_x_.size())
+    return getDblAttr(XPRS_MIPBESTOBJVAL);
+  return ObjectiveValue();
 }
 double XpressmpBackend::BestDualBound() {
   auto bnd = getDblAttr(XPRS_BESTBOUND);
@@ -2243,7 +2278,7 @@ double XpressmpBackend::BestDualBound() {
 
 double XpressmpBackend::MIPGapAbs() {
   return std::fabs(
-    ObjectiveValue() - BestDualBound());
+    MIPGapObjValue() - BestDualBound());
 }
 
 

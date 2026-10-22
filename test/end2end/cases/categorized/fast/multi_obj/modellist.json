@@ -269,6 +269,21 @@
     }
   },
   {
+    "name" : "multiobj_abstol_MIP multiobj=1 return_mipgap=3 Xpress",
+    "Comment": "Native multi-objective: the gap is that of the last pass",
+    "tags" : ["linear", "integer", "multiobj"],
+    "options": {
+      "xpress_options": "multiobj=1 mip:gap=0 return_mipgap=3 bestbound=1"
+    },
+    "solvers": ["xpress"],
+    "values": {
+      "_obj[1].relmipgap": 0,
+      "_obj[1].absmipgap": 0,
+      "_sobj[1]": 2.75,
+      "_sobj[2]": 3.5
+    }
+  },
+  {
     "name" : "multiobj_abstol_MIP multiobj=2 return_mipgap=3 bestbound=1",
     "Comment": "MIP gap and bound suffixes with several objectives",
     "tags" : ["linear", "integer", "multiobj"],

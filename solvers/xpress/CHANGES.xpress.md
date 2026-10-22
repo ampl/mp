@@ -3,6 +3,12 @@ Summary of recent updates to Xpress for AMPL
 
 
 ## unreleased
+- Fix: in a native multi-objective solve (*obj:multi=1*), the MIP gap
+  combined the first objective's value with the last pass's bound; it
+  is now the last pass's gap.
+- Fix: *mip:basis* with *sol:poolmode=2* fixed the integer variables to
+  the enumerator's last solution; they are now fixed to the pool's
+  best, the reported solution.
 - Fix: with *sol:poolmode=2* (solution enumeration), the reported
   solution and objective were the last solution the enumerator
   visited, not the pool's best; the MIP gap and *.bestbound* referred
