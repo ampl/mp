@@ -3,6 +3,11 @@ Summary of recent updates to Xpress for AMPL
 
 
 ## unreleased
+- Fix: with *sol:poolmode=2* (solution enumeration), the reported
+  solution and objective were the last solution the enumerator
+  visited, not the pool's best; the MIP gap and *.bestbound* referred
+  to the enumerator's search. The primary solution is now the pool's
+  best, and the bound is valid for it.
 - Options generated from the Xpress parameter database are named after
   the control with MP prefixes (e.g. *mip:backtrack*, *lp:autoperturb*,
   *bar:algaftercrossover*, *slp:algorithm*) instead of *<topic>:xprs_<name>*;

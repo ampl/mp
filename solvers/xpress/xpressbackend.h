@@ -194,6 +194,9 @@ protected:
   void CreateSolutionPoolEnvironment();
   /// Enumerate the sol:poollimit best solutions into the pool
   void EnumerateSolutions();
+  /// After enumeration, the problem holds the last solution the
+  /// enumerator visited. Keep the pool's best as the primary solution.
+  void TakePoolBestAsPrimary();
   /// Pool solution ids, best objective first
   std::vector<int> PoolSolutionIdsBestFirst();
   /// Is a pool solution within sol:poolgap / sol:poolgapabs of the best?
@@ -264,6 +267,9 @@ private:
   XPRSprob model_fixed_ = nullptr;
   bool fixed_model_failed_ = false;
   std::vector<double> mip_primal_before_fixed_, mip_objectives_before_fixed_;
+  /// Pool's best solution after enumeration (sol:poolmode)
+  std::vector<double> pool_best_x_;
+  double pool_best_obj_ = 0.0;
 
   /// These options are stored in the class
   struct Options {

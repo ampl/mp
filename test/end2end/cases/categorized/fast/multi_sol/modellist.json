@@ -62,6 +62,28 @@
     }
   },
   {
+    "name": "multi_sol_02 poolmode=2 poollimit=10 poolgap=0.01",
+    "tags": [ "linear", "multisol"],
+    "comment": "The primary solution must be the pool's best (Xpress enumerator)",
+    "objective": 413,
+    "options": { "ANYSOLVER_options": "sol:poolmode=2 sol:poollimit=10 sol:poolgap=0.01 solutionstub=stub" },
+    "values": {
+      "Cost": 413
+    }
+  },
+  {
+    "name": "multi_sol_02 poolmode=2 return_mipgap=3 bestbound=1 Xpress",
+    "tags": [ "linear", "multisol"],
+    "comment": "Gap and bound refer to the primary (best) solution, not to the enumerator's last",
+    "objective": 413,
+    "options": { "xpress_options": "sol:poolmode=2 sol:poollimit=10 sol:poolgap=0.01 solutionstub=stub return_mipgap=3 bestbound=1" },
+    "solvers": ["xpress"],
+    "values": {
+      "_obj[1].absmipgap": 0,
+      "_obj[1].bestbound": 413
+    }
+  },
+  {
     "name": "multi_sol_01 MIP strategy options CPLEX",
     "tags": [ "linear"],
     "objective": 1,

@@ -235,6 +235,7 @@ bool XpressmpBackend::IsQCP() const {
 
 ArrayRef<double> XpressmpBackend::PrimalSolution() {
   if (fixed_model_failed_) return mip_primal_before_fixed_;
+  if (pool_best_x_.size()) return pool_best_x_;
   int num_vars = NumVars();
   int error;
   std::vector<double> x(num_vars);
@@ -272,6 +273,8 @@ ArrayRef<double> XpressmpBackend::DualSolution_LP() {
 double XpressmpBackend::ObjectiveValue() const {
   if (fixed_model_failed_ && !mip_objectives_before_fixed_.empty())
     return mip_objectives_before_fixed_.front();
+  if (pool_best_x_.size())
+    return pool_best_obj_;
   return getDblAttr(XPRS_OBJVAL);
 }
 
@@ -384,9 +387,11 @@ void XpressmpBackend::Solve() {
   
   auto flags = XPRESSSolveFlags();
   int solvest=0, solst=0;
-  if (IsMIP() && need_multiple_solutions() && storedOptions_.nPoolMode_)
+  pool_best_x_.clear();
+  if (IsMIP() && need_multiple_solutions() && storedOptions_.nPoolMode_) {
     EnumerateSolutions();
-  else      // with sol:poolmode=0 the attached pool collects the solutions found
+    TakePoolBestAsPrimary();
+  } else      // with sol:poolmode=0 the attached pool collects the solutions found
     XPRESSMP_CCALL(XPRSoptimize(lp(), flags.c_str(), &solvest, &solst));
 
   WindupXPRESSMPSolve();
@@ -396,6 +401,14 @@ void XpressmpBackend::EnumerateSolutions() {
   int nMaxSols = std::max(1, storedOptions_.nbest_);
   XPRESSMP_CCALL(XPRS_mse_opt(mse_, lp(), msp_,
                               XPRS_mse_defaulthandler, 0, &nMaxSols));
+}
+
+void XpressmpBackend::TakePoolBestAsPrimary() {
+  auto ids = PoolSolutionIdsBestFirst();
+  if (ids.size()) {
+    pool_best_x_ = getPoolSolution(ids.front());
+    pool_best_obj_ = getPoolObjective(ids.front());
+  }
 }
 
 std::string XpressmpBackend::XPRESSSolveFlags() {
@@ -835,7 +848,9 @@ std::string XpressmpBackend::DoXpressFixedModel()
     std::vector<double> objs(n,
       std::numeric_limits<double>::quiet_NaN());
     for (int i = 0; i < n; i++)
-      if (XPRScalcobjn(lp(), i, NULL, &objs[i]))
+      if (XPRScalcobjn(lp(), i,
+                       pool_best_x_.size() ? pool_best_x_.data() : NULL,
+                       &objs[i]))
         return {};
     return objs;
   }
@@ -2219,7 +2234,11 @@ double XpressmpBackend::MIPGap() {
   return MIPGapAbs() / (1e-10 + std::abs(ObjectiveValue()));
 }
 double XpressmpBackend::BestDualBound() {
-  return getDblAttr(XPRS_BESTBOUND);
+  auto bnd = getDblAttr(XPRS_BESTBOUND);
+  if (pool_best_x_.size())    // enumeration: bound for the n-th best solution
+    bnd = getDblAttr(XPRS_OBJSENSE) >= 0
+        ? std::min(bnd, pool_best_obj_) : std::max(bnd, pool_best_obj_);
+  return bnd;
 }
 
 double XpressmpBackend::MIPGapAbs() {
