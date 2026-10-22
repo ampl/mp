@@ -1175,6 +1175,42 @@ public:
   double lb_hard(int var) const { return this->GetModel().lb_hard(var); }
   /// Shortcut ub_hard(var)
   double ub_hard(int var) const { return this->GetModel().ub_hard(var); }
+
+  /// Lower bound of \a var as the solver will see it:
+  /// best-known if submitted (cvt:pre:boundsbest, or fixed), else hard
+  double lb_subm(int var) const {
+    return (GetModel().if_submit_best_known_bounds() || is_fixed(var))
+        ? lb(var) : lb_hard(var);
+  }
+  /// Upper bound of \a var as the solver will see it
+  double ub_subm(int var) const {
+    return (GetModel().if_submit_best_known_bounds() || is_fixed(var))
+        ? ub(var) : ub_hard(var);
+  }
+  /// Lower bound of a linear body from the submitted variable bounds
+  double lb_subm_body(const LinTerms& lt) const {
+    double result = 0.0;
+    for (size_t i=0; i<lt.size(); ++i) {
+      const auto c = lt.coef(i);
+      const auto bnd = c>=0.0 ? lb_subm(lt.var(i)) : ub_subm(lt.var(i));
+      if (std::fabs(bnd) >= PracticallyInf())
+        return MinusInfty();
+      result += c * bnd;
+    }
+    return result;
+  }
+  /// Upper bound of a linear body from the submitted variable bounds
+  double ub_subm_body(const LinTerms& lt) const {
+    double result = 0.0;
+    for (size_t i=0; i<lt.size(); ++i) {
+      const auto c = lt.coef(i);
+      const auto bnd = c>=0.0 ? ub_subm(lt.var(i)) : lb_subm(lt.var(i));
+      if (std::fabs(bnd) >= PracticallyInf())
+        return Infty();
+      result += c * bnd;
+    }
+    return result;
+  }
   /// lb_array().
   /// @todo best-known bounds currently. ?
   template <class VarArray>
