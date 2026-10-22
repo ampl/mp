@@ -20,5 +20,35 @@
     "files": ["party2.mod", "party2.dat"],
     "tags" : ["logical"],
     "objective" : 16
+  },
+  {
+    "name" : "golomb6 [alldiff]",
+    "files": ["golomb.mod", "golomb6.dat"],
+    "tags" : ["logical"],
+    "objective" : 17
+  },
+  {
+    "name" : "golomb7 [alldiff]",
+    "files": ["golomb.mod", "golomb7.dat"],
+    "tags" : ["logical"],
+    "objective" : 25
+  },
+  {
+    "name" : "golomb8 [alldiff]",
+    "files": ["golomb.mod", "golomb8.dat"],
+    "tags" : ["logical"],
+    "objective" : 34
+  },
+  {
+    "name" : "golomb9 [alldiff]",
+    "files": ["golomb.mod", "golomb9.dat"],
+    "tags" : ["logical"],
+    "objective" : 44
+  },
+  {
+    "name" : "golomb10 [alldiff]",
+    "files": ["golomb.mod", "golomb10.dat"],
+    "tags" : ["logical"],
+    "objective" : 55
   }
 ]
