@@ -1111,11 +1111,14 @@ public:
   //////////////////////////// CREATE OR FIND A FIXED VARIABLE //////////////////////////////
   pre::NodeRange MakeFixedVar(double value) {
     auto it = map_fixed_vars_.find(value);
-    if (map_fixed_vars_.end()!=it)
-      return AutoLink( GetVarValueNode().Select( it->second ) );
-    auto v = MPD( DoAddVar(value, value) );
-    map_fixed_vars_[value] = (int)v;
-    return GetVarValueNode().Select( (int)v );  // no autolink, done in DoAddVar()
+    if (map_fixed_vars_.end()==it) {
+      auto v = GetModel().AddVar__basic(value, value);
+      it = map_fixed_vars_.insert({value, v}).first;
+    }
+    // A constant is shared and belongs to no item: no autolink.
+    // Otherwise, e.g., its IIS status would be reported
+    // for all original constraints using it.
+    return GetVarValueNode().Select( it->second );
   }
 
   /// Create or find a fixed variable

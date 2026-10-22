@@ -3,6 +3,13 @@ Summary of recent updates to the AMPL MP Library
 
 
 ## unreleased
+- Fix: the IIS of a model with logical constraints or if-then-else
+  expressions marked many unrelated constraints (*upp*): every
+  constraint that used a constant, e.g. the implicit else-0 of
+  *if ... then*, received the IIS status of MP's shared fixed
+  variable for that constant. Constants are no longer linked to
+  the constraints using them. Constraints sharing a subexpression
+  that is in the IIS are all reported.
 - Fix: with several objectives (*obj:multi*), *mip:return_gap* and
   *mip:bestbound* stopped debug builds with an assertion in
   *ReportSuffix*; release builds were unaffected. The objective

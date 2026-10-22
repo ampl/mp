@@ -120,6 +120,23 @@
     }
   },
   {
+    "name": "infeas_lcon_08 iis=1",
+    "tags": [ "logical", "iis" ],
+    "solvers_exclude": ["xpress", "cplex"],
+    "comment": "Constraints sharing the constant 0 with the IIS are not in it. Fuel[1,3] can be: it shares the subexpression P[1,3]>=1 with Reserve[3]. Excluded: Xpress returns no IIS for this MIP (as for infeas_lcon_05); CPLEX 22.2.0's parallel conflict refiner stops with SIGTRAP (threads=1 works)",
+    "options": {
+      "ANYSOLVER_options": "iis=1"
+    },
+    "values": {
+      "Balance[3].iis": ["mem", "low", "upp"],
+      "Reserve[3].iis": ["mem", "low", "upp"],
+      "Fuel[1,1].iis": "non",
+      "Fuel[2,4].iis": "non",
+      "Reserve[1].iis": "non",
+      "Balance[1].iis": "non"
+    }
+  },
+  {
     "name": "infeas_lcon_05 .funcpieces IN",
     "tags": [ "logical", "nonlinear", "funcpieces" ],
     "options": {
