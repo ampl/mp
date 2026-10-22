@@ -3,6 +3,13 @@ Summary of recent updates to MP2NL for AMPL
 
 
 ## unreleased
+- Configuration *alglib4nl* (ALGLIB for AMPL), from Knitro's: logical
+  expressions, if-then-else, min/max/abs, SOS and indicators are
+  linearized by MP; complementarity is converted with
+  *cvt:compl=1* (product): ALGLIB ignores NL complementarity
+  constraints, and the disjunctive and Fischer-Burmeister forms failed
+  on the tests. Its time limit and relative gap are *timeout* and
+  *pdgap*.
 - *lim:time* (did nothing), and new *mip:gap*, *mip:gapabs*, are
   passed to the subsolver as its own keywords (e.g., Knitro's
   *maxtime*, *mip_opt_gap_rel*, *mip_opt_gap_abs*; BARON's *maxtime*,

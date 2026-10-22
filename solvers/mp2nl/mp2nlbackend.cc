@@ -33,6 +33,7 @@ CreateMP2NLModelMgr(MP2NLCommon&, Env&, pre::BasicValuePresolver*&);
 /// Subsolver keywords for lim:time, mip:gap, mip:gapabs
 MP2NLBackend::LimitKeywordMap MP2NLBackend::limit_kw_map_ {
   { "knitro", { "maxtime", "mip_opt_gap_rel", "mip_opt_gap_abs" } },
+  { "alglib4nl", { "timeout", "pdgap", nullptr } },
   { "baron", { "maxtime", "epsr", "epsa" } },
   { "lindoglobal", { "maxtime", "epsr", "epsa" } },
   { "ipopt", { "max_cpu_time", nullptr, nullptr } },
@@ -135,6 +136,17 @@ MP2NLBackend::ConfigMap MP2NLBackend::config_map_ {
      "cvt:multoutcard=0 "
      // minmaxabs: indeed better linearize as Bob said
      "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },  // @todo compl
+    { "alglib4nl",          // from knitro; ALGLIB ignores NL complementarity
+     "cvt:pre:boundsbest=4 "
+     "acc:count=0 "
+     "acc:alldiff=0 acc:numberofconst=0 acc:numberofvar=0 "
+     "acc:indle=0 acc:indge=0 acc:indeq=0 acc:not=0 "
+     "acc:condlinle=0 acc:condlineq=0 acc:condlinge=0 "
+     "acc:condlinlt=0 acc:condlingt=0 acc:ifthen=0 "
+     "acc:and=0 acc:or=0 acc:abs=0 acc:max=0 acc:min=0 "
+     "acc:compl=0 acc:nlcompl=0 cvt:compl=1 "  // product a*b=tol: the only
+     "cvt:multoutcard=0 "                       // method solving the tests
+     "acc:sos1=0 acc:sos2=0 acc:impl=0" },
     { "lindoglobal",
      "cvt:pre:boundsbest=4 "
      "acc:count=0 "
