@@ -712,3 +712,54 @@ TEST(BoundsBestExprTest, Mode3__onlyExplicifiedNonlinearBest) {
   EXPECT_FALSE(ite);
   EXPECT_TRUE(ex);
 }
+
+
+/// cvt:pre:boundsbest=4: decided by the submitted model's class
+
+TEST(BoundsBestTest, Mode4__approximatedNonlinear__linearModel__best) {
+  mp::Env e;
+  Disj2IndTester<false, false> t(e, "cvt:pre:boundsbest=4");   // exp is PL-approximated
+  int y1, y2;
+  AddSplitModel(t, y1, y2);
+  t.ConvertModel();
+  EXPECT_FALSE(t.GetFlatCvt().GetModel().is_submitted_model_nonlinear());
+  int nbounded_int = 0, nexp = 0;
+  for (int v=t.Backend().NumVars(); --v > 2; ) {
+    if (INTEGER == t.InternalType(v))
+      nbounded_int += t.Backend().lb(v) == 0.0 && t.Backend().ub(v) == 5.0;
+    else if (t.Backend().lb(v) < t.Backend().ub(v))
+      nexp += t.Backend().lb(v) == 0.0;
+  }
+  EXPECT_EQ(1, nbounded_int);
+  EXPECT_EQ(1, nexp);
+}
+
+TEST(BoundsBestExprTest, Mode4__nonlinearSubmitted__hard) {
+  mp::Env e;
+  ExprTester t(e, "cvt:expr:nlassign=1 cvt:pre:boundsbest=4");  // exp submitted
+  AddDuplicatedExprModel(t);
+  t.ConvertModel();
+  EXPECT_TRUE(t.GetFlatCvt().GetModel().is_submitted_model_nonlinear());
+  bool ite, ex;
+  SplitBounds(t, ite, ex);
+  EXPECT_FALSE(ite);
+  EXPECT_FALSE(ex);
+}
+
+TEST(BoundsBestExprTest, Mode4__linearSubmitted__best) {
+  mp::Env e;
+  ExprTester t(e, "cvt:expr:nlassign=1 cvt:pre:boundsbest=4");
+  int b = t.Var(0, 1, INTEGER), x = t.Var(1, 5, INTEGER);
+  auto& m = t.GetModel();
+  auto ite = m.MakeIf(t.Cmp(EQ, b, 1), m.MakeVariable(x),
+                      m.MakeNumericConstant(0.0));
+  t.Minimize(ite);
+  t.Add( t.CmpE(LE, ite, 4.0) );                        // used twice
+  t.ConvertModel();
+  EXPECT_FALSE(t.GetFlatCvt().GetModel().is_submitted_model_nonlinear());
+  int nbounded_int = 0;
+  for (int v=t.Backend().NumVars(); --v > 1; )
+    if (INTEGER == t.InternalType(v) && t.Backend().lb(v) < t.Backend().ub(v))
+      nbounded_int += t.Backend().ub(v) <= 5.0 && t.Backend().lb(v) >= 0.0;
+  EXPECT_EQ(1, nbounded_int);
+}

@@ -3,6 +3,13 @@ Summary of recent updates to the AMPL MP Library
 
 
 ## unreleased
+- Option *cvt:pre:boundsbest* value 4: best-known bounds for all
+  variables when the submitted model has no nonlinear or quadratic
+  constraints or objectives, hard bounds otherwise. MP2NL sets it in
+  the configurations of the nonlinear subsolvers (knitro, ipopt,
+  conopt, snopt, minos, lgo, bonmin, couenne, baron, lindoglobal):
+  on MILPs the bounds speed up their branch-and-bound, on MINLPs the
+  bounds of auxiliary results degrade their barrier subproblems.
 - Option *cvt:pre:boundsbest* has values 2 and 3: 2 submits the
   best-known bounds of all result variables except those of smooth
   nonlinear expressions (exp, log, pow, trigonometric functions,

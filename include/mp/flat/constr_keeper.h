@@ -17,6 +17,7 @@
 #include "mp/flat/constr_hash.h"
 #include "mp/flat/redef/redef_base.h"
 #include "mp/flat/constr_eval.h"
+#include "mp/flat/constr_nonlinear.h"
 
 namespace mp {
 
@@ -257,6 +258,10 @@ public:
   /// Constraint type_info
   const std::type_info& GetTypeInfo() const override
   { return typeid(ConstraintType); }
+
+  /// Is the constraint type nonlinear for the solver?
+  bool IsNonlinearType() const override
+  { return IsNonlinearConType<ConstraintType>(); }
 
   /// Report total number
   int Size() const override {

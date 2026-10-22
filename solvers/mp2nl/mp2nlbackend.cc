@@ -34,6 +34,7 @@ CreateMP2NLModelMgr(MP2NLCommon&, Env&, pre::BasicValuePresolver*&);
 // 1e5 is usually the maximum numerically stable value
 MP2NLBackend::ConfigMap MP2NLBackend::config_map_ {
     { "baron",
+     "cvt:pre:boundsbest=4 "
      "acc:alldiff=0 acc:numberofconst=0 acc:numberofvar=0 "
      "acc:count=0 "
      "acc:indle=0 acc:indge=0 acc:indeq=0 acc:not=0 "
@@ -98,6 +99,7 @@ MP2NLBackend::ConfigMap MP2NLBackend::config_map_ {
      "acc:sinh=0 acc:cosh=0 acc:tanh=0 acc:asinh=0 acc:acosh=0 acc:atanh=0 "
      "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },
     { "knitro",
+     "cvt:pre:boundsbest=4 "
      "acc:count=0 "
      "acc:alldiff=0 acc:numberofconst=0 acc:numberofvar=0 "
      "acc:indle=0 acc:indge=0 acc:indeq=0 acc:not=0 "
@@ -109,6 +111,7 @@ MP2NLBackend::ConfigMap MP2NLBackend::config_map_ {
      // minmaxabs: indeed better linearize as Bob said
      "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },  // @todo compl
     { "lindoglobal",
+     "cvt:pre:boundsbest=4 "
      "acc:count=0 "
      "acc:alldiff=0 acc:numberofconst=0 acc:numberofvar=0 "
      "acc:indle=0 acc:indge=0 acc:indeq=0 acc:not=0 "
@@ -119,6 +122,7 @@ MP2NLBackend::ConfigMap MP2NLBackend::config_map_ {
      "cvt:multoutcard=0 "
      "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },   // @todo compl
     { "couenne",
+     "cvt:pre:boundsbest=4 "
      "acc:count=0 "
      "acc:alldiff=0 acc:numberofconst=0 acc:numberofvar=0 "
      "acc:indle=0 acc:indge=0 acc:indeq=0 acc:not=0 "
@@ -131,6 +135,7 @@ MP2NLBackend::ConfigMap MP2NLBackend::config_map_ {
      "acc:asinh=0 acc:acosh=0 acc:atanh=0 "
      "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },  // @todo compl
     { "bonmin",
+     "cvt:pre:boundsbest=4 "
      "acc:count=0 "
      "acc:alldiff=0 acc:numberofconst=0 acc:numberofvar=0 "
      "acc:indle=0 acc:indge=0 acc:indeq=0 acc:not=0 "
@@ -141,6 +146,7 @@ MP2NLBackend::ConfigMap MP2NLBackend::config_map_ {
      "cvt:multoutcard=0 cvt:socp=1 "
      "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },  // @todo compl
     { "conopt3",
+     "cvt:pre:boundsbest=4 "
      "acc:count=0 "
      "acc:alldiff=0 acc:numberofconst=0 acc:numberofvar=0 "
      "acc:indle=0 acc:indge=0 acc:indeq=0 acc:not=0 "
@@ -151,6 +157,7 @@ MP2NLBackend::ConfigMap MP2NLBackend::config_map_ {
      "cvt:multoutcard=0 cvt:socp=1 "
      "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },  // @todo compl
     { "conopt",
+     "cvt:pre:boundsbest=4 "
      "acc:count=0 "
      "acc:alldiff=0 acc:numberofconst=0 acc:numberofvar=0 "
      "acc:indle=0 acc:indge=0 acc:indeq=0 acc:not=0 "
@@ -161,6 +168,7 @@ MP2NLBackend::ConfigMap MP2NLBackend::config_map_ {
      "cvt:multoutcard=0 cvt:socp=1 "
      "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },  // @todo compl
     { "snopt",
+     "cvt:pre:boundsbest=4 "
      "acc:count=0 "
      "acc:alldiff=0 acc:numberofconst=0 acc:numberofvar=0 "
      "acc:indle=0 acc:indge=0 acc:indeq=0 acc:not=0 "
@@ -172,6 +180,7 @@ MP2NLBackend::ConfigMap MP2NLBackend::config_map_ {
      // minmaxabs: rely on ASL, or better linearize?
      "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },  // @todo compl
     { "ipopt",
+     "cvt:pre:boundsbest=4 "
      "acc:count=0 "
      "acc:alldiff=0 acc:numberofconst=0 acc:numberofvar=0 "
      "acc:indle=0 acc:indge=0 acc:indeq=0 acc:not=0 "
@@ -183,6 +192,7 @@ MP2NLBackend::ConfigMap MP2NLBackend::config_map_ {
      // minmaxabs: indeed better linearize as Bob said?
      "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },  // @todo compl
     { "minos",
+     "cvt:pre:boundsbest=4 "
      "acc:count=0 "
      "acc:alldiff=0 acc:numberofconst=0 acc:numberofvar=0 "
      "acc:indle=0 acc:indge=0 acc:indeq=0 acc:not=0 "
@@ -194,6 +204,7 @@ MP2NLBackend::ConfigMap MP2NLBackend::config_map_ {
      // minmaxabs: indeed better linearize as Bob said?
      "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },  // @todo compl
     { "lgo",
+     "cvt:pre:boundsbest=4 "
      "acc:count=0 "
      "acc:alldiff=0 acc:numberofconst=0 acc:numberofvar=0 "
      "acc:indle=0 acc:indge=0 acc:indeq=0 acc:not=0 "

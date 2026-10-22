@@ -741,6 +741,12 @@
     "objective": -3.54947979411954
   },
   {
+    "name" : "inline_nl_01 boundsbest=4",
+    "tags" : ["continuous", "nonlinear", "quadraticnonconvex"],
+    "options": { "mp_options": "debug=1 cvt:pre:boundsbest=4" },
+    "objective": -3.54947979411954
+  },
+  {
     "name" : "defvar_nl_01",
     "tags" : ["continuous", "nonlinear", "quadraticnonconvex"],
     "options": {

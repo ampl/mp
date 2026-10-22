@@ -386,13 +386,27 @@ public:
   /// Submit best-known bounds?
   int& if_submit_best_known_bounds() { return if_submit_best_bounds_; }
   /// Submit the best-known bounds of variable \a v?
+  /// Value 4 is decided by the submitted model's class, known
+  /// in PrepareVariables(); before that it answers as 0.
   bool if_submit_best_bounds_var(int v) const {
     switch (if_submit_best_bounds_) {
     case 1: return true;
     case 2: return !is_var_nl(v);
     case 3: return is_var_nl(v);
+    case 4: return model_nl_known_ && !model_nl_;
     default: return false;
     }
+  }
+  /// Is the submitted model nonlinear (nonlinear or quadratic
+  /// constraints or objectives)? Valid after PrepareVariables()
+  bool is_submitted_model_nonlinear() const
+  { assert(model_nl_known_); return model_nl_; }
+  /// Has a nonlinear or quadratic objective?
+  bool HasNonlinearObjective() const {
+    for (int i=0; i<num_objs(); ++i)
+      if (get_obj(i).HasExpr() || get_obj(i).GetQPTerms().size())
+        return true;
+    return false;
   }
   /// Mark \a v as the result of a smooth nonlinear expression
   void MarkVarNL(int v) { SetVarFlag(var_nl_, v); }
@@ -616,6 +630,8 @@ public:
 public:
   void PrepareVariables() const {
     assert(check_vars());
+    model_nl_ = HasFinalNonlinearConstraints() || HasNonlinearObjective();
+    model_nl_known_ = true;
     PrepareVarTypes();
     var_lb_subm_ = var_lb_;
     var_ub_subm_ = var_ub_;
@@ -755,6 +771,8 @@ private:
   std::vector<bool> var_type_required_;
   /// Results of smooth nonlinear expressions (cvt:pre:boundsbest 2/3)
   std::vector<bool> var_nl_;
+  /// Submitted model nonlinear? (cvt:pre:boundsbest 4)
+  mutable bool model_nl_ {false}, model_nl_known_ {false};
   /// Submit implied-integer auxiliaries as integer?
   int if_submit_aux_int_ {0};
   /// Set a per-variable flag, growing the vector on demand

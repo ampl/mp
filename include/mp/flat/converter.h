@@ -1310,33 +1310,6 @@ public:
       MarkVarTypeRequired(v);
   }
 
-  /// Is \a Con a smooth nonlinear functional constraint?
-  /// (cvt:pre:boundsbest 2/3)
-  template <class Con>
-  static constexpr bool IsSmoothNLFuncCon() {
-    return std::is_same_v<Con, DivConstraint>
-        || std::is_same_v<Con, ExpConstraint>
-        || std::is_same_v<Con, ExpAConstraint>
-        || std::is_same_v<Con, LogConstraint>
-        || std::is_same_v<Con, LogAConstraint>
-        || std::is_same_v<Con, PowConstExpConstraint>
-        || std::is_same_v<Con, SignpowConstExpConstraint>
-        || std::is_same_v<Con, PowConstraint>
-        || std::is_same_v<Con, LogisticConstraint>
-        || std::is_same_v<Con, SinConstraint>
-        || std::is_same_v<Con, CosConstraint>
-        || std::is_same_v<Con, TanConstraint>
-        || std::is_same_v<Con, AsinConstraint>
-        || std::is_same_v<Con, AcosConstraint>
-        || std::is_same_v<Con, AtanConstraint>
-        || std::is_same_v<Con, SinhConstraint>
-        || std::is_same_v<Con, CoshConstraint>
-        || std::is_same_v<Con, TanhConstraint>
-        || std::is_same_v<Con, AsinhConstraint>
-        || std::is_same_v<Con, AcoshConstraint>
-        || std::is_same_v<Con, AtanhConstraint>
-        || std::is_same_v<Con, CallConstraint>;
-  }
   /// Mark the result variable of a smooth nonlinear expression
   /// (cvt:pre:boundsbest 2/3). Default: nothing
   template <class Con>
@@ -2030,7 +2003,7 @@ private:
                        options_.propCtxCountNumberof_, 0, 7);
 
     GetEnv().AddOption("cvt:pre:boundsbest boundsbest bestbounds",
-                       "0*/1/2/3: Submit best-known variable bounds to the "
+                       "0*/1/2/3/4: Submit best-known variable bounds to the "
                        "solver (can inhibit its presolve):\n"
                        "\n"
                        "|  0 - no, hard bounds only\n"
@@ -2039,11 +2012,16 @@ private:
                        "nonlinear expressions (exp, log, pow, trigonometric "
                        "functions, divisions, products), which keep their "
                        "hard bounds\n"
-                       "|  3 - only those variables.\n"
+                       "|  3 - only those variables\n"
+                       "|  4 - all variables if the submitted model has no "
+                       "nonlinear or quadratic constraints or objectives, "
+                       "none otherwise (for solvers whose nonlinear "
+                       "relaxations are solved by a barrier method; MP2NL "
+                       "sets it for such subsolvers).\n"
                        "\n"
                        "Note: when a variable can be fixed, the stronger bounds "
                        "are always submitted.",
-                       GetModel().if_submit_best_known_bounds(), 0, 3);
+                       GetModel().if_submit_best_known_bounds(), 0, 4);
 
     GetModel().if_submit_aux_int() = ModelAPI::AuxIntDefault();
     GetEnv().AddOption("cvt:pre:auxint auxint",

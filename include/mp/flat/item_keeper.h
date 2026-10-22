@@ -165,6 +165,10 @@ public:
   /// Report how many could be added to Backend as of now
   virtual int GetNumberOfAddable() const = 0;
 
+  /// Is the constraint type nonlinear for the solver
+  /// (see IsNonlinearConType(), cvt:pre:boundsbest=4)?
+  virtual bool IsNonlinearType() const = 0;
+
   /// This adds all unbridged items to the backend (without conversion)
   virtual void AddUnbridgedToBackend(
       BasicFlatModelAPI& be, ItemNamer& vnames) = 0;
@@ -512,6 +516,15 @@ public:
   void ConvertAllWithExpressions(BasicFlatConverter& cvt) {
     for (auto& ck: con_keepers_)
       ck.second.ConvertAllWithExpressions(cvt);
+  }
+
+  /// Does the model submitted to the solver have
+  /// nonlinear (incl. quadratic) constraints?
+  bool HasFinalNonlinearConstraints() const {
+    for (const auto& ck: con_keepers_)
+      if (ck.second.IsNonlinearType() && ck.second.GetNumberOfAddable())
+        return true;
+    return false;
   }
 
   /// Fill counters of unbridged constraints

@@ -766,6 +766,22 @@
     }
   },
   {
+    "name" : "inline_01 boundsbest=4",
+    "tags" : ["logical", "linear"],
+    "options": {
+      "mp_options": "debug=1 acc:condlineq=0 acc:condlinge=0 acc:condlinle=0 acc:condlinlt=0 acc:condlingt=0 acc:indle=0 acc:indge=0 acc:indeq=0 acc:linrange=0 cvt:pre:boundsbest=4"
+    },
+    "objective": -5,
+    "values": {
+      "Initial.flat1__U__indeq": 6,
+      "Initial.flat1__U__indle": 0,
+      "Initial.flat1__U__indge": 0,
+      "Initial.flat1__A__lineq": 2,
+      "Initial.flat1__linle": 14,
+      "Initial.flat1__linge": 1
+    }
+  },
+  {
     "name" : "disj2ind_01",
     "tags" : ["logical", "linear"],
     "options": {
