@@ -717,6 +717,30 @@
     "objective": -3.54947979411954
   },
   {
+    "name" : "inline_nl_01 boundsbest=2",
+    "tags" : ["continuous", "nonlinear", "quadraticnonconvex"],
+    "options": { "mp_options": "debug=1 cvt:pre:boundsbest=2" },
+    "objective": -3.54947979411954
+  },
+  {
+    "name" : "inline_nl_01 boundsbest=3",
+    "tags" : ["continuous", "nonlinear", "quadraticnonconvex"],
+    "options": { "mp_options": "debug=1 cvt:pre:boundsbest=3" },
+    "objective": -3.54947979411954
+  },
+  {
+    "name" : "inline_nl_01 expr:nlassign=1 boundsbest=2",
+    "tags" : ["continuous", "nonlinear", "quadraticnonconvex"],
+    "options": { "mp_options": "debug=1 cvt:expr:nlassign=1 cvt:pre:boundsbest=2" },
+    "objective": -3.54947979411954
+  },
+  {
+    "name" : "inline_nl_01 expr:nlassign=1 boundsbest=3",
+    "tags" : ["continuous", "nonlinear", "quadraticnonconvex"],
+    "options": { "mp_options": "debug=1 cvt:expr:nlassign=1 cvt:pre:boundsbest=3" },
+    "objective": -3.54947979411954
+  },
+  {
     "name" : "defvar_nl_01",
     "tags" : ["continuous", "nonlinear", "quadraticnonconvex"],
     "options": {

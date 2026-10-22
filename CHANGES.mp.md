@@ -3,6 +3,12 @@ Summary of recent updates to the AMPL MP Library
 
 
 ## unreleased
+- Option *cvt:pre:boundsbest* has values 2 and 3: 2 submits the
+  best-known bounds of all result variables except those of smooth
+  nonlinear expressions (exp, log, pow, trigonometric functions,
+  divisions, products), 3 only those. The decision whether a result
+  variable with a significant best-known bound stays explicit follows
+  the same per-variable rule.
 - Option *cvt:pre:auxint* (default 0): auxiliary result variables
   whose integrality is implied by their defining constraint
   (if-then-else, min/max/abs, count/numberof, integer linear and

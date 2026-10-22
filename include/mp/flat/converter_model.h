@@ -380,10 +380,24 @@ public:
   bool if_skip_pushing_objs() const { return if_skip_push_objs_; }
   /// Set skip pushing objs
   void set_skip_pushing_objs(bool v=true) { if_skip_push_objs_=v; }
-  /// Submit best-known bounds?
+  /// Submit best-known bounds? (cvt:pre:boundsbest: 0 no, 1 all,
+  /// 2 all but smooth-nonlinear variables, 3 only those)
   int if_submit_best_known_bounds() const { return if_submit_best_bounds_; }
   /// Submit best-known bounds?
   int& if_submit_best_known_bounds() { return if_submit_best_bounds_; }
+  /// Submit the best-known bounds of variable \a v?
+  bool if_submit_best_bounds_var(int v) const {
+    switch (if_submit_best_bounds_) {
+    case 1: return true;
+    case 2: return !is_var_nl(v);
+    case 3: return is_var_nl(v);
+    default: return false;
+    }
+  }
+  /// Mark \a v as the result of a smooth nonlinear expression
+  void MarkVarNL(int v) { SetVarFlag(var_nl_, v); }
+  /// Is \a v the result of a smooth nonlinear expression?
+  bool is_var_nl(int v) const { return GetVarFlag(var_nl_, v); }
   /// Make fixed vars continuous?
   int if_make_fixed_vars_continuous() const { return if_make_fixed_vars_continuous_; }
   /// Make fixed vars continuous?
@@ -603,13 +617,13 @@ public:
   void PrepareVariables() const {
     assert(check_vars());
     PrepareVarTypes();
-    if (if_submit_best_known_bounds()) {
-      var_lb_subm_ = var_lb_best_;
-      var_ub_subm_ = var_ub_best_;
-    } else {
-      var_lb_subm_ = var_lb_;
-      var_ub_subm_ = var_ub_;
-    }
+    var_lb_subm_ = var_lb_;
+    var_ub_subm_ = var_ub_;
+    for (auto i=var_lb_subm_.size(); i--; )
+      if (if_submit_best_bounds_var(i)) {
+        var_lb_subm_[i] = var_lb_best_[i];
+        var_ub_subm_[i] = var_ub_best_[i];
+      }
     // Fix 'eliminated' variables - no proper deletion
     for (auto i=std::min(var_elim_.size(), var_lb_subm_.size());
          i--; ) {
@@ -739,6 +753,8 @@ private:
   std::vector<bool> var_implied_int_;
   /// Variables which the solver needs declared with their type
   std::vector<bool> var_type_required_;
+  /// Results of smooth nonlinear expressions (cvt:pre:boundsbest 2/3)
+  std::vector<bool> var_nl_;
   /// Submit implied-integer auxiliaries as integer?
   int if_submit_aux_int_ {0};
   /// Set a per-variable flag, growing the vector on demand

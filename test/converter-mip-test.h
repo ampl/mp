@@ -6,6 +6,7 @@
 #include "mp/flat/problem_flattener.h"
 #include "mp/flat/redef/MIP/converter_mip.h"
 #include "mp/flat/model_api_base.h"
+#include "mp/flat/nl_expr/model_api_base.h"
 
 namespace mip_converter_test {
 
@@ -336,6 +337,92 @@ public:
         ++n;
     return n;
   }
+};
+
+using mp::ExpressionAcceptanceLevel;
+using mp::ExprWrapper;
+
+/// A toy expression backend: accepts linear rows, NL constraints and
+/// objectives, explicifiers (NLAssign*) and exp/affine/quadratic
+/// expressions; records the submitted variables and the explicified ones.
+class ExprBackend :
+    public mp::BasicExprModelAPI<ExprBackend, int>,
+    public mp::EnvKeeper
+{
+public:
+  using BaseModelAPI = mp::BasicExprModelAPI<ExprBackend, int>;
+  ExprBackend(mp::Env& e) : mp::EnvKeeper(e) { }
+  static constexpr const char* GetTypeName() { return "expr_tester"; }
+  void AddVariables(const mp::VarArrayDef& v) { vars_ = v; }
+  void SetLinearObjective(int , const mp::LinearObjective& ) { }
+  void SetNLObjective(int , const mp::NLObjective& ) { }
+  int NumVars() const { return (int)vars_.size(); }
+  double lb(int v) const { return vars_.plb()[v]; }
+  double ub(int v) const { return vars_.pub()[v]; }
+  /// Variables assigned an explicified expression
+  const std::vector<int>& Explicified() const { return explicified_; }
+
+  USE_BASE_CONSTRAINT_HANDLERS(BaseModelAPI)
+  USE_BASE_EXPRESSION_HANDLERS(BaseModelAPI)
+  ACCEPT_EXPRESSION_INTERFACE(Recommended)
+  Expr GetVarExpression(int i) { return i; }
+  Expr GetZeroExpression() { return -1; }
+  D2I_RECORD_CONSTR(LinConLE, true)
+  D2I_RECORD_CONSTR(LinConGE, true)
+  D2I_RECORD_CONSTR(LinConEQ, true)
+  D2I_RECORD_CONSTR(LinConRange, true)
+public:
+  ACCEPT_CONSTRAINT(mp::NLConstraint, Recommended, mp::CG_Algebraic)
+  void AddConstraint(const mp::NLConstraint& ) { }
+  ACCEPT_CONSTRAINT(mp::NLAssignEQ, Recommended, mp::CG_General)
+  void AddConstraint(const mp::NLAssignEQ& nle)
+  { explicified_.push_back(GetVariable(nle)); }
+  ACCEPT_CONSTRAINT(mp::NLAssignLE, Recommended, mp::CG_General)
+  void AddConstraint(const mp::NLAssignLE& nle)
+  { explicified_.push_back(GetVariable(nle)); }
+  ACCEPT_CONSTRAINT(mp::NLAssignGE, Recommended, mp::CG_General)
+  void AddConstraint(const mp::NLAssignGE& nle)
+  { explicified_.push_back(GetVariable(nle)); }
+  ACCEPT_EXPRESSION(mp::NLAffineExpression, Recommended)
+  Expr AddExpression(const mp::NLAffineExpression& ) { return -2; }
+  ACCEPT_EXPRESSION(mp::NLQuadExpression, Recommended)
+  Expr AddExpression(const mp::NLQuadExpression& ) { return -3; }
+  ACCEPT_EXPRESSION(mp::ExpExpression, Recommended)
+  Expr AddExpression(const mp::ExpExpression& ) { return -4; }
+private:
+  mp::VarArrayDef vars_;
+  std::vector<int> explicified_;
+};
+
+/// Interface (flattener + MIP converter + expression backend)
+class ExprTester :
+    public mp::ProblemFltImpl<mp::ProblemFlattener, mp::Problem,
+      mp::FlatCvtImpl<mp::MIPFlatConverter, ExprBackend> >
+{
+  using Base = mp::ProblemFltImpl<mp::ProblemFlattener, mp::Problem,
+    mp::FlatCvtImpl<mp::MIPFlatConverter, ExprBackend> >;
+public:
+  ExprTester(mp::Env& e, const char* opts) : Base(e) {
+    this->InitOptions();
+    e.ParseOptionString(opts);
+  }
+  const ExprBackend& Backend() { return this->GetFlatCvt().GetModelAPI(); }
+  int Var(double lb, double ub, mp::var::Type ty=mp::var::CONTINUOUS)
+  { return this->AddVars(1, lb, ub, ty)[0]; }
+  mp::var::Type InternalType(int v)
+  { return this->GetFlatCvt().GetModel().var_type(v); }
+  mp::LogicalExpr Cmp(mp::expr::Kind kind, int var, double value) {
+    auto& m = this->GetModel();
+    return m.MakeRelational(kind, m.MakeVariable(var),
+                            m.MakeNumericConstant(value));
+  }
+  mp::LogicalExpr CmpE(mp::expr::Kind kind, mp::NumericExpr e, double value) {
+    auto& m = this->GetModel();
+    return m.MakeRelational(kind, e, m.MakeNumericConstant(value));
+  }
+  void Add(mp::LogicalExpr e) { this->GetModel().AddCon(e); }
+  void Minimize(mp::NumericExpr e)
+  { this->GetModel().AddObj(mp::obj::MIN, e); }
 };
 
 } // namespace mip_converter_test

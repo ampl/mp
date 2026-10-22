@@ -560,3 +560,155 @@ TEST(BigMTest, ImpliedByBestBoundsOnly__rowKept) {
     nrows += IsLowerRowOnR(lc, 1.0) && lc.lb() > -1e20;
   EXPECT_EQ(1, nrows);
 }
+
+
+/// cvt:pre:boundsbest 2/3: best-known bounds split between the variables
+/// of smooth nonlinear expressions and the others.
+/// y1 = if b then x else 0 (linear part), y2 = exp(z) (smooth nonlinear).
+template <class Tester>
+void AddSplitModel(Tester& t, int& y1pos, int& y2pos) {
+  int b = t.Var(0, 1, INTEGER), x = t.Var(1, 5, INTEGER), z = t.Var(0, 2);
+  auto& m = t.GetModel();
+  auto ite = m.MakeIf(t.Cmp(EQ, b, 1), m.MakeVariable(x),
+                      m.MakeNumericConstant(0.0));
+  auto ex = m.MakeUnary(mp::expr::EXP, m.MakeVariable(z));
+  t.Minimize( m.MakeBinary(mp::expr::ADD, ite, ex) );
+  y1pos = z+1;      // the two results are the first auxiliaries
+  y2pos = z+2;
+}
+
+TEST(BoundsBestTest, Mode2__nonlinearKeepsHardBounds) {
+  mp::Env e;
+  Disj2IndTester<false, false> t(e, "cvt:pre:boundsbest=2");
+  int y1, y2;
+  AddSplitModel(t, y1, y2);
+  t.ConvertModel();
+  int nbest_lin = 0, nhard_nl = 0;
+  for (int v=t.Backend().NumVars(); --v > 2; ) {
+    bool bounded = t.Backend().ub(v) < 1e20 && t.Backend().lb(v) > -1e20;
+    if (INTEGER == t.InternalType(v)) nbest_lin += bounded;   // if-then result
+    else nhard_nl += !bounded;                                // exp result
+  }
+  EXPECT_EQ(1, nbest_lin);
+  EXPECT_LE(1, nhard_nl);
+}
+
+TEST(BoundsBestTest, Mode3__onlyNonlinearGetsBestBounds) {
+  mp::Env e;
+  Disj2IndTester<false, false> t(e, "cvt:pre:boundsbest=3");
+  int y1, y2;
+  AddSplitModel(t, y1, y2);
+  t.ConvertModel();
+  int nhard_lin = 0, nbest_nl = 0;
+  for (int v=t.Backend().NumVars(); --v > 2; ) {
+    bool bounded = t.Backend().ub(v) < 1e20 && t.Backend().lb(v) > -1e20;
+    if (INTEGER == t.InternalType(v)) nhard_lin += !bounded;
+    else nbest_nl += bounded;
+  }
+  EXPECT_EQ(1, nhard_lin);
+  EXPECT_LE(1, nbest_nl);
+}
+
+
+TEST(BoundsBestTest, Mode0__allHardBounds) {
+  mp::Env e;
+  Disj2IndTester<false, false> t(e, "cvt:pre:boundsbest=0");
+  int y1, y2;
+  AddSplitModel(t, y1, y2);
+  t.ConvertModel();
+  int nbounded = 0;
+  for (int v=t.Backend().NumVars(); --v > 2; )
+    if (t.Backend().lb(v) < t.Backend().ub(v))          // not fixed
+      nbounded += t.Backend().ub(v) < 1e20 || t.Backend().lb(v) > -1e20;
+  EXPECT_EQ(0, nbounded);         // if-then and exp results are free
+}
+
+TEST(BoundsBestTest, Mode1__allBestBounds) {
+  mp::Env e;
+  Disj2IndTester<false, false> t(e, "cvt:pre:boundsbest=1");
+  int y1, y2;
+  AddSplitModel(t, y1, y2);
+  t.ConvertModel();
+  int nbounded_int = 0, nexp = 0;                // if-then result; exp result
+  for (int v=t.Backend().NumVars(); --v > 2; ) {
+    if (INTEGER == t.InternalType(v))
+      nbounded_int += t.Backend().lb(v) == 0.0 && t.Backend().ub(v) == 5.0;
+    else if (t.Backend().lb(v) < t.Backend().ub(v))   // exp result: lb 0
+      nexp += t.Backend().lb(v) == 0.0;                // (its best-known lb)
+  }
+  EXPECT_EQ(1, nbounded_int);
+  EXPECT_EQ(1, nexp);
+}
+
+
+/// Explicified expressions (cvt:expr:nlassign=1, exp(z) used twice):
+/// the exp result is assigned by an NLAssign and is a nonlinear result;
+/// the if-then result (used twice too) is an "other" result.
+template <class Tester>
+void AddDuplicatedExprModel(Tester& t) {
+  int b = t.Var(0, 1, INTEGER), x = t.Var(1, 5, INTEGER), z = t.Var(0, 2);
+  auto& m = t.GetModel();
+  auto ite = m.MakeIf(t.Cmp(EQ, b, 1), m.MakeVariable(x),
+                      m.MakeNumericConstant(0.0));
+  auto ex = m.MakeUnary(mp::expr::EXP, m.MakeVariable(z));
+  t.Minimize( m.MakeBinary(mp::expr::ADD, ite, ex) );
+  t.Add( t.CmpE(LE, m.MakeBinary(mp::expr::ADD, ite, ex), 6.0) );   // again
+}
+
+/// Submitted bounds of the explicified exp result and the if-then result
+template <class Tester>
+void SplitBounds(Tester& t, bool& ite_lb_best, bool& exp_lb_best) {
+  ite_lb_best = exp_lb_best = false;
+  const auto& expl = t.Backend().Explicified();
+  ASSERT_LE(1, (int)expl.size());
+  for (int v: expl)
+    if (INTEGER != t.InternalType(v))
+      exp_lb_best = t.Backend().lb(v) == 0.0;       // best-known lb of exp
+  for (int v=t.Backend().NumVars(); --v > 2; )
+    if (INTEGER == t.InternalType(v) && t.Backend().lb(v) < t.Backend().ub(v))
+      ite_lb_best = t.Backend().ub(v) == 5.0;
+}
+
+TEST(BoundsBestExprTest, Mode0) {
+  mp::Env e;
+  ExprTester t(e, "cvt:expr:nlassign=1 cvt:pre:boundsbest=0");
+  AddDuplicatedExprModel(t);
+  t.ConvertModel();
+  bool ite, ex;
+  SplitBounds(t, ite, ex);
+  EXPECT_FALSE(ite);
+  EXPECT_FALSE(ex);
+}
+
+TEST(BoundsBestExprTest, Mode1) {
+  mp::Env e;
+  ExprTester t(e, "cvt:expr:nlassign=1 cvt:pre:boundsbest=1");
+  AddDuplicatedExprModel(t);
+  t.ConvertModel();
+  bool ite, ex;
+  SplitBounds(t, ite, ex);
+  EXPECT_TRUE(ite);
+  EXPECT_TRUE(ex);
+}
+
+TEST(BoundsBestExprTest, Mode2__explicifiedNonlinearHard) {
+  mp::Env e;
+  ExprTester t(e, "cvt:expr:nlassign=1 cvt:pre:boundsbest=2");
+  AddDuplicatedExprModel(t);
+  t.ConvertModel();
+  bool ite, ex;
+  SplitBounds(t, ite, ex);
+  EXPECT_TRUE(ite);
+  EXPECT_FALSE(ex);
+}
+
+TEST(BoundsBestExprTest, Mode3__onlyExplicifiedNonlinearBest) {
+  mp::Env e;
+  ExprTester t(e, "cvt:expr:nlassign=1 cvt:pre:boundsbest=3");
+  AddDuplicatedExprModel(t);
+  t.ConvertModel();
+  bool ite, ex;
+  SplitBounds(t, ite, ex);
+  EXPECT_FALSE(ite);
+  EXPECT_TRUE(ex);
+}
