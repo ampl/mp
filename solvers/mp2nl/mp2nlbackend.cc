@@ -30,6 +30,31 @@ std::unique_ptr<BasicModelManager>
 CreateMP2NLModelMgr(MP2NLCommon&, Env&, pre::BasicValuePresolver*&);
 
 
+/// Subsolver keywords for lim:time, mip:gap, mip:gapabs
+MP2NLBackend::LimitKeywordMap MP2NLBackend::limit_kw_map_ {
+  { "knitro", { "maxtime", "mip_opt_gap_rel", "mip_opt_gap_abs" } },
+  { "baron", { "maxtime", "epsr", "epsa" } },
+  { "lindoglobal", { "maxtime", "epsr", "epsa" } },
+  { "ipopt", { "max_cpu_time", nullptr, nullptr } },
+  { "bonmin", { "bonmin.time_limit", "bonmin.allowable_fraction_gap",
+                "bonmin.allowable_gap" } },
+  { "couenne", { "bonmin.time_limit", "bonmin.allowable_fraction_gap",
+                 "bonmin.allowable_gap" } },
+  { "conopt", { "maxftime", nullptr, nullptr } },
+  { "lgo", { "timelim", nullptr, nullptr } },
+  { "cplexasl", { "time", "mipgap", "absmipgap" } },
+  { "gurobiasl", { "timelim", "mipgap", "mipgapabs" } },
+  { "baronmp", { "lim:time", nullptr, nullptr } },
+  { "gurobi", { "lim:time", "mip:gap", "mip:gapabs" } },
+  { "gcg", { "lim:time", "mip:gap", "mip:gapabs" } },
+  { "highs", { "lim:time", "mip:gap", "mip:gapabs" } },
+  { "cplex", { "lim:time", "mip:gap", "mip:gapabs" } },
+  { "mosek", { "lim:time", "mip:gap", "mip:gapabs" } },
+  { "copt", { "lim:time", "mip:gap", "mip:gapabs" } },
+  { "xpress", { "lim:time", "mip:gap", "mip:gapabs" } },
+  { "scip", { "lim:time", "mip:gap", "mip:gapabs" } },
+};
+
 // We don't provde bigM, it's user's risk.
 // 1e5 is usually the maximum numerically stable value
 MP2NLBackend::ConfigMap MP2NLBackend::config_map_ {
@@ -396,10 +421,48 @@ void MP2NLBackend::SetInterrupter(mp::Interrupter *inter) {
 }
 
 void MP2NLBackend::Solve() {
+  auto opts = storedOptions_.solver_options_;
+  auto lims = ForwardedLimits();
+  if (lims.size()) {
+    if (opts.size())
+      opts += ' ';
+    opts += lims;
+  }
+  if (verbose_mode() && lims.size())
+    Print("MP2NL: subsolver options '{}'\n", lims);
   GetNLSolver().Solve(
-      storedOptions_.solver_.c_str(),
-      storedOptions_.solver_options_.c_str());
+      storedOptions_.solver_.c_str(), opts.c_str());
   WindupMP2NLSolve();
+}
+
+std::string MP2NLBackend::ForwardedLimits() {
+  std::string result;
+  auto it = limit_kw_map_.find(storedOptions_.config_);
+  const LimitKeywords* kw
+      = (limit_kw_map_.end() != it) ? &it->second : nullptr;
+  auto forward = [&](const char* optname, const char* LimitKeywords::* kw_mbr,
+      double val, bool is_set) {
+    if (!is_set)
+      return;
+    if (kw && kw->*kw_mbr) {
+      if (result.size())
+        result += ' ';
+      result += fmt::format("{}={}", kw->*kw_mbr, val);
+    } else
+      AddWarning(std::string("MP2NL_") + optname,
+                 fmt::format("Option {} is not forwarded to solver '{}':\n"
+                             "  keyword unknown for configuration '{}'.\n"
+                             "  Use the solver's own options.",
+                             optname, storedOptions_.solver_,
+                             storedOptions_.config_));
+  };
+  forward("lim:time", &LimitKeywords::time_,
+          storedOptions_.tilim_, storedOptions_.tilim_ < 1e20);
+  forward("mip:gap", &LimitKeywords::gap_,
+          storedOptions_.mipgap_, storedOptions_.mipgap_ >= 0.0);
+  forward("mip:gapabs", &LimitKeywords::gapabs_,
+          storedOptions_.mipgapabs_, storedOptions_.mipgapabs_ >= 0.0);
+  return result;
 }
 
 void MP2NLBackend::WindupMP2NLSolve() { }
@@ -577,10 +640,23 @@ void MP2NLBackend::InitCustomOptions() {
                   "in the usual way as 'option <subsolver>_options \"...\";')",
                   storedOptions_.solver_options_);
 
-  /// Enforce time limit?
   AddStoredOption("lim:time timelim timelimit time_limit",
-    "Enforce limit on solve time (in seconds; default: 1e+20). DOES NOTHING CURRENTLY.",
+    "Limit on solve time (in seconds; default: no limit), "
+    "passed to the subsolver as its own keyword "
+    "(e.g., Knitro's maxtime) if known for the configuration. "
+    "Like mip:gap and mip:gapabs, it can be set per objective "
+    "in a multi-objective solve (suffix .option_timelim).",
     storedOptions_.tilim_);
+  AddStoredOption("mip:gap mipgap",
+    "Relative MIP optimality gap (default: the subsolver's), "
+    "passed to the subsolver as its own keyword "
+    "(e.g., Knitro's mip_opt_gap_rel) if known for the configuration.",
+    storedOptions_.mipgap_);
+  AddStoredOption("mip:gapabs mipgapabs",
+    "Absolute MIP optimality gap (default: the subsolver's), "
+    "passed to the subsolver as its own keyword "
+    "(e.g., Knitro's mip_opt_gap_abs) if known for the configuration.",
+    storedOptions_.mipgapabs_);
 
 
   /// Custom infinity value?

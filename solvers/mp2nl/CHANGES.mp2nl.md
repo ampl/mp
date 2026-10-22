@@ -3,6 +3,12 @@ Summary of recent updates to MP2NL for AMPL
 
 
 ## unreleased
+- *lim:time* (did nothing), and new *mip:gap*, *mip:gapabs*, are
+  passed to the subsolver as its own keywords (e.g., Knitro's
+  *maxtime*, *mip_opt_gap_rel*, *mip_opt_gap_abs*; BARON's *maxtime*,
+  *epsr*, *epsa*) for the known configurations. They can be set per
+  objective in a multi-objective solve (suffixes *.option_timelimit*,
+  *.option_mipgap*), which used to fail with "Option not found".
 - Fix: in a multi-objective solve (*obj:multi*), the NL file of
   every pass after the first had a wrong header (counts only for
   the items added since the previous pass); the subsolver read

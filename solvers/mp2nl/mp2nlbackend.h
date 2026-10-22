@@ -134,6 +134,14 @@ public:  // public for static polymorphism
 
 	/// Typedef map of default solver configs
 	using ConfigMap = std::map<std::string, std::string>;
+	/// Subsolver keywords for the limits MP2NL forwards:
+	/// time, relative gap, absolute gap (nullptr: not forwarded)
+	struct LimitKeywords {
+		const char* time_;
+		const char* gap_;
+		const char* gapabs_;
+	};
+	using LimitKeywordMap = std::map<std::string, LimitKeywords>;
 
   //////////////////// [[ Implementation details ]] //////////////////////
   ///////////////////////////////////////////////////////////////////////////////
@@ -203,9 +211,15 @@ private:
     int outlev_ = 0;
 
     double tilim_ = 1e20;
+    double mipgap_ = -1.0;      // <0: not set
+    double mipgapabs_ = -1.0;
   };
   Options storedOptions_;
 	static ConfigMap config_map_;
+	static LimitKeywordMap limit_kw_map_;
+
+	/// Subsolver options for lim:time, mip:gap, mip:gapabs
+	std::string ForwardedLimits();
 
   std::unique_ptr<MP2NLSolverQueryCallbacks> p_qc_;
 
