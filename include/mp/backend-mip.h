@@ -404,7 +404,7 @@ public:
       try {
         gaprel[0] = MP_DISPATCH( MIPGap() );
         if (1 & GetMIPOptions().returnMipGap_) {
-          ReportSuffix(sufRelMipGapObj, gaprel);
+          this->ReportFirstSuffixValue(sufRelMipGapObj, gaprel[0]);
           ReportSuffix(sufRelMipGapProb, gaprel);
         }
       } catch (const std::exception& exc) {
@@ -416,7 +416,7 @@ public:
       try {
         gapabs[0] = MP_DISPATCH( MIPGapAbs() );
         if (2 & GetMIPOptions().returnMipGap_) {
-          ReportSuffix(sufAbsMipGapObj, gapabs);
+          this->ReportFirstSuffixValue(sufAbsMipGapObj, gapabs[0]);
           ReportSuffix(sufAbsMipGapProb, gapabs);
         }
       } catch (const std::exception& exc) {
@@ -435,7 +435,7 @@ public:
     if (GetMIPOptions().returnBestDualBound_) {
       try {
         std::vector<double> dbl(1, MP_DISPATCH( BestDualBound() ));
-        ReportSuffix(sufBestBoundObj, dbl);
+        this->ReportFirstSuffixValue(sufBestBoundObj, dbl[0]);
         ReportSuffix(sufBestBoundProb, dbl);
       } catch (const std::exception& exc) {
         this->AddWarning(".bestbound", exc.what());

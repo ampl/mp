@@ -253,6 +253,39 @@
     }
   },
   {
+    "name" : "multiobj_abstol_MIP multiobj=1 return_mipgap=3 bestbound=1",
+    "Comment": "MIP gap and bound suffixes with several objectives. Native gap values depend on the solver",
+    "tags" : ["linear", "integer", "multiobj"],
+    "options": {
+      "ANYSOLVER_options": "multiobj=1 return_mipgap=3 bestbound=1",
+      "gurobi_options": "multiobj=1 mip:gap=0 return_mipgap=3 bestbound=1",
+      "xpress_options": "multiobj=1 mip:gap=0 return_mipgap=3 bestbound=1"
+    },
+    "values": {
+      "_obj[2].relmipgap": 0,
+      "_obj[2].absmipgap": 0,
+      "_sobj[1]": 2.75,
+      "_sobj[2]": 3.5
+    }
+  },
+  {
+    "name" : "multiobj_abstol_MIP multiobj=2 return_mipgap=3 bestbound=1",
+    "Comment": "MIP gap and bound suffixes with several objectives",
+    "tags" : ["linear", "integer", "multiobj"],
+    "options": {
+      "ANYSOLVER_options": "multiobj=2 return_mipgap=3 bestbound=1",
+      "gurobi_options": "multiobj=2 mip:gap=0 return_mipgap=3 bestbound=1",
+      "xpress_options": "multiobj=2 mip:gap=0 return_mipgap=3 bestbound=1"
+    },
+    "values": {
+      "_obj[1].relmipgap": 0,
+      "_obj[2].relmipgap": 0,
+      "_obj[2].absmipgap": 0,
+      "_sobj[1]": 2.75,
+      "_sobj[2]": 3.5
+    }
+  },
+  {
     "name" : "multiobj_unbdd_stats multiobj=2 multiobjstats=1",
     "Comment": "Stats for a pass not run after an unbounded pass",
     "tags" : ["linear", "continuous", "multiobj"],

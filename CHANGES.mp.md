@@ -3,6 +3,11 @@ Summary of recent updates to the AMPL MP Library
 
 
 ## unreleased
+- Fix: with several objectives (*obj:multi*), *mip:return_gap* and
+  *mip:bestbound* stopped debug builds with an assertion in
+  *ReportSuffix*; release builds were unaffected. The objective
+  suffixes *.relmipgap*, *.absmipgap* and *.bestbound* carry the value
+  for the first objective and 0 for the others.
 - Option *cvt:pre:boundsbest* value 4: best-known bounds for all
   variables when the submitted model has no nonlinear or quadratic
   constraints or objectives, hard bounds otherwise. MP2NL sets it in

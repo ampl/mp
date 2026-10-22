@@ -170,6 +170,18 @@ public:
     GetMM().ReportSuffix(suf, values);
   }
 
+  /// Report a value for the first element of the suffix,
+  /// \a pad for the others.
+  /// For objective suffixes with several objectives (obj:multi).
+  template <class N>
+  void ReportFirstSuffixValue(const SuffixDef<N>& suf,
+                              N value, N pad = {}) {
+    std::vector<N> values(
+          std::max(GetMM().GetSuffixSize(suf.kind()), (size_t)1), pad);
+    values[0] = value;
+    GetMM().ReportSuffix(suf, values);
+  }
+
   /// Get obj option setter
   BasicObjOptionSetter* GetObjOptionSetter() {
     return GetMM().GetObjOptionSetter();
