@@ -51,6 +51,14 @@ typedef struct AMPLS_MP_Solver_T {
   /// @return 0 on success
   AMPLS_C_EXPORT int AMPLSReportResults(AMPLS_MP_Solver* slv, const char* solFileName);
 
+  /// Report an error as a driver does: write the .sol file
+  /// with \a solve_result (e.g., 500) and \a msg, without exiting.
+  /// Needs the model's file name, i.e., a call of AMPLSLoadNLModel()
+  /// that got past reading the NL header (e.g., failed on an option).
+  /// @return 0 on success
+  AMPLS_C_EXPORT int AMPLSReportError(AMPLS_MP_Solver* slv,
+                                      int solve_result, const char* msg);
+
   /// Add message
   AMPLS_C_EXPORT void AMPLSAddMessage(AMPLS_MP_Solver* slv, const char* msg);
 

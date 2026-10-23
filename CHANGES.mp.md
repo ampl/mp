@@ -3,6 +3,9 @@ Summary of recent updates to the AMPL MP Library
 
 
 ## 20261101
+- AMPLS C API: *AMPLSReportError* writes the .sol file with a
+  solve result and message after a failed *AMPLSLoadNLModel* or
+  *AMPLSReportResults*, as drivers do on errors.
 - Fix: 64-bit integer options rejected values above 2^31
   ("this number is larger than an int"); they are now parsed
   as 64-bit integers.

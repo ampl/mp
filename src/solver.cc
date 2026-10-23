@@ -1505,6 +1505,15 @@ int AMPLSReportResults(AMPLS_MP_Solver* slv, const char* solFileName = NULL) {
   } );
 }
 
+int AMPLSReportError(AMPLS_MP_Solver* slv, int solve_result, const char* msg) {
+  return AMPLS__internal__TryCatchWrapper( slv, [=]() {
+    auto be = AMPLSGetBackend(slv);
+    be->set_ampl_flag();         // write the .sol file; otherwise exits
+    be->ReportError(solve_result,
+                    std::string(be->long_name()) + ": " + msg);
+  } );
+}
+
 void AMPLSAddMessage(AMPLS_MP_Solver* slv, const char* msg) {
   assert(slv->internal_info_);
   assert(msg);
