@@ -3,6 +3,11 @@ Summary of recent updates to the AMPL MP Library
 
 
 ## 20261101
+- Fix: *AMPLSSolve* (AMPLS C API) called the solver once, skipping
+  the iterations of the multiobjective emulator (*obj:multi=2*, or
+  *obj:multi=1* without native support); postsolving the results then
+  read uninitialized objectives and crashed. It now solves as drivers
+  do. This affected ASL drivers run with mp2nl=1.
 - AMPLS C API: *AMPLSReportError* writes the .sol file with a
   solve result and message after a failed *AMPLSLoadNLModel* or
   *AMPLSReportResults*, as drivers do on errors.

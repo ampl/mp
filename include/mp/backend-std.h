@@ -324,7 +324,7 @@ protected:
   virtual void Solve() override = 0;
 
   /// Our solving procedure.
-  virtual void RunSolveIterations() {
+  void RunSolveIterations() override {
     auto get_stt = [this]() {          // to be called before GetSolution()
       auto sr = GetSolveResult();
       SetStatus( sr );

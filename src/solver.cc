@@ -1470,7 +1470,7 @@ void AMPLSReadExtras(AMPLS_MP_Solver* slv) {
 
 void AMPLSSolve(AMPLS_MP_Solver* slv) {
   auto be = AMPLSGetBackend(slv);
-  be->Solve();
+  be->RunSolveIterations();      // as RunFromNLFile(), e.g., MO emulation
 }
 mp::BasicBackend* AMPLSGetBackend(AMPLS_MP_Solver* slv) {
   assert(slv->internal_info_);

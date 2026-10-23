@@ -87,6 +87,10 @@ public:
   /// Having everything set up, (re)solve the problem.
   /// This is to be overloaded by the implementation.
   virtual void Solve() { }
+  /// Solve as a driver does: Solve() for each iteration
+  /// (e.g., each pass of the multiobjective emulator).
+  /// This is used by the AMPLS C API.
+  virtual void RunSolveIterations() { Solve(); }
 
   /// Callbacks typedef
   using Callbacks = CCallbacks;
