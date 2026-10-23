@@ -1,4 +1,0 @@
-CPLEX Parameter File Version 22.2.0.0
-CPXPARAM_Tune_Display                            0
-CPXPARAM_TimeLimit                               5
-CPXPARAM_Tune_TimeLimit                          0.5

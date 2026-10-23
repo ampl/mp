@@ -1,7 +1,0 @@
-Knitro 15.0.1 (Barrier Algorithm)
-Tangential subproblem information
-
-                 Barrier      Barrier
-  Iter    Res   Objective    PrimFeas    CGits type
---------  --- ------------- --------- -------- ----
-       0  ---   1.02589e+02  1.00e-01

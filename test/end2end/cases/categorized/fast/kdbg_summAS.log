@@ -1,9 +1,0 @@
-Knitro 14.0.0 (Active-Set Algorithm)
-Summary information
-
-  Iter    Res    Objective   PrimFeas  DualFeas    Comp     CGits      ared       pred     ||d||   ||lmbda||     nu
---------  --- ------------- --------- --------- --------- -------- ---------- ---------- --------- --------- ---------
-       0  ---   1.00000e+00  0.00e+00  									      1.00e+01
-*** Singular AUG matrix: pivot = 1.000000e-08, regularize_aug = 1
-*** AUG regvalue = 1.000000e-08
-       1  Acc   1.00000e+00  0.00e+00  0.00e+00  0.00e+00        0   0.00e+00   0.00e+00  0.00e+00  0.00e+00  1.00e+01 0

@@ -23,6 +23,30 @@ Testing
 /test/end2end/*.xlsx
 /test/end2end/env
 /test/end2end/*.pyproj
+# end2end run outputs (run.py, AMPL and the solvers); case inputs
+# with these extensions are added with `git add -f`
+/test/end2end/**/*.log
+/test/end2end/**/*.lst
+/test/end2end/**/*.sol
+/test/end2end/**/*.lp
+/test/end2end/**/*.mps
+/test/end2end/**/*.jsonl
+/test/end2end/**/*.par
+/test/end2end/**/*.set
+/test/end2end/**/*.prm
+/test/end2end/**/*.cip
+/test/end2end/**/*.jtask
+/test/end2end/**/*.task.zst
+/test/end2end/**/*.mpi
+/test/end2end/**/*.trc
+/test/end2end/**/*.xtr
+/test/end2end/**/*.prt
+/test/end2end/**/*.xlsx
+/test/end2end/**/.amplparams
+/test/end2end/**/.venv/
+/test/end2end/**/venv/
+/test/end2end/**/OsiDefaultName_bounds
+/test/end2end/**/boundsfile.*
 /doc/env
 /doc/.venv
 .DS_Store
