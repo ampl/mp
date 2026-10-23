@@ -727,6 +727,44 @@ std::string XpressmpBackend::DoXpressFixedModel()
                         XPRS_NLPSOLSTATUS_GLOBALLYOPTIMAL_NODUALS==solstatus)
                                   ? ", no duals" : ", with duals";
 
+      // A global (spatial B&B) solve stopped by a limit reports
+      // NLPSTATUS_LOCALLY_OPTIMAL for its incumbent: report the limit.
+      auto stopstatus = getIntAttr(XPRS_NLPSTOPSTATUS);
+      if (XPRS_STOP_NONE == stopstatus)
+        stopstatus = getIntAttr(XPRS_STOPSTATUS);
+      if (XPRS_NLPSTATUS_LOCALLY_OPTIMAL == status ||
+          XPRS_NLPSTATUS_UNFINISHED == status) {
+        switch (stopstatus) {
+        case XPRS_STOP_TIMELIMIT:
+          return fFeasible
+              ? std::make_pair((int)sol::LIMIT_FEAS_TIME,
+                               "time limit, feasible solution" + msg_duals)
+              : std::make_pair((int)sol::LIMIT_NO_FEAS_TIME,
+                               std::string("time limit, without a feasible solution"));
+        case XPRS_STOP_WORKLIMIT:
+          return fFeasible
+              ? std::make_pair((int)sol::LIMIT_FEAS_WORK,
+                               "work limit, feasible solution" + msg_duals)
+              : std::make_pair((int)sol::LIMIT_NO_FEAS_WORK,
+                               std::string("work limit, without a feasible solution"));
+        case XPRS_STOP_NODELIMIT:
+          return fFeasible
+              ? std::make_pair((int)sol::LIMIT_FEAS_NODES,
+                               "node limit, feasible solution" + msg_duals)
+              : std::make_pair((int)sol::LIMIT_NO_FEAS_NODES,
+                               std::string("node limit, without a feasible solution"));
+        case XPRS_STOP_CTRLC:
+        case XPRS_STOP_USER:
+          return fFeasible
+              ? std::make_pair((int)sol::LIMIT_FEAS_INTERRUPT,
+                               "interrupted, feasible solution" + msg_duals)
+              : std::make_pair((int)sol::LIMIT_NO_FEAS_INTERRUPT,
+                               std::string("interrupted, without a feasible solution"));
+        default:
+          break;
+        }
+      }
+
       switch (status) {
       case XPRS_NLPSTATUS_LOCALLY_OPTIMAL:
         return { sol::OPTIMAL_LOCALLY,
