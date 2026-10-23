@@ -483,6 +483,27 @@ TEST(SolverTest, IntOptionHelper) {
   EXPECT_EQ(42, OptionHelper<int>::CastArg(42));
 }
 
+TEST(SolverTest, LongLongOptionHelper) {
+  fmt::MemoryWriter w;
+  OptionHelper<fmt::LongLong>::Write(w, 5000000000LL);
+  EXPECT_EQ("5000000000", w.str());
+  const char *start = "5000000000 ";
+  const char *s = start;
+  EXPECT_EQ(5000000000LL, OptionHelper<fmt::LongLong>::Parse(s));
+  EXPECT_EQ(start + 10, s);
+  s = "9223372036854775807";
+  EXPECT_EQ(9223372036854775807LL, OptionHelper<fmt::LongLong>::Parse(s));
+  s = "-9223372036854775808";
+  EXPECT_EQ(std::numeric_limits<fmt::LongLong>::min(),
+            OptionHelper<fmt::LongLong>::Parse(s));
+  s = "9223372036854775808";
+  EXPECT_THROW(OptionHelper<fmt::LongLong>::Parse(s), std::exception);
+  s = "abc";
+  EXPECT_THROW(OptionHelper<fmt::LongLong>::Parse(s), std::exception);
+  s = "5000000000";
+  EXPECT_THROW(OptionHelper<int>::Parse(s), std::exception);
+}
+
 TEST(SolverTest, DoubleOptionHelper) {
   fmt::MemoryWriter w;
   OptionHelper<double>::Write(w, 4.2);

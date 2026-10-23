@@ -76,9 +76,7 @@ template <>
 struct OptionHelper<fmt::LongLong> {
   typedef fmt::LongLong Arg;
   static void Write(fmt::Writer &w, Arg value) { w << value; }
-  static fmt::LongLong Parse(const char *&s, bool splitString=false) {
-    return OptionHelper<int>::Parse(s, splitString);
-  }
+  static fmt::LongLong Parse(const char *&s, bool splitString=false);
   static fmt::LongLong CastArg(fmt::LongLong value) { return value; }
 };
 

@@ -57,6 +57,8 @@ public:
   /// and the valid range.
   void GetSolverOption(const char* key, int& value) const;
   void SetSolverOption(const char* key, int value);
+  void GetSolverOption(const char* key, SCIP_Longint& value) const;
+  void SetSolverOption(const char* key, SCIP_Longint value);
   void GetSolverOption(const char* key, double& value) const;
   void SetSolverOption(const char* key, double value);
   void GetSolverOption(const char* key, std::string& value) const;

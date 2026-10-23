@@ -3,6 +3,8 @@ Summary of recent updates to SCIP for AMPL
 
 
 ## unreleased
+- 64-bit SCIP parameters (e.g., *lim:nodes*, *lim:totalnodes*,
+  *lim:stallnodes*) accept values above 2^31.
 - Options aligned with SCIP 10.0.2: corrected defaults and ranges
   (*cut:maxcutsroot* 2000, *cut:minortho*/*cut:minorthoroot* in 0..1
   with default 0.9, *pre:immrestartfac* and *pre:restartminred* 0.05),

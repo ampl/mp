@@ -3,6 +3,8 @@ Summary of recent updates to GCG for AMPL
 
 
 ## unreleased
+- 64-bit SCIP parameters (e.g., *lim:nodes*, *lim:stallnodes*)
+  accept values above 2^31.
 - Debug builds link again (the GCG 4 release library exports
   GCGgetOrigprob only as a macro).
 - Options aligned with GCG 4.0.2 / SCIP 10.0.2: corrected defaults,

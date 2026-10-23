@@ -314,5 +314,17 @@
     "values": {
       "solve_result_num": 0
     }
+  },
+  {
+    "name" : "knap_40 64-bit option value",
+    "tags" : ["linear", "integer"],
+    "files" : ["knap_40.mod"],
+    "comment": "lim:nodes is a 64-bit parameter (SCIP_Longint); values above 2^31 are accepted",
+    "options": { "ANYSOLVER_options": "lim:nodes=5000000000" },
+    "solvers": ["scip", "gcg"],
+    "objective": 1044,
+    "values": {
+      "solve_result_num": 0
+    }
   }
 ]

@@ -176,6 +176,15 @@ void GcgCommon::SetSolverOption(const char* key, int value) {
   CheckOptionSet(code, key, std::to_string(value));
 }
 
+void GcgCommon::GetSolverOption(const char* key, SCIP_Longint &value) const {
+  GCG_CCALL( SCIPgetLongintParam(getSCIP(), key, &value) );
+}
+
+void GcgCommon::SetSolverOption(const char* key, SCIP_Longint value) {
+  CheckOptionSet(SCIPsetLongintParam(getSCIP(), key, value),
+                 key, std::to_string(value));
+}
+
 void GcgCommon::GetSolverOption(const char* key, double &value) const {
   GCG_CCALL( SCIPgetRealParam(getSCIP(), key, &value) );
 }

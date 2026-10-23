@@ -150,11 +150,19 @@ protected:
 
 private:
   /// Register a parameter as an AMPL option and remember
-  /// the AMPL name for rejection messages
+  /// the AMPL name for rejection messages.
+  /// Integer bounds of a SCIP_Longint parameter register a 64-bit option.
   template <class... Args>
   void AddGcgOption(const char* names, const char* descr,
                     const char* key, Args&&... args) {
     RecordOptionName(key, PrimaryName(names));
+    if constexpr (2 == sizeof...(Args)
+                  && (std::is_same_v<std::decay_t<Args>, int> && ...)) {
+      if (SCIP_PARAMTYPE_LONGINT == ParamType(key)) {
+        AddSolverOption(names, descr, key, (SCIP_Longint)0, (SCIP_Longint)0);
+        return;
+      }
+    }
     AddSolverOption(names, descr, key, std::forward<Args>(args)...);
   }
   static std::string PrimaryName(const char* names) {

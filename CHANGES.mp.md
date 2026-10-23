@@ -3,6 +3,9 @@ Summary of recent updates to the AMPL MP Library
 
 
 ## unreleased
+- Fix: 64-bit integer options rejected values above 2^31
+  ("this number is larger than an int"); they are now parsed
+  as 64-bit integers.
 - Fix: the IIS of a model with logical constraints or if-then-else
   expressions marked many unrelated constraints (*upp*): every
   constraint that used a constant, e.g. the implicit else-0 of

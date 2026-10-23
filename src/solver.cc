@@ -301,6 +301,22 @@ int OptionHelper<int>::Parse(const char *&s, bool) {
   MP_RAISE("Unknown std::from_chars<int> result");
 }
 
+fmt::LongLong OptionHelper<fmt::LongLong>::Parse(const char *&s, bool) {
+  assert(!isspace(*s));
+  const char *end = SkipNonSpaces(s);
+  fmt::LongLong value;
+  auto result = std::from_chars(s, end, value);
+  if (result.ec == std::errc()) {
+    s = result.ptr;
+    return value;
+  }
+  MP_ASSERT_ALWAYS(result.ec != std::errc::invalid_argument,
+                   "this is not a number");
+  MP_ASSERT_ALWAYS(result.ec != std::errc::result_out_of_range,
+                   "this number is larger than a 64-bit integer");
+  MP_RAISE("Unknown std::from_chars<long long> result");
+}
+
 double OptionHelper<double>::Parse(const char *&s, bool) {
   assert(!isspace(*s));
   char *end = 0;        // Clang 16 still no from_chars<double>

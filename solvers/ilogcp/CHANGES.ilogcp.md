@@ -3,6 +3,8 @@ Summary of recent updates to ilogcp for AMPL
 
 
 ## unreleased
+- Integer options (e.g., *lim:fail*, *lim:choicepoint*) accept
+  values above 2^31.
 - Options renamed to the MP style with the previous names kept as
   synonyms, e.g. *lim:time* (timelimit), *lim:sol* (solutionlimit),
   *lim:fail* (faillimit), *tech:threads* (workers), *tech:seed*
