@@ -1,0 +1,361 @@
+  Path '.': loaded model description with 58 items... 
+Running 58 test cases with solvers ['mp2nl'] using 8 threads.
+AMPL executable: 'ampl'
+1. Solving with AMPL: 'div_by_const'                                            /Users/gb5/Documents/prj/AMPL/escrow__master_stable/cmake/acl/massage.h:95:34: runtime error: signed integer overflow: 33 * 489493583285034080 cannot be represented in type 'long'
+SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior /Users/gb5/Documents/prj/AMPL/escrow__master_stable/cmake/acl/massage.h:95:34 
+/Users/gb5/Documents/prj/AMPL/escrow__master_stable/cmake/acl/collect.c:1417:9: runtime error: applying non-zero offset 8 to null pointer
+SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior /Users/gb5/Documents/prj/AMPL/escrow__master_stable/cmake/acl/collect.c:1417:9 
+WARNING: not solved (solve_result: solved?)
+  Ok.  (0.3325s, 0 failed solver, 0 failed AMPL(PY)/script, 0 skipped)
+2. Solving with AMPL: 'expA_1'                                                    Ok.  (0.1886s, 0 failed solver, 0 failed AMPL(PY)/script, 0 skipped)
+3. Solving with AMPL: 'expA_1 check_pl_approx_expA'                             Skipped due to unsupported tags
+  (0.0000s, 0 failed solver, 0 failed AMPL(PY)/script, 1 skipped)
+4. Solving with AMPL: 'expA_2'                                                    Ok.  (0.1865s, 0 failed solver, 0 failed AMPL(PY)/script, 1 skipped)
+5. Solving with AMPL: 'logA_1'                                                    Ok.  (0.2080s, 0 failed solver, 0 failed AMPL(PY)/script, 1 skipped)
+6. Solving with AMPL: 'log_1'                                                     Ok.  (0.1878s, 0 failed solver, 0 failed AMPL(PY)/script, 1 skipped)
+7. Solving with AMPL: 'log_1_ccv PLconcave'                                       Ok.  (0.1936s, 0 failed solver, 0 failed AMPL(PY)/script, 1 skipped)
+8. Solving with AMPL: 'exp_01_check_obj reltol=1e-5'                              Ok.  (0.1870s, 0 failed solver, 0 failed AMPL(PY)/script, 1 skipped)
+9. Solving with AMPL: 'exp_01_check_obj reltol=1e-5 PLconvex'                     Ok.  (0.2853s, 0 failed solver, 0 failed AMPL(PY)/script, 1 skipped)
+10. Solving with AMPL: 'exp_01_obj_direct reltol=1e-5 PLconvex'                   Ok.  (0.2856s, 0 failed solver, 0 failed AMPL(PY)/script, 1 skipped)
+11. Solving with AMPL: 'exp_01_check_obj check_pl_approx_exp reltol=1e-5'       Skipped due to unsupported tags
+  (0.0000s, 0 failed solver, 0 failed AMPL(PY)/script, 2 skipped)
+12. Solving with AMPL: 'exp_02_check_2con'                                        Ok.  (0.1888s, 0 failed solver, 0 failed AMPL(PY)/script, 2 skipped)
+13. Solving with AMPL: 'exp_02_check_2con check_pl_approx_exp'                  Skipped due to unsupported tags
+  (0.0000s, 0 failed solver, 0 failed AMPL(PY)/script, 3 skipped)
+14. Solving with AMPL: 'exp_02_check_2con check: approx, pl, sos2'              Skipped due to unsupported tags
+  (0.0000s, 0 failed solver, 0 failed AMPL(PY)/script, 4 skipped)
+15. Solving with AMPL: 'log_01_check_obj'                                         Ok.  (0.1893s, 0 failed solver, 0 failed AMPL(PY)/script, 4 skipped)
+16. Solving with AMPL: 'log_01_check_obj check_pl_approx_log'                   Skipped due to unsupported tags
+  (0.0000s, 0 failed solver, 0 failed AMPL(PY)/script, 5 skipped)
+17. Solving with AMPL: 'log_02_check_2con_noncvx'                                 Ok.  (0.1886s, 0 failed solver, 0 failed AMPL(PY)/script, 5 skipped)
+18. Solving with AMPL: 'log_02_check_2con_noncvx check_pl_approx_log'           Skipped due to unsupported tags
+  (0.0000s, 0 failed solver, 0 failed AMPL(PY)/script, 6 skipped)
+19. Solving with AMPL: 'log_02_check_2con_noncvx check: approx, pl, sos2'       Skipped due to unsupported tags
+  (0.0000s, 0 failed solver, 0 failed AMPL(PY)/script, 7 skipped)
+20. Solving with AMPL: 'sin_01'                                                           FAILED(mp2nl): value of entity 'if abs(_obj[1]+3.141592653589793)<=0.01 then 1 else 0': value 0, expected 1
+                                                                                  (0.1894s, 1 failed solver, 0 failed AMPL(PY)/script, 7 skipped)
+21. Solving with AMPL: 'sin_01 check_pl_approx_sin'                             Skipped due to unsupported tags
+  (0.0000s, 1 failed solver, 0 failed AMPL(PY)/script, 8 skipped)
+22. Solving with AMPL: 'sin_02'                                                           FAILED(mp2nl): value of entity 'if abs(_obj[1]+5.71238898038469)<=0.01 then 1 else 0': value 0, expected 1
+                                                                                  (0.1885s, 2 failed solver, 0 failed AMPL(PY)/script, 8 skipped)
+23. Solving with AMPL: 'sin_02 check_pl_approx_sin'                             Skipped due to unsupported tags
+  (0.0000s, 2 failed solver, 0 failed AMPL(PY)/script, 9 skipped)
+24. Solving with AMPL: 'cos_01'                                                           FAILED(mp2nl): value of entity 'if abs(_obj[1]+191.6104822)<=1 then 1 else 0': value 0, expected 1
+                                                                                  (0.1886s, 3 failed solver, 0 failed AMPL(PY)/script, 9 skipped)
+25. Solving with AMPL: 'cos_01 check_pl_approx_cos'                             Skipped due to unsupported tags
+  (0.0000s, 3 failed solver, 0 failed AMPL(PY)/script, 10 skipped)
+26. Solving with AMPL: 'tan_01'                                                           FAILED(mp2nl): value of entity 'if abs(_obj[1]+0.6388867014)<=0.1 then 1 else 0': value 0, expected 1
+                                                                                  (0.4740s, 4 failed solver, 0 failed AMPL(PY)/script, 10 skipped)
+27. Solving with AMPL: 'sin_01 Gurobi: global'                                            FAILED(mp2nl): value of entity 'if abs(_obj[1]+3.141592653589793)<=0.01 then 1 else 0': value 0, expected 1
+                                                                                  (0.1929s, 5 failed solver, 0 failed AMPL(PY)/script, 10 skipped)
+28. Solving with AMPL: 'tan_01 Gurobi: funcnonlinear'                                     FAILED(mp2nl): value of entity 'if abs(_obj[1]+0.6388867014)<=0.1 then 1 else 0': value 0, expected 1
+                                                                                  (0.4186s, 6 failed solver, 0 failed AMPL(PY)/script, 10 skipped)
+29. Solving with AMPL: 'tan_01 check_pl_approx_tan'                             Skipped due to unsupported tags
+  (0.0000s, 6 failed solver, 0 failed AMPL(PY)/script, 11 skipped)
+30. Solving with AMPL: 'pow_01_pow4_lbx_neg'                                      Ok.  (0.1892s, 6 failed solver, 0 failed AMPL(PY)/script, 11 skipped)
+31. Solving with AMPL: 'pow_01a_pow4_x_neg PLApprox'                            Skipped due to unsupported tags
+  (0.0000s, 6 failed solver, 0 failed AMPL(PY)/script, 12 skipped)
+32. Solving with AMPL: 'pow_01a_pow4_x_neg QPApprox'                            Skipped due to unsupported tags
+  (0.0000s, 6 failed solver, 0 failed AMPL(PY)/script, 13 skipped)
+33. Solving with AMPL: 'pow_01a_pow4_x_neg'                                       Ok.  (0.1890s, 6 failed solver, 0 failed AMPL(PY)/script, 13 skipped)
+34. Solving with AMPL: 'pow_02_pow4_lbx_neg'                                      Ok.  (0.1887s, 6 failed solver, 0 failed AMPL(PY)/script, 13 skipped)
+35. Solving with AMPL: 'pow_03_pow5_lbx_neg'                                      Ok.  (0.1913s, 6 failed solver, 0 failed AMPL(PY)/script, 13 skipped)
+36. Solving with AMPL: 'pow_04_pow1.35'                                           Ok.  (0.1888s, 6 failed solver, 0 failed AMPL(PY)/script, 13 skipped)
+37. Solving with AMPL: 'pow_05_pow_minus0.35'                                     Ok.  (0.1885s, 6 failed solver, 0 failed AMPL(PY)/script, 13 skipped)
+38. Solving with AMPL: 'pow_06_pow_minus0.3'                                    /Users/gb5/Documents/prj/AMPL/escrow__master_stable/cmake/acl/collect.c:1532:8: runtime error: applying non-zero offset 8 to null pointer
+SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior /Users/gb5/Documents/prj/AMPL/escrow__master_stable/cmake/acl/collect.c:1532:8 
+  Ok.  (0.1918s, 6 failed solver, 0 failed AMPL(PY)/script, 13 skipped)
+39. Solving with AMPL: 'pow_07_varvar'                                            Ok.  (0.1880s, 6 failed solver, 0 failed AMPL(PY)/script, 13 skipped)
+40. Solving with AMPL: 'asin_01'                                                  Ok.  (0.2120s, 6 failed solver, 0 failed AMPL(PY)/script, 13 skipped)
+41. Solving with AMPL: 'acos_01'                                                  Ok.  (0.2173s, 6 failed solver, 0 failed AMPL(PY)/script, 13 skipped)
+42. Solving with AMPL: 'atan_01'                                                  Ok.  (0.2210s, 6 failed solver, 0 failed AMPL(PY)/script, 13 skipped)
+43. Solving with AMPL: 'sinh_01'                                                          FAILED(mp2nl): value of entity 'if abs(_obj[1]-6.88087328277653)<=0.01 then 1 else 0': value 0, expected 1
+                                                                                  (0.2539s, 7 failed solver, 0 failed AMPL(PY)/script, 13 skipped)
+44. Solving with AMPL: 'sinh_01_integer'                                                  FAILED(mp2nl): value of entity 'if abs(_obj[1])<=0.01 then 1 else 0': value 0, expected 1
+                                                                                  (0.3439s, 8 failed solver, 0 failed AMPL(PY)/script, 13 skipped)
+45. Solving with AMPL: 'cosh_01'                                                  Ok.  (0.2201s, 8 failed solver, 0 failed AMPL(PY)/script, 13 skipped)
+46. Solving with AMPL: 'tanh_01'                                                  Ok.  (0.2116s, 8 failed solver, 0 failed AMPL(PY)/script, 13 skipped)
+47. Solving with AMPL: 'asinh_01'                                                         FAILED(mp2nl): value of entity 'if abs(_obj[1]-7.1191696450538)<=0.1 then 1 else 0': value 0, expected 1
+                                                                                  (0.2211s, 9 failed solver, 0 failed AMPL(PY)/script, 13 skipped)
+48. Solving with AMPL: 'acosh_01'                                               WARNING: not solved (solve_result: infeasible)
+          FAILED(mp2nl): value of entity 'if abs(_obj[1]+12.9669563023371)<=0.01 then 1 else 0': value 0, expected 1
+                                                                                  (0.2032s, 10 failed solver, 0 failed AMPL(PY)/script, 13 skipped)
+49. Solving with AMPL: 'atanh_01'                                                         FAILED(mp2nl): value of entity 'if abs(_obj[1]-1.30327359)<=0.01 then 1 else 0': value 0, expected 1
+                                                                                  (0.2053s, 11 failed solver, 0 failed AMPL(PY)/script, 13 skipped)
+50. Solving with AMPL: 'tanh_02'                                                  Ok.  (0.2233s, 11 failed solver, 0 failed AMPL(PY)/script, 13 skipped)
+51. Solving with AMPL: 'hs54_inspired'                                                    FAILED(mp2nl): value of entity 'if abs(_obj[1] + 0.59) < 0.1 then 1': value 0, expected 1
+                                                                                  (0.1907s, 12 failed solver, 0 failed AMPL(PY)/script, 13 skipped)
+52. Solving with AMPL: 'hs54_inspired_2'                                        /Users/gb5/Documents/prj/AMPL/escrow__master_stable/cmake/acl/massage.h:95:37: runtime error: signed integer overflow: 5622048034660362579 + 3838824062371346842 cannot be represented in type 'long'
+SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior /Users/gb5/Documents/prj/AMPL/escrow__master_stable/cmake/acl/massage.h:95:37 
+          FAILED(mp2nl): value of entity 'if abs(_obj[1] + 0.5469485038) < 0.1 then 1': value 0, expected 1
+                                                                                  (0.1959s, 13 failed solver, 0 failed AMPL(PY)/script, 13 skipped)
+53. Solving with AMPL: 'hs54_inspired_2 cvt:qp2pass=0'                                    FAILED(mp2nl): value of entity 'if abs(_obj[1] + 0.5469485038) < 0.1 then 1': value 0, expected 1
+                                                                                  (0.1923s, 14 failed solver, 0 failed AMPL(PY)/script, 13 skipped)
+54. Solving with AMPL: 'hs54_inspired_2 cvt:qp2pass=1 cvt:multoutcard=0'                  FAILED(mp2nl): objective: value -1.6681396813215494e-06, expected -0.5469485038
+                                                                                  (0.1948s, 15 failed solver, 0 failed AMPL(PY)/script, 13 skipped)
+55. Solving with AMPL: 'hs54_inspired_2 cvt:qp2pass=0 cvt:multoutcard=0'                  FAILED(mp2nl): objective: value -1.6681396813215494e-06, expected -0.5469485038
+                                                                                  (0.1937s, 16 failed solver, 0 failed AMPL(PY)/script, 13 skipped)
+56. Solving with AMPL: 'hs54_inspired_3_qp'                                       Ok.  (0.1901s, 16 failed solver, 0 failed AMPL(PY)/script, 13 skipped)
+57. Solving with AMPL: 'hs54_inspired_4_qp qp2pass=1'                             Ok.  (0.1900s, 16 failed solver, 0 failed AMPL(PY)/script, 13 skipped)
+58. Solving with AMPL: 'hs54_inspired_4_qp qp2pass=0'                             Ok.  (0.1913s, 16 failed solver, 0 failed AMPL(PY)/script, 13 skipped)
+AddressSanitizer:DEADLYSIGNAL
+=================================================================
+==41839==ERROR: AddressSanitizer: stack-overflow on address 0x00016c8af460 (pc 0x000102d8bbc4 bp 0x00016c8b17f0 sp 0x00016c8af460 T0)
+    #0 0x000102d8bbc4 in x_sprintf printf.c:500
+    #1 0x000102d8b874 in Printf printf.c:1242
+    #2 0x000102d820c0 in pipecatch fpecatch.c:99
+    #3 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #4 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #5 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #6 0x00010320cc60 in myexit option.c:664
+    #7 0x000102d820cc in pipecatch fpecatch.c:101
+    #8 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #9 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #10 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #11 0x00010320cc60 in myexit option.c:664
+    #12 0x000102d820cc in pipecatch fpecatch.c:101
+    #13 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #14 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #15 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #16 0x00010320cc60 in myexit option.c:664
+    #17 0x000102d820cc in pipecatch fpecatch.c:101
+    #18 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #19 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #20 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #21 0x00010320cc60 in myexit option.c:664
+    #22 0x000102d820cc in pipecatch fpecatch.c:101
+    #23 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #24 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #25 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #26 0x00010320cc60 in myexit option.c:664
+    #27 0x000102d820cc in pipecatch fpecatch.c:101
+    #28 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #29 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #30 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #31 0x00010320cc60 in myexit option.c:664
+    #32 0x000102d820cc in pipecatch fpecatch.c:101
+    #33 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #34 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #35 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #36 0x00010320cc60 in myexit option.c:664
+    #37 0x000102d820cc in pipecatch fpecatch.c:101
+    #38 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #39 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #40 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #41 0x00010320cc60 in myexit option.c:664
+    #42 0x000102d820cc in pipecatch fpecatch.c:101
+    #43 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #44 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #45 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #46 0x00010320cc60 in myexit option.c:664
+    #47 0x000102d820cc in pipecatch fpecatch.c:101
+    #48 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #49 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #50 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #51 0x00010320cc60 in myexit option.c:664
+    #52 0x000102d820cc in pipecatch fpecatch.c:101
+    #53 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #54 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #55 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #56 0x00010320cc60 in myexit option.c:664
+    #57 0x000102d820cc in pipecatch fpecatch.c:101
+    #58 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #59 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #60 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #61 0x00010320cc60 in myexit option.c:664
+    #62 0x000102d820cc in pipecatch fpecatch.c:101
+    #63 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #64 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #65 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #66 0x00010320cc60 in myexit option.c:664
+    #67 0x000102d820cc in pipecatch fpecatch.c:101
+    #68 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #69 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #70 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #71 0x00010320cc60 in myexit option.c:664
+    #72 0x000102d820cc in pipecatch fpecatch.c:101
+    #73 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #74 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #75 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #76 0x00010320cc60 in myexit option.c:664
+    #77 0x000102d820cc in pipecatch fpecatch.c:101
+    #78 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #79 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #80 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #81 0x00010320cc60 in myexit option.c:664
+    #82 0x000102d820cc in pipecatch fpecatch.c:101
+    #83 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #84 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #85 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #86 0x00010320cc60 in myexit option.c:664
+    #87 0x000102d820cc in pipecatch fpecatch.c:101
+    #88 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #89 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #90 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #91 0x00010320cc60 in myexit option.c:664
+    #92 0x000102d820cc in pipecatch fpecatch.c:101
+    #93 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #94 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #95 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #96 0x00010320cc60 in myexit option.c:664
+    #97 0x000102d820cc in pipecatch fpecatch.c:101
+    #98 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #99 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #100 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #101 0x00010320cc60 in myexit option.c:664
+    #102 0x000102d820cc in pipecatch fpecatch.c:101
+    #103 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #104 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #105 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #106 0x00010320cc60 in myexit option.c:664
+    #107 0x000102d820cc in pipecatch fpecatch.c:101
+    #108 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #109 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #110 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #111 0x00010320cc60 in myexit option.c:664
+    #112 0x000102d820cc in pipecatch fpecatch.c:101
+    #113 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #114 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #115 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #116 0x00010320cc60 in myexit option.c:664
+    #117 0x000102d820cc in pipecatch fpecatch.c:101
+    #118 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #119 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #120 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #121 0x00010320cc60 in myexit option.c:664
+    #122 0x000102d820cc in pipecatch fpecatch.c:101
+    #123 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #124 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #125 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #126 0x00010320cc60 in myexit option.c:664
+    #127 0x000102d820cc in pipecatch fpecatch.c:101
+    #128 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #129 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #130 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #131 0x00010320cc60 in myexit option.c:664
+    #132 0x000102d820cc in pipecatch fpecatch.c:101
+    #133 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #134 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #135 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #136 0x00010320cc60 in myexit option.c:664
+    #137 0x000102d820cc in pipecatch fpecatch.c:101
+    #138 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #139 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #140 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #141 0x00010320cc60 in myexit option.c:664
+    #142 0x000102d820cc in pipecatch fpecatch.c:101
+    #143 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #144 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #145 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #146 0x00010320cc60 in myexit option.c:664
+    #147 0x000102d820cc in pipecatch fpecatch.c:101
+    #148 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #149 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #150 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #151 0x00010320cc60 in myexit option.c:664
+    #152 0x000102d820cc in pipecatch fpecatch.c:101
+    #153 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #154 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #155 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #156 0x00010320cc60 in myexit option.c:664
+    #157 0x000102d820cc in pipecatch fpecatch.c:101
+    #158 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #159 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #160 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #161 0x00010320cc60 in myexit option.c:664
+    #162 0x000102d820cc in pipecatch fpecatch.c:101
+    #163 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #164 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #165 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #166 0x00010320cc60 in myexit option.c:664
+    #167 0x000102d820cc in pipecatch fpecatch.c:101
+    #168 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #169 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #170 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #171 0x00010320cc60 in myexit option.c:664
+    #172 0x000102d820cc in pipecatch fpecatch.c:101
+    #173 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #174 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #175 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #176 0x00010320cc60 in myexit option.c:664
+    #177 0x000102d820cc in pipecatch fpecatch.c:101
+    #178 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #179 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #180 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #181 0x00010320cc60 in myexit option.c:664
+    #182 0x000102d820cc in pipecatch fpecatch.c:101
+    #183 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #184 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #185 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #186 0x00010320cc60 in myexit option.c:664
+    #187 0x000102d820cc in pipecatch fpecatch.c:101
+    #188 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #189 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #190 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #191 0x00010320cc60 in myexit option.c:664
+    #192 0x000102d820cc in pipecatch fpecatch.c:101
+    #193 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #194 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #195 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #196 0x00010320cc60 in myexit option.c:664
+    #197 0x000102d820cc in pipecatch fpecatch.c:101
+    #198 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #199 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #200 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #201 0x00010320cc60 in myexit option.c:664
+    #202 0x000102d820cc in pipecatch fpecatch.c:101
+    #203 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #204 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #205 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #206 0x00010320cc60 in myexit option.c:664
+    #207 0x000102d820cc in pipecatch fpecatch.c:101
+    #208 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #209 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #210 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #211 0x00010320cc60 in myexit option.c:664
+    #212 0x000102d820cc in pipecatch fpecatch.c:101
+    #213 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #214 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #215 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #216 0x00010320cc60 in myexit option.c:664
+    #217 0x000102d820cc in pipecatch fpecatch.c:101
+    #218 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #219 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #220 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #221 0x00010320cc60 in myexit option.c:664
+    #222 0x000102d820cc in pipecatch fpecatch.c:101
+    #223 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #224 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #225 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #226 0x00010320cc60 in myexit option.c:664
+    #227 0x000102d820cc in pipecatch fpecatch.c:101
+    #228 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #229 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #230 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #231 0x00010320cc60 in myexit option.c:664
+    #232 0x000102d820cc in pipecatch fpecatch.c:101
+    #233 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #234 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #235 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #236 0x00010320cc60 in myexit option.c:664
+    #237 0x000102d820cc in pipecatch fpecatch.c:101
+    #238 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #239 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #240 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #241 0x00010320cc60 in myexit option.c:664
+    #242 0x000102d820cc in pipecatch fpecatch.c:101
+    #243 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #244 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #245 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #246 0x00010320cc60 in myexit option.c:664
+    #247 0x000102d820cc in pipecatch fpecatch.c:101
+    #248 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #249 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+    #250 0x0001a03817b8 in longjmp+0x20 (libsystem_platform.dylib:arm64e+0x17b8)
+    #251 0x00010320cc60 in myexit option.c:664
+    #252 0x000102d820cc in pipecatch fpecatch.c:101
+    #253 0x0001a0383620 in _sigtramp+0x34 (libsystem_platform.dylib:arm64e+0x3620)
+    #254 0x00010439d284 in sigprocmask+0x84 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x29284)
+
+SUMMARY: AddressSanitizer: stack-overflow printf.c:500 in x_sprintf
+==41839==ABORTING

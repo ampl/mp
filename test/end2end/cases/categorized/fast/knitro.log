@@ -1,0 +1,501 @@
+  Path 'pl': loaded model description with 21 items... 
+  Path 'cp_global_constraints': loaded model description with 17 items... 
+  Path 'frac': loaded model description with 2 items... 
+  Path 'complementarity': loaded model description with 4 items... 
+  Path 'defvar': loaded model description with 3 items... 
+  Path 'suf_common': loaded model description with 15 items... 
+  Path 'mip_round_relax': loaded model description with 4 items... 
+  Path 'warmstart': loaded model description with 2 items... 
+  Path 'multi_obj': loaded model description with 28 items... 
+  Path 'general_constraints': loaded model description with 6 items... 
+  Path 'logical': loaded model description with 31 items... 
+  Path 'conic': loaded model description with 21 items... 
+  Path 'tech': loaded model description with 6 items... 
+  Path 'qp': loaded model description with 22 items... 
+  Path 'multi_sol': loaded model description with 7 items... 
+  Path 'suf_std': loaded model description with 12 items... 
+  Path 'poly': loaded model description with 2 items... 
+  Path 'iis_feasrelax': loaded model description with 14 items... 
+  Path 'nonlinear': loaded model description with 58 items... 
+Running 275 test cases with solvers ['knitro'] using 8 threads.
+AMPL executable: 'ampl'
+1. Solving with AMPL: 'steelpl1'                                                /Users/gb5/Documents/prj/AMPL/escrow__master_stable/cmake/acl/massage.h:95:34: runtime error: signed integer overflow: 33 * 489493583285034080 cannot be represented in type 'long'
+SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior /Users/gb5/Documents/prj/AMPL/escrow__master_stable/cmake/acl/massage.h:95:34 
+  Ok.  (0.4197s, 0 failed solver, 0 failed AMPL(PY)/script, 0 skipped)
+2. Solving with AMPL: 'steelpl2'                                                  Ok.  (0.1207s, 0 failed solver, 0 failed AMPL(PY)/script, 0 skipped)
+3. Solving with AMPL: 'steelpl3'                                                  Ok.  (0.1205s, 0 failed solver, 0 failed AMPL(PY)/script, 0 skipped)
+4. Solving with AMPL: 'steelpl4'                                                  Ok.  (0.1185s, 0 failed solver, 0 failed AMPL(PY)/script, 0 skipped)
+5. Solving with AMPL: 'steelpl5'                                                  Ok.  (0.1202s, 0 failed solver, 0 failed AMPL(PY)/script, 0 skipped)
+6. Solving with AMPL: 'transpl1'                                                  Ok.  (0.1213s, 0 failed solver, 0 failed AMPL(PY)/script, 0 skipped)
+7. Solving with AMPL: 'transpl2'                                                  Ok.  (0.1430s, 0 failed solver, 0 failed AMPL(PY)/script, 0 skipped)
+8. Solving with AMPL: 'steelpl1 pl_linearize=0'                                 Skipped due to unsupported tags
+  (0.0000s, 0 failed solver, 0 failed AMPL(PY)/script, 1 skipped)
+9. Solving with AMPL: 'steelpl2 pl_linearize=0'                                 Skipped due to unsupported tags
+  (0.0000s, 0 failed solver, 0 failed AMPL(PY)/script, 2 skipped)
+10. Solving with AMPL: 'steelpl3 pl_linearize=0'                                Skipped due to unsupported tags
+  (0.0000s, 0 failed solver, 0 failed AMPL(PY)/script, 3 skipped)
+11. Solving with AMPL: 'steelpl4 pl_linearize=0'                                Skipped due to unsupported tags
+  (0.0000s, 0 failed solver, 0 failed AMPL(PY)/script, 4 skipped)
+12. Solving with AMPL: 'steelpl5 pl_linearize=0'                                Skipped due to unsupported tags
+  (0.0000s, 0 failed solver, 0 failed AMPL(PY)/script, 5 skipped)
+13. Solving with AMPL: 'transpl1 pl_linearize=0'                                Skipped due to unsupported tags
+  (0.0000s, 0 failed solver, 0 failed AMPL(PY)/script, 6 skipped)
+14. Solving with AMPL: 'transpl2 pl_linearize=0'                                Skipped due to unsupported tags
+  (0.0000s, 0 failed solver, 0 failed AMPL(PY)/script, 7 skipped)
+15. Solving with AMPL: 'steelpl2 pl_linearize=0 acc:pl=1 acc:sos2=1'            Skipped due to unsupported tags
+  (0.0000s, 0 failed solver, 0 failed AMPL(PY)/script, 8 skipped)
+16. Solving with AMPL: 'steelpl3 pl_linearize=0 acc:pl=1 acc:sos2=1'            Skipped due to unsupported tags
+  (0.0000s, 0 failed solver, 0 failed AMPL(PY)/script, 9 skipped)
+17. Solving with AMPL: 'pl_sos2_eq_w pl_linearize=1'                            Skipped due to unsupported tags
+  (0.0000s, 0 failed solver, 0 failed AMPL(PY)/script, 10 skipped)
+18. Solving with AMPL: 'pl_defvars_01 pl_linearize=1'                             Ok.  (0.1849s, 0 failed solver, 0 failed AMPL(PY)/script, 10 skipped)
+19. Solving with AMPL: 'pl_defvars_01 pl_linearize=0'                           Skipped due to unsupported tags
+  (0.0000s, 0 failed solver, 0 failed AMPL(PY)/script, 11 skipped)
+20. Solving with AMPL: 'pl_defvars_02 pl_linearize=1'                             Ok.  (0.1585s, 0 failed solver, 0 failed AMPL(PY)/script, 11 skipped)
+21. Solving with AMPL: 'pl_defvars_02 pl_linearize=0'                           Skipped due to unsupported tags
+  (0.0000s, 0 failed solver, 0 failed AMPL(PY)/script, 12 skipped)
+22. Solving with AMPL: 'assign1 [if, alldiff]'                                  Skipped due to unsupported tags
+  (0.0000s, 0 failed solver, 0 failed AMPL(PY)/script, 13 skipped)
+23. Solving with AMPL: 'assign1 [if, alldiff] acc:_all=0'                       Skipped due to unsupported tags
+  (0.0000s, 0 failed solver, 0 failed AMPL(PY)/script, 14 skipped)
+24. Solving with AMPL: 'assign1 [if, alldiff] acc:_all=2'                       Skipped due to unsupported tags
+  (0.0000s, 0 failed solver, 0 failed AMPL(PY)/script, 15 skipped)
+25. Solving with AMPL: 'flowshp1 [or]'                                          Skipped due to unsupported tags
+  (0.0000s, 0 failed solver, 0 failed AMPL(PY)/script, 16 skipped)
+26. Solving with AMPL: 'flowshp1 [or]'                                          Skipped due to unsupported tags
+  (0.0000s, 0 failed solver, 0 failed AMPL(PY)/script, 17 skipped)
+27. Solving with AMPL: 'flowshp2 [or, ==>]'                                     Skipped due to unsupported tags
+  (0.0000s, 0 failed solver, 0 failed AMPL(PY)/script, 18 skipped)
+28. Solving with AMPL: 'balassign0 [linear]'                                    /Users/gb5/Documents/prj/AMPL/escrow__master_stable/cmake/acl/collect.c:1417:9: runtime error: applying non-zero offset 208 to null pointer
+SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior /Users/gb5/Documents/prj/AMPL/escrow__master_stable/cmake/acl/collect.c:1417:9 
+  Ok.  (0.1728s, 0 failed solver, 0 failed AMPL(PY)/script, 18 skipped)
+29. Solving with AMPL: 'balassign1 [numberof]'                                  Skipped due to unsupported tags
+  (0.0000s, 0 failed solver, 0 failed AMPL(PY)/script, 19 skipped)
+30. Solving with AMPL: 'sched0 [linear]'                                          Ok.  (0.1267s, 0 failed solver, 0 failed AMPL(PY)/script, 19 skipped)
+31. Solving with AMPL: 'sched1 [count, if]'                                     Skipped due to unsupported tags
+  (0.0000s, 0 failed solver, 0 failed AMPL(PY)/script, 20 skipped)
+32. Solving with AMPL: 'sched2 [numberof, if]'                                  Skipped due to unsupported tags
+  (0.0000s, 0 failed solver, 0 failed AMPL(PY)/script, 21 skipped)
+33. Solving with AMPL: 'x-multmip3 [count, if]'                                 Skipped due to unsupported tags
+  (0.0000s, 0 failed solver, 0 failed AMPL(PY)/script, 22 skipped)
+34. Solving with AMPL: 'x-multmip3 [count, if] cmpEps=0.01'                     Skipped due to unsupported tags
+  (0.0000s, 0 failed solver, 0 failed AMPL(PY)/script, 23 skipped)
+35. Solving with AMPL: 'x-multmip3__gt0 [count, if]'                            Skipped due to unsupported tags
+  (0.0000s, 0 failed solver, 0 failed AMPL(PY)/script, 24 skipped)
+36. Solving with AMPL: 'x-multmip1 [if, >]'                                     Skipped due to unsupported tags
+  (0.0000s, 0 failed solver, 0 failed AMPL(PY)/script, 25 skipped)
+37. Solving with AMPL: 'sudoku easy [alldiff, repeated vars in LinCon]'         Skipped due to unsupported tags
+  (0.0000s, 0 failed solver, 0 failed AMPL(PY)/script, 26 skipped)
+38. Solving with AMPL: 'unify_lin_expr_01 [alldiff, numberof, count]'           Skipped due to unsupported tags
+  (0.0000s, 0 failed solver, 0 failed AMPL(PY)/script, 27 skipped)
+39. Solving with AMPL: 'div01 nonconvex=2'                                                FAILED(knitro): objective: value 437.49252042820854, expected 437.5
+                                                                                  (0.1247s, 1 failed solver, 0 failed AMPL(PY)/script, 27 skipped)
+40. Solving with AMPL: 'div02 nonconvex=2'                                        Ok.  (0.1215s, 1 failed solver, 0 failed AMPL(PY)/script, 27 skipped)
+41. Solving with AMPL: 'econ2 compl_range'                                      /Users/gb5/Documents/prj/AMPL/escrow__master_stable/cmake/acl/massage.h:95:37: runtime error: signed integer overflow: 8429861626407280734 + 1484707839684987112 cannot be represented in type 'long'
+SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior /Users/gb5/Documents/prj/AMPL/escrow__master_stable/cmake/acl/massage.h:95:37 
+  Ok.  (0.1227s, 1 failed solver, 0 failed AMPL(PY)/script, 27 skipped)
+42. Solving with AMPL: 'compl_quad_01 compl with obj'                                     FAILED(knitro): value of entity 'y': value -1.0576927422212257e-10, expected -0.3738635434445156
+                                                                                  (0.1208s, 2 failed solver, 0 failed AMPL(PY)/script, 27 skipped)
+43. Solving with AMPL: 'compl_quad_02'                                            Ok.  (0.1206s, 2 failed solver, 0 failed AMPL(PY)/script, 27 skipped)
+44. Solving with AMPL: 'compl_quad_02 presolve 0'                                 Ok.  (0.1215s, 2 failed solver, 0 failed AMPL(PY)/script, 27 skipped)
+45. Solving with AMPL: 'defvar_01'                                                Ok.  (0.1208s, 2 failed solver, 0 failed AMPL(PY)/script, 27 skipped)
+46. Solving with AMPL: 'defvar_02'                                              WARNING: not solved (solve_result: failure)
+          FAILED(knitro): objective: value 2.7200000000000015, expected 2.864
+                                                                                  (0.1107s, 3 failed solver, 0 failed AMPL(PY)/script, 27 skipped)
+47. Solving as NL: 'viold_with_obj'                                                       FAILED(knitro): string  'Defined variable 1 not provided in the input'  is not found in the output
+                                                                                  (0.0881s, 4 failed solver, 0 failed AMPL(PY)/script, 27 skipped)
+48. Solving with AMPL: 'unbdd_01__solvers_pri_iss28'                            Skipped due to unsupported tags
+  (0.0000s, 4 failed solver, 0 failed AMPL(PY)/script, 28 skipped)
+49. Solving with AMPL: 'mipbound_01 bestbound=1return_mipgap=3'                 Skipped due to unsupported tags
+  (0.0000s, 4 failed solver, 0 failed AMPL(PY)/script, 29 skipped)
+50. Solving with AMPL: 'mipbound_01 bestbound=1 return_mipgap=3 objno=0'        Skipped due to unsupported tags
+  (0.0000s, 4 failed solver, 0 failed AMPL(PY)/script, 30 skipped)
+51. Solving with AMPL: 'mipbound_01 objno=0 writegraph'                         Skipped due to unsupported tags
+  (0.0000s, 4 failed solver, 0 failed AMPL(PY)/script, 31 skipped)
+52. Solving with AMPL: 'dietu_stt sensitivity=1'                                Skipped due to unsupported tags
+  (0.0000s, 4 failed solver, 0 failed AMPL(PY)/script, 32 skipped)
+53. Solving with AMPL: 'diet_max solnsens=1'                                    Skipped due to unsupported tags
+  (0.0000s, 4 failed solver, 0 failed AMPL(PY)/script, 33 skipped)
+54. Solving with AMPL: 'diet_nonrng_max solnsens=1'                             Skipped due to unsupported tags
+  (0.0000s, 4 failed solver, 0 failed AMPL(PY)/script, 34 skipped)
+55. Solving with AMPL: 'sos_01'                                                 Skipped due to unsupported tags
+  (0.0000s, 4 failed solver, 0 failed AMPL(PY)/script, 35 skipped)
+56. Solving with AMPL: 'sos_01 sos=0'                                           Skipped due to unsupported tags
+  (0.0000s, 4 failed solver, 0 failed AMPL(PY)/script, 36 skipped)
+57. Solving with AMPL: 'sos_01 presosenc'                                       Skipped due to unsupported tags
+  (0.0000s, 4 failed solver, 0 failed AMPL(PY)/script, 37 skipped)
+58. Solving with AMPL: 'sos_02_intref'                                          Skipped due to unsupported tags
+  (0.0000s, 4 failed solver, 0 failed AMPL(PY)/script, 38 skipped)
+59. Solving with AMPL: 'mip_lazy_01'                                            Skipped due to unsupported tags
+  (0.0000s, 4 failed solver, 0 failed AMPL(PY)/script, 39 skipped)
+60. Solving with AMPL: 'funcpieces_01_lcon funcpiecesuf=1'                      Skipped due to unsupported tags
+  (0.0000s, 4 failed solver, 0 failed AMPL(PY)/script, 40 skipped)
+61. Solving with AMPL: 'funcpieces_02 sin log max abs'                          Skipped due to unsupported tags
+  (0.0000s, 4 failed solver, 0 failed AMPL(PY)/script, 41 skipped)
+62. Solving with AMPL: 'funcpieces_01_01_obj acc:_expr=0'                       Skipped due to unsupported tags
+  (0.0000s, 4 failed solver, 0 failed AMPL(PY)/script, 42 skipped)
+63. Solving with AMPL: 'mip_round_01 mip:round=1'                               WARNING: not solved (solve_result: failure)
+  Ok.  (0.1127s, 4 failed solver, 0 failed AMPL(PY)/script, 42 skipped)
+64. Solving with AMPL: 'mip_round_01 mip:round=0'                               WARNING: not solved (solve_result: failure)
+  Ok.  (0.1099s, 4 failed solver, 0 failed AMPL(PY)/script, 42 skipped)
+65. Solving with AMPL: 'mip_round_01 mip:intfocus=1'                            Skipped due to unsupported tags
+  (0.0000s, 4 failed solver, 0 failed AMPL(PY)/script, 43 skipped)
+66. Solving with AMPL: 'mip_relax_01 alg:relax=1'                               Skipped due to unsupported tags
+  (0.0000s, 4 failed solver, 0 failed AMPL(PY)/script, 44 skipped)
+67. Solving with AMPL: 'warmstart_01 warmstart=2'                               Skipped due to unsupported tags
+  (0.0000s, 4 failed solver, 0 failed AMPL(PY)/script, 45 skipped)
+68. Solving with AMPL: 'mipstart_01'                                            Skipped due to unsupported tags
+  (0.0000s, 4 failed solver, 0 failed AMPL(PY)/script, 46 skipped)
+69. Solving with AMPL: 'dietobj default'                                          Ok.  (0.1190s, 4 failed solver, 0 failed AMPL(PY)/script, 46 skipped)
+70. Solving with AMPL: 'dietobj objno=1'                                          Ok.  (0.1212s, 4 failed solver, 0 failed AMPL(PY)/script, 46 skipped)
+71. Solving with AMPL: 'dietobj objno=4'                                                  FAILED(knitro): value of entity 'total_number': value 31.494382035699335, expected 30.92537313
+                                                                                  (0.1185s, 5 failed solver, 0 failed AMPL(PY)/script, 46 skipped)
+72. Solving with AMPL: 'dietobj multiobj=1'                                     Skipped due to unsupported tags
+  (0.0000s, 5 failed solver, 0 failed AMPL(PY)/script, 47 skipped)
+73. Solving with AMPL: 'dietobj_1000 multiobj=1'                                Skipped due to unsupported tags
+  (0.0000s, 5 failed solver, 0 failed AMPL(PY)/script, 48 skipped)
+74. Solving with AMPL: 'dietobj_1000 multiobj=1 obj_pr_1'                       Skipped due to unsupported tags
+  (0.0000s, 5 failed solver, 0 failed AMPL(PY)/script, 49 skipped)
+75. Solving with AMPL: 'dietobj_1000 multiobj=2 obj_pr_1'                       Skipped due to unsupported tags
+  (0.0000s, 5 failed solver, 0 failed AMPL(PY)/script, 50 skipped)
+76. Solving with AMPL: 'dietobj_1000 multiobj=1 obj_pr_2'                       Skipped due to unsupported tags
+  (0.0000s, 5 failed solver, 0 failed AMPL(PY)/script, 51 skipped)
+77. Solving with AMPL: 'dietQobj_1000 multiobj=2'                               Skipped due to unsupported tags
+  (0.0000s, 5 failed solver, 0 failed AMPL(PY)/script, 52 skipped)
+78. Solving with AMPL: 'dietQobj_1000 multiobj=2 obj_pr_2'                      Skipped due to unsupported tags
+  (0.0000s, 5 failed solver, 0 failed AMPL(PY)/script, 53 skipped)
+79. Solving with AMPL: 'dietQobj_1000_2 multiobj=2 obj_pr_3'                    Skipped due to unsupported tags
+  (0.0000s, 5 failed solver, 0 failed AMPL(PY)/script, 54 skipped)
+80. Solving with AMPL: 'dietobj multiobj=1 obj:2:priority=10'                   Skipped due to unsupported tags
+  (0.0000s, 5 failed solver, 0 failed AMPL(PY)/script, 55 skipped)
+81. Solving with AMPL: 'multiobj_abstol_MIP'                                    Skipped due to unsupported tags
+  (0.0000s, 5 failed solver, 0 failed AMPL(PY)/script, 56 skipped)
+82. Solving with AMPL: 'multiobj_reltol_MIP'                                    Skipped due to unsupported tags
+  (0.0000s, 5 failed solver, 0 failed AMPL(PY)/script, 57 skipped)
+83. Solving with AMPL: 'multiobj_reltol_MIP multiobj=2'                         Skipped due to unsupported tags
+  (0.0000s, 5 failed solver, 0 failed AMPL(PY)/script, 58 skipped)
+84. Solving with AMPL: 'multiobj_abstol_manual.run'                               Ok.  (0.3465s, 5 failed solver, 0 failed AMPL(PY)/script, 58 skipped)
+85. Solving with AMPL: 'obj_suf_01 multiobj=0'                                  Skipped due to unsupported tags
+  (0.0000s, 5 failed solver, 0 failed AMPL(PY)/script, 59 skipped)
+86. Solving with AMPL: 'obj_suf_01 multiobj=1'                                  Skipped due to unsupported tags
+  (0.0000s, 5 failed solver, 0 failed AMPL(PY)/script, 60 skipped)
+87. Solving with AMPL: 'obj_suf_01 multiobj=1 obj:multi:weight=1'               Skipped due to unsupported tags
+  (0.0000s, 5 failed solver, 0 failed AMPL(PY)/script, 61 skipped)
+88. Solving with AMPL: 'obj_suf_01__objpr_frac multiobj=1'                      Skipped due to unsupported tags
+  (0.0000s, 5 failed solver, 0 failed AMPL(PY)/script, 62 skipped)
+89. Solving with AMPL: 'obj_none_01'                                              Ok.  (0.1150s, 5 failed solver, 0 failed AMPL(PY)/script, 62 skipped)
+90. Solving with AMPL: 'obj_none_01 objno=0'                                      Ok.  (0.1148s, 5 failed solver, 0 failed AMPL(PY)/script, 62 skipped)
+91. Solving with AMPL: 'obj_none_01 multiobj=1'                                 Skipped due to unsupported tags
+  (0.0000s, 5 failed solver, 0 failed AMPL(PY)/script, 63 skipped)
+92. Solving with AMPL: 'obj_abs_01 multiobj=1'                                  Skipped due to unsupported tags
+  (0.0000s, 5 failed solver, 0 failed AMPL(PY)/script, 64 skipped)
+93. Solving with AMPL: 'obj_abs_01 obj:multi=2 writeprobindex'                  Skipped due to unsupported tags
+  (0.0000s, 5 failed solver, 0 failed AMPL(PY)/script, 65 skipped)
+94. Solving with AMPL: 'obj_abs_02 multiobj=1'                                  Skipped due to unsupported tags
+  (0.0000s, 5 failed solver, 0 failed AMPL(PY)/script, 66 skipped)
+95. Solving with AMPL: 'obj_abs_02 obj:no=2'                                    WARNING: not solved (solve_result: failure)
+          FAILED(knitro): objective: value 0.0, expected 4.333333333333333
+                                                                                  (0.1099s, 6 failed solver, 0 failed AMPL(PY)/script, 66 skipped)
+96. Solving with AMPL: 'obj_expr_01 obj:multi=2'                                Skipped due to unsupported tags
+  (0.0000s, 6 failed solver, 0 failed AMPL(PY)/script, 67 skipped)
+97. Solving with AMPL: 'max1'                                                   Skipped due to unsupported tags
+  (0.0000s, 6 failed solver, 0 failed AMPL(PY)/script, 68 skipped)
+98. Solving with AMPL: 'max2'                                                   Skipped due to unsupported tags
+  (0.0000s, 6 failed solver, 0 failed AMPL(PY)/script, 69 skipped)
+99. Solving with AMPL: 'maxMinAbsAffine'                                        Skipped due to unsupported tags
+  (0.0000s, 6 failed solver, 0 failed AMPL(PY)/script, 70 skipped)
+100. Solving with AMPL: 'and_or_max_01'                                         Skipped due to unsupported tags
+  (0.0000s, 6 failed solver, 0 failed AMPL(PY)/script, 71 skipped)
+101. Solving with AMPL: 'poly_01'                                                 Ok.  (0.1167s, 6 failed solver, 0 failed AMPL(PY)/script, 71 skipped)
+102. Solving with AMPL: 'and_or_max_poly_01'                                    Skipped due to unsupported tags
+  (0.0000s, 6 failed solver, 0 failed AMPL(PY)/script, 72 skipped)
+103. Solving with AMPL: 'mapcoloring'                                           Skipped due to unsupported tags
+  (0.0000s, 6 failed solver, 0 failed AMPL(PY)/script, 73 skipped)
+104. Solving with AMPL: 'eqVarConst01'                                          Skipped due to unsupported tags
+  (0.0000s, 6 failed solver, 0 failed AMPL(PY)/script, 74 skipped)
+105. Solving with AMPL: 'ifthen_var cmp:eps=1e-4'                               Skipped due to unsupported tags
+  (0.0000s, 6 failed solver, 0 failed AMPL(PY)/script, 75 skipped)
+106. Solving with AMPL: 'ifthen_var cmp:eps=0'                                  Skipped due to unsupported tags
+  (0.0000s, 6 failed solver, 0 failed AMPL(PY)/script, 76 skipped)
+107. Solving with AMPL: 'ifthen_var cmp:eps=0 chk:fail'                         Skipped due to unsupported tags
+  (0.0000s, 6 failed solver, 0 failed AMPL(PY)/script, 77 skipped)
+108. Solving with AMPL: 'ifthen_var_01 cmp:eps=1e-4'                            Skipped due to unsupported tags
+  (0.0000s, 6 failed solver, 0 failed AMPL(PY)/script, 78 skipped)
+109. Solving with AMPL: 'ifthen_var_01 cmp:eps=0'                               Skipped due to unsupported tags
+  (0.0000s, 6 failed solver, 0 failed AMPL(PY)/script, 79 skipped)
+110. Solving with AMPL: 'ifthen_var_01 cmp:eps=0 chk:fail'                      Skipped due to unsupported tags
+  (0.0000s, 6 failed solver, 0 failed AMPL(PY)/script, 80 skipped)
+111. Solving with AMPL: 'test_int_non_int'                                      Skipped due to unsupported tags
+  (0.0000s, 6 failed solver, 0 failed AMPL(PY)/script, 81 skipped)
+112. Solving with AMPL: 'impl1'                                                 Skipped due to unsupported tags
+  (0.0000s, 6 failed solver, 0 failed AMPL(PY)/script, 82 skipped)
+113. Solving with AMPL: 'impl2'                                                 Skipped due to unsupported tags
+  (0.0000s, 6 failed solver, 0 failed AMPL(PY)/script, 83 skipped)
+114. Solving with AMPL: 'impl3_var_EQ_var'                                      Skipped due to unsupported tags
+  (0.0000s, 6 failed solver, 0 failed AMPL(PY)/script, 84 skipped)
+115. Solving with AMPL: 'impl3_var_LE_var'                                      Skipped due to unsupported tags
+  (0.0000s, 6 failed solver, 0 failed AMPL(PY)/script, 85 skipped)
+116. Solving with AMPL: 'impl3_var_LE_var__extra'                               Skipped due to unsupported tags
+  (0.0000s, 6 failed solver, 0 failed AMPL(PY)/script, 86 skipped)
+117. Solving with AMPL: 'impl3_vev_lhs'                                         Skipped due to unsupported tags
+  (0.0000s, 6 failed solver, 0 failed AMPL(PY)/script, 87 skipped)
+118. Solving with AMPL: 'impl3_vnev_lhs'                                        Skipped due to unsupported tags
+  (0.0000s, 6 failed solver, 0 failed AMPL(PY)/script, 88 skipped)
+119. Solving with AMPL: 'impl4__reuseLEInSameCtx'                               Skipped due to unsupported tags
+  (0.0000s, 6 failed solver, 0 failed AMPL(PY)/script, 89 skipped)
+120. Solving with AMPL: 'impl5_commonExpr'                                      Skipped due to unsupported tags
+  (0.0000s, 6 failed solver, 0 failed AMPL(PY)/script, 90 skipped)
+121. Solving with AMPL: 'impl6_if'                                              Skipped due to unsupported tags
+  (0.0000s, 6 failed solver, 0 failed AMPL(PY)/script, 91 skipped)
+122. Solving with AMPL: 'impl_else_01'                                          Skipped due to unsupported tags
+  (0.0000s, 6 failed solver, 0 failed AMPL(PY)/script, 92 skipped)
+123. Solving with AMPL: 'impl_else_02'                                          Skipped due to unsupported tags
+  (0.0000s, 6 failed solver, 0 failed AMPL(PY)/script, 93 skipped)
+124. Solving with AMPL: 'int_ne_01'                                             Skipped due to unsupported tags
+  (0.0000s, 6 failed solver, 0 failed AMPL(PY)/script, 94 skipped)
+125. Solving with AMPL: 'int_ne_02__vnec'                                       Skipped due to unsupported tags
+  (0.0000s, 6 failed solver, 0 failed AMPL(PY)/script, 95 skipped)
+126. Solving with AMPL: 'int_ne_03__vnec__amplebnd'                             Skipped due to unsupported tags
+  (0.0000s, 6 failed solver, 0 failed AMPL(PY)/script, 96 skipped)
+127. Solving with AMPL: 'int_ne_04__2ne'                                        Skipped due to unsupported tags
+  (0.0000s, 6 failed solver, 0 failed AMPL(PY)/script, 97 skipped)
+128. Solving with AMPL: 'int_ne_05_ctx_redef'                                   Skipped due to unsupported tags
+  (0.0000s, 6 failed solver, 0 failed AMPL(PY)/script, 98 skipped)
+129. Solving with AMPL: 'float_ne_01__vnec cvt:mip:eps'                         Skipped due to unsupported tags
+  (0.0000s, 6 failed solver, 0 failed AMPL(PY)/script, 99 skipped)
+130. Solving with AMPL: 'float_ne_02__vne2c cvt:mip:eps'                        Skipped due to unsupported tags
+  (0.0000s, 6 failed solver, 0 failed AMPL(PY)/script, 100 skipped)
+131. Solving with AMPL: 'booleq_01'                                             Skipped due to unsupported tags
+  (0.0000s, 6 failed solver, 0 failed AMPL(PY)/script, 101 skipped)
+132. Solving with AMPL: 'booleq_02'                                             Skipped due to unsupported tags
+  (0.0000s, 6 failed solver, 0 failed AMPL(PY)/script, 102 skipped)
+133. Solving with AMPL: 'x-multmip3_small'                                      Skipped due to unsupported tags
+  (0.0000s, 6 failed solver, 0 failed AMPL(PY)/script, 103 skipped)
+134. Solving with AMPL: 'socp_01'                                                 Ok.  (0.1204s, 6 failed solver, 0 failed AMPL(PY)/script, 103 skipped)
+135. Solving with AMPL: 'socp_02_rqc'                                             Ok.  (0.1191s, 6 failed solver, 0 failed AMPL(PY)/script, 103 skipped)
+136. Solving with AMPL: 'socp_03_sqrt'                                            Ok.  (0.1190s, 6 failed solver, 0 failed AMPL(PY)/script, 103 skipped)
+137. Solving with AMPL: 'socp_04_2cones'                                          Ok.  (0.1191s, 6 failed solver, 0 failed AMPL(PY)/script, 103 skipped)
+138. Solving with AMPL: 'socp_05_rqcSqrt_abs'                                     Ok.  (0.1218s, 6 failed solver, 0 failed AMPL(PY)/script, 103 skipped)
+139. Solving with AMPL: 'TotalVariation2D'                                      WARNING: not solved (solve_result: solved?)
+          FAILED(knitro): objective: value 9.578094376484175, expected 9.569949819774543
+                                                                                  (4.1050s, 7 failed solver, 0 failed AMPL(PY)/script, 103 skipped)
+140. Solving with AMPL: 'TotalVariation2D_Quadr'                                WARNING: not solved (solve_result: limit)
+  Ok.  (22.6673s, 7 failed solver, 0 failed AMPL(PY)/script, 103 skipped)
+141. Solving with AMPL: 'socp_06_rsoc_constants'                                  Ok.  (0.1349s, 7 failed solver, 0 failed AMPL(PY)/script, 103 skipped)
+142. Solving with AMPL: 'socp_07_soc_constants'                                   Ok.  (0.1248s, 7 failed solver, 0 failed AMPL(PY)/script, 103 skipped)
+143. Solving with AMPL: 'socp_08_sqrt_constants'                                  Ok.  (0.1256s, 7 failed solver, 0 failed AMPL(PY)/script, 103 skipped)
+144. Solving with AMPL: 'socp_09_rsoc_hyperb_eoq'                                 Ok.  (0.1257s, 7 failed solver, 0 failed AMPL(PY)/script, 103 skipped)
+145. Solving with AMPL: 'socp_10_qpobj'                                           Ok.  (0.1188s, 7 failed solver, 0 failed AMPL(PY)/script, 103 skipped)
+146. Solving with AMPL: 'socp_11_qpobj__RSOC'                                     Ok.  (0.1179s, 7 failed solver, 0 failed AMPL(PY)/script, 103 skipped)
+147. Solving with AMPL: 'socp_12__issue229_2'                                     Ok.  (0.1207s, 7 failed solver, 0 failed AMPL(PY)/script, 103 skipped)
+148. Solving with AMPL: 'socp_13_abs_stdcone'                                   WARNING: not solved (solve_result: failure)
+          FAILED(knitro): value of entity 'solve_result_num': value 999, expected 0
+                                                                                  (0.1120s, 8 failed solver, 0 failed AMPL(PY)/script, 103 skipped)
+149. Solving with AMPL: 'expcones_01__plain'                                      Ok.  (0.1218s, 8 failed solver, 0 failed AMPL(PY)/script, 103 skipped)
+150. Solving with AMPL: 'expcones_02'                                             Ok.  (0.1232s, 8 failed solver, 0 failed AMPL(PY)/script, 103 skipped)
+151. Solving with AMPL: 'expcones_03'                                             Ok.  (0.1205s, 8 failed solver, 0 failed AMPL(PY)/script, 103 skipped)
+152. Solving with AMPL: 'expcones_04__negvar'                                     Ok.  (0.1196s, 8 failed solver, 0 failed AMPL(PY)/script, 103 skipped)
+153. Solving with AMPL: 'expcones_05__const'                                      Ok.  (0.1223s, 8 failed solver, 0 failed AMPL(PY)/script, 103 skipped)
+154. Solving with AMPL: 'expcones_06__kelly__affexp_lhs'                          Ok.  (0.1216s, 8 failed solver, 0 failed AMPL(PY)/script, 103 skipped)
+155. Solving with AMPL: 'Check_Standard_Options'                                  Ok.  (0.1194s, 8 failed solver, 0 failed AMPL(PY)/script, 103 skipped)
+156. Solving with AMPL: 'Check_Wrong_Option_Value'                                        FAILED(knitro): value of entity 'solve_result_num': value 0, expected 500
+                                                                                  (0.1201s, 9 failed solver, 0 failed AMPL(PY)/script, 103 skipped)
+157. Solving with AMPL: 'Check_Missing_Option_Value'                                      FAILED(knitro): value of entity 'solve_result_num': value 0, expected 500
+                                                                                  (0.1198s, 10 failed solver, 0 failed AMPL(PY)/script, 103 skipped)
+158. Solving with AMPL: 'Check_Huge_Option_Value'                               WARNING: not solved (solve_result: failure)
+          FAILED(knitro): value of entity 'solve_exitcode': value 256, expected 0
+                                                                                  (0.1125s, 11 failed solver, 0 failed AMPL(PY)/script, 103 skipped)
+159. Solving with AMPL: 'Check_Barrier_Flag'                                    Skipped due to unsupported tags
+  (0.0000s, 11 failed solver, 0 failed AMPL(PY)/script, 104 skipped)
+160. Solving with AMPL: 'Check sol:chk:fail'                                    Skipped due to unsupported tags
+  (0.0000s, 11 failed solver, 0 failed AMPL(PY)/script, 105 skipped)
+161. Solving with AMPL: 'ellipse_min'                                             Ok.  (0.1219s, 11 failed solver, 0 failed AMPL(PY)/script, 105 skipped)
+162. Solving with AMPL: 'ellipse_max'                                             Ok.  (0.1206s, 11 failed solver, 0 failed AMPL(PY)/script, 105 skipped)
+163. Solving with AMPL: 'ellipse_max_02'                                          Ok.  (0.1233s, 11 failed solver, 0 failed AMPL(PY)/script, 105 skipped)
+164. Solving with AMPL: 'ellipse_min qcpdual=1'                                 Skipped due to unsupported tags
+  (0.0000s, 11 failed solver, 0 failed AMPL(PY)/script, 106 skipped)
+165. Solving with AMPL: 'ellipse_min_rot qcpdual=1'                             Skipped due to unsupported tags
+  (0.0000s, 11 failed solver, 0 failed AMPL(PY)/script, 107 skipped)
+166. Solving with AMPL: 'ellipse_max qcpdual=1'                                 Skipped due to unsupported tags
+  (0.0000s, 11 failed solver, 0 failed AMPL(PY)/script, 108 skipped)
+167. Solving with AMPL: 'ellipse_max_02 qcpdual=1'                              Skipped due to unsupported tags
+  (0.0000s, 11 failed solver, 0 failed AMPL(PY)/script, 109 skipped)
+168. Solving with AMPL: 'ellipse_nonconvex testMIPstart'                        Skipped due to unsupported tags
+  (0.0000s, 11 failed solver, 0 failed AMPL(PY)/script, 110 skipped)
+169. Solving with AMPL: 'ellipse_nonconvex_abs testMIPstart'                    Skipped due to unsupported tags
+  (0.0000s, 11 failed solver, 0 failed AMPL(PY)/script, 111 skipped)
+170. Solving with AMPL: 'quadratic_obj'                                           Ok.  (0.1282s, 11 failed solver, 0 failed AMPL(PY)/script, 111 skipped)
+171. Solving with AMPL: 'quad_obj_repeated'                                     /Users/gb5/Documents/prj/AMPL/escrow__master_stable/cmake/acl/collect.c:1532:8: runtime error: applying non-zero offset 8 to null pointer
+SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior /Users/gb5/Documents/prj/AMPL/escrow__master_stable/cmake/acl/collect.c:1532:8 
+  Ok.  (0.1173s, 11 failed solver, 0 failed AMPL(PY)/script, 111 skipped)
+172. Solving with AMPL: 'quad_obj_repeated cvt:quadobj=0'                       WARNING: not solved (solve_result: failure)
+          FAILED(knitro): objective: value 4.0, expected 0
+                                                                                  (0.1122s, 12 failed solver, 0 failed AMPL(PY)/script, 111 skipped)
+173. Solving with AMPL: 'prod_bin_var_01'                                       Skipped due to unsupported tags
+  (0.0000s, 12 failed solver, 0 failed AMPL(PY)/script, 112 skipped)
+174. Solving with AMPL: 'prod_bin_var_02_obj cvt:prod=0'                          Ok.  (0.1274s, 12 failed solver, 0 failed AMPL(PY)/script, 112 skipped)
+175. Solving with AMPL: 'prod_bin_var_02_obj'                                     Ok.  (0.1251s, 12 failed solver, 0 failed AMPL(PY)/script, 112 skipped)
+176. Solving with AMPL: 'prod_01_obj'                                             Ok.  (0.1207s, 12 failed solver, 0 failed AMPL(PY)/script, 112 skipped)
+177. Solving with AMPL: 'prod_bin_03'                                             Ok.  (0.1283s, 12 failed solver, 0 failed AMPL(PY)/script, 112 skipped)
+178. Solving with AMPL: 'prod_bin_03 cvt:prod=0'                                  Ok.  (0.1240s, 12 failed solver, 0 failed AMPL(PY)/script, 112 skipped)
+179. Solving with AMPL: 'prod_bin_04'                                             Ok.  (0.1241s, 12 failed solver, 0 failed AMPL(PY)/script, 112 skipped)
+180. Solving with AMPL: 'prod_bin_04 cvt:prod=0'                                  Ok.  (0.1256s, 12 failed solver, 0 failed AMPL(PY)/script, 112 skipped)
+181. Solving with AMPL: 'prod_bin_06'                                             Ok.  (0.1259s, 12 failed solver, 0 failed AMPL(PY)/script, 112 skipped)
+182. Solving with AMPL: 'unify_quad_expr_01'                                              FAILED(knitro): error retrieving 'Initial.flat0__quadfunccon'
+                                                                                  (0.1257s, 13 failed solver, 0 failed AMPL(PY)/script, 112 skipped)
+183. Solving with AMPL: 'multi_sol_01'                                            Ok.  (0.1234s, 13 failed solver, 0 failed AMPL(PY)/script, 112 skipped)
+184. Solving with AMPL: 'multi_sol_01 countsolutions=1, check .nsol'            Skipped due to unsupported tags
+  (0.0000s, 13 failed solver, 0 failed AMPL(PY)/script, 113 skipped)
+185. Solving with AMPL: 'multi_sol_01 poolgap=0.1 solutionstub=stub'            Skipped due to unsupported tags
+  (0.0000s, 13 failed solver, 0 failed AMPL(PY)/script, 114 skipped)
+186. Solving with AMPL: 'multi_sol_01 poolgapabs=0.1 solutionstub=stub poolmode=2'Skipped due to unsupported tags
+  (0.0000s, 13 failed solver, 0 failed AMPL(PY)/script, 115 skipped)
+187. Solving with AMPL: 'multi_sol_01 poollimit=2 solutionstub=stub'            Skipped due to unsupported tags
+  (0.0000s, 13 failed solver, 0 failed AMPL(PY)/script, 116 skipped)
+188. Solving with AMPL: 'multi_sol_01 sol:count=1, check .npool'                Skipped due to unsupported tags
+  (0.0000s, 13 failed solver, 0 failed AMPL(PY)/script, 117 skipped)
+189. Solving with AMPL: 'multi_sol_01 poolgap=0.1 ams_stub=stub'                Skipped due to unsupported tags
+  (0.0000s, 13 failed solver, 0 failed AMPL(PY)/script, 118 skipped)
+190. Solving with AMPL: 'dietu_stt sstatus CPLEX netopt'                        Skipped due to unsupported tags
+  (0.0000s, 13 failed solver, 0 failed AMPL(PY)/script, 119 skipped)
+191. Solving with AMPL: 'wine_2solve'                                           Skipped due to unsupported tags
+  (0.0000s, 13 failed solver, 0 failed AMPL(PY)/script, 120 skipped)
+192. Solving with AMPL: 'dietu_stt test sstatus IN'                             Skipped due to unsupported tags
+  (0.0000s, 13 failed solver, 0 failed AMPL(PY)/script, 121 skipped)
+193. Solving with AMPL: 'diet writeprob='diet.lp' (quoted)'                     Skipped due to unsupported tags
+  (0.0000s, 13 failed solver, 0 failed AMPL(PY)/script, 122 skipped)
+194. Solving with AMPL: 'diet writesol=diet.sol'                                Skipped due to unsupported tags
+  (0.0000s, 13 failed solver, 0 failed AMPL(PY)/script, 123 skipped)
+195. Solving with AMPL: 'diet writeprob=diet.sol'                               Skipped due to unsupported tags
+  (0.0000s, 13 failed solver, 0 failed AMPL(PY)/script, 124 skipped)
+196. Solving with AMPL: 'diet duals; var/con sstatus'                           Skipped due to unsupported tags
+  (0.0000s, 13 failed solver, 0 failed AMPL(PY)/script, 125 skipped)
+197. Solving with AMPL: 'diet ini guesses'                                      Skipped due to unsupported tags
+  (0.0000s, 13 failed solver, 0 failed AMPL(PY)/script, 126 skipped)
+198. Solving with AMPL: 'diet_statuses preset incomplete'                       Skipped due to unsupported tags
+  (0.0000s, 13 failed solver, 0 failed AMPL(PY)/script, 127 skipped)
+199. Solving with AMPL: 'dietu_mip mip:basis=1'                                 Skipped due to unsupported tags
+  (0.0000s, 13 failed solver, 0 failed AMPL(PY)/script, 128 skipped)
+200. Solving with AMPL: 'dietu_mip mip:basis=0 (default for x-gurobi)'          Skipped due to unsupported tags
+  (0.0000s, 13 failed solver, 0 failed AMPL(PY)/script, 129 skipped)
+201. Solving with AMPL: 'mipb_int mip:basis=1'                                  Skipped due to unsupported tags
+  (0.0000s, 13 failed solver, 0 failed AMPL(PY)/script, 130 skipped)
+202. Solving with AMPL: 'power5 nonconvex=2'                                      Ok.  (0.1247s, 13 failed solver, 0 failed AMPL(PY)/script, 130 skipped)
+203. Solving with AMPL: 'camel1'                                                  Ok.  (0.1216s, 13 failed solver, 0 failed AMPL(PY)/script, 130 skipped)
+204. Solving with AMPL: 'airtrainee_infeas multiobj=1'                          Skipped due to unsupported tags
+  (0.0000s, 13 failed solver, 0 failed AMPL(PY)/script, 131 skipped)
+205. Solving with AMPL: 'infeas_int_01 iisfind=1'                               Skipped due to unsupported tags
+  (0.0000s, 13 failed solver, 0 failed AMPL(PY)/script, 132 skipped)
+206. Solving with AMPL: 'infeas_int_02_vars iisfind=1 presolve 0'               Skipped due to unsupported tags
+  (0.0000s, 13 failed solver, 0 failed AMPL(PY)/script, 133 skipped)
+207. Solving with AMPL: 'infeas_03__iisforce iisfind iisforce presolve 0'       Skipped due to unsupported tags
+  (0.0000s, 13 failed solver, 0 failed AMPL(PY)/script, 134 skipped)
+208. Solving with AMPL: 'infeas_int_02_vars feasrelax=4 ubpen=300'              Skipped due to unsupported tags
+  (0.0000s, 13 failed solver, 0 failed AMPL(PY)/script, 135 skipped)
+209. Solving with AMPL: 'infeas_int_01 feasrelax=5'                             Skipped due to unsupported tags
+  (0.0000s, 13 failed solver, 0 failed AMPL(PY)/script, 136 skipped)
+210. Solving with AMPL: 'infeas_int_01 feasrelax=6'                             Skipped due to unsupported tags
+  (0.0000s, 13 failed solver, 0 failed AMPL(PY)/script, 137 skipped)
+211. Solving with AMPL: 'infeas_int_01_negsuffix feasrelax=1'                   Skipped due to unsupported tags
+  (0.0000s, 13 failed solver, 0 failed AMPL(PY)/script, 138 skipped)
+212. Solving with AMPL: 'infeas_int_01 feasrelax=1'                             Skipped due to unsupported tags
+  (0.0000s, 13 failed solver, 0 failed AMPL(PY)/script, 139 skipped)
+213. Solving with AMPL: 'infeas_lcon_04'                                        Skipped due to unsupported tags
+  (0.0000s, 13 failed solver, 0 failed AMPL(PY)/script, 140 skipped)
+214. Solving with AMPL: 'infeas_lcon_05 .funcpieces IN'                         Skipped due to unsupported tags
+  (0.0000s, 13 failed solver, 0 failed AMPL(PY)/script, 141 skipped)
+215. Solving with AMPL: 'infeas_lcon_05 .iis OUT'                               Skipped due to unsupported tags
+  (0.0000s, 13 failed solver, 0 failed AMPL(PY)/script, 142 skipped)
+216. Solving with AMPL: 'infeas_lcon_06 .funcpieces IN'                         Skipped due to unsupported tags
+  (0.0000s, 13 failed solver, 0 failed AMPL(PY)/script, 143 skipped)
+217. Solving with AMPL: 'infeas_lcon_07 .funcpieces IN'                         Skipped due to unsupported tags
+  (0.0000s, 13 failed solver, 0 failed AMPL(PY)/script, 144 skipped)
+218. Solving with AMPL: 'div_by_const'                                          WARNING: not solved (solve_result: solved?)
+  Ok.  (0.1286s, 13 failed solver, 0 failed AMPL(PY)/script, 144 skipped)
+219. Solving with AMPL: 'expA_1'                                                  Ok.  (0.1211s, 13 failed solver, 0 failed AMPL(PY)/script, 144 skipped)
+220. Solving with AMPL: 'expA_1 check_pl_approx_expA'                           Skipped due to unsupported tags
+  (0.0000s, 13 failed solver, 0 failed AMPL(PY)/script, 145 skipped)
+221. Solving with AMPL: 'expA_2'                                                  Ok.  (0.1222s, 13 failed solver, 0 failed AMPL(PY)/script, 145 skipped)
+222. Solving with AMPL: 'logA_1'                                                  Ok.  (0.1199s, 13 failed solver, 0 failed AMPL(PY)/script, 145 skipped)
+223. Solving with AMPL: 'log_1'                                                   Ok.  (0.1217s, 13 failed solver, 0 failed AMPL(PY)/script, 145 skipped)
+224. Solving with AMPL: 'log_1_ccv PLconcave'                                   WARNING: not solved (solve_result: failure)
+          FAILED(knitro): error retrieving 'Initial.flat1_var_aux_int'
+                                                                                  (0.1109s, 14 failed solver, 0 failed AMPL(PY)/script, 145 skipped)
+225. Solving with AMPL: 'exp_01_check_obj reltol=1e-5'                          WARNING: not solved (solve_result: failure)
+          FAILED(knitro): objective: value 0.0, expected 1.6931555
+                                                                                  (0.1096s, 15 failed solver, 0 failed AMPL(PY)/script, 145 skipped)
+226. Solving with AMPL: 'exp_01_check_obj reltol=1e-5 PLconvex'                 WARNING: not solved (solve_result: failure)
+          FAILED(knitro): error retrieving 'Initial.flat1_var_aux_int'
+                                                                                  (0.1101s, 16 failed solver, 0 failed AMPL(PY)/script, 145 skipped)
+227. Solving with AMPL: 'exp_01_obj_direct reltol=1e-5 PLconvex'                WARNING: not solved (solve_result: failure)
+          FAILED(knitro): error retrieving 'Initial.flat1_var_aux_int'
+                                                                                  (0.1093s, 17 failed solver, 0 failed AMPL(PY)/script, 145 skipped)
+228. Solving with AMPL: 'exp_01_check_obj check_pl_approx_exp reltol=1e-5'      Skipped due to unsupported tags
+  (0.0000s, 17 failed solver, 0 failed AMPL(PY)/script, 146 skipped)
+229. Solving with AMPL: 'exp_02_check_2con'                                       Ok.  (0.1202s, 17 failed solver, 0 failed AMPL(PY)/script, 146 skipped)
+230. Solving with AMPL: 'exp_02_check_2con check_pl_approx_exp'                 Skipped due to unsupported tags
+  (0.0000s, 17 failed solver, 0 failed AMPL(PY)/script, 147 skipped)
+231. Solving with AMPL: 'exp_02_check_2con check: approx, pl, sos2'             Skipped due to unsupported tags
+  (0.0000s, 17 failed solver, 0 failed AMPL(PY)/script, 148 skipped)
+232. Solving with AMPL: 'log_01_check_obj'                                        Ok.  (0.1282s, 17 failed solver, 0 failed AMPL(PY)/script, 148 skipped)
+233. Solving with AMPL: 'log_01_check_obj check_pl_approx_log'                  Skipped due to unsupported tags
+  (0.0000s, 17 failed solver, 0 failed AMPL(PY)/script, 149 skipped)
+234. Solving with AMPL: 'log_02_check_2con_noncvx'                                Ok.  (0.1782s, 17 failed solver, 0 failed AMPL(PY)/script, 149 skipped)
+235. Solving with AMPL: 'log_02_check_2con_noncvx check_pl_approx_log'          Skipped due to unsupported tags
+  (0.0000s, 17 failed solver, 0 failed AMPL(PY)/script, 150 skipped)
+236. Solving with AMPL: 'log_02_check_2con_noncvx check: approx, pl, sos2'      Skipped due to unsupported tags
+  (0.0000s, 17 failed solver, 0 failed AMPL(PY)/script, 151 skipped)
+237. Solving with AMPL: 'sin_01'                                                          FAILED(knitro): value of entity 'if abs(_obj[1]+3.141592653589793)<=0.01 then 1 else 0': value 0, expected 1
+                                                                                  (0.1219s, 18 failed solver, 0 failed AMPL(PY)/script, 151 skipped)
+238. Solving with AMPL: 'sin_01 check_pl_approx_sin'                            Skipped due to unsupported tags
+  (0.0000s, 18 failed solver, 0 failed AMPL(PY)/script, 152 skipped)
+239. Solving with AMPL: 'sin_02'                                                          FAILED(knitro): value of entity 'if abs(_obj[1]+5.71238898038469)<=0.01 then 1 else 0': value 0, expected 1
+                                                                                  (0.1231s, 19 failed solver, 0 failed AMPL(PY)/script, 152 skipped)
+240. Solving with AMPL: 'sin_02 check_pl_approx_sin'                            Skipped due to unsupported tags
+  (0.0000s, 19 failed solver, 0 failed AMPL(PY)/script, 153 skipped)
+241. Solving with AMPL: 'cos_01'                                                          FAILED(knitro): value of entity 'if abs(_obj[1]+191.6104822)<=1 then 1 else 0': value 0, expected 1
+                                                                                  (0.1219s, 20 failed solver, 0 failed AMPL(PY)/script, 153 skipped)
+242. Solving with AMPL: 'cos_01 check_pl_approx_cos'                            Skipped due to unsupported tags
+  (0.0000s, 20 failed solver, 0 failed AMPL(PY)/script, 154 skipped)
+243. Solving with AMPL: 'tan_01'                                                  Ok.  (0.1366s, 20 failed solver, 0 failed AMPL(PY)/script, 154 skipped)
+244. Solving with AMPL: 'sin_01 Gurobi: global'                                           FAILED(knitro): value of entity 'if abs(_obj[1]+3.141592653589793)<=0.01 then 1 else 0': value 0, expected 1
+                                                                                  (0.1200s, 21 failed solver, 0 failed AMPL(PY)/script, 154 skipped)
+245. Solving with AMPL: 'tan_01 Gurobi: funcnonlinear'                            Ok.  (0.1357s, 21 failed solver, 0 failed AMPL(PY)/script, 154 skipped)
+246. Solving with AMPL: 'tan_01 check_pl_approx_tan'                            Skipped due to unsupported tags
+  (0.0000s, 21 failed solver, 0 failed AMPL(PY)/script, 155 skipped)
+247. Solving with AMPL: 'pow_01_pow4_lbx_neg'                                     Ok.  (0.1275s, 21 failed solver, 0 failed AMPL(PY)/script, 155 skipped)
+248. Solving with AMPL: 'pow_01a_pow4_x_neg PLApprox'                           Skipped due to unsupported tags
+  (0.0000s, 21 failed solver, 0 failed AMPL(PY)/script, 156 skipped)
+249. Solving with AMPL: 'pow_01a_pow4_x_neg QPApprox'                           Skipped due to unsupported tags
+  (0.0000s, 21 failed solver, 0 failed AMPL(PY)/script, 157 skipped)
+250. Solving with AMPL: 'pow_01a_pow4_x_neg'                                      Ok.  (0.1215s, 21 failed solver, 0 failed AMPL(PY)/script, 157 skipped)
+251. Solving with AMPL: 'pow_02_pow4_lbx_neg'                                     Ok.  (0.1223s, 21 failed solver, 0 failed AMPL(PY)/script, 157 skipped)
+252. Solving with AMPL: 'pow_03_pow5_lbx_neg'                                     Ok.  (0.1212s, 21 failed solver, 0 failed AMPL(PY)/script, 157 skipped)
+253. Solving with AMPL: 'pow_04_pow1.35'                                          Ok.  (0.1218s, 21 failed solver, 0 failed AMPL(PY)/script, 157 skipped)
+254. Solving with AMPL: 'pow_05_pow_minus0.35'                                    Ok.  (0.1210s, 21 failed solver, 0 failed AMPL(PY)/script, 157 skipped)
+255. Solving with AMPL: 'pow_06_pow_minus0.3'                                     Ok.  (0.1189s, 21 failed solver, 0 failed AMPL(PY)/script, 157 skipped)
+256. Solving with AMPL: 'pow_07_varvar'                                           Ok.  (0.1215s, 21 failed solver, 0 failed AMPL(PY)/script, 157 skipped)
+257. Solving with AMPL: 'asin_01'                                                 Ok.  (0.1201s, 21 failed solver, 0 failed AMPL(PY)/script, 157 skipped)
+258. Solving with AMPL: 'acos_01'                                                 Ok.  (0.1194s, 21 failed solver, 0 failed AMPL(PY)/script, 157 skipped)
+259. Solving with AMPL: 'atan_01'                                                 Ok.  (0.1219s, 21 failed solver, 0 failed AMPL(PY)/script, 157 skipped)
+260. Solving with AMPL: 'sinh_01'                                                 Ok.  (0.1213s, 21 failed solver, 0 failed AMPL(PY)/script, 157 skipped)
+261. Solving with AMPL: 'sinh_01_integer'                                         Ok.  (0.1406s, 21 failed solver, 0 failed AMPL(PY)/script, 157 skipped)
+262. Solving with AMPL: 'cosh_01'                                                 Ok.  (0.1225s, 21 failed solver, 0 failed AMPL(PY)/script, 157 skipped)
+263. Solving with AMPL: 'tanh_01'                                                 Ok.  (0.1213s, 21 failed solver, 0 failed AMPL(PY)/script, 157 skipped)
+264. Solving with AMPL: 'asinh_01'                                                Ok.  (0.1233s, 21 failed solver, 0 failed AMPL(PY)/script, 157 skipped)
+265. Solving with AMPL: 'acosh_01'                                                Ok.  (0.1229s, 21 failed solver, 0 failed AMPL(PY)/script, 157 skipped)
+266. Solving with AMPL: 'atanh_01'                                                Ok.  (0.1219s, 21 failed solver, 0 failed AMPL(PY)/script, 157 skipped)
+267. Solving with AMPL: 'tanh_02'                                                 Ok.  (0.1246s, 21 failed solver, 0 failed AMPL(PY)/script, 157 skipped)
+268. Solving with AMPL: 'hs54_inspired'                                                   FAILED(knitro): value of entity 'if abs(_obj[1] + 0.59) < 0.1 then 1': value 0, expected 1
+                                                                                  (0.1228s, 22 failed solver, 0 failed AMPL(PY)/script, 157 skipped)
+269. Solving with AMPL: 'hs54_inspired_2'                                                 FAILED(knitro): value of entity 'if abs(_obj[1] + 0.5469485038) < 0.1 then 1': value 0, expected 1
+                                                                                  (0.1231s, 23 failed solver, 0 failed AMPL(PY)/script, 157 skipped)
+270. Solving with AMPL: 'hs54_inspired_2 cvt:qp2pass=0'                                   FAILED(knitro): value of entity 'if abs(_obj[1] + 0.5469485038) < 0.1 then 1': value 0, expected 1
+                                                                                  (0.1222s, 24 failed solver, 0 failed AMPL(PY)/script, 157 skipped)
+271. Solving with AMPL: 'hs54_inspired_2 cvt:qp2pass=1 cvt:multoutcard=0'                 FAILED(knitro): objective: value -1.6681396813215494e-06, expected -0.5469485038
+                                                                                  (0.1223s, 25 failed solver, 0 failed AMPL(PY)/script, 157 skipped)
+272. Solving with AMPL: 'hs54_inspired_2 cvt:qp2pass=0 cvt:multoutcard=0'                 FAILED(knitro): objective: value -1.6681396813215494e-06, expected -0.5469485038
+                                                                                  (0.1220s, 26 failed solver, 0 failed AMPL(PY)/script, 157 skipped)
+273. Solving with AMPL: 'hs54_inspired_3_qp'                                      Ok.  (0.1266s, 26 failed solver, 0 failed AMPL(PY)/script, 157 skipped)
+274. Solving with AMPL: 'hs54_inspired_4_qp qp2pass=1'                            Ok.  (0.1280s, 26 failed solver, 0 failed AMPL(PY)/script, 157 skipped)
+275. Solving with AMPL: 'hs54_inspired_4_qp qp2pass=0'                            Ok.  (0.1210s, 26 failed solver, 0 failed AMPL(PY)/script, 157 skipped)

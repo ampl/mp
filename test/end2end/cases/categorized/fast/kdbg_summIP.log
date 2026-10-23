@@ -1,0 +1,7 @@
+Knitro 15.0.1 (Barrier Algorithm)
+Summary information
+
+  Iter    Res    Objective   PrimFeas  DualFeas    Comp     minComp   maxComp   aveComp  maxLmbda  minLmb_g  minSlack/ maxSlack    maxJ      maxH       mu
+--------  --- ------------- --------- --------- --------- --------- --------- --------- --------- --------- ---------/---------  --------  --------  --------
+       0  ---   1.07096e+02  0.00e+00  														     1.00e-01 
+Knitro barrier algorithm shifted slacks.

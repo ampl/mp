@@ -211,7 +211,7 @@
   },
   {
     "name" : "multiobj_abstol_MIP multiobj=1 multiobjstats=1",
-    "tags" : ["linear", "integer", "multiobj"],
+    "tags" : ["linear", "integer", "multiobj", "continuous"],
     "solvers_exclude": ["xpress", "copt"],
     "options": {
       "ANYSOLVER_options": "multiobj=1 obj:multi:stats=1",
@@ -233,7 +233,7 @@
   },
   {
     "name" : "multiobj_abstol_MIP multiobj=2 multiobjstats=1",
-    "tags" : ["linear", "integer", "multiobj"],
+    "tags" : ["linear", "integer", "multiobj", "continuous"],
     "options": {
       "ANYSOLVER_options": "multiobj=2 obj:multi:stats=1",
       "gurobi_options": "multiobj=2 mip:gap=0 obj:multi:stats=1",
@@ -255,7 +255,7 @@
   {
     "name" : "multiobj_abstol_MIP multiobj=1 return_mipgap=3 bestbound=1",
     "Comment": "MIP gap and bound suffixes with several objectives. Native gap values depend on the solver",
-    "tags" : ["linear", "integer", "multiobj"],
+    "tags" : ["linear", "integer", "multiobj", "continuous"],
     "options": {
       "ANYSOLVER_options": "multiobj=1 return_mipgap=3 bestbound=1",
       "gurobi_options": "multiobj=1 mip:gap=0 return_mipgap=3 bestbound=1",
@@ -286,7 +286,7 @@
   {
     "name" : "multiobj_abstol_MIP multiobj=2 return_mipgap=3 bestbound=1",
     "Comment": "MIP gap and bound suffixes with several objectives",
-    "tags" : ["linear", "integer", "multiobj"],
+    "tags" : ["linear", "integer", "multiobj", "continuous"],
     "options": {
       "ANYSOLVER_options": "multiobj=2 return_mipgap=3 bestbound=1",
       "gurobi_options": "multiobj=2 mip:gap=0 return_mipgap=3 bestbound=1",
@@ -359,7 +359,7 @@
   },
   {
     "name" : "multiobj_reltol_MIP",
-    "tags" : ["linear", "integer", "multiobj"],
+    "tags" : ["linear", "integer", "multiobj", "continuous"],
     "options": {
       "ANYSOLVER_options": "multiobj=1",
       "gurobi_options": "multiobj=1 mip:gap=0",
@@ -372,7 +372,7 @@
   },
   {
     "name" : "multiobj_reltol_MIP multiobj=2",
-    "tags" : ["linear", "integer", "multiobj"],
+    "tags" : ["linear", "integer", "multiobj", "continuous"],
     "options": {
       "mp_options": "multiobj=2",
       "gurobi_options": "multiobj=1 mip:gap=0",
@@ -385,7 +385,7 @@
   },
   {
     "name" : "multiobj_abstol_manual.run",
-    "tags" : ["linear"],
+    "tags" : ["linear", "continuous"],
     "files": ["multiobj_abstol_manual.run"],
     "objective": 3.5
   },
@@ -455,7 +455,7 @@
   },
   {
     "name" : "obj_abs_01 multiobj=1",
-    "tags" : ["linear", "integer", "multiobj"],
+    "tags" : ["linear", "integer", "multiobj", "continuous"],
     "options": {
       "ANYSOLVER_options": "multiobj=1"
     },
@@ -466,7 +466,7 @@
   },
   {
     "name" : "obj_abs_01 obj:multi=2 writeprobindex",
-    "tags" : ["linear", "integer", "multiobj"],
+    "tags" : ["linear", "integer", "multiobj", "continuous"],
     "options": {
       "mp_options": "multiobj=2 writeprob=obj_abs_01.lp writeprobindex=2",
       "mp2nl_options": "multiobj=2",
@@ -481,7 +481,7 @@
   },
   {
     "name" : "obj_abs_02 multiobj=1",
-    "tags" : ["linear", "integer", "multiobj"],
+    "tags" : ["linear", "integer", "multiobj", "continuous"],
     "options": {
       "ANYSOLVER_options": "multiobj=1"
     },
@@ -492,7 +492,7 @@
   },
   {
     "name" : "obj_abs_02 objno=2",
-    "tags" : ["linear", "integer"],
+    "tags" : ["linear", "integer", "continuous"],
     "options": {
       "ANYSOLVER_options": "objno=2"
     },
@@ -500,7 +500,7 @@
   },
   {
     "name" : "obj_expr_01 obj:multi=2",
-    "tags" : ["linear", "integer", "multiobj"],
+    "tags" : ["linear", "integer", "multiobj", "continuous"],
     "options": {
       "mp_options": "obj:multi=2 cvt:bigm=1e6"
     },

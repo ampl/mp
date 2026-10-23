@@ -1,4 +1,5 @@
 import enum
+import re
 from pathlib import Path
 from collections.abc import Iterable
 
@@ -99,6 +100,8 @@ class ModelTags(enum.Enum):
     gurobi_wls   = 100002
 
     mp2nl = 101000
+    mpdriver = 101100            # needs an MP driver (MP options, MP error handling);
+                                 # ASL drivers run such cases through MP2NL
 
     @staticmethod
     def fromString(l):
@@ -213,6 +216,21 @@ class Model(object):
             if tag not in tags:
                 return False
         return True
+
+    def needsMPDriver(self, optionsName: str):
+        """Whether the case needs an MP driver: tag mpdriver, mp_options,
+        or MP (namespaced) options such as cvt:bigm in the solver's
+        '<optionsName>_options', else in ANYSOLVER_options"""
+        if self.hasTag(ModelTags.mpdriver):
+            return True
+        if not self.hasOptions():
+            return False
+        opts = self.getOptions()
+        if "mp_options" in opts:
+            return True
+        val = opts.get(f"{optionsName}_options",
+                       opts.get("ANYSOLVER_options", ""))
+        return re.search(r"(^|\s)[A-Za-z_]\w*:\w", val) is not None
 
     def isScript(self):
         return self.hasTag(ModelTags.script)

@@ -1,0 +1,6 @@
+Knitro 14.0.0 (Active-Set Algorithm)
+Active Set information
+
+  Iter     #work    #eq    #ineq   #bnds    #TR  #ch(wk) #ch(TR)    #deg   #degEq  #degIn  #degBd  bnd=TR
+--------  ------  ------  ------  ------  ------ ------- ------- | ------  ------  ------  ------  ------
+       1       1       0       1       0       0       0       0 |      0       0       0       0       0

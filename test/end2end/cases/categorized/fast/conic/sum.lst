@@ -1,0 +1,96 @@
+===========================================================================
+ BARON version 24.10.10. Built: OSX-64 Thu Oct 10 23:06:25 EDT 2024
+ Running on machine 192-168-1-104.tpgi.com.au
+
+ BARON is a product of The Optimization Firm.
+ For information on BARON, see https://minlp.com/about-baron
+
+ If you publish work using this software, please cite publications from
+ https://minlp.com/baron-publications, such as: 
+
+ Khajavirad, A. and N. V. Sahinidis,
+ A hybrid LP/NLP paradigm for global optimization relaxations,
+ Mathematical Programming Computation, 10, 383-421, 2018.
+===========================================================================
+ This BARON run may utilize the following subsolver(s)
+ For LP/MIP/QP: CLP/CBC                                         
+ For NLP: External NLP, IPOPT, FILTERSQP
+===========================================================================
+    The options used in solving the problem are as follows:
+       maxtime        =  0.5000E+03
+       maxiter        =      -1
+       numsol         =       1
+       firstfeas      =       0
+       firstloc       =       0
+       cutoff         =  0.1000E+52
+       target         = -0.1000E+52
+       epsa           =  0.1000E-05
+       epsr           =  0.1000E-05
+       relgaptype     =       1
+       deltaterm      =       0
+       deltaa         =  0.1000E+52
+       deltar         =  0.1000E+01
+       deltat         = -0.1000E+03
+       boxtol         =  0.1000E-07
+       isoltol        =  0.1000E-03
+       absconfeastol  =  0.1000E-05
+       relconfeastol  =  0.0000E+00
+       absintfeastol  =  0.1000E-04
+       relintfeastol  =  0.0000E+00
+       primalcstol    =  0.1000E-04
+       dualcstol      =  0.1000E-04
+       dualfeastol    =  0.1000E-04
+       ectol          =  0.1000E-04
+       results        =       1
+       summary        =       1
+       times          =       1
+       wantdual       =       0
+       prtimefreq     =  0.3000E+02
+       prfreq         = 1000000
+       prlevel        =       1
+       lpsol          =       8
+       nlpsol         =      -1
+       allowminos     =       0
+       allowsnopt     =       0
+       allowexternal  =       1
+       allowipopt     =       1
+       allowfiltersd  =       0
+       allowfiltersqp =       1
+       allowcplex     =       0
+       allowxpress    =       0
+       allowcbc       =       1
+       allowhsl       =       0
+       allowhighs     =       0
+       dolocal        =       1
+       numloc         =      20
+       locres         =       0
+       pdo            =      -2
+       brvarstra      =       0
+       brptstra       =       0
+       nodesel        =       0
+       compiis        =       0
+       iisint         =       1
+       iisorder       =      -1
+       images         =      -1
+       threads        =       1
+       userrel        =       0
+       usergencuts    =       0
+       usersearch     =       0
+       usertighten    =       0
+       problemisconvex=       0
+===========================================================================
+ Preprocessing found feasible solution with value 0.00000
+ >>> Problem solved during preprocessing
+ Upper bound is    0.00000
+
+                         *** Normal completion ***            
+
+ Wall clock time:                     0.02
+ Total CPU time used:                 0.02
+
+ Total no. of BaR iterations:      -1
+ Best solution found at node:      -1
+ Max. no. of nodes in memory:       0
+ 
+ All done
+===========================================================================

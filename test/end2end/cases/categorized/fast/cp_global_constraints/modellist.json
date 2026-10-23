@@ -97,7 +97,7 @@
   {
     "name" : "x-multmip3 [count, if]",
     "files": ["x-multmip3.mod", "multmip3.dat"],
-    "tags" : ["logical"],
+    "tags" : ["logical", "continuous"],
     "options": { "solution_round": "6", "gcg_options": "mode=2" },
     "comment_options": "For solution_round, see #200",
     "objective" : 235625
@@ -105,7 +105,7 @@
   {
     "name" : "x-multmip3 [count, if] cmpEps=0.01",
     "files": ["x-multmip3.mod", "multmip3.dat"],
-    "tags" : ["logical"],
+    "tags" : ["logical", "continuous"],
     "options": {
       "solution_round": "6",
       "mp_options": "cvt:mip:eps=1e-2"
@@ -116,7 +116,7 @@
   {
     "name" : "x-multmip3__gt0 [count, if]",
     "files": ["x-multmip3__gt0.mod", "multmip3.dat"],
-    "tags" : ["logical"],
+    "tags" : ["logical", "continuous"],
     "options": { "solution_round": "6", "gcg_options": "mode=2" },
     "comment_options": "For solution_round, see #200",
     "objective" : 235625
@@ -124,7 +124,7 @@
   {
     "name" : "x-multmip1 [if, >]",
     "files": ["x-multmip1.mod", "multmip1.dat"],
-    "tags" : ["logical"],
+    "tags" : ["logical", "continuous"],
     "options": { 
       "solution_round": "6",
       "mp_options": "cvt:mip:bigM=100000"

@@ -2,7 +2,7 @@
   {
     "name" : "Check_Standard_Options",
     "files" : ["diet.mod", "diet.dat"],
-    "tags" : [ ],
+    "tags" : ["continuous"],
     "comment": "Check standard options: version, outlev",
     "comment": "Check acceptance of '?' and space/= for assignment",
     "options": { "ANYSOLVER_options": "version outlev ? outlev=? outlev 1 outlev=1 outlev 1" },
@@ -10,7 +10,7 @@
   },
   {
     "name" : "Check_Wrong_Option_Value",
-    "tags" : ["linear", "continuous"],
+    "tags" : ["linear", "continuous", "mpdriver"],
     "files" : ["diet.mod", "diet.dat"],
     "comment": "Check graceful exit on wrong options",
     "options": { "ANYSOLVER_options": "objno=12" },
@@ -21,7 +21,7 @@
   },
   {
     "name" : "Check_Missing_Option_Value",
-    "tags" : ["linear", "continuous"],
+    "tags" : ["linear", "continuous", "mpdriver"],
     "files" : ["diet.mod", "diet.dat"],
     "comment": "Check graceful exit on wrong options",
     "options": { "ANYSOLVER_options": "objno " },

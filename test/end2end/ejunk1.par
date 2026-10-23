@@ -1,0 +1,3282 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! This is the parameter file for use with LINDO API 1600. Each line contains
+! a parameter setting, where by default, all values are commented out with <!>
+! character. To enable a particular parameter setting, simply remove the <!>
+! character in front of it.
+!
+! You can use LSreadModelParameter() and/or LSreadEnvParameter() functions
+! to read parameter settings into your application.
+!
+! <runlindo.exe> driver program reads <lindo.par> file.
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!Use this parameter to set the sense of the objective function.
+!The default value is LS_MIN for minimization. Set this
+!parameter to LS_MAX if you want to maximize the objective.
+!LS_IPARAM_OBJSENSE                         = -1
+
+
+!This controls the frequency with which the solver calls back
+!to your optionally supplied callback routine. Range for
+!possible values is [0,inf). The default value for this option
+!is 0.5, meaning the solver calls back once every 0.5 seconds.
+!LS_DPARAM_CALLBACKFREQ                     = 0.5
+
+
+!When printing the objective value, it will first be multiplied by the value of
+!this parameter. For example, you may wish to set it to -1.0 if the original
+!problem was a maximization problem, but it is being solved as a minimization
+!problem. Range for possible values is (-inf,inf). The default value is 1.0.
+!LS_DPARAM_OBJPRINTMUL                      = 1
+
+
+!This is a flag indicating if the loaded model will be checked for errors.
+!Possible values are 0 and 1. 1 means that the loaded model will be
+!checked for errors. 0 means it will not. The default is 0.
+!LS_IPARAM_CHECK_FOR_ERRORS                 = 0
+
+
+!This flag controls if the user can interrupt the solver using the CTRL+C
+!keys. Possible values are 0 (off) and 1 (on). The default is 1 (on).
+!LS_IPARAM_ALLOW_CNTRLBREAK                 = 1
+
+
+!This refers to the type of decomposition to be performed on a linear or mixed
+!integer model. The possible values are identified with the following macros:
+!# LS_LINK_BLOCKS_FREE (0): The solver decides
+!which type of decomposition to use.
+!# LS_LINK_BLOCKS_SELF (1): The solver does not perform any decompositions
+!and uses the original model. This is the default.
+!# LS_LINK_BLOCKS_NONE (2): Attempt total decomposition
+!(no linking rows or columns).
+!# LS_LINK_BLOCKS_COLS (3): The decomposed model will
+!have dual angular structure (linking columns).
+!# LS_LINK_BLOCKS_ROWS (4): The decomposed model will
+!have block angular structure (linking rows).
+!# LS_LINK_BLOCKS_BOTH (5): The decomposed model will have both
+!dual and block angular structure (linking rows and columns).
+!For more information on decomposing models, refer
+!to Chapter 10, Analyzing Models and Solutions.
+!LS_IPARAM_DECOMPOSITION_TYPE               = 1
+
+
+!This is the type of barrier method to be used for solving the
+!referred model. This macro is reserved for future use.
+!The default is 4.
+!LS_IPARAM_BARRIER_SOLVER                   = 4
+
+
+!Standard MPS format assumes that the underlying model is of minimization
+!type. This flag indicates how to handle 'maximization' type
+!models when exporting in MPS format. Possible values are:
+!# LS_MPS_USE_MAX_NOTE (0): Export the model as minimization type
+!without flipping the objective function but a comment is
+!printed in the file that the model is of maximization type.  
+!# LS_MPS_USE_MAX_CARD (1): Export the model using the non-standard 'MAX'operator.
+!Some MPS parsers, including LINDO API can process MAX operator.
+!# LS_MPS_USE_MAX_FLIP (2): Export the model as a minimization problem
+!after flipping the sign of the objective. This is the default.
+!The default value is: LS_MPS_USE_MAX_FLIP (2).
+!LS_IPARAM_MPS_OBJ_WRITESTYLE               = 2
+
+
+!This controls the solution report style produced. Possible values are 0 (default)
+!and 1. The latter produces solution reports in LINDO API 1.x style.
+!LS_IPARAM_SOL_REPORT_STYLE                 = 0
+
+
+!This is reserved for internal use only.
+!The default is 0.
+!LS_IPARAM_INSTRUCT_LOADTYPE                = 0
+
+
+!This specifies the maximum number of characters
+!of strings in an instruction lists.
+!Possible values are positive integers. The default is 20.
+!LS_IPARAM_STRING_LENLMT                    = 20
+
+
+!This specifies whether to use name data or not when
+!exporting models in a portable file format.
+!Possible values are:
+!# 0: do not use name data
+!# 1: use name data
+!The default is 1.
+!LS_IPARAM_USE_NAMEDATA                     = 1
+
+
+!This value specifies the mode when copying a model
+!object. Bitmasks to define possible values are:
+!# LS_RAW_COPY    0
+!# LS_DEEP_COPY   1
+!# LS_TIME_COPY   2
+!# LS_STOC_COPY   4
+!# LS_SNGSTG_COPY    8
+!The default is LS_RAW_COPY (0).
+!LS_IPARAM_COPY_MODE                        = 0
+
+
+!This value specifies the number of parallel threads to be used when solving a model
+!with SBD method. Possible values are positive integers. The default is 1.
+!LS_IPARAM_SBD_NUM_THREADS                  = 1
+
+
+!Number of threads to use in the solver routine to be called. 
+!It is a solver-independent parameter which internally sets
+!solver-specific threading parameters automatically.
+!Possible values are positive integers. The default is 1.
+!LS_IPARAM_NUM_THREADS                      = 1
+
+
+!This parameter controls the threading mode for solvers
+!with multithreading support. Possible values are:
+!# LS_MTMODE_FREE = -1, solver decides.
+!# LS_MTMODE_EXPLCT  = 0, reserved for future.
+!# LS_MTMODE_PPCC = 1, try parallel mode (PP), but
+!if it is not available try concurrent mode (CC).
+!# LS_MTMODE_PP = 2, try parallel mode (PP) only.
+!# LS_MTMODE_CCPP = 3, try concurrent mode (CC), but
+!if it is not available try parallel mode (PP).
+!# LS_MTMODE_CC = 4, try concurrent mode (CC) only.
+!The default is LS_MTMODE_FREE, implying the best performing mode will be used.
+LS_IPARAM_MULTITHREAD_MODE                 = 0
+
+
+!Specifies the graph partitioning method to find
+!block structures. Possible values are:
+!# 0: Use an edge-weight minimizing graph partitioning heuristic.
+!# 1: Use a vertex-weight minimizing graph partitioning heuristic.
+!The default is 0.
+!LS_IPARAM_FIND_BLOCK                       = 0
+
+
+!Specifies the profiler level to break down the total cpu time into.
+!Possible values are:
+!# 0: Profiler is off.
+!# 1: Enable for simplex solver.
+!# 2: Enable for integer solver.
+!# 4: Enable for multistart solver.
+!# 8: Enable for global solver.
+!#16: Enable for stochastic solver.
+!The default is 0.
+!LS_IPARAM_PROFILER_LEVEL                   = 0
+
+
+!This controls the input mode when reading from MPI file.
+!Possible values are the following
+!# 0: High memory utilization, fast access speed
+!# 1: Low memory utilization, moderate access speed (default)
+!# 2: Conservative memory utilization, slow access speed
+!# 3: Reserved for future use
+!LS_IPARAM_INSTRUCT_READMODE                = 1
+
+
+!This is a flag indicating whether 1) fixed variables
+!are substituted out of the instruction list, 
+!2) performing numerical calculation on constant
+!numbers and replacing with the results.
+!Possible values are:
+!# -1: Solver decides (default)
+!# 0:  substitutions will not be performed
+!# 1:  substitutions will be performed
+!LS_IPARAM_INSTRUCT_SUBOUT                  = -1
+
+
+!This values specifies the capacity of the solution-pool
+!when searching for alternative solutions. The default is 20.
+!LS_IPARAM_SOLPOOL_LIM                      = 20
+
+
+!This specifies the symmetry finding level.
+!-1: solver decides
+! 0: Finding orbit only without MIP preprocessing.
+! 1: Finding orbit only with MIP preprocessing.
+! 2: Finding generators without MIP preprocessing.
+! 3: Finding generators with MIP preprocessing.
+! 4: Finding the first generator without MIP preprocessing.
+! 5: Finding the first generator with MIP preprocessing.
+!The default is -1.
+!LS_IPARAM_FIND_SYMMETRY_LEVEL              = -1
+
+
+!This specifies print level for symmetry finding. Bit settings are used to 
+!enable various print levels.
+!0: nothing printed.
+!2: general information.
+!4: time information.
+!8: orbit information.
+!16:partition information.
+!The default is 0.
+!LS_IPARAM_FIND_SYMMETRY_PRINT_LEVEL        = 0
+
+
+!This specifies the amount of print to do
+!during parameter tuning. Possible values are:
+!# 0: Do not print anything.
+!# >0:  Print more information (default).
+!Default is 1.
+!LS_IPARAM_TUNER_PRINT_LEVEL                = 1
+
+
+!This specifies the default seed value for the RNG.
+!Possible values are non-negative integers.
+!Default is 1031.
+!LS_IPARAM_DEFAULT_SEED                     = 1031
+
+
+!This specifies the log level of external solvers.
+!Possible values are:
+!# -1: Special value to display all dynamic loading steps. Debug only.
+!# 0: Do not print logs produced by the external solver (default).
+!# =solver_id:  Print only the logs from external solver with solver_id.
+!Default is 0.
+!LS_IPARAM_XSOLVER_LOG_LEVEL                = 0
+
+
+!This is a flag that, when set to 1, will force the solver to compute a basic
+!solution to an infeasible model that minimizes the sum of
+!infeasibilities and a basic feasible solution to an unbounded problem
+!from which an extreme direction originates. When set to 0, the solver
+!will return with an appropriate status flag as soon as infeasibility or
+!unboundedness is detected. If infeasibility or unboundedness is declared
+!with presolver's determination, no solution will be computed. The
+!default is 0.
+!LS_IPARAM_SOLVER_IUSOL                     = 0
+
+
+!This specifies an integer valued time limit in seconds for the LP solver.
+!The default value of -1 imposes no time limit. If LS_IPARAM_TIMLMT < -1,
+!then an error is returned. Range for possible values is [-1, INT_MAX].
+!Remark: Deprecated name LS_IPARAM_TIMLMT (integer typed)
+LS_IPARAM_SOLVER_TIMLMT                    = 4.958
+
+
+!If the optimal objective value of the LP being solved is shown to be worse
+!than this (e.g., if the dual simplex method is being used), then the
+!solver will exit without finding a feasible solution. This is a way of
+!saving computer time if there is no sufficiently attractive solution.
+!Range for possible values is (-inf,inf). Default is -1e+30.
+!LS_DPARAM_SOLVER_CUTOFFVAL                 = -1e+30
+
+
+!This is the feasibility tolerance. A constraint is considered violated if
+!the artificial, slack, or surplus variable associated with the
+!constraint violates its lower or upper bounds by the feasibility
+!tolerance. Range for possible values is [1e-10,1e-4]. The default value
+!is 1.0e-7.
+LS_DPARAM_SOLVER_FEASTOL                   = 1e-06
+
+
+!This is the starting basis flag. Possible values are 1 or 0. 1
+!means LINDO API will start from a cold basis discarding any
+!basis resident in memory.  0 means LINDO API will perform warm
+!starts using any basis currently in memory. The default is 0.
+!LS_IPARAM_SOLVER_RESTART                   = 0
+
+
+!This flag controls whether a basis crossover will be performed when solving
+!LPs with the barrier solver. A value of 0 indicates that a crossover
+!to a basic solution will be performed. If the value is 1, then the
+!barrier solution will be left intact. For example, if alternate optima
+!exist, the barrier method will return a solution that is, loosely
+!speaking, the average of all alternate optima. The default is 0.
+LS_IPARAM_SOLVER_IPMSOL                    = 1
+
+
+!This is the optimality tolerance. It is also referred to as the dual
+!feasibility tolerance. A dual slack (reduced cost) is considered
+!violated if it violates its lower bound by the optimality tolerance. 
+!Range for possible values is [1e-10,1e-4]. The default value is
+!1.0e-7.
+!LS_DPARAM_SOLVER_OPTTOL                    = 1e-07
+
+
+!This is a flag for the parameter LS_DPARAM_SOLVER_CUTOFFVAL.
+!The possible value of 0 means LS_DPARAM_SOLVER_CUTOFFVAL is
+!not used, else it is used as defined. Possible values are 0
+!(no), 1 (yes) and -1 (the solver decides). The default is 0.
+!LS_IPARAM_SOLVER_USECUTOFFVAL              = 0
+
+
+!This is a nonnegative value that controls the fill-in introduced by the
+!eliminations during pre-solve. Smaller values could help when the total
+!nonzeros in the presolved model is significantly more than the original
+!model.  Range for possible values is [0,inf). The default is 1000.
+!LS_IPARAM_SOLVER_PRE_ELIM_FILL             = 1000
+
+
+!This is a time limit in seconds for the LP solver. The default value
+!of -1 imposes no time limit. If LS_DPARAM_TIMLMT < -1, then an
+!error is returned. Range for possible values is [-1, inf).
+!Remark: Deprecated name LS_IPARAM_TIMLMT (integer typed)
+LS_DPARAM_SOLVER_TIMLMT                    = 4.958
+
+
+!Controls if simplex and interior-point optimizers will run concurrently,
+!0 means no concurrent runs will be performed, 1 means both optimizers
+!will run concurrently if at least two threads exist in system, 2
+!means both optimizers will run concurrently. The default is 0.
+!LS_IPARAM_SOLVER_CONCURRENT_OPTMODE        = 0
+
+
+!Reserved for future use.
+!Default is 1.0e-12.
+!LS_DPARAM_SOLVER_PERT_FEASTOL              = 1e-12
+
+
+!Reserved for future use. Default is 0.
+!LS_IPARAM_SOLVER_PARTIALSOL_LEVEL          = 0
+
+
+!This values specifies solver bitmask to enable/disable available strategies.
+!Possible values are
+! # LS_SOLVER_MODE_POOLBAS     (1)
+! # LS_SOLVER_MODE_POOLEDGE    (2)
+! # LS_SOLVER_MODE_INTBAS      (4)
+! # LS_SOLVER_MODE_LEX_EXPEACH (32)
+! # LS_SOLVER_MODE_LEX_EXPFAIL (64)
+! # LS_SOLVER_MODE_LEX_RESOLVEFAIL (128)
+! # LS_SOLVER_MODE_FULL_AGGR (256)
+! # LS_SOLVER_MODE_ADD_PM1_SQR (512)
+! # LS_SOLVER_MODE_ADD_PM1_ABS (1024)
+!The default is 1.
+LS_IPARAM_SOLVER_MODE                      = 0
+
+
+!This values specifies the method to use when generic solver is invoked.
+!Possible values are
+! # LS_METHOD_FREE     (0)
+! # LS_METHOD_PSIMPLEX (1)
+! # LS_METHOD_DSIMPLEX (2)
+! # LS_METHOD_BARRIER  (3)
+! # LS_METHOD_NLP      (4)
+! # LS_METHOD_MIP      (5)
+! # LS_METHOD_MULTIS   (6)
+! # LS_METHOD_GOP      (7)
+! # LS_METHOD_IIS      (8)
+! # LS_METHOD_IUS      (9)
+! # LS_METHOD_SBD      (10)
+! # LS_METHOD_SPRINT   (11)
+! # LS_METHOD_GA       (12)
+!The default is LS_METHOD_FREE (0).
+!LS_IPARAM_SOLVER_METHOD                    = 0
+
+
+!This values specifies if dual solution is required.
+!Possible values are
+!# 0: No.
+!# 1: Yes.
+!The default is Yes (1).
+LS_IPARAM_SOLVER_DUALSOL                   = 1
+
+
+!This controls the level of analysis when locating an IIS
+!to debug an infeasible model. Bit mask values are:
+!# LS_NECESSARY_ROWS= 1, Search for necessary rows
+!# LS_NECESSARY_COLS = 2, Search for necessary columns
+!# LS_SUFFICIENT_ROWS= 4,  Search for sufficient rows
+!# LS_SUFFICIENT_COLS = 8, Search for sufficient columns
+!# LS_IIS_INTS = 16,  Consider integrality restrictions as the potential cause of infeasibilities
+!and  include it in the analysis. If this option is disabled, all integrality restrictions
+!will be considered permanent in the model and will not be relaxes.
+!# LS_IISRANK_LTF = 32, Compute the underlying LTF matrix and use this as the basis of a
+!ranking score to guide the IIS run.
+!E.g. one could start from the bottom of the triangulated matrix and move up.
+!# LS_IISRANK_DECOMP = 64 If the underlying matrix is totally decomposable, rank blocks w.r.t
+!their sizes and debug the smallest independent infeasible block
+!# LS_IISRANK_NNZ = 128  Use the nonzero structure of the underlying matrix to compute
+!a ranking score to guide the IIS run. E.g. remove rows with more nonzero first etc...
+!#LS_IISLIMIT_MIS = 256  Treat iter/time limits as intractability
+!LS_IPARAM_IIS_ANALYZE_LEVEL                = 1
+
+
+!This controls the level of analysis when locating an
+!IUS to debug an unbounded LP. Bit mask values are:
+!# LS_NECESSARY_COLS = 2,
+!# LS_SUFFICIENT_COLS  = 8.
+!The default is 2.
+!LS_IPARAM_IUS_ANALYZE_LEVEL                = 2
+
+
+!This specifies which optimization method to use when
+!there is no previous basis. Possible values are:
+!# LS_METHOD_FREE
+!# LS_METHOD_PSIMPLEX
+!# LS_METHOD_DSIMPLEX
+!# LS_METHOD_BARRIER
+!# LS_METHOD_NLP
+!The default is LS_METHOD_FREE.
+!LS_IPARAM_IIS_TOPOPT                       = 0
+
+
+!This specifies which optimization method to use when
+!starting from a given basis. Possible values are:
+!# LS_METHOD_FREE
+!# LS_METHOD_PSIMPLEX
+!# LS_METHOD_DSIMPLEX
+!# LS_METHOD_BARRIER
+!# LS_METHOD_NLP
+!The default is LS_METHOD_FREE.
+!LS_IPARAM_IIS_REOPT                        = 0
+
+
+!This is a flag indicating is sensitivity filter will be
+!used during IIS search. Possible values are 0 (no), 1
+!(yes) and -1 (the solver decides). The default is 1.
+!LS_IPARAM_IIS_USE_SFILTER                  = 1
+
+
+!This specifies the amount of print to do
+!during IIS search. Possible values are:
+!# 0: Do not print anything (default).
+!# >0:  Print more information.
+!Default is 2.
+!LS_IPARAM_IIS_PRINT_LEVEL                  = 1
+
+
+!This specifies the norm to measure infeasibilities
+!in IIS search. Possible values are:
+!# LS_IIS_NORM_FREE : Solver decides
+!# LS_IIS_NORM_ONE: Use L-1 norm.
+!# LS_IIS_NORM_INFINITY: Use L-infinity norm.
+!The default is 0.
+!LS_IPARAM_IIS_INFEAS_NORM                  = 0
+
+
+!This is the iteration limit for IIS search. The default value
+!is -1, which means no iteration limit is imposed.
+!LS_IPARAM_IIS_ITER_LIMIT                   = -1
+
+
+!This is the iteration limit (double precision) for IIS search. The
+!default value is -1.0, which means no iteration limit is imposed.
+!LS_DPARAM_IIS_ITER_LIMIT                   = -1
+
+
+!This is the time limit for IIS search. The default
+!value is -1, which means no time limit is imposed.
+!LS_IPARAM_IIS_TIME_LIMIT                   = -1
+
+
+!This specifies the method to use in analyzing infeasible
+!models to locate an IIS. Possible values are:
+!# LS_IIS_DEFAULT = 0,
+!# LS_IIS_DEL_FILTER =1,
+!# LS_IIS_ADD_FILTER =2,
+!# LS_IIS_GBS_FILTER =3,
+!# LS_IIS_DFBS_FILTER =4,
+!# LS_IIS_FSC_FILTER =5,
+!# LS_IIS_ELS_FILTER =6
+!The default is  LS_IIS_DEFAULT 
+!LS_IPARAM_IIS_METHOD                       = 0
+
+
+!This flag controls whether the Elastic Filter should be enabled as
+!the supplementary filter in analyzing infeasible models when the
+!Elastic Filter is not the primary method. Possible values are 0
+!(no), 1 (yes) and >0 (other modes). The default is 0.
+!LS_IPARAM_IIS_USE_EFILTER                  = 0
+
+
+!This flag controls whether the global optimizer should be enabled
+!in analyzing infeasible NLP models. Possible values are 0
+!(no), 1 (yes) and -1 (the solver decides). The default is 0.
+!LS_IPARAM_IIS_USE_GOP                      = 0
+
+
+!This flag controls whether LSgetIIS() function should retrieve 
+!variable bounds in the IIS or the integer restrictions. This parameter is
+!effective only for infeasible integer models. For continuous models, it will
+!be ignored. Possible values are 0 (variable bound), 1 (integer restrictions).
+!The default is 0.
+!LS_IPARAM_IIS_GETMODE                      = 0
+
+
+!Reserved for internal use.
+!The default is 0.
+!LS_IPARAM_FMT_ISSQL                        = 0
+
+
+!This is a flag indicating if the nonlinear model will be solved as an LP.
+!Possible values are 0 and 1. 1 means that an LP using first order
+!approximations of the nonlinear terms in the model will be used when
+!optimizing the model with the LSoptimize() function. The default is 0.
+LS_IPARAM_NLP_SOLVE_AS_LP                  = 1
+
+
+!This refers to the type of nonlinear solver. The possible values are:
+!# LS_NMETHOD_FREE(4): solver decides,
+!# LS_NEMTHOD_LSQ(5): uses Levenberg-Marquardt method
+!to solve nonlinear least-squares problem.
+!# LS_NMETHOD_QP(6): uses Barrier solver for convex QCP models.
+!# LS_NMETHOD_CONOPT(7): uses CONOPT's reduced gradient solver. This is the default.
+!# LS_NEMTHOD_SLP(8): uses SLP solver.
+!# LS_NMETHOD_MSW_GRG(9): uses CONOPT with multistart feature enabled.
+!# LS_NMETHOD_IPOPT(10): uses IPOPT.
+!# LS_NMETHOD_RESERVED(11): reserved for future.
+!# LS_NMETHOD_GA(12): uses Genetic Algorithm.
+!LS_IPARAM_NLP_SOLVER                       = 7
+
+
+!This controls the type of linear solver to be used for solving linear
+!sub problems when solving nonlinear models. The possible values are:
+!# LS_METHOD_FREE (0)
+!# LS_METHOD_PSIMPLEX (1): primal simplex method.
+!# LS_METHOD_DSIMPLEX(2): dual simplex method,
+!# LS_METHOD_BARRIER(3): barrier  solver with or without crossover.
+!The default is LS_METHOD_FREE.
+!LS_IPARAM_NLP_SUBSOLVER                    = 0
+
+
+!This controls the level of trace output printed by the nonlinear solver. 1
+!means normal trace output. Higher values for this parameter lead to more
+!trace output.  Range for possible values is [0,inf). The default is 1.
+LS_IPARAM_NLP_PRINTLEVEL                   = 0
+
+
+!This controls the value of the step length in computing
+!the derivatives using finite differences. Range for
+!possible values is [1e-12, 0.999]. The default value is
+!5.0e-07.
+!LS_DPARAM_NLP_PSTEP_FINITEDIFF             = 5e-07
+
+
+!This is a flag indicating the technique used in computing derivatives
+!with Finite Differences. The possible values are:
+!# LS_DERIV_FREE: the solver decides,
+!# LS_DERIV_FORWARD_DIFFERENCE: use forward differencing method,
+!# LS_DERIV_BACKWARD_DIFFERENCE: use backward differencing method,
+!# LS_DERIV_CENTER_DIFFERENCE: use center differencing method.
+!The default value is 0.
+!LS_IPARAM_NLP_DERIV_DIFFTYPE               = 0
+
+
+!This is the feasibility tolerance for nonlinear constraints. A constraint is
+!considered violated if the artificial, slack, or surplus variable associated
+!with the constraint violates its lower or upper bounds by the feasibility
+!tolerance. Range for possible values is [1e-10,1). The default value is 1.0e-6.
+!LS_DPARAM_NLP_FEASTOL                      = 1e-06
+
+
+!This is the tolerance for the gradients of nonlinear functions.
+!The (projected) gradient of a function is considered to be
+!the zero-vector if its norm is below this tolerance.  Range
+!for possible values is [1e-10,1). The default value is 1.0e-7.
+!LS_DPARAM_NLP_REDGTOL                      = 1e-07
+
+
+!This is a flag indicating if an initial solution will be computed
+!using simple crash routines. Possible values are 0 (no), 1
+!(yes) and -1 (the solver decides). The default is 0.
+!LS_IPARAM_NLP_USE_CRASH                    = 0
+
+
+!This is a flag indicating if steepest edge directions should be
+!used in updating the solution. Possible values are 0 (no), 1
+!(yes) and -1 (the solver decides). The default value is 0.
+!LS_IPARAM_NLP_USE_STEEPEDGE                = 0
+
+
+!This is a flag indicating if sequential linear programming step directions
+!should be used in updating the solution. Possible values are 0 (no),
+!1 (yes) and -1 (the solver decides). The default value is 1.
+!LS_IPARAM_NLP_USE_SLP                      = 1
+
+
+!This is a flag indicating if selective constraint evaluations will
+!be performed in solving a nonlinear model. Possible values are 0
+!(no), 1 (yes) and -1 (the solver decides). The default value is 0.
+!LS_IPARAM_NLP_USE_SELCONEVAL               = 0
+
+
+!This controls the amount and type of NLP pre-solving. Possible options are:
+!# Simple pre-solving +2
+!# Probing +4
+!# Coefficient reduction +8
+!# Elimination +16
+!#Dual reductions +32
+!# Use dual information +64 
+!# Maximum pass +512
+!The default value is: 0
+!LS_IPARAM_NLP_PRELEVEL                     = 0
+
+
+!This controls the iteration limit on the number of nonlinear
+!iterations performed. Range for possible values is
+![-1,INT_MAX]. The default is INT_MAX (2147483647).
+LS_IPARAM_NLP_ITRLMT                       = 39480
+
+
+!This determines the extent to which the solver will attempt
+!to linearize nonlinear models. The available options are
+!# -1: Solver decides.
+!# 0: No linearization occurs.
+!# +1: Linearize ABS, MAX, and MIN functions.
+!# +2: IF, AND, OR, NOT, and all logical
+!# +4: Operators invovling binary and integer variables
+!The default is -1.
+LS_IPARAM_NLP_LINEARZ                      = 0
+
+
+!This is used to check the linearity characteristic of the solved model.
+!If the returned value equals 1, then the model is linear or has been
+!completely linearized in the linearization step. Thus, the global
+!optimality of the solution can be ensured. This parameter cannot be
+!set. This parameter will be deprecated in future versions.
+!LS_IPARAM_NLP_LINEARITY                    = 0
+
+
+!This is a flag indicating if the nonlinear solver should accept initial starting
+!solutions. Possible values are 0 (no), 1 (yes). The default is 1.
+!LS_IPARAM_NLP_STARTPOINT                   = 1
+
+
+!This is reserved for internal use only.
+!The default is 0.
+!LS_IPARAM_NLP_CONVEXRELAX                  = 0
+
+
+!This is reserved for internal use only.
+!The default is 0.
+!LS_IPARAM_NLP_CR_ALG_REFORM                = 0
+
+
+!This is a flag indicating if the nonlinear model should be
+!examined to check if it is a quadratic model. . Possible
+!values are 0 (no), 1 (yes). The default value is 1.
+LS_IPARAM_NLP_QUADCHK                      = 0
+
+
+!This is a flag to indicate if automatic differentiation is the method
+!of choice for computing derivatives and select the type of
+!differentiation. If the value is 0, then the Finite Differences
+!approach will be used. If the value is 1, then the forward type of
+!Automatic Differentiation will be used. If the value is 2, then the
+!backward type of Automatic Differentiation will be used. The default
+!is 2.
+!Note: Automatic Differentiation can be used only with Instruction
+!style input. It is only useful when the instructions are loaded.
+!LS_IPARAM_NLP_AUTODERIV                    = 2
+
+
+!This controls the maximum number of local searches (multistarts)
+!when solving a NLP using the multistart solver. Range for
+!possible values is [0,inf). The default value is 5.
+!LS_IPARAM_NLP_MAXLOCALSEARCH               = 5
+
+
+!This is a flag indicating if the quadratic model is convex or
+!not. If the value is 1, the minimization (maximization) model
+!is convex (concave). This value cannot be set. Default is 1.
+LS_IPARAM_NLP_CONVEX                       = 0
+
+
+!This specifies the CONOPT version to be used in NLP optimizations.
+!Possible values are 2, 3 and 4 (default:3).
+!LS_IPARAM_NLP_CONOPT_VER                   = 3
+
+
+!This is a flag indicating if an initial solution will be computed
+!using advanced crash routines. Possible values are 0 (no), >0
+!(others) and -1 (the solver decides). The default is 0.
+LS_IPARAM_NLP_USE_LINDO_CRASH              = 1
+
+
+!This specifies the iteration limit before a sequence of non-improving
+!NLP iterations is declared as stalling, thus causing the
+!solver to terminate.  The default is 100.
+!LS_IPARAM_NLP_STALL_ITRLMT                 = 100
+
+
+!This is a flag to indicate if Second Order Automatic Differentiation will
+!be performed in solving a nonlinear model. The second order derivatives
+!provide an exact/precise Hessian matrix to the SQP algorithm, which may
+!lead to less iterations and better solutions, but may also be quite
+!expensive in computing time for some cases. If the value is 1, then the
+!Second Order Automatic Differentiation will be used for CONOPT.
+!If the value is 2, then Second Order Automatic Differentiation will be
+!used for IpOpt. If the value is 3, it will be used for both.
+!the The default is 0.
+!Note: Automatic Differentiation can be used only with Instruction
+!style input. It is only useful when the instructions are loaded.
+!LS_IPARAM_NLP_AUTOHESS                     = 0
+
+
+!This input parameter specifies how the NLP solver reports the results
+!when an optimal or local-optimal solution satisfies the feasibility
+!tolerance (LS_DPARAM_NLP_FEASTOL) of the scaled model but not the
+!original (descaled) one. Possible values for LS_IPARAM_NLP_FEASCHK are
+!# 0 - Perform no action, accept the final solution and model status.
+!# 1 - Declare the model status as LS_STATUS_FEASIBLE if maximum violation in the
+!unscaled model is not higher than 10 times of the current feasibility tolerance
+!(LS_DPARAM_NLP_FEASTOL), otherwise declare the status as LS_STATUS_UNKNOWN.
+!# 2 - Declare the model status as LS_STATUS_UNKNOWN if maximum violation
+!in the unscaled model is higher than the current feasibility
+!tolerance (LS_DPARAM_NLP_FEASTOL). The default is (0).
+!LS_IPARAM_NLP_FEASCHK                      = 0
+
+
+!This controls the iteration limit (stored as a double) on the
+!number of nonlinear iterations performed. Range for possible
+!values is [-1,INT_MAX]. The default is INT_MAX (2147483647).
+LS_DPARAM_NLP_ITRLMT                       = 39480
+
+
+!This specifies the superbacic variable limit in nonlinear solver. Range for
+!possible values is [-1,INT_MAX]. The default is INT_MAX (2147483647).
+!LS_IPARAM_NLP_MAXSUP                       = 2147483647
+
+
+!Index of the multistart solution to be loaded main solution structures
+!Range of possible values are [0,+inf]. Default is 0.
+!LS_IPARAM_NLP_MSW_SOLIDX                   = 0
+
+
+!Number of nonlinear iterations to elapse before next progress message.
+!Range of possible values are [1,+inf]. Default is 50.
+!LS_IPARAM_NLP_ITERS_PER_LOGLINE            = 50
+
+
+!Maximum number refinement retries to purify the final NLP solution.
+!Range of possible values are [-1,+inf]. Default is 5.
+LS_IPARAM_NLP_MAX_RETRY                    = 6
+
+
+!Norm to measure the distance between two points in multistart search.
+!Range of possible values are [-1,+inf]. Default is 2.
+!LS_IPARAM_NLP_MSW_NORM                     = 2
+
+
+!Maximum number of reference points in the solution space to
+!generate trial points in multistart search. Range of
+!possible values are [-1,+inf]. Default is  -1 (solver
+!decides).
+!LS_IPARAM_NLP_MSW_POPSIZE                  = -1
+
+
+!Maximum number of populations to generate in multistart
+!search. Range of possible values are [-1,+inf].
+!Default is -1 (solver decides).
+!LS_IPARAM_NLP_MSW_MAXPOP                   = -1
+
+
+!Maximum number of consecutive populations to generate w/o any improvements.
+!Range of possible values are [-1,+inf]. Default is -1 (solver decides).
+!LS_IPARAM_NLP_MSW_MAXNOIMP                 = -1
+
+
+!Filtering mode to exclude certain domains during sampling
+!in multistart search. Bitmasks for possible values are
+!# -1 - Solver decides
+!# 1 - filter-out the points around known KKT
+!or feasible points previously visited.
+!# 2 - filter-out the points whose p() are in the vicinity
+!of p(x), where x is an initial point of a previous local
+!optimizations with p() being an internal merit function.
+!# 4 - filter-out the points in the vicinity of x, where x
+!are initial points of all previous local optimizations.
+!# 8 - filter-out the points whose p(.) values are below a dynamic
+!threshold tolerance, which is computed internally.
+!Default is -1.
+!LS_IPARAM_NLP_MSW_FILTMODE                 = -1
+
+
+!Penalty function neighborhood threshold in multistart search.
+!Possible values are (0,inf). Default is 0.01.
+!LS_DPARAM_NLP_MSW_POXDIST_THRES            = 0.01
+
+
+!Euclidean distance threshold in multistart search.
+!Possible values are (0,inf). Default is 0.001.
+!LS_DPARAM_NLP_MSW_EUCDIST_THRES            = 0.001
+
+
+!Initial solution neighborhood factor in multistart search.
+!Possible values are (0,inf). Default is 0.5.
+!LS_DPARAM_NLP_MSW_XNULRAD_FACTOR           = 0.5
+
+
+!KKT solution neighborhood factor in multistart search.
+!Possible values are (0,inf). Default is 0.85.
+!LS_DPARAM_NLP_MSW_XKKTRAD_FACTOR           = 0.85
+
+
+!Maximum number of multistarts (at tree nodes). Possible
+!values are positive integers. Default is 1.
+!LS_IPARAM_NLP_MAXLOCALSEARCH_TREE          = 1
+
+
+!This value specifies the number of parallel threads to be used
+!when solving an NLP model with the multistart solver.
+!Possible values are positive integers. The default is 1.   
+!LS_IPARAM_NLP_MSW_NUM_THREADS              = 1
+
+
+!This value specified the random number generator seed for the multistart
+!solver. Possible values are nonnegative integers. The default is 1019.
+!LS_IPARAM_NLP_MSW_RG_SEED                  = 1019
+
+
+!This value specifies the preprocessing strategies in multistart
+!solver. Bitmasks defining possible values are:
+!# -1: Solver decides
+!# LS_MSW_MODE_TRUNCATE_FREE: Truncate free variables
+!# LS_MSW_MODE_SCALE_REFSET: Scale reference points to origin
+!# LS_MSW_MODE_EXPAND_RADIUS: Enable expansive scaling of radius[k] by hit[k]
+!# LS_MSW_MODE_SKEWED_SAMPLE: Skewed sampling
+!allowing values in the vicinity of origin.
+!# LS_MSW_MODE_BEST_LOCAL_BND: Get best bounds by presolver
+!# LS_MSW_MODE_BEST_GLOBAL_BND: Get best bounds using GOP
+!# LS_MSW_MODE_SAMPLE_FREEVARS: Enable sampling
+!of free variables (not recommended)
+!# LS_MSW_MODE_PRECOLLECT:   Collect sufficiently
+!many trial points prior to local solves
+!# LS_MSW_MODE_POWER_SOLVE: Enable power solver,
+!trying several different local strategies
+!The default is : -1
+LS_IPARAM_NLP_MSW_PREPMODE                 = 273
+
+
+!This value specifies the mode to map reference points
+!in the unit cube into the original space.
+!Possible values are:
+!# -1 Solver decides
+!# 0 Use original variable bounds
+!# 1 Use min-max values over all sample points per each dimension
+!# 2 Use min-max values over all sample points over all dimensions.
+!The default value is -1.
+!LS_IPARAM_NLP_MSW_RMAPMODE                 = -1
+
+
+!This value controls the bitmask for advanced local optimization
+!modes. Reserved for future use. Default value is: 197152.
+!LS_IPARAM_NLP_XSMODE                       = 197152
+
+
+!This value  specifies the rate of replacement in successive populations.
+!Higher values favors survival of points in the parent population.
+!Possible values are (0,1). The default value is 0.1.
+!LS_DPARAM_NLP_MSW_OVERLAP_RATIO            = 0.1
+
+
+!Specifies the numeric infinity for nonlinear models.
+!Possible values are positive real numbers.
+!Default is 1e30. Smaller values could cause numerical problems.
+!LS_DPARAM_NLP_INF                          = 1e+30
+
+
+!This is a flag to switch from IPM solver to the standard
+!NLP (GRG) solver when IPM fails due to numerical
+!errors. Possible values are 0 and 1. The default is 1.
+!LS_IPARAM_NLP_IPM2GRG                      = 1
+
+
+!This is a flag to use SDP solver for POSD constraint.
+!Possible values are 0 and 1. The default is 1 (yes).
+!LS_IPARAM_NLP_USE_SDP                      = 1
+
+
+!This determines if linearization process is consistent
+!with WB/excel calculation. The available options are
+!# 0: No.
+!# 1: Yes.
+!The default is 0.
+!LS_IPARAM_NLP_LINEARZ_WB_CONSISTENT        = 0
+
+
+!If this is specified, multistart search will terminate as soon as
+!a solution less than or equal to this value is found. This can be used
+!to reduce the running time if a good value is known. Set to a large
+!negative value (-LS_INFINITY) to disable if a finite value had been
+!specified. Range for possible values is (-inf,inf). Default is
+!-LS_INFINITY.
+!LS_DPARAM_NLP_CUTOFFOBJ                    = -1e+30
+
+
+!This is a flag for the parameter LS_DPARAM_NLP_CUTOFFOBJ. The value of 0 means
+!that the current cutoff value is ignored, else it is used as defined. If you
+!don't want to lose the value of the parameter LS_DPARAM_NLP_CUTOFFOBJ, this
+!provides an alternative to disabling the cutoff objective. Possible values
+!are 0 (no), 1 (yes). The default is 0.
+!LS_IPARAM_NLP_USECUTOFFOBJ                 = 0
+
+
+!This determines if to explore conic reformulation.
+!The available options are
+!# 0: No.
+!# 1: Yes.
+!The default is 1.
+LS_IPARAM_NLP_CONIC_REFORM                 = 0
+
+
+!This determines how to explore QP reformulation.
+!Possible values in bit-mask form are:
+!# perform bound reduction +1
+!# modify constraint type  +2
+!# modify variable bound   +4
+!# consodidate objective   +8
+!# consolidate constraints +16
+!The default is 31.
+LS_IPARAM_NLP_QP_REFORM_LEVEL              = 31
+
+
+!This determines algorithm to use in NLOPT solver.
+!Possible values are:
+!NLOPT_GN_DIRECT = 0
+!NLOPT_GN_DIRECT_L = 1
+!NLOPT_GN_DIRECT_L_RAND = 2
+!NLOPT_GN_DIRECT_NOSCAL = 3
+!NLOPT_GN_DIRECT_L_NOSCAL = 4
+!NLOPT_GN_DIRECT_L_RAND_NOSCAL = 5
+!NLOPT_GN_ORIG_DIRECT = 6
+!NLOPT_GN_ORIG_DIRECT_L = 7
+!NLOPT_GD_STOGO = 8
+!NLOPT_GD_STOGO_RAND = 9
+!NLOPT_LD_LBFGS_NOCEDAL = 10
+!NLOPT_LD_LBFGS = 11
+!NLOPT_LN_PRAXIS = 12
+!NLOPT_LD_VAR1 = 13
+!NLOPT_LD_VAR2 = 14
+!NLOPT_LD_TNEWTON = 15
+!NLOPT_LD_TNEWTON_RESTART = 16
+!NLOPT_LD_TNEWTON_PRECOND = 17
+!NLOPT_LD_TNEWTON_PRECOND_RESTART = 18
+!NLOPT_GN_CRS2_LM = 19
+!NLOPT_GN_MLSL = 20
+!NLOPT_GD_MLSL = 21
+!NLOPT_GN_MLSL_LDS = 22
+!NLOPT_GD_MLSL_LDS = 23
+!NLOPT_LD_MMA = 24
+!NLOPT_LN_COBYLA = 25
+!NLOPT_LN_NEWUOA = 26
+!NLOPT_LN_NEWUOA_BOUND = 27
+!NLOPT_LN_NELDERMEAD = 28
+!NLOPT_LN_SBPLX = 29
+!NLOPT_LN_AUGLAG = 30
+!NLOPT_LD_AUGLAG = 31
+!NLOPT_LN_AUGLAG_EQ = 32
+!NLOPT_LD_AUGLAG_EQ = 33
+!NLOPT_LN_BOBYQA = 34
+!NLOPT_GN_ISRES = 35
+!NLOPT_AUGLAG = 36
+!NLOPT_AUGLAG_EQ = 37
+!NLOPT_G_MLSL = 38
+!NLOPT_G_MLSL_LDS = 39
+!NLOPT_LD_SLSQP = 40
+!NLOPT_LD_CCSAQ = 41
+!NLOPT_GN_ESCH = 42
+!NLOPT_GN_AGS = 43
+!The default is NLOPT_LN_COBYLA (25).
+!LS_IPARAM_NLP_NLOPT_ALGO                   = 25
+
+
+!Specifies the lambda value for the entropy surrogate in NLP.
+!Possible values are positive real numbers greater than eps.
+!Default is 10..
+!LS_DPARAM_NLP_ENLAMBDA                     = 10
+
+
+!This determines if NLP refining process is used.
+!Possible values are:
+!# No  0
+!# Yes  1
+!The default is 0.
+!LS_IPARAM_NLP_QP_REFINING                  = 0
+
+
+!This is the tolerance to declare the model primal or dual infeasible
+!using the interior-point optimizer. A smaller number means the
+!optimizer gets more conservative about declaring the model
+!infeasible. Range for possible values is (0,inf). The default is
+!1e-10.
+!LS_DPARAM_IPM_TOL_INFEAS                   = 1e-10
+
+
+!Controls how close the interior-point optimizer follows the central path.
+!A large value of this parameter means the central path is followed very
+!closely. For numerically unstable problems it might help to increase this
+!parameter. Range for possible values is (0,0.5). The default is 1e-08.
+!LS_DPARAM_IPM_TOL_PATH                     = 1e-08
+
+
+!Primal feasibility tolerance used for linear and quadratic optimization
+!problems. Range for possible values is (0,inf). The default is 1e-8.
+!LS_DPARAM_IPM_TOL_PFEAS                    = 1e-08
+
+
+!Relative step size to the boundary for linear and quadratic optimization problems.
+!Range for possible values is (0,9.99999e-1). The default is 0.9999.
+!LS_DPARAM_IPM_TOL_REL_STEP                 = 0.9999
+
+
+!Controls the initial primal starting point used by the interior-point optimizer.
+!If the interior-point optimizer converges slowly and/or the constraint or
+!variable bounds are very large, then it might be worthwhile to increase this
+!value. Range for possible values is [1e-2,inf). The default is 1.0.
+!LS_DPARAM_IPM_TOL_PSAFE                    = 1
+
+
+!Dual feasibility tolerance used for linear and quadratic optimization
+!problems. Range for possible values is (0,inf). The default is 1e-8.
+!LS_DPARAM_IPM_TOL_DFEAS                    = 1e-08
+
+
+!Controls the initial dual starting point used by the interior-point
+!optimizer. If the interior-point optimizer converges slowly and/or
+!the dual variables associated with constraint or variable bounds
+!are very large, then it might be worthwhile to increase this value.
+!Range for possible values is [1e-4,inf). The default is 1.0.
+!LS_DPARAM_IPM_TOL_DSAFE                    = 1
+
+
+!Relative complementarity gap tolerance. Range for possible
+!values is (0,inf). The default is 1e-16.
+!LS_DPARAM_IPM_TOL_MU_RED                   = 1e-16
+
+
+!Maximum relative dual bound violation allowed in an optimal basic solution.
+!Range for possible values is (0,inf). The default is 1e-12.
+!LS_DPARAM_IPM_BASIS_REL_TOL_S              = 1e-12
+
+
+!Maximum absolute dual bound violation in an optimal basic solution.
+!Range for possible values is (0,inf). The default is 1e-07.
+LS_DPARAM_IPM_BASIS_TOL_S                  = 1e-06
+
+
+!Maximum absolute primal bound violation allowed in an optimal basic solution.
+!Range for possible values is (0,inf). The default is 1e-07.
+LS_DPARAM_IPM_BASIS_TOL_X                  = 1e-06
+
+
+!Relative pivot tolerance used in the LU factorization in the basis identification
+!procedure. Range for possible values is (1e-6,9.99999e-1). The default is 0.01.
+!LS_DPARAM_IPM_BI_LU_TOL_REL_PIV            = 0.01
+
+
+!This controls when the conic optimizer declares the model primal
+!or dual infeasible. Smaller values mean the optimizer gets
+!more conservative about declaring the model infeasible. 
+!The default is 1e-12
+!LS_DPARAM_IPM_CO_TOL_INFEAS                = 1e-12
+
+
+!Primal feasibility tolerance for Conic solver.
+!Range for possible values is (0,inf). The default is 1e-008.
+!LS_DPARAM_IPM_CO_TOL_PFEAS                 = 1e-08
+
+
+!Dual feasibility tolerance for Conic solver.
+!Range for possible values is (0,inf). The default is 1e-008.
+!LS_DPARAM_IPM_CO_TOL_DFEAS                 = 1e-08
+
+
+!Optimality tolerance for Conic solver.
+!Range for possible values is (0,inf). The default is 1e-008.
+!LS_DPARAM_IPM_CO_TOL_MU_RED                = 1e-08
+
+
+!Controls the maximum number of iterations allowed in the interior-point
+!optimizer. Range for possible values is [0,inf). The default is 1000.
+!LS_IPARAM_IPM_MAX_ITERATIONS               = 1000
+
+
+!Controls the extent for detecting the offending columns in the Jacobian
+!of the constraint matrix. Range for possible values is [0,inf). 0
+!means no offending columns will be detected. 1 means offending
+!columns will be detected. In general, increasing the parameter
+!value beyond the default value of 40 does not improve the result.
+!LS_IPARAM_IPM_OFF_COL_TRH                  = 40
+
+
+!Number of threads to run the interior-point optimizer on.
+!Possible values are positive integers. The default is 1.
+!LS_IPARAM_IPM_NUM_THREADS                  = 1
+
+
+!This is a flag to check convexity of a quadratic program using barrier solver.
+!Possible values are:
+!# -1: check convexity only without solving the model.
+!# 0: use barrier solver to check convexity.
+!# 1: do not use barrier solver to check convexity.
+!The default is 1.
+LS_IPARAM_IPM_CHECK_CONVEXITY              = 0
+
+
+!This is the scaling mode for linear models, applies to both simplex methods as well
+!as the barrier and mixed-integer solver. Scaling multiplies the rows and columns of the
+!model by appropriate factors so as to  reduce the range of coefficient
+!This tends to reduce numerical difficulties. Possible values are:
+!# -1 Solver decides
+!#  0 Scaling is off
+!#  1 Scale rows and columns
+!#  2 Scale rows only
+!#  3 Scale columns only
+!The default is -1.
+LS_IPARAM_LP_SCALE                         = 1
+
+
+!This is a limit on the number of iterations the solver will perform before
+!terminating. If this value is a nonnegative integer, then it will be
+!used as an upper bound on the number of iterations the solver will
+!perform. If this value is -1, then no iteration limit will be used. The
+!solution may be infeasible.  Range for possible values is [-1,INT_MAX].
+!The default is INT_MAX (2147483647).
+!Remark: Deprecated name LS_IPARAM_SPLEX_ITRLMT
+LS_IPARAM_LP_ITRLMT                        = 2377286
+
+
+!This is the pricing option to be used by the
+!primal simplex method. Possible values are:
+!# -1: Solver decides the primal pricing method (default).
+!# 0: Partial pricing.
+!# 1: Devex
+!LS_IPARAM_SPLEX_PPRICING                   = -1
+
+
+!This is a positive integer scalar referring to the simplex iterations
+!between two consecutive basis re-factorizations. For numerically
+!unstable models, setting this parameter to smaller values may
+!help. Range for possible values is (0,inf). The default is 200.
+!LS_IPARAM_SPLEX_REFACFRQ                   = 200
+
+
+!This controls whether the explicit primal or dual form of the
+!given LP problem will be solved. Possible values are:
+!# 0: Solver decides (default).
+!# 1: Explicit primal form.
+!# 2: Explicit dual form.
+!LS_IPARAM_PROB_TO_SOLVE                    = 0
+
+
+!This controls the level of trace output printed by the simplex and barrier
+!solvers.  0 means no trace output. Higher values lead to more trace
+!output. Range for possible values is [0,inf). The default is 0.
+LS_IPARAM_LP_PRINTLEVEL                    = 0
+
+
+!This is the pricing option to be used by the
+!dual simplex method. Possible values are:
+!# -1: Solver decides (Default).
+!# 0: Dantzig's rule (partial pricing).
+!# 1: Dantzig's rule (full pricing with fallback to partial).
+!# 2: Steepest edge rule.
+!# 3: Dual Devex rule.
+!# 4: Approximate dual Devex rule.
+!LS_IPARAM_SPLEX_DPRICING                   = -1
+
+
+!This controls the dual simplex strategy, single-phase versus two-phase. The
+!possible values are 0,1 and 2. The default is 0, i.e. the solver decides.
+!LS_IPARAM_SPLEX_DUAL_PHASE                 = 0
+
+
+!This controls the amount and type of LP pre-solving
+!to be used. Possible values in bit-mask form are:
+!# Simple presolving  +2
+!# Primal based  +4
+!# Coefficient reduction  +8
+!# Elimination   +16
+!# Dual column based   +32
+!# Dual row based   +64
+!# Cone reductions   +128
+!# Use Max pass limit +1024
+!# Perform total decomposition after presolve +4096
+!# Perform presolve with low-memory requirements  +8192
+!# Use an external solver's presolver (reserved for future use)  +16384
+!The default value is: 
+!254 = 2+4+8+16+32+64+128.
+LS_IPARAM_LP_PRELEVEL                      = 126
+
+
+!This specifies the external solver to use.
+!Possible values are:
+!# 0: do not use any external solvers
+!# 1: use Mosek's simplex solvers
+!# 2: use Gurobi's simplex solvers
+!# 4: use Gurobi's integer solvers
+!The default is 0.
+!LS_IPARAM_SPLEX_USE_EXTERNAL               = 0
+
+
+!This is a limit on the number of iterations (stored as a double) the solver will
+!perform before terminating. If this value is a nonnegative double, then it will
+!be used as an upper bound on the number of iterations the solver will perform.
+!If this value is -1.0, then no iteration limit will be used. The solution may be
+!infeasible.  Range for possible values is [-1.0,inf). The default is -1.0.
+LS_DPARAM_LP_ITRLMT                        = 2.37729e+06
+
+
+!Minimum feasibility tolerance for LPs. Possible values are (0,inf).
+!Default is 1e-009. Reserved for future use.
+!LS_DPARAM_LP_MIN_FEASTOL                   = 1e-09
+
+
+!Maximum feasibility tolerance for LPs. Possible values are (0,inf).
+!Default is 1e-005. Reserved for future use.
+!LS_DPARAM_LP_MAX_FEASTOL                   = 1e-05
+
+
+!Minimum optimality tolerance for LPs. Possible values are (0,inf).
+!Default is 1e-009. Reserved for future use.
+!LS_DPARAM_LP_MIN_OPTTOL                    = 1e-09
+
+
+!Maximum optimality tolerance for LPs. Possible values are (0,inf).
+!Default is 1e-005. Reserved for future use.
+!LS_DPARAM_LP_MAX_OPTTOL                    = 1e-05
+
+
+!Reserved for future use.
+!The default is 1e-10.
+!LS_DPARAM_LP_MIN_PIVTOL                    = 1e-10
+
+
+!Reserved for future use. 
+!The default is 0.00001. 
+!LS_DPARAM_LP_MAX_PIVTOL                    = 1e-05
+
+
+!Coefficient matrix zero tolerance. Possible values are (0,inf).
+!Default is 2.22045e-016.
+!LS_DPARAM_LP_AIJ_ZEROTOL                   = 2.22045e-16
+
+
+!Simplex pivot zero tolerance. Possible values are (0,inf).
+!Default is 1e-008.
+!LS_DPARAM_LP_PIV_ZEROTOL                   = 1e-08
+
+
+!Simplex maximum pivot tolerance. Possible values are (0,inf).
+!Default is 1e-005.
+!LS_DPARAM_LP_PIV_BIGTOL                    = 1e-05
+
+
+!Big-M for phase-I. Possible values are (0,inf).
+!Default is 1e6. 
+!LS_DPARAM_LP_BIGM                          = 1e+06
+
+
+!Big-M to truncate lower and upper bounds in single phase dual-simplex.
+!Possible values are (0,inf).
+!Default is 1e+015.
+!LS_DPARAM_LP_BNDINF                        = 1e+15
+
+
+!Numeric infinity used by LP solvers. This value cannot be set. It is 1e+030.
+!LS_DPARAM_LP_INFINITY                      = 1e+30
+
+
+!Primal simplex partial pricing method. Possible values are:
+!# 0 : solver decides (default)
+!# 1 : use method 1
+!# 2 : use method 2
+!# 3 : use method 3
+!LS_IPARAM_LP_PPARTIAL                      = 0
+
+
+!This controls the dual min-ratio strategy. Possible
+!values are 0,1 and 2. The default is 1.
+!LS_IPARAM_LP_DRATIO                        = 1
+
+
+!This controls the number of pivot-candidates to consider
+!when searching for a stable pivot in LU decomposition.
+!Range for possible values is [1,inf). The default is 4.
+!LS_IPARAM_LP_RATRANGE                      = 4
+
+
+!Flag specifies whether LP primal-dual simplex
+!switch is enabled or not. Default is 1.
+!LS_IPARAM_LP_DPSWITCH                      = 1
+
+
+!Reserved for internal use.
+!Default is 5.
+!LS_IPARAM_LP_PALLOC                        = 5
+
+
+!LP Simplex print level. Possible values are nonnegative integers. Default is 0.
+!LS_IPARAM_LP_PRTFG                         = 0
+
+
+!Reserved for internal use. 
+!Default is 4194977.
+!LS_IPARAM_LP_OPRFREE                       = 16468
+
+
+!LP method for subproblem in Sprint method. Possible
+!values are macros for available LP solvers.
+!Default is 0.
+!LS_IPARAM_LP_SPRINT_SUB                    = 0
+
+
+!Extension mode used by the simplex method. Possible
+!values are bit masks.
+!Default is 0.
+LS_IPARAM_LP_XMODE                         = 192
+
+
+!Nonzero factor to declare pivot columns as sparse or dense. Possible
+!values are (0,100). Higher values avoid the use of dense pivot columns.
+!Default is 0 (solver decides).
+!LS_IPARAM_LP_PCOLAL_FACTOR                 = 0
+
+
+!Max number of merges during partial pricing before a refactor signal. Possible
+!values are 0 (solver decides) or any positive integer.
+!Default is 0.
+!LS_IPARAM_LP_MAXMERGE                      = 0
+
+
+!Perturbation factor used by the simplex method. Possible
+!values are nonnegative scalars.
+!Default is 0, which means solver decides.
+!LS_DPARAM_LP_PERTFACT                      = 0
+
+
+!Dynamic obj factor. Possible values are in (0,1).
+!Default is 0.75.
+!LS_DPARAM_LP_DYNOBJFACT                    = 0.75
+
+
+!Dynamic obj mode. Possible values are in [0,inf).
+!Default is 1.
+!LS_IPARAM_LP_DYNOBJMODE                    = 0
+
+
+!Merge factor in partial pricing before a refactor signal. Possible
+!values are in the range (0.001,1).
+!Default is 0.7.
+!LS_DPARAM_LP_MERGEFACT                     = 0.7
+
+
+!LP extension mode. Possible values are in [0,inf).
+!Default is 0.
+!LS_IPARAM_LP_UMODE                         = 542
+
+
+!Maximum number of passes in Sprint method. Possible
+!values are positive integers.
+!Default is 100.
+!LS_IPARAM_LP_SPRINT_MAXPASS                = 100
+
+
+!Specifies the max number of columns in Sprint as a factor of number of rows.
+!Possible values are non-negative integers.
+!Default is 0 (solver decides).
+LS_IPARAM_LP_SPRINT_COLFACT                = 10
+
+
+!Specifies the basis recovery method.
+!Possible values are positive integers in [0,3].
+!Default is 0 (solver decides).
+!LS_IPARAM_LP_BASRECOV_METHOD               = 0
+
+
+!Specifies the iteration limit for basis polishing.
+!Possible values are integers in the range [-1,+inf].
+!Default is -1 (solver decides).
+LS_IPARAM_LP_BASPOLISH_ITRLMT              = 0
+
+
+!Specifies the B&B tree depth beyond which basis polishing is deactivated.
+!Possible values are integers in the range [-1,+inf].
+!Default is -1 (solver decides).
+LS_IPARAM_LP_BASPOLISH_DEPTH               = 0
+
+
+!Specifies basis polishing strategy.
+!Possible values are bitmasks in the range [0,+inf].
+!Default is 0.
+!LS_IPARAM_LP_BASPOLISH_MODE                = 0
+
+
+!Number of pivot candidates in LU decomposition. Possible
+!values are positive integers. Default is 4.
+!LS_IPARAM_LU_NUM_CANDITS                   = 4
+
+
+!Number of maximum updates in LU decomposition. Possible
+!values are positive integers. Default is 500.
+!LS_IPARAM_LU_MAX_UPDATES                   = 500
+
+
+!Print level for LU decomposition. Possible values
+!are positive integers. Default is 0.
+!LS_IPARAM_LU_PRINT_LEVEL                   = 0
+
+
+!Basis update type in simplex. Possible values are 
+!#-1: Solver decides
+!# 0: Eta updates
+!# 1: Forrest-Tomlin updates.
+!Default is 1.
+!LS_IPARAM_LU_UPDATE_TYPE                   = 1
+
+
+!Reserved for internal use. Default is 0.
+!LS_IPARAM_LU_MODE                          = 0
+
+
+!LU pivot mode. Reserved for internal use. Default is 0.
+!LS_IPARAM_LU_PIVMOD                        = 0
+
+
+!LU Pivot tolerance. Possible values are (0,1). Default is 2.22045e-016.
+!LS_DPARAM_LU_EPS_DIAG                      = 2.22045e-16
+
+
+!LU Nonzero tolerance. Possible values are (0,1). Default is 2.22045e-016.
+!LS_DPARAM_LU_EPS_NONZ                      = 2.22045e-16
+
+
+!Absolute pivot tolerance. Possible values are (0,1). Default is 1e-008.
+!LS_DPARAM_LU_EPS_PIVABS                    = 1e-08
+
+
+!LU Relative pivot tolerance. Possible values are (0,1). Default is 0.01
+LS_DPARAM_LU_EPS_PIVREL                    = 0.3
+
+
+!LU Initial reciprocal condition estimator tolerance.
+!Possible values are (0,1). 
+!Default is 0.01.
+!LS_DPARAM_LU_INI_RCOND                     = 0.01
+
+
+!LU Threshold for sparse update. Reserved for internal use.
+!Default is 0.001.
+!LS_DPARAM_LU_SPVTOL_UPDATE                 = 0.001
+
+
+!LU threshold for sparse FTRAN. Reserved for internal use.
+!Default is 0.2.
+!LS_DPARAM_LU_SPVTOL_FTRAN                  = 0.2
+
+
+!LU threshold for sparse BTRAN. Reserved for internal use.
+!Default is 0.1.
+!LS_DPARAM_LU_SPVTOL_BTRAN                  = 0.1
+
+
+!Reserved for internal use. Default is 0.
+!LS_IPARAM_LU_CORE                          = 0
+
+
+!This is the time limit in seconds (integer) for MIP solver. Range for
+!possible values is [-1, inf). The default value is -1, which means
+!no time limit is imposed. However, the value of
+!LS_DPARAM_SOLVER_TIMLMT will be applied to each continuous sub
+!problem solve.
+!If the value of this parameter is greater than 0, then thevalue
+!of LS_DPARAM_SOLVER_TIMLMT will be disregarded.
+!If the time limit, LS_DPARAM_MIP_TIMLIM, is reached and a feasible integer solution
+!was found, it will be installed as the incumbent (best known) solution.
+LS_IPARAM_MIP_TIMLIM                       = 5
+
+
+!This is the time in seconds (integer) beyond which the relative optimality
+!tolerance, LS_DPARAM_MIP_PEROPTTOL, will be applied. Range for
+!possible values is [-1,inf). The default value is 100 seconds.
+LS_IPARAM_MIP_AOPTTIMLIM                   = -1
+
+
+!This value controls the time limit until finding a new integer solution
+!since the last integer solution found. Range for possible values is
+![-1,inf). The default value is -1, which means no time limit is imposed.
+!LS_IPARAM_MIP_LSOLTIMLIM                   = -1
+
+
+!This controls the amount and type of MIP pre-solving
+!at root node. Possible options are:
+!# Simple pre-solving +2
+!# Probing +4
+!# Coefficient reduction +8
+!# Elimination +16
+!# Dual reductions +32
+!# Use dual information +64
+!# Binary row presolving +128
+!# Row aggregation +256
+!# Coefficient lifting   +512
+!# Maximum pass  +1024
+!# Similar row  +2048
+!The default value is: 
+!3070 = 2+4+8+16+32+64+128+256+ 512+2048.
+!LS_IPARAM_MIP_PRELEVEL                     = 3070
+
+
+!This specifies the node selection rule for choosing between
+!all active nodes in the branch-and-bound tree when
+!solving integer programs. Possible selections are:
+!# 0: Solver decides .
+!# 1: Depth first search.
+!# 2: Choose node with worst bound.
+!# 3: Choose node with best bound.
+!# 4: Start with best bound. If no improvement in the gap between best bound
+!and best integer solution is obtained for some time, switch to:
+!if (number of active nodes<10000)
+!Best estimate node selection (5).
+!else
+!Worst bound node selection (2).
+!# 5: Choose the node with the best estimate, where the
+!new objective estimate is obtained using pseudo costs.
+!# 6: Same as (4), but start with the best estimate.
+!The default value is 4.
+!LS_IPARAM_MIP_NODESELRULE                  = 4
+
+
+!An integer variable is considered integer feasible if the absolute
+!difference from the nearest integer is smaller than this. Range
+!for possible values is [1e-10,0.5). The default value is 0.000001.
+!Note, this is similar to the tolerance LS_DPARAM_MIP_RELINTTOL,
+!but it uses absolute differences rather than relative differences.
+!LS_DPARAM_MIP_INTTOL                       = 1e-06
+
+
+!An integer variable is considered integer feasible if the difference between its
+!value and the nearest integer value divided by the value of the nearest integer
+!is less than this. Range for possible values is [1e-10,0.5). The default value is
+!8e-6. Note this is a relative version of the LS_DPARAM_MIP_INTTOL tolerance.
+LS_DPARAM_MIP_RELINTTOL                    = 1e-06
+
+
+!This is the MIP relative optimality tolerance. Solutions must beat the
+!incumbent by at least this relative amount to become the new, best
+!solution. Range for possible values is [1e-10,1). The default value is
+!1e-6.
+!LS_DPARAM_MIP_RELOPTTOL                    = 1e-06
+
+
+!This is the MIP relative optimality tolerance that will be in effect
+!after T seconds following the start. The value T should be
+!specified using the LS_DPARAM_MIP_AOPTTIMLIM parameter. Range
+!for possible values is [1e-10,1). The default value is 1e-5.
+!LS_DPARAM_MIP_PEROPTTOL                    = 1e-05
+
+
+!This controls the number passes to generate cuts on the root node.
+!Each of these passes will be followed by a re-optimization and a
+!new batch of cuts will be generated at the new solution.  Range
+!for possible values is [0,inf). The default value is 100.
+!LS_IPARAM_MIP_MAXCUTPASS_TOP               = 100
+
+
+!This controls the number passes to generate cuts on the child nodes.
+!Each of these passes will be followed by a re-optimization and a
+!new batch of cuts will be generated at the new solution. Range
+!for possible values is [0,inf). The default value is 2.
+!LS_IPARAM_MIP_MAXCUTPASS_TREE              = 2
+
+
+!This determines how many constraint cuts can be added as a percentage of the number
+!of original rows in an integer programming model. Range for possible values is
+![0,100). 0.75 is the default value, which means the total number of constraint
+!cuts LINDO API adds will not exceed 75% of the original row count.
+!LS_DPARAM_MIP_ADDCUTPER                    = 0.75
+
+
+!This determines how many constraint cuts can be added at child nodes
+!as a percentage of the number of original rows in an integer
+!programming model. Range for possible values is [0,100). 0.75 is
+!the default value, which means the total number of constraint cuts
+!LINDO API adds will not exceed 75% of the original row count.
+!LS_DPARAM_MIP_ADDCUTPER_TREE               = 0.75
+
+
+!This controls the maximum number of passes allowed in cut-generation
+!that does not improve the current relaxation. Range for
+!possible values is [0,inf). The default value is 3.
+!LS_IPARAM_MIP_MAXNONIMP_CUTPASS            = 3
+
+
+!This controls the combination of cut types to try at the root node
+!when solving a MIP. Bit settings are used to enable the various
+!cut types. Add the following values to enable the specified cuts:
+!# GUB cover +2
+!# Flow cover +4
+!# Lifting  +8
+!# Plant location +16
+!# Disaggregation +32
+!# Knapsack cover +64
+!# Lattice +128
+!# Gomory +256
+!# Coefficient reduction  +512
+!# GCD +1024
+!# Obj integrality  +2048
+!# Basis Cuts  +4096
+!# Cardinality Cuts +8192
+!# Disjunctive Cuts +16384
+!# Soft Knapsack Cuts  +32768
+!# LP Rounding Cuts  +65536
+!The default is 57342  which means all cut types
+!except cardinality cuts and LP Rounding cuts are generated.
+!LS_IPARAM_MIP_CUTLEVEL_TOP                 = 57342
+
+
+!This controls the combination of cut types to try at child nodes in the B&B tree
+!when solving a MIP. The bit settings to enable cuts at child nodes are the
+!same as those used to enable cuts at the root node. The default is 53246.
+!LS_IPARAM_MIP_CUTLEVEL_TREE                = 53246
+
+
+!This controls the total time to be spent in cut generation throughout the solution
+!of a MIP. Range for possible values is [0,inf). The default value is -1,
+!indicating that no time limits will be imposed when generating cuts.
+!LS_IPARAM_MIP_CUTTIMLIM                    = -1
+
+
+!This controls a threshold value for the depth of nodes in the B&B tree,
+!so cut generation will be less likely at those nodes deeper than this
+!threshold. Range for possible values is [0,inf). The default is 5.
+!LS_IPARAM_MIP_CUTDEPTH                     = 5
+
+
+!This controls the frequency of invoking cut generation at child nodes.
+!Range for possible values is [0,inf). The default value is 10,
+!indicating that the MIP solver will try to generate cuts at every 10
+!nodes.
+!LS_IPARAM_MIP_CUTFREQ                      = 10
+
+
+!This specifies the heuristic used to find the
+!integer solution. Possible values are:
+!# 0: No heuristic is used.
+!# 1: A simple heuristic is used. Typically, this will find integer solutions
+!only on problems with a certain structure. However, it tends to be fast.
+!# >2: This is an advanced heuristic that tries to find a 'good' integer
+!solution fast. In general, a value of 2 will not increase the total
+!solution time and will find an integer solution fast on many problems.
+!A higher value may find an integer solution faster, or an integer
+!solution where none would have been found with a lower level. Try
+!level 3 or 4 on 'difficult' problems where 2 does not help.
+!Higher values cause more time to be spent in the heuristic. The value may
+!be set arbitrarily high. However, >20 is probably not worthwhile.
+!The default is 3.
+!LS_DPARAM_MIP_HEUMINTIMLIM (above) controls the time
+!to be spent in searching heuristic solutions.
+!LS_IPARAM_MIP_HEULEVEL                     = 3
+
+
+!This specifies the amount of printing to do. Possible values are:
+!# 0: Do not print anything.
+!# 1: Print most basic information for branch-and-bound iterations.
+!# 2: Level 1 plus print information regarding addition of cuts, etc (default).
+LS_IPARAM_MIP_PRINTLEVEL                   = 0
+
+
+!This specifies the trace print level for the
+!MIP presolver. Possible selections are:
+!# 0: Do not print anything (default).
+!# 1: Print summary of preprocessing.
+!LS_IPARAM_MIP_PREPRINTLEVEL                = 0
+
+
+!If this is specified, then any part of the branch-and-bound tree that has
+!a bound worse than this value will not be considered. This can be used
+!to reduce the running time if a good bound is known. Set to a large
+!positive value (LS_INFINITY) to disable if a finite value had been
+!specified. Range for possible values is (-inf,inf). Default is
+!LS_INFINITY.
+!LS_DPARAM_MIP_CUTOFFOBJ                    = 1e+30
+
+
+!This is a flag for the parameter LS_DPARAM_MIP_CUTOFFOBJ. The value of 0 means
+!that the current cutoff value is ignored, else it is used as defined. If you
+!don't want to lose the value of the parameter LS_DPARAM_MIP_CUTOFFOBJ, this
+!provides an alternative to disabling the cutoff objective. Possible values
+!are 0 (no), 1 (yes) and -1 (the solver decides). The default is 0.
+!LS_IPARAM_MIP_USECUTOFFOBJ                 = 0
+
+
+!This specifies the depth from the root in which strong branching is used. Range
+!for possible values is [0,inf). The default value of 10 means that strong
+!branching is used on a level of 1 to 10 measured from the root. Strong
+!branching finds the real bound for branching on a given variable, which, in
+!most cases, requires a solution of a linear program and may therefore also
+!be quite expensive in computing time. However, if used on nodes close to the
+!root node of the tree, it also gives a much better bound for that part of
+!the tree and can therefore reduce the size of the branch-and-bound tree.
+!LS_IPARAM_MIP_STRONGBRANCHLEVEL            = 10
+
+
+!This specifies the tree reordering level. Range for
+!possible values is [0,inf). The default is 10.
+!LS_IPARAM_MIP_TREEREORDERLEVEL             = 10
+
+
+!This specifies the direction to branch first when
+!branching on a variable. Possible values are:
+!# 0: Solver decides (default),
+!# 1: Always branch up first,
+!# 2: Always branch down first.
+!LS_IPARAM_MIP_BRANCHDIR                    = 0
+
+
+!This specifies which optimization method to use when
+!there is no previous basis. Possible values are:
+!# LS_METHOD_FREE (default)
+!# LS_METHOD_PSIMPLEX
+!# LS_METHOD_DSIMPLEX
+!# LS_METHOD_BARRIER
+!# LS_METHOD_NLP
+!LS_IPARAM_MIP_TOPOPT                       = 0
+
+
+!This specifies which optimization method to use when doing
+!reoptimization from a given basis. Possible values are:
+!# LS_METHOD_FREE (default)
+!# LS_METHOD_PSIMPLEX
+!# LS_METHOD_DSIMPLEX
+!# LS_METHOD_BARRIER
+!# LS_METHOD_NLP
+!LS_IPARAM_MIP_REOPT                        = 0
+
+
+!This specifies the optimization method to use when
+!solving mixed-integer models. Possible values are:
+!# 0: Solver decides (default).
+!# 1: Use B&B only.
+!# 2: Use Enumeration and Knapsack solver only.
+!LS_IPARAM_MIP_SOLVERTYPE                   = 0
+
+
+!If this is set to 1, the integer pre-solver will try to keep
+!LP bases in memory. This typically gives faster solution
+!times, but uses more memory. Setting this parameter to 0
+!causes the pre-solver to erase bases from memory. The default
+!is 1.
+!LS_IPARAM_MIP_KEEPINMEM                    = 1
+
+
+!This specifies the rule for choosing the variable to branch
+!on at the selected node. Possible selections are:
+!# 0: Solver decides (default).
+!# 1: Basis rounding with pseudo reduced costs.
+!# 2: Maximum infeasibility.
+!# 3: Pseudo reduced costs only.
+!# 4:   Maximum coefficient only.
+!# 5:   Previous branching only.
+!LS_IPARAM_MIP_BRANCHRULE                   = 0
+
+
+!This specifies the cutoff value as a percentage of the reduced costs to
+!be used in fixing variables when using the reduced cost fixing
+!heuristic. Range for possible values is [0,9.9e-1]. The default is
+!0.99.
+!LS_DPARAM_MIP_REDCOSTFIX_CUTOFF            = 0.99
+
+
+!This specifies the minimum required change in the objective function for the
+!cut generation phase to continue generating cuts. Range for possible values
+!is [0,1]. The default, based on empirical testing,  is set at  1.5625e-5.
+!LS_DPARAM_MIP_ADDCUTOBJTOL                 = 1.5625e-05
+
+
+!This specifies the minimum time in seconds to be spent in finding heuristic solutions
+!to the MIP model. LS_IPARAM_MIP_HEULEVEL (below) controls the heuristic used
+!to find the integer solution. Range for possible values is [0,inf).
+!The default is 0.
+!LS_IPARAM_MIP_HEUMINTIMLIM                 = 0
+
+
+!This controls how variable selection priorities
+!are set and used. Possible values are:
+!# 0: If user has specified priorities, then
+!use them. Otherwise, let LINDO API decide.
+!# 1: If user has specified priorities, then use them. However,
+!also allow overwriting user's choices if necessary.
+!# 2: If user has specified priorities, then use
+!them. Otherwise, do not use any priorities.
+!# 3: Let LINDO API set the priorities and ignore any user specified priorities.
+!# 4:  Binaries always have higher priority over general integers.
+!The default is 0.
+!LS_IPARAM_MIP_BRANCH_PRIO                  = 0
+
+
+!This controls the maximum difference between the upper and lower bounds
+!of an integer variable that will enable the scaling in the simplex
+!solver when solving a sub problem in the branch-and-bound tree.
+!Range for possible values is [-1,inf). The default value is 10000.
+!LS_IPARAM_MIP_SCALING_BOUND                = 10000
+
+
+!This specifies the weight in pseudocost computations for variable selection.
+!Range for possible values is (0,inf). The default is 6.25.
+!LS_DPARAM_MIP_PSEUDOCOST_WEIGT             = 6.25
+
+
+!This refers to the Big-M value used in linearizing nonlinear expressions.
+!Range for possible values is (0,inf). The default value is 1.0e+5.
+!LS_DPARAM_MIP_LBIGM                        = 100000
+
+
+!This refers to a near-zero value used in linearizing nonlinear expressions.
+!Range for possible values is (0,inf). The default value is 1.0e-6.
+!LS_DPARAM_MIP_DELTA                        = 1e-06
+
+
+!This flag controls whether the dual solution to the LP relaxation
+!that yielded the optimal MIP solution will be computed or not.
+!Possible values are 0 (no), 1 (yes). The default is 0.
+!LS_IPARAM_MIP_DUAL_SOLUTION                = 0
+
+
+!This is the limit on the total number of branches to be created
+!during branch-and-bound. Range for possible values is [-1,inf).
+!The default value is -1, which means no limit is imposed.
+!If the branch limit, LS_IPARAM_MIP_BRANCH_LIMIT, is reached
+!and a feasible integer solution was found, it will be
+!installed as the incumbent (best known) solution.
+!LS_IPARAM_MIP_BRANCH_LIMIT                 = -1
+
+
+!This is the total LP iteration limit (stored as a double variable) summed over
+!all branches for branch-and-bound. Range for possible values is [-1,inf). The
+!default value is -1, which means no iteration limit is imposed. If this
+!iteration limit is reached, branch-and-bound will stop and the best feasible
+!integer solution found will be installed as the incumbent (best known)
+!solution.
+!Remark: Deprecated name LS_IPARAM_MIP_ITRLIM (integer typed)
+!LS_DPARAM_MIP_ITRLIM                       = -1
+
+
+!This specifies an upper limit on the number of constraints to be involved in the
+!derivation of an aggregation cut at the root node.  Range for possible values
+!is [-1,inf). The default is -1, which means that the solver will decide.
+!LS_IPARAM_MIP_AGGCUTLIM_TOP                = -1
+
+
+!This specifies an upper limit on the number of constraints to be
+!involved in the derivation of an aggregation cut at the tree
+!nodes. Range for possible values is [-1,inf). The default is 3.
+!LS_IPARAM_MIP_AGGCUTLIM_TREE               = 3
+
+
+!This specifies the (positive) factor that multiplies the number of constraints
+!to impose an iteration limit to simplex method and trigger a switch over
+!to the barrier method. Range for possible values is [-1,inf).
+!The default value is -1, which means that no iteration limit is imposed.
+!LS_DPARAM_MIP_SWITCHFAC_SIM_IPM_ITER       = -1
+
+
+!This specifies the threshold on active nodes for switching to depth-first search
+!rule. Range for possible values is [-1,inf). The default is 50,000.
+!LS_IPARAM_MIP_ANODES_SWITCH_DF             = 50000
+
+
+!This is the MIP absolute optimality tolerance. Solutions must beat the
+!incumbent by at least this absolute amount to become the new, best
+!solution. Range for possible values is [0,inf). The default value is 0.
+!LS_DPARAM_MIP_ABSOPTTOL                    = 0
+
+
+!This specifies the value to update the cutoff value each time a mixed integer solution
+!is found. Range for possible values is (-inf,inf). The default is 0.0
+!LS_DPARAM_MIP_MINABSOBJSTEP                = 0
+
+
+!This specifies the rule in pseudocost computations
+!for variable selection. Possible values are
+!# 0: solver decides (default).
+!# 1: only use min pseudo cost.
+!# 2: only use max pseudo cost.
+!# 3: use quadratic score function and the pseudo cost weigth.
+!# 4: same as 3 without quadratic score.
+!LS_IPARAM_MIP_PSEUDOCOST_RULE              = 0
+
+
+!This specifies the frequency of enumeration heuristic. Possible values are
+!# 0: off
+!# 1: only at top (root) node without cuts.
+!# 2: both at top (root) and tree nodes without cuts.
+!# 3: same as 1 with cuts.
+!# 4: same as 2 with cuts (default).
+!LS_IPARAM_MIP_ENUM_HEUMODE                 = 4
+
+
+!This controls the amount and type of MIP pre-solving
+!at tree nodes. Possible options are:
+!# Simple pre-solving +2
+!# Probing +4
+!# Coefficient reduction +8
+!# Elimination +16
+!# Dual reductions +32
+!# Use dual information +64
+!# Binary row presolving +128
+!# Row aggregation +256
+!# Maximum pass +512
+!The default value is: 
+!686 = 2+4+8+32+128+512.
+!LS_IPARAM_MIP_PRELEVEL_TREE                = 686
+
+
+!This specifies the cutoff value as a percentage of the reduced costs to be
+!used in fixing variables when using the reduced cost fixing heuristic at
+!tree nodes. Range for possible values is [0,9.9e-1]. The default is 0.9.
+!LS_DPARAM_MIP_REDCOSTFIX_CUTOFF_TREE       = 0.9
+
+
+!This flag controls if all MIP calculations would be based on the
+!integrality tolerance specified by LS_DPARAM_MIP_INTTOL.  The
+!flag will be disregarded if the following conditions fail to hold
+!# All coefficients of the coefficient matrix
+!and the right-hand side vector are integers
+!# Any continuous variable that is not yet proved to be
+!an implied integer has coefficients  all -1 or +1.
+!# All continuous variables have integer bounds or, -inf or +inf
+!# All continuous variables have only one nonzero in each constraint.
+!Possible values are 0 (no), 1 (yes) and -1 (the solver
+!decides). The default for this flag is 0.
+!LS_IPARAM_MIP_USE_INT_ZERO_TOL             = 0
+
+
+!This flag controls if cut generation is enabled during MIP heuristics. Possible
+!values are 0 (no), 1 (yes) and -1 (the solver decides). The default is -1.
+!LS_IPARAM_MIP_USE_CUTS_HEU                 = -1
+
+
+!This value specifies the threshold for which the coefficient of
+!a binary variable would be considered as big-M (when
+!applicable). Range for possible values is [1e-6,inf). The default
+!is 1.0e8.
+!LS_DPARAM_MIP_BIGM_FOR_INTTOL              = 1e+08
+
+
+!This value specifies the minimum number of variables, among
+!all the candidates,  to try the strong branching on.
+!Range for possible values is [0,inf). The default is 3.
+!LS_IPARAM_MIP_STRONGBRANCHDONUM            = 3
+
+
+!This value specifies the threshold for the times a cut could remain active
+!after successive reoptimization during branch-and-bound.  If the
+!count is larger than the specified level the solver will inactive the
+!cut. Range for possible values is [0,inf). The default is 20.
+!LS_IPARAM_MIP_MAKECUT_INACTIVE_COUNT       = 20
+
+
+!This is a nonnegative value that controls the fill-in introduced by the
+!eliminations during pre-solveSmaller values could help when the total
+!nonzeros in the presolved model is significantly more than the original
+!model.  Range for possible values is [0,inf). The default is 100.
+!LS_IPARAM_MIP_PRE_ELIM_FILL                = 100
+
+
+!This controls the MIP heuristic mode.  Possible values are:
+!=0 solver is free to decide when to stop the heuristic (default),
+!=1 solver uses a pre-specified time limit to stop the heuristic.
+!=2 solver uses a pre-specified iteration limit to stop the heuristic.
+!The default is 0.
+!LS_IPARAM_MIP_HEU_MODE                     = 0
+
+
+!This is the time limit in seconds for MIP solver. 
+!Range for possible values is [-1.0, inf). The default value is -1,
+!which means no time limit is imposed. If the time limit,
+!LS_DPARAM_MIP_TIMLIM, is reached and a feasible integer solution
+!was found, it will be installed as the incumbent (best known)
+!solution.
+LS_DPARAM_MIP_TIMLIM                       = 5
+
+
+!This is the time in seconds beyond which the relative optimality
+!tolerance, LS_DPARAM_MIP_PEROPTTOL, will be applied. Range for
+!possible values is [-1,inf). The default value is 100 seconds.
+LS_DPARAM_MIP_AOPTTIMLIM                   = -1
+
+
+!This value controls the time limit until finding a new integer solution
+!since the last integer solution found. Range for possible values is
+![-1,inf). The default value is -1, which means no time limit is imposed.
+!LS_DPARAM_MIP_LSOLTIMLIM                   = -1
+
+
+!This controls the total time to be spent in cut generation throughout
+!the solution of a MIP. Range for possible values is [0,inf).
+!The default value is -1.0  indicating that no time
+!limits will be imposed when generating cuts.
+!LS_DPARAM_MIP_CUTTIMLIM                    = -1
+
+
+!This specifies the minimum time in seconds to be spent
+!in finding heuristic solutions to the MIP model.
+!LS_IPARAM_MIP_HEULEVEL (below) controls the heuristic used to find the integer
+!solution. Range for possible values is [0,inf). The default is 0.
+!LS_DPARAM_MIP_HEUMINTIMLIM                 = 0
+
+
+!Controls the mode for the feasibility pump heuristic. Possible values are:
+!# -1: Solver decides
+!# 0: Off,
+!# 1: Solver decides,
+!# 2: On until the first solution,
+!# 3: Try to get more than one solutions.
+!The default is -1.
+!LS_IPARAM_MIP_FP_MODE                      = -1
+
+
+!Controls the weight of the objective function in the  feasibility pump.
+!Possible values are in the closed interval [0,1]. The default is 1.0.
+!LS_DPARAM_MIP_FP_WEIGHT                    = 1
+
+
+!This specifies optimization and reoptimization method
+!for feasibility pump heuristic. Possible values are:
+!# 0: Solver decides (default).
+!# 1: Use primal method.
+!# 2: Use dual simplex.
+!# 3:   Use barrier solver (with or without basis crossover, depending
+!on LS_IPARAM_SOLVER_IPMSOL parameter setting described above)
+!LS_IPARAM_MIP_FP_OPT_METHOD                = 0
+
+
+!This is the time limit in seconds for feasibility pump heuristic.
+!A value of -1 implies no time limit is imposed. Range for
+!possible values is [-1,inf). The default value is 1800.
+!LS_DPARAM_MIP_FP_TIMLIM                    = 1800
+
+
+!This is the iteration limit for feasibility pump heuristic.
+!A value of -1 means no iteration limit is imposed. Range
+!for possible values is [-1,inf). The default value is 500.
+!LS_IPARAM_MIP_FP_ITRLIM                    = 500
+
+
+!This specifies the feasibility-pump (FP) heuristic mode. Possible values are :
+!# 0 : FP is disabled.
+!# 1 : Solver decides.
+!# 2 : Enable FP if no cutoff value or initial mip solution was defined
+!# 3 : Enable FP independent of cutoff values and initial mip solutions
+!# 4 : Same as 2 but also enable FP on child nodes in branch-bound tree.
+!# 5 : Same as 3 but also enable FP on child nodes in branch-bound tree.
+!The default is 0.
+LS_IPARAM_MIP_FP_HEU_MODE                  = 1
+
+
+!This value specifies the threshold for the MIP objective value
+!For minimization problem, if the best known solution has an objective value less than
+!or equal to the threshold, the MIP solver will stop and report this solution.
+!Range for possible values is (-inf, inf). The default is -inf for min, and +inf for max problems.
+!LS_DPARAM_MIP_OBJ_THRESHOLD                = -1e+30
+
+
+!Reserved for future use. Default is 0.
+!LS_IPARAM_MIP_LOCALBRANCHNUM               = 0
+
+
+!This specifies the (positive) factor that multiplies the number of constraints
+!to impose a time limit to simplex method and trigger a switch over to
+!the barrier method. Range for possible values is [-1.0,inf). The
+!default value is -1.0, which means that no time limit is imposed.
+!LS_DPARAM_MIP_SWITCHFAC_SIM_IPM_TIME       = -1
+
+
+!This specifies the simplex-iteration limit for the MIP solver. Possible
+!values are nonnegative integers and -1 (no limit). The default is -1.
+LS_DPARAM_MIP_ITRLIM_SIM                   = 2.37729e+06
+
+
+!This specifies the nonlinear-iteration limit for the MIP solver. Possible
+!values are nonnegative integers and -1 (no limit). The default is -1.
+LS_DPARAM_MIP_ITRLIM_NLP                   = 40000
+
+
+!This specifies the barrier-iteration limit for the MIP solver. Possible
+!values are nonnegative integers and -1 (no limit). The default is -1.
+LS_DPARAM_MIP_ITRLIM_IPM                   = 40000
+
+
+!This specifies the maximum number of k-best solutions to store.
+!Possible values are positive integers. Default is 10.
+!LS_IPARAM_MIP_MAXNUM_MIP_SOL_STORAGE       = 10
+
+
+!This value specifies the concurrent optimization mode with cold start.
+!See: LS_IPARAM_SOLVER_CONCURRENT_OPTMODE for possible values. The default is 0
+!LS_IPARAM_MIP_CONCURRENT_TOPOPTMODE        = 0
+
+
+!This value specifies the concurrent optimization mode with warm start.
+!See: LS_IPARAM_SOLVER_CONCURRENT_OPTMODE for possible values. The default is 0
+!LS_IPARAM_MIP_CONCURRENT_REOPTMODE         = 0
+
+
+!The heuristic level for the prerelax solver. -1 is for solver decides,
+!0 is for nothing. 1 is for one-change, 2 is for one-change and
+!two-change, and 3 is for depth first enumeration. Default is -1.
+!LS_IPARAM_MIP_PREHEU_LEVEL                 = -1
+
+
+!This values specifies the presolver level for the prerelax MIP solver.
+!See:  LS_IPARAM_LP_PRELEVEL for possible values. The default is 10.
+!LS_IPARAM_MIP_PREHEU_PRE_LEVEL             = 10
+
+
+!This value specifies the print level for the prerelax MIP solver.
+!Possible values are nonnegative integers. The default is 0.
+!LS_IPARAM_MIP_PREHEU_PRINT_LEVEL           = 0
+
+
+!Iteration limit for the two change heuristic. Default is 20000000.
+!LS_IPARAM_MIP_PREHEU_TC_ITERLIM            = 20000000
+
+
+!Limit for the variable visit in depth first enumeration. Default is 200.
+!LS_IPARAM_MIP_PREHEU_DFE_VSTLIM            = 200
+
+
+!The sequence of the variable considered by the prerelax heuristic.
+!If 1, then forward; if -1, then backward. Default is -1.
+!LS_IPARAM_MIP_PREHEU_VAR_SEQ               = -1
+
+
+!Reserved for future use. Default is 2.
+!LS_IPARAM_MIP_USE_PARTIALSOL_LEVEL         = 2
+
+
+!This value specifies the general strategy in solving
+!MIPs. Bitmasks defining possible values are:
+!# LS_MIP_MODE_NO_TIME_EVENTS (2): Disable all time-driven
+!events for reproducibility of runs.
+!# LS_MIP_MODE_FAST_FEASIBILITY (4): Favor finding feasible
+!solutions quickly (reserved for future use).
+!# LS_MIP_MODE_FAST_OPTIMALITY (8): Favor proving optimality
+!quickly (reserved for future use).
+!# LS_MIP_MODE_NO_BRANCH_CUTS (16): Disable cut generation before branching.
+!# LS_MIP_MODE_NO_LP_BARRIER (32): Disable barrier method when solving LP relaxation.
+!The default is 2.
+!LS_IPARAM_MIP_GENERAL_MODE                 = 2
+
+
+!This parameter specifies the number of parallel threads
+! to use by the parallel MIP solver.  Possible values are positive
+! integers. The default is 1 implying that the parallel solver is disabled.
+!LS_IPARAM_MIP_NUM_THREADS                  = 1
+
+
+!This value specifies the number of branches to polish in the next round.
+!Possible values are nonnegative integers. The default is 4000.
+!LS_IPARAM_MIP_POLISH_NUM_BRANCH_NEXT       = 4000
+
+
+!This value specifies the maximum number of branches to polish.
+!Possible values are nonnegative integers. The default is 2000.
+!LS_IPARAM_MIP_POLISH_MAX_BRANCH_COUNT      = 2000
+
+
+!This value specifies the proportion solutions in the pool
+!to initiate a polishing-task at the current node.
+!Possible values are:
+!In the range of [0.01,0.99].
+!The default is 0.6.
+!LS_DPARAM_MIP_POLISH_ALPHA_TARGET          = 0.6
+
+
+!Environment, Model This parameter controls the
+!concurrent MIP strategy. Possible values are:
+!# LS_MTMODE_FREE = -1, Solver decides
+!# LS_STRATEGY_USER = 0, Use the custom search strategy
+!defined via a callback function for each thread.
+!# LS_STRATEGY_PRIMIP = 1, Defines built-in priority lists for each thread.
+!# LS_STRATEGY_NODEMIP = 2, Reserved for future use
+!# LS_STRATEGY_HEUMIP = 3, Defines heuristic based strategies for each thread.
+!Default is -1.
+!LS_IPARAM_MIP_CONCURRENT_STRATEGY          = -1
+
+
+!Reserved for future use.
+!The default is 1.0.
+!LS_DPARAM_MIP_BRANCH_TOP_VAL_DIFF_WEIGHT   = 1
+
+
+!Reserved for future use. Default is 3.
+!LS_IPARAM_MIP_BASCUTS_DONUM                = 3
+
+
+!This is a flag for whether to use MIP parallelization
+!on subproblems solved in MIP preprocessing.
+!# 0:  do not use
+!# 1: use (default)
+!LS_IPARAM_MIP_PARA_SUB                     = 1
+
+
+!This value specifies the iteration limit of each round in MIP parallelization,
+!it is a weighted combination of simplex and barrier iterations.
+!Possible values are positive integers. The default is 2.0.
+!LS_DPARAM_MIP_PARA_RND_ITRLMT              = 2
+
+
+!This value specifies the number of initial nodes for MIP parallelization.
+!Possible values are nonnegative integers and -1 (solver decides).
+!The default is -1.
+!LS_DPARAM_MIP_PARA_INIT_NODE               = -1
+
+
+!This is a flag for iteration mode in MIP parallelization.
+!Possible values are:
+!# 0:  each thread terminates as soon as arrives iteration limit.
+!# 1:  each thread terminates until all threads get iteration limit (default).
+!LS_IPARAM_MIP_PARA_ITR_MODE                = 1
+
+
+!This is a flag for whether to use parallelization
+!on the feasibility pump heuristic.
+!Possible options are:
+!# 0:  not use
+!# 1:  use
+!The default value is 1.
+!LS_IPARAM_MIP_PARA_FP                      = 1
+
+
+!This specifies the mode of parallel feasibility pump.
+!Possible options are:
+!# 0:  terminate when all threads finish
+!# 1:  terminate as soon as the master thread finishes
+!The default value is 0.
+!LS_IPARAM_MIP_PARA_FP_MODE                 = 0
+
+
+!This specifies whether to use without OBJ heu.
+!Possible values are:
+!# 0 : Not Use
+!# 1:  Use.
+!The default value is 0.
+!LS_IPARAM_MIP_HEU_DROP_OBJ                 = 0
+
+
+!This specifies the MIP absolute cut tolerance.
+!Possible values are:
+!#  < 0: Internally decided tolerance.
+!#  >= 0: User defined tolerance.
+!The default value is -1.0.
+!LS_DPARAM_MIP_ABSCUTTOL                    = -1
+
+
+!This specifies whether to use Perspective Reformulation.
+!Possible values are:
+!# 0: Off.
+!# 1: on.
+!The default value is 1.
+!LS_IPARAM_MIP_PERSPECTIVE_REFORM           = 1
+
+
+!This specifies the tree reordering mode.
+!Possible values are:
+!# 1: Use tree reordering only for subproblems.
+!# 2: Use tree reordering for subproblems and the
+!main bnb loop only when LP status is infeasible.
+!# 3: Not use tree reordering.
+!# 4: Use tree reordering based on LS_IPARAM_MIP_TREEREORDERLEVEL.
+!The default value is 1.
+!LS_IPARAM_MIP_TREEREORDERMODE              = 1
+
+
+!This specifies the external solver to use solving MIPs.
+!Possible values are:
+!# 0: do not use any external solvers
+!# 3: use Gurobi's MIP solver
+!The default is 0.
+!LS_IPARAM_MIP_XSOLVER                      = 0
+
+
+!This specifies whether to invoke the BNP solver automatically when MIP solver is called.
+!0: do not invoke BNP solver automatically,
+!1: invoke the BNP solver automatically if it is determined to be beneficiary.
+!The default is 0.
+!LS_IPARAM_MIP_BNB_TRY_BNP                  = 0
+
+
+!This specifies whether to use gop solver in MIP KBest.
+!0: do not use gop,
+!1: use gop.
+!The default is 0.
+!LS_IPARAM_MIP_KBEST_USE_GOP                = 0
+
+
+!This specifies mip symmetry handling methods.
+!-1: solver decides,
+!0: do not use symmetries,
+!1: adding symmetry breaking cuts.
+!2: orbital fixing.
+!The default is -1.
+!LS_IPARAM_MIP_SYMMETRY_MODE                = -1
+
+
+!This specifies the method used for linearizing the ALLDIFF constraints.
+!-1: solver decides.
+!1: using the sequencing formulation.
+!2: using assignment formulation.
+!The default is -1.
+!LS_IPARAM_MIP_ALLDIFF_METHOD               = -1
+
+
+!This is the integer solution limit for MIP solver.
+!Range for possible values is [-1, INT_MAX). The default
+!value is -1, which means no solution limit is imposed.
+!LS_IPARAM_MIP_SOLLIM                       = -1
+
+
+!This specifies the type of objective in the projection step of
+!feasibility pump heuristic. Possible values are:
+!# 0 (default)
+!# 1 
+!LS_IPARAM_MIP_FP_PROJECTION                = 0
+
+
+!Solver does not handle symmetries when the total nonzeros
+!in the presolved model is more than this value and the
+!parameter LS_IPARAM_MIP_SYMMETRY_MODE is set to -1.
+!Range for possible values is [0, INT_MAX). The default
+!value is 50000.
+!LS_IPARAM_MIP_SYMMETRY_NONZ                = 50000
+
+
+!This is the iteration limit of the LP solved after fixing
+!integer variables to their initial values. Range for
+!possible values is [0, INT_MAX). The default value is -1,
+!which means the solver decides on the limit.
+!LS_IPARAM_MIP_FIXINIT_ITRLIM               = -1
+
+
+!This value is the GOP optimality tolerance. Solutions must
+!beat the incumbent by at least this amount to become the
+!new best solution. Range for possible values is [0,1].
+!The default value is 1e-5.
+!Remark: Deprecated name LS_DPARAM_GOP_OPTTOL
+!LS_DPARAM_GOP_RELOPTTOL                    = 1e-05
+
+
+!Option GOP floating-point tolerance.
+!The default is 1e-010.
+!LS_DPARAM_GOP_FLTTOL                       = 1e-10
+
+
+!This value specifies the minimal width of variable intervals in a box allowed
+!to branch. Range for possible values is [0,1]. The default value is 1.0e-6.
+!LS_DPARAM_GOP_BOXTOL                       = 1e-06
+
+
+!This value specifies the maximal width of variable intervals for
+!a box to be considered as an incumbent box containing an
+!incumbent solution. It is used when LS_IPARAM_GOP_MAXWIDMD is set
+!at 1. Range for possible values is [0,1]. The default value is
+!1e-4.
+!LS_DPARAM_GOP_WIDTOL                       = 0.0001
+
+
+!This value is the delta tolerance in the GOP convexification. It is a measure of
+!how closely the additional constraints added as part of convexification should
+!be satisfied. Range for possible values is [0,1]. The default value is 1e-7.
+LS_DPARAM_GOP_DELTATOL                     = 1e-05
+
+
+!This value specifies the maximum magnitude of variable bounds used in the GOP convexification.
+!Any lower bound smaller than the negative of this value will be treated as the
+!negative of this value. Any upper bound greater than this value will be treated
+!as this value. This helps the global solver focus on more productive domains.
+!Range for possible values is [0,inf). The default value is 1e10.
+!LS_DPARAM_GOP_BNDLIM                       = 1e+10
+
+
+!This is the integer time limit in seconds for GOP branch-and-bound.
+!Range for possible values is [-1, INT_MAX). The default
+!value is -1, which means no time limit is imposed.
+LS_IPARAM_GOP_TIMLIM                       = 5
+
+
+!This specifies the criterion used to certify
+!the global optimality. Possible values are:
+!# 0: the absolute deviation of objective lower and upper bounds should
+!be smaller than LS_DPARAM_GOP_RELOPTTOL at the global optimum.
+!# 1: the relative deviation of objective lower and upper bounds should
+!be smaller than LS_DPARAM_GOP_RELOPTTOL at the global optimum.
+!# 2: which means either absolute or relative tolerance
+!is satisfied at global optimum (default).
+!LS_IPARAM_GOP_OPTCHKMD                     = 2
+
+
+!This specifies how the branching variable is selected in GOP. The branch variable
+!is selected as the one that holds the largest magnitude in the measure.
+!Possible values are:
+!# 0: Absolute width of interval.
+!# 1: Locally relative width.
+!# 2: Globally relative width.
+!#3: Globally relative distance from the convex minimum to the bounds.
+!# 4: Absolute violation between the function and
+!its convex envelope at the convex minimum.
+!# 5: Relative violation between the function and
+!its convex envelope at the convex minimum.
+!The default value is 5.
+!LS_IPARAM_GOP_BRANCHMD                     = 5
+
+
+!This is the maximum width flag for the global solution. The GOP branch-and-bound
+!may continue contracting a box with an incumbent solution until its
+!maximum width is smaller than LS_DPARAM_GOP_WIDTOL.
+!The possible value are:
+!# 0: the maximum width criterion is suppressed (default).
+!# 1: the maximum width criterion is performed.
+!LS_IPARAM_GOP_MAXWIDMD                     = 0
+
+
+!This controls the amount and type of GOP pre-solving. Possible options are:
+!# Initial model reduction                    +1
+!# Initial local optimization                 +2
+!# Initial linear constraint propagation      +4
+!# Recursive linear constraint propagation    +8
+!# Recursive nonlinear constraint propagation +16
+!# Search for good near feasible solutions    +32
+!# Check for unboundedness                    +64
+!# Alter derivative methods                   +128
+!# MIP pre-optimizations                      +256
+!# NLP pre-optimizations                      +512
+!# Add auxiliary variables                    +1024
+!The default value is 1022 = 2+4+8+16+32+64+128+256+512
+!LS_IPARAM_GOP_PRELEVEL                     = 1022
+
+
+!This controls the amount and type of GOP post-solving. Possible options are:
+!Apply LSgetBestBound()                             +2
+!Reoptimize variable bounds                         +4
+!Reoptimize variable bounds on selected node only   +8
+!The default value is: 14 = 2+4+8
+!LS_IPARAM_GOP_POSTLEVEL                    = 14
+
+
+!This specifies the node selection rule for choosing between
+!all active nodes in the GOP branch-and-bound tree when
+!solving global optimization programs. Possible selections
+!are:
+!# 0: Depth first search.
+!# 1: Choose node with worst bound.
+!The default value is 1.
+!LS_IPARAM_GOP_BBSRCHMD                     = 1
+
+
+!This specifies the decomposition point selection rule. In the branch
+!step of GOP branch-and-bound, a branch point M is selected to
+!decompose the selected variable interval [Lb, Ub] into two
+!sub-intervals, [Lb, M] and [M, Ub]. Possible options are:
+!# 0: mid-point.
+!# 1: local minimum/convex minimum.
+!The default value is 1.
+!LS_IPARAM_GOP_DECOMPPTMD                   = 1
+
+
+!This controls the algebraic reformulation rule for a GOP. The algebraic
+!reformulation and analysis is very crucial in building a tight
+!convex envelope to enclose the nonlinear/non-convex functions. A
+!lower degree of overestimation on convex envelopes helps increase
+!the convergence rate to the global optimum. Possible options are:
+!# Rearrange and collect terms   +2
+!# Expand all parentheses   +4
+!# Retain nonlinear functions   +8
+!# Selectively expand parentheses +16
+!The default value is:  18 = 2+16
+LS_IPARAM_GOP_ALGREFORMMD                  = 50
+
+
+!This controls the reliable rounding rule in the GOP branch-and-bound. The
+!global solver applies many sub-optimizations to estimate the lower and
+!upper bounds on the global optimum. A rounding error or numerical
+!instability could unintentionally cut off a good solution. A variety of
+!reliable approaches are available to improve the precision. Possible
+!values are:
+!# No rounding  0
+!# Use smaller optimality/feasibility tolerances
+!and appropriate pre-solving options  +2
+!# Apply interval arithmetic to re-verify the solution feasibility  +4
+!The default value is 0.
+!LS_IPARAM_GOP_RELBRNDMD                    = 0
+
+
+!This specifies the amount of print to do for
+!the global solver. Possible selections are:
+!# 0: Do not print anything.
+!# 1: Print information for GOP branch-and-bound iterations (default).
+LS_IPARAM_GOP_PRINTLEVEL                   = 0
+
+
+!This value is associated with the parameter LS_DPARAM_GOP_BNDLIM and
+!determines the mode how the specified bound limit will be used.
+!Possible values are:
+! # 0:Do not use the bound limit on the variables.
+! # 1: Use the bound limit right at the beginning of global optimization.
+!# 2: Use the bound limit after the initial local optimization, if
+!selected. This properly sets the bound limit for each variable
+!to include the initial solution, if any, within the range.
+!The default is 2.
+!LS_IPARAM_GOP_BNDLIM_MODE                  = 2
+
+
+!This is the integer limit on the total number of branches to be created
+!during branch-and-bound in GOP tree. Range for possible values is
+![-1,INT_MAX]. The default is INT_MAX (2147483647). If the branch
+!limit, LS_IPARAM_GOP_BRANCH_LIMIT, is reached and a feasible solution
+!was found, it will be installed as the incumbent (best known)
+!solution.
+!This controls the strategy of GOP
+!branch-and-bound procedure.
+!Possible options are:
+!# LP convex relaxation     +2
+!# Honor NLP solutions      +4
+!# Box Branching            +8
+!# Honor IPM solutions      +16
+! The default is 30.
+!LS_IPARAM_GOP_BRANCH_LIMIT                 = 2147483647
+
+
+!Reserved for future use. The default is 30.
+!LS_IPARAM_GOP_CORELEVEL                    = 30
+
+
+!This specifies the mode for global search. Possible values are
+!# 0: global search for a feasible solution (thus a feasibility certificate).
+!# 1: global search for an optimal solution (default).
+!# 2: global search for an unboundedness certificate.
+!The default value is 1.
+!LS_IPARAM_GOP_OPT_MODE                     = 1
+
+
+!This specifies the heuristic used in the global solver
+!to find good solution. Possible values are:
+!# 0: No heuristic is used.
+!# 1: A simple heuristic is used. Typically, this will put more efforts in searching
+!for good solutions, and less in bound tightening. The default is 0.
+!LS_IPARAM_GOP_HEU_MODE                     = 0
+
+
+!This is a flag indicating whether fixed variables are substituted
+!out of the instruction list used in the global solver.
+!Possible values are 0 (no), 1 (yes). The default is 1.
+!LS_IPARAM_GOP_SUBOUT_MODE                  = 1
+
+
+!This is reserved for internal use only.
+!The default value is 1.
+!LS_IPARAM_GOP_USE_NLPSOLVE                 = 1
+
+
+!This value controls the branch limit until finding a new nonlinear solution
+!since the last nonlinear solution is found. Range for possible values is
+![-1,inf). The default value is -1, which means no branch limit is imposed.
+!LS_IPARAM_GOP_LSOLBRANLIM                  = -1
+
+
+!This is reserved for internal use only.
+!The default is 2.
+LS_IPARAM_GOP_LPSOPT                       = 0
+
+
+!This is the time limit in seconds for GOP branch-and-bound.
+!Range for possible values is [-1.0,inf). The default
+!value is -1.0, which means no time limit is imposed.
+LS_DPARAM_GOP_TIMLIM                       = 5
+
+
+!This is the limit on the total number of branches (stored as a double) to be
+!created during branch-and-bound in GOP tree. Range for possible values is
+![-1, +inf).The default value is -1, which means no limit is imposed. If the
+!branch limit, LS_DPARAM_GOP_BRANCH_LIMIT, is reached and a feasible solution
+!was found, it will be installed as the incumbent (best known) solution.
+!LS_DPARAM_GOP_BRANCH_LIMIT                 = -1
+
+
+!This is a flag indicating if GOP exploits quadratic feature. Possible
+!values are: 0 (no) and 1 (yes). The default is 0.
+!LS_IPARAM_GOP_QUADMD                       = 0
+
+
+!This is a flag indicating which heuristic limit on
+!sub-solver in GOP is based. Possible values are:
+!# 0: No limit.
+!# 1: time based limit.
+!# 2: iteration based limit.
+!# 3: both time and iteration based limit.
+!The default value is 1 (time based limit).
+LS_IPARAM_GOP_LIM_MODE                     = 4
+
+
+!This is the total iteration limit (including simplex, barrier and nonlinear
+!iteration) summed over branches in GOP.  Range for possible values
+!is [-1, inf). The default value is -1, which means no iteration
+!limit is imposed. If this limit is reached, GOP will stop.
+!LS_DPARAM_GOP_ITRLIM                       = -1
+
+
+!This is the total simplex iteration limit summed over all branches in GOP.
+!Range for possible values is [-1, inf). The default value is -1, which
+!means no iteration limit is imposed. If this limit is reached, GOP will
+!stop.
+!LS_DPARAM_GOP_ITRLIM_SIM                   = -1
+
+
+!This is the total barrier iteration limit summed over all branches in GOP.
+!Range for possible values is [-1, inf). The default value is -1, which
+!means no iteration limit is imposed. If this limit is reached, GOP will
+!stop.
+!LS_DPARAM_GOP_ITRLIM_IPM                   = -1
+
+
+!This is the total nonlinear iteration limit summed over all branches in GOP.
+!Range for possible values is [-1, inf). The default value is -1, which means
+!no iteration limit is imposed. If this limit is reached, GOP will stop.
+!LS_DPARAM_GOP_ITRLIM_NLP                   = -1
+
+
+!This is the GOP absolute optimality tolerance. Solutions must beat the incumbent
+!by at least this absolute amount to become the new, best solution. Range
+!for possible values is [0,inf). The default value is 1e-6.
+!LS_DPARAM_GOP_ABSOPTTOL                    = 1e-06
+
+
+!This is a flag indicating if GOP exploits linearizable model.Possible
+!values are -1 (solver decides), 0 (no) and 1 (yes).The default value is -1.
+LS_IPARAM_GOP_LINEARZ                      = 0
+
+
+!This value specifies the number of parallel threads to be used when
+!solving a nonlinear model with the global optimization solver.
+!Possible values are positive integers. The default is 1.   
+!LS_IPARAM_GOP_NUM_THREADS                  = 1
+
+
+!This is a flag indicating if GOP exploits multi linear feature.
+!Possible values are: 0 (no) and 1 (yes). The default is 1.
+!LS_IPARAM_GOP_MULTILINEAR                  = 1
+
+
+!This value specifies the threshold of objective value in the GOP solver.
+!For min problem, if current incurmbent solution is less than the threshold
+!GOP solver will stop
+!Range for possible values is (-inf, inf). The default value is -inf.
+!LS_DPARAM_GOP_OBJ_THRESHOLD                = 1e+30
+
+
+!This specifies if the GOP solver should solve the model as a QP when applicable. Possible
+!values are: 0 (general GOP solver) and 1 (specified QP solver). The default is 0.
+!LS_IPARAM_GOP_QUAD_METHOD                  = -1
+
+
+!This is the integer solution limit for GOP branch-and-bound.
+!Range for possible values is [-1, INT_MAX). The default
+!value is -1, which means no solution limit is imposed.
+!LS_IPARAM_GOP_SOLLIM                       = -1
+
+
+!This is a flag indicating if GOP exploits convex MINLP model.Possible
+!values are 0 (no) and 1 (yes).The default value is 0.
+!LS_IPARAM_GOP_CMINLP                       = 0
+
+
+!This is a flag indicating if GOP explore conic reformulation.
+!Possible values are 0 (no) and 1 (yes).The default value is 1.
+!LS_IPARAM_GOP_CONIC_REFORM                 = 1
+
+
+!Common sample size per stochastic parameter.  Possible values are positive
+!integers or -1. Default is -1, which implies 'not specified'.
+!LS_IPARAM_STOC_NSAMPLE_SPAR                = -1
+
+
+!Common sample size per stage. Possible values are positive integers
+!or -1. Default is -1, which implies 'not specified'.
+!LS_IPARAM_STOC_NSAMPLE_STAGE               = -1
+
+
+!Seed to initialize the random number generator.  Possible
+!values are positive integers. The default is 1031.
+!LS_IPARAM_STOC_RG_SEED                     = 1031
+
+
+!Stochastic optimization method to solve the model. Possible values are:
+!# LS_METHOD_STOC_FREE  
+!# LS_METHOD_STOC_DETEQ  
+!# LS_METHOD_STOC_NBD  
+!# LS_METHOD_STOC_ALD  
+!The default is LS_METHOD_STOC_FREE.
+!LS_IPARAM_STOC_METHOD                      = -1
+
+
+!Reoptimization method to solve the node-models.  Possible values are:
+!# LS_METHOD_FREE (default)
+!# LS_METHOD_PSIMPLEX
+!# LS_METHOD_DSIMPLEX
+!# LS_METHOD_BARRIER
+!# LS_METHOD_NLP
+!LS_IPARAM_STOC_REOPT                       = 0
+
+
+!Optimization method to solve the root problem. Possible values are:
+!# LS_METHOD_FREE (default)
+!# LS_METHOD_PSIMPLEX
+!# LS_METHOD_DSIMPLEX
+!# LS_METHOD_BARRIER
+!# LS_METHOD_NLP
+!# LS_METHOD_MULTIS
+!# LS_METHOD_GOP
+!LS_IPARAM_STOC_TOPOPT                      = 0
+
+
+!Iteration limit for stochastic solver. Possible values
+!are positive integers or (-1) no limit. Default is -1.
+!LS_IPARAM_STOC_ITER_LIM                    = -1
+
+
+!Print level to display progress information during optimization.
+!Possible values are nonnegative integers. Default is 2.
+!LS_IPARAM_STOC_PRINT_LEVEL                 = 2
+
+
+!Type of deterministic equivalent to be used by the solver. Possible values are:
+!# LS_DETEQ_FREE (-1)
+!# LS_DETEQ_IMPLICIT (0)   
+!# LS_DETEQ_EXPLICIT (1)
+!# LS_DETEQ_CHANCE (2)
+!LS_DETEQ_IMPLICIT is valid for linear and integer models only.
+!Default value is LS_DETEQ_FREE(-1).
+!LS_IPARAM_STOC_DETEQ_TYPE                  = -1
+
+
+!Flag to enable/disable calculation of lower bounds on EVPI. Possible
+!values are (0): disable, (1) enable. Default is 1.
+!LS_IPARAM_STOC_CALC_EVPI                   = 1
+
+
+!Flag to restrict sampling to continuous stochastic parameters only or
+!not.  Possible values are (0): disable, (1) enable. Default is 0.
+!LS_IPARAM_STOC_SAMP_CONT_ONLY              = 0
+
+
+!Bucket size in Benders decomposition. Possible values are positive
+!integers or (-1) for solver decides. Default is -1.
+!LS_IPARAM_STOC_BUCKET_SIZE                 = -1
+
+
+!Maximum number of scenarios allowed when solving an SP. Possible
+!values are positive integers. Default is 40,000.
+!If the model contains stochastic parameters from distributions
+!with infinite populations, the solver will return error:
+!LSERR_STOC_SCENARIO_LIMIT unless a sampling scheme is
+!specified.
+!Sampling shemes can be specified either parametrically (using
+!LS_IPARAM_STOC_NSAMPLE_STAGE or
+!LS_IPARAM_STOC_NSAMPLE_SPAR) or by calling 
+!LSloadSampleSizes() function.
+!LS_IPARAM_STOC_MAX_NUMSCENS                = 40000
+
+
+!Stage beyond which node-models share the same model structure. Possible
+!values are positive integers less than or equal to number of
+!stages in the model or (-1) for solver decides. Default is -1.
+!LS_IPARAM_STOC_SHARE_BEGSTAGE              = -1
+
+
+!Presolve level solving node-models.  Possible values
+!are bitmasks defined in LS_IPARAM_LP_PRELEVEL.
+!Default is 0.
+!LS_IPARAM_STOC_NODELP_PRELEVEL             = 0
+
+
+!Time limit for stochastic solver. Possible values are nonnegative
+!real numbers or -1.0 for solver decides. Default is -1.0.
+!LS_DPARAM_STOC_TIME_LIM                    = -1
+
+
+!Relative optimality tolerance (w.r.t lower and upper bounds
+!on the true objective) to stop the solver.  Possible
+!values are reals in (0,1) interval. Default is 1e-7.
+!LS_DPARAM_STOC_RELOPTTOL                   = 1e-07
+
+
+!Absolute optimality tolerance (w.r.t lower and upper bounds
+!on the true objective) to stop the solver. .  Possible
+!values are reals in (0,1) interval. Default is 1e-7.
+!LS_DPARAM_STOC_ABSOPTTOL                   = 1e-07
+
+
+!Specifies the bitmask to export stochastic model data for advanced
+!debugging. Possible values are 0, 1, 2, 4 and 8. Default is 0.
+!LS_IPARAM_STOC_DEBUG_MASK                  = 0
+
+
+!Sampling method for variance reduction. Possible values are:
+!# LS_MONTECARLO (0) 
+!# LS_LATINSQUARE (1)
+!# LS_ANTITHETIC  (2)
+!# LS_LATINSQUARE + 
+!# LS_ANTITHETIC (3)
+!LS_MONTECARLO implies the use of standard sampling with no variance reduction. LS_ANTITHETIC
+!implies the use of antithetic pairs of uniform variates to control variance.
+!LS_LATINSQUARE implies the use of basic Latin-hypercude sampling which is known
+!to be efficient for most distributions. Default is LS_LATINSQUARE.  
+!LS_IPARAM_STOC_VARCONTROL_METHOD           = 1
+
+
+!Correlation type associated with the correlation matrix. Possible values are:
+!# LS_CORR_TARGET (-1)
+!# LS_CORR_PEARSON (0)
+!# LS_CORR_KENDALL (1)
+!# LS_CORR_SPEARMAN (2)
+!Default is LS_CORR_PEARSON.
+!LS_IPARAM_STOC_CORRELATION_TYPE            = 0
+
+
+!Warm start basis for wait-see model . Possible values are:
+!# LS_WSBAS_FREE = -1  Solver decides (Default)
+!# LS_WSBAS_NONE = 0,  No warm-starts
+!# LS_WSBAS_AVRG = 1,  Use the optimal basis from Average (Expected Value) model
+!# LS_WSBAS_LAST = 2,  Use the last valid basis, typically
+!the optimal basis from the last scenario solved.
+!LS_IPARAM_STOC_WSBAS                       = -1
+
+
+!Outer loop iteration limit for ALD.  Possible values
+!are positive integers. Default is 200.
+!LS_IPARAM_STOC_ALD_OUTER_ITER_LIM          = 200
+
+
+!Inner loop iteration limit for ALD. Possible values
+!are positive integers. Default is 1000.
+!LS_IPARAM_STOC_ALD_INNER_ITER_LIM          = 1000
+
+
+!Dual feasibility tolerance for ALD. Range for possible
+!values is [1e-16,inf). The default value is 0.0001.
+!LS_DPARAM_STOC_ALD_DUAL_FEASTOL            = 0.0001
+
+
+!Primal feasibility tolerance for ALD. Range for possible
+!values is [1e-16,inf). The default value is 0.0001.
+!LS_DPARAM_STOC_ALD_PRIMAL_FEASTOL          = 0.0001
+
+
+!Dual step length for ALD. Range for possible values
+!is [1e-16,inf). The default value is 0.9.
+!LS_DPARAM_STOC_ALD_DUAL_STEPLEN            = 0.9
+
+
+!Primal step length for ALD. Range for possible values
+!is [1e-16,inf). The default value is 0.5.
+!LS_DPARAM_STOC_ALD_PRIMAL_STEPLEN          = 0.5
+
+
+!Flag to specify whether to order non-temporal models or not. Default is 1.
+!LS_IPARAM_CORE_ORDER_BY_STAGE              = 1
+
+
+!Node name format. Reserved for internal use.
+!LS_SPARAM_STOC_FMT_NODE_NAME               = -1
+
+
+!Scenario name format. Reserved for internal use.
+!LS_SPARAM_STOC_FMT_SCENARIO_NAME           = -1
+
+
+!Flag to specify whether stochastic parameters in MPI will be mapped
+!as LP matrix elements. Default is 0. It is required to set this
+!flag to 1 to use Nested-Benders Method to solve linear SPs.
+!LS_IPARAM_STOC_MAP_MPI2LP                  = 0
+
+
+!Flag to enable or disable autoaggregation of stages. Default is 1.
+!LS_IPARAM_STOC_AUTOAGGR                    = 1
+
+
+!Benchmark scenario to compare EVPI and EVMU against. Possible values are:
+!# LS_SCEN_ROOT (-1)   Root scenario, usually corresponds to the first scenario.
+!# LS_SCEN_AVRG (-2)  Average (expected value) scenario.
+!# LS_SCEN_MEDIAN (-3) Median scenario
+!# LS_SCEN_USER  (-4) User specified scenario
+!# LS_SCEN_NONE  (-5) No benchmark scenarios.
+!Default is LS_SCEN_AVRG.
+!LS_IPARAM_STOC_BENCHMARK_SCEN              = -2
+
+
+!Value to truncate infinite bounds at non-leaf nodes. Range
+!for possible values is (0,inf). Default is 1e+9.
+!LS_DPARAM_STOC_INFBND                      = 1e+09
+
+
+!Flag to use add-instructions mode when building deteq. Default is 0.
+!LS_IPARAM_STOC_ADD_MPI                     = 0
+
+
+!Flag to enable elimination of fixed variables from deteq MPI. Default is 1.
+!LS_IPARAM_STOC_ELIM_FXVAR                  = 1
+
+
+!RHS value of objective cut in SBD master problem. . Range for possible values
+!is (-inf,inf). Default is -1e+30. If this value is set to a finite value,
+!then an objective cut with specified RHS will be added to the master problem.
+!LS_DPARAM_STOC_SBD_OBJCUTVAL               = -1e+30
+
+
+!Flag to enable objective cut in SBD master problem. Default is 1.
+!LS_IPARAM_STOC_SBD_OBJCUTFLAG              = 1
+
+
+!Maximum number of candidate solutions to generate at SBD root . Possible values
+!are nonnegative integers or -1 (solver decides). The default is -1.
+!LS_IPARAM_STOC_SBD_NUMCANDID               = -1
+
+
+!Big-M value for linearization and penalty functions. Range
+!for possible values is (0,inf). Default is 1e+008.
+!LS_DPARAM_STOC_BIGM                        = 1e+08
+
+
+!This value controls the creation and loading of name-date in DETEQ and SCENARIO
+!models when working with an SP model. Possible values are positive
+!integers. Default is 0, which implies no name data will be generated and
+!the DETEQ and SCENARIO models will have generic variable and constraint
+!names.
+!LS_IPARAM_STOC_NAMEDATA_LEVEL              = 0
+
+
+!Max cuts to generate for master problem. Possible values are non-negative
+!integers and -1. Default is -1, which imples 'solver decides'.
+!LS_IPARAM_STOC_SBD_MAXCUTS                 = -1
+
+
+!This specifies the method to use when solving the deterministic equivalent.
+!Possible values are:
+!# LS_METHOD_FREE = 0,  
+!# LS_METHOD_SBD = 10,
+!The default is LS_METHOD_FREE.
+!LS_IPARAM_STOC_DEQOPT                      = 0
+
+
+!This parameter specifies the type of subproblem
+!formulation to be used in heuristic search.
+!Possible values are nonnegative integers and -1.
+!# 0 - Perform heuristic search in the original solution space.
+!# 1 - Perform heuristic search in the space of discrete variables
+!coupled with optimizations in the linear space.
+!The default is -1 (solver decides).
+!LS_IPARAM_STOC_DS_SUBFORM                  = -1
+
+
+!This value specifies the primal-step tolerance in decomposition based algorithms.
+!Possible values are in the range of (0,1). The default is 1e-8.
+!LS_DPARAM_STOC_REL_PSTEPTOL                = 1e-08
+
+
+!This value specifies the dual-step tolerance in decomposition based algorithms.
+!Possible values are in the range of (0,1). The default is 1e-7.
+!LS_DPARAM_STOC_REL_DSTEPTOL                = 1e-07
+
+
+!This value specifies the number of parallel threads to be
+!used when solving a stochastic programming model.
+!Possible values are positive integers.The default is 0. 
+! 
+!LS_IPARAM_STOC_NUM_THREADS                 = 0
+
+
+!This value specifies the number of implict blocks when exporting
+!a DETEQ model. Reserved for internal use. Default is -1.
+!LS_IPARAM_STOC_DETEQ_NBLOCKS               = -1
+
+
+!Bitmask to enable available methods for solving the
+!nearest correlation matrix (NCM) subproblem.
+!Possible values are :
+!# Solver decides = 0
+!# LS_NCM_STD = 1
+!# LS_NCM_GA = 2
+!# LS_NCM_ALTP = 4
+!# LS_NCM_L2NORM_CONE = 8
+!# LS_NCM_L2NORM_NLP = 16
+!Default is 5.
+!LS_IPARAM_SAMP_NCM_METHOD                  = 5
+
+
+!SP Objective cutoff (target) value to stop the
+!nearest correlation matrix (NCM) subproblem.
+!Possible values are (-inf,inf). Default is
+!-1e+30 (for minimization type problems).
+!LS_DPARAM_SAMP_NCM_CUTOBJ                  = -1e+30
+
+
+!Level for using partial point in solver. Possible values are nonnegative
+!integers.
+!Default is -1.
+!LS_IPARAM_SAMP_NCM_DSTORAGE                = -1
+
+
+!SP Correlation matrix diagonal shift increment. Possible
+!values are (0,1). Default is 1e-006.
+!LS_DPARAM_SAMP_CDSINC                      = 1e-06
+
+
+!SP Flag to enable scaling of raw sample data. Possible
+!values are 0: don't scale, 1: scale. The default is 0.
+!LS_IPARAM_SAMP_SCALE                       = 0
+
+
+!Iteration limit for NCM method. Possible values
+!are integers in [-1,inf).  The default is 100.
+!LS_IPARAM_SAMP_NCM_ITERLIM                 = 100
+
+
+!Optimality tolerance for NCM method. Possible values are (0,1).
+!Default is 1e-7.
+!LS_DPARAM_SAMP_NCM_OPTTOL                  = 1e-07
+
+
+!SP Correlation matrix diagonal shift limit. Possible
+!values are (0,inf). Default is 1e-002.
+!LS_DPARAM_SAMP_CDSMAX                      = 0.01
+
+
+!This value specifies the number of parallel threads to be used when sampling.
+!Possible values are positive integers. The default is 0.   
+!LS_IPARAM_SAMP_NUM_THREADS                 = 0
+
+
+!This value specifies the buffer size for random number generators
+!in running in parallel mode. Possible values are
+!nonnegative integers. The default is 0 (solver decides).
+!LS_IPARAM_SAMP_RG_BUFFER_SIZE              = 0
+
+
+!This parameter specifies the limited bound
+!for those unbounded continuous variables.
+!Possible values are in (0, +Inf).
+!The default is 100000.
+!LS_DPARAM_BNP_INFBND                       = 100000
+
+
+!This parameter specifies the computing level of BNP solver.
+!Possible values are integers in [0,4].
+!# 0 - A pure Lagrangean Relaxation procedure.
+!# 1 - Best-First search branch and price procedure.
+!# 2 - Worst-First search branch and price procedure.
+!# 3 - Depth-First search branch and price procedure.
+!# 4 - Breadth-First search branch and price procedure.
+!The default is 1.
+!LS_IPARAM_BNP_LEVEL                        = 1
+
+
+!This parameter speciefies the print level for BNP solver.
+!Possible values are nonnegative integers. The default is 2.
+!LS_IPARAM_BNP_PRINT_LEVEL                  = 2
+
+
+!This parameter specifies the box size for
+!the Box-Step method used in BNP solver.
+!Possible values are nonnegative real numbers. The default is 0.0(no box).
+!LS_DPARAM_BNP_BOX_SIZE                     = 0
+
+
+!This parameter speciefies the number of parallel threads used in BNP solver.
+!Possible values are positive integers. The default is 1.
+!LS_IPARAM_BNP_NUM_THREADS                  = 1
+
+
+!This parameter specifies iteration limit when solving subproblems.
+!Possible values are -1 and nonnegative real numbers. The default is -1.0.
+!LS_DPARAM_BNP_SUB_ITRLMT                   = -1
+
+
+!This parameter specifies the method for finding block structure
+!in BNP solver. Possible values are 1, 2, and 3.
+!# 1  - Use heuristic #1 to find block structure.
+!# 2  - Use heuristic #2 to find block structure.
+!# 3 - Read user defined block structure from a .tim file.
+!The default is 1.
+!LS_IPARAM_BNP_FIND_BLK                     = 1
+
+
+!This parameter specifies the presolve level for BNP solver. Possible
+!values are nonnegative integers. The default is 0 (no presolve).
+!LS_IPARAM_BNP_PRELEVEL                     = 0
+
+
+!This parameter specifies the limit on the number of generated
+!columns in BNP solver. Possible values are -1 and
+!nonnegative real numbers. The default is -1.0 (no limit).
+!LS_DPARAM_BNP_COL_LMT                      = -1
+
+
+!This parameter specifies time limit for BNP solver. Possible values are
+!-1 and nonnegative real numbers. The default is -1.0 (no limit).
+!LS_DPARAM_BNP_TIMLIM                       = -1
+
+
+!This parameter specifeis the limit on simplex iterations in BNP solver. Possible
+!values are -1 and nonnegative real numbers. The default is -1.0 (no limit).
+!LS_DPARAM_BNP_ITRLIM_SIM                   = -1
+
+
+!This parameter specifies the IPM limit in BNP solver. Possible values
+!are -1 and nonnegative real numbers. The default is -1.0 (no limit).
+!LS_DPARAM_BNP_ITRLIM_IPM                   = -1
+
+
+!This parameter specifies the limit on the total number
+!of branches in BNP solver. Possible values are -1 and
+!nonnegative integers. The default is -1 (no limit).
+!LS_IPARAM_BNP_BRANCH_LIMIT                 = -1
+
+
+!This parameter specifies the iteration limit in BNP solver. Possible values
+!are -1 and nonnegative real numbers. The default is -1.0 (no limit).
+!LS_DPARAM_BNP_ITRLIM                       = -1
+
+
+!This value specifies the probability of crossover for continuous
+!variables. Possible values are in [0,1]. The default is 0.8.
+!LS_DPARAM_GA_CXOVER_PROB                   = 0.8
+
+
+!This value specifies the spreading factor for crossover. Possible values are
+!positive integers. Higher values imply lesser spread. The default is 10.
+!LS_DPARAM_GA_XOVER_SPREAD                  = 10
+
+
+!This values specifies the probability of crossover for integer
+!variables. Possible values are in [0,1]. The default is 0.8.
+!LS_DPARAM_GA_IXOVER_PROB                   = 0.8
+
+
+!This value specifies the probability of mutation for continuous
+!variables. Possible values are in [0,1].  The default is 0.05.
+!LS_DPARAM_GA_CMUTAT_PROB                   = 0.05
+
+
+!This value specifies the spreading factor for mutation. Possible values are
+!positive integers. Higher values imply lesser spread. The default is 20.
+!LS_DPARAM_GA_MUTAT_SPREAD                  = 20
+
+
+!This values specifies the probability of mutation for integer
+!variables. Possible values are in [0,1]. The default is 0.1.
+!LS_DPARAM_GA_IMUTAT_PROB                   = 0.1
+
+
+!This value specifies the zero tolerance. Possible
+!values are in (0,1). The default is 1e-14
+!LS_DPARAM_GA_TOL_ZERO                      = 1e-14
+
+
+!This values specifies the primal feasibility tolerance. Possible
+!values are in (0,1). The default is 0.0000001.
+!LS_DPARAM_GA_TOL_PFEAS                     = 1e-07
+
+
+!This values specifies the numeric infinity. Possible values are
+!positive real numbers in (1e10, 1e30). The default is 1e15.
+!LS_DPARAM_GA_INF                           = 1e+15
+
+
+!This values specifies the infinity threshold for finite bounds.
+!Possible values are in (1e-6,1e12). The default is 100000000.
+!LS_DPARAM_GA_INFBND                        = 1e+08
+
+
+!This values specifies the 'Alpha' parameter in Blending Alpha Crossover
+!method. Possible values are in (0,+inf). The default is 5.
+!LS_DPARAM_GA_BLXA                          = 5
+
+
+!This values specifies the 'Beta' parameter in Blending Alpha-Beta Crossover
+!method. Possible values are in (0,+inf). The default is 5.
+!LS_DPARAM_GA_BLXB                          = 5
+
+
+!This values specifies the method of crossover for
+!continuous variables. Possible values are:
+!# -1 Solver decides
+!#  LS_GA_CROSS_BLXA : Blending Alpha Crossover
+!# LS_GA_CROSS_BLXAB : Blending Alpha-Beta Crossover
+!# LS_GA_CROSS_SBX : Simulated (Binary) Crossover
+!The default is:  -1.
+!LS_IPARAM_GA_CXOVER_METHOD                 = -1
+
+
+!This values specifies the method of crossover
+!for integer variables. Possible values are:
+!# -1 Solve decides
+!# LS_GA_CROSS_TWOPOINT Two-point Binary Crossover.
+!# LS_GA_CROSS_ONEPOINT One-point Binary Crossover.
+!The default is:  -1
+!LS_IPARAM_GA_IXOVER_METHOD                 = -1
+
+
+!This values specifies the method of mutation for
+!continuous variables. Reserved for future use.
+!The default is -1.
+!LS_IPARAM_GA_CMUTAT_METHOD                 = -1
+
+
+!This values specifies the method of mutation for integer
+!variables. Reserved for future use. The default is -1.
+!LS_IPARAM_GA_IMUTAT_METHOD                 = -1
+
+
+!This values specifies the random seed. Possible values
+!are nonnegative integers. The default value is 1031.
+!LS_IPARAM_GA_SEED                          = 1031
+
+
+!This values specifies the number of generations. Possible
+!values are positive integers. The default is 500.
+!LS_IPARAM_GA_NGEN                          = 500
+
+
+!This values specifies the population size. Possible
+!values are positive integers. The default is 200.
+!LS_IPARAM_GA_POPSIZE                       = 200
+
+
+!This values specifies the print level to log files.
+!Possible values are nonnegative integers.
+!The default is 0.
+!LS_IPARAM_GA_FILEOUT                       = 0
+
+
+!This values specifies the print level.
+!Possible values are nonnegative integers.
+!The default is 1.
+!LS_IPARAM_GA_PRINTLEVEL                    = 1
+
+
+!This values specifies the mask specifying the method to
+!inject and external individual. Possible values are:
+!# 0 - do not inject an external individual
+!# 1 - inject an optimum individual
+!# 2 - inject an individual derived from a previously loaded solution.
+!The default is 0.
+!LS_IPARAM_GA_INJECT_OPT                    = 1
+
+
+!This value specifies the number of parallel threads to be
+!used when solving a model with genetic algorithm.
+!Possible values are positive integers. The default is 1.
+!LS_IPARAM_GA_NUM_THREADS                   = 1
+
+
+!This values specifies the objective function sense. Possible
+!values are LS_MIN and LS_MAX. The default is 1.
+!LS_IPARAM_GA_OBJDIR                        = -1
+
+
+!This values specifies the target objective function value. Possible
+!values are real numbers in (-1e30,+1e30). The default is +1e30.
+!LS_DPARAM_GA_OBJSTOP                       = 1e+30
+
+
+!This values specifies the probability of migration of individuals to the
+!next generation. Possible values are in [0,1]. The default is 0.0  
+!LS_DPARAM_GA_MIGRATE_PROB                  = 0
+
+
+!This values specifies the search space or search
+!mode. Reserved for future use. The default is 0.
+!LS_IPARAM_GA_SSPACE                        = 0
+
+

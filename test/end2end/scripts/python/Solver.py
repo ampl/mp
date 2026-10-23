@@ -74,6 +74,7 @@ class Solver(object):
         self._unsupportedTags = unsupportedTags
         self._nlpmethod = nlpmethod
         self._version = None
+        self._name = name
 
     def get_version(self):
         return self._version
@@ -145,8 +146,29 @@ class Solver(object):
         return getattr(self, "_output", "")
 
     def getName(self):
+        if self._name:
+            return self._name
         path = PurePath(self._exePath)
         return path.stem
+
+    def named(self, name: str):
+        """Set a solver name different from the executable's,
+           e.g. to run one executable as two solvers"""
+        self._name = name
+        return self
+
+    def acceptsMPOptions(self) -> bool:
+        """Whether the solver accepts MP options and cases
+           needing an MP driver (Model.needsMPDriver())"""
+        return False
+
+    def mapCaseOptionName(self, name: str) -> str:
+        """AMPL option receiving a case's option 'name'"""
+        return name
+
+    def getFixedAMPLOptions(self) -> list:
+        """Further (name, value) AMPL options set for every case"""
+        return []
 
     def getExecutable(self):
         return self._exePath
@@ -1083,7 +1105,8 @@ class MPDirectSolver(AMPLSolver):
     def __init__(self, exeName, timeout=None, nthreads=None,
                  otherOptions=None, stags=None):
         sDefault = {ModelTags.continuous,
-                    ModelTags.linear
+                    ModelTags.linear,
+                    ModelTags.mpdriver
                     }
         if stags is None:
             stags = sDefault
@@ -1111,6 +1134,9 @@ class MPDirectSolver(AMPLSolver):
 
     def _get_timing_options(self):
         return "timing=1"
+
+    def acceptsMPOptions(self) -> bool:
+        return True
 
     def _doParseSolution(self, st, stdout=None):
         if not st:
@@ -1519,6 +1545,8 @@ class COPTSolver(MPDirectSolver):
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
         stags = {ModelTags.fixmodel, ModelTags.continuous, ModelTags.integer, ModelTags.binary,
                  ModelTags.sstatus, ModelTags.return_mipgap, ModelTags.sens,
+                 ModelTags.unbdd,     ## unbdd_01 fails: COPT returns no primal point, and its
+                                      ## simplex/barrier rays do not improve the objective
                  ModelTags.relax, ModelTags.warmstart, ModelTags.mipstart,
                  ModelTags.sos, ModelTags.lazy_user_cuts,
                  ModelTags.iis, ModelTags.feasrelax, ModelTags.feasrelax_modes,
@@ -1652,8 +1680,52 @@ class GUROBIODHSolver(MPDirectSolver):
 
 
 ### ASL+MP2NL solvers (to run with mp2nl=1)
-class GurobiASLMP2NLSolver(MPDirectSolver):
+class ASLMP2NLSolver(MPDirectSolver):
+    """An ASL driver built with the MP2NL wrapper, run through MP2NL:
+       mp2nl=1 in '<config>_options' makes the wrapper call MP2NL, which
+       reformulates the model with the case's MP options (mp2nl_options)
+       and runs the driver on the new NL file. The driver reads the time
+       limit, threads and LP method from its own '<engine>_options'."""
+    def _getMP2NLConfig(self):
+        """MP2NL configuration of the wrapper (MP2NL_SOLVERNAME)"""
+        return self._getAMPLOptionsName()
+
+    def _getEngineOptionsName(self):
+        """Options variable read by the ASL driver itself"""
+        return self._getAMPLOptionsName()
+
+    def mapCaseOptionName(self, name: str) -> str:
+        if name == f"{self._getAMPLOptionsName()}_options":
+            return "mp2nl_options"     # written for the MP driver
+        return name
+
+    def getAMPLOptions(self, model) -> tuple:
+        value = self._otherOptions if self._otherOptions else ""
+        if self._exportLP:
+            value += f" {self._setExportLP(self.getExportLPFileName(model.getFilePath()))}"
+        return ("mp2nl_options", value)
+
+    def getFixedAMPLOptions(self) -> list:
+        native = []
+        if self._timeout:
+            native.append(self._setTimeLimit(self._timeout))
+        if self._nthreads:
+            native.append(self._setNThreads(self._nthreads))
+        if self._lpmethod:
+            native.append(self._setLPMethod(self._lpmethod))
+        native = " ".join([o for o in native if o])
+        cfg = f"{self._getMP2NLConfig()}_options"
+        eng = f"{self._getEngineOptionsName()}_options"
+        if cfg == eng:
+            return [(cfg, f"mp2nl=1 {native}".strip())]
+        return [(cfg, "mp2nl=1"), (eng, native)]
+
+
+class GurobiASLMP2NLSolver(ASLMP2NLSolver):
             def _getAMPLOptionsName(self):
+                return "gurobi"
+
+            def _getMP2NLConfig(self):
                 return "gurobiasl"
 
             def _get_timing_options(self):
@@ -1696,7 +1768,107 @@ class GurobiASLMP2NLSolver(MPDirectSolver):
                 super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
 
-class ConoptMP2NLSolver(MPDirectSolver):
+class XpressASLMP2NLSolver(ASLMP2NLSolver):
+            def _getAMPLOptionsName(self):
+                return "xpress"
+
+            def _getMP2NLConfig(self):
+                return "xpressasl"
+
+            def _setTimeLimit(self, seconds):
+                return "maxtime={}".format(int(seconds))   # integer keyword
+
+            def _get_timing_options(self):
+                return ""
+
+            def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
+                stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
+                ModelTags.plinear,
+                ModelTags.quadratic,
+                ModelTags.quadratic_obj,
+                ModelTags.quadraticnonconvex,
+
+                ModelTags.socp,      ## MP transforms cones to quadratics
+                ModelTags.socp_hard_to_recognize,
+                ModelTags.expcones,  ## Although might not have the expconic solver
+
+                ModelTags.nonlinear, ModelTags.log, ModelTags.trigonometric,
+
+                ModelTags.unbdd,
+                ModelTags.qcpdual,
+#                ModelTags.return_mipgap,
+                ModelTags.sos, #ModelTags.presosenc,
+                ModelTags.sens,
+                ModelTags.lazy_user_cuts,
+#                ModelTags.funcpieces,
+#                ModelTags.integralityfocus,
+
+                ModelTags.relax, ModelTags.warmstart, ModelTags.mipstart,
+
+                ModelTags.multiobj,
+                ModelTags.obj_priority,
+#                ModelTags.multisol,
+                ModelTags.sstatus,
+#                ModelTags.fixmodel,
+ #               ModelTags.iis, ModelTags.iisforce, ModelTags.feasrelax,
+
+#                ModelTags.writelp, ModelTags.writesol,
+
+                         }
+                super().__init__(exeName, timeout, nthreads, otherOptions, stags)
+
+
+class CPLEXASLMP2NLSolver(ASLMP2NLSolver):
+            def _getAMPLOptionsName(self):
+                return "cplex"
+
+            def _getMP2NLConfig(self):
+                return "cplexasl"
+
+            def _setTimeLimit(self, seconds):
+                return "time={}".format(seconds)
+
+            def _get_timing_options(self):
+                return ""
+
+            def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
+                stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
+                ModelTags.plinear,
+                ModelTags.quadratic,
+                ModelTags.quadratic_obj,
+                ModelTags.quadraticnonconvex,
+
+                ModelTags.socp,      ## MP transforms cones to quadratics
+                ModelTags.socp_hard_to_recognize,
+                ModelTags.expcones,  ## Although might not have the expconic solver
+
+                ModelTags.nonlinear, ModelTags.log, ModelTags.trigonometric,
+
+                ModelTags.unbdd,
+                ModelTags.qcpdual,
+#                ModelTags.return_mipgap,
+                ModelTags.sos, #ModelTags.presosenc,
+                ModelTags.sens,
+                ModelTags.lazy_user_cuts,
+#                ModelTags.funcpieces,
+#                ModelTags.integralityfocus,
+
+                ModelTags.relax, ModelTags.warmstart, ModelTags.mipstart,
+
+                ModelTags.multiobj,
+                ModelTags.obj_priority,
+#                ModelTags.multisol,
+                ModelTags.sstatus,
+#                ModelTags.fixmodel,
+ #               ModelTags.iis, ModelTags.iisforce, ModelTags.feasrelax,
+
+#                ModelTags.writelp, ModelTags.writesol,
+
+                         }
+                super().__init__(exeName, timeout, nthreads, otherOptions, stags)
+
+
+class ConoptMP2NLSolver(ASLMP2NLSolver):
             def _getAMPLOptionsName(self):
                 return "conopt"
 
@@ -1743,7 +1915,7 @@ class ConoptMP2NLSolver(MPDirectSolver):
                 super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
 
-class BonminMP2NLSolver(MPDirectSolver):
+class BonminMP2NLSolver(ASLMP2NLSolver):
             def _getAMPLOptionsName(self):
                 return "bonmin"
 
@@ -1790,7 +1962,7 @@ class BonminMP2NLSolver(MPDirectSolver):
                 super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
 
-class CouenneMP2NLSolver(MPDirectSolver):
+class CouenneMP2NLSolver(ASLMP2NLSolver):
             def _getAMPLOptionsName(self):
                 return "couenne"
 
@@ -1840,7 +2012,7 @@ class CouenneMP2NLSolver(MPDirectSolver):
                 super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
 
-class LindoglobalMP2NLSolver(MPDirectSolver):
+class LindoglobalMP2NLSolver(ASLMP2NLSolver):
             def _getAMPLOptionsName(self):
                 return "lindoglobal"
 
@@ -1891,7 +2063,7 @@ class LindoglobalMP2NLSolver(MPDirectSolver):
                 super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
 
-class BaronMP2NLSolver(MPDirectSolver):
+class BaronMP2NLSolver(ASLMP2NLSolver):
             def _getAMPLOptionsName(self):
                 return "baron"
 
@@ -1941,7 +2113,7 @@ class BaronMP2NLSolver(MPDirectSolver):
                 super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
 
-class KnitroMP2NLSolver(MPDirectSolver):
+class KnitroMP2NLSolver(ASLMP2NLSolver):
             def _getAMPLOptionsName(self):
                 return "knitro"
 

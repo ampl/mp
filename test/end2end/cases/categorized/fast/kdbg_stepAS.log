@@ -1,0 +1,7 @@
+Knitro 14.0.0 (Active-Set Algorithm)
+Step information
+
+  Iter    Res    Objective   PrimFeas   DeltaLP   alphaLP   ||dLP||   ||dN||   DeltaEQP  alphaEQP  ||dEQP||    Delta     ||d||   ||dSOC||   tauPLP
+--------  --- ------------- --------- --------- --------- --------- --------- --------- --------- --------- --------- --------- --------- ---------
+       0  ---   1.00000e+00  0.00e+00
+       1  Acc   1.00000e+00  0.00e+00  1.00e+12  0.00e+00  0.00e+00  0.00e+00  1.25e+12  1.00e+00  0.00e+00  1.25e+12  0.00e+00  0.00e+00  1.00e+00 CGNWT

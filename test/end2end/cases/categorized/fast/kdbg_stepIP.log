@@ -1,0 +1,6 @@
+Knitro 15.0.1 (Barrier Algorithm)
+Step information
+
+  Iter    Res    Objective   PrimFeas  DualFeas    Comp      Delta   ||step||    ||v||    ||Zu||    ||SOC||   alphaS    alphaLS #bk #cr   pertH   regKKT  regAUG
+--------  --- ------------- --------- --------- --------- --------- --------- --------- --------- --------- --------- --------- --- ---  ------- ------- -------
+       0  ---   1.07096e+02  0.00e+00                      1.00e+10

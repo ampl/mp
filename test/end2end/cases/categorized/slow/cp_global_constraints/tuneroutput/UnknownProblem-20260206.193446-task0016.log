@@ -1,0 +1,133 @@
+==> HEURSEARCHROOTCUTFREQ = 2
+==> THREADS              = 1
+FICO Xpress v9.8.0, Hyper, solve started 19:35:53, Feb 6, 2026
+Heap usage: 6461KB (peak 6461KB, 3719KB system)
+Minimizing MILP  using 1 thread and up to 16GB memory, with these control settings:
+THREADS = 1
+HEURSEARCHROOTCUTFREQ = 2
+Original problem has:
+      9126 rows        15290 cols        33176 elements     10150 entities
+      4872 inds
+Presolved problem has:
+      8510 rows         9702 cols        33414 elements      9702 entities
+LP relaxation tightened
+Presolve finished in 0 seconds
+Heap usage: 14MB (peak 19MB, 3719KB system)
+
+Coefficient range                    original                 solved        
+  Coefficients   [min,max] : [ 1.00e+00,  2.00e+01] / [ 6.25e-02,  1.75e+00]
+  RHS and bounds [min,max] : [ 1.00e+00,  2.00e+01] / [ 1.00e+00,  2.00e+01]
+  Objective      [min,max] : [      0.0,       0.0] / [      0.0,       0.0]
+Autoscaling applied standard scaling
+
+Symmetric problem: generators: 17, support set: 8322 (partial detection)
+ Number of orbits: 822, largest orbit: 156
+ Row orbits: 683, row support: 7527
+Will try to keep branch and bound tree memory usage below 14.8GB
+Crash basis containing 174 structural columns created
+ 
+   Its         Obj Value      S   Ninf  Nneg   Sum Dual Inf  Time
+     0           .000000      D   2952     0        .000000     0
+  8586           .073978      D    464     0        .000000     1
+  8740           .000000      P      0     0        .000000     1
+Optimal solution found
+Dual solved problem
+  8740 simplex iterations in 1.08 seconds at time 1
+
+Final objective                       : 0.000000000000000e+00
+  Max primal violation      (abs/rel) : 2.220e-16 / 1.776e-16
+  Max dual violation        (abs/rel) :       0.0 /       0.0
+  Max complementarity viol. (abs/rel) :       0.0 /       0.0
+
+Starting root cutting & heuristics
+ 
+ Its Type    BestSoln    BestBound   Sols    Add    Del     Gap     GInf   Time
+   1  K                    .000000      0   1777      0             2274      4
+   2  K                    .000000      0   3476   1134             2362      5
+   3  K                    .000000      0   2655   3013             2330      6
+   4  K                    .000000      0   2373   2701             2137      8
+   5  K                    .000000      0   2301   2340             2159      8
+   6  K                    .000000      0   1896   2236             2106      9
+   7  K                    .000000      0   1905   1976             2033     10
+   8  K                    .000000      0   2001   1922             1941     11
+   9  K                    .000000      0   1800   2034             1826     12
+  10  K                    .000000      0   1961   1832             1776     13
+  11  K                    .000000      0   1826   2003             1756     13
+  12  K                    .000000      0   1825   1851             1723     14
+  13  K                    .000000      0   1605   1791             1671     14
+  14  K                    .000000      0   1752   1610             1717     15
+  15  K                    .000000      0   1716   1748             1686     15
+  16  K                    .000000      0   1687   1716             1728     16
+  17  K                    .000000      0   1673   1720             1569     16
+  18  K                    .000000      0   1540   1698             1537     17
+  19  K                    .000000      0   1606   1525             1563     17
+  20  K                    .000000      0   1692   1636             1558     18
+  21  K                    .000000      0   1518   1658             1562     18
+  22  K                    .000000      0   1919   1594             1509     19
+  23  K                    .000000      0   1691   1900             1452     19
+  24  K                    .000000      0   1770   1701             1491     20
+  25  K                    .000000      0   1535   1749             1446     20
+  26  K                    .000000      0   1611   1567             1392     21
+  27  K                    .000000      0   1667   1634             1434     21
+  28  K                    .000000      0   1703   1649             1461     22
+  29  K                    .000000      0   1678   1750             1398     22
+  30  K                    .000000      0   1729   1690             1382     23
+  31  K                    .000000      0   1744   1728             1382     23
+  32  K                    .000000      0   1464   1740             1317     24
+  33  K                    .000000      0   1583   1467             1317     24
+  34  K                    .000000      0   1658   1605             1268     25
+  35  K                    .000000      0   1489   1659             1243     25
+  36  K                    .000000      0   1577   1507             1178     25
+  37  K                    .000000      0   1585   1560             1207     25
+  38  K                    .000000      0   1550   1578             1223     26
+  39  K                    .000000      0   1313   1543             1187     26
+  40  K                    .000000      0   1452   2748             1205     26
+  41  G                    .000000      0    256     81             1123     27
+  42  G                    .000000      0    524    776             1079     27
+Heuristic search 'R' started
+Heuristic search 'R' stopped
+ 
+Cuts in the matrix         : 713
+Cut elements in the matrix : 15602
+
+Starting tree search.
+Deterministic mode with up to 1 running thread and up to 1 task.
+Heap usage: 41MB (peak 50MB, 3747KB system)
+ 
+    Node     BestSoln    BestBound   Sols Active  Depth     Gap     GInf   Time
+       1                   .000000      0      2      1              849     28
+       2                   .000000      0      2      3             1001     29
+       3                   .000000      0      3      4             1009     29
+       4                   .000000      0      4      5              946     30
+       5                   .000000      0      5      3             1033     30
+       6                   .000000      0      6      4             1033     30
+       7                   .000000      0      7      5             1168     31
+       8                   .000000      0      8      4             1019     31
+       9                   .000000      0      9      5             1121     32
+      10                   .000000      0     10      6              937     32
+      20                   .000000      0     14     12              961     34
+      30                   .000000      0     14     22              770     36
+      40                   .000000      0     14     32              684     37
+      50                   .000000      0     14     42              661     38
+      61                   .000000      0     14     53              528     38
+      71                   .000000      0     14     63              659     39
+      82                   .000000      0     14     74              536     39
+      92                   .000000      0     14     84              445     40
+     102                   .000000      0     14     94              471     40
+Elapsed time (sec): 41, estimated tree completion: 0.00000
+Heap usage: 582MB (peak 612MB, 3743KB system)
+B&B tree size: 1.9MB total
+ 
+    Node     BestSoln    BestBound   Sols Active  Depth     Gap     GInf   Time
+b    167      .000000      .000000      1    135    148 0.0e+00        0     41
+STOPPING - MIPRELSTOP target reached (MIPRELSTOP=0.0001  gap=0).
+STOPPING - MIPRELSTOP target reached (MIPRELSTOP=0.0001  gap=0).
+ *** Search completed ***
+Uncrunching matrix
+Final MIP objective                   : 0.000000000000000e-01
+Final MIP bound                       : 0.000000000000000e-01
+  Solution time / primaldual integral :     41.99s/ 99.999002%
+  Work / work units per second        :     68.96 /      1.64
+  Number of solutions found / nodes   :         1 /       167
+  Max primal violation      (abs/rel) : 8.882e-16 / 4.441e-17
+  Max integer violation     (abs    ) : 8.882e-16

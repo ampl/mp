@@ -1,7 +1,7 @@
 [
   {
     "name" : "div_by_const",
-    "tags" : ["linear"],
+    "tags" : ["linear", "continuous"],
     "objective": 11.33333333333333,
     "options": { "mp_options": "debug=1" },
     "values": {

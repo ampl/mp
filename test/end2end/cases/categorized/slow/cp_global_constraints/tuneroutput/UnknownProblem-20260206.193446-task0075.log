@@ -1,0 +1,105 @@
+==> COVERCUTS            = 2
+==> CUTFACTOR            = 1
+==> GOMCUTS              = 10
+==> THREADS              = 1
+FICO Xpress v9.8.0, Hyper, solve started 19:41:43, Feb 6, 2026
+Heap usage: 6461KB (peak 6461KB, 3914KB system)
+Minimizing MILP  using 1 thread and up to 16GB memory, with these control settings:
+COVERCUTS = 2
+GOMCUTS = 10
+THREADS = 1
+CUTFACTOR = 1
+Original problem has:
+      9126 rows        15290 cols        33176 elements     10150 entities
+      4872 inds
+Presolved problem has:
+      8510 rows         9702 cols        33414 elements      9702 entities
+LP relaxation tightened
+Presolve finished in 0 seconds
+Heap usage: 14MB (peak 19MB, 3914KB system)
+
+Coefficient range                    original                 solved        
+  Coefficients   [min,max] : [ 1.00e+00,  2.00e+01] / [ 6.25e-02,  1.75e+00]
+  RHS and bounds [min,max] : [ 1.00e+00,  2.00e+01] / [ 1.00e+00,  2.00e+01]
+  Objective      [min,max] : [      0.0,       0.0] / [      0.0,       0.0]
+Autoscaling applied standard scaling
+
+Symmetric problem: generators: 17, support set: 8322 (partial detection)
+ Number of orbits: 822, largest orbit: 156
+ Row orbits: 683, row support: 7527
+Will try to keep branch and bound tree memory usage below 14.8GB
+Crash basis containing 174 structural columns created
+ 
+   Its         Obj Value      S   Ninf  Nneg   Sum Dual Inf  Time
+     0           .000000      D   2952     0        .000000     0
+  8586           .073978      D    464     0        .000000     1
+  8740           .000000      P      0     0        .000000     1
+Optimal solution found
+Dual solved problem
+  8740 simplex iterations in 1.23 seconds at time 1
+
+Final objective                       : 0.000000000000000e+00
+  Max primal violation      (abs/rel) : 2.220e-16 / 1.776e-16
+  Max dual violation        (abs/rel) :       0.0 /       0.0
+  Max complementarity viol. (abs/rel) :       0.0 /       0.0
+
+Starting root cutting & heuristics
+ 
+ Its Type    BestSoln    BestBound   Sols    Add    Del     Gap     GInf   Time
+   1  K                    .000000      0   1777      0             2274      4
+   2  K                    .000000      0   1704   1134             2362      5
+   3  G                    .000000      0    709   1422             2344      5
+   4  G                    .000000      0    340    612             2251      5
+   5  G                    .000000      0    172    320             2249      5
+   6  G                    .000000      0    170    177             2161      5
+   7  G                    .000000      0    246    185             2151      6
+   8  G                    .000000      0    258    255             2141      6
+   9  G                    .000000      0     94    235             2083      6
+  10  G                    .000000      0    202    345             2062      6
+Heuristic search 'R' started
+Heuristic search 'R' stopped
+ 
+Cuts in the matrix         : 987
+Cut elements in the matrix : 11051
+
+Starting tree search.
+Deterministic mode with up to 1 running thread and up to 1 task.
+Heap usage: 38MB (peak 42MB, 3921KB system)
+ 
+    Node     BestSoln    BestBound   Sols Active  Depth     Gap     GInf   Time
+       1                   .000000      0      2      1             1032      8
+       2                   .000000      0      2      3             1257      9
+       3                   .000000      0      3      4             1227      9
+       4                   .000000      0      4      5             1356     10
+       5                   .000000      0      5      3             1344     11
+       6                   .000000      0      6      4             1284     11
+       7                   .000000      0      7      5             1367     11
+       8                   .000000      0      8      4             1323     12
+       9                   .000000      0      9      5             1390     12
+      10                   .000000      0     10      6             1432     13
+      20                   .000000      0     14     16             1284     15
+      30                   .000000      0     14     26             1011     16
+      40                   .000000      0     14     36              779     17
+      50                   .000000      0     14     46              793     18
+      60                   .000000      0     14     56              634     18
+      71                   .000000      0     14     67              535     19
+      81                   .000000      0     14     77              432     20
+      92                   .000000      0     14     88              487     20
+     102                   .000000      0     14     98              345     20
+Elapsed time (sec): 23, estimated tree completion: 0.00000
+Heap usage: 501MB (peak 623MB, 3916KB system)
+B&B tree size: 2.4MB total
+ 
+    Node     BestSoln    BestBound   Sols Active  Depth     Gap     GInf   Time
+g    202      .000000      .000000      1    126    148 0.0e+00        0     23
+STOPPING - MIPRELSTOP target reached (MIPRELSTOP=0.0001  gap=0).
+STOPPING - MIPRELSTOP target reached (MIPRELSTOP=0.0001  gap=0).
+ *** Search completed ***
+Uncrunching matrix
+Final MIP objective                   : 0.000000000000000e-01
+Final MIP bound                       : 0.000000000000000e-01
+  Solution time / primaldual integral :     23.43s/ 99.988819%
+  Work / work units per second        :     41.49 /      1.77
+  Number of solutions found / nodes   :         1 /       202
+  Max primal violation      (abs/rel) :       0.0 /       0.0
+  Max integer violation     (abs    ) :       0.0

@@ -16,7 +16,7 @@
   {
     "name" : "ifthen_var cmp:eps=1e-4",
     "objective" : -3,
-    "tags" : ["logical"],
+    "tags" : ["logical", "continuous"],
     "options": {
       "mp_options": "cvt:cmp:eps=1e-4",
       "mp2nl_options": "solver_options='cvt:cmp:eps=1e-4'"
@@ -33,7 +33,7 @@
   {
     "name" : "ifthen_var cmp:eps=0",
     "objective" : -3,
-    "tags" : ["logical"],
+    "tags" : ["logical", "continuous"],
     "options": {
       "mp_options": "cvt:cmp:eps=0",
       "mp2nl_options": "solver_options='cvt:cmp:eps=0'"
@@ -44,7 +44,7 @@
   },
   {
     "name" : "ifthen_var cmp:eps=0 chk:fail",
-    "tags" : ["logical"],
+    "tags" : ["logical", "continuous"],
     "comment_MP2NL": "fails for MP2NL because of a changed model",
     "options": {
       "mp_options": "cvt:cmp:eps=0 chk:fail",
@@ -59,7 +59,7 @@
   {
     "name" : "ifthen_var_01 cmp:eps=1e-4",
     "objective" : -20,
-    "tags" : ["logical"],
+    "tags" : ["logical", "continuous"],
     "options": {
       "mp_options": "cvt:cmp:eps=1e-4 debug=1",
       "mp2nl_options": "solver_options='cvt:cmp:eps=1e-4 debug=1'"
@@ -79,7 +79,7 @@
   {
     "name" : "ifthen_var_01 cmp:eps=0 ineq2related=0",
     "objective" : 2,
-    "tags" : ["logical"],
+    "tags" : ["logical", "continuous"],
     "options": {
       "mp_options": "cvt:cmp:eps=0 ineq2rel=0 debug=1",
       "mp2nl_options": "solver_options='cvt:cmp:eps=0 ineq2rel=0 debug=1'"
@@ -92,7 +92,7 @@
   },
   {
     "name" : "ifthen_var_01 cmp:eps=0 chk:fail",
-    "tags" : ["logical"],
+    "tags" : ["logical", "continuous"],
     "comment_MP2NL": "fails for MP2NL because of a changed model",
     "options": {
       "mp_options": "cvt:cmp:eps=0 chk:fail",
@@ -157,11 +157,11 @@
   {
     "name" : "impl6_if",
     "objective" : -2,
-    "tags" : ["logical"]
+    "tags" : ["logical", "continuous"]
   },
   {
     "name" : "impl_else_01",
-    "tags" : ["logical"],
+    "tags" : ["logical", "continuous"],
     "objective": 9,
     "options": {
       "mp_options": "cvt:bigM=1e4"
@@ -212,7 +212,7 @@
       "mp_options": "cvt:mip:eps=0.01"
     },
     "objective" : 0.01,
-    "tags" : ["logical"]
+    "tags" : ["logical", "continuous"]
   },
   {
     "name" : "float_ne_02__vne2c cvt:mip:eps",
@@ -220,7 +220,7 @@
       "mp_options": "cvt:mip:eps=0.01"
     },
     "objective" : 0.01,
-    "tags" : ["logical"]
+    "tags" : ["logical", "continuous"]
   },
   {
     "name" : "booleq_01",
@@ -228,7 +228,7 @@
       "mp_options": "cvt:bigm=1e5"
     },
     "objective" : 1,
-    "tags" : ["logical"]
+    "tags" : ["logical", "continuous"]
   },
   {
     "name" : "booleq_02",
@@ -244,14 +244,14 @@
       "mp_options": "cvt:bigm=1e5"
     },
     "objective" : 150,
-    "tags" : ["logical"]
+    "tags" : ["logical", "continuous"]
   },
   {
     "name" : "uenc_ratio_01",
     "options": {
       "mp_options": "version debug=1"
     },
-    "tags" : ["logical"],
+    "tags" : ["logical", "continuous"],
     "objective" : 2,
     "comment": "No UEnc by default",
     "values": {
@@ -263,7 +263,7 @@
     "options": {
       "mp_options": "cvt:uenc:ratio=2 acc:condlineq=1 debug=1"
     },
-    "tags" : ["logical"],
+    "tags" : ["logical", "continuous"],
     "objective" : 2,
     "values": {
       "Initial.flat1__A__uenc": 0
@@ -274,7 +274,7 @@
     "options": {
       "mp_options": "cvt:uenc:ratio=3 acc:condlineq=1 debug=1"
     },
-    "tags" : ["logical"],
+    "tags" : ["logical", "continuous"],
     "objective" : 2,
     "values": {
       "Initial.flat1__A__uenc": 0
@@ -285,7 +285,7 @@
     "options": {
       "mp_options": "cvt:uenc:ratio=3.5 acc:condlineq=1 debug=1"
     },
-    "tags" : ["logical"],
+    "tags" : ["logical", "continuous"],
     "objective" : 2,
     "values": {
       "Initial.flat1__A__uenc": 1
@@ -296,7 +296,7 @@
     "options": {
       "mp_options": "acc:condlineq=1 debug=1"
     },
-    "tags" : ["logical"],
+    "tags" : ["logical", "continuous"],
     "objective" : 3,
     "values": {
       "Initial.flat1__A__uenc": 0
@@ -307,7 +307,7 @@
     "options": {
       "mp_options": "acc:condlineq=1 debug=1 cvt:uenc:negctx=0"
     },
-    "tags" : ["logical"],
+    "tags" : ["logical", "continuous"],
     "objective" : 3,
     "values": {
       "Initial.flat1__A__uenc": 1
@@ -318,7 +318,7 @@
     "options": {
       "mp_options": "acc:condlineq=1 debug=1"
     },
-    "tags" : ["logical"],
+    "tags" : ["logical", "continuous"],
     "objective" : 2,
     "values": {
       "Initial.flat1__A__uenc": 1
@@ -329,7 +329,7 @@
     "options": {
       "mp_options": "acc:condlineq=1 debug=1 cvt:uenc:negctx=2"
     },
-    "tags" : ["logical"],
+    "tags" : ["logical", "continuous"],
     "objective" : 2,
     "values": {
       "Initial.flat1__A__uenc": 0
@@ -340,7 +340,7 @@
     "options": {
       "mp_options": "acc:condlineq=1 debug=1 cvt:uenc:negctx=3"
     },
-    "tags" : ["logical"],
+    "tags" : ["logical", "continuous"],
     "objective" : 2,
     "values": {
       "Initial.flat1__A__uenc": 0
@@ -363,7 +363,7 @@
     "options": {
       "mp_options": "acc:condlineq=1 debug=1 cvt:pre:ctx2count=0"
     },
-    "tags" : ["logical"],
+    "tags" : ["logical", "continuous"],
     "objective" : 202,
     "values": {
       "Initial.flat1__uenc": 0,
@@ -375,7 +375,7 @@
     "options": {
       "mp_options": "acc:condlineq=1 debug=1"
     },
-    "tags" : ["logical"],
+    "tags" : ["logical", "continuous"],
     "objective" : 202,
     "values": {
       "Initial.flat1__uenc": 0,
@@ -387,7 +387,7 @@
     "options": {
       "mp_options": "acc:condlineq=1 debug=1 ctx2count=1"
     },
-    "tags" : ["logical"],
+    "tags" : ["logical", "continuous"],
     "objective" : 200,
     "values": {
       "Initial.flat1__uenc": 0,
@@ -399,7 +399,7 @@
     "options": {
       "mp_options": "acc:condlineq=1 debug=1 ctx2count=3"
     },
-    "tags" : ["logical"],
+    "tags" : ["logical", "continuous"],
     "objective" : 200,
     "values": {
       "Initial.flat1__uenc": 0,
@@ -411,7 +411,7 @@
     "options": {
       "mp_options": "acc:condlinle=1 acc:condlinge=1 debug=1 ctx2count=0"
     },
-    "tags" : ["logical"],
+    "tags" : ["logical", "continuous"],
     "objective" : 214,
     "values": {
       "Initial.flat1__A__indle": 4,
@@ -423,7 +423,7 @@
     "options": {
       "mp_options": "acc:condlinle=1 acc:condlinge=1 debug=1"
     },
-    "tags" : ["logical"],
+    "tags" : ["logical", "continuous"],
     "objective" : 214,
     "values": {
       "Initial.flat1__A__indle": 3,
@@ -435,7 +435,7 @@
     "options": {
       "mp_options": "acc:condlinle=1 acc:condlinge=1 debug=1 ctx2ineq=0"
     },
-    "tags" : ["logical"],
+    "tags" : ["logical", "continuous"],
     "objective" : 214,
     "values": {
       "Initial.flat1__A__indle": 4,
@@ -568,7 +568,7 @@
     "options": {
       "mp_options": "debug=1"
     },
-    "tags" : ["logical", "linear"],
+    "tags" : ["logical", "linear", "continuous"],
     "objective": -44,
     "values": {
       "Initial.flat0__count": 0,
@@ -585,7 +585,7 @@
     "options": {
       "mp_options": "debug=1 ineq2bndeq=0 ineq2related=0"
     },
-    "tags" : ["logical", "linear"],
+    "tags" : ["logical", "linear", "continuous"],
     "objective": -44,
     "values": {
       "Initial.flat0__count": 0,
@@ -615,7 +615,7 @@
   },
   {
     "name" : "redefvar_01",
-    "tags" : ["logical", "linear"],
+    "tags" : ["logical", "linear", "continuous"],
     "values": {
       "solve_result": "solved",
       "min {i in 1.._nlogcons} _logcon[i]": 1
@@ -623,7 +623,7 @@
   },
   {
     "name" : "redefvar_02",
-    "tags" : ["logical", "linear"],
+    "tags" : ["logical", "linear", "continuous"],
     "objective": 11,
     "values": {
       "solve_result": "solved",
@@ -632,7 +632,7 @@
   },
   {
     "name" : "redefvar_02 acc:linfn=0",
-    "tags" : ["logical", "linear"],
+    "tags" : ["logical", "linear", "continuous"],
     "options": { "mp_options": "acc:linfn=0" },
     "objective": 11,
     "values": {
@@ -642,7 +642,7 @@
   },
   {
     "name" : "test_ctx2bndeq_01 ctx2bndeq=0",
-    "tags" : ["logical", "linear"],
+    "tags" : ["logical", "linear", "continuous"],
     "options": {
       "mp_options": "ctx2bndeq=0 debug=1 acc:condlineq=0 acc:condlinge=0 acc:condlinle=0 acc:condlinlt=0 acc:condlingt=0" },
     "objective": -18,
@@ -656,7 +656,7 @@
   },
   {
     "name" : "test_ctx2bndeq_01",
-    "tags" : ["logical", "linear"],
+    "tags" : ["logical", "linear", "continuous"],
     "options": {
       "mp_options": "debug=1 acc:condlineq=0 acc:condlinge=0 acc:condlinle=0 acc:condlinlt=0 acc:condlingt=0" },
     "objective": -18,
@@ -783,7 +783,7 @@
   },
   {
     "name" : "disj2ind_01",
-    "tags" : ["logical", "linear"],
+    "tags" : ["logical", "linear", "continuous"],
     "options": {
       "mp_options": "debug=1 acc:condlinle=0 acc:condlinlt=0 acc:condlinge=0 acc:condlingt=0 acc:condlineq=0 acc:or=0 acc:and=0 acc:not=0"
     },
@@ -798,7 +798,7 @@
   },
   {
     "name" : "disj2ind_01 disj2ind=0",
-    "tags" : ["logical", "linear"],
+    "tags" : ["logical", "linear", "continuous"],
     "options": {
       "mp_options": "debug=1 acc:condlinle=0 acc:condlinlt=0 acc:condlinge=0 acc:condlingt=0 acc:condlineq=0 acc:or=0 acc:and=0 acc:not=0 cvt:pre:disj2ind=0"
     },
@@ -813,7 +813,7 @@
   },
   {
     "name" : "disj2ind_02",
-    "tags" : ["logical", "linear"],
+    "tags" : ["logical", "linear", "continuous"],
     "options": {
       "mp_options": "debug=1 acc:condlinle=0 acc:condlinlt=0 acc:condlinge=0 acc:condlingt=0 acc:condlineq=0 acc:or=0 acc:and=0 acc:not=0"
     },
@@ -829,7 +829,7 @@
   },
   {
     "name" : "disj2ind_02 uenc:negctx:max=2",
-    "tags" : ["logical", "linear"],
+    "tags" : ["logical", "linear", "continuous"],
     "options": {
       "mp_options": "debug=1 acc:condlinle=0 acc:condlinlt=0 acc:condlinge=0 acc:condlingt=0 acc:condlineq=0 acc:or=0 acc:and=0 acc:not=0 uenc:negctx:max=2"
     },
@@ -856,7 +856,7 @@
   },
   {
     "name" : "disj2ind_04_uenc",
-    "tags" : ["logical", "linear"],
+    "tags" : ["logical", "linear", "continuous"],
     "options": {
       "mp_options": "debug=1 acc:condlinle=0 acc:condlinlt=0 acc:condlinge=0 acc:condlingt=0 acc:condlineq=0 acc:or=0 acc:and=0 acc:not=0"
     },
@@ -869,7 +869,7 @@
   },
   {
     "name" : "disj2ind_04_uenc uenc:negctx:max=2",
-    "tags" : ["logical", "linear"],
+    "tags" : ["logical", "linear", "continuous"],
     "options": {
       "mp_options": "debug=1 acc:condlinle=0 acc:condlinlt=0 acc:condlinge=0 acc:condlingt=0 acc:condlineq=0 acc:or=0 acc:and=0 acc:not=0 uenc:negctx:max=2"
     },
@@ -882,7 +882,7 @@
   },
   {
     "name" : "disj2ind_05_and_uenc",
-    "tags" : ["logical", "linear"],
+    "tags" : ["logical", "linear", "continuous"],
     "options": {
       "mp_options": "debug=1 acc:condlinle=0 acc:condlinlt=0 acc:condlinge=0 acc:condlingt=0 acc:condlineq=0 acc:or=0 acc:and=0 acc:not=0"
     },
@@ -895,7 +895,7 @@
   },
   {
     "name" : "disj2ind_05_and_uenc uenc:negctx:max=2",
-    "tags" : ["logical", "linear"],
+    "tags" : ["logical", "linear", "continuous"],
     "options": {
       "mp_options": "debug=1 acc:condlinle=0 acc:condlinlt=0 acc:condlinge=0 acc:condlingt=0 acc:condlineq=0 acc:or=0 acc:and=0 acc:not=0 uenc:negctx:max=2"
     },
@@ -925,7 +925,7 @@
   },
   {
     "name" : "auxint_01",
-    "tags" : ["logical", "linear"],
+    "tags" : ["logical", "linear", "continuous"],
     "options": {
       "mp_options": "debug=1"
     },
@@ -936,7 +936,7 @@
   },
   {
     "name" : "auxint_01 auxint=1",
-    "tags" : ["logical", "linear"],
+    "tags" : ["logical", "linear", "continuous"],
     "options": {
       "mp_options": "debug=1 cvt:pre:auxint=1"
     },
@@ -947,7 +947,7 @@
   },
   {
     "name" : "auxint_01 bigM only",
-    "tags" : ["logical", "linear"],
+    "tags" : ["logical", "linear", "continuous"],
     "options": {
       "mp_options": "debug=1 acc:indle=0 acc:indeq=0 acc:indge=0 acc:and=0 acc:or=0 acc:not=0 acc:ifthen=0 acc:count=0"
     },

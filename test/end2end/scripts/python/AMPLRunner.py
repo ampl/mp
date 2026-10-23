@@ -201,6 +201,8 @@ class AMPLRunner(object):
             if logOption:
                 value += f" {logOption}"
         self._ampl.setOption(name, value)
+        for (fname, fvalue) in self._solver.getFixedAMPLOptions():
+            self._ampl.setOption(fname, fvalue)
         
     def _getSolverVersion(self, solver) -> tuple:
         """Returns driver version (e.g. 20240316), version string"""
@@ -367,7 +369,9 @@ class AMPLRunner(object):
             return
         (slvname, slvval) = self._solver.getAMPLOptions(model)         # slvname = 'gurobi_options' e.g.
         if model.hasOptions():
-            optmap = model.getOptions()
+            optmap = {}                                 # Case option -> solver's AMPL option
+            for name, val in model.getOptions().items():
+                optmap[self._solver.mapCaseOptionName(name)] = val
             for name, val in optmap.items():
                 if name.endswith("_options"):               # A solver option
                     if name.endswith("SOLVER_options"):         # Any-solver option

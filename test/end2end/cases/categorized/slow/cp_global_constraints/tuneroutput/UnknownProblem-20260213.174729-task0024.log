@@ -1,0 +1,139 @@
+==> HEUREMPHASIS         = 0
+FICO Xpress v9.8.0, Hyper, solve started 17:47:41, Feb 13, 2026
+Heap usage: 3143KB (peak 3143KB, 7110KB system)
+Minimizing MILP  using up to 8 threads and up to 16GB memory, with these control settings:
+HEUREMPHASIS = 0
+Original problem has:
+      3342 rows         6925 cols        14348 elements      4012 entities
+      1632 inds
+Presolved problem has:
+      3085 rows         3864 cols        13518 elements      3864 entities
+LP relaxation tightened
+Presolve finished in 0 seconds
+Heap usage: 6702KB (peak 9248KB, 7110KB system)
+
+Coefficient range                    original                 solved        
+  Coefficients   [min,max] : [ 1.00e+00,  2.00e+01] / [ 6.25e-02,  1.25e+00]
+  RHS and bounds [min,max] : [ 1.00e+00,  2.00e+01] / [ 1.00e+00,  2.00e+01]
+  Objective      [min,max] : [      0.0,       0.0] / [      0.0,       0.0]
+Autoscaling applied standard scaling
+
+Symmetric problem: generators: 16, support set: 3864
+ Number of orbits: 105, largest orbit: 252
+ Row orbits: 108, row support: 3057
+Will try to keep branch and bound tree memory usage below 15.0GB
+Starting concurrent solve with dual (1 thread) and barrier (7 threads)
+
+              Concurrent-Solve,   0s
+            Dual                      Barrier      
+    objective   sum inf                            
+ P   .0000000   .0000000 |                         
+------- optimal -------- | ----- interrupted ------
+Concurrent statistics:
+           Dual: 2553 simplex iterations, 0.31s
+        Barrier: 6 barrier and 1033 simplex iterations, 0.08s
+            Barrier used 7 threads 7 cores
+, crossover used 7 threads
+Optimal solution found
+ 
+   Its         Obj Value      S   Ninf  Nneg        Sum Inf  Time
+  2553           .000000      P      0     0        .000000     0
+Dual solved problem
+  2553 simplex iterations in 0.32 seconds at time 0
+
+Final objective                       : 0.000000000000000e+00
+  Max primal violation      (abs/rel) : 2.220e-16 / 1.776e-16
+  Max dual violation        (abs/rel) :       0.0 /       0.0
+  Max complementarity viol. (abs/rel) :       0.0 /       0.0
+
+Starting root cutting
+ 
+ Its Type    BestSoln    BestBound   Sols    Add    Del     Gap     GInf   Time
+   1  K                    .000000      0    797      0              680      0
+   2  K                    .000000      0   1119    590              546      0
+   3  K                    .000000      0    637    980              578      0
+   4  K                    .000000      0    581    610              639      0
+   5  K                    .000000      0    608    591              525      0
+   6  K                    .000000      0    641    617              608      1
+   7  K                    .000000      0    557    637              577      1
+   8  K                    .000000      0    585    549              590      1
+   9  K                    .000000      0    532    586              546      1
+  10  K                    .000000      0    523    536              527      1
+  11  K                    .000000      0    659    560              528      1
+  12  K                    .000000      0    567    635              499      1
+  13  K                    .000000      0    569    567              457      1
+  14  K                    .000000      0    592    571              518      1
+  15  K                    .000000      0    527    596              454      1
+  16  K                    .000000      0    479    532              435      1
+  17  K                    .000000      0    468    478              426      1
+  18  K                    .000000      0    439    475              451      1
+  19  K                    .000000      0    475    433              426      1
+  20  K                    .000000      0    505    477              413      1
+  21  K                    .000000      0    415    500              433      1
+  22  K                    .000000      0    441    416              434      1
+  23  K                    .000000      0    347    442              405      1
+  24  K                    .000000      0    355    335              415      2
+  25  K                    .000000      0    515    366              402      2
+  26  K                    .000000      0    587    517              414      2
+  27  K                    .000000      0    501    588              386      2
+  28  K                    .000000      0    472    514              413      2
+  29  K                    .000000      0    368    463              372      2
+  30  K                    .000000      0    367    378              361      2
+  31  K                    .000000      0    322    361              324      2
+  32  K                    .000000      0    350    323              337      2
+  33  K                    .000000      0    364    356              333      2
+  34  K                    .000000      0    302    360              316      2
+  35  K                    .000000      0    350    307              295      2
+  36  K                    .000000      0    242    359              353      2
+  37  K                    .000000      0    289    229              323      2
+  38  K                    .000000      0    247    289              313      2
+  39  K                    .000000      0    349    255              298      2
+  40  K                    .000000      0    265    596              305      2
+  41  G                    .000000      0    239     20              311      2
+  42  G                    .000000      0    292    539              318      2
+ 
+Cuts in the matrix         : 306
+Cut elements in the matrix : 5209
+
+Starting tree search.
+Deterministic mode with up to 8 running threads and up to 16 tasks.
+Heap usage: 17MB (peak 19MB, 7269KB system)
+ 
+    Node     BestSoln    BestBound   Sols Active  Depth     Gap     GInf   Time
+       1                   .000000      0      2      1              213      3
+       2                   .000000      0      2      3              281      3
+       3                   .000000      0      3      4              275      3
+       4                   .000000      0      4      3              349      3
+       5                   .000000      0      5      4              272      3
+       6                   .000000      0      6      4              347      3
+       7                   .000000      0      7      5              185      3
+       8                   .000000      0      8      5              220      3
+       9                   .000000      0      9      5              210      3
+      10                   .000000      0     10      6              185      3
+      20                   .000000      0     20      8              167      3
+      35                   .000000      0     23     15              137      4
+      45                   .000000      0     23     13              206      4
+      56                   .000000      0     23     23              112      4
+      67                   .000000      0     23     26               85      4
+      81                   .000000      0     23     21              138      4
+      96                   .000000      0     23     37               51      4
+     110                   .000000      0     23     40               77      4
+     215                   .000000      0     23     64               44      5
+Elapsed time (sec): 5, estimated tree completion: 0.00000
+Heap usage: 433MB (peak 526MB, 5128KB system)
+B&B tree size: 1.6MB total
+ 
+    Node     BestSoln    BestBound   Sols Active  Depth     Gap     GInf   Time
+     322                   .000000      0     23     94               15      5
+*    359      .000000      .000000      1     23    112 0.0e+00        0      5
+STOPPING - MIPRELSTOP target reached (MIPRELSTOP=0.0001  gap=0).
+STOPPING - MIPRELSTOP target reached (MIPRELSTOP=0.0001  gap=0).
+ *** Search completed ***
+Uncrunching matrix
+Final MIP objective                   : 0.000000000000000e-01
+Final MIP bound                       : 0.000000000000000e-01
+  Solution time / primaldual integral :      5.90s/ 99.798174%
+  Work / work units per second        :      2.75 /      0.47
+  Number of solutions found / nodes   :         1 /       359
+  Max primal violation      (abs/rel) : 3.553e-15 / 3.553e-15
+  Max integer violation     (abs    ) : 3.553e-15

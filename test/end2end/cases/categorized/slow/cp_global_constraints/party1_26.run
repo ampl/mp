@@ -1,0 +1,122 @@
+###snapshot-version: 0.1.6
+###model-start
+param B integer > 0;
+set BOATS = 1 .. B;
+set HOSTS within BOATS;
+set VISITORS = BOATS diff HOSTS;
+param capacity{BOATS}  integer >= 0;
+param crew{BOATS}  integer > 0;
+param guest_cap{i in BOATS}  = capacity[i] less crew[i];
+param T integer > 0;
+set TIMES = 1 .. T;
+set MEET = {j in VISITORS, jj in VISITORS: j < jj};
+var H{VISITORS, TIMES}  integer >= 1
+     <= B;
+subject to VisitHosts{j in VISITORS, jj in VISITORS, t in TIMES} : H[j,t]
+   != jj;
+subject to VisitOnce{j in VISITORS} : alldiff({t in TIMES} (H[j,t]));
+subject to Cap{i in HOSTS, t in TIMES} : sum{j in VISITORS} ( if H[j,t] == i
+   then crew[j]) <= guest_cap[i];
+subject to MeetDefn{(j,jj) in MEET} : atmost 1 ({t in TIMES} (H[j,t] == H[jj,t
+  ]));
+###model-end
+
+###options-start
+reset options;
+environ Initial;
+###options-end
+
+###current-problem/environment-start
+problem Initial;
+environ Initial;
+###current-problem/environment-end
+
+###data-start
+data;
+param B := 26;
+set HOSTS :=
+     1
+     2
+     3
+     4
+     5
+     6
+     7
+     9
+     10
+     11
+     12
+     16
+     20;
+param capacity :=
+     [1] 6
+     [2] 8
+     [3] 12
+     [4] 12
+     [5] 12
+     [6] 12
+     [7] 12
+     [8] 10
+     [9] 10
+     [10] 10
+     [11] 10
+     [12] 10
+     [13] 8
+     [14] 8
+     [15] 8
+     [16] 12
+     [17] 8
+     [18] 8
+     [19] 8
+     [20] 8
+     [21] 8
+     [22] 8
+     [23] 7
+     [24] 7
+     [25] 7
+     [26] 7;
+param crew :=
+     [1] 2
+     [2] 2
+     [3] 2
+     [4] 2
+     [5] 4
+     [6] 4
+     [7] 4
+     [8] 1
+     [9] 2
+     [10] 2
+     [11] 2
+     [12] 3
+     [13] 4
+     [14] 2
+     [15] 3
+     [16] 6
+     [17] 2
+     [18] 2
+     [19] 4
+     [20] 2
+     [21] 4
+     [22] 5
+     [23] 4
+     [24] 4
+     [25] 2
+     [26] 2;
+param T := 6;
+data;
+data;
+data;
+data;
+data;
+model;
+###data-end
+
+###objectives-start
+###objectives-end
+
+###fixes-start
+###fixes-end
+
+###drop-restore-start
+###drop-restore-end
+

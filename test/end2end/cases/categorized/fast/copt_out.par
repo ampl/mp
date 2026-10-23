@@ -1,0 +1,11 @@
+TimeLimit                 10
+NLPTol                    1e-09
+RelGap                    0.001
+MultiObjTimeLimit         100
+Logging                   0
+Presolve                  1
+FAPHeurLevel              2
+BarOrder                  2
+BarStart                  1
+Threads                   8
+MipStartNodeLimit         10

@@ -1,0 +1,6 @@
+Knitro 15.0.1 (Barrier Algorithm)
+Normal subproblem information
+
+  Iter    Res    ||v||    ||vC||    ||vI||    ||vN||     cred     ||c||  ||c+Av|| type
+--------  --- --------- --------- --------- --------- --------- -------- -------- ----
+       0  ---

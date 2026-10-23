@@ -30,14 +30,21 @@ class SolverCollection:
     def getSolver(self, nameoralias: str):
         return self._solvers.get(self._aliases[nameoralias])
 
+def aslExecutable(binPath, name):
+    """'<name>asl' if present, else the ASL driver '<name>' built with
+       the MP2NL wrapper (it runs as a plain ASL driver without mp2nl=1)"""
+    from shutil import which
+    asl = path.join(binPath, name + "asl")
+    return asl if which(Solver.Solver.getExecutableName(asl)) else path.join(binPath, name)
+
 def addStdSolvers(solvers: SolverCollection, binPath=""):
     ### ASL solvers
-    solvers.addSolver(Solver.BaronSolver(path.join(binPath,"baronasl")))
-    solvers.addSolver(Solver.LindoSolver(path.join(binPath, "lindoglobalasl")))
-    solvers.addSolver(Solver.KnitroSolver(path.join(binPath,"knitroasl")))
+    solvers.addSolver(Solver.BaronSolver(aslExecutable(binPath, "baron")).named("baronasl"))
+    solvers.addSolver(Solver.LindoSolver(aslExecutable(binPath, "lindoglobal")).named("lindoglobalasl"))
+    solvers.addSolver(Solver.KnitroSolver(aslExecutable(binPath, "knitro")).named("knitroasl"))
     solvers.addSolver(Solver.CouenneSolver(path.join(binPath, "couenneasl")))
     solvers.addSolver(Solver.BonminSolver(path.join(binPath, "bonminasl")))
-    solvers.addSolver(Solver.ConoptSolver(path.join(binPath,"conoptasl")))
+    solvers.addSolver(Solver.ConoptSolver(aslExecutable(binPath, "conopt")).named("conoptasl"))
     solvers.addSolver(Solver.ConoptSolver(path.join(binPath,"conopt4")))
     solvers.addSolver(Solver.OcteractSolver(path.join(binPath, "octeract-engine")))
     solvers.addSolver(Solver.MindoptSolver(path.join(binPath,"mindoptampl")))
@@ -58,7 +65,9 @@ def addStdSolvers(solvers: SolverCollection, binPath=""):
     solvers.addSolver(Solver.CouenneMP2NLSolver(path.join(binPath, "couenne")))
     solvers.addSolver(Solver.BonminMP2NLSolver(path.join(binPath, "bonmin")))
     solvers.addSolver(Solver.ConoptMP2NLSolver(path.join(binPath,"conopt")))
-    solvers.addSolver(Solver.GurobiASLMP2NLSolver(path.join(binPath,"gurobiaslmp2nl")))
+    solvers.addSolver(Solver.GurobiASLMP2NLSolver(path.join(binPath,"gurobiasl")).named("gurobiaslmp2nl"))
+    solvers.addSolver(Solver.XpressASLMP2NLSolver(path.join(binPath,"xpressasl")).named("xpressaslmp2nl"))
+    solvers.addSolver(Solver.CPLEXASLMP2NLSolver(path.join(binPath,"cplexasl")).named("cplexaslmp2nl"))
 
 
     ### MP solvers

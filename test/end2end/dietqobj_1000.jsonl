@@ -1,0 +1,114 @@
+{"COMMENT": "Initial model information. Can be updated later with new bounds, names, etc."}
+{"VAR_index": 0, "name": "_svar1_", "printed": "var _svar1_ >=2 <=10", "bounds": [2, 10], "type": 0, "is_from_nl": 1}
+{"VAR_index": 1, "name": "_svar2_", "printed": "var _svar2_ >=2 <=10", "bounds": [2, 10], "type": 0, "is_from_nl": 1}
+{"VAR_index": 2, "name": "_svar3_", "printed": "var _svar3_ >=2 <=10", "bounds": [2, 10], "type": 0, "is_from_nl": 1}
+{"VAR_index": 3, "name": "_svar4_", "printed": "var _svar4_ >=2 <=10", "bounds": [2, 10], "type": 0, "is_from_nl": 1}
+{"VAR_index": 4, "name": "_svar5_", "printed": "var _svar5_ >=2 <=10", "bounds": [2, 10], "type": 0, "is_from_nl": 1}
+{"VAR_index": 5, "name": "_svar6_", "printed": "var _svar6_ >=2 <=10", "bounds": [2, 10], "type": 0, "is_from_nl": 1}
+{"VAR_index": 6, "name": "_svar7_", "printed": "var _svar7_ >=2 <=10", "bounds": [2, 10], "type": 0, "is_from_nl": 1}
+{"VAR_index": 7, "name": "_svar8_", "printed": "var _svar8_ >=2 <=10", "bounds": [2, 10], "type": 0, "is_from_nl": 1}
+{"NL_OBJECTIVE_index": 0, "name": "_OBJ1_", "sense": 0, "printed": "minimize _OBJ1_: -3.1899999999999999 * _x[1] + -2.5899999999999999 * _x[2] + -2.29 * _x[3] + -2.8900000000000001 * _x[4] + -1.8899999999999999 * _x[5] + -1.99 * _x[6] + -1.99 * _x[7] + -2.4900000000000002 * _x[8] + (0.12574972068831825 * _x[1] * _x[1] + 0.046075880073805781 * _x[2] * _x[2] + 0.1851594898703135 * _x[3] * _x[3] + 0.19185958326173305 * _x[4] * _x[4] + 0.030087905780687593 * _x[5] * _x[5] + 0.14568018724211579 * _x[6] * _x[6] + 0.114791093054844 * _x[7] * _x[7] + 0.059995663721280512 * _x[8] * _x[8] + 1000)"}
+{"VAR_index": 8, "name": "_svar9_", "printed": "var _svar9_", "bounds": [-1.79769e+308, 1.79769e+308], "type": 0, "is_from_nl": 0}
+{"CON_TYPE": "_powc", "index": 0, "depth": 0, "data": {"res_var": 8, "args": [0], "params": [2]}}
+{"VAR_index": 9, "name": "_svar10_", "printed": "var _svar10_", "bounds": [-1.79769e+308, 1.79769e+308], "type": 0, "is_from_nl": 0}
+{"CON_TYPE": "_powc", "index": 1, "depth": 0, "data": {"res_var": 9, "args": [1], "params": [2]}}
+{"VAR_index": 10, "name": "_svar11_", "printed": "var _svar11_", "bounds": [-1.79769e+308, 1.79769e+308], "type": 0, "is_from_nl": 0}
+{"CON_TYPE": "_powc", "index": 2, "depth": 0, "data": {"res_var": 10, "args": [2], "params": [2]}}
+{"VAR_index": 11, "name": "_svar12_", "printed": "var _svar12_", "bounds": [-1.79769e+308, 1.79769e+308], "type": 0, "is_from_nl": 0}
+{"CON_TYPE": "_powc", "index": 3, "depth": 0, "data": {"res_var": 11, "args": [3], "params": [2]}}
+{"VAR_index": 12, "name": "_svar13_", "printed": "var _svar13_", "bounds": [-1.79769e+308, 1.79769e+308], "type": 0, "is_from_nl": 0}
+{"CON_TYPE": "_powc", "index": 4, "depth": 0, "data": {"res_var": 12, "args": [4], "params": [2]}}
+{"VAR_index": 13, "name": "_svar14_", "printed": "var _svar14_", "bounds": [-1.79769e+308, 1.79769e+308], "type": 0, "is_from_nl": 0}
+{"CON_TYPE": "_powc", "index": 5, "depth": 0, "data": {"res_var": 13, "args": [5], "params": [2]}}
+{"VAR_index": 14, "name": "_svar15_", "printed": "var _svar15_", "bounds": [-1.79769e+308, 1.79769e+308], "type": 0, "is_from_nl": 0}
+{"CON_TYPE": "_powc", "index": 6, "depth": 0, "data": {"res_var": 14, "args": [6], "params": [2]}}
+{"VAR_index": 15, "name": "_svar16_", "printed": "var _svar16_", "bounds": [-1.79769e+308, 1.79769e+308], "type": 0, "is_from_nl": 0}
+{"CON_TYPE": "_powc", "index": 7, "depth": 0, "data": {"res_var": 15, "args": [7], "params": [2]}}
+{"VAR_index": 16, "name": "_svar17_", "printed": "var _svar17_ = 1000", "bounds": [1000, 1000], "type": 0, "is_from_nl": 0}
+{"OBJECTIVE_index": 0, "sense": 0, "qp_terms": {"coefs": [], "vars1": [], "vars2": []}, "lin_terms": {"coefs": [-3.19, -2.59, -2.29, -2.89, -1.89, -1.99, -1.99, -2.49, 0.12575, 0.0460759, 0.185159, 0.19186, 0.0300879, 0.14568, 0.114791, 0.0599957, 1], "vars": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]}}
+{"link_index": [0, 0], "link_type": "CopyLink", "src_nodes": [{"src_vars()": [0, 7]}], "dest_nodes": [{"dest_vars()": [0, 7]}]}
+{"link_index": [0, 1], "link_type": "CopyLink", "src_nodes": [{"src_objs()": 0}], "dest_nodes": [{"dest_objs()": 0}]}
+{"NL_OBJECTIVE_index": 1, "name": "_OBJ2_", "sense": 0, "printed": "minimize _OBJ2_: -3.0899999999999999 * _x[1] + -2.79 * _x[2] + -2.29 * _x[3] + -2.5899999999999999 * _x[4] + -1.5900000000000001 * _x[5] + -1.99 * _x[6] + -2.0899999999999999 * _x[7] + -2.2999999999999998 * _x[8] + (0.076424789179766667 * _x[1] * _x[1] + 0.08737685284074441 * _x[2] * _x[2] + 0.1363902309431281 * _x[3] * _x[3] + 0.11940337362312418 * _x[4] * _x[4] + 0.18898409548874284 * _x[5] * _x[5] + 0.079069678984776612 * _x[6] * _x[6] + 0.010586863461117714 * _x[7] * _x[7] + 0.15356368384421967 * _x[8] * _x[8] + 1000)"}
+{"OBJECTIVE_index": 1, "sense": 0, "qp_terms": {"coefs": [], "vars1": [], "vars2": []}, "lin_terms": {"coefs": [-3.09, -2.79, -2.29, -2.59, -1.59, -1.99, -2.09, -2.3, 0.0764248, 0.0873769, 0.13639, 0.119403, 0.188984, 0.0790697, 0.0105869, 0.153564, 1], "vars": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]}}
+{"NL_OBJECTIVE_index": 2, "name": "_OBJ3_", "sense": 0, "printed": "minimize _OBJ3_: -2.5899999999999999 * _x[1] + -2.9900000000000002 * _x[2] + -2.4900000000000002 * _x[3] + -2.6899999999999999 * _x[4] + -1.99 * _x[5] + -2.29 * _x[6] + -2 * _x[7] + -2.6899999999999999 * _x[8] + (0.095519498097769842 * _x[1] * _x[1] + 0.042323155804129819 * _x[2] * _x[2] + 0.15967213207016753 * _x[3] * _x[3] + 0.16918359151913173 * _x[4] * _x[4] + 0.12213155663555032 * _x[5] * _x[5] + 0.048587636492184394 * _x[6] * _x[6] + 0.058191369088394729 * _x[7] * _x[7] + 0.11114446253366254 * _x[8] * _x[8] + 1000)"}
+{"OBJECTIVE_index": 2, "sense": 0, "qp_terms": {"coefs": [], "vars1": [], "vars2": []}, "lin_terms": {"coefs": [-2.59, -2.99, -2.49, -2.69, -1.99, -2.29, -2, -2.69, 0.0955195, 0.0423232, 0.159672, 0.169184, 0.122132, 0.0485876, 0.0581914, 0.111144, 1], "vars": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]}}
+{"NL_OBJECTIVE_index": 3, "name": "_OBJ4_", "sense": 0, "printed": "minimize _OBJ4_: _x[1] + _x[2] + _x[3] + _x[4] + _x[5] + _x[6] + _x[7] + _x[8]"}
+{"OBJECTIVE_index": 3, "sense": 0, "qp_terms": {"coefs": [], "vars1": [], "vars2": []}, "lin_terms": {"coefs": [1, 1, 1, 1, 1, 1, 1, 1], "vars": [0, 1, 2, 3, 4, 5, 6, 7]}}
+{"NL_CON_TYPE": "lin", "index": 0, "name": "_CON1_", "printed": "_CON1_: 60 * _x[1] + 8 * _x[2] + 8 * _x[3] + 40 * _x[4] + 15 * _x[5] + 70 * _x[6] + 25 * _x[7] + 60 * _x[8] >= 700"}
+{"CON_TYPE": "_linrange", "index": 0, "depth": 0, "data": {"body": {"coefs": [60, 8, 8, 40, 15, 70, 25, 60], "vars": [0, 1, 2, 3, 4, 5, 6, 7]}, "rhs_or_range": [700, 1.79769e+308]}}
+{"link_index": [1, 0], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 0}], "dest_nodes": [{"dest_vars()": 8}]}
+{"link_index": [1, 1], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 0}], "dest_nodes": [{"_powc": 0}]}
+{"link_index": [1, 2], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 0}], "dest_nodes": [{"dest_vars()": 9}]}
+{"link_index": [1, 3], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 0}], "dest_nodes": [{"_powc": 1}]}
+{"link_index": [1, 4], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 0}], "dest_nodes": [{"dest_vars()": 10}]}
+{"link_index": [1, 5], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 0}], "dest_nodes": [{"_powc": 2}]}
+{"link_index": [1, 6], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 0}], "dest_nodes": [{"dest_vars()": 11}]}
+{"link_index": [1, 7], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 0}], "dest_nodes": [{"_powc": 3}]}
+{"link_index": [1, 8], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 0}], "dest_nodes": [{"dest_vars()": 12}]}
+{"link_index": [1, 9], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 0}], "dest_nodes": [{"_powc": 4}]}
+{"link_index": [1, 10], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 0}], "dest_nodes": [{"dest_vars()": 13}]}
+{"link_index": [1, 11], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 0}], "dest_nodes": [{"_powc": 5}]}
+{"link_index": [1, 12], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 0}], "dest_nodes": [{"dest_vars()": 14}]}
+{"link_index": [1, 13], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 0}], "dest_nodes": [{"_powc": 6}]}
+{"link_index": [1, 14], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 0}], "dest_nodes": [{"dest_vars()": 15}]}
+{"link_index": [1, 15], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 0}], "dest_nodes": [{"_powc": 7}]}
+{"link_index": [1, 16], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 1}], "dest_nodes": [{"dest_vars()": 8}]}
+{"link_index": [1, 17], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 1}], "dest_nodes": [{"_powc": 0}]}
+{"link_index": [1, 18], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 1}], "dest_nodes": [{"dest_vars()": 9}]}
+{"link_index": [1, 19], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 1}], "dest_nodes": [{"_powc": 1}]}
+{"link_index": [1, 20], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 1}], "dest_nodes": [{"dest_vars()": 10}]}
+{"link_index": [1, 21], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 1}], "dest_nodes": [{"_powc": 2}]}
+{"link_index": [1, 22], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 1}], "dest_nodes": [{"dest_vars()": 11}]}
+{"link_index": [1, 23], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 1}], "dest_nodes": [{"_powc": 3}]}
+{"link_index": [1, 24], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 1}], "dest_nodes": [{"dest_vars()": 12}]}
+{"link_index": [1, 25], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 1}], "dest_nodes": [{"_powc": 4}]}
+{"link_index": [1, 26], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 1}], "dest_nodes": [{"dest_vars()": 13}]}
+{"link_index": [1, 27], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 1}], "dest_nodes": [{"_powc": 5}]}
+{"link_index": [1, 28], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 1}], "dest_nodes": [{"dest_vars()": 14}]}
+{"link_index": [1, 29], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 1}], "dest_nodes": [{"_powc": 6}]}
+{"link_index": [1, 30], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 1}], "dest_nodes": [{"dest_vars()": 15}]}
+{"link_index": [1, 31], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 1}], "dest_nodes": [{"_powc": 7}]}
+{"link_index": [1, 32], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 2}], "dest_nodes": [{"dest_vars()": 8}]}
+{"link_index": [1, 33], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 2}], "dest_nodes": [{"_powc": 0}]}
+{"link_index": [1, 34], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 2}], "dest_nodes": [{"dest_vars()": 9}]}
+{"link_index": [1, 35], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 2}], "dest_nodes": [{"_powc": 1}]}
+{"link_index": [1, 36], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 2}], "dest_nodes": [{"dest_vars()": 10}]}
+{"link_index": [1, 37], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 2}], "dest_nodes": [{"_powc": 2}]}
+{"link_index": [1, 38], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 2}], "dest_nodes": [{"dest_vars()": 11}]}
+{"link_index": [1, 39], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 2}], "dest_nodes": [{"_powc": 3}]}
+{"link_index": [1, 40], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 2}], "dest_nodes": [{"dest_vars()": 12}]}
+{"link_index": [1, 41], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 2}], "dest_nodes": [{"_powc": 4}]}
+{"link_index": [1, 42], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 2}], "dest_nodes": [{"dest_vars()": 13}]}
+{"link_index": [1, 43], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 2}], "dest_nodes": [{"_powc": 5}]}
+{"link_index": [1, 44], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 2}], "dest_nodes": [{"dest_vars()": 14}]}
+{"link_index": [1, 45], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 2}], "dest_nodes": [{"_powc": 6}]}
+{"link_index": [1, 46], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 2}], "dest_nodes": [{"dest_vars()": 15}]}
+{"link_index": [1, 47], "link_type": "One2ManyLink", "src_nodes": [{"src_objs()": 2}], "dest_nodes": [{"_powc": 7}]}
+{"NL_CON_TYPE": "lin", "index": 1, "name": "_CON2_", "printed": "_CON2_: 20 * _x[1] + 10 * _x[3] + 40 * _x[4] + 35 * _x[5] + 30 * _x[6] + 50 * _x[7] + 20 * _x[8] >= 700"}
+{"CON_TYPE": "_linrange", "index": 1, "depth": 0, "data": {"body": {"coefs": [20, 10, 40, 35, 30, 50, 20], "vars": [0, 2, 3, 4, 5, 6, 7]}, "rhs_or_range": [700, 1.79769e+308]}}
+{"NL_CON_TYPE": "lin", "index": 2, "name": "_CON3_", "printed": "_CON3_: 295 * _x[1] + 770 * _x[2] + 440 * _x[3] + 430 * _x[4] + 315 * _x[5] + 400 * _x[6] + 370 * _x[7] + 450 * _x[8] >= 16000"}
+{"CON_TYPE": "_linrange", "index": 2, "depth": 0, "data": {"body": {"coefs": [295, 770, 440, 430, 315, 400, 370, 450], "vars": [0, 1, 2, 3, 4, 5, 6, 7]}, "rhs_or_range": [16000, 1.79769e+308]}}
+{"NL_CON_TYPE": "lin", "index": 3, "name": "_CON4_", "printed": "_CON4_: 938 * _x[1] + 2180 * _x[2] + 945 * _x[3] + 278 * _x[4] + 1182 * _x[5] + 896 * _x[6] + 1329 * _x[7] + 1397 * _x[8] <= 50000"}
+{"CON_TYPE": "_linrange", "index": 3, "depth": 0, "data": {"body": {"coefs": [938, 2180, 945, 278, 1182, 896, 1329, 1397], "vars": [0, 1, 2, 3, 4, 5, 6, 7]}, "rhs_or_range": [-1.79769e+308, 50000]}}
+{"NL_CON_TYPE": "lin", "index": 4, "name": "_CON5_", "printed": "_CON5_: 295 * _x[1] + 770 * _x[2] + 440 * _x[3] + 430 * _x[4] + 315 * _x[5] + 400 * _x[6] + 370 * _x[7] + 450 * _x[8] <= 24000"}
+{"CON_TYPE": "_linrange", "index": 4, "depth": 0, "data": {"body": {"coefs": [295, 770, 440, 430, 315, 400, 370, 450], "vars": [0, 1, 2, 3, 4, 5, 6, 7]}, "rhs_or_range": [-1.79769e+308, 24000]}}
+{"VAR_index": 17, "name": "_svar18_", "printed": "var _svar18_", "bounds": [-1.79769e+308, 1.79769e+308], "type": 0, "is_from_nl": 0}
+{"CON_TYPE": "_linfn", "index": 0, "depth": 1, "data": {"res_var": 17, "expr": {"body": {"coefs": [0.297694, 0.175776, 0.481222, 0.480447, 0.341204, 0.273338, 0.183569, 0.324704], "vars": [8, 9, 10, 11, 12, 13, 14, 15]}, "const_term": 0}}}
+{"link_index": [2, 2], "link_type": "CopyLink", "src_nodes": [{"src_cons()": [0, 4]}], "dest_nodes": [{"_linrange": [0, 4]}]}
+{"COMMENT": "Updated model information."}
+{"VAR_index": 0, "name": "_x[1]", "printed": "var _x[1] >=2 <=10", "bounds": [2, 10], "type": 0, "is_from_nl": 1}
+{"VAR_index": 1, "name": "_x[2]", "printed": "var _x[2] >=2 <=10", "bounds": [2, 10], "type": 0, "is_from_nl": 1}
+{"VAR_index": 2, "name": "_x[3]", "printed": "var _x[3] >=2 <=10", "bounds": [2, 10], "type": 0, "is_from_nl": 1}
+{"VAR_index": 3, "name": "_x[4]", "printed": "var _x[4] >=2 <=10", "bounds": [2, 10], "type": 0, "is_from_nl": 1}
+{"VAR_index": 4, "name": "_x[5]", "printed": "var _x[5] >=2 <=10", "bounds": [2, 10], "type": 0, "is_from_nl": 1}
+{"VAR_index": 5, "name": "_x[6]", "printed": "var _x[6] >=2 <=10", "bounds": [2, 10], "type": 0, "is_from_nl": 1}
+{"VAR_index": 6, "name": "_x[7]", "printed": "var _x[7] >=2 <=10", "bounds": [2, 10], "type": 0, "is_from_nl": 1}
+{"VAR_index": 7, "name": "_x[8]", "printed": "var _x[8] >=2 <=10", "bounds": [2, 10], "type": 0, "is_from_nl": 1}
+{"VAR_index": 8, "name": "_OBJ1__flatv1_", "printed": "var _OBJ1__flatv1_ = 0", "bounds": [0, 0], "type": 0, "is_from_nl": 0}
+{"VAR_index": 9, "name": "_OBJ1__flatv2_", "printed": "var _OBJ1__flatv2_ = 0", "bounds": [0, 0], "type": 0, "is_from_nl": 0}
+{"VAR_index": 10, "name": "_OBJ1__flatv3_", "printed": "var _OBJ1__flatv3_ = 0", "bounds": [0, 0], "type": 0, "is_from_nl": 0}
+{"VAR_index": 11, "name": "_OBJ1__flatv4_", "printed": "var _OBJ1__flatv4_ = 0", "bounds": [0, 0], "type": 0, "is_from_nl": 0}
+{"VAR_index": 12, "name": "_OBJ1__flatv5_", "printed": "var _OBJ1__flatv5_ = 0", "bounds": [0, 0], "type": 0, "is_from_nl": 0}
+{"VAR_index": 13, "name": "_OBJ1__flatv6_", "printed": "var _OBJ1__flatv6_ = 0", "bounds": [0, 0], "type": 0, "is_from_nl": 0}
+{"VAR_index": 14, "name": "_OBJ1__flatv7_", "printed": "var _OBJ1__flatv7_ = 0", "bounds": [0, 0], "type": 0, "is_from_nl": 0}
+{"VAR_index": 15, "name": "_OBJ1__flatv8_", "printed": "var _OBJ1__flatv8_ = 0", "bounds": [0, 0], "type": 0, "is_from_nl": 0}

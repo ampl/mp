@@ -200,8 +200,8 @@
     "values": {
       "x.iis": "upp",
       "y.iis": "non",
-      "C1.iis": "mem",
-      "C2.iis": "mem",
+      "C1.iis": ["mem", "low"],
+      "C2.iis": ["mem", "upp"],
       "C3.iis": "non"
     }
   }

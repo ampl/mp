@@ -1,0 +1,17 @@
+STATISTICS
+  Problem name     : 
+  Variables        : 5 (0 binary, 0 integer, 0 implicit integer, 5 continuous)
+  Constraints      : 2 initial, 3 maximal
+OBJECTIVE
+  Sense            : minimize
+VARIABLES
+  [continuous] <_var0_>: obj=3, original bounds=[-2,5]
+  [continuous] <_var1_>: obj=-2, original bounds=[-12,3]
+  [continuous] <_var2_>: obj=0, original bounds=[0,0]
+  [continuous] <_var3_>: obj=0, original bounds=[0,0]
+  [continuous] <_var4_>: obj=0, original bounds=[-48,10]
+CONSTRAINTS
+  [linear] <>:  +3<_var0_>[C] -2<_var1_>[C] == 13;
+  [nonlinear] <>: 2*abs(<_var0_>)-4*abs(<_var1_>)-<_var4_> <= 0;
+  [linear] <>: <_var4_>[C] <= -34;
+END

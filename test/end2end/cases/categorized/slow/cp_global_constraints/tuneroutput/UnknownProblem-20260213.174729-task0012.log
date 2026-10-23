@@ -1,0 +1,98 @@
+==> GOMCUTS              = 2
+FICO Xpress v9.8.0, Hyper, solve started 17:47:29, Feb 13, 2026
+Heap usage: 3143KB (peak 3143KB, 2359KB system)
+Minimizing MILP  using up to 8 threads and up to 16GB memory, with these control settings:
+GOMCUTS = 2
+Original problem has:
+      3342 rows         6925 cols        14348 elements      4012 entities
+      1632 inds
+Presolved problem has:
+      3085 rows         3864 cols        13518 elements      3864 entities
+LP relaxation tightened
+Presolve finished in 0 seconds
+Heap usage: 6702KB (peak 9248KB, 2372KB system)
+
+Coefficient range                    original                 solved        
+  Coefficients   [min,max] : [ 1.00e+00,  2.00e+01] / [ 6.25e-02,  1.25e+00]
+  RHS and bounds [min,max] : [ 1.00e+00,  2.00e+01] / [ 1.00e+00,  2.00e+01]
+  Objective      [min,max] : [      0.0,       0.0] / [      0.0,       0.0]
+Autoscaling applied standard scaling
+
+Symmetric problem: generators: 16, support set: 3864
+ Number of orbits: 105, largest orbit: 252
+ Row orbits: 108, row support: 3057
+Will try to keep branch and bound tree memory usage below 15.1GB
+Starting concurrent solve with dual (1 thread) and barrier (7 threads)
+
+              Concurrent-Solve,   0s
+            Dual                      Barrier      
+    objective   sum inf                            
+ P   .0000000   .0000000 |                         
+                         |                         
+------- optimal -------- | ----- interrupted ------
+Concurrent statistics:
+           Dual: 2553 simplex iterations, 0.09s
+        Barrier: 4 barrier and 0 simplex iterations, 0.09s
+            Barrier used 7 threads 7 cores
+
+Optimal solution found
+ 
+   Its         Obj Value      S   Ninf  Nneg        Sum Inf  Time
+  2553           .000000      P      0     0        .000000     0
+Dual solved problem
+  2553 simplex iterations in 0.09 seconds at time 0
+
+Final objective                       : 0.000000000000000e+00
+  Max primal violation      (abs/rel) : 2.220e-16 / 1.776e-16
+  Max dual violation        (abs/rel) :       0.0 /       0.0
+  Max complementarity viol. (abs/rel) :       0.0 /       0.0
+
+Starting root cutting & heuristics
+Deterministic mode with up to 2 additional threads
+ 
+ Its Type    BestSoln    BestBound   Sols    Add    Del     Gap     GInf   Time
+   1  K                    .000000      0    797      0              680      1
+   2  K                    .000000      0    212    590              546      1
+   3  K                    .000000      0   1059    189              505      1
+   4  K                    .000000      0    538    929              536      1
+   5  K                    .000000      0    622    554              439      1
+   6  K                    .000000      0    615    623              487      1
+   7  K                    .000000      0    560    612              426      1
+   8  K                    .000000      0    596    586              462      1
+   9  K                    .000000      0    531    578              443      1
+  10  K                    .000000      0    560    535              391      2
+  11  K                    .000000      0    457    543              404      2
+  12  K                    .000000      0    521    466              404      2
+  13  K                    .000000      0    528    521              417      2
+  14  K                    .000000      0    545    541              461      2
+  15  K                    .000000      0    516    532              424      2
+  16  K                    .000000      0    482    514              398      2
+  17  K                    .000000      0    403    489              399      2
+  18  K                    .000000      0    397    399              408      2
+  19  K                    .000000      0    341    404              379      2
+  20  K                    .000000      0    385    340              424      2
+  21  K                    .000000      0    415    389              319      2
+  22  K                    .000000      0    386    417              370      2
+  23  K                    .000000      0    417    398              421      3
+  24  K                    .000000      0    265    403              369      3
+  25  K                    .000000      0    332    268              388      3
+  26  K                    .000000      0    226    331              364      3
+  27  K                    .000000      0    186    233              375      3
+  28  K                    .000000      0    171    193              320      3
+  29  K                    .000000      0    459    179              357      3
+  30  K                    .000000      0    303    441              315      3
+  31  K                    .000000      0    214    303              315      3
+  32  K                    .000000      0    355    209              341      3
+  33  K                    .000000      0    322    362              362      3
+  34  K                    .000000      0    440    323              345      3
+  35  K                    .000000      0    302    707              300      3
+q             .000000      .000000      1               0.0e+00        0      4
+ *** Search completed ***
+Uncrunching matrix
+Final MIP objective                   : 0.000000000000000e-01
+Final MIP bound                       : 0.000000000000000e-01
+  Solution time / primaldual integral :      4.06s/ 99.924401%
+  Work / work units per second        :      2.84 /      0.70
+  Number of solutions found / nodes   :         1 /         1
+  Max primal violation      (abs/rel) :       0.0 /       0.0
+  Max integer violation     (abs    ) :       0.0

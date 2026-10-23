@@ -1,0 +1,283 @@
+BEGIN MOSEK
+
+MSK_IPAR_ANA_SOL_BASIS                           1                 
+MSK_IPAR_ANA_SOL_PRINT_VIOLATED                  0                 
+MSK_IPAR_AUTO_SORT_A_BEFORE_OPT                  0                 
+MSK_IPAR_AUTO_UPDATE_SOL_INFO                    0                 
+MSK_IPAR_BASIS_SOLVE_USE_PLUS_ONE                0                 
+MSK_IPAR_BI_CLEAN_OPTIMIZER                      2                 
+MSK_IPAR_BI_IGNORE_MAX_ITER                      0                 
+MSK_IPAR_BI_IGNORE_NUM_ERROR                     0                 
+MSK_IPAR_BI_MAX_ITERATIONS                       1000000           
+MSK_IPAR_CACHE_LICENSE                           1                 
+MSK_IPAR_COMPRESS_STATFILE                       1                 
+MSK_IPAR_FOLDING_USE                             2                 
+MSK_IPAR_GETDUAL_CONVERT_LMIS                    1                 
+MSK_IPAR_HEARTBEAT_SIM_FREQ_TICKS                1000000           
+MSK_IPAR_INFEAS_GENERIC_NAMES                    0                 
+MSK_IPAR_INFEAS_REPORT_AUTO                      0                 
+MSK_IPAR_INFEAS_REPORT_LEVEL                     1                 
+MSK_IPAR_INTPNT_BASIS                            1                 
+MSK_IPAR_INTPNT_DIFF_STEP                        1                 
+MSK_IPAR_INTPNT_HOTSTART                         0                 
+MSK_IPAR_INTPNT_MAX_ITERATIONS                   100               
+MSK_IPAR_INTPNT_MAX_NUM_COR                      -1                
+MSK_IPAR_INTPNT_OFF_COL_TRH                      40                
+MSK_IPAR_INTPNT_ORDER_GP_NUM_SEEDS               0                 
+MSK_IPAR_INTPNT_ORDER_METHOD                     0                 
+MSK_IPAR_INTPNT_REGULARIZATION_USE               1                 
+MSK_IPAR_INTPNT_SCALING                          0                 
+MSK_IPAR_INTPNT_SOLVE_FORM                       0                 
+MSK_IPAR_INTPNT_STARTING_POINT                   0                 
+MSK_IPAR_LICENSE_DEBUG                           0                 
+MSK_IPAR_LICENSE_PAUSE_TIME                      100               
+MSK_IPAR_LICENSE_SUPPRESS_EXPIRE_WRNS            0                 
+MSK_IPAR_LICENSE_TRH_EXPIRY_WRN                  7                 
+MSK_IPAR_LICENSE_WAIT                            0                 
+MSK_IPAR_LOG                                     0                 
+MSK_IPAR_LOG_ANA_PRO                             1                 
+MSK_IPAR_LOG_BI                                  1                 
+MSK_IPAR_LOG_BI_FREQ                             2500              
+MSK_IPAR_LOG_CUT_SECOND_OPT                      1                 
+MSK_IPAR_LOG_EXPAND                              1                 
+MSK_IPAR_LOG_FEAS_REPAIR                         1                 
+MSK_IPAR_LOG_FILE                                1                 
+MSK_IPAR_LOG_INCLUDE_SUMMARY                     0                 
+MSK_IPAR_LOG_INFEAS_ANA                          1                 
+MSK_IPAR_LOG_INTPNT                              1                 
+MSK_IPAR_LOG_LOCAL_INFO                          1                 
+MSK_IPAR_LOG_MIO                                 4                 
+MSK_IPAR_LOG_MIO_FREQ                            10                
+MSK_IPAR_LOG_ORDER                               1                 
+MSK_IPAR_LOG_PRESOLVE                            1                 
+MSK_IPAR_LOG_SENSITIVITY                         1                 
+MSK_IPAR_LOG_SENSITIVITY_OPT                     0                 
+MSK_IPAR_LOG_SIM                                 4                 
+MSK_IPAR_LOG_SIM_FREQ                            1000              
+MSK_IPAR_LOG_SIM_FREQ_GIGA_TICKS                 100               
+MSK_IPAR_LOG_STORAGE                             0                 
+MSK_IPAR_MAX_NUM_WARNINGS                        10                
+MSK_IPAR_MIO_BRANCH_DIR                          0                 
+MSK_IPAR_MIO_CONFLICT_ANALYSIS_LEVEL             -1                
+MSK_IPAR_MIO_CONIC_OUTER_APPROXIMATION           0                 
+MSK_IPAR_MIO_CONSTRUCT_SOL                       0                 
+MSK_IPAR_MIO_CROSSOVER_MAX_NODES                 -1                
+MSK_IPAR_MIO_CUT_CLIQUE                          1                 
+MSK_IPAR_MIO_CUT_CMIR                            1                 
+MSK_IPAR_MIO_CUT_GMI                             1                 
+MSK_IPAR_MIO_CUT_IMPLIED_BOUND                   1                 
+MSK_IPAR_MIO_CUT_KNAPSACK_COVER                  1                 
+MSK_IPAR_MIO_CUT_LIPRO                           0                 
+MSK_IPAR_MIO_CUT_SELECTION_LEVEL                 -1                
+MSK_IPAR_MIO_DATA_PERMUTATION_METHOD             0                 
+MSK_IPAR_MIO_DUAL_RAY_ANALYSIS_LEVEL             -1                
+MSK_IPAR_MIO_FEASPUMP_LEVEL                      -1                
+MSK_IPAR_MIO_HEURISTIC_LEVEL                     -1                
+MSK_IPAR_MIO_INDEPENDENT_BLOCK_LEVEL             -1                
+MSK_IPAR_MIO_MAX_NUM_BRANCHES                    -1                
+MSK_IPAR_MIO_MAX_NUM_RELAXS                      -1                
+MSK_IPAR_MIO_MAX_NUM_RESTARTS                    10                
+MSK_IPAR_MIO_MAX_NUM_ROOT_CUT_ROUNDS             100               
+MSK_IPAR_MIO_MAX_NUM_SOLUTIONS                   -1                
+MSK_IPAR_MIO_MEMORY_EMPHASIS_LEVEL               0                 
+MSK_IPAR_MIO_MIN_REL                             5                 
+MSK_IPAR_MIO_MODE                                1                 
+MSK_IPAR_MIO_NODE_OPTIMIZER                      2                 
+MSK_IPAR_MIO_NODE_SELECTION                      0                 
+MSK_IPAR_MIO_NUMERICAL_EMPHASIS_LEVEL            0                 
+MSK_IPAR_MIO_OPT_FACE_MAX_NODES                  -1                
+MSK_IPAR_MIO_PERSPECTIVE_REFORMULATE             1                 
+MSK_IPAR_MIO_PRESOLVE_AGGREGATOR_USE             1                 
+MSK_IPAR_MIO_PROBING_LEVEL                       -1                
+MSK_IPAR_MIO_PROPAGATE_OBJECTIVE_CONSTRAINT      0                 
+MSK_IPAR_MIO_QCQO_REFORMULATION_METHOD           0                 
+MSK_IPAR_MIO_RENS_MAX_NODES                      -1                
+MSK_IPAR_MIO_RINS_MAX_NODES                      -1                
+MSK_IPAR_MIO_ROOT_OPTIMIZER                      2                 
+MSK_IPAR_MIO_SEED                                42                
+MSK_IPAR_MIO_SYMMETRY_LEVEL                      -1                
+MSK_IPAR_MIO_VAR_SELECTION                       0                 
+MSK_IPAR_MIO_VB_DETECTION_LEVEL                  -1                
+MSK_IPAR_MT_SPINCOUNT                            0                 
+MSK_IPAR_NG                                      0                 
+MSK_IPAR_NUM_THREADS                             8                 
+MSK_IPAR_OPF_WRITE_HEADER                        1                 
+MSK_IPAR_OPF_WRITE_HINTS                         1                 
+MSK_IPAR_OPF_WRITE_LINE_LENGTH                   80                
+MSK_IPAR_OPF_WRITE_PARAMETERS                    0                 
+MSK_IPAR_OPF_WRITE_PROBLEM                       1                 
+MSK_IPAR_OPF_WRITE_SOL_BAS                       1                 
+MSK_IPAR_OPF_WRITE_SOL_ITG                       1                 
+MSK_IPAR_OPF_WRITE_SOL_ITR                       1                 
+MSK_IPAR_OPF_WRITE_SOLUTIONS                     0                 
+MSK_IPAR_OPTIMIZER                               1                 
+MSK_IPAR_PARAM_READ_CASE_NAME                    1                 
+MSK_IPAR_PARAM_READ_IGN_ERROR                    0                 
+MSK_IPAR_PRESOLVE_ELIMINATOR_MAX_FILL            -1                
+MSK_IPAR_PRESOLVE_ELIMINATOR_MAX_NUM_TRIES       -1                
+MSK_IPAR_PRESOLVE_LINDEP_ABS_WORK_TRH            100               
+MSK_IPAR_PRESOLVE_LINDEP_NEW                     0                 
+MSK_IPAR_PRESOLVE_LINDEP_REL_WORK_TRH            100               
+MSK_IPAR_PRESOLVE_LINDEP_USE                     1                 
+MSK_IPAR_PRESOLVE_MAX_NUM_PASS                   -1                
+MSK_IPAR_PRESOLVE_MAX_NUM_REDUCTIONS             -1                
+MSK_IPAR_PRESOLVE_USE                            1                 
+MSK_IPAR_PRIMAL_REPAIR_OPTIMIZER                 2                 
+MSK_IPAR_PTF_WRITE_PARAMETERS                    0                 
+MSK_IPAR_PTF_WRITE_SINGLE_PSD_TERMS              0                 
+MSK_IPAR_PTF_WRITE_SOLUTIONS                     0                 
+MSK_IPAR_PTF_WRITE_TRANSFORM                     1                 
+MSK_IPAR_READ_ASYNC                              0                 
+MSK_IPAR_READ_DEBUG                              0                 
+MSK_IPAR_READ_KEEP_FREE_CON                      0                 
+MSK_IPAR_READ_MPS_FORMAT                         2                 
+MSK_IPAR_READ_MPS_WIDTH                          1024              
+MSK_IPAR_READ_TASK_IGNORE_PARAM                  0                 
+MSK_IPAR_REMOTE_USE_COMPRESSION                  3                 
+MSK_IPAR_REMOVE_UNUSED_SOLUTIONS                 0                 
+MSK_IPAR_SENSITIVITY_ALL                         0                 
+MSK_IPAR_SENSITIVITY_TYPE                        0                 
+MSK_IPAR_SIM_BASIS_FACTOR_USE                    1                 
+MSK_IPAR_SIM_DEGEN                               1                 
+MSK_IPAR_SIM_DETECT_PWL                          1                 
+MSK_IPAR_SIM_DUAL_CRASH                          90                
+MSK_IPAR_SIM_DUAL_PHASEONE_METHOD                0                 
+MSK_IPAR_SIM_DUAL_RESTRICT_SELECTION             50                
+MSK_IPAR_SIM_DUAL_SELECTION                      3                 
+MSK_IPAR_SIM_EXPLOIT_DUPVEC                      0                 
+MSK_IPAR_SIM_HOTSTART                            1                 
+MSK_IPAR_SIM_HOTSTART_LU                         1                 
+MSK_IPAR_SIM_MAX_ITERATIONS                      100000            
+MSK_IPAR_SIM_MAX_NUM_SETBACKS                    250               
+MSK_IPAR_SIM_NON_SINGULAR                        1                 
+MSK_IPAR_SIM_PRECISION                           0                 
+MSK_IPAR_SIM_PRECISION_BOOST                     0                 
+MSK_IPAR_SIM_PRIMAL_CRASH                        90                
+MSK_IPAR_SIM_PRIMAL_PHASEONE_METHOD              0                 
+MSK_IPAR_SIM_PRIMAL_RESTRICT_SELECTION           50                
+MSK_IPAR_SIM_PRIMAL_SELECTION                    4                 
+MSK_IPAR_SIM_REFACTOR_FREQ                       0                 
+MSK_IPAR_SIM_REFORMULATION                       0                 
+MSK_IPAR_SIM_SAVE_LU                             0                 
+MSK_IPAR_SIM_SCALING                             0                 
+MSK_IPAR_SIM_SCALING_METHOD                      0                 
+MSK_IPAR_SIM_SEED                                7                 
+MSK_IPAR_SIM_SOLVE_FORM                          0                 
+MSK_IPAR_SIM_SWITCH_OPTIMIZER                    0                 
+MSK_IPAR_SOL_FILTER_KEEP_BASIC                   0                 
+MSK_IPAR_SOL_READ_NAME_WIDTH                     -1                
+MSK_IPAR_SOL_READ_WIDTH                          1024              
+MSK_IPAR_TIMING_LEVEL                            1                 
+MSK_IPAR_WRITE_ASYNC                             0                 
+MSK_IPAR_WRITE_BAS_CONSTRAINTS                   1                 
+MSK_IPAR_WRITE_BAS_HEAD                          1                 
+MSK_IPAR_WRITE_BAS_VARIABLES                     1                 
+MSK_IPAR_WRITE_COMPRESSION                       9                 
+MSK_IPAR_WRITE_FREE_CON                          1                 
+MSK_IPAR_WRITE_GENERIC_NAMES                     0                 
+MSK_IPAR_WRITE_IGNORE_INCOMPATIBLE_ITEMS         0                 
+MSK_IPAR_WRITE_INT_CONSTRAINTS                   1                 
+MSK_IPAR_WRITE_INT_HEAD                          1                 
+MSK_IPAR_WRITE_INT_VARIABLES                     1                 
+MSK_IPAR_WRITE_JSON_INDENTATION                  0                 
+MSK_IPAR_WRITE_LP_FULL_OBJ                       1                 
+MSK_IPAR_WRITE_LP_LINE_WIDTH                     80                
+MSK_IPAR_WRITE_MPS_FORMAT                        2                 
+MSK_IPAR_WRITE_MPS_INT                           1                 
+MSK_IPAR_WRITE_SOL_BARVARIABLES                  1                 
+MSK_IPAR_WRITE_SOL_CONSTRAINTS                   1                 
+MSK_IPAR_WRITE_SOL_HEAD                          1                 
+MSK_IPAR_WRITE_SOL_IGNORE_INVALID_NAMES          0                 
+MSK_IPAR_WRITE_SOL_VARIABLES                     1                 
+
+MSK_DPAR_ANA_SOL_INFEAS_TOL                      1.00000000e-06    
+MSK_DPAR_BASIS_REL_TOL_S                         1.00000000e-12    
+MSK_DPAR_BASIS_TOL_S                             1.00000000e-08    
+MSK_DPAR_BASIS_TOL_X                             1.00000000e-08    
+MSK_DPAR_DATA_SYM_MAT_TOL                        1.00000000e-12    
+MSK_DPAR_DATA_SYM_MAT_TOL_HUGE                   1.00000000e+20    
+MSK_DPAR_DATA_SYM_MAT_TOL_LARGE                  1.00000000e+10    
+MSK_DPAR_DATA_TOL_AIJ_HUGE                       1.00000000e+20    
+MSK_DPAR_DATA_TOL_AIJ_LARGE                      1.00000000e+10    
+MSK_DPAR_DATA_TOL_BOUND_INF                      1.00000000e+16    
+MSK_DPAR_DATA_TOL_BOUND_WRN                      1.00000000e+08    
+MSK_DPAR_DATA_TOL_C_HUGE                         1.00000000e+16    
+MSK_DPAR_DATA_TOL_CJ_LARGE                       1.00000000e+08    
+MSK_DPAR_DATA_TOL_QIJ                            1.00000000e-16    
+MSK_DPAR_DATA_TOL_X                              1.00000000e-08    
+MSK_DPAR_FOLDING_TOL_EQ                          1.00000000e-09    
+MSK_DPAR_INTPNT_CO_TOL_DFEAS                     1.00000000e-08    
+MSK_DPAR_INTPNT_CO_TOL_INFEAS                    1.00000000e-12    
+MSK_DPAR_INTPNT_CO_TOL_MU_RED                    1.00000000e-08    
+MSK_DPAR_INTPNT_CO_TOL_NEAR_REL                  1.00000000e+03    
+MSK_DPAR_INTPNT_CO_TOL_PFEAS                     1.00000000e-08    
+MSK_DPAR_INTPNT_CO_TOL_REL_GAP                   1.00000000e-08    
+MSK_DPAR_INTPNT_QO_TOL_DFEAS                     1.00000000e-08    
+MSK_DPAR_INTPNT_QO_TOL_INFEAS                    1.00000000e-12    
+MSK_DPAR_INTPNT_QO_TOL_MU_RED                    1.00000000e-08    
+MSK_DPAR_INTPNT_QO_TOL_NEAR_REL                  1.00000000e+03    
+MSK_DPAR_INTPNT_QO_TOL_PFEAS                     1.00000000e-08    
+MSK_DPAR_INTPNT_QO_TOL_REL_GAP                   1.00000000e-08    
+MSK_DPAR_INTPNT_TOL_DFEAS                        1.00000000e-09    
+MSK_DPAR_INTPNT_TOL_DSAFE                        1.00000000e+00    
+MSK_DPAR_INTPNT_TOL_INFEAS                       1.00000000e-10    
+MSK_DPAR_INTPNT_TOL_MU_RED                       1.00000000e-16    
+MSK_DPAR_INTPNT_TOL_PATH                         1.00000000e-08    
+MSK_DPAR_INTPNT_TOL_PFEAS                        1.00000000e-09    
+MSK_DPAR_INTPNT_TOL_PSAFE                        1.00000000e+00    
+MSK_DPAR_INTPNT_TOL_REL_GAP                      1.00000000e-09    
+MSK_DPAR_INTPNT_TOL_REL_STEP                     9.99900000e-01    
+MSK_DPAR_INTPNT_TOL_STEP_SIZE                    1.00000000e-06    
+MSK_DPAR_LOWER_OBJ_CUT                           -inf              
+MSK_DPAR_LOWER_OBJ_CUT_FINITE_TRH                -5.00000000e+29   
+MSK_DPAR_MIO_CLIQUE_TABLE_SIZE_FACTOR            -1.00000000e+00   
+MSK_DPAR_MIO_DJC_MAX_BIGM                        1.00000000e+06    
+MSK_DPAR_MIO_MAX_TIME                            -1.00000000e+00   
+MSK_DPAR_MIO_REL_GAP_CONST                       1.00000000e-10    
+MSK_DPAR_MIO_TOL_ABS_GAP                         0.00000000e+00    
+MSK_DPAR_MIO_TOL_ABS_RELAX_INT                   1.00000000e-05    
+MSK_DPAR_MIO_TOL_FEAS                            1.00000000e-06    
+MSK_DPAR_MIO_TOL_REL_DUAL_BOUND_IMPROVEMENT      0.00000000e+00    
+MSK_DPAR_MIO_TOL_REL_GAP                         1.00000000e-04    
+MSK_DPAR_OPTIMIZER_MAX_TICKS                     -1.00000000e+00   
+MSK_DPAR_OPTIMIZER_MAX_TIME                      5.00000000e+00    
+MSK_DPAR_PRESOLVE_TOL_ABS_LINDEP                 1.00000000e-06    
+MSK_DPAR_PRESOLVE_TOL_PRIMAL_INFEAS_PERTURBATION 1.00000000e-06    
+MSK_DPAR_PRESOLVE_TOL_REL_LINDEP                 1.00000000e-10    
+MSK_DPAR_PRESOLVE_TOL_S                          1.00000000e-08    
+MSK_DPAR_PRESOLVE_TOL_X                          1.00000000e-08    
+MSK_DPAR_QCQO_REFORMULATE_REL_DROP_TOL           1.00000000e-15    
+MSK_DPAR_SEMIDEFINITE_TOL_APPROX                 1.00000000e-10    
+MSK_DPAR_SIM_LU_TOL_REL_PIV                      1.00000000e-02    
+MSK_DPAR_SIM_PRECISION_SCALING_EXTENDED          2.00000000e+00    
+MSK_DPAR_SIM_PRECISION_SCALING_NORMAL            1.00000000e+00    
+MSK_DPAR_SIMPLEX_ABS_TOL_PIV                     1.00000000e-07    
+MSK_DPAR_UPPER_OBJ_CUT                           inf               
+MSK_DPAR_UPPER_OBJ_CUT_FINITE_TRH                5.00000000e+29    
+
+MSK_SPAR_BAS_SOL_FILE_NAME                       
+MSK_SPAR_DATA_FILE_NAME                          
+MSK_SPAR_DEBUG_FILE_NAME                         
+MSK_SPAR_INT_SOL_FILE_NAME                       
+MSK_SPAR_ITR_SOL_FILE_NAME                       
+MSK_SPAR_MIO_DEBUG_STRING                        
+MSK_SPAR_PARAM_COMMENT_SIGN                      %
+MSK_SPAR_PARAM_READ_FILE_NAME                    
+MSK_SPAR_PARAM_WRITE_FILE_NAME                   
+MSK_SPAR_READ_MPS_BOU_NAME                       
+MSK_SPAR_READ_MPS_OBJ_NAME                       
+MSK_SPAR_READ_MPS_RAN_NAME                       
+MSK_SPAR_READ_MPS_RHS_NAME                       
+MSK_SPAR_REMOTE_OPTSERVER_HOST                   
+MSK_SPAR_REMOTE_TLS_CERT                         
+MSK_SPAR_REMOTE_TLS_CERT_PATH                    
+MSK_SPAR_SENSITIVITY_FILE_NAME                   
+MSK_SPAR_SENSITIVITY_RES_FILE_NAME               
+MSK_SPAR_SOL_FILTER_XC_LOW                       
+MSK_SPAR_SOL_FILTER_XC_UPR                       
+MSK_SPAR_SOL_FILTER_XX_LOW                       
+MSK_SPAR_SOL_FILTER_XX_UPR                       
+MSK_SPAR_STAT_KEY                                
+MSK_SPAR_STAT_NAME                               
+
+END MOSEK

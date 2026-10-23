@@ -1,0 +1,63 @@
+\ Model amplgurobi
+\ LP format - for model browsing. Use MPS format to capture full model detail.
+\ Signature: 0xaa30a4fb46add776
+Minimize
+  - b[2] - b[3] + x[1] - x[2] + x[3] - x[4] + 3 b[1] - Obj_flatv4_
+   + 0 Obj_flatv5_ + 0 Obj_flatv6_ + 0 Obj_flatv7_ + 0 Obj_flatv8_
+   + 0 Obj_flatv9_ + 0 Obj_flatv10_ + 0 C1_flatv1_ + 4 Obj
+Subject To
+ C1__numberofvar__condlineq1___linle1_: x[1] - x[2]
+   + 4 C1__numberofvar_auxv1_ <= 4
+ C1__numberofvar__condlineq1___linle2_: - x[1] + x[2]
+   + 4 C1__numberofvar_auxv1_ <= 4
+ C1__numberofvar__condlineq2___linle1_: x[1] - x[3]
+   + 4 C1__numberofvar_auxv2_ <= 4
+ C1__numberofvar__condlineq2___linle2_: - x[1] + x[3]
+   + 4 C1__numberofvar_auxv2_ <= 4
+ C1__numberofvar__condlineq3___linle1_: x[1] - x[4]
+   + 4 C1__numberofvar_auxv3_ <= 4
+ C1__numberofvar__condlineq3___linle2_: - x[1] + x[4]
+   + 4 C1__numberofvar_auxv3_ <= 4
+ Fix_If2: C1_flatv2_ <= 0
+ C1_flat: - b[2] - b[3] + C1_flatv2_ - C1_flatv3_ <= 3
+ Obj__condlineq3___linle1_: x[3] + Obj_flatv3_ <= 4
+ Obj__condlineq3___linle2_: - x[3] + 3 Obj_flatv3_ <= 0
+ Obj__condlineq2___linle1_: x[2] + 2 Obj_flatv2_ <= 4
+ Obj__condlineq2___linle2_: - x[2] + 2 Obj_flatv2_ <= 0
+ Obj__condlineq1___linle1_: x[1] + 3 Obj_flatv1_ <= 4
+ Obj__condlineq1___linle2_: - x[1] + Obj_flatv1_ <= 0
+ C1__numberofvar__lineq: - C1_flatv3_ + C1__numberofvar_auxv1_
+   + C1__numberofvar_auxv2_ + C1__numberofvar_auxv3_ = 0
+ Obj__count1_: Obj_flatv1_ + Obj_flatv2_ + Obj_flatv3_ - Obj_flatv4_ = 0
+ C1__ifthen: 2 b[3] - C1_flatv2_ = 0
+ Bound_Count2: Obj_flatv4_ >= 1
+Bounds
+ b[2] <= 1
+ b[3] <= 1
+ x[1] <= 4
+ x[2] <= 4
+ x[3] <= 4
+ x[4] <= 4
+ b[1] <= 1
+ Obj_flatv1_ <= 1
+ Obj_flatv2_ <= 1
+ Obj_flatv3_ <= 1
+ 1 <= Obj_flatv4_ <= 3
+ Obj_flatv5_ = 5
+ Obj_flatv6_ = 2
+ Obj_flatv7_ = 2
+ Obj_flatv8_ = 0
+ Obj_flatv9_ = 0
+ Obj_flatv10_ = 0
+ C1_flatv1_ = 0
+ C1_flatv2_ = 0
+ C1_flatv3_ <= 3
+ C1__numberofvar_auxv1_ <= 1
+ C1__numberofvar_auxv2_ <= 1
+ C1__numberofvar_auxv3_ <= 1
+ Obj = 1
+Generals
+ b[2] b[3] x[1] x[2] x[3] x[4] b[1] Obj_flatv1_ Obj_flatv2_ Obj_flatv3_
+ Obj_flatv4_ C1_flatv3_ C1__numberofvar_auxv1_ C1__numberofvar_auxv2_
+ C1__numberofvar_auxv3_
+End

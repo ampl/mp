@@ -24,6 +24,14 @@ class ModelRunner(object):
         return f"{m.getName()}.{s.getName()}.log"
 
     @staticmethod
+    def getOptionsName(solver) -> str:
+        """Prefix of the solver's AMPL options variable, '' if none"""
+        try:
+            return solver._getAMPLOptionsName()
+        except Exception:
+            return ""
+
+    @staticmethod
     def getAMPLVersion(amplPath: str) -> str:
         """First line of 'ampl -v', or a note when it cannot be run"""
         import subprocess
@@ -171,17 +179,23 @@ class ModelRunner(object):
                         ss = r.getSolver()
                     else:
                         ss = r
+                    skipReason = None
                     if not m.isSubsetOfTags(ss.getSupportedTags()) or \
                             m.hasAnyTag(ss.getUnsupportedTags()) or \
                             (m.hasSolvers() and ss.getName() not in m.getSolvers()) or \
                             (m.hasSolversExcluded() and ss.getName() in m.getSolversExcluded()):
-                        self._runs[i][-1]["outmsg"] = "Skipped, unsupported tags or solver restriction"
+                        skipReason = "unsupported tags or solver restriction"
+                    elif not ss.acceptsMPOptions() and \
+                            m.needsMPDriver(ModelRunner.getOptionsName(ss)):
+                        skipReason = "MP options (ASL drivers: run through MP2NL)"
+                    if skipReason:
+                        self._runs[i][-1]["outmsg"] = "Skipped, " + skipReason
                         self._runs[i][-1]["solver"] = ss
                         if r.isBenchmark:
-                            print("\n\t\t{0: <20}: Skipped due to unsupported tags or solver restriction".
-                              format(ss.getName()), flush=True)
+                            print("\n\t\t{0: <20}: Skipped due to {1}".
+                              format(ss.getName(), skipReason), flush=True)
                         else:
-                            print("Skipped due to unsupported tags or solver restriction", flush=True)
+                            print("Skipped due to " + skipReason, flush=True)
                         nSkipped[i] += 1
                     else:
                       if keepLogs:

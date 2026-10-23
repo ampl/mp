@@ -1,0 +1,10 @@
+option version 'AMPL Version 20260924 (Darwin-25.5.0, 64-bit)\
+Licensed to License for development and testing <gleb@ampl.com>.\
+Maintenance expires with version 20280106.\
+Using license file "/Users/gb5/Documents/prj/AMPL/bin/ampl.macos64/ampl.lic".\
+';
+XPRESS 9.8.1(46.01.02): maxtime=5
+Unknown keyword ".0"
+threads=8
+exit value 1
+<BREAK>

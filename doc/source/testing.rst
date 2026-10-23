@@ -92,6 +92,10 @@ following items, where non-compulsory items are italicized:
 * **"tags": ["linear", "continuous"]**: tags specifying model type, the case
   is executed only if the tags are a subset of the solver's ones. Except the
   tag **"run"** which means the test case is an AMPL script.
+  List **"continuous"** whenever the model has continuous variables
+  (including AMPL's ``var x in 1..9``): drivers for integer models only
+  skip such cases. Tag **"mpdriver"** marks a case that needs an MP driver
+  (MP options or MP's handling of invalid options).
 
 * *"files": ["diet.mod", "diet.dat"]*
 
@@ -101,6 +105,12 @@ following items, where non-compulsory items are italicized:
   Option key ending with ``ANYSOLVER_options`` is for any solver, except when
   a solver-specific key is present (like ``baron_options``).
   Moreover, ``mp_options`` applies to all MP drivers.
+  ASL drivers skip cases with ``mp_options`` or with MP (namespaced)
+  options such as ``cvt:bigm=1e5`` in their options; an ASL driver built
+  with the MP2NL wrapper runs them through MP2NL (solver classes
+  ``baron``, ``conopt``, ``knitro``, ``lindoglobal``, ``gurobiaslmp2nl``,
+  ``xpressaslmp2nl``, ``cplexaslmp2nl``): ``mp2nl=1`` is passed in the
+  driver's options, and the case's options go to ``mp2nl_options``.
 
 * *"values": { "X[0].iis": "upp", ... }*. Expected values or expressions,
   in the form AMPL ``display`` command would accept. Only available for AMPL
