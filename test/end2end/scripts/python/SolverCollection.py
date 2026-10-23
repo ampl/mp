@@ -79,6 +79,7 @@ def addStdSolvers(solvers: SolverCollection, binPath=""):
     solvers.addSolver(Solver.COPTSolver(path.join(binPath,"copt")))
     solvers.addSolver(Solver.cuOptSolver(path.join(binPath,"cuoptmp")))
     solvers.addSolver(Solver.CpsatSolver(path.join(binPath,"cpsat")))
+    solvers.addSolver(Solver.GecodeSolver(path.join(binPath,"gecode")))
     solvers.addSolver(Solver.HighsSolver(path.join(binPath,"highs")), aliases=["highsmp"])
     solvers.addSolver(Solver.MP2NLSolver(path.join(binPath,"mp2nl")))
     solvers.addSolver(Solver.XPRESSDirectSolver(path.join(binPath,"xpress")))

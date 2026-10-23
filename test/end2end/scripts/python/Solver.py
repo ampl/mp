@@ -1607,6 +1607,38 @@ class CpsatSolver(MPDirectSolver):
             ModelTags.prod_with_bin_var,
             ModelTags.log
         }
+class GecodeSolver(MPDirectSolver):
+    """Gecode, old MP framework: integer variables and constraint
+    programming (logical and global constraints) only."""
+    def _setLPMethod(self, method : str):
+        return ""                               # No LP methods
+
+    def _setNLPMethod(self, method: str):
+        return ""
+
+    def _getAMPLOptionsName(self):
+        return "gecode"
+
+    def setLogFile(self, name):
+        return ""                               # No log file option
+
+    def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
+        stags = {ModelTags.integer, ModelTags.binary,
+                 ModelTags.logical,
+                 ModelTags.multisol,
+                 }
+        super().__init__(exeName, timeout, nthreads, otherOptions, stags)
+        # As for CP-SAT: no continuous variables, so none of the tags
+        # MPDirectSolver adds for drivers with them
+        self._supportedTags = self._supportedTags - {
+            ModelTags.continuous,
+            ModelTags.complementarity,
+            ModelTags.plinear,
+            ModelTags.nonlinear,
+            ModelTags.prod_with_bin_var,
+            ModelTags.log
+        }
+
 class MosekSolver(MPDirectSolver):
     def _setLPMethod(self, method : str):
         m  = "1" if method == "SIMPLEX" else "4"
