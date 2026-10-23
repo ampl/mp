@@ -83,7 +83,7 @@ else()
 endif()
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-set(MP_VERSION 4.0.3)
+set(MP_VERSION 4.2.0)
 if (NOT MP_VERSION MATCHES "^([0-9]+).([0-9]+).([0-9]+)$")
   message(FATAL_ERROR "MP: invalid version format ${MP_VERSION}.")
 endif ()
@@ -236,7 +236,7 @@ endif()  ## NOT SKIP_BUILD_MP
 include_directories(include)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
-set(MP_DATE 20260908)
+set(MP_DATE 20261101)
 
 set(MP_SYSINFO "${CMAKE_SYSTEM_NAME} ${CMAKE_SYSTEM_PROCESSOR}")
 

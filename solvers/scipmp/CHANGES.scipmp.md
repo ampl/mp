@@ -2,7 +2,7 @@ Summary of recent updates to SCIP for AMPL
 ==========================================
 
 
-## unreleased
+## 20261101
 - 64-bit SCIP parameters (e.g., *lim:nodes*, *lim:totalnodes*,
   *lim:stallnodes*) accept values above 2^31.
 - Options aligned with SCIP 10.0.2: corrected defaults and ranges

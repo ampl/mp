@@ -2,7 +2,7 @@ Summary of recent updates to HiGHS for AMPL
 ===========================================
 
 
-## unreleased
+## 20261101
 - Emulate *mip:basis* for linear algebraic MIPs, with separate
   *mip:basis:timelimit* and *mip:basis:iterlimit* options.
 - Options aligned with HiGHS 1.15.1: corrected value tables and

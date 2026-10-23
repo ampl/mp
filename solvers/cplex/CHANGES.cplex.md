@@ -2,7 +2,7 @@ Summary of recent updates to CPLEX for AMPL
 ==============================================
 
 
-## unreleased
+## 20261101
 - Option *obj:multi:stats=1* reports multi-objective pass
   statistics in native mode (*obj:multi=1*).
 - Add separate fixed-model limits *mip:basis:timelimit* and

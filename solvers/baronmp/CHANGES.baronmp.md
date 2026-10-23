@@ -1,7 +1,7 @@
 Summary of recent updates to BARONMP for AMPL
 =============================================
 
-## unreleased
+## 20261101
 - New options for documented BARON settings: *alg:feastol*
   (AbsConFeasTol), *mip:intfeastol* (AbsIntFeasTol), *alg:boxtol*,
   *alg:cutoff*, *alg:isoltol*, *alg:relfeastol*, *mip:relintfeastol*,

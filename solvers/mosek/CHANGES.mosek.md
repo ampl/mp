@@ -2,7 +2,7 @@ Summary of recent updates to MOSEK for AMPL
 ===========================================
 
 
-## unreleased
+## 20261101
 - Emulate *mip:basis* for linear algebraic MIPs, with separate
   *mip:basis:timelimit* and *mip:basis:iterlimit* options.
 - Options aligned with MOSEK 11.2.0: *alg:method* lists the MOSEK 11

@@ -2,7 +2,7 @@ Summary of recent updates to the AMPL MP Library
 ================================================
 
 
-## unreleased
+## 20261101
 - Fix: 64-bit integer options rejected values above 2^31
   ("this number is larger than an int"); they are now parsed
   as 64-bit integers.

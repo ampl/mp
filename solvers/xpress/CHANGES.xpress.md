@@ -2,7 +2,7 @@ Summary of recent updates to Xpress for AMPL
 ============================================
 
 
-## unreleased
+## 20261101
 - Fix: in a native multi-objective solve (*obj:multi=1*), the MIP gap
   combined the first objective's value with the last pass's bound; it
   is now the last pass's gap.
