@@ -3,6 +3,12 @@ Summary of recent updates to Xpress for AMPL
 
 
 ## 20261101
+- Fix: a global (spatial branch-and-bound) solve stopped by a time,
+  work or node limit, or interrupted, was reported as *solved?*
+  (*solve_result_num* 120, "locally optimal solution") with its
+  incumbent; it is now reported as a limit (e.g. 402, "time limit,
+  feasible solution"; 4xx without a feasible solution), from
+  XPRS_NLPSTOPSTATUS (or XPRS_STOPSTATUS).
 - Fix: in a native multi-objective solve (*obj:multi=1*), the MIP gap
   combined the first objective's value with the last pass's bound; it
   is now the last pass's gap.
