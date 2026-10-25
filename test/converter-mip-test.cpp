@@ -763,3 +763,92 @@ TEST(BoundsBestExprTest, Mode4__linearSubmitted__best) {
       nbounded_int += t.Backend().ub(v) <= 5.0 && t.Backend().lb(v) >= 0.0;
   EXPECT_EQ(1, nbounded_int);
 }
+
+
+////////////// Piecewise-linear terms: PL -> SOS2 -> MIP //////////////
+
+/// Maximize abs(x) for x in [-10, 10] fixed to \a value
+/// by a linear row, i.e., after the PL constraint is created.
+/// @return the result variable of the PL term
+template <bool fSOS2>
+int ConvertAbsOfFixedArg(PLTester<fSOS2>& t, double value) {
+  int x = t.Var(-10, 10);
+  t.Maximize(t.AbsPL(x));
+  t.Fix(x, value);
+  t.ConvertModel();
+  const auto& obj = t.Backend().ObjVars();
+  EXPECT_EQ(1u, obj.size());
+  return obj.empty() ? -1 : obj[0];
+}
+
+/// Expect the PL term's result \a y fixed at \a value without SOS2
+template <bool fSOS2>
+void ExpectFixedResultNoSOS2(PLTester<fSOS2>& t, int y, double value) {
+  ASSERT_LE(0, y);
+  EXPECT_EQ(value, t.Backend().lb(y));
+  EXPECT_EQ(value, t.Backend().ub(y));
+  EXPECT_EQ(0, t.template NumUsed<mp::SOS2Constraint>());
+  EXPECT_EQ(0, t.Backend().NumIntVars());
+}
+
+TEST(PLTest, ArgFixedAtBreakpoint__noSOS2__resultFixed) {
+  mp::Env e;
+  PLTester<false> t(e, "");
+  int y = ConvertAbsOfFixedArg(t, 0.0);
+  ExpectFixedResultNoSOS2(t, y, 0.0);
+}
+
+TEST(PLTest, ArgFixedAtEndBreakpoint__noSOS2__resultFixed) {
+  mp::Env e;
+  PLTester<false> t(e, "");
+  int y = ConvertAbsOfFixedArg(t, -1.0);
+  ExpectFixedResultNoSOS2(t, y, 1.0);
+}
+
+TEST(PLTest, ArgFixedBeyondBreakpoints__noSOS2__resultFixed) {
+  mp::Env e;
+  PLTester<false> t(e, "");
+  int y = ConvertAbsOfFixedArg(t, 2.0);
+  ExpectFixedResultNoSOS2(t, y, 2.0);
+}
+
+TEST(PLTest, ArgFixedBeyondBreakpoints__nativeSOS2__noSOS2Submitted) {
+  mp::Env e;
+  PLTester<true> t(e, "");
+  int y = ConvertAbsOfFixedArg(t, 2.0);
+  ExpectFixedResultNoSOS2(t, y, 2.0);
+  EXPECT_TRUE(t.Backend().GetSOS2Constraint().empty());
+}
+
+TEST(PLTest, OneSegmentInDomain__noSOS2__linearEquality) {
+  mp::Env e;
+  PLTester<false> t(e, "");
+  int x = t.Var(0.5, 0.7);
+  t.Maximize(t.AbsPL(x));
+  t.ConvertModel();
+  EXPECT_EQ(0, t.NumUsed<mp::SOS2Constraint>());
+  EXPECT_EQ(2, t.Backend().NumVars());                  // x, abs(x)
+  ASSERT_EQ(1u, t.Backend().GetLinConEQ().size());
+}
+
+TEST(PLTest, Nonconvex__noSOS2__logarithmicBinaries) {
+  mp::Env e;
+  PLTester<false> t(e, "");
+  int x = t.Var(-10, 10);
+  t.Maximize(t.AbsPL(x));
+  t.ConvertModel();
+  EXPECT_EQ(1, t.NumUsed<mp::SOS2Constraint>());        // converted
+  EXPECT_EQ(1, t.Backend().NumIntVars());               // ceil(log2(2))
+}
+
+TEST(PLTest, Nonconvex__nativeSOS2__submitted) {
+  mp::Env e;
+  PLTester<true> t(e, "");
+  int x = t.Var(-10, 10);
+  t.Maximize(t.AbsPL(x));
+  t.ConvertModel();
+  const auto& sos2 = t.Backend().GetSOS2Constraint();
+  ASSERT_EQ(1u, sos2.size());
+  EXPECT_EQ(3u, sos2[0].get_vars().size());
+  EXPECT_EQ(0, t.Backend().NumIntVars());
+}

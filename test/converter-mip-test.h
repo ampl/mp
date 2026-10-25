@@ -339,6 +339,106 @@ public:
   }
 };
 
+/// A toy backend for piecewise-linear conversion tests.
+/// Accepts linear constraints; SOS2 if \a fSOS2
+/// (otherwise MP converts SOS2 into MIP).
+/// Records the variables and the linear objective.
+template <bool fSOS2>
+class PLBackend :
+    public mp::BasicFlatModelAPI,
+    public mp::EnvKeeper
+{
+public:
+  PLBackend(mp::Env& e) : mp::EnvKeeper(e) { }
+
+  static constexpr const char* GetTypeName() { return "pl_tester"; }
+
+  void AddVariables(const mp::VarArrayDef& v) { vars_ = v; }
+  void SetLinearObjective(int , const mp::LinearObjective& lo)
+  { obj_vars_.assign(lo.vars().begin(), lo.vars().end()); }
+
+  /// Number of variables
+  int NumVars() const { return (int)vars_.size(); }
+  double lb(int v) const { return vars_.plb()[v]; }
+  double ub(int v) const { return vars_.pub()[v]; }
+  mp::var::Type type(int v) const { return vars_.ptype()[v]; }
+  /// Variables of the linear objective
+  const std::vector<int>& ObjVars() const { return obj_vars_; }
+  /// Number of submitted integer variables
+  int NumIntVars() const {
+    int n=0;
+    for (int v=NumVars(); v--; )
+      n += (mp::var::INTEGER == type(v));
+    return n;
+  }
+
+  USE_BASE_CONSTRAINT_HANDLERS(mp::BasicFlatModelAPI)
+
+  D2I_RECORD_CONSTR(LinConLE, true)
+  D2I_RECORD_CONSTR(LinConGE, true)
+  D2I_RECORD_CONSTR(LinConEQ, true)
+  D2I_RECORD_CONSTR(LinConRange, true)
+  D2I_RECORD_CONSTR(SOS2Constraint, fSOS2)
+
+private:
+  mp::VarArrayDef vars_;
+  std::vector<int> obj_vars_;
+};
+
+
+/// Interface (flattener + MIP converter + toy backend)
+/// for piecewise-linear conversion tests
+template <bool fSOS2>
+class PLTester :
+    public mp::ProblemFltImpl<mp::ProblemFlattener, mp::Problem,
+      mp::FlatCvtImpl<mp::MIPFlatConverter, PLBackend<fSOS2> > >
+{
+  using Base = mp::ProblemFltImpl<mp::ProblemFlattener, mp::Problem,
+    mp::FlatCvtImpl<mp::MIPFlatConverter, PLBackend<fSOS2> > >;
+public:
+  /// Construct with solver options \a opts
+  PLTester(mp::Env& e, const char* opts) : Base(e) {
+    this->InitOptions();
+    e.ParseOptionString(opts);
+  }
+
+  /// The backend
+  const PLBackend<fSOS2>& Backend()
+  { return this->GetFlatCvt().GetModelAPI(); }
+
+  /// Number of used (active or converted) items of type \a Con
+  template <class Con>
+  int NumUsed() {
+    return this->GetFlatCvt().GetConstraintKeeper((Con*)nullptr)
+        .GetNumberOfUsed();
+  }
+
+  /// Add variable
+  int Var(double lb, double ub)
+  { return this->AddVars(1, lb, ub, mp::var::CONTINUOUS)[0]; }
+
+  /// Add linear constraint  v == value
+  void Fix(int v, double value) {
+    const double coef = 1.0;
+    this->InputAlgebraicCon(1, &coef, &v, value, value);
+  }
+
+  /// Make  <<0; -1, 1>> v,  i.e., abs(v)
+  mp::NumericExpr AbsPL(int v) {
+    auto& m = this->GetModel();
+    auto bld = m.BeginPLTerm(1);
+    bld.AddSlope(-1.0);
+    bld.AddBreakpoint(0.0);
+    bld.AddSlope(1.0);
+    return m.EndPLTerm(bld, m.MakeVariable(v));
+  }
+
+  /// Maximize expression \a e
+  void Maximize(mp::NumericExpr e)
+  { this->GetModel().AddObj(mp::obj::MAX, e); }
+};
+
+
 using mp::ExpressionAcceptanceLevel;
 using mp::ExprWrapper;
 

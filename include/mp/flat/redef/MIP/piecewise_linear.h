@@ -43,6 +43,8 @@ public:
     if (i1>i0)                         // Gurobi 9 does this.
       ConsiderExtendingEndSegments();  // Bad when approximating
     ConsiderShorteningPL();
+    if (ConsiderShortenedDegenerateCases())
+      return Context::CTX_MIX;
     RedefineInSOS2();
 		return Context::CTX_MIX;           // general case
   }
@@ -78,25 +80,46 @@ protected:
 	bool ConsiderDegenerateCases(const ItemType& cc) {
 		assert(points_ == cc.GetParameters().GetPLPoints());
 		if (2 >= points_.size()) {
-			y = cc.GetResultVar();
-			x = cc.GetArguments()[0];
 			MP_ASSERT_ALWAYS(points_.size(), "PL expression: no breakpoints");
 			if (1==points_.size()) {
-				GetMC().NarrowVarBounds(x, points_.x_[0], points_.x_[0]);
-				GetMC().NarrowVarBounds(y, points_.y_[0], points_.y_[0]);
-			} else if (2==points_.size()) {
+				FixAtPoint(0);
+			} else {
 				MP_ASSERT_ALWAYS(points_.x_[0] < points_.x_[1],
 						"Empty 1-segment PL expression");
-				long double slope
-						= ((long double)(points_.y_[1] - points_.y_[0]))
-						/ (points_.x_[1] - points_.x_[0]);
-				GetMC().AddConstraint(
-							LinConEQ{ {{1.0, double(-slope)}, {y, x}},
-							double(points_.y_[0] - slope*points_.x_[0])});
+				RedefineAsSegment(0);
 			}
 			return true;
 		}
     return false;
+  }
+  /// After shortening to the argument's domain,
+  /// see if a single point or segment remains.
+  /// A single breakpoint would otherwise give a 1-variable SOS2.
+  /// @return true iff that
+  /// (a corresponding simpler constraint is added)
+  bool ConsiderShortenedDegenerateCases() {
+    if (points_.x_[i0] >= points_.x_[i1])   // fixed argument
+      FixAtPoint(i0);
+    else if (i0+1 == i1)
+      RedefineAsSegment(i0);
+    else
+      return false;
+    return true;
+  }
+  /// Fix argument and result at breakpoint \a i
+  void FixAtPoint(size_t i) {
+    GetMC().NarrowVarBounds(x, points_.x_[i], points_.x_[i]);
+    GetMC().NarrowVarBounds(y, points_.y_[i], points_.y_[i]);
+  }
+  /// Redefine as the linear function of segment (i, i+1).
+  /// Requires x_[i] < x_[i+1].
+  void RedefineAsSegment(size_t i) {
+    long double slope
+        = ((long double)(points_.y_[i+1] - points_.y_[i]))
+        / (points_.x_[i+1] - points_.x_[i]);
+    GetMC().AddConstraint(
+          LinConEQ{ {{1.0, double(-slope)}, {y, x}},
+          double(points_.y_[i] - slope*points_.x_[i])});
   }
   /// See if have a convex case
 	bool ConsiderConvexity(const ItemType& cc) {

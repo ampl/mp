@@ -165,5 +165,65 @@
     "options": {
         "pl_linearize": 0
     }
+  },
+  {
+    "name" : "pl_fixed_arg_01 pl_linearize=0",
+    "objective" :  3.5,
+    "tags" : ["linear", "continuous", "plinear"],
+    "options": {
+        "presolve": 0,
+        "pl_linearize": 0
+    }
+  },
+  {
+    "name" : "pl_fixed_arg_01 pl_linearize=0 acc:pl=1 acc:sos2=1",
+    "objective" :  3.5,
+    "tags" : ["linear", "continuous", "plinear",
+              "check_pl2sos2", "check_sos2_from_pl"],
+    "options": {
+        "presolve": 0,
+        "pl_linearize": 0,
+        "mp_options": "acc:pl=1 acc:sos2=1"
+    }
+  },
+  {
+    "name" : "pl_fixed_arg_02 pl_linearize=0",
+    "objective" :  3.5,
+    "tags" : ["linear", "continuous", "plinear"],
+    "options": {
+        "presolve": 0,
+        "pl_linearize": 0
+    }
+  },
+  {
+    "name" : "pl_fixed_arg_02 pl_linearize=0 acc:pl=1 acc:sos2=1",
+    "objective" :  3.5,
+    "tags" : ["linear", "continuous", "plinear",
+              "check_pl2sos2", "check_sos2_from_pl"],
+    "options": {
+        "presolve": 0,
+        "pl_linearize": 0,
+        "mp_options": "acc:pl=1 acc:sos2=1"
+    }
+  },
+  {
+    "name" : "pl_fixed_arg_03 pl_linearize=0",
+    "objective" :  -1,
+    "tags" : ["linear", "continuous", "plinear"],
+    "options": {
+        "presolve": 0,
+        "pl_linearize": 0
+    }
+  },
+  {
+    "name" : "pl_fixed_arg_03 pl_linearize=0 acc:pl=1 acc:sos2=1",
+    "objective" :  -1,
+    "tags" : ["linear", "continuous", "plinear",
+              "check_pl2sos2", "check_sos2_from_pl"],
+    "options": {
+        "presolve": 0,
+        "pl_linearize": 0,
+        "mp_options": "acc:pl=1 acc:sos2=1"
+    }
   }
 ]
