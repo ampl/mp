@@ -1,5 +1,6 @@
 from sys import platform
 import argparse
+import os
 
 from runModels import runModels,writeModels
 import Exporter
@@ -114,6 +115,10 @@ class Tester:
                     lpmethod: str = None, nlpmethod: str = None,
                     export_lp: bool = False):
         self._ampl = ampl
+        # Cases tagged 'cd' and scripts change AMPL's directory
+        # for the rest of the session: a relative path would break.
+        if bin_path:
+            bin_path = os.path.abspath(bin_path)
         self._solvers = SolverCollection.SolverCollection()
         SolverCollection.addStdSolvers(self._solvers, bin_path)
         for name, slv in self._solvers.getSolvers():
