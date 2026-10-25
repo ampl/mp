@@ -181,11 +181,14 @@ private: \
   std::vector<mp::Type> cons_ ## Type ## _;
 
 
-/// A toy backend for disjunction absorption tests (cvt:pre:disj2ind).
-/// Accepts linear constraints;
-/// indicators if \a fInd (otherwise big-M);
-/// OR if \a fOr; conditional <= if \a fCond.
-template <bool fInd, bool fOr, bool fCond=false>
+/// A toy backend for disjunction absorption, auxiliary-variable,
+/// bounds and piecewise-linear tests.
+/// Accepts and records linear constraints, indicators, OR,
+/// conditional <=, and SOS2. Tests switch native acceptance off with
+/// acc:... options (see kAcc*), so that a single instantiation of the
+/// converter serves all variants: each distinct backend type
+/// instantiates the whole MIP converter, which makes this file
+/// slow and memory-hungry to compile.
 class Disj2IndBackend :
     public mp::BasicFlatModelAPI,
     public mp::EnvKeeper
@@ -196,7 +199,8 @@ public:
   static constexpr const char* GetTypeName() { return "d2i_tester"; }
 
   void AddVariables(const mp::VarArrayDef& v) { vars_ = v; }
-  void SetLinearObjective(int , const mp::LinearObjective& ) { }
+  void SetLinearObjective(int , const mp::LinearObjective& lo)
+  { obj_vars_.assign(lo.vars().begin(), lo.vars().end()); }
 
   /// Number of variables
   int NumVars() const { return (int)vars_.size(); }
@@ -205,6 +209,15 @@ public:
   double ub(int v) const { return vars_.pub()[v]; }
   /// Submitted variable type
   mp::var::Type type(int v) const { return vars_.ptype()[v]; }
+  /// Variables of the linear objective
+  const std::vector<int>& ObjVars() const { return obj_vars_; }
+  /// Number of submitted integer variables
+  int NumIntVars() const {
+    int n=0;
+    for (int v=NumVars(); v--; )
+      n += (mp::var::INTEGER == type(v));
+    return n;
+  }
 
   USE_BASE_CONSTRAINT_HANDLERS(mp::BasicFlatModelAPI)
 
@@ -212,11 +225,12 @@ public:
   D2I_RECORD_CONSTR(LinConGE, true)
   D2I_RECORD_CONSTR(LinConEQ, true)
   D2I_RECORD_CONSTR(LinConRange, true)
-  D2I_RECORD_CONSTR(IndicatorConstraintLinLE, fInd)
-  D2I_RECORD_CONSTR(IndicatorConstraintLinGE, fInd)
-  D2I_RECORD_CONSTR(IndicatorConstraintLinEQ, fInd)
-  D2I_RECORD_CONSTR(OrConstraint, fOr)
-  D2I_RECORD_CONSTR(CondLinConLE, fCond)
+  D2I_RECORD_CONSTR(IndicatorConstraintLinLE, true)
+  D2I_RECORD_CONSTR(IndicatorConstraintLinGE, true)
+  D2I_RECORD_CONSTR(IndicatorConstraintLinEQ, true)
+  D2I_RECORD_CONSTR(OrConstraint, true)
+  D2I_RECORD_CONSTR(CondLinConLE, true)
+  D2I_RECORD_CONSTR(SOS2Constraint, true)
 
 public:
   /// Number of linear constraints of all kinds
@@ -233,29 +247,46 @@ public:
 
 private:
   mp::VarArrayDef vars_;
+  std::vector<int> obj_vars_;
 };
 
 
+/// Acceptance options selecting what Disj2IndBackend accepts natively;
+/// the rest is converted by MP.
+/// Linear constraints only (indicators become big-M)
+constexpr const char* kAccLinear =
+    "acc:indle=0 acc:indge=0 acc:indeq=0 acc:or=0 acc:condlinle=0 "
+    "acc:sos2=0";
+/// Linear constraints and indicators
+constexpr const char* kAccInd = "acc:or=0 acc:condlinle=0 acc:sos2=0";
+/// Linear constraints, indicators and OR
+constexpr const char* kAccIndOr = "acc:condlinle=0 acc:sos2=0";
+/// Linear constraints, indicators, OR and conditional <=
+constexpr const char* kAccIndOrCond = "acc:sos2=0";
+/// Linear constraints and SOS2
+constexpr const char* kAccLinearSOS2 =
+    "acc:indle=0 acc:indge=0 acc:indeq=0 acc:or=0 acc:condlinle=0";
+
+
 /// Interface (flattener + MIP converter + toy backend)
-/// for disjunction absorption tests
-template <bool fInd, bool fOr, bool fCond=false>
+/// for disjunction absorption and related tests
 class Disj2IndTester :
     public mp::ProblemFltImpl<mp::ProblemFlattener, mp::Problem,
-      mp::FlatCvtImpl<mp::MIPFlatConverter,
-                      Disj2IndBackend<fInd, fOr, fCond> > >
+      mp::FlatCvtImpl<mp::MIPFlatConverter, Disj2IndBackend> >
 {
   using Base = mp::ProblemFltImpl<mp::ProblemFlattener, mp::Problem,
-    mp::FlatCvtImpl<mp::MIPFlatConverter,
-                    Disj2IndBackend<fInd, fOr, fCond> > >;
+    mp::FlatCvtImpl<mp::MIPFlatConverter, Disj2IndBackend> >;
 public:
-  /// Construct with solver options \a opts
-  Disj2IndTester(mp::Env& e, const char* opts) : Base(e) {
+  /// Construct with acceptance options \a acc (kAcc...)
+  /// and further solver options \a opts
+  Disj2IndTester(mp::Env& e, const char* acc, const char* opts="")
+    : Base(e) {
     this->InitOptions();
-    e.ParseOptionString(opts);
+    e.ParseOptionString((std::string(acc) + ' ' + opts).c_str());
   }
 
   /// The backend
-  const Disj2IndBackend<fInd, fOr, fCond>& Backend() {
+  const Disj2IndBackend& Backend() {
     return this->GetFlatCvt().GetModelAPI();
   }
 
@@ -339,83 +370,12 @@ public:
   }
 };
 
-/// A toy backend for piecewise-linear conversion tests.
-/// Accepts linear constraints; SOS2 if \a fSOS2
-/// (otherwise MP converts SOS2 into MIP).
-/// Records the variables and the linear objective.
-template <bool fSOS2>
-class PLBackend :
-    public mp::BasicFlatModelAPI,
-    public mp::EnvKeeper
-{
+/// Interface for piecewise-linear conversion tests.
+/// Reuses Disj2IndTester's converter instantiation.
+class PLTester : public Disj2IndTester {
 public:
-  PLBackend(mp::Env& e) : mp::EnvKeeper(e) { }
-
-  static constexpr const char* GetTypeName() { return "pl_tester"; }
-
-  void AddVariables(const mp::VarArrayDef& v) { vars_ = v; }
-  void SetLinearObjective(int , const mp::LinearObjective& lo)
-  { obj_vars_.assign(lo.vars().begin(), lo.vars().end()); }
-
-  /// Number of variables
-  int NumVars() const { return (int)vars_.size(); }
-  double lb(int v) const { return vars_.plb()[v]; }
-  double ub(int v) const { return vars_.pub()[v]; }
-  mp::var::Type type(int v) const { return vars_.ptype()[v]; }
-  /// Variables of the linear objective
-  const std::vector<int>& ObjVars() const { return obj_vars_; }
-  /// Number of submitted integer variables
-  int NumIntVars() const {
-    int n=0;
-    for (int v=NumVars(); v--; )
-      n += (mp::var::INTEGER == type(v));
-    return n;
-  }
-
-  USE_BASE_CONSTRAINT_HANDLERS(mp::BasicFlatModelAPI)
-
-  D2I_RECORD_CONSTR(LinConLE, true)
-  D2I_RECORD_CONSTR(LinConGE, true)
-  D2I_RECORD_CONSTR(LinConEQ, true)
-  D2I_RECORD_CONSTR(LinConRange, true)
-  D2I_RECORD_CONSTR(SOS2Constraint, fSOS2)
-
-private:
-  mp::VarArrayDef vars_;
-  std::vector<int> obj_vars_;
-};
-
-
-/// Interface (flattener + MIP converter + toy backend)
-/// for piecewise-linear conversion tests
-template <bool fSOS2>
-class PLTester :
-    public mp::ProblemFltImpl<mp::ProblemFlattener, mp::Problem,
-      mp::FlatCvtImpl<mp::MIPFlatConverter, PLBackend<fSOS2> > >
-{
-  using Base = mp::ProblemFltImpl<mp::ProblemFlattener, mp::Problem,
-    mp::FlatCvtImpl<mp::MIPFlatConverter, PLBackend<fSOS2> > >;
-public:
-  /// Construct with solver options \a opts
-  PLTester(mp::Env& e, const char* opts) : Base(e) {
-    this->InitOptions();
-    e.ParseOptionString(opts);
-  }
-
-  /// The backend
-  const PLBackend<fSOS2>& Backend()
-  { return this->GetFlatCvt().GetModelAPI(); }
-
-  /// Number of used (active or converted) items of type \a Con
-  template <class Con>
-  int NumUsed() {
-    return this->GetFlatCvt().GetConstraintKeeper((Con*)nullptr)
-        .GetNumberOfUsed();
-  }
-
-  /// Add variable
-  int Var(double lb, double ub)
-  { return this->AddVars(1, lb, ub, mp::var::CONTINUOUS)[0]; }
+  /// Construct with acceptance options \a acc (kAcc...)
+  PLTester(mp::Env& e, const char* acc) : Disj2IndTester(e, acc) { }
 
   /// Add linear constraint  v == value
   void Fix(int v, double value) {

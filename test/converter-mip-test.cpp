@@ -92,7 +92,7 @@ void ExpectSingleIndicator(const std::vector<Ind>& inds,
 
 TEST(Disj2IndTest, ImplicationLE__becomesIndicatorOnB) {
   mp::Env e;
-  Disj2IndTester<true, false> t(e, "");
+  Disj2IndTester t(e, kAccInd);
   int b = t.Var(0, 1, INTEGER), x = t.Var(-10, 10);
   AddImplLE(t, b, x, 3);
   t.ConvertModel();
@@ -104,7 +104,7 @@ TEST(Disj2IndTest, ImplicationLE__becomesIndicatorOnB) {
 
 TEST(Disj2IndTest, ImplicationLE__optionOff__indicatorOnAuxVar) {
   mp::Env e;
-  Disj2IndTester<true, false> t(e, "cvt:pre:disj2ind=0");
+  Disj2IndTester t(e, kAccInd, "cvt:pre:disj2ind=0");
   int b = t.Var(0, 1, INTEGER), x = t.Var(-10, 10);
   AddImplLE(t, b, x, 3);
   t.ConvertModel();
@@ -117,7 +117,7 @@ TEST(Disj2IndTest, ImplicationLE__optionOff__indicatorOnAuxVar) {
 
 TEST(Disj2IndTest, ImplicationLE__presolveOff__untouched) {
   mp::Env e;
-  Disj2IndTester<true, false> t(e, "cvt:pre:all=0");
+  Disj2IndTester t(e, kAccInd, "cvt:pre:all=0");
   int b = t.Var(0, 1, INTEGER), x = t.Var(-10, 10);
   AddImplLE(t, b, x, 3);
   t.ConvertModel();
@@ -126,7 +126,7 @@ TEST(Disj2IndTest, ImplicationLE__presolveOff__untouched) {
 
 TEST(Disj2IndTest, ImplicationLE__bigM__singleRowNoAuxBinary) {
   mp::Env e;
-  Disj2IndTester<false, false> t(e, "");
+  Disj2IndTester t(e, kAccLinear);
   int b = t.Var(0, 1, INTEGER), x = t.Var(-10, 10);
   AddImplLE(t, b, x, 3);
   t.ConvertModel();
@@ -136,7 +136,7 @@ TEST(Disj2IndTest, ImplicationLE__bigM__singleRowNoAuxBinary) {
 
 TEST(Disj2IndTest, ImplicationWithZero__literalB0) {
   mp::Env e;
-  Disj2IndTester<true, false> t(e, "");
+  Disj2IndTester t(e, kAccInd);
   int b = t.Var(0, 1, INTEGER), x = t.Var(-10, 10);
   t.Add( t.Bin(OR, t.Cmp(NE, b, 0), t.Cmp(GE, x, 2)) );   // b==0 ==> x>=2
   t.ConvertModel();
@@ -145,7 +145,7 @@ TEST(Disj2IndTest, ImplicationWithZero__literalB0) {
 
 TEST(Disj2IndTest, StrictInequality__usesComparisonEps) {
   mp::Env e;
-  Disj2IndTester<true, false> t(e, "");
+  Disj2IndTester t(e, kAccInd);
   int b = t.Var(0, 1, INTEGER), x = t.Var(-10, 10);
   int c = t.Var(0, 1, INTEGER), y = t.Var(-10, 10, INTEGER);
   t.Add( t.Bin(OR, t.Cmp(NE, b, 1), t.Cmp(LT, x, 3)) );
@@ -162,7 +162,7 @@ TEST(Disj2IndTest, StrictInequality__usesComparisonEps) {
 
 TEST(Disj2IndTest, ConjunctionConsequent__twoIndicatorsOnB) {
   mp::Env e;
-  Disj2IndTester<true, false> t(e, "");
+  Disj2IndTester t(e, kAccInd);
   int b = t.Var(0, 1, INTEGER), x = t.Var(-10, 10), y = t.Var(-10, 10);
   t.Add( t.Bin(OR, t.Cmp(NE, b, 1),
                t.Bin(AND, t.Cmp(LE, x, 3), t.Cmp(GE, y, 1))) );
@@ -175,7 +175,7 @@ TEST(Disj2IndTest, ConjunctionConsequent__twoIndicatorsOnB) {
 
 TEST(Disj2IndTest, DisequalityConsequent__literalInDisjunctionRow) {
   mp::Env e;
-  Disj2IndTester<true, false> t(e, "");
+  Disj2IndTester t(e, kAccInd);
   int b = t.Var(0, 1, INTEGER), x = t.Var(-10, 10);
   t.Add( t.Bin(OR, t.Cmp(NE, b, 1), t.Cmp(NE, x, 3)) );   // b==1 ==> x!=3
   t.ConvertModel();
@@ -190,7 +190,7 @@ TEST(Disj2IndTest, DisequalityConsequent__literalInDisjunctionRow) {
 
 TEST(Disj2IndTest, SharedConsequent__notAbsorbed) {
   mp::Env e;
-  Disj2IndTester<true, false> t(e, "");
+  Disj2IndTester t(e, kAccInd);
   int a = t.Var(0, 1, INTEGER), b = t.Var(0, 1, INTEGER);
   int x = t.Var(-10, 10);
   AddImplLE(t, a, x, 3);
@@ -204,7 +204,7 @@ TEST(Disj2IndTest, SharedConsequent__notAbsorbed) {
 
 TEST(Disj2IndTest, NativeOr__absorbedAnyway) {
   mp::Env e;
-  Disj2IndTester<true, true> t(e, "");
+  Disj2IndTester t(e, kAccIndOr);
   int b = t.Var(0, 1, INTEGER), x = t.Var(-10, 10);
   AddImplLE(t, b, x, 3);
   t.ConvertModel();
@@ -214,7 +214,7 @@ TEST(Disj2IndTest, NativeOr__absorbedAnyway) {
 
 TEST(Disj2IndTest, NativeConditionals__untouched) {
   mp::Env e;
-  Disj2IndTester<true, true, true> t(e, "");
+  Disj2IndTester t(e, kAccIndOrCond);
   int b = t.Var(0, 1, INTEGER), x = t.Var(-10, 10);
   AddImplLE(t, b, x, 3);
   t.ConvertModel();
@@ -237,7 +237,7 @@ void AddUEncCase(Tester& t, int b, int x, bool fEnc) {
 
 TEST(Disj2IndTest, UEncCandidate__noEncoding__absorbed) {
   mp::Env e;
-  Disj2IndTester<true, false> t(e, "");
+  Disj2IndTester t(e, kAccInd);
   int b = t.Var(0, 1, INTEGER), x = t.Var(1, 9, INTEGER);
   AddUEncCase(t, b, x, false);
   t.ConvertModel();
@@ -247,7 +247,7 @@ TEST(Disj2IndTest, UEncCandidate__noEncoding__absorbed) {
 
 TEST(Disj2IndTest, UEncCandidate__encoding__flagRowKept) {
   mp::Env e;
-  Disj2IndTester<true, false> t(e, "");
+  Disj2IndTester t(e, kAccInd);
   int b = t.Var(0, 1, INTEGER), x = t.Var(1, 9, INTEGER);
   AddUEncCase(t, b, x, true);
   t.ConvertModel();
@@ -257,7 +257,7 @@ TEST(Disj2IndTest, UEncCandidate__encoding__flagRowKept) {
 
 TEST(Disj2IndTest, UEncCandidate__bitOff__notAbsorbed) {
   mp::Env e;
-  Disj2IndTester<true, false> t(e, "cvt:pre:disj2ind=3");
+  Disj2IndTester t(e, kAccInd, "cvt:pre:disj2ind=3");
   int b = t.Var(0, 1, INTEGER), x = t.Var(1, 9, INTEGER);
   AddUEncCase(t, b, x, false);
   t.ConvertModel();
@@ -268,7 +268,7 @@ TEST(Disj2IndTest, UEncCandidate__bitOff__notAbsorbed) {
 
 TEST(Disj2IndTest, TwoConditionals__bit4__oneBinary) {
   mp::Env e;
-  Disj2IndTester<true, false> t(e, "cvt:pre:disj2ind=15");
+  Disj2IndTester t(e, kAccInd, "cvt:pre:disj2ind=15");
   int x = t.Var(-10, 10), y = t.Var(-10, 10);
   t.Add( t.Bin(OR, t.Cmp(LE, x, 0), t.Cmp(LE, y, 0)) );   // x<=0 || y<=0
   t.ConvertModel();
@@ -281,7 +281,7 @@ TEST(Disj2IndTest, TwoConditionals__bit4__oneBinary) {
 
 TEST(Disj2IndTest, TwoConditionals__default__notAbsorbed) {
   mp::Env e;
-  Disj2IndTester<true, false> t(e, "");
+  Disj2IndTester t(e, kAccInd);
   int x = t.Var(-10, 10), y = t.Var(-10, 10);
   t.Add( t.Bin(OR, t.Cmp(LE, x, 0), t.Cmp(LE, y, 0)) );
   t.ConvertModel();
@@ -301,7 +301,7 @@ void AddSemicontinuous(Tester& t, int x, int b) {
 
 TEST(VarBndTest, ComparisonInGap__reusesBinary) {
   mp::Env e;
-  Disj2IndTester<true, false> t(e, "");
+  Disj2IndTester t(e, kAccInd);
   int x = t.Var(0, 10), b = t.Var(0, 1, INTEGER), a = t.Var(0, 1, INTEGER);
   AddSemicontinuous(t, x, b);
   t.Add( t.Bin(OR, t.Cmp(NE, a, 1), t.Cmp(GE, x, 1)) );   // a==1 ==> x>=1
@@ -314,7 +314,7 @@ TEST(VarBndTest, ComparisonInGap__reusesBinary) {
 
 TEST(VarBndTest, ThresholdAboveLowerBound__notDecided) {
   mp::Env e;
-  Disj2IndTester<true, false> t(e, "");
+  Disj2IndTester t(e, kAccInd);
   int x = t.Var(0, 10), b = t.Var(0, 1, INTEGER), a = t.Var(0, 1, INTEGER);
   AddSemicontinuous(t, x, b);
   t.Add( t.Bin(OR, t.Cmp(NE, a, 1), t.Cmp(GE, x, 3)) );   // 3 > L=2
@@ -324,7 +324,7 @@ TEST(VarBndTest, ThresholdAboveLowerBound__notDecided) {
 
 TEST(VarBndTest, OptionOff__notDecided) {
   mp::Env e;
-  Disj2IndTester<true, false> t(e, "cvt:pre:vbnd=0 cvt:pre:disj2ind=0");
+  Disj2IndTester t(e, kAccInd, "cvt:pre:vbnd=0 cvt:pre:disj2ind=0");
   int x = t.Var(0, 10), b = t.Var(0, 1, INTEGER), a = t.Var(0, 1, INTEGER);
   AddSemicontinuous(t, x, b);
   t.Add( t.Bin(OR, t.Cmp(NE, a, 1), t.Cmp(GE, x, 1)) );
@@ -343,7 +343,7 @@ void AddThreeTermGdp(Tester& t, int x, int y, int z) {
 
 TEST(Disj2IndTest, ThreeTermGdp__bit16__indicatorsOnDisjuncts) {
   mp::Env e;
-  Disj2IndTester<true, false> t(e, "cvt:pre:disj2ind=27");
+  Disj2IndTester t(e, kAccInd, "cvt:pre:disj2ind=27");
   int x = t.Var(-10, 10), y = t.Var(-10, 10), z = t.Var(-10, 10);
   AddThreeTermGdp(t, x, y, z);
   t.ConvertModel();
@@ -360,7 +360,7 @@ TEST(Disj2IndTest, ThreeTermGdp__bit16__indicatorsOnDisjuncts) {
 
 TEST(Disj2IndTest, ThreeTermGdp__default__conjunctsReified) {
   mp::Env e;
-  Disj2IndTester<true, false> t(e, "");
+  Disj2IndTester t(e, kAccInd);
   int x = t.Var(-10, 10), y = t.Var(-10, 10), z = t.Var(-10, 10);
   AddThreeTermGdp(t, x, y, z);
   t.ConvertModel();
@@ -377,7 +377,7 @@ void AddImplOfConjunction(Tester& t, int b, int x1, int x2) {
 
 TEST(Disj2IndTest, OrOverAndOfBinaries__bit32__clauses) {
   mp::Env e;
-  Disj2IndTester<true, false> t(e, "cvt:pre:disj2ind=43");
+  Disj2IndTester t(e, kAccInd, "cvt:pre:disj2ind=43");
   int b = t.Var(0, 1, INTEGER), x1 = t.Var(0, 1, INTEGER), x2 = t.Var(0, 1, INTEGER);
   AddImplOfConjunction(t, b, x1, x2);
   t.ConvertModel();
@@ -387,7 +387,7 @@ TEST(Disj2IndTest, OrOverAndOfBinaries__bit32__clauses) {
 
 TEST(Disj2IndTest, OrOverAndOfBinaries__default__andKept) {
   mp::Env e;
-  Disj2IndTester<true, false> t(e, "");
+  Disj2IndTester t(e, kAccInd);
   int b = t.Var(0, 1, INTEGER), x1 = t.Var(0, 1, INTEGER), x2 = t.Var(0, 1, INTEGER);
   AddImplOfConjunction(t, b, x1, x2);
   t.ConvertModel();
@@ -406,7 +406,7 @@ void AddHoleCase(Tester& t, int x, int a) {
 
 TEST(VarBndTest, DomainHole__comparisonsShareOneBinary) {
   mp::Env e;
-  Disj2IndTester<true, false> t(e, "");
+  Disj2IndTester t(e, kAccInd);
   int x = t.Var(0, 10), a = t.Var(0, 1, INTEGER);
   AddHoleCase(t, x, a);
   t.ConvertModel();
@@ -416,7 +416,7 @@ TEST(VarBndTest, DomainHole__comparisonsShareOneBinary) {
 
 TEST(VarBndTest, DomainHole__optionBitOff__separateComparisons) {
   mp::Env e;
-  Disj2IndTester<true, false> t(e, "cvt:pre:vbnd=1 cvt:pre:disj2ind=0");
+  Disj2IndTester t(e, kAccInd, "cvt:pre:vbnd=1 cvt:pre:disj2ind=0");
   int x = t.Var(0, 10), a = t.Var(0, 1, INTEGER);
   AddHoleCase(t, x, a);
   t.ConvertModel();
@@ -429,7 +429,7 @@ TEST(VarBndTest, DomainHole__optionBitOff__separateComparisons) {
 /// cvt:pre:auxint: implied-integer auxiliaries submitted as continuous
 TEST(AuxIntTest, IfThenOfIntegers__continuousSubmitted_integerInside) {
   mp::Env e;
-  Disj2IndTester<true, false> t(e, "");
+  Disj2IndTester t(e, kAccInd);
   int b = t.Var(0, 1, INTEGER), x = t.Var(0, 10, INTEGER),
       y = t.Var(0, 10, INTEGER);
   auto ite = t.If(t.Cmp(EQ, b, 1), x, y);
@@ -453,7 +453,7 @@ TEST(AuxIntTest, IfThenOfIntegers__continuousSubmitted_integerInside) {
 
 TEST(AuxIntTest, OptionOn__integerSubmitted) {
   mp::Env e;
-  Disj2IndTester<true, false> t(e, "cvt:pre:auxint=1");
+  Disj2IndTester t(e, kAccInd, "cvt:pre:auxint=1");
   int b = t.Var(0, 1, INTEGER), x = t.Var(0, 10, INTEGER),
       y = t.Var(0, 10, INTEGER);
   t.Minimize( t.If(t.Cmp(EQ, b, 1), x, y) );
@@ -464,7 +464,7 @@ TEST(AuxIntTest, OptionOn__integerSubmitted) {
 
 TEST(AuxIntTest, IfThenOfContinuous__continuous) {
   mp::Env e;
-  Disj2IndTester<true, false> t(e, "");
+  Disj2IndTester t(e, kAccInd);
   int b = t.Var(0, 1, INTEGER), x = t.Var(0, 10), y = t.Var(0, 10, INTEGER);
   t.Minimize( t.If(t.Cmp(EQ, b, 1), x, y) );
   t.ConvertModel();
@@ -476,7 +476,7 @@ TEST(AuxIntTest, IfThenOfContinuous__continuous) {
 /// the if-then result becomes an indicator binary (cvt:pre:disj2ind)
 TEST(AuxIntTest, IfThenAsIndicatorBinary__binary) {
   mp::Env e;
-  Disj2IndTester<true, false> t(e, "");
+  Disj2IndTester t(e, kAccInd);
   int b = t.Var(0, 1, INTEGER), y = t.Var(0, 10);
   t.Add( t.Bin(OR, t.Cmp(LE, y, 4), t.CmpE(NE, t.IfC(t.Cmp(EQ, b, 0), 1, 0), 0)) );
   t.ConvertModel();
@@ -491,7 +491,7 @@ TEST(AuxIntTest, IfThenAsIndicatorBinary__binary) {
 
 TEST(AuxIntTest, ComparisonResults__integer) {
   mp::Env e;
-  Disj2IndTester<false, false> t(e, "cvt:pre:disj2ind=0");
+  Disj2IndTester t(e, kAccLinear, "cvt:pre:disj2ind=0");
   int x = t.Var(-10, 10);
   t.Add( t.Bin(OR, t.Cmp(GE, x, 1), t.Cmp(LE, x, -1)) );   // big-M
   t.ConvertModel();
@@ -501,7 +501,7 @@ TEST(AuxIntTest, ComparisonResults__integer) {
 
 TEST(AuxIntTest, CountResult__continuous) {
   mp::Env e;
-  Disj2IndTester<false, false> t(e, "");
+  Disj2IndTester t(e, kAccLinear);
   int x = t.Var(-10, 10);
   t.Minimize( t.Count2(t.Cmp(GE, x, 1), t.Cmp(LE, x, -1)) );
   t.ConvertModel();
@@ -511,7 +511,7 @@ TEST(AuxIntTest, CountResult__continuous) {
 
 TEST(AuxIntTest, FixedIntVar__continuousSubmittedOnly) {
   mp::Env e;
-  Disj2IndTester<false, false> t(e, "");
+  Disj2IndTester t(e, kAccLinear);
   int x = t.Var(3, 3, INTEGER), y = t.Var(0, 10, INTEGER);
   t.Lin2(1.0, x, 1.0, y, -INFINITY, 8.0);
   t.ConvertModel();
@@ -525,7 +525,7 @@ TEST(AuxIntTest, FixedIntVar__continuousSubmittedOnly) {
 /// (unsubmitted): the row must stay, else y is free in the solver
 TEST(BigMTest, ImpliedByBestBoundsOnly__rowKept) {
   mp::Env e;
-  Disj2IndTester<false, false> t(e, "");
+  Disj2IndTester t(e, kAccLinear);
   int b = t.Var(0, 1, INTEGER), x = t.Var(50, 270, INTEGER);
   auto& m = t.GetModel();
   auto ite = m.MakeIf(t.Cmp(EQ, b, 1), m.MakeVariable(x),
@@ -579,7 +579,7 @@ void AddSplitModel(Tester& t, int& y1pos, int& y2pos) {
 
 TEST(BoundsBestTest, Mode2__nonlinearKeepsHardBounds) {
   mp::Env e;
-  Disj2IndTester<false, false> t(e, "cvt:pre:boundsbest=2");
+  Disj2IndTester t(e, kAccLinear, "cvt:pre:boundsbest=2");
   int y1, y2;
   AddSplitModel(t, y1, y2);
   t.ConvertModel();
@@ -595,7 +595,7 @@ TEST(BoundsBestTest, Mode2__nonlinearKeepsHardBounds) {
 
 TEST(BoundsBestTest, Mode3__onlyNonlinearGetsBestBounds) {
   mp::Env e;
-  Disj2IndTester<false, false> t(e, "cvt:pre:boundsbest=3");
+  Disj2IndTester t(e, kAccLinear, "cvt:pre:boundsbest=3");
   int y1, y2;
   AddSplitModel(t, y1, y2);
   t.ConvertModel();
@@ -612,7 +612,7 @@ TEST(BoundsBestTest, Mode3__onlyNonlinearGetsBestBounds) {
 
 TEST(BoundsBestTest, Mode0__allHardBounds) {
   mp::Env e;
-  Disj2IndTester<false, false> t(e, "cvt:pre:boundsbest=0");
+  Disj2IndTester t(e, kAccLinear, "cvt:pre:boundsbest=0");
   int y1, y2;
   AddSplitModel(t, y1, y2);
   t.ConvertModel();
@@ -625,7 +625,7 @@ TEST(BoundsBestTest, Mode0__allHardBounds) {
 
 TEST(BoundsBestTest, Mode1__allBestBounds) {
   mp::Env e;
-  Disj2IndTester<false, false> t(e, "cvt:pre:boundsbest=1");
+  Disj2IndTester t(e, kAccLinear, "cvt:pre:boundsbest=1");
   int y1, y2;
   AddSplitModel(t, y1, y2);
   t.ConvertModel();
@@ -718,7 +718,7 @@ TEST(BoundsBestExprTest, Mode3__onlyExplicifiedNonlinearBest) {
 
 TEST(BoundsBestTest, Mode4__approximatedNonlinear__linearModel__best) {
   mp::Env e;
-  Disj2IndTester<false, false> t(e, "cvt:pre:boundsbest=4");   // exp is PL-approximated
+  Disj2IndTester t(e, kAccLinear, "cvt:pre:boundsbest=4");   // exp is PL-approximated
   int y1, y2;
   AddSplitModel(t, y1, y2);
   t.ConvertModel();
@@ -770,8 +770,7 @@ TEST(BoundsBestExprTest, Mode4__linearSubmitted__best) {
 /// Maximize abs(x) for x in [-10, 10] fixed to \a value
 /// by a linear row, i.e., after the PL constraint is created.
 /// @return the result variable of the PL term
-template <bool fSOS2>
-int ConvertAbsOfFixedArg(PLTester<fSOS2>& t, double value) {
+int ConvertAbsOfFixedArg(PLTester& t, double value) {
   int x = t.Var(-10, 10);
   t.Maximize(t.AbsPL(x));
   t.Fix(x, value);
@@ -782,47 +781,46 @@ int ConvertAbsOfFixedArg(PLTester<fSOS2>& t, double value) {
 }
 
 /// Expect the PL term's result \a y fixed at \a value without SOS2
-template <bool fSOS2>
-void ExpectFixedResultNoSOS2(PLTester<fSOS2>& t, int y, double value) {
+void ExpectFixedResultNoSOS2(PLTester& t, int y, double value) {
   ASSERT_LE(0, y);
   EXPECT_EQ(value, t.Backend().lb(y));
   EXPECT_EQ(value, t.Backend().ub(y));
-  EXPECT_EQ(0, t.template NumUsed<mp::SOS2Constraint>());
+  EXPECT_EQ(0, t.NumUsed<mp::SOS2Constraint>());
   EXPECT_EQ(0, t.Backend().NumIntVars());
+  EXPECT_TRUE(t.Backend().GetSOS2Constraint().empty());
 }
 
-TEST(PLTest, ArgFixedAtBreakpoint__noSOS2__resultFixed) {
+TEST(PLTest, ArgFixedAtBreakpoint__accSos2Off__resultFixed) {
   mp::Env e;
-  PLTester<false> t(e, "");
+  PLTester t(e, kAccLinear);
   int y = ConvertAbsOfFixedArg(t, 0.0);
   ExpectFixedResultNoSOS2(t, y, 0.0);
 }
 
-TEST(PLTest, ArgFixedAtEndBreakpoint__noSOS2__resultFixed) {
+TEST(PLTest, ArgFixedAtEndBreakpoint__accSos2Off__resultFixed) {
   mp::Env e;
-  PLTester<false> t(e, "");
+  PLTester t(e, kAccLinear);
   int y = ConvertAbsOfFixedArg(t, -1.0);
   ExpectFixedResultNoSOS2(t, y, 1.0);
 }
 
-TEST(PLTest, ArgFixedBeyondBreakpoints__noSOS2__resultFixed) {
+TEST(PLTest, ArgFixedBeyondBreakpoints__accSos2Off__resultFixed) {
   mp::Env e;
-  PLTester<false> t(e, "");
+  PLTester t(e, kAccLinear);
   int y = ConvertAbsOfFixedArg(t, 2.0);
   ExpectFixedResultNoSOS2(t, y, 2.0);
 }
 
 TEST(PLTest, ArgFixedBeyondBreakpoints__nativeSOS2__noSOS2Submitted) {
   mp::Env e;
-  PLTester<true> t(e, "");
+  PLTester t(e, kAccLinearSOS2);
   int y = ConvertAbsOfFixedArg(t, 2.0);
   ExpectFixedResultNoSOS2(t, y, 2.0);
-  EXPECT_TRUE(t.Backend().GetSOS2Constraint().empty());
 }
 
-TEST(PLTest, OneSegmentInDomain__noSOS2__linearEquality) {
+TEST(PLTest, OneSegmentInDomain__accSos2Off__linearEquality) {
   mp::Env e;
-  PLTester<false> t(e, "");
+  PLTester t(e, kAccLinear);
   int x = t.Var(0.5, 0.7);
   t.Maximize(t.AbsPL(x));
   t.ConvertModel();
@@ -831,19 +829,20 @@ TEST(PLTest, OneSegmentInDomain__noSOS2__linearEquality) {
   ASSERT_EQ(1u, t.Backend().GetLinConEQ().size());
 }
 
-TEST(PLTest, Nonconvex__noSOS2__logarithmicBinaries) {
+TEST(PLTest, Nonconvex__accSos2Off__logarithmicBinaries) {
   mp::Env e;
-  PLTester<false> t(e, "");
+  PLTester t(e, kAccLinear);
   int x = t.Var(-10, 10);
   t.Maximize(t.AbsPL(x));
   t.ConvertModel();
   EXPECT_EQ(1, t.NumUsed<mp::SOS2Constraint>());        // converted
+  EXPECT_TRUE(t.Backend().GetSOS2Constraint().empty());
   EXPECT_EQ(1, t.Backend().NumIntVars());               // ceil(log2(2))
 }
 
 TEST(PLTest, Nonconvex__nativeSOS2__submitted) {
   mp::Env e;
-  PLTester<true> t(e, "");
+  PLTester t(e, kAccLinearSOS2);
   int x = t.Var(-10, 10);
   t.Maximize(t.AbsPL(x));
   t.ConvertModel();
