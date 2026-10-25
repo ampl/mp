@@ -291,5 +291,20 @@
     "values": {
       "solve_result": "failure"
     }
+  },
+  {
+    "name" : "pl_unbounded_01 pl_linearize=0 acc:pl=0 acc:sos2=2",
+    "objective" : 4,
+    "tags" : ["linear", "continuous", "plinear", "sos"],
+    "solvers_exclude": ["xpress"],
+    "options": {
+        "presolve": 0,
+        "pl_linearize": 0,
+        "mp_options": "acc:pl=0 acc:sos2=2"
+    },
+    "comment": "Unbounded PL argument, native SOS2: rays for the unbounded sides. The LP relaxation is unbounded; Xpress then reports 'unbounded or infeasible' without branching (cvt:pl:domain helps)",
+    "values": {
+      "x": -4
+    }
   }
 ]

@@ -32,6 +32,7 @@ public:
   /// Convert in any context
   Context Convert(const ItemType& cc, int ) {
     points_ = cc.GetParameters().GetPLPoints();
+    rayL_ = rayR_ = false;
     i0=0;                              // first breakpoint
     i1=points_.x_.size()-1;            // last breakpoint
 		MP_ASSERT_ALWAYS(i1>=i0, "PL->SOS2: no breakpoints");
@@ -69,13 +70,14 @@ protected:
     GetMC().NarrowVarBestBounds(y, range.first, range.second);
   }
   /// See if we need to extend the end segments
-  /// to cover larger domain
+  /// to cover larger domain.
+  /// Unbounded sides with native SOS2 get rays instead.
   void ConsiderExtendingEndSegments() {
     const auto dom = ExtensionDomain();
-    if (GetMC().lb(x) < points_.x_.front() &&
+    if (!rayL_ && GetMC().lb(x) < points_.x_.front() &&
         points_.x_.front() > -dom)
       ExtendSegTo(0, 1, std::max(GetMC().lb(x), -dom));
-    if (GetMC().ub(x) > points_.x_.back() &&
+    if (!rayR_ && GetMC().ub(x) > points_.x_.back() &&
         points_.x_.back() < dom)
       ExtendSegTo(i1, i1-1, std::min(GetMC().ub(x), dom));
   }
@@ -83,23 +85,28 @@ protected:
   /// The MIP reformulation of SOS2 amplifies the solver's tolerances
   /// by this value: unless the option is set, it uses the argument's
   /// bounds and fails if one is infinite (as cvt:bigM for indicators).
-  /// Native SOS2 is not affected: then the default is 1e6.
+  /// Native SOS2, unless the option is set, gets exact rays
+  /// for infinite sides (see RedefineInSOS2()).
   double ExtensionDomain() {
     const auto dom = GetMC().PLDomain();
-    if (!GetMC().GetConstraintKeeper((SOS2Constraint*)nullptr)
-        .IfConvertsItems())
-      return dom >= 0.0 ? dom : 1e6;
+    const bool native = !GetMC().GetConstraintKeeper(
+          (SOS2Constraint*)nullptr).IfConvertsItems();
     const auto lbx = GetMC().lb(x), ubx = GetMC().ub(x);
     const auto lbExt = lbx < points_.x_.front() ? lbx : 0.0;
     const auto ubExt = ubx > points_.x_.back() ? ubx : 0.0;
     if (dom < 0.0) {
-      if (lbExt <= GetMC().PracticallyMinusInf()
-          || ubExt >= GetMC().PracticallyInf())
+      const bool infL = lbExt <= GetMC().PracticallyMinusInf();
+      const bool infR = ubExt >= GetMC().PracticallyInf();
+      if (native) {
+        rayL_ = infL;
+        rayR_ = infR;
+      } else if (infL || infR)
         FailUnbounded();
       return INFINITY;
     }
-    if ((lbExt < -dom && points_.x_.front() > -dom)
-        || (ubExt > dom && points_.x_.back() < dom))
+    if (!native &&
+        ((lbExt < -dom && points_.x_.front() > -dom)
+         || (ubExt > dom && points_.x_.back() < dom)))
       WarnDomainLimited();
     return dom;
   }
@@ -221,26 +228,52 @@ protected:
 						Yi - slopes[i]*Xi});
 		}
 	}
-	/// Non-convex redefinition into SOS2 + linear
+	/// Non-convex redefinition into SOS2 + linear:
+  /// x = sum(lambda_i * x_i), y = sum(lambda_i * y_i), sum(lambda)=1.
+  /// An unbounded side gets a ray variable r>=0 as an extra
+  /// SOS2 member next to the end lambda: then that lambda is 1,
+  /// and (x, y) moves from the end point along the end segment.
   void RedefineInSOS2() {
     auto lambda = GetMC().AddVars_returnIds(i1-i0+1, 0.0, 1.0);
-    std::vector<double> weights(i1-i0+1);
-    std::iota(weights.begin(), weights.end(), 1.0);
-    GetMC().AddConstraint(      // indicate range of sum(lambda)
-          SOS2Constraint(lambda, weights,
-                         SOSExtraInfo{ {1.0, 1.0} }) );
-    std::fill(weights.begin(), weights.end(), 1.0);
+    std::vector<double> weights(lambda.size(), 1.0);
     GetMC().AddConstraint(
           LinConEQ{ {weights, lambda}, {1.0} });
-    weights.assign(points_.y_.begin()+i0, points_.y_.begin()+i1+1);
-    LinearFunctionalConstraint funccon{ {{weights, lambda}, 0.0} };
+    std::vector<double> cx(points_.x_.begin()+i0, points_.x_.begin()+i1+1);
+    std::vector<double> cy(points_.y_.begin()+i0, points_.y_.begin()+i1+1);
+    auto sosvars = lambda;
+    if (rayL_)
+      AddRay(true, sosvars, lambda, cx, cy);
+    if (rayR_)
+      AddRay(false, sosvars, lambda, cx, cy);
+    weights.resize(sosvars.size());
+    std::iota(weights.begin(), weights.end(), 1.0);
+    GetMC().AddConstraint(      // indicate range of sum(lambda)
+          SOS2Constraint(sosvars, weights,
+                         (rayL_ || rayR_) ? SOSExtraInfo{}
+                                          : SOSExtraInfo{ {1.0, 1.0} }) );
+    LinearFunctionalConstraint funccon{ {{cy, lambda}, 0.0} };
     funccon.SetContext( GetMC().GetInitExprContext(y) );
     GetMC().RedefineVariable(y, std::move(funccon));
-    weights.assign(points_.x_.begin()+i0, points_.x_.begin()+i1+1);
-    weights.push_back(-1.0);
+    cx.push_back(-1.0);
     lambda.push_back(x);
     GetMC().AddConstraint(
-          LinConEQ{ {weights, lambda}, {0.0} });
+          LinConEQ{ {cx, lambda}, {0.0} });
+  }
+  /// Add a ray variable r>=0 along the left/right end segment:
+  /// to \a sosvars at that end, to \a lambda with coefficients
+  /// -1/+1 in \a cx and -/+slope in \a cy.
+  void AddRay(bool left, std::vector<int>& sosvars,
+              std::vector<int>& lambda,
+              std::vector<double>& cx, std::vector<double>& cy) {
+    const auto r = int( GetMC().AddVar(0.0, INFINITY) );
+    const size_t j0 = left ? i0 : i1-1;           // end segment
+    const auto slope = (points_.y_[j0+1]-points_.y_[j0])
+        / (points_.x_[j0+1]-points_.x_[j0]);
+    const double dir = left ? -1.0 : 1.0;
+    sosvars.insert(left ? sosvars.begin() : sosvars.end(), r);
+    lambda.push_back(r);
+    cx.push_back(dir);
+    cy.push_back(dir*slope);
   }
 
   /// Extend segment (i0, i1) (if i0<i1, then to the left,
@@ -271,6 +304,8 @@ private:
   PLPoints points_;
   size_t i0{0};
   size_t i1{0};
+  bool rayL_{false};                   // rays for unbounded sides
+  bool rayR_{false};
   int x{-1};
   int y{-1};
 };

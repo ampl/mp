@@ -517,7 +517,8 @@ private:
                        "the solver's feasibility tolerance is amplified by up to "
                        "this value. Not used by default: then an unbounded "
                        "argument is an error in the MIP reformulation, and "
-                       "native SOS2 uses 1e6. Use with care (prefer tight bounds).",
+                       "native SOS2 gets exact rays for unbounded sides. "
+                       "Use with care (prefer tight bounds).",
                        options_.PLDomain_, -1.0, 1e100);
     this->GetEnv().AddOption("cvt:uenc:ratio uenc:ratio",
                        "Min ratio (ub-lb+1)/Nvalues to skip unary encoding "

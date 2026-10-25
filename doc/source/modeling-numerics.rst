@@ -84,7 +84,9 @@ The MIP linearization of a nonconvex PL expression via SOS2 constraints
 needs finite bounds on the argument: an unbounded argument is an error,
 unless a limit is set with the option *cvt:pl:domain* (use with caution:
 the solver's feasibility tolerance is amplified by up to this value,
-which can lead to violated PL expressions). The stability can be improved
+which can lead to violated PL expressions). With native SOS2 support
+in the solver, unbounded sides of the argument are modeled exactly
+by ray variables. The stability can be improved
 in some cases by decreasing integer tolerance, Gurobi's *intfocus* and
 *numfocus* options, switching off presolve in the solver, and other tuning measures.
 

@@ -906,11 +906,25 @@ TEST(PLTest, UnboundedArg__accSos2Off__plDomainOption) {
   EXPECT_EQ(1u, e.GetWarningsMap().count("PLDomain"));
 }
 
-TEST(PLTest, UnboundedArg__nativeSOS2__defaultDomainNoWarning) {
+TEST(PLTest, UnboundedArg__nativeSOS2__rays) {
   mp::Env e;
   PLTester t(e, kAccLinearSOS2);
   ConvertAbsOfUnboundedArg(t);
   ASSERT_EQ(1u, t.Backend().GetSOS2Constraint().size());
-  EXPECT_EQ(1e6, MaxAbsEQCoef(t));
+  const auto& sos = t.Backend().GetSOS2Constraint()[0];
+  ASSERT_EQ(5, sos.size());                    // ray, 3 points, ray
+  for (int i : {0, 4})
+    EXPECT_EQ(INFINITY, t.GetFlatCvt().ub(sos.get_vars()[i]));
+  EXPECT_EQ(1.0, MaxAbsEQCoef(t));             // no 1e6 coefficients
+  EXPECT_EQ(0u, e.GetWarningsMap().count("PLDomain"));
+}
+
+TEST(PLTest, UnboundedArg__nativeSOS2__plDomainOption) {
+  mp::Env e;
+  PLTester t(e, kAccLinearSOS2, "cvt:pl:domain=100");
+  ConvertAbsOfUnboundedArg(t);
+  ASSERT_EQ(1u, t.Backend().GetSOS2Constraint().size());
+  EXPECT_EQ(3, t.Backend().GetSOS2Constraint()[0].size());
+  EXPECT_EQ(100.0, MaxAbsEQCoef(t));           // old behavior: no rays
   EXPECT_EQ(0u, e.GetWarningsMap().count("PLDomain"));
 }
