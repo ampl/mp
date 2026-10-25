@@ -40,6 +40,8 @@ protected:
   }
   void ConvertSOS2FromPL(const ItemType& cc) {
     const int d = int(cc.get_vars().size()-1);
+    if (d < 2)          // At most 2 lambdas: adjacency is trivial,
+      return;           // and sum(lambda)==1 is a separate constraint
     const int r = int(std::ceil(std::log2(d)));
     auto lambda = cc.get_vars();
     lambda.push_back(-1);             // reserve for 1 extra var
