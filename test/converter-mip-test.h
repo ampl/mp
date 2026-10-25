@@ -375,7 +375,9 @@ public:
 class PLTester : public Disj2IndTester {
 public:
   /// Construct with acceptance options \a acc (kAcc...)
-  PLTester(mp::Env& e, const char* acc) : Disj2IndTester(e, acc) { }
+  /// and further solver options \a opts
+  PLTester(mp::Env& e, const char* acc, const char* opts="")
+    : Disj2IndTester(e, acc, opts) { }
 
   /// Add linear constraint  v == value
   void Fix(int v, double value) {

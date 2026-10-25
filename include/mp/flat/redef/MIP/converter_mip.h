@@ -447,6 +447,9 @@ public:
   double bigMDefault() const { return options_.bigM_default_; }
   double PLApproxRelTol() const { return options_.PLApproxRelTol_; }
   double PLApproxDomain() const { return options_.PLApproxDomain_; }
+  /// Max abs value of a PL argument's domain for PL -> SOS2,
+  /// <0 if not set
+  double PLDomain() const { return options_.PLDomain_; }
   /// How to convert complementarity
   int ComplementarityCvt() const { return options_.complCvt_; }
   /// Complementarity smoothing tolerance
@@ -460,6 +463,7 @@ private:
     double bigM_default_ { -1 };
     double PLApproxRelTol_ { 1e-2 };
     double PLApproxDomain_ { 1e6 };
+    double PLDomain_ { -1 };
     double NoUEncPosCtxRatio_ { 0.0 };
     int NoUEncNegCtxMax_ { 1 };
   };
@@ -506,6 +510,15 @@ private:
                        "For piecewise-linear approximated functions, both arguments and result "
                        "are bounded to +-[pladomain]. Default 1e6.",
                        options_.PLApproxDomain_, 0.0, 1e100);
+    this->GetEnv().AddOption("cvt:pl:domain pl:domain pldomain",
+                       "Max absolute value of the argument of a piecewise-linear "
+                       "expression converted to SOS2 (and further to MIP if SOS2 "
+                       "is not accepted natively). In the MIP reformulation, "
+                       "the solver's feasibility tolerance is amplified by up to "
+                       "this value. Not used by default: then an unbounded "
+                       "argument is an error in the MIP reformulation, and "
+                       "native SOS2 uses 1e6. Use with care (prefer tight bounds).",
+                       options_.PLDomain_, -1.0, 1e100);
     this->GetEnv().AddOption("cvt:uenc:ratio uenc:ratio",
                        "Min ratio (ub-lb+1)/Nvalues to skip unary encoding "
                        "for a variable x, where Nvalues is the number of constants "

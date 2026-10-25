@@ -265,5 +265,31 @@
         "pl_linearize": 0,
         "mp_options": "acc:pl=1 acc:sos2=1"
     }
+  },
+  {
+    "name" : "pl_unbounded_01 pl_linearize=0 cvt:pl:domain=100",
+    "objective" :  4,
+    "tags" : ["linear", "continuous", "plinear"],
+    "solvers_exclude": ["xpress"],
+    "comment": "Xpress takes the PL natively and fails on its unbounded nonconvex range (warning 939)",
+    "options": {
+        "presolve": 0,
+        "pl_linearize": 0,
+        "mp_options": "cvt:pl:domain=100"
+    }
+  },
+  {
+    "name" : "pl_unbounded_01 pl_linearize=0 acc:pl=0 acc:sos2=0",
+    "tags" : ["linear", "continuous", "plinear",
+              "check_pl2sos2", "check_sos2_from_pl"],
+    "options": {
+        "presolve": 0,
+        "pl_linearize": 0,
+        "mp_options": "acc:pl=0 acc:sos2=0"
+    },
+    "comment": "Unbounded PL argument, SOS2 -> MIP without cvt:pl:domain. With acc:pl=1, the conversion failure is a warning and the PL is passed natively",
+    "values": {
+      "solve_result": "failure"
+    }
   }
 ]

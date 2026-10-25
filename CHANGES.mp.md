@@ -14,6 +14,15 @@ Summary of recent updates to the AMPL MP Library
   without native SOS2. The results of piecewise-linear terms now
   receive bounds from their arguments' domains, also when these
   are narrowed later, e.g., by linear constraints.
+- Change: the MIP reformulation of a nonconvex piecewise-linear
+  term (solvers without native SOS2, e.g., HiGHS, MOSEK, or
+  *acc:pl=0 acc:sos2=0*) no longer limits an unbounded argument to
+  +-1e6 silently: this amplified the feasibility tolerance by up to
+  1e6 and could give wrong solutions. An unbounded argument is now
+  an error; finite bounds are used as given. New option
+  *cvt:pl:domain* sets the limit explicitly, with a warning when
+  it applies (use with caution). With native SOS2, the limit stays
+  1e6 by default.
 - Fix: *AMPLSSolve* (AMPLS C API) called the solver once, skipping
   the iterations of the multiobjective emulator (*obj:multi=2*, or
   *obj:multi=1* without native support); postsolving the results then

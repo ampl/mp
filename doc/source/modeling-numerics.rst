@@ -79,7 +79,12 @@ usually handle them algorithmically in a numerically stable way. Otherwise,
 if PL expressions are linearized, it is recommended to have the argument
 and result variables bounded in :math:`\pm10^4` (the tighter the better;
 for :ref:`approximated nonlinear functions <nonlinear-functions>`,
-hard bounds of up to :math:`\pm10^6` are imposed by default). The stability can be improved
+hard bounds of up to :math:`\pm10^6` are imposed by default).
+The MIP linearization of a nonconvex PL expression via SOS2 constraints
+needs finite bounds on the argument: an unbounded argument is an error,
+unless a limit is set with the option *cvt:pl:domain* (use with caution:
+the solver's feasibility tolerance is amplified by up to this value,
+which can lead to violated PL expressions). The stability can be improved
 in some cases by decreasing integer tolerance, Gurobi's *intfocus* and
 *numfocus* options, switching off presolve in the solver, and other tuning measures.
 

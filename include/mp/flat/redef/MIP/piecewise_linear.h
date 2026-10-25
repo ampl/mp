@@ -9,6 +9,7 @@
 #include <numeric>
 #include <cassert>
 
+#include "mp/format.h"
 #include "mp/flat/redef/redef_base.h"
 #include "mp/flat/constr_std.h"
 
@@ -70,12 +71,56 @@ protected:
   /// See if we need to extend the end segments
   /// to cover larger domain
   void ConsiderExtendingEndSegments() {
+    const auto dom = ExtensionDomain();
     if (GetMC().lb(x) < points_.x_.front() &&
-        points_.x_.front() > -PLMaxVal())
-      ExtendSegTo(0, 1, std::max(GetMC().lb(x), -PLMaxVal()));
+        points_.x_.front() > -dom)
+      ExtendSegTo(0, 1, std::max(GetMC().lb(x), -dom));
     if (GetMC().ub(x) > points_.x_.back() &&
-        points_.x_.back() < PLMaxVal())
-      ExtendSegTo(i1, i1-1, std::min(GetMC().ub(x), PLMaxVal()));
+        points_.x_.back() < dom)
+      ExtendSegTo(i1, i1-1, std::min(GetMC().ub(x), dom));
+  }
+  /// Max abs value to extend the end segments to (cvt:pl:domain).
+  /// The MIP reformulation of SOS2 amplifies the solver's tolerances
+  /// by this value: unless the option is set, it uses the argument's
+  /// bounds and fails if one is infinite (as cvt:bigM for indicators).
+  /// Native SOS2 is not affected: then the default is 1e6.
+  double ExtensionDomain() {
+    const auto dom = GetMC().PLDomain();
+    if (!GetMC().GetConstraintKeeper((SOS2Constraint*)nullptr)
+        .IfConvertsItems())
+      return dom >= 0.0 ? dom : 1e6;
+    const auto lbx = GetMC().lb(x), ubx = GetMC().ub(x);
+    const auto lbExt = lbx < points_.x_.front() ? lbx : 0.0;
+    const auto ubExt = ubx > points_.x_.back() ? ubx : 0.0;
+    if (dom < 0.0) {
+      if (lbExt <= GetMC().PracticallyMinusInf()
+          || ubExt >= GetMC().PracticallyInf())
+        FailUnbounded();
+      return INFINITY;
+    }
+    if ((lbExt < -dom && points_.x_.front() > -dom)
+        || (ubExt > dom && points_.x_.back() < dom))
+      WarnDomainLimited();
+    return dom;
+  }
+  /// Fail: no MIP reformulation for an unbounded argument
+  [[noreturn]] void FailUnbounded() {
+    throw ConstraintConversionFailure(
+          "PLInfBound",
+          "The argument of a piecewise-linear expression\n"
+          "is unbounded, which prevents its MIP reformulation.\n"
+          "Set bounds on the argument,\n"
+          "or use option cvt:pl:domain (with caution).\n"
+          "See more: mp.ampl.com/modeling-numerics.html");
+  }
+  /// Warn that the argument's domain is limited by cvt:pl:domain
+  void WarnDomainLimited() {
+    GetMC().AddWarning("PLDomain", fmt::format(
+        "The domain of a piecewise-linear expression's argument\n"
+        "has been limited to +-{} (cvt:pl:domain).\n"
+        "The MIP reformulation can violate the expression\n"
+        "by up to this value times the feasibility tolerance.",
+        GetMC().PLDomain()));
   }
   /// See if we need to remove/shorten side segments
   void ConsiderShorteningPL() {
@@ -197,12 +242,6 @@ protected:
     GetMC().AddConstraint(
           LinConEQ{ {weights, lambda}, {0.0} });
   }
-
-  /// PLMaxVal, currently constant.
-  /// Default max abs value of the argument and of the result
-  /// of a PL. Applied when the PL is defined on a smaller
-  /// domain but the argument allows more.
-  double PLMaxVal() const { return 1e6; }
 
   /// Extend segment (i0, i1) (if i0<i1, then to the left,
   /// otherwise to the right) in PLPoints to start/end

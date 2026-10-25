@@ -865,3 +865,52 @@ TEST(PLTest, BoundedArg__resultBoundsFromDomain) {
   EXPECT_EQ(0.0, t.GetFlatCvt().lb(y));                 // at x=0
   EXPECT_EQ(3.0, t.GetFlatCvt().ub(y));                 // at x=-3
 }
+
+/// Max abs coefficient in the linear equalities
+double MaxAbsEQCoef(PLTester& t) {
+  double m = 0.0;
+  for (const auto& lc: t.Backend().GetLinConEQ())
+    for (size_t i=0; i<lc.size(); ++i)
+      m = std::max(m, std::fabs(lc.pcoefs()[i]));
+  return m;
+}
+
+/// Maximize abs(x) for unbounded x
+void ConvertAbsOfUnboundedArg(PLTester& t) {
+  int x = t.Var(-INFINITY, INFINITY);
+  t.Maximize(t.AbsPL(x));
+  t.ConvertModel();
+}
+
+TEST(PLTest, UnboundedArg__accSos2Off__error) {
+  mp::Env e;
+  PLTester t(e, kAccLinear);
+  EXPECT_THROW(ConvertAbsOfUnboundedArg(t), mp::Error);
+}
+
+TEST(PLTest, BoundedArgBeyond1e6__accSos2Off__argBoundsUsed) {
+  mp::Env e;
+  PLTester t(e, kAccLinear);
+  int x = t.Var(-1e7, 1e7);                             // no cut to +-1e6
+  t.Maximize(t.AbsPL(x));
+  t.ConvertModel();
+  EXPECT_EQ(1e7, MaxAbsEQCoef(t));
+  EXPECT_EQ(0u, e.GetWarningsMap().count("PLDomain"));
+}
+
+TEST(PLTest, UnboundedArg__accSos2Off__plDomainOption) {
+  mp::Env e;
+  PLTester t(e, kAccLinear, "cvt:pl:domain=100");
+  ConvertAbsOfUnboundedArg(t);
+  EXPECT_EQ(100.0, MaxAbsEQCoef(t));
+  EXPECT_EQ(1u, e.GetWarningsMap().count("PLDomain"));
+}
+
+TEST(PLTest, UnboundedArg__nativeSOS2__defaultDomainNoWarning) {
+  mp::Env e;
+  PLTester t(e, kAccLinearSOS2);
+  ConvertAbsOfUnboundedArg(t);
+  ASSERT_EQ(1u, t.Backend().GetSOS2Constraint().size());
+  EXPECT_EQ(1e6, MaxAbsEQCoef(t));
+  EXPECT_EQ(0u, e.GetWarningsMap().count("PLDomain"));
+}
