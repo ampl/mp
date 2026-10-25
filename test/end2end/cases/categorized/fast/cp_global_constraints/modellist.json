@@ -173,5 +173,56 @@
     "values": {
       "solve_result_num": 490
     }
+  },
+  {
+    "name" : "nqueens [alldiff]",
+    "files": ["nqueens.mod"],
+    "tags" : ["logical"],
+     "objective" : 150
+  },
+  {
+    "name" : "allinterval [alldiff, abs]",
+    "files": ["allinterval.mod"],
+    "tags" : ["logical"],
+    "objective" : 198
+  },
+  {
+    "name" : "magicseq [numberof, count]",
+    "files": ["magicseq.mod"],
+    "tags" : ["logical"],
+    "objective" : 6
+  },
+  {
+    "name" : "langford [alldiff]",
+    "files": ["langford.mod"],
+    "tags" : ["logical"],
+    "objective" : 1
+  },
+  {
+    "name" : "magicsquare [alldiff, linear]",
+    "files": ["magicsquare.mod"],
+    "tags" : ["logical"],
+    "objective" : 7
+  },
+  {
+    "name" : "costas [alldiff]",
+    "files": ["costas.mod"],
+    "tags" : ["logical"],
+    "objective" : 7
+  },
+  {
+    "name" : "carseq [numberof, count]",
+    "files": ["carseq.mod", "carseq.dat"],
+    "tags" : ["logical"]
+  },
+  {
+    "name" : "jobshop ft06 [or]",
+    "files": ["jobshop.mod", "ft06.dat"],
+    "tags" : ["logical"],
+    "comment": "Fisher-Thompson 6x6, optimum 55. Disjunctive big-M for MIP solvers.",
+    "options": {
+      "mp_options": "cvt:mip:bigM=1e5"
+    },
+    "objective" : 55
   }
 ]

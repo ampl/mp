@@ -672,7 +672,8 @@
     "name" : "inline_01",
     "tags" : ["logical", "linear"],
     "options": {
-      "mp_options": "debug=1 acc:condlineq=0 acc:condlinge=0 acc:condlinle=0 acc:condlinlt=0 acc:condlingt=0 acc:indle=0 acc:indge=0 acc:indeq=0 acc:linrange=0"
+      "mp_options": "debug=1 acc:condlineq=0 acc:condlinge=0 acc:condlinle=0 acc:condlinlt=0 acc:condlingt=0 acc:indle=0 acc:indge=0 acc:indeq=0 acc:linrange=0",
+      "cpsat_options": "acc:count=0 acc:numberofvar=0"
     },
     "objective": -5,
     "values": {
@@ -689,7 +690,8 @@
     "name" : "inline_01 boundsbest=1",
     "tags" : ["logical", "linear"],
     "options": {
-      "mp_options": "debug=1 acc:condlineq=0 acc:condlinge=0 acc:condlinle=0 acc:condlinlt=0 acc:condlingt=0 acc:indle=0 acc:indge=0 acc:indeq=0 acc:linrange=0 cvt:pre:boundsbest=1"
+      "mp_options": "debug=1 acc:condlineq=0 acc:condlinge=0 acc:condlinle=0 acc:condlinlt=0 acc:condlingt=0 acc:indle=0 acc:indge=0 acc:indeq=0 acc:linrange=0 cvt:pre:boundsbest=1",
+      "cpsat_options": "acc:count=0 acc:numberofvar=0 acc:ifthen=0 acc:impl=0"
     },
     "objective": -5,
     "values": {
@@ -705,7 +707,8 @@
     "name" : "inline_01 boundsbest=2",
     "tags" : ["logical", "linear"],
     "options": {
-      "mp_options": "debug=1 acc:condlineq=0 acc:condlinge=0 acc:condlinle=0 acc:condlinlt=0 acc:condlingt=0 acc:indle=0 acc:indge=0 acc:indeq=0 acc:linrange=0 cvt:pre:boundsbest=2"
+      "mp_options": "debug=1 acc:condlineq=0 acc:condlinge=0 acc:condlinle=0 acc:condlinlt=0 acc:condlingt=0 acc:indle=0 acc:indge=0 acc:indeq=0 acc:linrange=0 cvt:pre:boundsbest=2",
+      "cpsat_options": "acc:count=0 acc:numberofvar=0 acc:ifthen=0 acc:impl=0"
     },
     "objective": -5,
     "values": {
@@ -721,7 +724,8 @@
     "name" : "inline_01 boundsbest=3",
     "tags" : ["logical", "linear"],
     "options": {
-      "mp_options": "debug=1 acc:condlineq=0 acc:condlinge=0 acc:condlinle=0 acc:condlinlt=0 acc:condlingt=0 acc:indle=0 acc:indge=0 acc:indeq=0 acc:linrange=0 cvt:pre:boundsbest=3"
+      "mp_options": "debug=1 acc:condlineq=0 acc:condlinge=0 acc:condlinle=0 acc:condlinlt=0 acc:condlingt=0 acc:indle=0 acc:indge=0 acc:indeq=0 acc:linrange=0 cvt:pre:boundsbest=3",
+      "cpsat_options": "acc:count=0 acc:numberofvar=0 acc:ifthen=0 acc:impl=0"
     },
     "objective": -5,
     "values": {
@@ -737,7 +741,8 @@
     "name" : "inline_01 auxint=1",
     "tags" : ["logical", "linear"],
     "options": {
-      "mp_options": "debug=1 acc:condlineq=0 acc:condlinge=0 acc:condlinle=0 acc:condlinlt=0 acc:condlingt=0 acc:indle=0 acc:indge=0 acc:indeq=0 acc:linrange=0 cvt:pre:auxint=1"
+      "mp_options": "debug=1 acc:condlineq=0 acc:condlinge=0 acc:condlinle=0 acc:condlinlt=0 acc:condlingt=0 acc:indle=0 acc:indge=0 acc:indeq=0 acc:linrange=0 cvt:pre:auxint=1",
+      "cpsat_options": "acc:count=0 acc:numberofvar=0"
     },
     "objective": -5,
     "values": {
@@ -753,7 +758,8 @@
     "name" : "inline_01 auxint=1 boundsbest=1",
     "tags" : ["logical", "linear"],
     "options": {
-      "mp_options": "debug=1 acc:condlineq=0 acc:condlinge=0 acc:condlinle=0 acc:condlinlt=0 acc:condlingt=0 acc:indle=0 acc:indge=0 acc:indeq=0 acc:linrange=0 cvt:pre:auxint=1 cvt:pre:boundsbest=1"
+      "mp_options": "debug=1 acc:condlineq=0 acc:condlinge=0 acc:condlinle=0 acc:condlinlt=0 acc:condlingt=0 acc:indle=0 acc:indge=0 acc:indeq=0 acc:linrange=0 cvt:pre:auxint=1 cvt:pre:boundsbest=1",
+      "cpsat_options": "acc:count=0 acc:numberofvar=0 acc:ifthen=0 acc:impl=0"
     },
     "objective": -5,
     "values": {
@@ -769,7 +775,8 @@
     "name" : "inline_01 boundsbest=4",
     "tags" : ["logical", "linear"],
     "options": {
-      "mp_options": "debug=1 acc:condlineq=0 acc:condlinge=0 acc:condlinle=0 acc:condlinlt=0 acc:condlingt=0 acc:indle=0 acc:indge=0 acc:indeq=0 acc:linrange=0 cvt:pre:boundsbest=4"
+      "mp_options": "debug=1 acc:condlineq=0 acc:condlinge=0 acc:condlinle=0 acc:condlinlt=0 acc:condlingt=0 acc:indle=0 acc:indge=0 acc:indeq=0 acc:linrange=0 cvt:pre:boundsbest=4",
+      "cpsat_options": "acc:count=0 acc:numberofvar=0 acc:ifthen=0 acc:impl=0"
     },
     "objective": -5,
     "values": {
