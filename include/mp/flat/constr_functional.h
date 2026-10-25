@@ -5,6 +5,8 @@
   * Functional flat constraints
   */
 
+#include <utility>
+
 #include "mp/error.h"
 #include "mp/flat/constr_static.h"
 
@@ -481,6 +483,12 @@ struct PLPoints {
         0.0 :
         (y_[i1]-y_[i0]) / (x_[i1]-x_[i0]);
   }
+  /// Value at \a x. The end segments extend linearly.
+  double Eval(double x) const;
+  /// Range of values over the argument domain [lb, ub]
+  /// (either bound can be infinite).
+  /// @return {min, max}, possibly infinite
+  std::pair<double, double> Range(double lb, double ub) const;
 
   /// operator==
   bool operator==(const PLPoints& plp) const

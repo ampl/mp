@@ -36,6 +36,7 @@ public:
 		MP_ASSERT_ALWAYS(i1>=i0, "PL->SOS2: no breakpoints");
 		y = cc.GetResultVar();
     x = cc.GetArguments()[0];
+    NarrowBoundsAtConversion(cc);
 		if (ConsiderDegenerateCases(cc))
 			return Context::CTX_MIX;
 		if (ConsiderConvexity(cc))
@@ -51,6 +52,21 @@ public:
 
 
 protected:
+  /// Narrow the bounds of the argument, if it is a linear expression,
+  /// and of the result, from the current bounds.
+  /// They can be tighter than when this PL was created:
+  /// linear constraints can be flattened later (AMPL writes them
+  /// after the nonlinear ones), and the PLs this one depends on
+  /// are converted earlier (e.g., fixed, see FixAtPoint()).
+  void NarrowBoundsAtConversion(const ItemType& cc) {
+    if (auto plin = GetMC().template
+        GetInitExpressionOfType<LinearFunctionalConstraint>(x)) {
+      auto bnt = GetMC().ComputeBoundsAndType(plin->GetAffineExpr());
+      GetMC().NarrowVarBestBounds(x, bnt.lb(), bnt.ub());
+    }
+    const auto range = GetMC().PLResultRange(cc);
+    GetMC().NarrowVarBestBounds(y, range.first, range.second);
+  }
   /// See if we need to extend the end segments
   /// to cover larger domain
   void ConsiderExtendingEndSegments() {

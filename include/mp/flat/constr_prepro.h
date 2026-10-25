@@ -927,9 +927,26 @@ public:
       AtanhConstraint& , PreprocessInfo& ) {
   }
 
+  /// Result bounds from the argument's domain.
+  /// Without them, a PL of a PL (via linear expressions)
+  /// would get an unbounded argument, see cvt:pl:domain.
   template <class PreprocessInfo>
   void PreprocessConstraint(
-      PLConstraint& , PreprocessInfo& ) {
+      PLConstraint& c, PreprocessInfo& prepro) {
+    const auto range = PLResultRange(c);
+    prepro.narrow_result_bounds(range.first, range.second);
+  }
+
+  /// Range of a PL's result over its argument's current bounds
+  /// @return {lb, ub}, infinite if unknown
+  std::pair<double, double> PLResultRange(const PLConstraint& c) {
+    const auto x = c.GetArguments()[0];
+    const auto lb = MPD( lb(x) ), ub = MPD( ub(x) );
+    if (lb > ub)                       // infeasible, reported elsewhere
+      return { -INFINITY, INFINITY };
+    return c.GetParameters().GetPLPoints().Range(
+          lb <= MPD( PracticallyMinusInf() ) ? -INFINITY : lb,
+          ub >= MPD( PracticallyInf() ) ? INFINITY : ub);
   }
 
   template <class PreprocessInfo>

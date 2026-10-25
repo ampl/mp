@@ -9,6 +9,11 @@ Summary of recent updates to the AMPL MP Library
   *acc:sos2=0*). The term now reduces to its value at that point.
   A term with a single linear piece over its argument's domain
   becomes one linear equality, without an SOS2 constraint.
+- Fix: chained piecewise-linear terms (one term's argument depends
+  on another term's result) could get wrong solutions in solvers
+  without native SOS2. The results of piecewise-linear terms now
+  receive bounds from their arguments' domains, also when these
+  are narrowed later, e.g., by linear constraints.
 - Fix: *AMPLSSolve* (AMPLS C API) called the solver once, skipping
   the iterations of the multiobjective emulator (*obj:multi=2*, or
   *obj:multi=1* without native support); postsolving the results then

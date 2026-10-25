@@ -225,5 +225,45 @@
         "pl_linearize": 0,
         "mp_options": "acc:pl=1 acc:sos2=1"
     }
+  },
+  {
+    "name" : "pl_chain_01 pl_linearize=0",
+    "objective" :  -0.75,
+    "tags" : ["linear", "continuous", "plinear"],
+    "options": {
+        "presolve": 0,
+        "pl_linearize": 0
+    }
+  },
+  {
+    "name" : "pl_chain_01 pl_linearize=0 acc:pl=1 acc:sos2=1",
+    "objective" :  -0.75,
+    "tags" : ["linear", "continuous", "plinear",
+              "check_pl2sos2", "check_sos2_from_pl"],
+    "options": {
+        "presolve": 0,
+        "pl_linearize": 0,
+        "mp_options": "acc:pl=1 acc:sos2=1"
+    }
+  },
+  {
+    "name" : "pl_chain_02 pl_linearize=0",
+    "objective" :  0,
+    "tags" : ["linear", "continuous", "plinear"],
+    "options": {
+        "presolve": 0,
+        "pl_linearize": 0
+    }
+  },
+  {
+    "name" : "pl_chain_02 pl_linearize=0 acc:pl=1 acc:sos2=1",
+    "objective" :  0,
+    "tags" : ["linear", "continuous", "plinear",
+              "check_pl2sos2", "check_sos2_from_pl"],
+    "options": {
+        "presolve": 0,
+        "pl_linearize": 0,
+        "mp_options": "acc:pl=1 acc:sos2=1"
+    }
   }
 ]

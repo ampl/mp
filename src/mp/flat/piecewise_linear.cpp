@@ -1179,6 +1179,56 @@ PLSlopes::PLSlopes(const PLPoints& plp) {
 	}
 }
 
+double PLPoints::Eval(double x) const {
+  assert(!empty());
+  if (x <= x_.front())
+    return y_.front() + PreSlope() * ((long double)x - x_.front());
+  if (x >= x_.back())
+    return y_.back() + PostSlope() * ((long double)x - x_.back());
+  auto i1 = std::upper_bound(x_.begin(), x_.end(), x) - x_.begin();
+  auto i0 = i1-1;                     // x_[i0] <= x < x_[i1]
+  return y_[i0] + ((long double)y_[i1]-y_[i0])
+      * ((long double)x-x_[i0]) / ((long double)x_[i1]-x_[i0]);
+}
+
+namespace {
+/// Accumulates the min and max of values
+struct ValueRange {
+  double min_ {INFINITY}, max_ {-INFINITY};
+  void Add(double y) {
+    min_ = std::min(min_, y);
+    max_ = std::max(max_, y);
+  }
+  /// Add the values on a ray with \a slope (sign of direction applied)
+  /// starting at \a y0
+  void AddRay(double y0, double slope) {
+    if (slope > 0.0)
+      max_ = INFINITY;
+    else if (slope < 0.0)
+      min_ = -INFINITY;
+    Add(y0);
+  }
+};
+}  // namespace
+
+std::pair<double, double>
+PLPoints::Range(double lb, double ub) const {
+  assert(!empty() && lb <= ub);
+  ValueRange r;
+  if (std::isinf(lb))                 // left ray: x -> -inf
+    r.AddRay(y_.front(), -PreSlope());
+  else
+    r.Add(Eval(lb));
+  if (std::isinf(ub))
+    r.AddRay(y_.back(), PostSlope());
+  else
+    r.Add(Eval(ub));
+  for (size_t i=0; i<x_.size(); ++i)
+    if (lb < x_[i] && x_[i] < ub)     // interior breakpoints
+      r.Add(y_[i]);
+  return { r.min_, r.max_ };
+}
+
 bool IsConvex(const PLSlopes& pls) {
 	const auto& sl = pls.GetSlopes();
 	MP_ASSERT_ALWAYS(sl.size(), "Empty PL expression");

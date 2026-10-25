@@ -633,8 +633,9 @@ TEST(BoundsBestTest, Mode1__allBestBounds) {
   for (int v=t.Backend().NumVars(); --v > 2; ) {
     if (INTEGER == t.InternalType(v))
       nbounded_int += t.Backend().lb(v) == 0.0 && t.Backend().ub(v) == 5.0;
-    else if (t.Backend().lb(v) < t.Backend().ub(v))   // exp result: lb 0
-      nexp += t.Backend().lb(v) == 0.0;                // (its best-known lb)
+    else if (t.Backend().lb(v) < t.Backend().ub(v))   // exp result: its
+      nexp += t.Backend().lb(v) == 1.0                 // best-known bounds
+          && t.Backend().ub(v) < 7.4;                  // from the PL approx.
   }
   EXPECT_EQ(1, nbounded_int);
   EXPECT_EQ(1, nexp);
@@ -728,7 +729,7 @@ TEST(BoundsBestTest, Mode4__approximatedNonlinear__linearModel__best) {
     if (INTEGER == t.InternalType(v))
       nbounded_int += t.Backend().lb(v) == 0.0 && t.Backend().ub(v) == 5.0;
     else if (t.Backend().lb(v) < t.Backend().ub(v))
-      nexp += t.Backend().lb(v) == 0.0;
+      nexp += t.Backend().lb(v) == 1.0 && t.Backend().ub(v) < 7.4;
   }
   EXPECT_EQ(1, nbounded_int);
   EXPECT_EQ(1, nexp);
@@ -850,4 +851,17 @@ TEST(PLTest, Nonconvex__nativeSOS2__submitted) {
   ASSERT_EQ(1u, sos2.size());
   EXPECT_EQ(3u, sos2[0].get_vars().size());
   EXPECT_EQ(0, t.Backend().NumIntVars());
+}
+
+TEST(PLTest, BoundedArg__resultBoundsFromDomain) {
+  mp::Env e;
+  PLTester t(e, kAccLinear);
+  int x = t.Var(-3, 2);
+  t.Minimize(t.AbsPL(x));                               // convex: keeps y
+  t.ConvertModel();
+  ASSERT_EQ(1u, t.Backend().ObjVars().size());
+  int y = t.Backend().ObjVars()[0];
+  // Best-known bounds (submitted only with cvt:pre:boundsbest)
+  EXPECT_EQ(0.0, t.GetFlatCvt().lb(y));                 // at x=0
+  EXPECT_EQ(3.0, t.GetFlatCvt().ub(y));                 // at x=-3
 }
