@@ -14,9 +14,12 @@ public:
   /// construct from given names array
   ItemNamer(const std::vector<std::string>& nm, std::string nmd)
       : p_names_given_(&nm), nm_dfl_(nmd) { }
-  /// Obtain name[i]
+  /// Obtain name[i].
+  /// Given names can be empty, e.g., for auxiliary variables
+  /// after name presolve: then generate one.
   const char* at(size_t i) {
-    if (p_names_given_ && i<p_names_given_->size())
+    if (p_names_given_ && i<p_names_given_->size()
+        && !(*p_names_given_)[i].empty())
       return (*p_names_given_)[i].c_str();
     if (i>=names_gen_.size())
       names_gen_.resize((size_t)(1.3*i+100));
