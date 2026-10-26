@@ -113,6 +113,11 @@ protected:
       if (HasAlgExpr(obj.GetLinTerms())) {
         auto qexpr
             = CollectAlgSubExpr(obj.GetLinTerms(), obj.GetQPTerms());
+        // Without quadratic objectives (cvt:quadobj=0), the flattener
+        // moved the QP terms into a constraint: keep it that way
+        if (qexpr.GetBody().GetQPTerms().size()
+            && !MPCD( IfPassQuadObj() ))
+          continue;
         auto obj_src = MPD( GetObjValueSourceNode() ).Select(iobj);
         pre::AutoLinkScope auto_link_scope
             { *(Impl*)this, obj_src };
