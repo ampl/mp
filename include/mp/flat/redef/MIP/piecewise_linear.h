@@ -278,14 +278,17 @@ protected:
 
   /// Extend segment (i0, i1) (if i0<i1, then to the left,
   /// otherwise to the right) in PLPoints to start/end
-  /// in new x0
+  /// in new x0.
+  /// x0 can coincide with x1 when shortening both ends of a segment
+  /// to a fixed argument; ConsiderShortenedDegenerateCases()
+  /// then fixes the result at that point.
   void ExtendSegTo(size_t i0, size_t i1, double x0) {
     assert(i0!=i1);
     assert(2<=points_.x_.size());
     auto& x0_old = points_.x_[i0];
     auto x1 = points_.x_[i1];
     int sign = i0<i1 ? 1 : -1;
-    assert(sign*(x1-x0) > 0.0);
+    assert(sign*(x1-x0) >= 0.0);
     assert(sign*(x1-x0_old)>0.0);
     auto& y0_old = points_.y_[i0];
     auto y1 = points_.y_[i1];
