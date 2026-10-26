@@ -2,6 +2,7 @@ import enum
 import re
 from pathlib import Path
 from collections.abc import Iterable
+from SolverCategory import SolverCategory
 
 
 class ModelTags(enum.Enum):
@@ -162,10 +163,26 @@ class Model(object):
 
     def hasExpectedValues(self):
         return (self._description is not None) and \
-            ("values" in self._description)
+            ("values" in self._description or
+             "values_per_solver_category" in self._description)
 
-    def getExpectedValues(self):
-        return self._description["values"]
+    def getExpectedValues(self, category=None):
+        """'values', updated by 'values_per_solver_category'[category]
+        (a SolverCategory or None): a null value there drops the check,
+        e.g., for converter statistics a category does not produce"""
+        values = dict(self._description.get("values", {}))
+        percat = self._description.get("values_per_solver_category", {})
+        unknown = set(percat) - {c.value for c in SolverCategory}
+        if unknown:
+            raise ValueError("unknown solver categories {} in case '{}'".format(
+                sorted(unknown), self.getName()))
+        if category is not None:
+            for name, val in percat.get(category.value, {}).items():
+                if val is None:
+                    values.pop(name, None)
+                else:
+                    values[name] = val
+        return values
 
     def hasExpectedOutput(self):
         return (self._description is not None) and \

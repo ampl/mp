@@ -152,6 +152,9 @@
     "values": {
       "solve_result": "infeasible",
       "Initial.flat0__linfn": 4
+    },
+    "values_per_solver_category": {
+      "CPLegacy": { "Initial.flat0__linfn": null }
     }
   },
   {

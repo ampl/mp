@@ -5,6 +5,7 @@ import subprocess
 import re 
 
 from Model import Model, ModelTags
+from SolverCategory import SolverCategory
 from TimeMe import TimeMe
 import psutil
 import time
@@ -169,6 +170,25 @@ class Solver(object):
     def getFixedAMPLOptions(self) -> list:
         """Further (name, value) AMPL options set for every case"""
         return []
+
+    ## SolverCategory of the driver, selecting the case's expected
+    ## 'values_per_solver_category'; None: plain 'values' only
+    CATEGORY = None
+
+    def getCategory(self):
+        return self.CATEGORY
+
+    def checkCategory(self):
+        """Warning if the constraints the driver accepts natively
+        imply a category other than the declared one"""
+        if self.CATEGORY is None or self.CATEGORY == SolverCategory.CPLegacy:
+            return None
+        actual = SolverCategory.ofDriver(self.getExecutable())
+        if actual is None or actual == self.CATEGORY:
+            return None
+        return "WARNING: solver '{}' is declared {}, but its acc: options " \
+            "imply {}; update {}.CATEGORY".format(self.getName(),
+                self.CATEGORY.value, actual.value, type(self).__name__)
 
     def getExecutable(self):
         return self._exePath
@@ -1155,6 +1175,8 @@ class MPDirectSolver(AMPLSolver):
                 self._stats["objective"] = None
 
 class GurobiDirectSolver(MPDirectSolver):
+    CATEGORY = SolverCategory.MILPWithLogicals
+
     
     def _setNLPMethod(self, method: str): # reformulation, native, nativepl 
         if method == "REFORMULATION":
@@ -1233,6 +1255,8 @@ class GurobiDirectSolver(MPDirectSolver):
 class IlogCPSolver(MPDirectSolver):
     """IBM ILOG CP Optimizer driver (ilogcp), old MP framework;
     uses CPLEX for problems without logical/nonlinear constraints."""
+    CATEGORY = SolverCategory.CPLegacy
+
     def _getAMPLOptionsName(self):
         return "ilogcp"
 
@@ -1266,6 +1290,8 @@ class IlogCPSolver(MPDirectSolver):
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
 class CPLEXDirectSolver(MPDirectSolver):
+    CATEGORY = SolverCategory.MIPWithIndicators
+
     def _getAMPLOptionsName(self):
         return "cplex"
 
@@ -1303,6 +1329,8 @@ class CPLEXDirectSolver(MPDirectSolver):
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
 class XPRESSDirectSolver(MPDirectSolver):
+    CATEGORY = SolverCategory.MILPWithLogicals
+
        
     def _getAMPLOptionsName(self):
         return "xpress"
@@ -1406,6 +1434,8 @@ class MP2NLSolver(MPDirectSolver):
                 super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
 class BaronMPSolver(MPDirectSolver):
+    CATEGORY = SolverCategory.MILP
+
     def _getAMPLOptionsName(self):
         return "baron"
     
@@ -1430,6 +1460,8 @@ class BaronMPSolver(MPDirectSolver):
 
 
 class SCIPSolver(MPDirectSolver):
+    CATEGORY = SolverCategory.MILPWithLogicals
+
     def _getAMPLOptionsName(self):
         return "scip"
      
@@ -1459,6 +1491,8 @@ class SCIPSolver(MPDirectSolver):
 
 
 class GCGSolver(MPDirectSolver):
+    CATEGORY = SolverCategory.MILP
+
     def _getAMPLOptionsName(self):
         return "gcg"
 
@@ -1477,6 +1511,8 @@ class GCGSolver(MPDirectSolver):
 
 
 class HighsSolver(MPDirectSolver):
+    CATEGORY = SolverCategory.MILP
+
     def _setLPMethod(self, method : str):
         mymap = { "SIMPLEX" : "simplex",
                   "BARRIER" : "ipm",
@@ -1533,6 +1569,8 @@ class KnitroMPSolver(MPDirectSolver):
 
 
 class COPTSolver(MPDirectSolver):
+    CATEGORY = SolverCategory.MIPWithIndicators
+
     def _setLPMethod(self, method : str):
         mymap = { "SIMPLEX" : 1,
                   "BARRIER" : 2,
@@ -1582,6 +1620,8 @@ class cuOptSolver(MPDirectSolver):
 
 class CpsatSolver(MPDirectSolver):
     """OR-Tools CP-SAT: integer variables and integer coefficients only."""
+    CATEGORY = SolverCategory.CP
+
     def _setLPMethod(self, method : str):
         return ""                               # No LP methods
 
@@ -1610,6 +1650,8 @@ class CpsatSolver(MPDirectSolver):
 class GecodeSolver(MPDirectSolver):
     """Gecode, old MP framework: integer variables and constraint
     programming (logical and global constraints) only."""
+    CATEGORY = SolverCategory.CPLegacy
+
     def _setLPMethod(self, method : str):
         return ""                               # No LP methods
 
@@ -1640,6 +1682,8 @@ class GecodeSolver(MPDirectSolver):
         }
 
 class MosekSolver(MPDirectSolver):
+    CATEGORY = SolverCategory.MIPWithIndicators
+
     def _setLPMethod(self, method : str):
         m  = "1" if method == "SIMPLEX" else "4"
         return f"lp:method {m}"

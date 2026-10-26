@@ -399,7 +399,8 @@ class AMPLRunner(object):
             self._assertAndRecord(expsol, self.stats["objective"],
                                   "objective")
         if model.hasExpectedValues():
-            for name, ev in model.getExpectedValues().items():
+            for name, ev in model.getExpectedValues(
+                    self._solver.getCategory()).items():
                 self.stats["eval_done"] = True
                 try:
                     if name.startswith("option "):

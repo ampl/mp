@@ -98,4 +98,8 @@ def runModels(directory, ampl: str, solvers: list,
                 msg += " using {} threads".format( solvers[0].getNThreads() )
         msg += '.'
         print(msg)
+        for slv in solvers:
+            warning = slv.checkCategory()
+            if warning:
+                print(warning)
         runner.run(modelList, exporter, keepLogs, verbose)

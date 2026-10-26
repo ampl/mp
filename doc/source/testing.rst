@@ -170,6 +170,36 @@ of various types and statuses. The specifiers:
 
 Run an AMPL session to see all such suffixes, or check existing test cases.
 
+These counts depend on which constraints a driver accepts natively,
+i.e., does not reformulate. Test drivers are therefore assigned a
+*solver category* (``SolverCategory`` in the test scripts):
+
+* ``MILP``: linear constraints only (HiGHS, GCG, BARON);
+* ``MIPWithIndicators``: plus indicator constraints (CPLEX, COPT, MOSEK);
+* ``MILPWithLogicals``: plus ``and``, ``or`` (Gurobi, Xpress, SCIP);
+* ``CP``: plus ``count``, ``numberof``, ``alldiff``, if-then (CP-SAT);
+* ``CPLegacy``: drivers on the old MP framework, without the model converter
+  and its counts (Gecode, ilogcp).
+
+Nonlinear functions do not influence the category.
+The test scripts warn when the ``acc:`` options of a driver imply a category
+other than the declared one.
+A case gives *"values"* as for one category and corrections for others in
+*"values_per_solver_category"*; ``null`` drops a check:
+
+.. code-block:: json
+
+    "values": {
+      "Initial.flat1__U__indeq": 6,
+      "Initial.flat1__linle": 14
+    },
+    "values_per_solver_category": {
+      "CP": { "Initial.flat1__U__indeq": 3, "Initial.flat1__linle": 8 },
+      "CPLegacy": { "Initial.flat1__U__indeq": null, "Initial.flat1__linle": null }
+    }
+
+Drivers without a category use *"values"* only.
+
 
 .. _unit_tests:
 

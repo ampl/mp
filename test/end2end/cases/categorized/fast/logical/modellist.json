@@ -453,6 +453,18 @@
       "Initial.flat1__A__indle": 4,
       "Initial.flat1__A__indeq": 4,
       "Initial.flat1__A__indge": 4
+    },
+    "values_per_solver_category": {
+      "MILP": {
+        "Initial.flat1__A__indle": 3,
+        "Initial.flat1__A__indeq": 3,
+        "Initial.flat1__A__indge": 3
+      },
+      "MIPWithIndicators": {
+        "Initial.flat1__A__indle": 3,
+        "Initial.flat1__A__indeq": 3,
+        "Initial.flat1__A__indge": 3
+      }
     }
   },
   {
@@ -466,6 +478,14 @@
       "Initial.flat1__A__indle": 0,
       "Initial.flat1__A__indeq": 4,
       "Initial.flat1__A__indge": 0
+    },
+    "values_per_solver_category": {
+      "MILP": {
+        "Initial.flat1__A__indeq": 3
+      },
+      "MIPWithIndicators": {
+        "Initial.flat1__A__indeq": 3
+      }
     }
   },
   {
@@ -652,6 +672,18 @@
       "Initial.flat1__indle": 2,
       "Initial.flat1__U__indge": 5,
       "min {i in 1.._nlogcons} _logcon[i]": 1
+    },
+    "values_per_solver_category": {
+      "MILP": {
+        "Initial.flat1__U__indeq": 5,
+        "Initial.flat1__U__indle": 2,
+        "Initial.flat1__indle": 0,
+        "Initial.flat1__U__indge": 3
+      },
+      "MIPWithIndicators": {
+        "Initial.flat1__U__indeq": 7,
+        "Initial.flat1__U__indle": 3
+      }
     }
   },
   {
@@ -666,14 +698,23 @@
       "Initial.flat1__U__indle": 2,
       "Initial.flat1__U__indge": 0,
       "min {i in 1.._nlogcons} _logcon[i]": 1
+    },
+    "values_per_solver_category": {
+      "MILP": {
+        "Initial.flat1__U__indeq": 5,
+        "Initial.flat1__indeq": 0,
+        "Initial.flat1__U__indle": 1
+      },
+      "MIPWithIndicators": {
+        "Initial.flat1__U__indeq": 7
+      }
     }
   },
   {
     "name" : "inline_01",
     "tags" : ["logical", "linear"],
     "options": {
-      "mp_options": "debug=1 acc:condlineq=0 acc:condlinge=0 acc:condlinle=0 acc:condlinlt=0 acc:condlingt=0 acc:indle=0 acc:indge=0 acc:indeq=0 acc:linrange=0",
-      "cpsat_options": "acc:count=0 acc:numberofvar=0"
+      "mp_options": "debug=1 acc:condlineq=0 acc:condlinge=0 acc:condlinle=0 acc:condlinlt=0 acc:condlingt=0 acc:indle=0 acc:indge=0 acc:indeq=0 acc:linrange=0"
     },
     "objective": -5,
     "values": {
@@ -684,14 +725,21 @@
       "Initial.flat1__linle": 14,
       "Initial.flat1__linge": 1,
       "Initial.flat1__linfn": 0
+    },
+    "values_per_solver_category": {
+      "CP": {
+        "Initial.flat1__U__indeq": 3,
+        "Initial.flat1__linle": 8,
+        "Initial.flat1__count": 2,
+        "Initial.flat1__numberofvar": 1
+      }
     }
   },
   {
     "name" : "inline_01 boundsbest=1",
     "tags" : ["logical", "linear"],
     "options": {
-      "mp_options": "debug=1 acc:condlineq=0 acc:condlinge=0 acc:condlinle=0 acc:condlinlt=0 acc:condlingt=0 acc:indle=0 acc:indge=0 acc:indeq=0 acc:linrange=0 cvt:pre:boundsbest=1",
-      "cpsat_options": "acc:count=0 acc:numberofvar=0 acc:ifthen=0 acc:impl=0"
+      "mp_options": "debug=1 acc:condlineq=0 acc:condlinge=0 acc:condlinle=0 acc:condlinlt=0 acc:condlingt=0 acc:indle=0 acc:indge=0 acc:indeq=0 acc:linrange=0 cvt:pre:boundsbest=1"
     },
     "objective": -5,
     "values": {
@@ -701,14 +749,22 @@
       "Initial.flat1__lineq": 3,
       "Initial.flat1__linle": 14,
       "Initial.flat1__linge": 1
+    },
+    "values_per_solver_category": {
+      "CP": {
+        "Initial.flat1__U__indeq": 3,
+        "Initial.flat1__lineq": 2,
+        "Initial.flat1__linle": 8,
+        "Initial.flat1__count": 2,
+        "Initial.flat1__numberofvar": 1
+      }
     }
   },
   {
     "name" : "inline_01 boundsbest=2",
     "tags" : ["logical", "linear"],
     "options": {
-      "mp_options": "debug=1 acc:condlineq=0 acc:condlinge=0 acc:condlinle=0 acc:condlinlt=0 acc:condlingt=0 acc:indle=0 acc:indge=0 acc:indeq=0 acc:linrange=0 cvt:pre:boundsbest=2",
-      "cpsat_options": "acc:count=0 acc:numberofvar=0 acc:ifthen=0 acc:impl=0"
+      "mp_options": "debug=1 acc:condlineq=0 acc:condlinge=0 acc:condlinle=0 acc:condlinlt=0 acc:condlingt=0 acc:indle=0 acc:indge=0 acc:indeq=0 acc:linrange=0 cvt:pre:boundsbest=2"
     },
     "objective": -5,
     "values": {
@@ -718,14 +774,22 @@
       "Initial.flat1__lineq": 3,
       "Initial.flat1__linle": 14,
       "Initial.flat1__linge": 1
+    },
+    "values_per_solver_category": {
+      "CP": {
+        "Initial.flat1__U__indeq": 3,
+        "Initial.flat1__lineq": 2,
+        "Initial.flat1__linle": 8,
+        "Initial.flat1__count": 2,
+        "Initial.flat1__numberofvar": 1
+      }
     }
   },
   {
     "name" : "inline_01 boundsbest=3",
     "tags" : ["logical", "linear"],
     "options": {
-      "mp_options": "debug=1 acc:condlineq=0 acc:condlinge=0 acc:condlinle=0 acc:condlinlt=0 acc:condlingt=0 acc:indle=0 acc:indge=0 acc:indeq=0 acc:linrange=0 cvt:pre:boundsbest=3",
-      "cpsat_options": "acc:count=0 acc:numberofvar=0 acc:ifthen=0 acc:impl=0"
+      "mp_options": "debug=1 acc:condlineq=0 acc:condlinge=0 acc:condlinle=0 acc:condlinlt=0 acc:condlingt=0 acc:indle=0 acc:indge=0 acc:indeq=0 acc:linrange=0 cvt:pre:boundsbest=3"
     },
     "objective": -5,
     "values": {
@@ -735,14 +799,21 @@
       "Initial.flat1__A__lineq": 2,
       "Initial.flat1__linle": 14,
       "Initial.flat1__linge": 1
+    },
+    "values_per_solver_category": {
+      "CP": {
+        "Initial.flat1__U__indeq": 3,
+        "Initial.flat1__linle": 8,
+        "Initial.flat1__count": 2,
+        "Initial.flat1__numberofvar": 1
+      }
     }
   },
   {
     "name" : "inline_01 auxint=1",
     "tags" : ["logical", "linear"],
     "options": {
-      "mp_options": "debug=1 acc:condlineq=0 acc:condlinge=0 acc:condlinle=0 acc:condlinlt=0 acc:condlingt=0 acc:indle=0 acc:indge=0 acc:indeq=0 acc:linrange=0 cvt:pre:auxint=1",
-      "cpsat_options": "acc:count=0 acc:numberofvar=0"
+      "mp_options": "debug=1 acc:condlineq=0 acc:condlinge=0 acc:condlinle=0 acc:condlinlt=0 acc:condlingt=0 acc:indle=0 acc:indge=0 acc:indeq=0 acc:linrange=0 cvt:pre:auxint=1"
     },
     "objective": -5,
     "values": {
@@ -752,14 +823,21 @@
       "Initial.flat1__A__lineq": 2,
       "Initial.flat1__linle": 14,
       "Initial.flat1__linge": 1
+    },
+    "values_per_solver_category": {
+      "CP": {
+        "Initial.flat1__U__indeq": 3,
+        "Initial.flat1__linle": 8,
+        "Initial.flat1__count": 2,
+        "Initial.flat1__numberofvar": 1
+      }
     }
   },
   {
     "name" : "inline_01 auxint=1 boundsbest=1",
     "tags" : ["logical", "linear"],
     "options": {
-      "mp_options": "debug=1 acc:condlineq=0 acc:condlinge=0 acc:condlinle=0 acc:condlinlt=0 acc:condlingt=0 acc:indle=0 acc:indge=0 acc:indeq=0 acc:linrange=0 cvt:pre:auxint=1 cvt:pre:boundsbest=1",
-      "cpsat_options": "acc:count=0 acc:numberofvar=0 acc:ifthen=0 acc:impl=0"
+      "mp_options": "debug=1 acc:condlineq=0 acc:condlinge=0 acc:condlinle=0 acc:condlinlt=0 acc:condlingt=0 acc:indle=0 acc:indge=0 acc:indeq=0 acc:linrange=0 cvt:pre:auxint=1 cvt:pre:boundsbest=1"
     },
     "objective": -5,
     "values": {
@@ -769,14 +847,22 @@
       "Initial.flat1__lineq": 3,
       "Initial.flat1__linle": 14,
       "Initial.flat1__linge": 1
+    },
+    "values_per_solver_category": {
+      "CP": {
+        "Initial.flat1__U__indeq": 3,
+        "Initial.flat1__lineq": 2,
+        "Initial.flat1__linle": 8,
+        "Initial.flat1__count": 2,
+        "Initial.flat1__numberofvar": 1
+      }
     }
   },
   {
     "name" : "inline_01 boundsbest=4",
     "tags" : ["logical", "linear"],
     "options": {
-      "mp_options": "debug=1 acc:condlineq=0 acc:condlinge=0 acc:condlinle=0 acc:condlinlt=0 acc:condlingt=0 acc:indle=0 acc:indge=0 acc:indeq=0 acc:linrange=0 cvt:pre:boundsbest=4",
-      "cpsat_options": "acc:count=0 acc:numberofvar=0 acc:ifthen=0 acc:impl=0"
+      "mp_options": "debug=1 acc:condlineq=0 acc:condlinge=0 acc:condlinle=0 acc:condlinlt=0 acc:condlingt=0 acc:indle=0 acc:indge=0 acc:indeq=0 acc:linrange=0 cvt:pre:boundsbest=4"
     },
     "objective": -5,
     "values": {
@@ -786,6 +872,14 @@
       "Initial.flat1__A__lineq": 2,
       "Initial.flat1__linle": 14,
       "Initial.flat1__linge": 1
+    },
+    "values_per_solver_category": {
+      "CP": {
+        "Initial.flat1__U__indeq": 3,
+        "Initial.flat1__linle": 8,
+        "Initial.flat1__count": 2,
+        "Initial.flat1__numberofvar": 1
+      }
     }
   },
   {
