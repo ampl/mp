@@ -277,6 +277,11 @@ class AMPLSolver(Solver):
         raise Exception("Not implemented in base class")
 
     
+    def _getNLRunArgs(self) -> list:
+        """Further command-line arguments when running an NL file
+        directly (no AMPL options then, see getFixedAMPLOptions())"""
+        return []
+
     def _doRun(self,  model: Model, logFile : str):
         toption = ""
         if self._timeout:
@@ -297,12 +302,14 @@ class AMPLSolver(Solver):
 
         try:
             if toption:
-                return self._runProcess([self._exePath, model.getFilePath(), "-AMPL", toption],
+                return self._runProcess([self._exePath, model.getFilePath(), "-AMPL", toption]
+                                        + self._getNLRunArgs(),
                                         timeout=self._timeout, logFile = logFile)
                 
             else:
-                return self._runProcess([self._exePath, model.getFilePath(), "-AMPL"],
-                                               timeout=self._timeout, logFile = logFile)
+                return self._runProcess([self._exePath, model.getFilePath(), "-AMPL"]
+                                        + self._getNLRunArgs(),
+                                        timeout=self._timeout, logFile = logFile)
         except subprocess.TimeoutExpired:
             return "subprocess timeout expired"
         except subprocess.CalledProcessError as e:
@@ -1795,6 +1802,10 @@ class ASLMP2NLSolver(MPDirectSolver):
         if cfg == eng:
             return [(cfg, f"mp2nl=1 {native}".strip())]
         return [(cfg, "mp2nl=1"), (eng, native)]
+
+    def _getNLRunArgs(self) -> list:
+        # The wrapper recognizes mp2nl=1 only as a separate argument
+        return ["mp2nl=1"]
 
 
 class GurobiASLMP2NLSolver(ASLMP2NLSolver):
