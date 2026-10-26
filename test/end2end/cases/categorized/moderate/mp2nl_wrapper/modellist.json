@@ -1,0 +1,19 @@
+[
+  {
+    "name": "mp2nl wrapper translated",
+    "files": [
+      "../../fast/qp/mp2nl_wrapper.mod"
+    ],
+    "tags": [
+      "quadratic_obj"
+    ],
+    "solvers": [
+      "knitro"
+    ],
+    "objective": 1,
+    "values": {
+      "x": 1,
+      "solve_result_num": 0
+    }
+  }
+]

@@ -1,0 +1,4 @@
+model mp2nl_wrapper.mod;
+# Bypass the wrapper even when the harness selects the MP2NL configuration.
+option knitro_options 'mp2nl=0 outlev=0';
+solve;

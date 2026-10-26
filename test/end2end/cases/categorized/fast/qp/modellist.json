@@ -353,5 +353,23 @@
       "cplex_options": "pre:folding=1 mip:dive=1 mip:cardls=1 lp:dynamicrows=0 pre:qcpduals=2 pre:qpmakepsd=0 mip:eplin=1e-4 alg:feasrelax:tol=1e-5 tech:writelevel=1 alg:siftalg=2 lim:siftiter=1000 tech:siftdisplay=1 tech:tunemeasure=2"
     },
     "solvers": ["cplex"]
+  },
+  {
+    "name": "mp2nl wrapper native",
+    "files": [
+      "mp2nl_wrapper_native.run"
+    ],
+    "tags": [
+      "script",
+      "quadratic_obj"
+    ],
+    "solvers": [
+      "knitro"
+    ],
+    "objective": 1,
+    "values": {
+      "x": 1,
+      "solve_result_num": 0
+    }
   }
 ]
