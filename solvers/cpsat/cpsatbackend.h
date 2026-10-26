@@ -77,6 +77,16 @@ public:
   /// on its sat::Model.
   void SetupPlateauCallbacks() override { }
 
+  /// Initial values as CP-SAT solution hints
+  /// (WARMSTART adds option alg:start).
+  /// Partial starts are fine: CP-SAT completes them.
+  ALLOW_STD_FEATURE(MIPSTART, true)
+  void AddMIPStart(ArrayRef<double> x0, ArrayRef<int> sparsity) override;
+  ALLOW_STD_FEATURE(WARMSTART, true)
+  /// Called when dual initial values come too: they are ignored
+  void AddPrimalDualStart(Solution sol) override
+  { AddMIPStart(sol.primal, sol.spars_primal); }
+
   /// Model export (adds options tech:writeprob, tech:writeprobindex):
   /// the CP-SAT model in protobuf text format
   ALLOW_STD_FEATURE(WRITE_PROBLEM, true)

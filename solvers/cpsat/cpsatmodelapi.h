@@ -34,6 +34,10 @@ public:
   /// keep implied-integer auxiliaries integer (cvt:pre:auxint)
   static int AuxIntDefault() { return 1; }
 
+  /// Products are native: keep a product of sums as one product
+  /// of two auxiliary variables (cvt:multoutcard)
+  static double MultOutCardDefault() { return 1.0; }
+
   /// Called before problem input.
   void InitProblemModificationPhase(const FlatModelInfo*);
   /// After
@@ -63,6 +67,12 @@ public:
   void AddConstraint(const MinConstraint& mc);
   ACCEPT_CONSTRAINT(AbsConstraint, Recommended, CG_General)
   void AddConstraint(const AbsConstraint& ac);
+  /// Products: r = x*y (from quadratic terms, see acc:mul),
+  /// r = x^k for integer k >= 0
+  ACCEPT_CONSTRAINT(MulConstraint, Recommended, CG_General)
+  void AddConstraint(const MulConstraint& mc);
+  ACCEPT_CONSTRAINT(PowConstExpConstraint, Recommended, CG_General)
+  void AddConstraint(const PowConstExpConstraint& pc);
 
   /// Logic: r = and/or(...), indicators
   ACCEPT_CONSTRAINT(AndConstraint, Recommended, CG_General)

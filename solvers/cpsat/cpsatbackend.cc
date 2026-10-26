@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <vector>
 #include <atomic>
 #include <chrono>
@@ -271,6 +272,26 @@ void CpsatBackend::SetInterrupter(mp::Interrupter *inter) {
   // arriving between the two must not be lost.
   data()->interrupted.store(false);
   inter->SetHandler(InterruptCpsat, data());
+}
+
+void CpsatBackend::AddMIPStart(ArrayRef<double> x0_unpres,
+                               ArrayRef<int> sparsity_unpres) {
+  // Values of the auxiliary variables come from the converter
+  auto mv = GetValuePresolver().PresolveSolution( { x0_unpres } );
+  auto ms = GetValuePresolver().PresolveGenericInt( { sparsity_unpres } );
+  const auto x0 = mv.GetVarValues()();
+  const auto s0 = ms.GetVarValues()();
+  auto* d = data();
+  const auto n = std::min( { x0.size(), s0.size(), d->vars.size() } );
+  for (size_t i = 0; i < n; ++i) {
+    if (!s0[i])
+      continue;
+    // Hints are integer values; clamp into the domain
+    // (CP-SAT would ignore an out-of-domain hint)
+    const auto v = std::clamp( (int64_t)std::llround(x0[i]),
+                               d->var_lb[i], d->var_ub[i] );
+    d->builder.AddHint(d->vars[i], v);
+  }
 }
 
 void CpsatBackend::Solve() {

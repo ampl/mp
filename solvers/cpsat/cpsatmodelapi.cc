@@ -171,6 +171,30 @@ void CpsatModelAPI::AddConstraint(const AbsConstraint& ac) {
       Var(ac.GetResultVar()), Var(ac.GetArguments().at(0)));
 }
 
+void CpsatModelAPI::AddConstraint(const MulConstraint& mc) {
+  const auto& args = mc.GetArguments();
+  data()->builder.AddMultiplicationEquality(
+      Var(mc.GetResultVar()), Var(args[0]), Var(args[1]));
+}
+
+void CpsatModelAPI::AddConstraint(const PowConstExpConstraint& pc) {
+  auto& b = data()->builder;
+  const double e = pc.GetParameters().at(0);
+  if (!IsIntegerValue(e) || e < 0.0)
+    throw std::runtime_error(fmt::format(
+        "CP-SAT: only powers with integer exponents >= 0 are "
+        "supported, got exponent {}", e));
+  const auto r = Var(pc.GetResultVar());
+  const auto x = Var(pc.GetArguments().at(0));
+  const auto k = (size_t)std::llround(e);
+  if (0 == k)                                   // x^0 = 1
+    b.AddEquality(r, 1);
+  else if (1 == k)
+    b.AddEquality(r, x);
+  else
+    b.AddMultiplicationEquality(r, std::vector<LinearExpr>(k, x));
+}
+
 
 //////////////////////////// logic ////////////////////////////
 
