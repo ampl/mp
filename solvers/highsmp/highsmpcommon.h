@@ -133,6 +133,9 @@ namespace mp{
     void RaiseOptionRejected(const char* key, const std::string& value,
                              Setter retry);
     std::map<std::string, std::string> optNames_;
+    // Only successfully applied options; query current values when cloning.
+    // This avoids option-name allocations owned by the vendor DLL's CRT.
+    std::map<std::string, int> appliedOptions_;
 
     void LoadHighsLibrary(bool gpu);
     void OpenSolver();

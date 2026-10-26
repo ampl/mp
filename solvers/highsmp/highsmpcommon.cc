@@ -157,6 +157,7 @@ void HighsCommon::SetSolverOption(const char* key, int value) {
       else
         loader().Highs_setIntOptionValue(lp(), key, value);
     });
+  appliedOptions_[key] = type;
 }
 
 void HighsCommon::GetSolverOption(const char* key, double &value) const {
@@ -169,6 +170,7 @@ void HighsCommon::SetSolverOption(const char* key, double value) {
     RaiseOptionRejected(key, fmt::format("{}", value), [&]() {
       loader().Highs_setDoubleOptionValue(lp(), key, value);
     });
+  appliedOptions_[key] = kHighsOptionTypeDouble;
 }
 
 void HighsCommon::GetSolverOption(const char* key, std::string &value) const {
@@ -183,6 +185,7 @@ void HighsCommon::SetSolverOption(const char* key, const std::string& value) {
     RaiseOptionRejected(key, value, [&]() {
       loader().Highs_setStringOptionValue(lp(), key, value.c_str());
     });
+  appliedOptions_[key] = kHighsOptionTypeString;
 }
 
 

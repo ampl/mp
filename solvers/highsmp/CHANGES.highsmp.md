@@ -3,6 +3,9 @@ Summary of recent updates to HiGHS for AMPL
 
 
 ## 20261101
+- Fix Windows Debug heap assertions when copying options to the fixed LP:
+  retain driver-owned option names instead of freeing names allocated by
+  a vendor library using a different C runtime.
 - A quadratic objective with integer variables (MIQP, which HiGHS
   cannot solve) is reported as such, suggesting *cvt:quadobj=0*;
   before, the message was "argument index out of range".

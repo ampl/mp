@@ -1,0 +1,29 @@
+[
+  {
+    "name": "fixed_mip highs copied option types",
+    "files": [
+      "../../fast/mip_basis/fixed_mip.mod"
+    ],
+    "tags": [
+      "linear",
+      "integer",
+      "fixmodel"
+    ],
+    "solvers": [
+      "highs"
+    ],
+    "objective": 14.75,
+    "options": {
+      "highs_options": "mip:basis=1 mip:basis:timelimit=10 mip:basis:iterlimit=100 outlev=1 threads=1 pre:solve=off feastol=1e-8 dualfeastol=1e-8"
+    },
+    "values": {
+      "b": 1,
+      "k": 1,
+      "y": 2.25,
+      "demand": 3,
+      "y.sstatus": "bas",
+      "solve_result_num": 0,
+      "if (demand.sstatus != 'none') then 1 else 0": 1
+    }
+  }
+]

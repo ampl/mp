@@ -76,55 +76,37 @@ void HighsBackend::CopyOptionsToFixedLP(void* fixed) {
     "mip_improving_solution_save", "mip_improving_solution_file",
     "mip_debug_solution_file"
   };
-  if (!loader().Highs_getNumOptions || !loader().Highs_getOptionName) {
-    int output = 0, threads = 0;
-    GetSolverOption("output_flag", output);
-    GetSolverOption("threads", threads);
-    loader().Highs_setBoolOptionValue(fixed, "output_flag", output);
-    loader().Highs_setIntOptionValue(fixed, "threads", threads);
-    return;
-  }
-  int nopt = loader().Highs_getNumOptions(lp());
   char sval[kHighsMaximumStringLength];
-  for (int i = 0; i < nopt; ++i) {
-    char* pname = nullptr;       // allocated by HiGHS, freed here
-    if (kHighsStatusOk != loader().Highs_getOptionName(lp(), i, &pname)
-        || !pname) {
-      std::free(pname);
-      continue;
-    }
-    std::string name_str(pname);
-    std::free(pname);
-    const char* name = name_str.c_str();
+  // Names belong to the driver, not to a possibly different vendor CRT.
+  for (const auto& option : appliedOptions_) {
+    const char* name = option.first.c_str();
     bool skipit = false;
     for (auto sk : skip)
       if (0 == std::strcmp(sk, name)) { skipit = true; break; }
     if (skipit)
       continue;
-    int type = -1;
-    loader().Highs_getOptionType(lp(), name, &type);
-    switch (type) {
+    switch (option.second) {
     case kHighsOptionTypeBool: {
       int v = 0;
-      if (kHighsStatusOk == loader().Highs_getBoolOptionValue(lp(), name, &v))
-        loader().Highs_setBoolOptionValue(fixed, name, v);
+      HIGHS_CCALL(loader().Highs_getBoolOptionValue(lp(), name, &v));
+      HIGHS_CCALL(loader().Highs_setBoolOptionValue(fixed, name, v));
       break;
     }
     case kHighsOptionTypeInt: {
       int v = 0;
-      if (kHighsStatusOk == loader().Highs_getIntOptionValue(lp(), name, &v))
-        loader().Highs_setIntOptionValue(fixed, name, v);
+      HIGHS_CCALL(loader().Highs_getIntOptionValue(lp(), name, &v));
+      HIGHS_CCALL(loader().Highs_setIntOptionValue(fixed, name, v));
       break;
     }
     case kHighsOptionTypeDouble: {
       double v = 0;
-      if (kHighsStatusOk == loader().Highs_getDoubleOptionValue(lp(), name, &v))
-        loader().Highs_setDoubleOptionValue(fixed, name, v);
+      HIGHS_CCALL(loader().Highs_getDoubleOptionValue(lp(), name, &v));
+      HIGHS_CCALL(loader().Highs_setDoubleOptionValue(fixed, name, v));
       break;
     }
     case kHighsOptionTypeString:
-      if (kHighsStatusOk == loader().Highs_getStringOptionValue(lp(), name, sval))
-        loader().Highs_setStringOptionValue(fixed, name, sval);
+      HIGHS_CCALL(loader().Highs_getStringOptionValue(lp(), name, sval));
+      HIGHS_CCALL(loader().Highs_setStringOptionValue(fixed, name, sval));
       break;
     default:
       break;
