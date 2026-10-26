@@ -17,6 +17,7 @@ class ModelTags(enum.Enum):
     prod_with_bin_var = 3.7   # at most 1 term in a product non-binary
     prod_int = 3.8            # products and integer powers of integer variables,
                               # solved exactly (nonconvex quadratics or CP)
+    int_ops = 3.9             # floor, ceil, round, trunc, div, mod
     socp = 4
     socp_hard_to_recognize = 4.1  ## For solvers recognizing from quadratics
     expcones = 4.4

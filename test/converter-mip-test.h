@@ -355,6 +355,22 @@ public:
     bld.AddArg(b);
     return m.EndCount(bld);
   }
+  /// Make  kind(var)  , e.g., floor(x)
+  mp::NumericExpr Un(mp::expr::Kind kind, int var) {
+    auto& m = this->GetModel();
+    return m.MakeUnary(kind, m.MakeVariable(var));
+  }
+  /// Make  (v1 kind v2)  , e.g., x div y
+  mp::NumericExpr BinN(mp::expr::Kind kind, int v1, int v2) {
+    auto& m = this->GetModel();
+    return m.MakeBinary(kind, m.MakeVariable(v1), m.MakeVariable(v2));
+  }
+  /// Make  round(var, n)
+  mp::NumericExpr Round(int var, double n) {
+    auto& m = this->GetModel();
+    return m.MakeBinary(mp::expr::ROUND, m.MakeVariable(var),
+                        m.MakeNumericConstant(n));
+  }
   /// Minimize expression \a e
   void Minimize(mp::NumericExpr e)
   { this->GetModel().AddObj(mp::obj::MIN, e); }

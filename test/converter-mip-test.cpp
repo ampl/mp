@@ -928,3 +928,59 @@ TEST(PLTest, UnboundedArg__nativeSOS2__plDomainOption) {
   EXPECT_EQ(100.0, MaxAbsEQCoef(t));           // old behavior: no rays
   EXPECT_EQ(0u, e.GetWarningsMap().count("PLDomain"));
 }
+
+
+/// floor, ceil, round, div, mod and integer products for MIP
+TEST(IntOpsTest, Floor__integerResultAndTwoRows) {
+  mp::Env e;
+  Disj2IndTester t(e, kAccLinear);
+  int x = t.Var(0.3, 7.6);
+  t.Minimize( t.Un(mp::expr::FLOOR, x) );
+  t.ConvertModel();
+  int r = x+1;                                 // floor(x)
+  EXPECT_EQ(INTEGER, t.Backend().type(r));     // required, not implied
+  EXPECT_EQ(0.0, t.GetFlatCvt().lb(r));
+  EXPECT_EQ(7.0, t.GetFlatCvt().ub(r));
+  EXPECT_EQ(2, t.Backend().NumLinCons());      // r <= x <= r+1-eps
+}
+
+TEST(IntOpsTest, FloorOfInteger__identity) {
+  mp::Env e;
+  Disj2IndTester t(e, kAccLinear);
+  int x = t.Var(-3, 7, INTEGER);
+  t.Minimize( t.Un(mp::expr::FLOOR, x) );
+  t.ConvertModel();
+  EXPECT_EQ(0, t.NumUsed<mp::FloorConstraint>());
+  EXPECT_EQ(0, t.Backend().NumLinCons());
+}
+
+TEST(IntOpsTest, DivVariableDivisor__exactProduct) {
+  mp::Env e;
+  Disj2IndTester t(e, kAccLinear);
+  int x = t.Var(-20, 20, INTEGER), y = t.Var(1, 5, INTEGER);
+  t.Minimize( t.BinN(mp::expr::TRUNC_DIV, x, y) );
+  t.ConvertModel();
+  EXPECT_EQ(1, t.NumUsed<mp::MulConstraint>());          // y * q
+  EXPECT_EQ(0, t.NumUsed<mp::PowConstExpConstraint>());  // not approximated
+}
+
+TEST(IntOpsTest, Round__evenOddDecomposition) {
+  mp::Env e;
+  Disj2IndTester t(e, kAccLinear);
+  int x = t.Var(-2.6, 3.4);
+  t.Minimize( t.Round(x, 0) );
+  t.ConvertModel();
+  // r = 2m + p, and two rows |x - r| <= 1/2 - eps*p
+  EXPECT_EQ(3, t.Backend().NumLinCons());
+  EXPECT_EQ(2, t.NumAuxVars(INTEGER, INTEGER) - 1);       // m, p (+ r)
+}
+
+TEST(IntOpsTest, IntProdBits0__productApproximated) {
+  mp::Env e;
+  Disj2IndTester t(e, kAccLinear, "cvt:mip:intprodbits=0");
+  int x = t.Var(-20, 20, INTEGER), y = t.Var(1, 5, INTEGER);
+  t.Minimize( t.BinN(mp::expr::TRUNC_DIV, x, y) );
+  t.ConvertModel();
+  EXPECT_EQ(3, t.NumUsed<mp::PowConstExpConstraint>());  // old behavior
+}
+

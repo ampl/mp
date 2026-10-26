@@ -14,5 +14,22 @@
     "tags" : ["integer", "prod_int"],
     "options": { "gurobi_options": "nonconvex=2" },
     "objective" : 70
+  },
+  {
+    "name" : "prod_int_01 linearized",
+    "files" : ["prod_int_01.mod"],
+    "tags" : ["integer"],
+    "comment": "Exact MIP reformulation of integer products (binary expansion), also for MIP solvers without nonconvex quadratics",
+    "solvers_exclude" : ["knitro", "knitromp", "gecode", "ilogcp"],
+    "options": { "mp_options": "cvt:quadobj=0 cvt:quadcon=0" },
+    "objective" : 27
+  },
+  {
+    "name" : "pow_int_01 linearized",
+    "files" : ["pow_int_01.mod"],
+    "tags" : ["integer"],
+    "solvers_exclude" : ["knitro", "knitromp", "gecode", "ilogcp"],
+    "options": { "mp_options": "cvt:quadobj=0 cvt:quadcon=0" },
+    "objective" : 70
   }
 ]

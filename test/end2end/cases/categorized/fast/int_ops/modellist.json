@@ -1,0 +1,25 @@
+[
+  {
+    "name" : "int_ops_01",
+    "tags" : ["integer", "int_ops"],
+    "comment": "div, mod with variable and negative divisors; optimum by enumeration",
+    "objective" : -88,
+    "values": { "x": -11, "y": -3, "z": 9, "w": 3 }
+  },
+  {
+    "name" : "int_ops_01 intprodbits=0",
+    "files" : ["int_ops_01.mod"],
+    "tags" : ["integer", "int_ops"],
+    "comment": "Products y*(x div y) approximated: only for solvers taking them natively",
+    "solvers" : ["cpsat", "gurobi", "scip"],
+    "options": { "mp_options": "cvt:mip:intprodbits=0" },
+    "objective" : -88
+  },
+  {
+    "name" : "int_ops_02",
+    "tags" : ["continuous", "int_ops"],
+    "comment": "floor, ceil, round (ties to even), trunc, round(x,1), real div/mod",
+    "objective" : 18.2123,
+    "values": { "a": 4, "b": 3.3, "c": 2.6, "e": 7.5, "g": 0.33, "h": 1.5 }
+  }
+]

@@ -1160,7 +1160,8 @@ class MPDirectSolver(AMPLSolver):
                     ModelTags.nonlinear,
                     ModelTags.prod_with_bin_var,
                     ModelTags.log,
-                    ModelTags.multiobj
+                    ModelTags.multiobj,
+                    ModelTags.int_ops
                 }
             # Direct/FlatConverter drivers with non-convex quadratics:
             if ModelTags.quadraticnonconvex in stags:
@@ -1307,6 +1308,7 @@ class IlogCPSolver(MPDirectSolver):
                  ModelTags.iis,
                  }
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
+        self._supportedTags = self._supportedTags - {ModelTags.int_ops}  # old MP framework
 
 class CPLEXDirectSolver(MPDirectSolver):
     CATEGORY = SolverCategory.MIPWithIndicators
@@ -1700,7 +1702,8 @@ class GecodeSolver(MPDirectSolver):
             ModelTags.plinear,
             ModelTags.nonlinear,
             ModelTags.prod_with_bin_var,
-            ModelTags.log
+            ModelTags.log,
+            ModelTags.int_ops   # old MP framework
         }
 
 class MosekSolver(MPDirectSolver):
