@@ -73,6 +73,11 @@ public:
   void AddConstraint(const MulConstraint& mc);
   ACCEPT_CONSTRAINT(PowConstExpConstraint, Recommended, CG_General)
   void AddConstraint(const PowConstExpConstraint& pc);
+  /// r = x div y = trunc(x/y), r = x mod y (sign of x), as in AMPL
+  ACCEPT_CONSTRAINT(IntDivConstraint, Recommended, CG_General)
+  void AddConstraint(const IntDivConstraint& dc);
+  ACCEPT_CONSTRAINT(ModConstraint, Recommended, CG_General)
+  void AddConstraint(const ModConstraint& mc);
 
   /// Logic: r = and/or(...), indicators
   ACCEPT_CONSTRAINT(AndConstraint, Recommended, CG_General)
@@ -114,6 +119,9 @@ private:
   /// Domain from bounds for an integer-valued linear expression
   static Domain MakeDomain(double lb, double ub);
   bool IsFixedTo(int var, int64_t value) const;
+  /// The divisor y, or a copy with 0 removed from its domain
+  /// (CP-SAT requires that for division)
+  IntVar NonzeroDivisor(int y);
   /// Add r <==> and(lits)
   void AddAnd(int r, const std::vector<BoolVar>& lits);
   template <class Con>

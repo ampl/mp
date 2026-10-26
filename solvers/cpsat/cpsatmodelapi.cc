@@ -177,6 +177,39 @@ void CpsatModelAPI::AddConstraint(const MulConstraint& mc) {
       Var(mc.GetResultVar()), Var(args[0]), Var(args[1]));
 }
 
+CpsatModelAPI::IntVar CpsatModelAPI::NonzeroDivisor(int y) {
+  auto* d = data();
+  const auto ly = d->var_lb.at(y), uy = d->var_ub.at(y);
+  if (ly > 0 || uy < 0)
+    return Var(y);
+  if (0 == ly && 0 == uy)
+    throw std::runtime_error("CP-SAT: division by 0");
+  const auto y1 = d->builder.NewIntVar(
+        Domain(ly, -1).UnionWith(Domain(1, uy)));
+  d->builder.AddEquality(y1, Var(y));
+  return y1;
+}
+
+void CpsatModelAPI::AddConstraint(const IntDivConstraint& dc) {
+  const auto& a = dc.GetArguments();
+  data()->builder.AddDivisionEquality(      // CP-SAT truncates, as AMPL
+        Var(dc.GetResultVar()), Var(a[0]), NonzeroDivisor(a[1]));
+}
+
+void CpsatModelAPI::AddConstraint(const ModConstraint& mc) {
+  // r = x - y*q, q = x div y; |q| <= |x| and |y*q| <= |x|
+  auto* d = data();
+  auto& b = d->builder;
+  const int x = mc.GetArguments()[0], y = mc.GetArguments()[1];
+  const int64_t m = std::max(std::abs(d->var_lb.at(x)),
+                             std::abs(d->var_ub.at(x)));
+  const auto q = b.NewIntVar(Domain(-m, m));
+  b.AddDivisionEquality(q, Var(x), NonzeroDivisor(y));
+  const auto p = b.NewIntVar(Domain(-m, m));
+  b.AddMultiplicationEquality(p, Var(y), q);
+  b.AddEquality(Var(mc.GetResultVar()), LinearExpr(Var(x)) - p);
+}
+
 void CpsatModelAPI::AddConstraint(const PowConstExpConstraint& pc) {
   auto& b = data()->builder;
   const double e = pc.GetParameters().at(0);
