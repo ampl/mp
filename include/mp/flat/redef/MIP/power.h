@@ -5,6 +5,7 @@
 #include <cassert>
 
 #include "mp/flat/redef/MIP/lin_approx.h"
+#include "mp/flat/redef/MIP/mul.h"
 
 namespace mp {
 
@@ -42,9 +43,12 @@ public:
   Context Convert(const ItemType& con, int i) {
     assert(!con.GetContext().IsNone());
     auto pwr = con.GetParameters()[0];
-    if (GetMC().IfQuadratizePowConstPosIntExp() &&
-        GetMC().is_integer_value(pwr) && pwr > 0.0)
+    const bool f_int_pwr = GetMC().is_integer_value(pwr) && pwr > 0.0;
+    if (GetMC().IfQuadratizePowConstPosIntExp() && f_int_pwr)
       Convert2Quadratics(con, i);
+    else if (f_int_pwr && pwr >= 2.0 && FactorToExpand(
+               GetMC(), con.GetArguments()[0], con.GetArguments()[0]) >= 0)
+      Convert2Products(con);             // exact for integer arguments
     else
       Convert2PL(con, i);
     return Context::CTX_MIX;
@@ -52,8 +56,8 @@ public:
 
 
 protected:
-  /// Convert into quadratics
-  void Convert2Quadratics(const ItemType& con, int ) {
+  /// x^pwr = x^pwr1 * x^pwr2, pwr integer: the two factors
+  std::pair<int, int> SplitPower(const ItemType& con) {
     auto pwr = con.GetParameters()[0];
     assert(GetMC().is_integer_value(pwr) && pwr > 0.0);
     auto arg = con.GetArguments()[0];
@@ -70,6 +74,23 @@ protected:
       arg2 = GetMC().AssignResultVar2Args(
             PowConstExpConstraint{ {arg}, DblParamArray1{pwr2} });
     }
+    return { arg1, arg2 };
+  }
+
+  /// Convert into products r = x^pwr1 * x^pwr2 (MulConstraint),
+  /// for an integer argument: MulConverter_MIP expands them exactly
+  void Convert2Products(const ItemType& con) {
+    const auto args = SplitPower(con);
+    GetMC().RedefineVariable(con.GetResultVar(),
+          MulConstraint{ {std::min(args.first, args.second),
+                          std::max(args.first, args.second)} });
+    GetMC().PropagateResultOfInitExpr(
+          con.GetResultVar(), con.GetContext());
+  }
+
+  /// Convert into quadratics
+  void Convert2Quadratics(const ItemType& con, int ) {
+    const auto [arg1, arg2] = SplitPower(con);
     GetMC().RedefineVariable(con.GetResultVar(),
           QuadraticFunctionalConstraint(
             QuadraticExpr(

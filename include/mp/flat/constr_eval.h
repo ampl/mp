@@ -90,6 +90,57 @@ double ComputeValue(const MulConstraint& con, const VarVec& x) {
   return x[con.GetArguments()[0]] * x[con.GetArguments()[1]];
 }
 
+/// \a v snapped to the nearest integer if within the feasibility
+/// tolerance: the rounding functions jump at integers, and solver
+/// values such as 2.9999999 should evaluate as at 3.
+template <class VarInfo>
+double SnapToInteger(double v, const VarInfo& x) {
+  const auto r = std::round(v);
+  return std::fabs(v - r) <= x.feastol() ? r : v;
+}
+
+/// Compute result of the floor constraint.
+template <class VarInfo>
+double ComputeValue(const FloorConstraint& con, const VarInfo& x) {
+  return std::floor(SnapToInteger(x[con.GetArguments()[0]], x));
+}
+
+/// Compute result of the ceil constraint.
+template <class VarInfo>
+double ComputeValue(const CeilConstraint& con, const VarInfo& x) {
+  return std::ceil(SnapToInteger(x[con.GetArguments()[0]], x));
+}
+
+/// Compute result of the round constraint: ties to even, as AMPL.
+/// Values within the feasibility tolerance of a tie count as the tie.
+template <class VarInfo>
+double ComputeValue(const RoundConstraint& con, const VarInfo& x) {
+  const auto v = x[con.GetArguments()[0]];
+  const auto v2 = std::round(2.0 * v);             // nearest half-integer
+  return std::nearbyint(
+        std::fabs(2.0*v - v2) <= 2.0*x.feastol() ? v2 / 2.0 : v);
+}
+
+/// Compute result of the int div constraint: trunc(x / y)
+template <class VarInfo>
+double ComputeValue(const IntDivConstraint& con, const VarInfo& x) {
+  auto divt = x[con.GetArguments()[0]];
+  auto divs = x[con.GetArguments()[1]];
+  if (0.0==std::fabs(divs))
+    return divt>=0.0 ? INFINITY : -INFINITY;
+  return std::trunc(SnapToInteger(divt / divs, x));
+}
+
+/// Compute result of the mod constraint: x - y * (x div y)
+template <class VarInfo>
+double ComputeValue(const ModConstraint& con, const VarInfo& x) {
+  auto divt = x[con.GetArguments()[0]];
+  auto divs = x[con.GetArguments()[1]];
+  if (0.0==std::fabs(divs))
+    return INFINITY;
+  return divt - divs * std::trunc(SnapToInteger(divt / divs, x));
+}
+
 /// Compute result of the IfThen constraint.
 template <class VarVec>
 double ComputeValue(const IfThenConstraint& con, const VarVec& x) {

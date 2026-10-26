@@ -55,6 +55,15 @@ public:
   INSTALL_ITEM_CONVERTER(CountConverter_MIP)
   /// Div
   INSTALL_ITEM_CONVERTER(DivConverter_MIP)
+  /// Integer div, mod (AMPL div, mod)
+  INSTALL_ITEM_CONVERTER(IntDivConverter_MIP)
+  INSTALL_ITEM_CONVERTER(ModConverter_MIP)
+  /// Floor, ceil, round
+  INSTALL_ITEM_CONVERTER(FloorConverter_MIP)
+  INSTALL_ITEM_CONVERTER(CeilConverter_MIP)
+  INSTALL_ITEM_CONVERTER(RoundConverter_MIP)
+  /// Products r = x*y (when not accepted natively)
+  INSTALL_ITEM_CONVERTER(MulConverter_MIP)
   /// CondLinEQ
   INSTALL_ITEM_CONVERTER(CondLinEQConverter_MIP)
   /// CondQuadEQ
@@ -450,6 +459,9 @@ public:
   /// Max abs value of a PL argument's domain for PL -> SOS2,
   /// <0 if not set
   double PLDomain() const { return options_.PLDomain_; }
+  /// Max number of binaries for the exact MIP reformulation of
+  /// a product with an integer factor (cvt:mip:intprodbits)
+  int IntProdBits() const { return options_.IntProdBits_; }
   /// How to convert complementarity
   int ComplementarityCvt() const { return options_.complCvt_; }
   /// Complementarity smoothing tolerance
@@ -464,6 +476,7 @@ private:
     double PLApproxRelTol_ { 1e-2 };
     double PLApproxDomain_ { 1e6 };
     double PLDomain_ { -1 };
+    int IntProdBits_ { 30 };
     double NoUEncPosCtxRatio_ { 0.0 };
     int NoUEncNegCtxMax_ { 1 };
   };
@@ -520,6 +533,18 @@ private:
                        "native SOS2 gets exact rays for unbounded sides. "
                        "Use with care (prefer tight bounds).",
                        options_.PLDomain_, -1.0, 1e100);
+    this->GetEnv().AddOption("cvt:mip:intprodbits intprodbits",
+                       "Products x*y of variables, when not accepted "
+                       "natively, with an integer factor of finite bounds "
+                       "(and the other factor bounded): "
+                       "exact MIP reformulation by binary expansion of the "
+                       "integer factor with the smaller range if it needs "
+                       "at most this many binary variables. Default 30. "
+                       "Otherwise, and with 0, such products are "
+                       "approximated as ((x+y)^2-x^2-y^2)/2 with "
+                       "piecewise-linear squares, as for continuous factors. "
+                       "Products with a binary factor are always exact.",
+                       options_.IntProdBits_, 0, 62);
     this->GetEnv().AddOption("cvt:uenc:ratio uenc:ratio",
                        "Min ratio (ub-lb+1)/Nvalues to skip unary encoding "
                        "for a variable x, where Nvalues is the number of constants "

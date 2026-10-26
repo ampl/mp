@@ -830,6 +830,110 @@ public:
           ? var::INTEGER : var::CONTINUOUS );
   }
 
+  /// Preprocess floor
+  template <class PreprocessInfo>
+  void PreprocessConstraint(
+      FloorConstraint& c, PreprocessInfo& prepro) {
+    PreprocessRounding(c, prepro, [](double v) { return std::floor(v); });
+  }
+
+  /// Preprocess ceil
+  template <class PreprocessInfo>
+  void PreprocessConstraint(
+      CeilConstraint& c, PreprocessInfo& prepro) {
+    PreprocessRounding(c, prepro, [](double v) { return std::ceil(v); });
+  }
+
+  /// Preprocess round
+  template <class PreprocessInfo>
+  void PreprocessConstraint(
+      RoundConstraint& c, PreprocessInfo& prepro) {
+    PreprocessRounding(c, prepro, [](double v) { return std::nearbyint(v); });
+  }
+
+  /// floor, ceil, round: the integer argument itself,
+  /// otherwise its rounded bounds (monotone functions)
+  template <class Con, class PreprocessInfo, class RoundFn>
+  void PreprocessRounding(
+      Con& c, PreprocessInfo& prepro, RoundFn rnd) {
+    const auto x = c.GetArguments()[0];
+    if (MPCD( is_var_integer(x) )) {
+      prepro.set_result_var(x);
+      return;
+    }
+    prepro.narrow_result_bounds( rnd(MPCD( lb(x) )), rnd(MPCD( ub(x) )) );
+    prepro.set_result_type( var::INTEGER );
+  }
+
+  /// Preprocess x div y = trunc(x/y)
+  template <class PreprocessInfo>
+  void PreprocessConstraint(
+      IntDivConstraint& c, PreprocessInfo& prepro) {
+    const auto x = c.GetArguments()[0], y = c.GetArguments()[1];
+    const double lx=MPCD( lb(x) ), ux=MPCD( ub(x) ),
+        ly=MPCD( lb(y) ), uy=MPCD( ub(y) );
+    if (0.0==ly && 0.0==uy)
+      MP_RAISE("Division by 0 in 'div'");
+    if (1.0==ly && 1.0==uy && MPCD( is_var_integer(x) )) {
+      prepro.set_result_var(x);
+      return;
+    }
+    prepro.set_result_type( var::INTEGER );
+    if (!IsFiniteRange(lx, ux))
+      return;
+    if (IsFiniteRange(ly, uy) && (ly > 0.0 || uy < 0.0)) {
+      // trunc is monotone: truncate the extreme quotients
+      auto l0 = std::numeric_limits<double>::max();
+      auto u0 = std::numeric_limits<double>::lowest();
+      for (auto x1: {lx, ux})
+        for (auto y1: {ly, uy}) {
+          l0 = std::min(l0, x1 / y1);
+          u0 = std::max(u0, x1 / y1);
+        }
+      prepro.narrow_result_bounds( std::trunc(l0), std::trunc(u0) );
+    } else if (IsIntegerValued(y)) {          // |y| >= 1
+      const auto m = std::max(std::fabs(lx), std::fabs(ux));
+      prepro.narrow_result_bounds( -m, m );
+    }
+  }
+
+  /// Preprocess x mod y = x - y*(x div y):
+  /// |r| < |y|, |r| <= |x|, sign of x
+  template <class PreprocessInfo>
+  void PreprocessConstraint(
+      ModConstraint& c, PreprocessInfo& prepro) {
+    const auto x = c.GetArguments()[0], y = c.GetArguments()[1];
+    const double lx=MPCD( lb(x) ), ux=MPCD( ub(x) ),
+        ly=MPCD( lb(y) ), uy=MPCD( ub(y) );
+    if (0.0==ly && 0.0==uy)
+      MP_RAISE("Division by 0 in 'mod'");
+    const bool f_int = IsIntegerValued(x) && IsIntegerValued(y);
+    auto b = std::max(std::fabs(lx), std::fabs(ux));
+    if (IsFiniteRange(ly, uy))
+      b = std::min(b,
+                   std::max(std::fabs(ly), std::fabs(uy)) - (f_int ? 1.0 : 0.0));
+    prepro.narrow_result_bounds( lx >= 0.0 ? 0.0 : -b, ux <= 0.0 ? 0.0 : b );
+    if (lx==ux && ly==uy && 0.0!=ly) {              // constant
+      const auto v = lx - ly * std::trunc(lx / ly);
+      prepro.narrow_result_bounds( v, v );
+    }
+    if (f_int)
+      prepro.set_result_type( var::INTEGER );
+  }
+
+  /// Whether \a v is integer: integer type,
+  /// or fixed at an integer value (constants are fixed variables)
+  bool IsIntegerValued(int v) const {
+    return MPCD( is_var_integer(v) )
+        || (MPCD( is_fixed(v) ) && MPCD( fixed_value(v) )
+            == std::round(MPCD( fixed_value(v) )));
+  }
+
+  /// Whether [l, u] is finite
+  bool IsFiniteRange(double l, double u) const {
+    return l > MPCD( PracticallyMinusInf() ) && u < MPCD( PracticallyInf() );
+  }
+
   /// Preprocess IfThen
   template <class PreprocessInfo>
   void PreprocessConstraint(

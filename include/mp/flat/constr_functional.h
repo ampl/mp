@@ -59,6 +59,22 @@ DEF_NUMERIC_FUNC_CONSTR( Mul, VarArray2,
                                   "r = v1 * v2");
 
 ////////////////////////////////////////////////////////////////////////
+/// \brief Integer rounding and division, as in AMPL:
+/// floor, ceil, round (ties to even), x div y = trunc(x/y),
+/// x mod y = x - y * (x div y) (sign of x).
+/// trunc(x) is built from floor and ceil.
+DEF_NUMERIC_FUNC_CONSTR( Floor, VarArray1,
+                                  "r = floor(v)");
+DEF_NUMERIC_FUNC_CONSTR( Ceil, VarArray1,
+                                  "r = ceil(v)");
+DEF_NUMERIC_FUNC_CONSTR( Round, VarArray1,
+                                  "r = round(v), ties to even");
+DEF_NUMERIC_FUNC_CONSTR( IntDiv, VarArray2,
+                                  "r = v1 div v2 = trunc(v1 / v2)");
+DEF_NUMERIC_FUNC_CONSTR( Mod, VarArray2,
+                                  "r = v1 mod v2 = v1 - v2 * (v1 div v2)");
+
+////////////////////////////////////////////////////////////////////////
 DEF_NUMERIC_FUNC_CONSTR( IfThen, VarArrayN<3>,
                          "Expr-valued: if (cond) then (expr1) else (expr2)");
 

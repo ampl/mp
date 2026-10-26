@@ -543,8 +543,21 @@ are multiplied out so that coefficients of individual quadratic terms can be ext
 For example, :math:`(x-2)(y+3)` is multiplied out as :math:`xy-2y+3x-6`.
 If the solver natively handles quadratic terms, then the quadratic coefficients are
 passed to the solver, which decides whether and how to handle them. Otherwise, quadratic
-terms are linearized where possible, such as where one of the operands is a binary variable,
-or approximated.
+terms are linearized where possible, or approximated:
+
+- a product with a binary variable is linearized exactly;
+- a product with an integer variable of finite bounds (the other factor being
+  bounded too) is reformulated exactly by binary expansion of the integer factor
+  with the smaller range: :math:`y = l_y + \sum_j 2^j b_j`, so that
+  :math:`xy = l_y x + \sum_j 2^j (b_j x)` (Gupte, Ahmed, Cheon, Dey, 2013).
+  Option ``cvt:mip:intprodbits`` limits the number of binary variables
+  (default 30; 0 restores the approximation below);
+  integer powers :math:`x^k` are built from such products;
+- other products :math:`xy` are approximated as
+  :math:`((x+y)^2 - x^2 - y^2)/2` with piecewise-linear squares.
+
+Equal products share their reformulation. Constraint programming solvers
+(CP-SAT) receive products and integer powers natively (``acc:mul``, ``acc:powc``).
 
 Piecewise linearization allows handling of nonconvex QP and nonlinear models
 by convex MIP solvers.
@@ -569,6 +582,45 @@ previously described. For example:
     subj to Eq {i in J} :
        x[i+neq] / (b[i+neq] * sum {j in J} x[j+neq] / b[j+neq]) =
           c[i] * x[i] / (40 * b[i] * sum {j in J} x[j] / b[j]);
+
+
+Rounding and integer division
+**************************************
+
+- floor( *expr* ), ceil( *expr* )
+- round( *expr* [, *n* ] ), trunc( *expr* [, *n* ] )
+    *expr-valued:* rounding to an integer, or to *n* decimal places
+    (*n* a constant integer). ``round`` rounds ties to even, as AMPL does
+    (``round(2.5) = 2``).
+- *expr1* div *expr2*, *expr1* mod *expr2*
+    *expr-valued:* truncated quotient ``trunc(expr1/expr2)`` and
+    remainder ``expr1 - expr2 * (expr1 div expr2)``, which has the sign
+    of *expr1*; also for real numbers (``7.5 mod 2 = 1.5``).
+
+For an integer argument, ``floor``, ``ceil``, ``round`` and ``trunc``
+return the argument itself. Otherwise, with an integer variable :math:`r`
+and the tolerance :math:`\epsilon` of option ``cvt:mip:eps``:
+
+- :math:`r = \lfloor x \rfloor`: :math:`r \le x \le r + 1 - \epsilon`;
+  :math:`r = \lceil x \rceil` symmetrically;
+- :math:`r = \mathrm{round}(x)`: :math:`r = 2m + p` with integer :math:`m`
+  and binary :math:`p`, :math:`|x - r| \le 1/2 - \epsilon p`, so that a tie
+  rounds to the even neighbor;
+- ``trunc`` uses ``floor`` for nonnegative and ``ceil`` for nonpositive
+  arguments;
+- :math:`q = x \mathop{\rm div} y`: with the remainder
+  :math:`\rho = x - yq`, :math:`|\rho| \le |y| - \epsilon` (1 for integer
+  :math:`\rho`), :math:`\rho` has the sign of :math:`x`, and :math:`y \ne 0`,
+  as in MiniZinc's linearization library. For a variable divisor, :math:`yq`
+  is a product, reformulated exactly for bounded integer :math:`q`
+  (see above); ``mod`` reuses the quotient.
+
+Decimal values such as 0.15 are not exact in binary floating point, so ties
+of ``round(x, n)`` with *n* > 0 can be resolved differently from AMPL's own
+evaluation. AMPL's ``trunc(x, n)`` with negative *n* can differ from
+the mathematical truncation that MP applies.
+
+CP-SAT receives ``div`` and ``mod`` natively (``acc:intdiv``, ``acc:mod``).
 
 
 Conic optimization

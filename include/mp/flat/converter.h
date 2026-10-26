@@ -2562,6 +2562,11 @@ protected:
   STORE_CONSTRAINT_TYPE__WITH_MAP(CountConstraint, "acc:count", 400)
 
   STORE_CONSTRAINT_TYPE__WITH_MAP(DivConstraint, "acc:div", 600)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(ModConstraint, "acc:mod", 610)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(IntDivConstraint, "acc:intdiv", 620)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(FloorConstraint, "acc:floor", 630)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(CeilConstraint, "acc:ceil", 632)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(RoundConstraint, "acc:round", 634)
   STORE_CONSTRAINT_TYPE__WITH_MAP(MulConstraint, "acc:mul", 650)
   STORE_CONSTRAINT_TYPE__WITH_MAP(IfThenConstraint, "acc:ifthen", 700)
   STORE_CONSTRAINT_TYPE__WITH_MAP(ImplicationConstraint, "acc:impl", 800)

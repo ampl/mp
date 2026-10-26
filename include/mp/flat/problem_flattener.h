@@ -1147,6 +1147,65 @@ public:          // need to be public due to CRTP
     return VisitFunctionalExpression<AbsConstraint>({ e.arg() });
   }
 
+  EExpr VisitFloor(UnaryExpr e) {
+    return VisitFunctionalExpression<FloorConstraint>({ e.arg() });
+  }
+
+  EExpr VisitCeil(UnaryExpr e) {
+    return VisitFunctionalExpression<CeilConstraint>({ e.arg() });
+  }
+
+  /// x div y = trunc(x / y)
+  EExpr VisitTruncDiv(BinaryExpr e) {
+    return VisitFunctionalExpression<IntDivConstraint>({ e.lhs(), e.rhs() });
+  }
+
+  /// x mod y = x - y * (x div y)
+  EExpr VisitMod(BinaryExpr e) {
+    return VisitFunctionalExpression<ModConstraint>({ e.lhs(), e.rhs() });
+  }
+
+  /// round(x, n) = round(x * 10^n) / 10^n, ties to even
+  EExpr VisitRound(BinaryExpr e) { return VisitRoundOrTrunc(e, true); }
+
+  /// trunc(x, n) = trunc(x * 10^n) / 10^n
+  EExpr VisitTrunc(BinaryExpr e) { return VisitRoundOrTrunc(e, false); }
+
+  /// round(x, n) or trunc(x, n), n a constant integer
+  EExpr VisitRoundOrTrunc(BinaryExpr e, bool f_round) {
+    auto en = Convert2EExpr(e.rhs());
+    const auto n = en.constant_term();
+    if (!en.is_constant() || n != std::round(n) || std::fabs(n) > 300.0)
+      MP_RAISE(fmt::format(
+                 "{}(x, n): n should be a constant integer in [-300, 300]",
+                 f_round ? "round" : "trunc"));
+    const double scale = std::pow(10.0, n);
+    auto ex = Convert2EExpr(e.lhs());
+    ex *= scale;
+    const int x = Convert2Var(std::move(ex));
+    EExpr result = Var2EExpr( f_round
+        ? GetFlatCvt().AssignResultVar2Args(RoundConstraint{ {x} })
+        : TruncVar(x) );
+    result *= 1.0 / scale;
+    return result;
+  }
+
+  /// trunc(x): floor for x >= 0, ceil for x <= 0
+  int TruncVar(int x) {
+    auto& cvt = GetFlatCvt();
+    if (cvt.is_var_integer(x))
+      return x;
+    if (cvt.lb(x) >= 0.0)
+      return cvt.AssignResultVar2Args(FloorConstraint{ {x} });
+    if (cvt.ub(x) <= 0.0)
+      return cvt.AssignResultVar2Args(CeilConstraint{ {x} });
+    const int fl = cvt.AssignResultVar2Args(FloorConstraint{ {x} });
+    const int ce = cvt.AssignResultVar2Args(CeilConstraint{ {x} });
+    const int pos = cvt.AssignResultVar2Args(       // x >= 0
+          CondLinConGE{ { {{1.0}, {x}}, 0.0 } });
+    return cvt.AssignResultVar2Args(IfThenConstraint{ {pos, fl, ce} });
+  }
+
   EExpr VisitLogicalConstant(LogicalConstant c) {
     return EExpr::Constant{ double(c.value()) };
   }

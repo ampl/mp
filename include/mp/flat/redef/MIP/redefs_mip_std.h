@@ -18,6 +18,7 @@
 #include "mp/flat/redef/MIP/indicator_ge.h"
 #include "mp/flat/redef/MIP/indicator_eq.h"
 #include "mp/flat/redef/MIP/indicator_quad.h"
+#include "mp/flat/redef/MIP/int_div.h"
 #include "mp/flat/redef/MIP/lin_approx.h"
 #include "mp/flat/redef/MIP/logical_and.h"
 #include "mp/flat/redef/MIP/logical_or.h"
@@ -28,6 +29,7 @@
 #include "mp/flat/redef/MIP/numberof_var.h"
 #include "mp/flat/redef/MIP/piecewise_linear.h"
 #include "mp/flat/redef/MIP/power.h"
+#include "mp/flat/redef/MIP/rounding.h"
 #include "mp/flat/redef/MIP/sos2.h"
 
 

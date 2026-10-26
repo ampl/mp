@@ -3,6 +3,20 @@ Summary of recent updates to the AMPL MP Library
 
 
 ## 20261101
+- New: AMPL's *floor*, *ceil*, *round(x[, n])* (ties to even),
+  *trunc(x[, n])*, *div* and *mod* (also for real numbers and variable
+  divisors), before rejected as "unsupported". MIP reformulations:
+  floor/ceil by bounds with *cvt:mip:eps*, round with an even/odd
+  decomposition, div/mod by quotient and remainder as in MiniZinc's
+  linearization library. Options *acc:floor*, *acc:ceil*,
+  *acc:round*, *acc:intdiv*, *acc:mod*.
+- Products of variables with a bounded integer factor are reformulated
+  exactly for MIP solvers without (nonconvex) quadratics, by binary
+  expansion of the integer factor (option *cvt:mip:intprodbits*, default
+  30; 0 restores the piecewise-linear approximation); integer powers
+  x^k likewise. Before, such products were approximated.
+- Fix: with *cvt:quadcon=0*, quadratic range constraints were still
+  passed to solvers accepting them (e.g., MOSEK).
 - New functional constraint *r = x\*y* (*acc:mul*) for solvers taking
   products of variables natively (CP-SAT): quadratic terms of
   non-binary variables become such constraints instead of the
