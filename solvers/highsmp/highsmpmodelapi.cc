@@ -28,6 +28,7 @@ void HighsModelAPI::AddVariables(const VarArrayDef& v) {
     for (int i = 0; i < v.size(); i++)
       HIGHS_CCALL(loader().Highs_passColName(lp(), i, v.pnames()[i]));
   accObjectives().setNumVars(v.size());
+  has_int_vars_ = has_int_vars_ || !intIndices.empty();
 }
 
 void HighsModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
@@ -40,6 +41,11 @@ void HighsModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
 
 
 void HighsModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective& qo) {
+  if (has_int_vars_)              // HiGHS would fail with a generic error
+    throw std::runtime_error(
+        "HiGHS cannot solve MIQP: the objective is quadratic and there "
+        "are integer variables. Set cvt:quadobj=0 to reformulate "
+        "the quadratic objective terms.");
   if (1 > iobj) {
     auto lo= qo.GetLinTerms();
     // Note that the linear part is only stored (see SetLinearObjective)

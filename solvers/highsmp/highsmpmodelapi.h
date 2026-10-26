@@ -91,8 +91,9 @@ public:
   ACCEPT_CONSTRAINT(LinConGE, Recommended, CG_Linear)
   void AddConstraint(const LinConGE& lc);
 
-
-
+private:
+  /// HiGHS cannot solve MIQP: see SetQuadraticObjective()
+  bool has_int_vars_ = false;
 };
 
 } // namespace mp

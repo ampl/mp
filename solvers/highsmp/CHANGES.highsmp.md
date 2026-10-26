@@ -3,6 +3,9 @@ Summary of recent updates to HiGHS for AMPL
 
 
 ## 20261101
+- A quadratic objective with integer variables (MIQP, which HiGHS
+  cannot solve) is reported as such, suggesting *cvt:quadobj=0*;
+  before, the message was "argument index out of range".
 - Emulate *mip:basis* for linear algebraic MIPs, with separate
   *mip:basis:timelimit* and *mip:basis:iterlimit* options.
 - Options aligned with HiGHS 1.15.1: corrected value tables and

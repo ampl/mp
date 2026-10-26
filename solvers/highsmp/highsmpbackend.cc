@@ -381,7 +381,7 @@ void HighsBackend::Solve() {
   }
   int status = loader().Highs_run(lp());
   if (status != kHighsStatusOk && status != kHighsStatusWarning)
-    throw std::runtime_error(fmt::format("  Error {} while solving with HiGHS").c_str());
+    throw std::runtime_error(fmt::format("  Error {} while solving with HiGHS", status));
     // Mask warnings for pdlp
   if((status == kHighsStatusWarning) && (storedOptions_.lpmethod_!="pdlp-gpu"))
       Print("  Warning code {} while solving with HiGHS\n", status);
