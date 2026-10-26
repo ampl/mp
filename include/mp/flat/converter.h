@@ -1780,7 +1780,7 @@ private:
     int passQuadCon_ = 1;
     int passNLObj_ = ModelAPIAcceptsNLObj();
     int useQP2Pass_ = 1;
-    double QPMultOutCard_ = 1e9;
+    double QPMultOutCard_ = ModelAPI::MultOutCardDefault();
     int passSOCPCones_ = 0;
     int passSOCP2QC_ = 0;
     int passExpCones_ = 0;
@@ -2103,12 +2103,14 @@ private:
                        "Usually faster.",
                        options_.useQP2Pass_, 0, 1);
     GetEnv().AddOption("cvt:multoutcard multoutcard",
+                       fmt::format(
                        "Up to which (estimated) QP matrix cardinality "
                        "should a product of 2 linear expressions "
-                       "be multiplied out. Default 1e9.\n"
+                       "be multiplied out. Default {}.\n"
                        "\n"
                        "Low value can speed up model input, but prone to "
                        "numerical issues.",
+                       ModelAPI::MultOutCardDefault()).c_str(),
                        options_.QPMultOutCard_, 0.0, 1e20);
 
 
@@ -2560,6 +2562,7 @@ protected:
   STORE_CONSTRAINT_TYPE__WITH_MAP(CountConstraint, "acc:count", 400)
 
   STORE_CONSTRAINT_TYPE__WITH_MAP(DivConstraint, "acc:div", 600)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(MulConstraint, "acc:mul", 650)
   STORE_CONSTRAINT_TYPE__WITH_MAP(IfThenConstraint, "acc:ifthen", 700)
   STORE_CONSTRAINT_TYPE__WITH_MAP(ImplicationConstraint, "acc:impl", 800)
 

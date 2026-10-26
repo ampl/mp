@@ -804,6 +804,32 @@ public:
     }
   }
 
+  /// Preprocess Mul: bounds from the products of the argument bounds,
+  /// integer if both arguments are
+  template <class PreprocessInfo>
+  void PreprocessConstraint(
+      MulConstraint& c, PreprocessInfo& prepro) {
+    auto& m = MPD( GetModel() );
+    auto v1 = c.GetArguments()[0], v2 = c.GetArguments()[1];
+    const double b1[] = {m.lb(v1), m.ub(v1)}, b2[] = {m.lb(v2), m.ub(v2)};
+    if (b1[0] > MPD( PracticallyMinusInf() ) &&
+        b1[1] < MPD( PracticallyInf() ) &&
+        b2[0] > MPD( PracticallyMinusInf() ) &&
+        b2[1] < MPD( PracticallyInf() )) {
+      auto l0 = std::numeric_limits<double>::max();
+      auto u0 = std::numeric_limits<double>::lowest();
+      for (auto x1: b1)
+        for (auto x2: b2) {
+          l0 = std::min(l0, x1*x2);
+          u0 = std::max(u0, x1*x2);
+        }
+      prepro.narrow_result_bounds( l0, u0 );
+    }
+    prepro.set_result_type(
+          var::INTEGER==m.var_type(v1) && var::INTEGER==m.var_type(v2)
+          ? var::INTEGER : var::CONTINUOUS );
+  }
+
   /// Preprocess IfThen
   template <class PreprocessInfo>
   void PreprocessConstraint(

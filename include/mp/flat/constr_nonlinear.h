@@ -18,6 +18,7 @@ namespace mp {
 template <class Con>
 constexpr bool IsSmoothNLFuncCon() {
   return std::is_same_v<Con, DivConstraint>
+      || std::is_same_v<Con, MulConstraint>
       || std::is_same_v<Con, ExpConstraint>
       || std::is_same_v<Con, ExpAConstraint>
       || std::is_same_v<Con, LogConstraint>

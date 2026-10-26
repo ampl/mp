@@ -209,6 +209,13 @@ public:
   /// variables.
   static int AuxIntDefault() { return 0; }
 
+  /// Default of option *cvt:multoutcard*: up to which (estimated)
+  /// number of quadratic terms a product of two sums is multiplied
+  /// out. 1 for solvers taking products of variables natively
+  /// (MulConstraint): a product of sums then stays one product
+  /// of two auxiliary variables.
+  static double MultOutCardDefault() { return 1e9; }
+
 
   /// Placeholder for SetQuadraticObjective()
   void SetQuadraticObjective(int , const QuadraticObjective& ) {

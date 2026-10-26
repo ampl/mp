@@ -3,6 +3,22 @@ Summary of recent updates to the AMPL MP Library
 
 
 ## 20261101
+- New functional constraint *r = x\*y* (*acc:mul*) for solvers taking
+  products of variables natively (CP-SAT): quadratic terms of
+  non-binary variables become such constraints instead of the
+  piecewise-linear approximation of *((x+y)^2-x^2-y^2)/2*; equal
+  products share one constraint. The default of *cvt:multoutcard*
+  is now per solver (1 for CP-SAT: a product of sums stays one
+  product of two auxiliary variables).
+- Fix: inlining algebraic subexpressions into an objective
+  (*cvt:pre:unnest*) could make it quadratic for solvers without
+  quadratic objectives (*cvt:quadobj=0*), which then failed.
+- Fix: checking whether an auxiliary variable can be replaced by its
+  defining expression (e.g., for MP2NL and expression-based solvers)
+  could add an unused copy of a comparison to the model.
+- Fix: a dual ray requested for a model without constraints
+  (MOSEK, "infeasible or unbounded") failed with "map::at".
+- Fix: *tech:writegraph* wrote empty names for auxiliary variables.
 - Fix: a nonconvex piecewise-linear term whose argument becomes
   fixed at a breakpoint failed with "MIPFlatConverter: vector"
   in solvers without native SOS2 (e.g., HiGHS, MOSEK, or

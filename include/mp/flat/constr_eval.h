@@ -84,6 +84,12 @@ double ComputeValue(const DivConstraint& con, const VarVec& x) {
       : divt / divs;
 }
 
+/// Compute result of the mul constraint.
+template <class VarVec>
+double ComputeValue(const MulConstraint& con, const VarVec& x) {
+  return x[con.GetArguments()[0]] * x[con.GetArguments()[1]];
+}
+
 /// Compute result of the IfThen constraint.
 template <class VarVec>
 double ComputeValue(const IfThenConstraint& con, const VarVec& x) {

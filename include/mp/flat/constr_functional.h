@@ -52,6 +52,13 @@ DEF_NUMERIC_FUNC_CONSTR( Div, VarArray2,
                                   "r = v1 / v2 and v2!=0");
 
 ////////////////////////////////////////////////////////////////////////
+/// \brief MulConstraint: product of two variables.
+/// Created from quadratic terms only for solvers accepting it
+/// natively (CP solvers), see QCConverter_MIP.
+DEF_NUMERIC_FUNC_CONSTR( Mul, VarArray2,
+                                  "r = v1 * v2");
+
+////////////////////////////////////////////////////////////////////////
 DEF_NUMERIC_FUNC_CONSTR( IfThen, VarArrayN<3>,
                          "Expr-valued: if (cond) then (expr1) else (expr2)");
 

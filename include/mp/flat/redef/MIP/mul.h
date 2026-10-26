@@ -70,7 +70,19 @@ protected:
     if (GetMC().is_binary_var(x) ||
         GetMC().is_binary_var(y))
       return LinearizeProductWithBinaryVar(c, x, y);
+    if (GetMC().UserAcceptsAndRecommends((MulConstraint*)nullptr))
+      return ProductAsMul(c, x, y);
     return LinearizeGeneralProduct(c, x, y);
+  }
+
+  /// c*x*y -> c*r, r = x*y, for solvers taking products natively
+  /// (acc:mul). Equal products share r.
+  LinTerms ProductAsMul(double c, int x, int y) {
+    if (y < x)
+      std::swap(x, y);        // so that x*y and y*x are the same
+    auto r = GetMC().AssignResultVar2Args(
+          MulConstraint{ {x, y} } );
+    return { {c}, {r} };
   }
 
   LinTerms LinearizeProductWithBinaryVar(double c, int x, int y) {
