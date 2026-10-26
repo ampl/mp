@@ -90,5 +90,27 @@
     "solvers": [ "snopt777" ],
     "options": { "snopt777_options": "alg:start=0" },
     "values": { "if solve_result_num >= 400 and solve_result_num < 500 then 1 else 0": 1 }
+  },
+  {
+    "name": "ws_hint_01",
+    "tags": [ "integer", "logical", "mipstart" ],
+    "objective": 62
+  },
+  {
+    "name": "ws_hint_01 fixed to hints CP-SAT",
+    "files": [ "ws_hint_01.mod" ],
+    "tags": [ "integer", "logical", "mipstart" ],
+    "solvers": [ "cpsat" ],
+    "options": { "cpsat_options": "params='fix_variables_to_their_hinted_value:true'" },
+    "objective": 25
+  },
+  {
+    "name": "ws_hint_01 alg:start=0 fixed to hints CP-SAT",
+    "files": [ "ws_hint_01.mod" ],
+    "tags": [ "integer", "logical", "mipstart" ],
+    "comment": "Negative control: no hints, so nothing is fixed",
+    "solvers": [ "cpsat" ],
+    "options": { "cpsat_options": "alg:start=0 params='fix_variables_to_their_hinted_value:true'" },
+    "objective": 62
   }
 ]

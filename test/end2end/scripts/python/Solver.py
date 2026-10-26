@@ -109,12 +109,24 @@ class Solver(object):
         if model.hasExpectedOutput():
             self._getSolution(model)
             output += self._stats["outmsg"]
+            output += self._getSolMessage(model)  # can span several lines
             for oitem in model.getExpectedOutput():
                 self._stats["eval_done"] = True
                 if str(oitem) not in output:
                    self._stats.setdefault("eval_fail_msg", []).append( \
                     "string  '" + str(oitem) + \
                     "'  is not found in the output")
+
+    @staticmethod
+    def _getSolMessage(model: Model) -> str:
+        """Solver message of the .sol file: the lines before 'Options'"""
+        sol = model.getSolFilePath()
+        if not sol.exists():
+            return ""
+        lines = sol.read_text().splitlines()
+        if "Options" in lines:
+            lines = lines[:lines.index("Options")]
+        return "\n".join(lines)
 
     def _assertAndRecord(self, expval, val, msg):
         b1 = isinstance(expval, (int, float))
@@ -1152,7 +1164,7 @@ class MPDirectSolver(AMPLSolver):
                 }
             # Direct/FlatConverter drivers with non-convex quadratics:
             if ModelTags.quadraticnonconvex in stags:
-                stags = stags | {ModelTags.polynomial}
+                stags = stags | {ModelTags.polynomial, ModelTags.prod_int}
         
         opts = self._get_timing_options()
         if otherOptions:
@@ -1641,6 +1653,9 @@ class CpsatSolver(MPDirectSolver):
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
         stags = {ModelTags.integer, ModelTags.binary,
                  ModelTags.return_mipgap,
+                 ModelTags.prod_int,     # products, integer powers natively
+                 ModelTags.multisol,     # improving solutions found
+                 ModelTags.mipstart,     # solution hints
                  }
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
         # MPDirectSolver adds tags for drivers with continuous variables

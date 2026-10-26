@@ -14,10 +14,14 @@
     "options": { "mp_options": "countsolutions=1" },
     "values": {
       "Initial.nsol": 6
+    },
+    "values_per_solver_category": {
+      "CP": { "Initial.nsol": { "min": 1 } }
     }
   },
   {
     "name": "multi_sol_01 poolgap=0.1 solutionstub=stub",
+    "solvers_exclude": ["cpsat"],
     "tags": [ "linear", "multisol"],
     "objective": 1,
     "options": { "ANYSOLVER_options": "poolgap=0.1 solutionstub=stub" },
@@ -27,6 +31,7 @@
   },
   {
     "name": "multi_sol_01 poolgapabs=0.1 solutionstub=stub poolmode=2",
+    "solvers_exclude": ["cpsat"],
     "tags": [ "linear", "multisol"],
     "objective": 1,
     "options": { "ANYSOLVER_options": "poolgapabs=0.1 solutionstub=stub poolmode=2" },
@@ -36,6 +41,7 @@
   },
   {
     "name": "multi_sol_01 poollimit=2 solutionstub=stub",
+    "solvers_exclude": ["cpsat"],
     "tags": [ "linear", "multisol"],
     "objective": 1,
     "options": { "ANYSOLVER_options": "poollimit=2 solutionstub=stub" },
@@ -50,10 +56,14 @@
     "options": { "mp_options": "countsolutions=1" },
     "values": {
       "Initial.npool": 6
+    },
+    "values_per_solver_category": {
+      "CP": { "Initial.npool": { "min": 1 } }
     }
   },
   {
     "name": "multi_sol_01 poolgap=0.1 ams_stub=stub",
+    "solvers_exclude": ["cpsat"],
     "tags": [ "linear", "multisol"],
     "objective": 1,
     "options": { "ANYSOLVER_options": "poolgap=0.1 ams_stub=stub" },
@@ -63,6 +73,7 @@
   },
   {
     "name": "multi_sol_02 poolmode=2 poollimit=10 poolgap=0.01",
+    "solvers_exclude": ["cpsat"],
     "tags": [ "linear", "multisol"],
     "comment": "The primary solution must be the pool's best (Xpress enumerator)",
     "objective": 413,
@@ -148,11 +159,20 @@
     "solvers": ["copt"]
   },
   {
+    "name": "multi_sol_01 solutionstub=stub CP-SAT",
+    "files": ["multi_sol_01.mod"],
+    "tags": ["linear", "multisol"],
+    "comment": "CP-SAT: the improving solutions found",
+    "solvers": ["cpsat"],
+    "objective": 1,
+    "options": { "cpsat_options": "solutionstub=stub countsolutions=1" },
+    "values": { "TotalSum.nsol": { "min": 1 }, "Initial.nsol": { "min": 1 } }
+  },
+  {
     "name": "multi_sol_04 no objective, countsolutions=1",
     "tags": [ "logical" ],
     "comment": "Feasibility problem: objective suffixes nsol/npool must not be written (used to crash)",
     "options": { "mp_options": "countsolutions=1" },
-    "solvers": ["cpsat", "gecode"],
     "values": {
       "solve_result_num": 0
     }
@@ -162,7 +182,6 @@
     "tags": [ "logical" ],
     "comment": "Same with solution files written",
     "options": { "mp_options": "solutionstub=stub" },
-    "solvers": ["cpsat", "gecode"],
     "values": {
       "solve_result_num": 0
     }

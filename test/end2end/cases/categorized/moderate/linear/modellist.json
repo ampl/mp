@@ -7,7 +7,7 @@
   {
     "name" : "cut",
     "objective" : 47,
-    "tags" : ["linear", "integer", "script"],
+    "tags" : ["linear", "integer", "script", "continuous"],
     "files" : ["cut.run"],
     "options": {
       "scip_options": "pre:settings=3 pro:maxrounds=0 pro:maxroundsroot=0 heu:settings=3",
@@ -18,7 +18,7 @@
   {
     "name" : "cut2",
     "objective" : 47,
-    "tags" : ["linear", "integer", "script"],
+    "tags" : ["linear", "integer", "script", "continuous"],
     "files" : ["cut2.run"],
     "options": {
       "scip_options": "pre:settings=3 pro:maxrounds=0 pro:maxroundsroot=0 heu:settings=3",
@@ -104,19 +104,19 @@
   {
     "name" : "multmip1",
     "objective" : 229850,
-    "tags" : ["linear", "binary"],
+    "tags" : ["linear", "binary", "continuous"],
     "files" : ["multmip1.mod", "multmip1.dat"]
   },
   {
     "name" : "multmip2",
     "objective" : 233150,
-    "tags" : ["linear", "binary"],
+    "tags" : ["linear", "binary", "continuous"],
     "files" : ["multmip2.mod", "multmip2.dat"]
   },
   {
     "name" : "multmip3",
     "objective" : 235625,
-    "tags" : ["linear", "binary"],
+    "tags" : ["linear", "binary", "continuous"],
     "files" : ["multmip3.mod", "multmip3.dat"]
   },
   {

@@ -150,8 +150,8 @@
     "options": {
       "gurobi_options": "nonconvex=2",
       "cplex_options": "qp:target=3",
-      "highs_options": "cvt:quadobj=0",
-      "copt_options": "cvt:quadobj=0 cvt:quadcon=0",
+      "highs_options": "cvt:quadobj=0 cvt:plapprox:reltol=0.001",
+      "copt_options": "cvt:quadobj=0 cvt:quadcon=0 cvt:plapprox:reltol=0.001",
       "comment_highs_copt": "non convex objective, linearise"
     },
     "values": {

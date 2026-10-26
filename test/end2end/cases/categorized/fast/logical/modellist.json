@@ -107,7 +107,7 @@
   {
     "name" : "test_int_non_int",
     "objective" : 0,
-    "tags" : ["logical"]
+    "tags" : ["logical", "continuous"]
   },
   {
     "name" : "impl1",
@@ -351,7 +351,7 @@
     "options": {
       "mp_options": "acc:condlineq=1 debug=1"
     },
-    "tags" : ["logical"],
+    "tags" : ["logical", "continuous"],
     "objective" : 0,
     "values": {
       "Initial.flat1__uenc": 0,

@@ -647,5 +647,71 @@
     "objective" : 0,
     "options": { "gurobi_options": "multiobj=1 obj:multi:stats=1 lim:sol=1" },
     "values": { "_obj[1].objpass_result": 100, "_obj[2].objpass_result": 0 }
+  },
+  {
+    "name" : "mo_int_01 multiobj=1",
+    "files" : ["mo_int_01.mod"],
+    "tags" : ["integer", "logical", "multiobj"],
+    "comment": "Integer-only lexicographic objectives (also for CP solvers)",
+    "options": { "ANYSOLVER_options": "multiobj=1", "solution_round": "6" },
+    "objective" : 45,
+    "values": { "_obj[2]": 26, "_obj[3]": 4 }
+  },
+  {
+    "name" : "mo_int_01 multiobj=2 multiobjstats=1",
+    "files" : ["mo_int_01.mod"],
+    "tags" : ["integer", "logical", "multiobj"],
+    "options": { "ANYSOLVER_options": "multiobj=2 multiobjstats=1", "solution_round": "6" },
+    "objective" : 45,
+    "values": { "_obj[2]": 26, "_obj[3]": 4,
+                "_obj[1].objpass": 1, "_obj[2].objpass": 2, "_obj[3].objpass": 3,
+                "_obj[3].objpass_result": 0 }
+  },
+  {
+    "name" : "mo_int_01 multiobj=1 objabstol",
+    "files" : ["mo_int_01.mod", "mo_int_01_abstol.run"],
+    "tags" : ["integer", "logical", "multiobj"],
+    "options": { "ANYSOLVER_options": "multiobj=1", "solution_round": "6" },
+    "objective" : 42,
+    "values": { "_obj[2]": 15, "_obj[3]": 3 }
+  },
+  {
+    "name" : "mo_int_01 multiobj=1 objreltol",
+    "files" : ["mo_int_01.mod", "mo_int_01_reltol.run"],
+    "tags" : ["integer", "logical", "multiobj"],
+    "options": { "ANYSOLVER_options": "multiobj=1", "solution_round": "6" },
+    "objective" : 41,
+    "values": { "_obj[2]": 14, "_obj[3]": 4 }
+  },
+  {
+    "name" : "mo_int_01 multiobj=1 blend fractional weights",
+    "files" : ["mo_int_01.mod", "mo_int_01_blend.run"],
+    "tags" : ["integer", "logical", "multiobj"],
+    "comment": "One priority level: CP-SAT gets a floating-point objective",
+    "options": { "ANYSOLVER_options": "multiobj=1", "solution_round": "6" },
+    "objective" : 42,
+    "values": { "_obj[2]": 18, "_obj[3]": 5 }
+  },
+  {
+    "name" : "mo_int_01 objno=2",
+    "files" : ["mo_int_01.mod"],
+    "tags" : ["integer", "logical", "multiobj"],
+    "options": { "ANYSOLVER_options": "objno=2", "solution_round": "6" },
+    "values": { "_obj[2]": 5 }
+  },
+  {
+    "name" : "mo_int_01 objno=0",
+    "files" : ["mo_int_01.mod"],
+    "tags" : ["integer", "logical", "multiobj"],
+    "comment": "No objective: feasibility",
+    "options": { "ANYSOLVER_options": "objno=0", "solution_round": "6" },
+    "values": { "solve_result_num": 0 }
+  },
+  {
+    "name" : "mo_int_01 infeasible multiobj=2 multiobjstats=1",
+    "files" : ["mo_int_01.mod", "mo_int_01_inf.dat"],
+    "tags" : ["integer", "logical", "multiobj"],
+    "options": { "ANYSOLVER_options": "multiobj=2 multiobjstats=1", "solution_round": "6" },
+    "values": { "solve_result": "infeasible" }
   }
 ]

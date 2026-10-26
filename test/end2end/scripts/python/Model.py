@@ -15,6 +15,8 @@ class ModelTags(enum.Enum):
     quadraticnonconvex = 3
     quadratic_obj_nonconvex = 3.5
     prod_with_bin_var = 3.7   # at most 1 term in a product non-binary
+    prod_int = 3.8            # products and integer powers of integer variables,
+                              # solved exactly (nonconvex quadratics or CP)
     socp = 4
     socp_hard_to_recognize = 4.1  ## For solvers recognizing from quadratics
     expcones = 4.4

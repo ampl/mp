@@ -1,0 +1,18 @@
+[
+  {
+    "name" : "prod_int_01",
+    "tags" : ["integer", "prod_int"],
+    "comment": "CP: 3 distinct products (x*y shared), 2 powers",
+    "options": { "mp_options": "debug=1", "gurobi_options": "nonconvex=2" },
+    "objective" : 27,
+    "values_per_solver_category": {
+      "CP": { "Initial.flat1__mul": 3, "Initial.flat1__powc": 2 }
+    }
+  },
+  {
+    "name" : "pow_int_01",
+    "tags" : ["integer", "prod_int"],
+    "options": { "gurobi_options": "nonconvex=2" },
+    "objective" : 70
+  }
+]

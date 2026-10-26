@@ -1,0 +1,6 @@
+# One priority level, fractional weights
+let Risk.objpriority := 3;
+let Spread.objpriority := 3;
+let Profit.objweight := 1;
+let Risk.objweight := 0.5;
+let Spread.objweight := 1.5;
