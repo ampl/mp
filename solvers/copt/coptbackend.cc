@@ -1738,7 +1738,7 @@ pre::ValueMapInt CoptBackend::ConsIIS() {
 
   return { {{ CG_Linear, iis_lincon },
       { CG_SOS, iis_soscon },
-      { CG_Logical, iis_indicon }} };
+        { CG_General, iis_indicon }} };
 
 }
 
