@@ -229,6 +229,15 @@ public:
   /// Resulting constraint type: GE
   using AlgConGE = AlgebraicConstraint< AlgConBody, AlgConRhs<1> >;
 
+  /// Quadratic ranges are also converted when accepted, but quadratic
+  /// constraints are not to be passed (cvt:quadcon=0): the resulting
+  /// quadratic constraints are then linearized.
+  bool IfNeedsConversion(const ItemType& , int ) {
+    if constexpr (std::is_same_v<AlgConBody, QuadAndLinTerms>)
+      return !GetMC().IfPassQuadCon();
+    return false;
+  }
+
   /// Conversion
   ///
   /// Responsible for adding presolve links
