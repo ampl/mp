@@ -354,6 +354,9 @@ void MP2NLModelAPI::PrepareModel() {
 }
 
 void MP2NLModelAPI::MapExpressions() {
+  // Writing the previous NL file (multi-objective passes)
+  // has retrieved the explicified expressions again
+  ResetIniExprRetrievedFlags();
   ResetObjMetaInfo();
   is_alg_con_nl_.clear();
   is_alg_con_nl_.resize(alg_con_info_.size());  // grow flags array
