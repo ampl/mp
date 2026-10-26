@@ -1240,7 +1240,10 @@ public:
           || ub(res_var)<MPCD( Infty() )) {
         const auto& cloc = MPCD( GetInitExpression(res_var) );
         PreprocessInfoStd preinfo;
-        cloc.GetCK()->PreprocessConstraint(cloc.GetIndex(), preinfo);
+        {
+          PreproBoundsOnlyScope bounds_only{prepro_bounds_only_};
+          cloc.GetCK()->PreprocessConstraint(cloc.GetIndex(), preinfo);
+        }
         if (lb_hard(res_var) > preinfo.lb()     // If some hard bound better:
             || ub_hard(res_var) < preinfo.ub())
           return true;
@@ -2289,6 +2292,12 @@ public:
   bool IfPreproIneqRHS() const
   { return MPCD( CanPreprocess(options_.preprocessInequalityRhs_) ); }
 
+  /// Whether constraint preprocessing only computes the result's
+  /// bounds and type: a query on a copy of a stored constraint
+  /// (IfSubmittedVarBoundsStrongerThanInitExpr()),
+  /// which must not rewrite it into new variables or constraints.
+  bool IfPreproBoundsOnly() const { return prepro_bounds_only_; }
+
   /// Whether preprocess inequality into ==LB/UB
   bool IfPreproIneq2BndEq() const
   { return MPCD( CanPreprocess(options_.preprocessIneq2BndEq_) ); }
@@ -2485,6 +2494,15 @@ private:
   /// to set up autolinking,
   /// or declare it empty
   bool is_autolinking_requested_ {false};
+
+  /// See IfPreproBoundsOnly(); set by const queries
+  mutable bool prepro_bounds_only_ {false};
+  /// Sets prepro_bounds_only_ for its lifetime
+  struct PreproBoundsOnlyScope {
+    bool& flag_;
+    PreproBoundsOnlyScope(bool& f) : flag_(f) { flag_ = true; }
+    ~PreproBoundsOnlyScope() { flag_ = false; }
+  };
 
   pre::Many2OneLink many2one_link_ { GetValuePresolver() }; // the many-to-one links
 

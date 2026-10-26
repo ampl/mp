@@ -111,11 +111,15 @@ public:
   void SetContext(int i, Context ctx) override
   { assert(check_index(i)); cons_[i].GetCon().SetContext(ctx); }
 
-  /// Propagate expression result of constraint \a i bottom-up
+  /// Propagate expression result of constraint \a i bottom-up.
+  /// Preprocesses a copy: preprocessing can modify the constraint
+  /// (sort, round RHS, integrate nested), and the stored one
+  /// has already been preprocessed.
   void PreprocessConstraint(int i, PreprocessInfoStd& preinfo) override {
     if constexpr (std::is_base_of_v<FunctionalConstraint, Constraint>) {
       PreprocessInfo<Constraint> prepro;
-      GetConverter().PreprocessConstraint(cons_[i].GetCon(), prepro);
+      auto con = cons_[i].GetCon();
+      GetConverter().PreprocessConstraint(con, prepro);
       preinfo.narrow_result_bounds(prepro.lb(), prepro.ub());
       preinfo.set_result_type(prepro.get_result_type());
     }

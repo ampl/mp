@@ -219,7 +219,7 @@ public:
     if (lb>=0.0) {  // When result var is set, \a c is skipped
       prepro.set_result_var(argvar);
       return;
-    } else if (ub<=0.0) {
+    } else if (ub<=0.0 && !MPCD( IfPreproBoundsOnly() )) {
       auto res = MPD( AssignResult2Args(   // create newvar = -argvar
             LinearFunctionalConstraint({ {{-1.0}, {argvar}}, 0.0 })) );
       prepro.set_result_var(res.get_var());
@@ -321,7 +321,7 @@ public:
     auto& m = MP_DISPATCH( GetModel() );
     const auto& con = c.GetConstraint();
     const auto& body = con.GetBody();
-    if (1==body.size()) {                           // var==const
+    if (1==body.size() && !MPCD( IfPreproBoundsOnly() )) {   // var==const; complement var
       assert( 1.0==body.coef(0) );                  // is normalized
       int var = body.var(0);
       if (m.is_binary_var(var)) {            // See if this is binary var==const
@@ -374,7 +374,8 @@ public:
   bool IfPreprocessHole(
       const Body& body, double rhs, PreprocessInfo& prepro) {
     if constexpr (std::is_same_v<Body, LinTerms>) {
-      if (1 != body.size() || !MPCD( IfPreproHoles() ))
+      if (1 != body.size() || !MPCD( IfPreproHoles() )
+          || MPCD( IfPreproBoundsOnly() ))
         return false;
       const int x = body.var(0);
       const auto side = MPCD( GetVarDomainHoles() ).Classify(
@@ -397,7 +398,8 @@ public:
   bool IfPreprocessVarBnd(
       const Body& body, double rhs, PreprocessInfo& prepro) {
     if constexpr (std::is_same_v<Body, LinTerms>) {
-      if (1 != body.size() || !MPCD( IfPreproVarBnd() ))
+      if (1 != body.size() || !MPCD( IfPreproVarBnd() )
+          || MPCD( IfPreproBoundsOnly() ))
         return false;
       const int x = body.var(0);
       const auto lit = MPCD( GetVarBinaryBounds() ).Decide(
@@ -420,7 +422,7 @@ public:
       ConditionalConstraint<
           AlgebraicConstraint< Body, AlgConRhs<kind> > >& cc,
       PreprocessInfo& prepro) {
-    if (!IsNormalized(cc)) {
+    if (!IsNormalized(cc) && !MPCD( IfPreproBoundsOnly() )) {
       auto arg1 = cc.GetArguments();
       arg1.negate();    // Negate the terms and sense
       prepro.set_result_var(   // Add the normalized one instead
@@ -489,7 +491,7 @@ public:
       ConditionalConstraint<
           AlgebraicConstraint< Body, AlgConRhs<kind> > >& cc,
       PreprocessInfo& prepro, const BndNType& bnt) {
-    if (MPCD( IfPreproIneq2BndEq() )) {
+    if (MPCD( IfPreproIneq2BndEq() ) && !MPCD( IfPreproBoundsOnly() )) {
       auto& algc = cc.GetArguments();
       auto convert = [&](double rhseq, bool fNegate=false) {
         auto res = MPD( AssignResultVar2Args(
@@ -555,7 +557,7 @@ public:
       ConditionalConstraint<
           AlgebraicConstraint< Body, AlgConRhs<kind> > >& cc,
       PreprocessInfo& prepro, const BndNType& bnt) {
-    if (MPCD( IfPreproIneq2Related() )) {
+    if (MPCD( IfPreproIneq2Related() ) && !MPCD( IfPreproBoundsOnly() )) {
       auto& algc = cc.GetArguments();
       auto rhs = algc.rhs();
       auto cmpEps = MPCD( ComparisonEps( bnt ) );
