@@ -157,9 +157,15 @@ public:
     return map_.at(i);
   }
 
-  /// Move out the single array
-  Array MoveOut()
-  { assert(IsSingleKey()); return std::move(map_.at(0)); }
+  /// Move out the single array.
+  /// An empty map (e.g., constraint values of a model
+  /// without constraints) gives an empty array.
+  Array MoveOut() {
+    if (map_.empty())
+      return {};
+    assert(IsSingleKey());
+    return std::move(map_.at(0));
+  }
 
   /// Move out array \a i
   Array MoveOut(int i) { return std::move(map_.at(i)); }
