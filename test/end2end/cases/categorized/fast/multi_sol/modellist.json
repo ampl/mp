@@ -146,5 +146,25 @@
     "objective": 1,
     "options": { "copt_options": "tech:tunebase=copt_tune.par tech:tunetimelim=1 tech:tuneoutlev=0" },
     "solvers": ["copt"]
+  },
+  {
+    "name": "multi_sol_04 no objective, countsolutions=1",
+    "tags": [ "logical" ],
+    "comment": "Feasibility problem: objective suffixes nsol/npool must not be written (used to crash)",
+    "options": { "mp_options": "countsolutions=1" },
+    "solvers": ["cpsat", "gecode"],
+    "values": {
+      "solve_result_num": 0
+    }
+  },
+  {
+    "name": "multi_sol_04 no objective, solutionstub=stub",
+    "tags": [ "logical" ],
+    "comment": "Same with solution files written",
+    "options": { "mp_options": "solutionstub=stub" },
+    "solvers": ["cpsat", "gecode"],
+    "values": {
+      "solve_result_num": 0
+    }
   }
 ]

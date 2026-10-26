@@ -159,12 +159,16 @@ void SolutionWriterImpl<Solver, PB, Writer>::HandleSolution(
     auto kindO = mp::suf::Kind( suf::OBJ | suf::OUTPUT | suf::OUTONLY );
     builder_.AddIntSuffix("nsol", kindP, 0).
         SetValue(0, num_solutions_);
-    builder_.AddIntSuffix("nsol", kindO, 0).
-        SetValue(0, num_solutions_);
     builder_.AddIntSuffix("npool", kindP, 0).
         SetValue(0, num_solutions_);
-    builder_.AddIntSuffix("npool", kindO, 0).
-        SetValue(0, num_solutions_);
+    // An objective suffix has one value per objective: none to set
+    // for a feasibility problem (writing value 0 would be out of bounds)
+    if (builder_.num_objs() > 0) {
+      builder_.AddIntSuffix("nsol", kindO, 0).
+          SetValue(0, num_solutions_);
+      builder_.AddIntSuffix("npool", kindO, 0).
+          SetValue(0, num_solutions_);
+    }
   }
   SolutionAdapter<PB> sol(
         status, &builder_, message.c_str(), options_,
