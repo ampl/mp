@@ -1016,6 +1016,11 @@ std::pair<int, std::string> CplexBackend::GetSolveResult(int optimstatus) {
 
 
 void CplexBackend::ComputeIIS() {
+  iisColIndices.clear();
+  iisColValues.clear();
+  iisRowIndices.clear();
+  iisRowValues.clear();
+  iisGrouped_ = false;
   int status;
   int cs;
   int nr, nc, nr2, nc2;
@@ -1027,12 +1032,15 @@ void CplexBackend::ComputeIIS() {
   //if (nGroups > 0) // use ext routines if we have non linear constraints
   if(true)
   {
+    iisGrouped_ = true;
     
     // Check if we have bounds on variables, in which case, consider them as possible
     // conflicts, otherwise don't.
     std::vector<double> lbs(NumVars()), ubs(NumVars());
-    CPXgetlb(env(), lp(), lbs.data(), 0, NumVars() - 1);
-    CPXgetub(env(), lp(), ubs.data(), 0, NumVars() - 1);
+    if (NumVars()) {
+      CPLEX_CALL(CPXgetlb(env(), lp(), lbs.data(), 0, NumVars() - 1));
+      CPLEX_CALL(CPXgetub(env(), lp(), ubs.data(), 0, NumVars() - 1));
+    }
     for (int i = 0; i < NumVars(); i++) {
       if (lbs[i] > MinusInfinity()) nGroups++;
       if (ubs[i] < Infinity()) nGroups++;
@@ -1079,12 +1087,13 @@ void CplexBackend::ComputeIIS() {
     }
     
     // Calculate information on the above defined groups
-    CPXrefineconflictext(env(), lp(), nGroups, nGroups,
-      grpPref.data(), grpBeg.data(), grpInd.data(), grpType.data());
+    if (!nGroups) return;
+    CPLEX_CALL(CPXrefineconflictext(env(), lp(), nGroups, nGroups,
+      grpPref.data(), grpBeg.data(), grpInd.data(), grpType.data()));
     
     // Get calculated information
     std::vector<int> grpStat(nGroups);
-    CPXgetconflictext(env(), lp(), grpStat.data(), 0, nGroups - 1);
+    CPLEX_CALL(CPXgetconflictext(env(), lp(), grpStat.data(), 0, nGroups - 1));
     for (int i = j = 0; i < NumVars(); i++)
     {
       int val = CPX_CONFLICT_EXCLUDED;
@@ -1212,14 +1221,17 @@ pre::ValueMapInt CplexBackend::ConsIIS() {
       iis_indcon(NumIndicatorCons(), (int)IISStatus::non),
       iis_soscon(NumSOSCons(), (int)IISStatus::non);
 
-  for (int i = 0; i < (int)iisRowIndices.size(); i++)
+  // Extended conflicts concatenate type-local indices. Only the linear
+  // prefix indexes iis_lincon; other groups have separate index spaces.
+  const int nlin = iisGrouped_ ? NumLinCons() : (int)iisRowIndices.size();
+  for (int i = 0; i < nlin; i++)
     iis_lincon[iisRowIndices[i]] = (int)IISCplexToAMPL(iisRowValues[i]);
   int j = NumLinCons();
-  for (int i = 0; i < NumQPCons(); i++)
+  for (int i = 0; iisGrouped_ && i < NumQPCons(); i++)
     iis_qc[i] = (int)IISCplexToAMPL(iisRowValues[j++]);
-  for (int i = 0; i < NumIndicatorCons(); i++)
+  for (int i = 0; iisGrouped_ && i < NumIndicatorCons(); i++)
     iis_indcon[i] = (int)IISCplexToAMPL(iisRowValues[j++]);
-  for (int i = 0; i < NumSOSCons(); i++)
+  for (int i = 0; iisGrouped_ && i < NumSOSCons(); i++)
     iis_soscon[i] = (int)IISCplexToAMPL(iisRowValues[j++]);
   return { {{ CG_Linear, iis_lincon },
         { CG_Quadratic, iis_qc },

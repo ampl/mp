@@ -1,0 +1,40 @@
+# Reconstruct and check an IIS, then verify irreducibility.
+model ../../fast/iis_feasrelax/iis_indicators.mod;
+
+param original_status;
+param keep_cap binary;
+param keep_zero binary;
+param keep_one binary;
+param keep_irrelevant binary;
+param subset_status;
+param without_cap_status;
+param without_zero_status;
+param without_one_status;
+
+solve;
+let original_status := solve_result_num;
+let keep_cap := if Cap.iis != 'non' then 1 else 0;
+let keep_zero := if WhenZero.iis != 'non' then 1 else 0;
+let keep_one := if WhenOne.iis != 'non' then 1 else 0;
+let keep_irrelevant := if Irrelevant.iis != 'non' then 1 else 0;
+
+# Reconstruct from the returned IIS, rather than from expected membership.
+# Keep the solver configuration, also exercising repeated IIS queries.
+if keep_cap = 0 then drop Cap;
+if keep_zero = 0 then drop WhenZero;
+if keep_one = 0 then drop WhenOne;
+if keep_irrelevant = 0 then drop Irrelevant;
+solve;
+let subset_status := solve_result_num;
+
+# Check irreducibility: each missing member admits a feasible assignment.
+restore Cap; restore WhenZero; restore WhenOne;
+drop Cap;
+solve;
+let without_cap_status := solve_result_num;
+restore Cap; drop WhenZero;
+solve;
+let without_zero_status := solve_result_num;
+restore WhenZero; drop WhenOne;
+solve;
+let without_one_status := solve_result_num;

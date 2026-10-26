@@ -204,5 +204,43 @@
       "C2.iis": ["mem", "upp"],
       "C3.iis": "non"
     }
+  },
+  {
+    "name": "IIS native indicators",
+    "files": [
+      "iis_indicators.mod"
+    ],
+    "tags": [
+      "logical",
+      "iis"
+    ],
+    "options": {
+      "ANYSOLVER_options": "iis=1",
+      "cplex_options": "iis=1 tech:threads=1"
+    },
+    "values": {
+      "solve_result": "infeasible",
+      "Cap.iis": [
+        "mem",
+        "upp"
+      ],
+      "WhenZero.iis": [
+        "mem",
+        "low"
+      ],
+      "WhenOne.iis": [
+        "mem",
+        "low"
+      ],
+      "Irrelevant.iis": "non"
+    },
+    "solvers": [
+      "cplex",
+      "gurobi",
+      "copt",
+      "xpress",
+      "scip"
+    ],
+    "comment": "Requires native indicators with free variables and IIS reporting; the first indicator is irrelevant."
   }
 ]

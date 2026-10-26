@@ -362,6 +362,7 @@ private:
   // to store IIS
   std::vector<int> iisColIndices, iisColValues,
                     iisRowIndices, iisRowValues;
+  bool iisGrouped_ = false;
 
 };
 

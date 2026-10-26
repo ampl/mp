@@ -1,0 +1,42 @@
+[
+  {
+    "name": "IIS indicators reconstruct conflict",
+    "files": [
+      "iis_indicators.run"
+    ],
+    "tags": [
+      "script",
+      "logical",
+      "iis"
+    ],
+    "options": {
+      "ANYSOLVER_options": "iis=1",
+      "cplex_options": "iis=1 tech:threads=1"
+    },
+    "values": {
+      "original_status": {
+        "min": 200,
+        "max": 299
+      },
+      "keep_cap": 1,
+      "keep_zero": 1,
+      "keep_one": 1,
+      "subset_status": {
+        "min": 200,
+        "max": 299
+      },
+      "without_cap_status": 0,
+      "without_zero_status": 0,
+      "without_one_status": 0,
+      "keep_irrelevant": 0
+    },
+    "solvers": [
+      "cplex",
+      "gurobi",
+      "copt",
+      "xpress",
+      "scip"
+    ],
+    "comment": "Requires native indicators with free variables and IIS reporting; the first indicator is irrelevant."
+  }
+]
