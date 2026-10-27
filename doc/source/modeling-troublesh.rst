@@ -14,7 +14,9 @@ or logical conditions when using a different approach.
 Sometimes, just a different
 formulation can help, for example, a logical condition
 can be manually linearized.
-See sections :ref:`efficiency` and :ref:`numerical_accuracy`.
+See sections :ref:`efficiency` and :ref:`numerical_accuracy`; for choosing
+between whole formulations, and checking a candidate before a benchmark, see
+:ref:`modeling-formulations` and :ref:`before-benchmarking`.
 
 Play with `AMPL options <https://dev.ampl.com/ampl/options.html>`_
 and :ref:`solver-options`.
@@ -38,6 +40,8 @@ the solver's received model, and, if possible, the solver's presolved model:
     solve;
 
 MP offers ways to :ref:`explore automatic reformulations<explore-reformulations>`.
+Formats and options are in :ref:`writeprob`; how to read the big-M constants
+MP generated is shown in :ref:`declared-bounds-bigm`.
 
 
 .. _reading-solver-results:
@@ -59,12 +63,15 @@ Check a status before acting on it:
 - **"Infeasible" can be wrong** on hard nonconvex or numerically difficult
   models. Before acting on it, solve with a second solver, or solve a version
   with the constraints made elastic (slack variables with a large penalty)
-  and look at which slacks are needed.
+  and look at which slacks are needed. MP solvers can build that version
+  themselves (:ref:`feasibilityrelaxation`) or report an irreducible
+  infeasible subset (:ref:`iis`).
 - **Check the point itself**: the :ref:`automatic solution check <solution-check>`
   warnings, and the violated logical constraints
   (``display {i in 1.._nlogcons: !_logcon[i].val} (_logconname[i]);``).
 - **Do not screen results with the reported gap alone.** Recompute the gap
-  from the objective and the bound where it matters.
+  from the objective and the bound where it matters; see
+  :ref:`returnMIPgap` and :ref:`returnBestBound` for retrieving them.
 - **Cross-check bounds against incumbents.** When several runs (solvers,
   seeds, formulations) solve the same instance, every feasible objective is an
   incumbent and every dual bound bounds the same optimum, so an incumbent
@@ -122,7 +129,7 @@ section is about measuring them fairly.
 - **Summarize robustly**: shifted geometric means of times, or performance
   profiles (Dolan & Moré 2002).
 - **Run every arm under the same conditions**: thread count, time limit,
-  options, and machine load. Record the solver and driver versions with every
+  options, starting values (:ref:`warm-start`), and machine load. Record the solver and driver versions with every
   result.
 - **Change one thing per arm.** If an arm changes two things that may both
   matter, add the missing combination rather than argue which one did it.
