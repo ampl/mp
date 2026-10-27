@@ -70,7 +70,8 @@ Indicator constraints or big-M
 
 MP passes an implication ``b = 1 ==> constraint`` to solvers with native
 indicator support as an indicator constraint, and linearizes it with a
-big-M constant for the others (see :ref:`tight_bounds`). It is tempting to
+big-M constant for the others (see :ref:`tight_bounds`; the constant is sized
+from declared bounds, see :ref:`declared-bounds-bigm`). It is tempting to
 replace every hand-written big-M pair by an indicator, since an indicator
 needs no constant. That is a real risk when the constant is *honest*, i.e.
 derivable from the data:
@@ -99,7 +100,8 @@ Logic in implications, and facets
 
 AMPL transmits ``b = 1 ==> C`` as a disjunction, and MP recovers indicator
 constraints from it, including for a conjunction of comparisons
-(``b = 1 ==> forall {s in S} x[s] = 1``), see option *cvt:pre:disj2ind*. On
+(``b = 1 ==> forall {s in S} x[s] = 1``), see option *cvt:pre:disj2ind* in
+:ref:`conditional-operators`. On
 a unit commitment test, a minimum up-time written with a ``forall``
 consequent gave exactly the same root bound as one implication per period.
 
@@ -180,8 +182,9 @@ perspective :math:`\mathit{cost} \ge z\,f(x/z)` together with the on/off
 bounds describes the convex hull of "off, or on and paying :math:`f`"
 (Frangioni & Gentile 2006). It is rarely written literally:
 
-- **Piecewise-linear convex** :math:`f = \max_k (s_k x + c_k)`: multiply every
-  **intercept** by :math:`z`. The rows stay linear:
+- **Piecewise-linear convex** :math:`f = \max_k (s_k x + c_k)`, often written
+  with AMPL's ``<<...>>`` notation (:ref:`piecewise_linear_modeling`): multiply
+  every **intercept** by :math:`z`. The rows stay linear:
 
   .. code-block:: ampl
 
@@ -189,12 +192,12 @@ bounds describes the convex hull of "off, or on and paying :math:`f`"
       subject to Cost_Persp {k in 1..nseg}: Cost >= s[k] * X + c[k] * Z;
 
 - **Quadratic** :math:`f = q x^2`: a rotated second-order cone,
-  ``q * X^2 <= Cost * Z``.
+  ``q * X^2 <= Cost * Z`` (see :ref:`socp`).
 - **With MP's semicontinuous declaration** ``var X in {0} union interval[lo, hi]``
   there is no :math:`z` in the model. Gate the intercepts with a threshold
   inside the gap :math:`(0, lo)`; MP decides the comparison with the binary it
-  creates for the declaration (option *cvt:pre:vbnd*), so the result is the
-  same perspective:
+  creates for the declaration (option *cvt:pre:vbnd*, see
+  :ref:`conditional-operators`), so the result is the same perspective:
 
   .. code-block:: ampl
 
@@ -218,8 +221,8 @@ is a formulation choice with no known sign. On two models of the same
 shape, a product of a discrete-valued variable and a continuous one, the
 two forms won in opposite directions, by a factor of 4 to 600 in the
 remaining gap. Until the set membership rework is complete, see the
-recommendation in :ref:`expressions_supported`, and measure both forms on
-your model.
+recommendation in :ref:`set-membership`, and measure both forms on your
+model.
 
 
 .. _tighter-not-faster:
@@ -243,7 +246,8 @@ solver:
 So write both formulations and benchmark them, after making the comparison
 fair: size the big-M constant honestly (a hull that beats a deliberately
 loose big-M proves nothing), and check that the formulation really is what
-you intended (count variables and rows, compare root bounds).
+you intended (count variables and rows, compare root bounds); the checklist
+is in :ref:`before-benchmarking`.
 
 
 .. _substitute-or-name:
@@ -262,8 +266,9 @@ constraint.
 - Keep the named variable when the name lets MP recognize structure (a cone
   ``Wc^2 + Ws^2 <= Wi * Wj`` over lifted variables is recognized; with the
   lifts inlined it is a degree-4 expression), when the quantity needs a bound
-  that its expression does not imply (defined variables carry no bounds), or
-  when the defining constraint's dual is needed.
+  that its expression does not imply (defined variables carry no bounds; see
+  the example in :ref:`subexpression-bounds`), or when the defining
+  constraint's dual is needed.
 - Coordinates are a choice too: a polynomial form (for example rectangular
   voltages) suits solvers that only accept quadratic nonconvexity and conic
   relaxations; the original transcendental form has fewer variables and can
