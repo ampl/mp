@@ -15,7 +15,9 @@ A general treatment of this topic is provided in
 *E. Klotz and A.M. Newman (2013).
 Practical guidelines for solving difficult mixed integer linear programs.
 Surveys in Operations Research and Management Science 18(1-2) 18-32*,
-and related literature.
+and related literature. Choosing between whole formulations of a model
+(hand-written big-M, indicators, known reformulations) is covered in
+:ref:`modeling-formulations`.
 
 
 Simplification of logic
@@ -156,7 +158,9 @@ to 8.7%.
 To check what MP generated, export the solver's model
 (:ref:`explore-final-model`) and compare the coefficients of the binary
 variables with what the data allows. To measure the effect, compare
-root bounds (:ref:`root-bound-check`). The notebooks tagged
+root bounds (:ref:`root-bound-check`). Whether to keep such implications as
+native indicators instead is discussed in :ref:`indicator-vs-bigm`. The
+notebooks tagged
 `big-m <https://colab.ampl.com/tags/big-m.html>`__ walk through these steps.
 
 
