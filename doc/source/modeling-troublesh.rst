@@ -45,7 +45,9 @@ MP offers ways to :ref:`explore automatic reformulations<explore-reformulations>
 Reading solver results
 *************************
 
-A solver status is a claim. Check it before acting on it:
+A solver status is a claim. The status values themselves (``solve_result``,
+``solve_result_num`` and their ranges) are listed in :ref:`solve-result-codes`.
+Check a status before acting on it:
 
 - **"Optimal" from a local solver is a local claim.** On a nonconvex model, a
   local NLP or MINLP solver's ``solved`` means a point satisfying local
@@ -99,6 +101,10 @@ In a script, an unsuccessful solve may not raise an exception: check
 
 Comparing formulations and solvers
 **************************************
+
+How to choose and check the formulations themselves (root bounds, indicators
+or big-M, known reformulations) is in :ref:`modeling-formulations`; this
+section is about measuring them fairly.
 
 - **Validate first.** A reformulation is trusted only after it reproduces
   the original's objective and status on identical data, at more than one
