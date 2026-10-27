@@ -208,6 +208,10 @@ Four checks take minutes and often save a long benchmark:
 4. **Find out which solvers can solve the reference formulation at all.** A
    solver that cannot solve it gives no evidence about variants of it.
 
+Which formulations are worth trying is discussed in
+:ref:`modeling-formulations`; how to compare the measurements fairly, in
+:ref:`comparing-formulations`.
+
 
 
 .. _reformulation-graph:
@@ -750,8 +754,9 @@ a confident wrong status.
 Where the options go
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- ``mp2nl_options`` takes **MP's** options: ``solver=``, the reformulation
-  options ``cvt:...``, the acceptance options ``acc:...``, the solution check
+- ``mp2nl_options`` takes **MP's** options (see :ref:`solver-options` for how
+  option strings work): ``solver=``, the reformulation options ``cvt:...``,
+  the acceptance options ``acc:...`` (:ref:`acceptance-options`), the solution check
   ``sol:chk:...``, and generic ones such as ``lim:time``, ``mip:gap``,
   ``outlev``. The full list is printed by ``mp2nl -=``.
 - ``<subsolver>_options`` takes **the subsolver's own** keywords. An MP keyword
@@ -825,10 +830,11 @@ Subsolver configurations, files, statuses
   name, choose a configuration with ``config=<name>``.
 - ``stub=<path>`` keeps the reformulated NL file as ``<path>.nl``, to inspect
   what the subsolver received or to attach to a support request.
-- The status is the subsolver's. A local solver's "optimal" on a nonconvex
-  model is a local optimum; some subsolvers report a time-limit stop as a
-  failure. Read ``solve_message`` and the solution-check warnings together
-  with ``solve_result``.
+- The status is the subsolver's (codes in :ref:`solve-result-codes`). A local
+  solver's "optimal" on a nonconvex model is a local optimum; some subsolvers
+  report a time-limit stop as a failure. Read ``solve_message`` and the
+  solution-check warnings together with ``solve_result``; see
+  :ref:`reading-solver-results`.
 
 Worked example: the notebooks tagged
 `mp2nl <https://colab.ampl.com/tags/mp2nl.html>`__.
