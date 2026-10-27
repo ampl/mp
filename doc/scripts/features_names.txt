@@ -1,5 +1,5 @@
 WRITE_PROBLEM,:ref:`writeprob`
-WRITE_SOLUTION,Solution Export
+WRITE_SOLUTION,:ref:`writesol`
 REPORT_TIMES,:ref:`report-times`
 FEAS_RELAX,:ref:`feasibilityrelaxation`
 IIS,:ref:`iis`

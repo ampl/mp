@@ -27,6 +27,9 @@ Important features
 
 This section lists most important solver features,
 controlling solver behavior and information flow.
+Which of them a solver offers, its algorithms and their essential controls
+are described on the solver's page on
+`AMPL Development <https://dev.ampl.com/solvers/index.html>`__.
 
 * Option :ref:`lim:time (timelimit), lim:soltimelimit <ampl-solver-options>` -
   sets solver time limit
@@ -394,12 +397,14 @@ or visit `AMPL Development solver page <https://dev.ampl.com/solvers/index.html>
 .. _BaronMP: https://dev.ampl.com/solvers/baron/
 .. _MP2NL: https://dev.ampl.com/solvers/mp2nl/
 
+.. rst-class:: solver-support
+
 +------------------------------+-------+--------+---------+--------+---------+------+------+--------+-------+--------+--------+----------+--------+
 | Feature                      | Copt_ | CPLEX_ | Gurobi_ | Mosek_ | Xpress_ | CBC_ | GCG_ | HiGHS_ | SCIP_ | CPSAT_ | cuOpt_ | BaronMP_ | MP2NL_ |
 +==============================+=======+========+=========+========+=========+======+======+========+=======+========+========+==========+========+
 | :ref:`writeprob`             | |y|   | |y|    | |y|     | |y|    | |y|     | |y|  | |y|  | |y|    | |y|   | |y|    | |n|    | |y|      | |n|    |
 +------------------------------+-------+--------+---------+--------+---------+------+------+--------+-------+--------+--------+----------+--------+
-| Solution Export              | |y|   | |y|    | |y|     | |y|    | |y|     | |n|  | |y|  | |y|    | |y|   | |n|    | |y|    | |y|      | |n|    |
+| :ref:`writesol`              | |y|   | |y|    | |y|     | |y|    | |y|     | |n|  | |y|  | |y|    | |y|   | |n|    | |y|    | |y|      | |n|    |
 +------------------------------+-------+--------+---------+--------+---------+------+------+--------+-------+--------+--------+----------+--------+
 | :ref:`report-times`          | |y|   | |y|    | |y|     | |y|    | |y|     | |y|  | |y|  | |y|    | |y|   | |y|    | |y|    | |y|      | |y|    |
 +------------------------------+-------+--------+---------+--------+---------+------+------+--------+-------+--------+--------+----------+--------+
@@ -526,6 +531,32 @@ formulations is described in :ref:`before-benchmarking`.
    Use `solexpand;` to see the AMPL presolved model as sent to
    the driver (set `option presolve 0;` to disable
    `AMPL presolve <https://dev.ampl.com/ampl/reference/options.html#presolve-options>`_).
+
+
+.. _writesol:
+
+Solution export
+---------------
+
+Many solvers can also write the solution in their own format, for example
+to compare it with a run outside AMPL or to attach it to a support request.
+The format is the solver's; the file extension may select among several::
+
+    option <solver>_options 'writesol=/tmp/diet.sol';
+
+The option can be repeated to write several files.
+
+.. list-table::
+   :header-rows: 0
+
+   * - **Option**
+     - ``tech:writesolution``, ``writesol``
+   * - **Applicability**
+     - All models
+   * - **Values**
+     - Values:
+
+       * **filename** - Filename for the exported solution
 
 
 .. _report-times:

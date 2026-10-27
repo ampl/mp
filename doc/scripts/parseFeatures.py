@@ -132,7 +132,7 @@ MP_FEATURES = "https://mp.ampl.com/features-guide.html"
 # Feature -> (title on dev.ampl.com, main option, anchor in the MP features guide)
 DEVAMPL_FEATURES = {
     "WRITE_PROBLEM": ("Model export", "tech:writemodel", "model-export"),
-    "WRITE_SOLUTION": ("Solution export", "tech:writesolution", None),
+    "WRITE_SOLUTION": ("Solution export", "tech:writesolution", "solution-export"),
     "FEAS_RELAX": ("Feasibility relaxation", "alg:feasrelax", "feasibility-relaxation"),
     "IIS": ("Irreducible inconsistent subset (IIS)", "iis:find",
             "irreducible-inconsistent-subset-iis"),

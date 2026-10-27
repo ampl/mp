@@ -1,0 +1,31 @@
+/* Feature support table: solver names written vertically and narrow cells,
+   so that all solver columns fit the page */
+table.solver-support {
+  width: auto !important;
+  font-size: 0.9em;
+}
+table.solver-support th:not(:first-child) {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  white-space: nowrap;
+  vertical-align: bottom;
+  text-align: left;
+  padding: 0.4em 0.1em !important;
+}
+table.solver-support td {
+  text-align: center;
+  padding: 0.1em 0.15em !important;
+  min-width: 0;
+}
+table.solver-support td:first-child,
+table.solver-support th:first-child {
+  text-align: left;
+  min-width: 14em;
+}
+table.solver-support col {
+  width: auto !important;
+}
+/* paragraph margins in the cells: in vertical writing they widen the columns */
+table.solver-support p {
+  margin: 0;
+}

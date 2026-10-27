@@ -117,9 +117,7 @@ html_extra_path = ["_html"]
 sitemap_filename = "sphinx-sitemap.xml"
 
 html_static_path = ["_static"]
-# html_css_files = [
-#     'css/custom.css',
-# ]
+html_css_files = ["css/mp.css"]
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
 html_title = "AMPL MP Documentation"
