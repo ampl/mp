@@ -46,15 +46,18 @@ __ https://ampl.com/resources/logic-and-constraint-programming-extensions/
 
 - `Gecode <https://github.com/ampl/mp/tree/develop/solvers/gecode>`_
 
-- `JaCoP <https://github.com/ampl/mp/tree/develop/solvers/jacop>`_
+- `JaCoP <https://github.com/ampl/mp/tree/develop/solvers/jacop>`_ (unmaintained)
 
-- `LocalSolver <https://github.com/ampl/mp/tree/develop/solvers/localsolver>`_
+- `LocalSolver <https://github.com/ampl/mp/tree/develop/solvers/localsolver>`_ (unmaintained)
+
+For constraint programming with MP's reformulations, use the MP-based
+CP-SAT driver (see :ref:`modeling-overview`).
 
 
 Specialized drivers
 -------------------
 
-- `SOCP solver <https://github.com/ampl/mp/tree/develop/solvers/cplex>`_
+- `SOCP solver <https://github.com/ampl/mp/tree/develop/solvers/cplexsocp>`_
   uses IBM ILOG CPLEX to solve problems convertable to SOCP form.
 
 - `SSD solver <https://github.com/ampl/mp/tree/develop/solvers/ssdsolver>`_

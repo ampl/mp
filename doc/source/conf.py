@@ -5,8 +5,24 @@ import subprocess
 import datetime
 
 # Important: keep this as a string or sphinx will fail with
-# a non-helpful error message
-MP_VERSION = "20211021"
+# a non-helpful error message.
+# The version is the date of the latest entry in CHANGES.mp.md.
+def _mp_version():
+    import re
+    changes = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                           "..", "..", "CHANGES.mp.md")
+    try:
+        with open(changes, encoding="utf-8") as f:
+            for line in f:
+                m = re.match(r"##\s+(\d{8})", line)
+                if m:
+                    return m.group(1)
+    except OSError:
+        pass
+    return "unknown"
+
+
+MP_VERSION = _mp_version()
 
 # -- General configuration -----------------------------------------------------
 

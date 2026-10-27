@@ -44,8 +44,10 @@ is passed to the solver as a single formula using
 an expression tree mechanism. This representation allows
 more general treatment of nonlinearities in the solver,
 usually resulting in better performance and numerical precision.
-Examples of MP solvers supporting expression trees are
-SCIP 9.1.1 and Gurobi 12.
+MP solvers accepting expression trees include Gurobi, Xpress and SCIP
+(by default) and COPT (with ``acc:_expr=1``); MP2NL passes expression trees
+to NL solvers. Option ``acc:_expr`` in a solver's option list shows whether,
+and by default how, it accepts them.
 
 Next subsection explains how a user can switch between
 flat constraints and formulas, if available,

@@ -186,9 +186,12 @@ Logical operators
 - not *constr*
     *constr-valued:* Satisfied when *constr* is false.
 
-Expressions using these operators are transformed to use Gurobi's native AND
-and OR "general constraints" when possible. In other cases, they are
+Solvers with native AND and OR constraints (currently Gurobi, Xpress, SCIP
+and CP-SAT) receive them directly. For other solvers, they are
 transformed to simpler constraints that use relational operators.
+Whether a solver accepts a construct natively is shown by the corresponding
+:ref:`acceptance option <acceptance-options>` in its option list
+(``<solver> -=``).
 
 .. code-block:: ampl
 
@@ -264,8 +267,9 @@ Piecewise-linear expressions
 ABS, MIN, MAX
 ^^^^^^^^^^^^^^^^^^^
 
-Expressions using abs, min, and max are transformed to use Gurobi's native ABS, MIN, and MAX
-"general constraints" when possible. In other cases, they are transformed to simpler constraints
+Solvers with native support receive abs, min and max directly (abs: currently
+Gurobi, Xpress, COPT, SCIP and CP-SAT; min and max: Gurobi, Xpress and CP-SAT).
+For other solvers, they are transformed to simpler constraints
 that use relational operators, and in particular are linearized where all of the operands are linear.
 
 .. code-block:: ampl
@@ -295,7 +299,8 @@ is defined by a list of ``n`` *breakpoints* and ``n+1``
 We recommend setting `AMPL option <https://dev.ampl.com/ampl/reference/options.html>`_
 ``pl_linearize`` to 0 for MP solvers. Then piecewise-linear expressions are represented to the solver
 in the form of expression trees. The MP-based interface transforms them to use a solver's native
-methods for piecewise-linear functions (Gurobi, COPT), and linearizes them for other solvers (HiGHS).
+methods for piecewise-linear functions (Gurobi, CPLEX, Xpress), and linearizes them for other
+solvers (for example COPT, HiGHS, MOSEK).
 
 When AMPL option ``pl_linearize`` is at its default value of 1, AMPL linearizes these
 piecewise-linear expressions, and sends the linearized versions to the solver. The linearization
@@ -337,6 +342,7 @@ Counting operators
     *expr-valued:* The number of members of the indexing set such that the *constr* is satisfied.
 
 AMPL’s ``count`` operator examines an indexed collection of constraints, and returns the number of those constraints that are satisfied. The AMPL translator instantiates the specified constraint for each member of the indexing set, and communicates all of the instantiated constraints to the solver interface; then the solver interface transforms the counting operation to a form that the solver can accept.
+Constraint programming solvers (CP-SAT) receive ``count`` and ``numberof`` natively.
 
 .. code-block:: ampl
 
@@ -419,8 +425,8 @@ require careful modeling in regard to :ref:`numerical_accuracy`.
     *constr-valued:* Satisfied when all of the items in the *expr-list* take different values.
 
 This operator provides a much more concise alternative to specifying ``!=`` between all pairs
-in a specified collection of expressions. Currently none of the MP-based solvers support this
-operator natively, so the interface transforms it to a representation in terms of simpler
+in a specified collection of expressions. Constraint programming solvers (CP-SAT) receive it
+natively; for other solvers, the interface transforms it to a representation in terms of simpler
 constraints.
 
 .. code-block:: ampl
@@ -727,8 +733,8 @@ power flow. *IEEE Trans. Power Syst.* 31(1).
 Exponential cones
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Mosek natively handles exponential conic constraints.
-They are recognized by MP and passed to Mosek via its API.
+MOSEK and COPT natively handle exponential conic constraints.
+They are recognized by MP and passed to the solver via its API.
 Example:
 
 .. code-block:: ampl
