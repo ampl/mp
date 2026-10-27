@@ -785,6 +785,42 @@ How nonlinear functions reach the solver depends on its class:
    * - NL solvers through :ref:`MP2NL <mp2nl>` (e.g. Knitro, Ipopt, BARON)
      - Passed in the NL file, after MP's reformulation of the other constructs.
 
+For example, the Chichinadze test function has many local minima:
+
+.. code-block:: ampl
+
+    param pi := 4*atan(1);
+    var x {1..2} >= -30, <= 30;
+    minimize Chichinadze:
+       x[1]^2 - 12*x[1] + 11 + 10*cos(pi*x[1]/2) +
+          8*sin(pi*5*x[1]) - exp(-(x[2]-.5)^2/2)/sqrt(5);
+
+.. tab-set::
+
+   .. tab-item:: Python
+
+      .. code-block:: python
+
+         ampl.solve(solver="scip")            # or gurobi, xpress: global solvers
+         print(ampl.obj["Chichinadze"].value(), ampl.var["x"].to_list())
+
+   .. tab-item:: AMPL
+
+      .. code-block:: ampl
+
+         ampl: option solver scip;            # or gurobi, xpress: global solvers
+         ampl: solve;
+         SCIP 10.0.2: optimal solution; objective -43.31586211
+
+Gurobi, Xpress and SCIP all prove the global minimum :math:`-43.3159` at
+:math:`x \approx (5.9013, 0.5)`. A local solver can stop at one of the local
+minima, and a linear-quadratic solver works with the piecewise-linear
+approximation, whose accuracy depends on the bounds and on
+``cvt:plapprox:reltol``.
+
+For an interactive example of global optimization, see the Christmas tree
+decorations app in our `Streamlit gallery <https://ampl.com/streamlit>`_.
+
 Supported functions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -872,101 +908,3 @@ The appoximation is constructed by the MP interface, using :ref:`options <solver
 To reduce the approximation size and improve numerical properties,
 set tight bounds on the variables, as described in
 :ref:`piecewise_linear_modeling`.
-
-Handling in Gurobi
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-For Gurobi, the following univariate nonlinear functions are instead handled natively:
-**exp**, **log**, **^**, **sin**, **cos**, **tan** **tanh**.
-As part of the new MINLP capability, it applies
-`global nonlinear solving <https://www.gurobi.com/>`_ via spatial branching.
-After suitable transformations, MP interface sends Gurobi
-:ref:`expressions trees <flat-vs-expressions>` that use
-these functions.
-
-Gurobi 12 defaults to proper nonlinear handling of these functions.
-Alternatively (and deprecated in Gurobi 13) it allows their piecewise-linear approximation
-as part of preprocessing. Gurobi :ref:`option <solver-options>` ``alg:global``
-(``pre:funcnonlinear``) can be used to apply piecewise-linear approximation,
-after disabling expression trees:
-
-.. tab-set::
-
-   .. tab-item:: Python
-
-      .. code-block:: python
-
-         ampl.solve(solver="gurobi", gurobi_options="global=-1 acc:_expr=0")
-
-   .. tab-item:: AMPL
-
-      .. code-block:: ampl
-
-         ampl: option gurobi_options 'global=-1 acc:_expr=0'; solve;
-
-For individual constraints and objectives, the choice of global solving vs
-piecewise-linear approximation can be performed via the ``.global`` suffix:
-
-.. code-block:: text
-
-  pre:funcnonlinear (funcnonlinear, global)
-      Controls how general functions with their constraint's or objective's
-      suffix .funcnonlinear or, if not available, .global unset (or set to 0)
-      are treated (ATTENTION: different meaning than Gurobi FuncNonLinear
-      parameter and attribute):
-
-      -1 - Piecewise-linear approximation
-      0  - Automatic (default)
-      1  - Treated as nonlinear functions
-
-      Suffix values mean the same.
-
-See our `Christmas tree decorations Streamlit example <https://ampl.com/streamlit>`_
-using global optimization.
-
-**Deprecated** (Gurobi 13 deprecates its piecewise-linear approximation of
-general functions): piecewise-linear aproximation can be influenced by setting
-the following options in the AMPL ``gurobi_options`` string:
-
-.. code-block:: text
-
-  pre:funcpieces
-      Sets the strategy for constructing a piecewise-linear approximation of a
-      function:
-
-      0   - Automatic choice (default)
-      >=2 - Sets the number of pieces, of equal width
-      1   - Uses a fixed width for each piece, as specified by the
-            funcpiecelength option
-      -1  - Bounds the absolute error of the approximation, as specified
-            by the funcpieceerror option
-      -2  - Bounds the relative error of the approximation, as specified
-            by the funcpieceerror option
-
-  pre:funcpiecelength
-      When funcpieces = 1, specifies the length of each piece of the
-      approximation.
-
-  pre:funcpieceerror
-      When funcpieces = -1 or -2, specifies the maximum allowed
-      error (absolute for -1, relative for -2) in the approximation.
-
-  pre:funcpieceratio
-      Controls whether the piecewise-linear approximation is an underestimate
-      of the function, an overestimate, or somewhere in between. A value of
-      0.0 will always underestimate, while a value of 1.0 will always
-      overestimate; a value in between will interpolate between the
-      underestimate and the overestimate. A special value of -1 chooses
-      points that are on the original function.
-
-These options can also be overridden for a particular objective or constraint,
-by setting suffixes of the same names. For example, after defining the objective
-shown below, setting ``suffix funcpieces IN; let Chichinadze.funcpieces := 12;``
-specifies 12 pieces for approximating the sin, cos, and exp functions in that objective.
-
-.. code-block:: ampl
-
-    minimize Chichinadze:
-       x[1]^2 - 12*x[1] + 11 + 10*cos(pi*x[1]/2) +
-          8*sin(pi*5*x[1]) - exp(-(x[2]-.5)^2/2)/sqrt(5);
-
