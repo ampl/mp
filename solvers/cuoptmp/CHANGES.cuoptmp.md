@@ -2,6 +2,11 @@ Summary of recent updates to cuOpt for AMPL
 ===========================================
 
 
+## 20261101
+- Option *mip:heuristicsonly* spelled correctly; the old
+  spelling *mip:hueristicsonly* remains as a synonym.
+
+
 ## 20251210
 - Option *obj:multi:options*: fix integer-valued
   objective-specific options.

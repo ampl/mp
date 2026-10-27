@@ -410,7 +410,8 @@ void CuoptmpBackend::InitCustomOptions() {
     "Relative tolerance used to terminate the MIP solve",
     CUOPT_MIP_RELATIVE_GAP, 0.0, 1e-1);
 
-  AddSolverOption("mip:hueristicsonly hueristicsonly",
+  AddSolverOption("mip:heuristicsonly heuristicsonly "
+    "mip:hueristicsonly hueristicsonly",
     "Run only the GPU heuristics",
     CUOPT_MIP_HEURISTICS_ONLY,
     values_bool, "false");
