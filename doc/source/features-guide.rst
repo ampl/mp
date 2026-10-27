@@ -103,11 +103,21 @@ AMPL/MP solver options
 AMPL/MP solver options provide a unified interface to
 MP parameters, as well as underlying solver's configuration:
 
-.. code-block:: ampl
+.. tab-set::
 
-    ampl: option solver gurobi;
-    ampl: option gurobi_options 'outlev=1';      ## verbose output
-    ampl: solve;
+   .. tab-item:: Python
+
+      .. code-block:: python
+
+         ampl.solve(solver="highs", highs_options="outlev=1")   # verbose output
+
+   .. tab-item:: AMPL
+
+      .. code-block:: ampl
+
+         ampl: option solver highs;
+         ampl: option highs_options 'outlev=1';      ## verbose output
+         ampl: solve;
 
 Many of them are
 `standardized across AMPL solvers <https://dev.ampl.com/solvers/index.html>`__.
@@ -138,9 +148,19 @@ Option file
 It is possible to input a file with predefined AMPL solver options,
 using ``tech:optionfile``:
 
-.. code-block:: ampl
+.. tab-set::
 
-    ampl: option cbc_options 'optionfile="options_experiment1.txt"';
+   .. tab-item:: Python
+
+      .. code-block:: python
+
+         ampl.solve(solver="cbc", cbc_options='optionfile="options_experiment1.txt"')
+
+   .. tab-item:: AMPL
+
+      .. code-block:: ampl
+
+         ampl: option cbc_options 'optionfile="options_experiment1.txt"';
 
 For the underlying solver's native options see :ref:`native-options`.
 
@@ -152,13 +172,21 @@ From AMPL, options can be passed to an MP solver in two ways.
 Solver-specific options are passed
 via AMPL option ``(solvername)_options``:
 
-.. code-block:: ampl
+.. tab-set::
 
-    ampl: option solver gurobi;
-    ampl: option gurobi_options 'iis=1';         ## Tell Gurobi to find IIS
-    ampl: solve;
-    Gurobi 10.0.2:   alg:iisfind = 1
-    Gurobi 10.0.2: infeasible problem
+   .. tab-item:: Python
+
+      .. code-block:: python
+
+         ampl.solve(solver="highs", highs_options="iis=1")   # ask HiGHS to find an IIS
+
+   .. tab-item:: AMPL
+
+      .. code-block:: ampl
+
+         ampl: option solver highs;
+         ampl: option highs_options 'iis=1';         ## ask HiGHS to find an IIS
+         ampl: solve;
 
 If your solver executable has a different name, say ``gurobi25.exe``,
 and you provide ``gurobi25_options``, they will be used instead.
@@ -166,9 +194,19 @@ and you provide ``gurobi25_options``, they will be used instead.
 Common options (for all MP solvers) can be passed via AMPL option
 ``mp_options``:
 
-.. code-block:: ampl
+.. tab-set::
 
-    ampl: option mp_options 'lim:time=300';      ## Options for all MP solvers
+   .. tab-item:: Python
+
+      .. code-block:: python
+
+         ampl.option["mp_options"] = "lim:time=300"     # options for all MP solvers
+
+   .. tab-item:: AMPL
+
+      .. code-block:: ampl
+
+         ampl: option mp_options 'lim:time=300';      ## Options for all MP solvers
 
 The value of ``mp_options`` is parsed before ``(solvername)_options``.
 Thus, ``mp_options`` allows setting parameters for all MP solvers,
@@ -194,12 +232,27 @@ Query option values
 To query the value of an option (default, or set via other methods),
 use '?' as argument:
 
-.. code-block:: ampl
+.. tab-set::
 
-    ampl: option mosek_options 'threads=?';
-    ampl: solve;
-    MOSEK 10.0.43:   tech:threads = 0
-    MOSEK 10.0.43: optimal; objective 10
+   .. tab-item:: Python
+
+      .. code-block:: python
+
+         ampl.solve(solver="mosek", mosek_options="threads=?", verbose=True)
+
+   .. tab-item:: AMPL
+
+      .. code-block:: ampl
+
+         ampl: option mosek_options 'threads=?';
+         ampl: solve;
+
+Output:
+
+.. code-block:: text
+
+    MOSEK 11.2.0:   tech:threads = 0
+    MOSEK 11.2.0: optimal; objective 10
 
 
 
@@ -228,35 +281,50 @@ Solve result codes
 
 The result of the last solve in AMPL can be seen as follows.
 
-.. code-block:: ampl
+.. tab-set::
 
-    ampl: model party2.mod
-    ampl: data party2.dat
-    ampl: display solve_result_num, solve_result;
-    solve_result_num = -1
-    solve_result = '?'
+   .. tab-item:: Python
 
-    ampl: option solver gurobi;
-    ampl: option gurobi_options 'lim:time 20';
-    ampl: solve;
-    Gurobi 11.0.0:   lim:time = 20
-    Gurobi 11.0.0: time limit, feasible solution
-    35671 simplex iteration(s)
-    1 branching node(s)
-    absmipgap=27, relmipgap=0.818182
-    ampl: display solve_result_num, solve_result;
-    solve_result_num = 402
-    solve_result = limit
+      .. code-block:: python
 
-    ampl: option solve_result_table;
-    option solve_result_table '\
-    0       solved\
-    100     solved?\
-    200     infeasible\
-    300     unbounded\
-    400     limit\
-    500     failure\
-    ';
+         ampl.read("party2.mod")
+         ampl.read_data("party2.dat")
+         print(ampl.solve_result, ampl.get_value("solve_result_num"))    # ? -1
+         ampl.solve(solver="gurobi", gurobi_options="lim:time=20")
+         print(ampl.solve_result, ampl.get_value("solve_result_num"))    # limit 402
+         print(ampl.get_value("solve_message"))
+
+   .. tab-item:: AMPL
+
+      .. code-block:: ampl
+
+         ampl: model party2.mod
+         ampl: data party2.dat
+         ampl: display solve_result_num, solve_result;
+         solve_result_num = -1
+         solve_result = '?'
+
+         ampl: option solver gurobi;
+         ampl: option gurobi_options 'lim:time=20';
+         ampl: solve;
+         Gurobi 13.0.3:   lim:time = 20
+         Gurobi 13.0.3: time limit, feasible solution; objective 21
+         94305 simplex iterations
+         1 branching node
+         absmipgap=15, relmipgap=0.714286
+         ampl: display solve_result_num, solve_result;
+         solve_result_num = 402
+         solve_result = limit
+
+         ampl: option solve_result_table;
+         option solve_result_table '\
+         0       solved\
+         100     solved?\
+         200     infeasible\
+         300     unbounded\
+         400     limit\
+         500     failure\
+         ';
 
 MP details the solve result codes as follows:
 
@@ -732,9 +800,11 @@ Penaly weights < 0 are treated as Infinity, allowing no violation.
    * - **Example**
      - Use :ref:`this model <infeasibleModel>`
 
-       Solve the model changing the penalties to get different solutions::
+       Solve the model changing the penalties to get different solutions
+       (the values shown are from Gurobi 13; another solver can return a
+       different solution with the same relaxation objective)::
 
-          options <solver>_options "alg:feasrelax=1";
+          option <solver>_options "alg:feasrelax=1";
           option presolve 0;    # otherwise the model could be oversimplified
 
           solve; display x,y;
@@ -748,7 +818,7 @@ Penaly weights < 0 are treated as Infinity, allowing no violation.
         
        Now we want to force all variable lower bounds to be respected::
 
-          options <solver>_options "alg:feasrelax=1 alg:lbpen=-1";
+          option <solver>_options "alg:feasrelax=1 alg:lbpen=-1";
           solve; display x,y;
 
        Gives, as expected x=5 (it had a lower bound of 5):
@@ -761,7 +831,7 @@ Penaly weights < 0 are treated as Infinity, allowing no violation.
        Single violations can be controlled via suffixes; in this case we
        want to control the constraints violations::
 
-          options <solver>_options "alg:feasrelax=1 alg:lbpen=1"; # allow lower bounds to be violated again
+          option <solver>_options "alg:feasrelax=1 alg:lbpen=1"; # allow lower bounds to be violated again
 
           suffix rhspen IN;
           let C1.rhspen := 1; # normal weight
@@ -779,7 +849,7 @@ Penaly weights < 0 are treated as Infinity, allowing no violation.
           C3.slack = 0
 
        C1 is violated - which makes sense as we specified that C2 cannot be violated
-       and we gave an higher avoidance weight to C2. If we want to violate C1 instead,
+       and we gave a higher avoidance weight to C3. If we want to violate C1 instead,
        we can::
 
           let C1.rhspen := 10; # We'd rather not violate C1
@@ -933,7 +1003,7 @@ This option controls whether to calculate these values and return them in the su
 
        Execute::
 
-          options <solver>_options "alg:sens=1"; 
+          option <solver>_options "alg:sens=1";
           option presolve 0;  # disable model transformations in AMPL
           solve;
 
@@ -992,7 +1062,7 @@ if crossover is not applied.
 
        Solve the model and report kappa::
 
-          options <solver>_options "alg:kappa=3"; 
+          option <solver>_options "alg:kappa=3";
           solve;
 
           display Initial.kappa, total_number.kappa;
@@ -1050,23 +1120,25 @@ or suffix ``dunbdd`` if the constraints are infeasible.
 
        Solve the (infeasible) model and report the ``dunbdd`` rays::
 
-          options gurobi_options "alg:rays=3"; # it is default already
+          option <solver>_options "alg:rays=3"; # it is default already
           option presolve 0;  # else the model could be oversimplified
           solve;
-          display c1.dunbdd, c2.dunbdd, c3.dunbdd;
+          display c1.dunbdd, c2.dunbdd, c3.dunbdd, c4.dunbdd;
 
-       Output:
+       Output (HiGHS 1.15.1; the sign convention of the ray depends on the
+       solver):
 
        .. code-block:: shell
 
-          x-Gurobi 9.5.2: alg:rays=3
-          x-Gurobi 9.5.2: infeasible problem
+          HiGHS 1.15.1:   alg:rays = 3
+          HiGHS 1.15.1: infeasible problem
 
           suffix dunbdd OUT;
 
           c1.dunbdd = 1
-          c2.dunbdd = 0
-          c3.dunbdd = 0
+          c2.dunbdd = -1
+          c3.dunbdd = -1
+          c4.dunbdd = 0
 
 
 .. _multipleObjectives:
@@ -1117,7 +1189,7 @@ for examples.
 
        Execute::
 
-          options <solver>_options "obj:multi=1"; 
+          option <solver>_options "obj:multi=1"; 
           solve;
 
        Output:
@@ -1172,22 +1244,21 @@ difficult model, see also :ref:`reading-solver-results`.
         option <solver>_options "iisfind=1";
         option presolve 0;  # else the model could be oversimplified
         solve;
-        display c1.iis, c2.iis, c3.iis;
+        display c1.iis, c2.iis, c3.iis, c4.iis;
 
-       Output:
+       Output (HiGHS 1.15.1):
 
        .. code-block:: shell
 
-          x-Gurobi 9.5.2: alg:iisfind=1
-          x-Gurobi 9.5.2: infeasible problem
-          2 simplex iterations
+          HiGHS 1.15.1:   iis:find = 1
+          HiGHS 1.15.1: infeasible problem
 
           suffix iis symbolic OUT;
-          suffix dunbdd OUT;
-  
+
           c1.iis = mem
           c2.iis = mem
           c3.iis = mem
+          c4.iis = non
 
 
 MIP-only features
@@ -1355,24 +1426,48 @@ positive to denote a lazy constraint and negative to mark a contraint as a user 
        * **2** - Accept <0 values to denote user cuts
        * **3** - Accept both (default)
    * - **Example**
-     - Following ampl model
-
-       .. code-block:: ampl
- 
-            TODO Model
-
-       end of code block
+     - For the model
 
        .. code-block:: ampl
 
-            option presolve 0;  # disable model transformations in AMPL
+            var x integer >= 0, <= 10;
+            var z >= 0, <= 10;
+            maximize Profit: 5*x + 4*z;
+            subject to c1: 6*x + 4*z <= 24;
+            subject to c2: x + 2*z <= 7;
+            subject to c3: x + z <= 8;     # redundant: implied by c1 and the bounds
 
-            suffix lazy IN;
-            let c1.lazy := 1;  # lazy constraint
-            let c2.lazy := -1; # user cut, must be redundant as it might never be pulled in
-            solve;
+       mark ``c1`` as a lazy constraint and the redundant ``c3`` as a user cut
+       (a user cut must be redundant, since it might never be pulled in):
 
-            # TODO SHOW OUTPUT
+       .. tab-set::
+
+          .. tab-item:: Python
+
+             .. code-block:: python
+
+                ampl.option["presolve"] = 0   # keep AMPL from removing c3
+                ampl.eval("suffix lazy IN; let c1.lazy := 1; let c3.lazy := -1;")
+                ampl.solve(solver="gurobi", gurobi_options="mip:lazy=3")
+
+          .. tab-item:: AMPL
+
+             .. code-block:: ampl
+
+                option presolve 0;  # keep AMPL from removing c3
+                suffix lazy IN;
+                let c1.lazy := 1;   # lazy constraint
+                let c3.lazy := -1;  # user cut
+                option gurobi_options 'mip:lazy=3';
+                solve;
+
+       Output:
+
+       .. code-block:: text
+
+            Gurobi 13.0.3: optimal solution; objective 21
+            2 simplex iterations
+            1 branching node
 
 
 
@@ -1406,23 +1501,34 @@ This option controls whether to read those values and use them in the solution p
        * **0** - Ignore priorities
        * **1** - Read priorities (default)
    * - **Example**
-     - Following AMPL model
+     - For the model shown under :ref:`lazyConstraints`, give ``x`` a higher
+       branching priority (the suffix must be declared first):
 
-       .. code-block:: ampl
- 
-            TODO Model
+       .. tab-set::
 
-       end of code block
+          .. tab-item:: Python
 
-       .. code-block:: ampl
+             .. code-block:: python
 
-            option presolve 0;  # disable model transformations in AMPL
+                ampl.eval("suffix priority IN; let x.priority := 5;")
+                ampl.solve(solver="gurobi", gurobi_options="mip:priorities=1")
 
-            let x.priority := 1;
-            let y.priority := 5;
-            solve;
+          .. tab-item:: AMPL
 
-            # TODO SHOW OUTPUT
+             .. code-block:: ampl
+
+                suffix priority IN;
+                let x.priority := 5;
+                option gurobi_options 'mip:priorities=1';
+                solve;
+
+       Output:
+
+       .. code-block:: text
+
+            Gurobi 13.0.3: optimal solution; objective 21
+            2 simplex iterations
+            1 branching node
 
 
 
@@ -1486,19 +1592,35 @@ CPLEX, and Xpress.
        * **0** - No (default)
        * **1** - Yes
    * - **Example**
-     - Following ampl model
+     - For the model shown under :ref:`lazyConstraints`, solve the MIP, then the
+       fixed model, and read its duals and basis status:
 
-       .. code-block:: ampl
- 
-            TODO Model
+       .. tab-set::
 
-       end of code block
+          .. tab-item:: Python
 
-       .. code-block:: ampl
+             .. code-block:: python
 
-            option <solver>_options "mip:basis=1";
+                ampl.solve(solver="gurobi", gurobi_options="mip:basis=1")
+                print(ampl.get_output("display c1.dual, c2.dual, c3.dual, x.sstatus, z.sstatus;"))
 
-            # TODO SHOW OUTPUT
+          .. tab-item:: AMPL
+
+             .. code-block:: ampl
+
+                option gurobi_options 'mip:basis=1';
+                solve;
+                display c1.dual, c2.dual, c3.dual, x.sstatus, z.sstatus;
+
+       Output:
+
+       .. code-block:: text
+
+            c1.dual = 1
+            c2.dual = 0
+            c3.dual = 0
+            x.sstatus = low
+            z.sstatus = bas
 
 
 .. _plateauStop:

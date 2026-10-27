@@ -25,6 +25,8 @@ An infeasible model
 ^^^^^^^^^^^^^^^^^^^^^
 
 **Model** :download:`(download here) <models/iis.mod>`.
+Constraints ``c1``-``c3`` are incompatible; ``c4`` is not needed for the
+infeasibility, so it is not in the IIS.
 
 .. literalinclude:: models/iis.mod
 
