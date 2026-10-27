@@ -9,3 +9,6 @@ Summary of recent updates to CP-SAT for AMPL
 - *div* and *mod* are passed natively (*acc:intdiv*, *acc:mod*).
 - Initial values of the variables (including MP's auxiliary
   variables) are passed as CP-SAT solution hints (*alg:start*).
+- New option *tech:logfile*: appends the CP-SAT search log to a file,
+  regardless of *tech:outlev* (which only controls whether the log is
+  also written to stdout). Without it, behavior is unchanged.

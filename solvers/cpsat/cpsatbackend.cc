@@ -18,6 +18,7 @@
 #include "ortools/base/version.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/logging.h"
 
 #include "mp/env.h"
 #include "mp/flat/model_api_base.h"
@@ -150,6 +151,31 @@ private:
   bool haveIncumbent_ = false, haveBound_ = false;
   double incumbent_ = 0.0, bound_ = 0.0;
   std::atomic<bool> stopped_{false};
+};
+
+/// While alive, appends every line of the CP-SAT search log to a file,
+/// independently of whether the log also goes to stdout (tech:outlev),
+/// as Gurobi's tech:logfile does. It is a callback on the model's logger,
+/// which only sees the lines if log_search_progress is on.
+/// \a model must outlive the solve, and this object must be destroyed
+/// first (declare it after the model).
+class LogFileSink {
+public:
+  /// @throw std::runtime_error if the file cannot be opened
+  LogFileSink(const std::string& name, sat::Model* model)
+    : file_(name, std::ios::app) {
+    if (!file_)
+      throw std::runtime_error("Could not open the log file '" + name + "'");
+    model->GetOrCreate<operations_research::SolverLogger>()
+        ->AddInfoLoggingCallback([this](const std::string& line) {
+      std::lock_guard<std::mutex> lock(mutex_);
+      file_ << line << std::endl;     // flushed: a killed solve keeps its log
+    });
+  }
+
+private:
+  std::mutex mutex_;                  // the logger is not thread-safe
+  std::ofstream file_;
 };
 
 }  // namespace {}
@@ -307,6 +333,10 @@ void CpsatBackend::Solve() {
   sat::Model model;
   model.Add(sat::NewSatParameters(d->params));
 
+  std::optional<LogFileSink> logSink;           // after the model
+  if (!storedOptions_.logFile_.empty())
+    logSink.emplace(storedOptions_.logFile_, &model);
+
   if (need_multiple_solutions()) {
     model.Add(sat::NewFeasibleSolutionObserver(
         [this, d](const sat::CpSolverResponse& r) {
@@ -416,7 +446,12 @@ void CpsatBackend::InitOptionParsing() {
 void CpsatBackend::FinishOptionParsing() {
   auto* d = data();
   d->var_bound = storedOptions_.varbound_;
-  d->params.set_log_search_progress(storedOptions_.outlev_ > 0);
+  // The search log is produced if wanted on stdout (tech:outlev) or in
+  // a file (tech:logfile); outlev only controls stdout, as in other drivers
+  const bool toStdout = storedOptions_.outlev_ > 0;
+  d->params.set_log_search_progress(
+        toStdout || !storedOptions_.logFile_.empty());
+  d->params.set_log_to_stdout(toStdout);
   if (!storedOptions_.params_.empty()) {
     if (!google::protobuf::TextFormat::MergeFromString(
           storedOptions_.params_, &d->params))
@@ -452,6 +487,12 @@ void CpsatBackend::InitCustomOptions() {
   AddStoredOption("tech:outlev outlev",
       "0*/1: Whether to write the CP-SAT search log to stdout.",
       storedOptions_.outlev_, 0, 1);
+
+  AddStoredOption("tech:logfile logfile",
+      "Log file name. The log is appended to it regardless "
+      "of tech:outlev, which only controls whether the log is also "
+      "written to stdout.",
+      storedOptions_.logFile_);
 
   AddStoredOption("tech:params params parameters",
       "Additional CP-SAT parameters, in the protobuf text format of "

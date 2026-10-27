@@ -139,6 +139,7 @@ private:
   struct Options {
     std::string params_;         ///< SatParameters in text format
     int outlev_ = 0;
+    std::string logFile_;        ///< Search log file name, if any
     double varbound_ = kCpsatDefaultVarBound;
   };
   Options storedOptions_;
