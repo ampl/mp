@@ -83,6 +83,9 @@ def create_dataframe(directory, feature_names_file, backend_mapping_file):
         row = [feature_names.get(feature, feature)]  # Use friendly name if available
         for backend_name in filtered_backends:
             value = all_macros.get(backend_name, {}).get(feature, default_features.get(feature,False))
+            # MP emulates multiple objectives for every driver without native support
+            if feature == "MULTIOBJ" and value is False:
+                value = 2
             row.append('|y|' if value==1 else '|n|' if value ==0 else '|e|')
         data.append(row)
 
