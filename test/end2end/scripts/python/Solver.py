@@ -704,7 +704,8 @@ class GurobiSolver(AMPLSolver):
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
         stags = {
                  ModelTags.continuous, ModelTags.integer, ModelTags.binary,
-                 ModelTags.linear, ModelTags.quadratic}
+                 ModelTags.linear, ModelTags.quadratic,
+                 ModelTags.multiobj}
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
     def _doParseSolution(self, st, stdout=None):
