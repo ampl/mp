@@ -324,10 +324,8 @@ Gecode::IntPropLevel MPToGecodeConverter::GetIPL(int con_index) const {
   if (!ipl_suffix_)
     return ipl_;
   int value = ipl_suffix_.value(con_index);
-  assert(value == Gecode::IPL_VAL || value == Gecode::IPL_BND ||
-         value == Gecode::IPL_DOM || value == Gecode::IPL_DEF);
-  if (value < 0 || value > Gecode::IPL_DEF)
-    throw Error("Invalid value \"{}\" for suffix \"ipl\"", value);
+  if (value < Gecode::IPL_DEF || value > Gecode::IPL_DOM)
+    throw Error(fmt::format("Invalid value \"{}\" for suffix \"ipl\"", value));
   return static_cast<Gecode::IntPropLevel>(value);
 }
 

@@ -92,10 +92,10 @@ and ``display...`` lines.)
 Suffixes
 --------
 
-You can use the suffix ``icl`` to specify integer consistency level for
+You can use the suffix ``ipl`` to specify the integer propagation level for
 constraints::
 
-  subj to c1: alldiff ({i in 1..n} q[i]) suffix icl icl_dom;
+  subj to c1: alldiff ({i in 1..n} q[i]) suffix ipl ipl_dom;
 
 This suffix and possible values for it are defined in ``gecode.ampl``.
 Requires AMPL version 20130906 or later.
