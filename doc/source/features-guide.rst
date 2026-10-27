@@ -285,6 +285,11 @@ More information is in Chapter 14 of the
 `AMPL Book <https://ampl.com/learn/ampl-book/>`_.
 See also the roll cutting example on `AMPL Colab <https://colab.ampl.com>`_.
 
+What a status means depends on the solver. For a local nonlinear solver on a
+nonconvex model, ``solved`` means a locally optimal point, not a proof; a
+``limit`` status can come with no improved point, so the variables may still
+hold the starting values. See :ref:`reading-solver-results`.
+
 
 .. _support-by-solvers:
 
@@ -530,6 +535,11 @@ have a value assigned. Note that, for LP problems, also the dual values can be p
 
 This option controls whether to use incoming primal (and dual, for LP) variable values in 
 a warmstart.
+
+When comparing formulations or solvers, give every run the same starting
+values, derived from the data (for example the current operating state),
+never from a solve of the same model: a start near the optimum flatters
+whichever run receives it.
 
 .. list-table::
    :header-rows: 0
