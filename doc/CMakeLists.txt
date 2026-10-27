@@ -73,6 +73,7 @@ add_prefix(mp_docs ${DOC_BASEDIR}/
     modeling-expressions.rst
     modeling-mo.rst
     modeling-efficiency.rst
+    modeling-formulations.rst
     modeling-numerics.rst
     modeling-tools.rst
     modeling-troublesh.rst

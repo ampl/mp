@@ -28,6 +28,7 @@ while below follows a comprehensive guide.
    modeling-expressions
    modeling-mo
    modeling-efficiency
+   modeling-formulations
    modeling-numerics
    modeling-tools
    modeling-troublesh
