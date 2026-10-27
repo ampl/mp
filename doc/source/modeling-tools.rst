@@ -743,8 +743,9 @@ Invocation
 Some of the
 `nonlinear AMPL solvers <https://dev.ampl.com/solvers/index.html#nonlinear-solvers>`_
 (currently `Knitro <https://dev.ampl.com/solvers/knitro/index.html#knitro>`_,
-`Baron <https://dev.ampl.com/solvers/baron/index.html#baron>`_,
-`Conopt <https://dev.ampl.com/solvers/conopt/index.html#conopt>`_),
+`BARON <https://dev.ampl.com/solvers/baron/index.html#baron>`_,
+`CONOPT <https://dev.ampl.com/solvers/conopt/index.html#conopt>`_,
+`LINDO Global <https://dev.ampl.com/solvers/lindoglobal/index.html>`_),
 as well as the legacy solvers
 `gurobiasl <https://dev.ampl.com/solvers/gurobi/index.html#gurobi>`_,
 `cplexasl <https://dev.ampl.com/solvers/cplex/index.html#cplex>`_,
