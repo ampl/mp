@@ -421,7 +421,8 @@ controlled by the option `writeprob`::
 
 
 The format is solver-dependent and determined by the file extension
-('.lp' in the example).
+('.lp' in the example). What to look for in the exported model when comparing
+formulations is described in :ref:`before-benchmarking`.
 
 .. admonition:: Exporting with names
 
@@ -539,7 +540,7 @@ a warmstart.
 When comparing formulations or solvers, give every run the same starting
 values, derived from the data (for example the current operating state),
 never from a solve of the same model: a start near the optimum flatters
-whichever run receives it.
+whichever run receives it. See also :ref:`comparing-formulations`.
 
 .. list-table::
    :header-rows: 0
@@ -670,7 +671,8 @@ Feasibility Relaxation
 
 The feasibility relaxation functionality enables the solver to find a feasible
 solution even if the original model is unfeasible without explicitly adding
-slack variables to the constraints.
+slack variables to the constraints. It is also a way to check an "infeasible"
+status that may be wrong, see :ref:`reading-solver-results`.
 In the feasibility relaxation problem, 
 
 #. Each variable :math:`x` can violate its bounds (:math:`lb \leq x \leq ub`):
@@ -1136,6 +1138,8 @@ An IIS is a subset of constraints and variables that is still infeasible and whe
 the subsystem becaomes feasible. Note that an infeasible model can have more than one IIS.
 
 This options controls whether to perform the additional computational steps required to find an IIS.
+Before acting on an "infeasible" status of a hard nonconvex or numerically
+difficult model, see also :ref:`reading-solver-results`.
 
 .. list-table::
    :header-rows: 0
