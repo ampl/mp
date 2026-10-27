@@ -33,11 +33,29 @@ Exporting the solver model
 To see what MP and/or the solver do with your model, export
 the solver's received model, and, if possible, the solver's presolved model:
 
-.. code-block:: ampl
+.. tab-set::
 
-    option gurobi_options 'writeprob=disj.lp writepresolved=disj_pre.lp';
-    option gurobi_auxfiles rc;     ## To use var/con names
-    solve;
+   .. tab-item:: Python
+
+      .. code-block:: python
+
+         solver = "gurobi"                          # any MP solver
+         ampl.option[solver + "_auxfiles"] = "rc"   # pass AMPL names to the solver
+         ampl.solve(solver=solver, mp_options="writeprob=disj.lp")
+
+   .. tab-item:: AMPL
+
+      .. code-block:: ampl
+
+         ampl: option solver gurobi;           ## any MP solver
+         ampl: option gurobi_auxfiles rc;      ## pass AMPL names to the solver
+         ampl: option mp_options 'writeprob=disj.lp';
+         ampl: solve;
+
+Names appear in the file where the solver's export format keeps them (the
+HiGHS LP export, for example, uses generic names). Solvers that can also export
+their presolved model accept ``writepresolved`` (for example
+``gurobi_options="writeprob=disj.lp writepresolved=disj_pre.lp"``).
 
 MP offers ways to :ref:`explore automatic reformulations<explore-reformulations>`.
 Formats and options are in :ref:`writeprob`; how to read the big-M constants
@@ -161,8 +179,18 @@ From a Python script, write the model and data of the failing case from a
 If you cannot reduce the model and don't
 want to show it, give us just the NL file produced by
 
-.. code-block:: ampl
+.. tab-set::
 
-    option auxfiles ''; write bdisj;
+   .. tab-item:: Python
+
+      .. code-block:: python
+
+         ampl.write("bdisj")      # binary NL file disj.nl, without auxiliary files
+
+   .. tab-item:: AMPL
+
+      .. code-block:: ampl
+
+         ampl: option auxfiles ''; write bdisj;
 
 For solver support, use MPS or another full-precision model format.

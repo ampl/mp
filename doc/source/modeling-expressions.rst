@@ -890,9 +890,19 @@ as part of preprocessing. Gurobi :ref:`option <solver-options>` ``alg:global``
 (``pre:funcnonlinear``) can be used to apply piecewise-linear approximation,
 after disabling expression trees:
 
-.. code-block:: ampl
+.. tab-set::
 
-  ampl: option gurobi_options 'global=-1 acc:_expr=0'; solve;
+   .. tab-item:: Python
+
+      .. code-block:: python
+
+         ampl.solve(solver="gurobi", gurobi_options="global=-1 acc:_expr=0")
+
+   .. tab-item:: AMPL
+
+      .. code-block:: ampl
+
+         ampl: option gurobi_options 'global=-1 acc:_expr=0'; solve;
 
 For individual constraints and objectives, the choice of global solving vs
 piecewise-linear approximation can be performed via the ``.global`` suffix:

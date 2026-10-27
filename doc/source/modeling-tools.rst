@@ -445,9 +445,20 @@ and their results substituted into ``C``, ``C`` holds false.
 To check validity of a group of logical constraints in AMPL,
 use a statement such as this:
 
-.. code-block:: ampl
+.. tab-set::
 
-    display {i in 1.._nlogcons: !_logcon[i].val} (_logconname[i]);
+   .. tab-item:: Python
+
+      .. code-block:: python
+
+         violated = ampl.get_data(
+             "{i in 1.._nlogcons: !_logcon[i].val} _logconname[i]").to_list()
+
+   .. tab-item:: AMPL
+
+      .. code-block:: ampl
+
+         display {i in 1.._nlogcons: !_logcon[i].val} (_logconname[i]);
 
 
 In contrast, the role of the :ref:`Idealistic mode <idealistic-viols>`
@@ -533,9 +544,20 @@ as follows:
 To check validity of a group of algebraic constraints in AMPL,
 use a statement such as this:
 
-.. code-block:: ampl
+.. tab-set::
 
-    display {i in 1.._ncons: _con[i].slack < -1e-3} (_conname[i], _con[i].slack);
+   .. tab-item:: Python
+
+      .. code-block:: python
+
+         violated = ampl.get_data(
+             "{i in 1.._ncons: _con[i].slack < -1e-3} (_conname[i], _con[i].slack)").to_list()
+
+   .. tab-item:: AMPL
+
+      .. code-block:: ampl
+
+         display {i in 1.._ncons: _con[i].slack < -1e-3} (_conname[i], _con[i].slack);
 
 
 
@@ -659,21 +681,31 @@ or whether the user has provided variable values manually.)
 To see which expressions cause the violation,
 use driver option ``chk:mode``:
 
-.. code-block:: ampl
+.. tab-set::
 
-    ampl: option gurobi_options 'chk:mode=1023';
-    ampl: solve;
-    Gurobi 11.0.2:   sol:chk:mode = 1023
-    Gurobi 11.0.2: optimal solution; objective 10
-    0 simplex iterations
+   .. tab-item:: Python
 
-    ------------ WARNINGS ------------
-    WARNING.  2 case(s) of "Tolerance violations". One of them:
-      Type                         MaxAbs [Name]   MaxRel [Name]
-      expr '_ifthen'               1E+01 [Total_11_]  -
-      expr '_and'                  [Total_7_]      -
-      objective(s)                 1E+01 [Total]   -
-    Documentation: mp.ampl.com/modeling-tools.html#automatic-solution-check.
+      .. code-block:: python
+
+         ampl.solve(solver="gurobi", mp_options="chk:mode=1023", verbose=True)
+
+   .. tab-item:: AMPL
+
+      .. code-block:: ampl
+
+         ampl: option gurobi_options 'chk:mode=1023';
+         ampl: solve;
+         Gurobi 11.0.2:   sol:chk:mode = 1023
+         Gurobi 11.0.2: optimal solution; objective 10
+         0 simplex iterations
+
+         ------------ WARNINGS ------------
+         WARNING.  2 case(s) of "Tolerance violations". One of them:
+           Type                         MaxAbs [Name]   MaxRel [Name]
+           expr '_ifthen'               1E+01 [Total_11_]  -
+           expr '_and'                  [Total_7_]      -
+           objective(s)                 1E+01 [Total]   -
+         Documentation: mp.ampl.com/modeling-tools.html#automatic-solution-check.
 
 
 Remedies
