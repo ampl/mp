@@ -162,16 +162,49 @@ To explore the model received by the solver,
 export the model
 in one of the solver's general formats:
 
-.. code-block:: ampl
+.. tab-set::
 
-  ampl: option mosek_auxfiles rc;   ## To use var/con names
-  ampl: option mosek_options 'writeprob=/tmp/ell.jtask'; solve;
+   .. tab-item:: Python
 
-Some solvers can export their presolved model:
+      .. code-block:: python
 
-.. code-block:: ampl
+         ampl.option["mosek_auxfiles"] = "rc"     # to use var/con names
+         ampl.solve(solver="mosek", mosek_options="writeprob=/tmp/ell.jtask")
 
-  option gurobi_options 'outlev=1 writepresolved=disj_pre.lp';
+   .. tab-item:: AMPL
+
+      .. code-block:: ampl
+
+         ampl: option mosek_auxfiles rc;   ## To use var/con names
+         ampl: option mosek_options 'writeprob=/tmp/ell.jtask'; solve;
+
+Some solvers can export their presolved model
+(``writepresolved``, for example ``gurobi_options="outlev=1 writepresolved=disj_pre.lp"``).
+
+In the exported model, the rows MP generated for a logical constraint show
+the constants it used. For an implication linearized with big-M, the
+coefficient of the binary variable is :math:`-M`; compare it with what the
+data allows (:ref:`declared-bounds-bigm`).
+
+
+.. _before-benchmarking:
+
+Before benchmarking a reformulation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Four checks take minutes and often save a long benchmark:
+
+1. **Does the construct bind?** Solve once and check that the constrained
+   quantity reaches its limit somewhere: perturb the limit (an unchanged
+   objective means the constraint is slack), or tabulate where the variable
+   landed. Slack constraints can hide each other: fix the loosest one first,
+   then check again.
+2. **Compare root bounds** of the formulations (:ref:`root-bound-check`).
+3. **Read what the solver receives**: export it as above, and count the
+   variables and rows each formulation adds or removes. A restatement that
+   changes neither probably expands to the same model.
+4. **Find out which solvers can solve the reference formulation at all.** A
+   solver that cannot solve it gives no evidence about variants of it.
 
 
 
