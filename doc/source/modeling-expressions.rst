@@ -152,7 +152,9 @@ a disjunct which is a conjunction of comparisons
 (as in *(x <= 1 and y >= 2) or (x >= 5 and y <= 0) or z >= 3*)
 with one binary variable per disjunct, as the standard big-M
 formulation of a disjunction does, and distribute a static disjunction
-over a conjunction of binary conditions.
+over a conjunction of binary conditions. Whether an implication solves faster
+as an indicator or as a big-M row depends on the model; see
+:ref:`indicator-vs-bigm`.
 
 For a variable declared as *var x in {0} union interval[L, U]*, AMPL adds
 a binary variable *b* with *x >= L*b* and *x <= U*b*. A comparison of *x*
@@ -455,7 +457,8 @@ Certain nonlinear solvers, notably Knitro, handle complementarity constraints na
 For MP-based solvers, the interface converts uses of ``complements`` to equivalent
 constraints using logical operators or certain nonlinear functions,
 see :ref:`solver options <ampl-solver-options>`
-``cvt:compl``, ``cvt:compl:eps``.
+``cvt:compl``, ``cvt:compl:eps``; the available reformulations are listed in
+:ref:`mp2nl-complementarity`.
 
 .. code-block:: ampl
 
@@ -711,7 +714,9 @@ row took the medium instance from "not proven optimal in 60 seconds" to a
 proof in under a second. The lifted variables must be variables with
 declared bounds (not defined variables, which would be substituted back), and
 the bounds should be tight. On meshed networks the cone is a cut, not an
-exact relaxation (Kocuk, Dey & Sun 2016).
+exact relaxation (Kocuk, Dey & Sun 2016). To check that the solver received
+the row as a cone, export its model (:ref:`explore-final-model`); for when to
+keep a quantity as a named variable at all, see :ref:`substitute-or-name`.
 
 *References:* R.A. Jabr (2006). Radial distribution load flow using conic
 programming. *IEEE Trans. Power Syst.* 21(3). B. Kocuk, S.S. Dey, X.A. Sun
