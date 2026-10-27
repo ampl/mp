@@ -766,6 +766,25 @@ see :ref:`explore-final-model`.
 General nonlinear functions
 **********************************
 
+How nonlinear functions reach the solver depends on its class:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 35 65
+
+   * - Solvers
+     - Handling
+   * - Gurobi, Xpress, SCIP; COPT with ``acc:_expr=1``
+     - Passed natively as expression trees (:ref:`flat-vs-expressions`).
+       Gurobi and SCIP solve globally, Xpress too if its license allows
+       (otherwise, or with ``alg:nlpsolver=1``, locally); COPT solves locally.
+   * - Linear-quadratic solvers (CPLEX, HiGHS, MOSEK, CBC, GCG, cuOpt;
+       COPT by default)
+     - Approximated piecewise-linearly (:ref:`nonlinear-pl-approx`), so the
+       solver optimizes the approximation.
+   * - NL solvers through :ref:`MP2NL <mp2nl>` (e.g. Knitro, Ipopt, BARON)
+     - Passed in the NL file, after MP's reformulation of the other constructs.
+
 Supported functions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -798,8 +817,9 @@ Supported functions
 Functions recognized from the model
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The following functions are recognized from the user input
-(and natively supported by Gurobi 13):
+The following functions are recognized from the user input, for solvers that
+accept them natively (currently Gurobi); other solvers receive the original
+expression:
 
 
 Signpow function
@@ -894,7 +914,8 @@ piecewise-linear approximation can be performed via the ``.global`` suffix:
 See our `Christmas tree decorations Streamlit example <https://ampl.com/streamlit>`_
 using global optimization.
 
-Piecewise-linear aproximation can be influenced by setting
+**Deprecated** (Gurobi 13 deprecates its piecewise-linear approximation of
+general functions): piecewise-linear aproximation can be influenced by setting
 the following options in the AMPL ``gurobi_options`` string:
 
 .. code-block:: text
