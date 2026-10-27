@@ -40,6 +40,93 @@ the solver's received model, and, if possible, the solver's presolved model:
 MP offers ways to :ref:`explore automatic reformulations<explore-reformulations>`.
 
 
+.. _reading-solver-results:
+
+Reading solver results
+*************************
+
+A solver status is a claim. Check it before acting on it:
+
+- **"Optimal" from a local solver is a local claim.** On a nonconvex model, a
+  local NLP or MINLP solver's ``solved`` means a point satisfying local
+  optimality conditions, not a proven optimum. On linear, convex quadratic,
+  conic and MILP models the same status is a proof.
+- **A time-limit stop can return the starting point.** If a solver stops
+  without an improved point, the variables keep their previous values and
+  look like a solution. Compare them with the values before the solve.
+- **"Infeasible" can be wrong** on hard nonconvex or numerically difficult
+  models. Before acting on it, solve with a second solver, or solve a version
+  with the constraints made elastic (slack variables with a large penalty)
+  and look at which slacks are needed.
+- **Check the point itself**: the :ref:`automatic solution check <solution-check>`
+  warnings, and the violated logical constraints
+  (``display {i in 1.._nlogcons: !_logcon[i].val} (_logconname[i]);``).
+- **Do not screen results with the reported gap alone.** Recompute the gap
+  from the objective and the bound where it matters.
+- **Cross-check bounds against incumbents.** When several runs (solvers,
+  seeds, formulations) solve the same instance, every feasible objective is an
+  incumbent and every dual bound bounds the same optimum, so an incumbent
+  better than any run's bound exposes a defect in one of the two runs.
+  Ignore differences below about :math:`10^{-9}` relative, and those within
+  the solvers' optimality tolerance.
+
+In a script, an unsuccessful solve may not raise an exception: check
+``solve_result`` after every solve.
+
+.. tab-set::
+
+   .. tab-item:: Python
+
+      .. code-block:: python
+
+         before = ampl.var["x"].to_dict()
+         ampl.solve(solver="highs", highs_options="lim:time=60")
+         after = ampl.var["x"].to_dict()
+         moved = any(abs(after[k] - before[k]) > 1e-9 for k in after)
+         if ampl.solve_result not in ("solved", "limit") or not moved:
+             print(ampl.get_value("solve_message"))
+
+   .. tab-item:: AMPL
+
+      .. code-block:: ampl
+
+         solve;
+         if solve_result not in {'solved', 'limit'} then
+            print solve_message;
+
+
+.. _comparing-formulations:
+
+Comparing formulations and solvers
+**************************************
+
+- **Validate first.** A reformulation is trusted only after it reproduces
+  the original's objective and status on identical data, at more than one
+  instance size and with more than one solver.
+- **Repeat with several random seeds** (option *tech:seed* where available).
+  Mixed-integer solving times vary a lot under changes that should not matter
+  (Lodi & Tramontani 2013); a 2.4 times speedup seen on one seed disappeared
+  over five.
+- **Compare on the same instances.** Compare times only over instances both
+  sides solved, and report how many there were. A mean over each side's own
+  solved instances rewards a formulation for failing on the hard ones; in one
+  benchmark it turned "1.4 times slower" into "1.6 times faster".
+- **Keep the axes apart**: number of instances solved, final gap, and time to
+  optimality often disagree.
+- **Summarize robustly**: shifted geometric means of times, or performance
+  profiles (Dolan & Moré 2002).
+- **Run every arm under the same conditions**: thread count, time limit,
+  options, and machine load. Record the solver and driver versions with every
+  result.
+- **Change one thing per arm.** If an arm changes two things that may both
+  matter, add the missing combination rather than argue which one did it.
+
+*References:* E.D. Dolan, J.J. Moré (2002). Benchmarking optimization software
+with performance profiles. *Math. Programming* 91, 201-213. A. Lodi,
+A. Tramontani (2013). Performance variability in mixed-integer programming.
+*INFORMS TutORials in Operations Research*, doi:10.1287/educ.2013.0112.
+
+
 Contacting support
 *******************************
 
@@ -47,6 +134,17 @@ If you decide to contact AMPL or solver support, please provide a (possibly redu
 version of your model reproducing the issue. Please also provide
 the AMPL solver version by running ``highs -v``
 or solver logs obtained with options ``version outlev=1 timing=2``.
+From a Python script, write the model and data of the failing case from a
+**fresh** AMPL session (a session in which the solver crashed may not respond):
+
+.. code-block:: python
+
+    ampl = AMPL()
+    ampl.read("model.mod")
+    # ... load the same data as in the failing run ...
+    ampl.export_model("repro.mod")
+    ampl.export_data("repro.dat")
+
 If you cannot reduce the model and don't
 want to show it, give us just the NL file produced by
 
