@@ -7,7 +7,7 @@ cbcmpbackend.h,.. _CBC: https://dev.ampl.com/solvers/cbc/
 gcgmpbackend.h,.. _GCG: https://dev.ampl.com/solvers/gcg/
 highsmpbackend.h,.. _HiGHS: https://dev.ampl.com/solvers/highs/
 scipmpbackend.h,.. _SCIP: https://dev.ampl.com/solvers/scip/
-cpsatbackend.h,.. _CPSAT: https://github.com/ampl/mp/tree/develop/solvers/cpsat
+cpsatbackend.h,.. _CPSAT: https://dev.ampl.com/solvers/cpsat/
 cuoptmpbackend.h,.. _cuOpt: https://dev.ampl.com/solvers/cuopt/
 baronmpbackend.h,.. _BaronMP: https://dev.ampl.com/solvers/baron/
 mp2nlbackend.h,.. _MP2NL: https://dev.ampl.com/solvers/mp2nl/

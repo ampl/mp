@@ -389,7 +389,7 @@ or visit `AMPL Development solver page <https://dev.ampl.com/solvers/index.html>
 .. _GCG: https://dev.ampl.com/solvers/gcg/
 .. _HiGHS: https://dev.ampl.com/solvers/highs/
 .. _SCIP: https://dev.ampl.com/solvers/scip/
-.. _CPSAT: https://github.com/ampl/mp/tree/develop/solvers/cpsat
+.. _CPSAT: https://dev.ampl.com/solvers/cpsat/
 .. _cuOpt: https://dev.ampl.com/solvers/cuopt/
 .. _BaronMP: https://dev.ampl.com/solvers/baron/
 .. _MP2NL: https://dev.ampl.com/solvers/mp2nl/
