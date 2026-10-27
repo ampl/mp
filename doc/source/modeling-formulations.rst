@@ -246,6 +246,8 @@ loose big-M proves nothing), and check that the formulation really is what
 you intended (count variables and rows, compare root bounds).
 
 
+.. _substitute-or-name:
+
 Nonlinear models: substitute or name
 ***************************************
 

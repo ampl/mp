@@ -51,6 +51,8 @@ Next subsection explains how a user can switch between
 flat constraints and formulas, if available,
 or force reformulation.
 
+.. _acceptance-options:
+
 Acceptance options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -791,6 +793,8 @@ point can be listed from Python:
 So: logic needs a subsolver for integer variables (an MINLP solver);
 complementarity alone, with a smooth reformulation, can go to an NLP solver.
 
+
+.. _mp2nl-complementarity:
 
 Complementarity reformulations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

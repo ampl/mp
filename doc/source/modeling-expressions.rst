@@ -98,6 +98,8 @@ in :ref:`supported-constraints`. Those performed by AMPL itself,
 can be configured by `AMPL options <https://dev.ampl.com/ampl/options.html>`_.
 
 
+.. _conditional-operators:
+
 Conditional operators
 ***********************************
 
@@ -469,6 +471,8 @@ see :ref:`solver options <ampl-solver-options>`
 
 
 
+.. _set-membership:
+
 Set membership operator
 **********************************
 
@@ -640,6 +644,8 @@ Note that general non-linear solvers accept them too,
 but might not provide any specialized methods.
 See `conic examples <https://colab.ampl.com/tags/conic.html>`__
 at Google Colab.
+
+.. _socp:
 
 Second-order cone programming (SOCP)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

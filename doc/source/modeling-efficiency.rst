@@ -78,6 +78,8 @@ The constraint implies that if ``sum {p in PRODUCTS} Flow[p,i,j]`` is positive, 
 As a result of this change, ``sum {p in PRODUCTS} Flow[p,i,j] >= min_ship`` is a subexpression in both the constraint and the objective, simplifying the converson of the model.
 
 
+.. _subexpression-bounds:
+
 Bounds on subexpressions
 *************************
 
