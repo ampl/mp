@@ -69,6 +69,7 @@ for the following categories of operators and expressions:
 - Set membership operator: ``in``
 
 Modeling details and examples are given in the :ref:`expressions_supported` section below.
+Choosing between alternative formulations of a model is discussed in :ref:`modeling-formulations`.
 Technical details, configuration settings, and tools are in the :ref:`modeling-tools` section.
 See also the individual solvers' documentation at
 `AMPL Development <https://dev.ampl.com/solvers/index.html>`_
