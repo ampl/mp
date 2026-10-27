@@ -13,6 +13,47 @@ if(NOT SPHINX_EXECUTABLE)
   return()
 endif()
 
+# A sphinx-build found on PATH may belong to a Python environment without
+# the theme and extensions that source/conf.py loads; the doc target then
+# fails inside Sphinx ("Could not import extension ...") and, since it is
+# part of ALL, the whole build fails. Check them in the interpreter that
+# runs sphinx-build (its shebang line), or in the first Python found.
+set(MP_DOC_PYTHON_MODULES
+  sphinx breathe ampl_sphinx_theme sphinx_design sphinx_sitemap
+  sphinxcontrib.googleanalytics)
+set(SPHINX_PYTHON "")
+file(STRINGS ${SPHINX_EXECUTABLE} _sphinx_shebang LIMIT_COUNT 1)
+if (_sphinx_shebang MATCHES "^#!([^ \t]+)")
+  set(SPHINX_PYTHON ${CMAKE_MATCH_1})
+  if (SPHINX_PYTHON MATCHES "/env$")        # '#!/usr/bin/env python3'
+    string(REGEX REPLACE "^#![^ \t]+[ \t]+([^ \t]+).*" "\\1"
+           _sphinx_py_name "${_sphinx_shebang}")
+    find_program(SPHINX_PYTHON_FROM_ENV ${_sphinx_py_name})
+    set(SPHINX_PYTHON ${SPHINX_PYTHON_FROM_ENV})
+  endif ()
+endif ()
+if (NOT SPHINX_PYTHON)
+  find_package(Python3 COMPONENTS Interpreter QUIET)
+  set(SPHINX_PYTHON ${Python3_EXECUTABLE})
+endif ()
+if (SPHINX_PYTHON)
+  set(_missing_doc_modules "")
+  foreach (_mod ${MP_DOC_PYTHON_MODULES})
+    execute_process(COMMAND ${SPHINX_PYTHON} -c "import ${_mod}"
+                    RESULT_VARIABLE _mod_res OUTPUT_QUIET ERROR_QUIET)
+    if (NOT _mod_res EQUAL 0)
+      list(APPEND _missing_doc_modules ${_mod})
+    endif ()
+  endforeach ()
+  if (_missing_doc_modules)
+    message(STATUS "Target doc disabled: ${SPHINX_PYTHON} (used by "
+      "${SPHINX_EXECUTABLE}) lacks Python module(s) ${_missing_doc_modules}. "
+      "Install doc/requirements.txt into that environment, or point "
+      "SPHINX_EXECUTABLE to a sphinx-build that has them.")
+    return()
+  endif ()
+endif ()
+
 message(STATUS
   "Documentation building configured. "
   "Set BUILD_DOC=off otherwise.")
