@@ -306,5 +306,17 @@
     "values": {
       "x": -4
     }
+  },
+  {
+    "name" : "pl_union_dom_sos_01",
+    "objective" : -6,
+    "tags" : ["linear", "integer"],
+    "options": {
+        "pl_linearize": 1
+    },
+    "comment": "SOS2 binaries of the PL term precede the SOS1 variables of the union domain (ASL suf_sos renumbering)",
+    "values": {
+      "x": 6
+    }
   }
 ]
