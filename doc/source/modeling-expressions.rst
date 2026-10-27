@@ -304,6 +304,10 @@ numerical accuracy becomes a concern. To promote numerical stability, it is reco
 the argument and result variables be explicitly bounded within at most [-1e+4,+1e+4]. See more in the section
 on :ref:`numerical_accuracy`.
 
+A convex piecewise-linear cost charged only while a unit is on (a
+semicontinuous variable) has a stronger linear formulation, the
+:ref:`perspective <perspective>`.
+
 
 .. code-block:: ampl
 
@@ -499,6 +503,10 @@ that does not contain an *=* phrase.
                || grade == 5 || 8.1 <= grade <= 9
                || grade >= 10;
 
+   Which of the two forms solves faster depends on the model and the solver;
+   on two models with the same structure they won in opposite directions.
+   Where performance matters, try both (:ref:`modeling-formulations`).
+
 
 Before sending a problem to the solver interface, AMPL converts variable
 definitions of this kind to alternative definitions that do not use the
@@ -630,7 +638,7 @@ Some solvers can handle conic constraints with tailored algorithms:
 Mosek, Gurobi, COPT, SCIP, CPLEX, Xpress.
 Note that general non-linear solvers accept them too,
 but might not provide any specialized methods.
-See `conic examples <https://colab.ampl.com/tags/conic.html>`_
+See `conic examples <https://colab.ampl.com/tags/conic.html>`__
 at Google Colab.
 
 Second-order cone programming (SOCP)
@@ -667,6 +675,42 @@ complaining::
 In this case, change the model to use standard SOCP forms,
 or consider playing with
 the :ref:`options <solver-options>` ``cvt:socp`` and ``cvt:socp2qp``.
+
+
+.. _redundant-convex-constraints:
+
+Redundant convex constraints on lifted variables
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+MP recognizes a cone from its algebraic form, so the variables of the cone
+must appear by name. Inline them and the structure is gone. This also
+enables a useful technique: when the model's own definitions imply a convex
+inequality, add it. It removes no feasible point, and can give a global
+solver the convex bound it otherwise lacks. The classical example is the
+lifted form of AC power flow (Jabr 2006):
+
+.. code-block:: ampl
+
+    var Wii {i in BUS} >= vmin[i]^2, <= vmax[i]^2;
+    var Wc {(i,j) in LINE} >= wc_lo[i,j], <= wc_hi[i,j];
+    var Ws {(i,j) in LINE} >= -ws_hi[i,j], <= ws_hi[i,j];
+    subject to Wii_Def {i in BUS}: Wii[i] = V[i]^2;
+    subject to Wc_Def {(i,j) in LINE}: Wc[i,j] = V[i]*V[j]*cos(Th[i]-Th[j]);
+    subject to Ws_Def {(i,j) in LINE}: Ws[i,j] = V[i]*V[j]*sin(Th[i]-Th[j]);
+    # an identity of the definitions, and a rotated second-order cone:
+    subject to SOC {(i,j) in LINE}: Wc[i,j]^2 + Ws[i,j]^2 <= Wii[i]*Wii[j];
+
+On an AC optimal power flow test with discrete transformer taps, this one
+row took the medium instance from "not proven optimal in 60 seconds" to a
+proof in under a second. The lifted variables must be variables with
+declared bounds (not defined variables, which would be substituted back), and
+the bounds should be tight. On meshed networks the cone is a cut, not an
+exact relaxation (Kocuk, Dey & Sun 2016).
+
+*References:* R.A. Jabr (2006). Radial distribution load flow using conic
+programming. *IEEE Trans. Power Syst.* 21(3). B. Kocuk, S.S. Dey, X.A. Sun
+(2016). Inexactness of SDP relaxation and valid inequalities for optimal
+power flow. *IEEE Trans. Power Syst.* 31(1).
 
 
 Exponential cones
