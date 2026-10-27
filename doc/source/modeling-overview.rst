@@ -3,83 +3,69 @@
 Modeling overview and implemented solvers
 ------------------------------------------
 
+Solvers built with AMPL's MP library (`ampl/mp <https://github.com/ampl/mp>`_)
+accept a much wider range of model expressions than a solver's own API:
+you write the model the way you think about it, and MP passes each construct
+to the solver natively where the solver supports it, and reformulates it
+otherwise.
 
-AMPL's newly extended C++ solver interface library, MP, is publicly
-available in the `ampl/mp <https://github.com/ampl/mp>`_ repository.
-Solver interfaces built with MP are able to handle a significantly
-expanded range of model expressions.
-Currently available MP-based solvers include:
+**What MP handles**, with details in :ref:`expressions_supported`:
 
-- `gurobi <https://github.com/ampl/mp/tree/develop/solvers/gurobi>`_,
-  an interface to the `Gurobi solver <https://ampl.com/products/solvers/solvers-we-sell/gurobi/>`_
+- conditional and logical constraints: ``if-then-else``, ``==>``, ``or``,
+  ``and``, ``exists``, ``forall``;
+- counting and constraint-programming constructs: ``count``, ``atmost``,
+  ``atleast``, ``exactly``, ``numberof``, ``alldiff``, ``!=``;
+- piecewise-linear functions, ``abs``, ``min``, ``max``;
+- rounding and integer division: ``floor``, ``ceil``, ``round``, ``trunc``,
+  ``div``, ``mod``;
+- nonlinear functions and products, second-order and exponential cones;
+- complementarity (``complements``) and set membership (``in``; being
+  reworked, see :ref:`set-membership`);
+- multiple objectives (:ref:`multiple-objectives`).
 
-- `cplex <https://github.com/ampl/mp/tree/develop/solvers/cplex>`_,
-  an interface to the `IBM ILOG CPLEX solver <https://ampl.com/products/solvers/solvers-we-sell/cplex/>`_
+**Solver classes.** What happens to a construct depends on the solver:
 
-- `copt <https://github.com/ampl/mp/tree/develop/solvers/copt>`_,
-  an interface to `Cardinal Optimizer <https://ampl.com/products/solvers/solvers-we-sell/copt/>`_
+.. list-table::
+   :header-rows: 1
+   :widths: 22 38 40
 
-- `xpress <https://github.com/ampl/mp/tree/develop/solvers/xpress>`_,
-  an interface to `FICO Xpress <https://ampl.com/products/solvers/solvers-we-sell/xpress/>`_
+   * - Class
+     - MP-based drivers
+     - What MP does
+   * - Linear and mixed-integer
+     - Gurobi, CPLEX, Xpress, COPT, HiGHS, SCIP, MOSEK, CBC, GCG, cuOpt
+     - Logic becomes indicator or general constraints where the solver has
+       them, big-M rows otherwise; other nonlinear functions are
+       approximated piecewise-linearly.
+   * - Conic
+     - MOSEK, COPT, Gurobi, Xpress, CPLEX, SCIP
+     - Recognizes second-order and exponential cones from their algebraic
+       form (:ref:`socp`).
+   * - Global nonlinear
+     - Gurobi, Xpress, SCIP, BARON (``baronmp``); COPT solves nonlinear
+       models locally (``acc:_expr=1``)
+     - Passes nonlinear functions as expression trees
+       (:ref:`flat-vs-expressions`).
+   * - Constraint programming
+     - CP-SAT (integer models)
+     - Receives logic, counting, ``alldiff``, products, ``div`` and ``mod``
+       natively. The same AMPL constructs are reformulated for MIP solvers,
+       so a constraint-programming model can also be solved by any MIP solver.
+   * - Any NL solver
+     - :ref:`MP2NL <mp2nl>` (e.g. Knitro, Ipopt, Couenne, BARON)
+     - Applies MP's reformulations, then calls the NL solver.
 
-- `mosek <https://github.com/ampl/mp/tree/develop/solvers/mosek>`_,
-  an interface to the `MOSEK solver <https://ampl.com/products/solvers/solvers-we-sell/mosek/>`_
+Which constructs a particular solver accepts natively is listed in its
+:ref:`acceptance options <acceptance-options>` (``<solver> -=``); its other
+features are summarized in :ref:`support-by-solvers`. Binaries are available
+through the `AMPL Portal <https://portal.ampl.com>`_, and each solver's page
+on `AMPL Development <https://dev.ampl.com/solvers/index.html>`_ describes its
+options and solver-specific features.
 
-- `baronmp <https://github.com/ampl/mp/tree/develop/solvers/baronmp>`_,
-  an interface to the `BARON solver <https://ampl.com/products/solvers/global-solvers/baron/>`_
-
-- `highs <https://github.com/ampl/mp/tree/develop/solvers/highsmp>`_,
-  an interface to the open-source `HiGHS solver <https://ampl.com/products/solvers/open-source-solvers/>`_
-
-- `cuopt <https://github.com/ampl/mp/tree/develop/solvers/cuoptmp>`_,
-  an interface to the open-source `NVIDIA cuOpt solver <https://ampl.com/products/solvers/open-source-solvers/>`_
-
-- `cbc <https://github.com/ampl/mp/tree/develop/solvers/cbcmp>`_,
-  an enhanced interface to the open-source
-  `CBC solver <https://ampl.com/products/solvers/open-source-solvers/>`_
-
-- `scip <https://github.com/ampl/mp/tree/develop/solvers/scipmp>`_,
-  an interface to the open-source `SCIP solver <https://ampl.com/products/solvers/open-source-solvers/>`_
-
-- `gcg <https://github.com/ampl/mp/tree/develop/solvers/gcgmp>`_,
-  an interface to the open-source `GCG solver <https://ampl.com/products/solvers/open-source-solvers/>`_
-
-- A meta-solver :ref:`MP2NL <mp2nl>` translating MP to any AMPL solver.
-
-Binaries for these solvers can be downloaded, in distribution
-bundles and individually, through the `AMPL Portal <https://portal.ampl.com>`_.
-Solver options and features are described
-at :ref:`features-guide`
-and, for concrete solvers,
-at `AMPL Development <https://dev.ampl.com/solvers/index.html>`_.
-
-
-
-The expanded MP solver interface library offers new support
-for the following categories of operators and expressions:
-
-- Conditional operators: ``if-then-else``; ``==>``, ``<==``, ``<==>``
-- Logical operators: ``or``, ``and``, ``not``; ``exists``, ``forall``
-- Piecewise linear functions: ``abs``; ``min``, ``max``; ``<<breakpoints; slopes>>``
-- Counting operators: ``count``; ``atmost``, ``atleast``, ``exactly``; ``numberof``
-- Relational and comparison operators: ``>(=)``, ``<(=)``, ``(!)=``; ``alldiff``
-- Complementarity operator: ``complements``
-- Nonlinear operators and functions: ``*``, ``/``, ``^``; ``exp``, ``log``;
-  ``sin``, ``cos``, ``tan``; ``sinh``, ``cosh``, ``tanh``
-- Set membership operator: ``in``
-
-Modeling details and examples are given in the :ref:`expressions_supported` section below.
-Choosing between alternative formulations of a model is discussed in :ref:`modeling-formulations`.
-Technical details, configuration settings, and tools are in the :ref:`modeling-tools` section.
-See also the individual solvers' documentation at
-`AMPL Development <https://dev.ampl.com/solvers/index.html>`_
-for more details of solver-specific features:
-
-- Choice between linearization in the interface and native solver support for some operations
-- Handling of AMPL suffixes on constraints that are transformed by the interface
-
-The slides from our presentation on
-`Advances in Model-Based Optimization <https://ampl.com/MEETINGS/TALKS/2022_07_Bethlehem_Fourer.pdf>`_
-provide overview of the MP interface library in the context of AMPL applications,
-including comments on implementation and efficiency issues.
-
+**Where to read next:**
+:ref:`modeling-formulations` (choosing between formulations),
+:ref:`efficiency` and :ref:`numerical_accuracy` (writing models that solve
+well), :ref:`modeling-tools` (reformulation options, exploring what the
+solver receives, solution check, MP2NL), and :ref:`modeling-troublesh`.
+Small modeling tasks are covered in the
+`MP Modeling Series <https://ampl.com/streamlit/Modeling_Tips>`_.
