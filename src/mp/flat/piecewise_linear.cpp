@@ -290,7 +290,7 @@ void BasicPLApproximator<FuncCon>::InitNonPeriodic() {
   // according to lbx() / ubx()
   laPrm_.fUsePeriod = false;
   auto bp_default = GetDefaultBreakpoints();
-  std::set<float> bpl_set(bp_default.begin(), bp_default.end());
+  std::set<double> bpl_set(bp_default.begin(), bp_default.end());
   auto it = bpl_set.insert(lbx()).first;
   bpl_set.erase(bpl_set.begin(), it);      // remove points before lbx()
   it = bpl_set.insert(ubx()).first;

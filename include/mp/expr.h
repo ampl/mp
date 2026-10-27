@@ -418,8 +418,14 @@ class Function {
 namespace internal {
 /// An expression iterator
 template <typename ExprType>
-class ExprIterator :
-    public std::iterator<std::forward_iterator_tag, ExprType> {
+class ExprIterator {
+ public:
+  typedef std::forward_iterator_tag iterator_category;
+  typedef ExprType value_type;
+  typedef std::ptrdiff_t difference_type;
+  typedef const ExprType *pointer;
+  typedef ExprType reference;
+
  private:
   const ExprBase::Impl *const *ptr_;
 

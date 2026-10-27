@@ -572,7 +572,14 @@ public:
     explicit Range(const BasicProblem *p) : problem_(p) {}
 
    public:
-    class iterator : public std::iterator<std::forward_iterator_tag, T> {
+    class iterator {
+     public:
+      using iterator_category = std::forward_iterator_tag;
+      using value_type = T;
+      using difference_type = std::ptrdiff_t;
+      using pointer = const T*;
+      using reference = T;
+
      private:
       T item_;
 
