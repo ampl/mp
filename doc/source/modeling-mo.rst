@@ -207,6 +207,6 @@ after each pass:
 Examples
 **************************************
 
-See the :ref:`important-features` and
+See the :ref:`multiple objectives feature <multipleObjectives>` and
 `Multi-objective AMPL Colab notebooks <https://colab.ampl.com/tags/multi-objective.html>`__
 for examples.

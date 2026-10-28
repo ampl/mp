@@ -10,8 +10,8 @@ these are usually characterized by a set of :ref:`solver-options` used to contro
 `AMPL options <https://dev.ampl.com/ampl/reference/options.html>`_ and
 sometimes `AMPL suffixes <https://dev.ampl.com/ampl/reference/suffixes.html>`_
 to pass required data and results, and may change the behaviour
-of the solution process. Below, :ref:`important-features` highlight most commonly used features,
-while :ref:`support-by-solvers` gives more details.
+of the solution process. Below, :ref:`important-features` lists the options and features used most often,
+while :ref:`support-by-solvers` shows which solver supports which feature.
 
 Furthermore, MP offers unified :ref:`solve-result-codes`.
 
