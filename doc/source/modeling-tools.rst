@@ -59,7 +59,8 @@ Acceptance options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The acceptance options tell which constraints and expressions a solver
-receives natively; their defaults are listed by ``<solver> -=acc:``.
+receives natively; their defaults are listed by ``<solver> -=acc:`` and
+compared across drivers in :ref:`full-cons-list`.
 A summary per solver is in the Features section of its page on
 `AMPL Development <https://dev.ampl.com/solvers/index.html>`__.
 
@@ -138,24 +139,26 @@ at `AMPL Development <https://dev.ampl.com/solvers/index.html>`_.
 
 .. _full-cons-list:
 
-Full constraint list
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Native constraints and expressions by driver
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Every constraint and expression type known to MP, and whether a driver
 receives it natively, is listed by running the solver executable with the
 ``-c`` command-line switch; ``<solver> -=acc:`` lists the
 :ref:`acceptance options <acceptance-options>` that change it.
-The tables below summarize the default acceptance of the MP-based drivers.
-Each column header gives the driver's release date; an installed driver
-may differ, so check it with ``<solver> -c``.
+The tables below show, for the MP-based drivers, the default levels
+reported by ``-c``. Each column header gives the driver's release date;
+an installed driver may differ, so check it with ``<solver> -c``.
 
-* **C** - received natively as a constraint; **E** - received natively inside
+* **C** - accepted natively as a constraint; **E** - accepted natively inside
   an expression (tree);
-* **c**, **e** - accepted, but MP reformulates it by default;
-* **–** - not received natively: MP reformulates it, or reports that it cannot
-  (also for types that an older driver does not know);
+* **c**, **e** - accepted, but MP's reformulation is used by default;
+* **–** - not accepted; MP reformulates it;
+* **×** - neither accepted nor reformulated by MP;
+* empty - type unknown to that (older) driver;
 * **\*** - the members of the row (e.g. ``=``, ``<=``, ``>=``) differ.
 
+The cuOpt column is read from the driver's source code.
 Native acceptance does not imply faster solving; to compare, switch the
 reformulation on or off with the construct's option, for example ``acc:or=0``.
 For MP2NL, acceptance depends on the subsolver, see :ref:`mp2nl`.
@@ -591,7 +594,7 @@ contained in non-linear models, as follows:
     * expr '_pow'                  7E+01           6E-04
 
 The full list of expressions which can be reported is given
-in section :ref:`Full constraint list <full-cons-list>`.
+in section :ref:`full-cons-list`.
 To find these expressions in the original model, use
 the :ref:`Reformulation explorer <reformulation-graph>`.
 

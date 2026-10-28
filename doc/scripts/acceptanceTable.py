@@ -1,7 +1,8 @@
 """Table of the constraints and expressions that MP-based drivers receive natively.
 
 Runs `<solver> -v` and `<solver> -c` for each driver in DRIVERS that is found on
-PATH, saves the results in doc/source/tables/acceptance.json, and writes
+PATH (drivers in SOURCES that are not on PATH are read from their source code),
+saves the results in doc/source/tables/acceptance.json, and writes
 doc/source/tables/acceptance.rst, which the "Full constraint list" section of
 modeling-tools.rst includes. A driver is updated only when it is on PATH and
 its driver date is not older than the saved one, so a run without solvers
@@ -136,6 +137,35 @@ GROUPS = [
 LEVEL = {"NativeRecommended": 2, "NativeAcceptedButNotRecommended": 1,
          "NotAccepted": 0}
 
+# Drivers that can be read from their source code when not on PATH
+# (e.g., they need hardware not available here):
+# driver -> (model API header with ACCEPT_CONSTRAINT/ACCEPT_EXPRESSION
+#            declarations, driver on PATH whose -c gives convertibility)
+SOURCES = {"cuopt": ("cuoptmp/cuoptmpmodelapi.h", "highs")}
+SOURCE_LEVEL = {"Recommended": 2, "AcceptedButNotRecommended": 1,
+                "NotAccepted": 0}
+MP_ROOT = os.path.join(LOCAL_PATH, "..", "..")
+
+
+def from_source(driver, data):
+    """Acceptance of a driver from its source code, convertibility from the
+    reference driver's saved data; date: latest MP release in CHANGES.mp.md."""
+    header, ref = SOURCES[driver]
+    if ref not in data:
+        return None, None
+    text = open(os.path.join(MP_ROOT, "solvers", header)).read()
+    with open(os.path.join(MP_ROOT, "CHANGES.mp.md")) as f:
+        m = re.search(r"^## (\d{8})", f.read(), re.M)
+    date = m.group(1) if m else None
+    cons = {}
+    for name, e in data[ref]["cons"].items():
+        cons[name] = [e[0], 0, 0, e[3]]
+    for kind, name, level in re.findall(
+            r"ACCEPT_(CONSTRAINT|EXPRESSION)\(\s*(\w+)\s*,\s*(\w+)", text):
+        if name in cons:
+            cons[name][1 if kind == "CONSTRAINT" else 2] = SOURCE_LEVEL.get(level, 0)
+    return date, cons
+
 
 def driver_date(exe):
     try:
@@ -166,25 +196,26 @@ def acceptance(exe):
 
 
 def cell(entries):
-    """C/E: received natively as constraint/expression, lower case if MP's
-    reformulation is preferred by default; '-': not received natively,
-    also when an older driver does not know the type.
-    (-c's "NonConvertible" is not shown: MP may still handle the construct
-    at another stage, e.g. <==> or cones written algebraically.)"""
+    """The level reported by `<solver> -c`: C/E - accepted natively as a
+    constraint/expression, lower case if MP's reformulation is preferred
+    by default; '-' - not accepted, MP converts it; 'x' - neither accepted
+    nor convertible; '' - type unknown to this (older) driver;
+    '*' - the members of the row differ."""
     def one(e):
-        if e is None:  # an older driver that does not know this type
-            return "–"
+        if e is None:
+            return ""
         conv, con, expr, _ = e
         s = ("C" if con == 2 else "c" if con == 1 else "") + \
             ("E" if expr == 2 else "e" if expr == 1 else "")
-        return s or "–"
+        return s or ("–" if conv else "×")
     vals = {one(e) for e in entries}
     return vals.pop() if len(vals) == 1 else "\\*"  # escaped for reST
 
 
 def write_table(data):
     solvers = [s for s in DRIVERS if s in data]
-    head = [f"{DRIVERS[s]} {data[s]['date']}" for s in solvers]
+    head = [f"{DRIVERS[s]} {data[s]['date']}" + (" (source)" if data[s].get("source")
+                                                 else "") for s in solvers]
     lines = [
         ".. This file is written by doc/scripts/acceptanceTable.py; do not edit.",
         "",
@@ -234,6 +265,21 @@ def main():
     changed = False
     for s in selected:
         exe = shutil.which(s)
+        if not exe and s in SOURCES:
+            date, cons = from_source(s, data)
+            if not date or not cons:
+                print(f"{s}: not on PATH, no source data, kept")
+                continue
+            if s in data and date < data[s]["date"]:
+                print(f"{s}: source {date} older than saved {data[s]['date']}, kept")
+                continue
+            entry = {"date": date, "banner": "from source " + SOURCES[s][0],
+                     "source": True, "cons": cons}
+            if data.get(s) != entry:
+                data[s] = entry
+                changed = True
+                print(f"{s}: updated from source ({date})")
+            continue
         if not exe:
             print(f"{s}: not on PATH, kept")
             continue

@@ -60,7 +60,8 @@ otherwise.
 Each solver's page on `AMPL Development <https://dev.ampl.com/solvers/index.html>`_
 (linked above) summarizes the problem types and expressions it receives natively,
 its algorithms and options. The exact list for an installed driver is in its
-:ref:`acceptance options <acceptance-options>` (``<solver> -=acc:``); other
+:ref:`acceptance options <acceptance-options>` (``<solver> -=acc:``), and
+compared across drivers in :ref:`native constructs by driver <full-cons-list>`; other
 features are compared in :ref:`support-by-solvers`. Binaries are available
 through the `AMPL Portal <https://portal.ampl.com>`_.
 

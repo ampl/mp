@@ -186,8 +186,8 @@ Logical operators
 - not *constr*
     *constr-valued:* Satisfied when *constr* is false.
 
-Solvers with native AND and OR constraints (currently Gurobi, Xpress, SCIP
-and CP-SAT) receive them directly. For other solvers, they are
+Solvers with native AND and OR constraints (Gurobi, Xpress, SCIP
+and CP-SAT; see :ref:`native constructs by driver <full-cons-list>`) receive them directly. For other solvers, they are
 transformed to simpler constraints that use relational operators.
 Whether a solver accepts a construct natively is shown by the corresponding
 :ref:`acceptance option <acceptance-options>` in its option list
@@ -267,8 +267,9 @@ Piecewise-linear expressions
 ABS, MIN, MAX
 ^^^^^^^^^^^^^^^^^^^
 
-Solvers with native support receive abs, min and max directly (abs: currently
-Gurobi, Xpress, COPT, SCIP and CP-SAT; min and max: Gurobi, Xpress and CP-SAT).
+Solvers with native support receive abs, min and max directly (abs:
+Gurobi, Xpress, COPT, SCIP and CP-SAT; min and max: Gurobi, Xpress and CP-SAT;
+see :ref:`native constructs by driver <full-cons-list>`).
 For other solvers, they are transformed to simpler constraints
 that use relational operators, and in particular are linearized where all of the operands are linear.
 
@@ -342,7 +343,8 @@ Counting operators
     *expr-valued:* The number of members of the indexing set such that the *constr* is satisfied.
 
 AMPL’s ``count`` operator examines an indexed collection of constraints, and returns the number of those constraints that are satisfied. The AMPL translator instantiates the specified constraint for each member of the indexing set, and communicates all of the instantiated constraints to the solver interface; then the solver interface transforms the counting operation to a form that the solver can accept.
-Constraint programming solvers (CP-SAT) receive ``count`` and ``numberof`` natively.
+Constraint programming solvers (CP-SAT) receive ``count`` and ``numberof`` natively
+(see :ref:`native constructs by driver <full-cons-list>`).
 
 .. code-block:: ampl
 
@@ -578,7 +580,8 @@ terms are linearized where possible, or approximated:
   :math:`((x+y)^2 - x^2 - y^2)/2` with piecewise-linear squares.
 
 Equal products share their reformulation. Constraint programming solvers
-(CP-SAT) receive products and integer powers natively (``acc:mul``, ``acc:powc``).
+(CP-SAT) receive products and integer powers natively (``acc:mul``, ``acc:powc``;
+see :ref:`native constructs by driver <full-cons-list>`).
 
 Piecewise linearization allows handling of nonconvex QP and nonlinear models
 by convex MIP solvers.
@@ -641,7 +644,8 @@ of ``round(x, n)`` with *n* > 0 can be resolved differently from AMPL's own
 evaluation. AMPL's ``trunc(x, n)`` with negative *n* can differ from
 the mathematical truncation that MP applies.
 
-CP-SAT receives ``div`` and ``mod`` natively (``acc:intdiv``, ``acc:mod``).
+CP-SAT receives ``div`` and ``mod`` natively (``acc:intdiv``, ``acc:mod``;
+see :ref:`native constructs by driver <full-cons-list>`).
 
 
 Conic optimization
@@ -733,7 +737,7 @@ power flow. *IEEE Trans. Power Syst.* 31(1).
 Exponential cones
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-MOSEK and COPT natively handle exponential conic constraints.
+MOSEK and COPT natively handle exponential conic constraints (see :ref:`native constructs by driver <full-cons-list>`).
 They are recognized by MP and passed to the solver via its API.
 Example:
 
@@ -857,7 +861,7 @@ Functions recognized from the model
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The following functions are recognized from the user input, for solvers that
-accept them natively (currently Gurobi); other solvers receive the original
+accept them natively (Gurobi; see :ref:`native constructs by driver <full-cons-list>`); other solvers receive the original
 expression:
 
 

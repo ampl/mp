@@ -6492,6 +6492,738 @@
    ]
   }
  },
+ "cuopt": {
+  "date": "20261101",
+  "banner": "from source cuoptmp/cuoptmpmodelapi.h",
+  "source": true,
+  "cons": {
+   "AbsConstraint": [
+    true,
+    0,
+    0,
+    [
+     "acc:abs"
+    ]
+   ],
+   "AcosConstraint": [
+    true,
+    0,
+    0,
+    [
+     "acc:acos"
+    ]
+   ],
+   "AcoshConstraint": [
+    true,
+    0,
+    0,
+    [
+     "acc:acosh"
+    ]
+   ],
+   "AllDiffConstraint": [
+    true,
+    0,
+    0,
+    [
+     "acc:alldiff"
+    ]
+   ],
+   "AndConstraint": [
+    true,
+    0,
+    0,
+    [
+     "acc:and",
+     "acc:forall"
+    ]
+   ],
+   "AsinConstraint": [
+    true,
+    0,
+    0,
+    [
+     "acc:asin"
+    ]
+   ],
+   "AsinhConstraint": [
+    true,
+    0,
+    0,
+    [
+     "acc:asinh"
+    ]
+   ],
+   "AtanConstraint": [
+    true,
+    0,
+    0,
+    [
+     "acc:atan"
+    ]
+   ],
+   "AtanhConstraint": [
+    true,
+    0,
+    0,
+    [
+     "acc:atanh"
+    ]
+   ],
+   "CallConstraint": [
+    false,
+    0,
+    0,
+    [
+     "acc:call"
+    ]
+   ],
+   "CeilConstraint": [
+    true,
+    0,
+    0,
+    [
+     "acc:ceil"
+    ]
+   ],
+   "ComplementarityLinear": [
+    true,
+    0,
+    0,
+    [
+     "acc:compl",
+     "acc:compllin"
+    ]
+   ],
+   "ComplementarityQuadratic": [
+    true,
+    0,
+    0,
+    [
+     "acc:complquad"
+    ]
+   ],
+   "CondLinConEQ": [
+    true,
+    0,
+    0,
+    [
+     "acc:condlineq"
+    ]
+   ],
+   "CondLinConGE": [
+    true,
+    0,
+    0,
+    [
+     "acc:condlinge"
+    ]
+   ],
+   "CondLinConGT": [
+    true,
+    0,
+    0,
+    [
+     "acc:condlingt"
+    ]
+   ],
+   "CondLinConLE": [
+    true,
+    0,
+    0,
+    [
+     "acc:condlinle"
+    ]
+   ],
+   "CondLinConLT": [
+    true,
+    0,
+    0,
+    [
+     "acc:condlinlt"
+    ]
+   ],
+   "CondQuadConEQ": [
+    true,
+    0,
+    0,
+    [
+     "acc:condquadeq"
+    ]
+   ],
+   "CondQuadConGE": [
+    true,
+    0,
+    0,
+    [
+     "acc:condquadge"
+    ]
+   ],
+   "CondQuadConGT": [
+    true,
+    0,
+    0,
+    [
+     "acc:condquadgt"
+    ]
+   ],
+   "CondQuadConLE": [
+    true,
+    0,
+    0,
+    [
+     "acc:condquadle"
+    ]
+   ],
+   "CondQuadConLT": [
+    true,
+    0,
+    0,
+    [
+     "acc:condquadlt"
+    ]
+   ],
+   "CosConstraint": [
+    true,
+    0,
+    0,
+    [
+     "acc:cos"
+    ]
+   ],
+   "CoshConstraint": [
+    true,
+    0,
+    0,
+    [
+     "acc:cosh"
+    ]
+   ],
+   "CountConstraint": [
+    true,
+    0,
+    0,
+    [
+     "acc:count"
+    ]
+   ],
+   "DivConstraint": [
+    true,
+    0,
+    0,
+    [
+     "acc:div"
+    ]
+   ],
+   "EquivalenceConstraint": [
+    false,
+    0,
+    0,
+    [
+     "acc:equiv",
+     "acc:equivalence"
+    ]
+   ],
+   "ExpAConstraint": [
+    true,
+    0,
+    0,
+    [
+     "acc:expa",
+     "acc:expA"
+    ]
+   ],
+   "ExpConstraint": [
+    true,
+    0,
+    0,
+    [
+     "acc:exp"
+    ]
+   ],
+   "ExponentialConeConstraint": [
+    false,
+    0,
+    0,
+    [
+     "acc:expcone"
+    ]
+   ],
+   "FloorConstraint": [
+    true,
+    0,
+    0,
+    [
+     "acc:floor"
+    ]
+   ],
+   "GeometricConeConstraint": [
+    false,
+    0,
+    0,
+    [
+     "acc:geomcone"
+    ]
+   ],
+   "IfThenConstraint": [
+    true,
+    0,
+    0,
+    [
+     "acc:ifthen"
+    ]
+   ],
+   "ImplicationConstraint": [
+    true,
+    0,
+    0,
+    [
+     "acc:impl"
+    ]
+   ],
+   "IndicatorConstraintLinEQ": [
+    true,
+    0,
+    0,
+    [
+     "acc:indeq",
+     "acc:indlineq"
+    ]
+   ],
+   "IndicatorConstraintLinGE": [
+    true,
+    0,
+    0,
+    [
+     "acc:indge",
+     "acc:indlinge"
+    ]
+   ],
+   "IndicatorConstraintLinLE": [
+    true,
+    0,
+    0,
+    [
+     "acc:indle",
+     "acc:indlinle"
+    ]
+   ],
+   "IndicatorConstraintQuadEQ": [
+    true,
+    0,
+    0,
+    [
+     "acc:indquadeq"
+    ]
+   ],
+   "IndicatorConstraintQuadGE": [
+    true,
+    0,
+    0,
+    [
+     "acc:indquadge"
+    ]
+   ],
+   "IndicatorConstraintQuadLE": [
+    true,
+    0,
+    0,
+    [
+     "acc:indquadle"
+    ]
+   ],
+   "IntDivConstraint": [
+    true,
+    0,
+    0,
+    [
+     "acc:intdiv"
+    ]
+   ],
+   "LinConEQ": [
+    false,
+    2,
+    0,
+    [
+     "acc:lineq"
+    ]
+   ],
+   "LinConGE": [
+    false,
+    2,
+    0,
+    [
+     "acc:linge"
+    ]
+   ],
+   "LinConLE": [
+    false,
+    2,
+    0,
+    [
+     "acc:linle"
+    ]
+   ],
+   "LinConRange": [
+    true,
+    0,
+    0,
+    [
+     "acc:linrange",
+     "acc:linrng"
+    ]
+   ],
+   "LinearFunctionalConstraint": [
+    true,
+    0,
+    0,
+    [
+     "acc:linfn",
+     "acc:linfunccon"
+    ]
+   ],
+   "LogAConstraint": [
+    true,
+    0,
+    0,
+    [
+     "acc:loga",
+     "acc:logA"
+    ]
+   ],
+   "LogConstraint": [
+    true,
+    0,
+    0,
+    [
+     "acc:log"
+    ]
+   ],
+   "LogisticConstraint": [
+    false,
+    0,
+    0,
+    [
+     "acc:logi",
+     "acc:logistic"
+    ]
+   ],
+   "MaxConstraint": [
+    true,
+    0,
+    0,
+    [
+     "acc:max"
+    ]
+   ],
+   "MinConstraint": [
+    true,
+    0,
+    0,
+    [
+     "acc:min"
+    ]
+   ],
+   "ModConstraint": [
+    true,
+    0,
+    0,
+    [
+     "acc:mod"
+    ]
+   ],
+   "MulConstraint": [
+    true,
+    0,
+    0,
+    [
+     "acc:mul"
+    ]
+   ],
+   "NLAssignEQ": [
+    false,
+    0,
+    0,
+    [
+     "acc:nlassigneq"
+    ]
+   ],
+   "NLAssignGE": [
+    false,
+    0,
+    0,
+    [
+     "acc:nlassignge"
+    ]
+   ],
+   "NLAssignLE": [
+    false,
+    0,
+    0,
+    [
+     "acc:nlassignle"
+    ]
+   ],
+   "NLComplementarity": [
+    false,
+    0,
+    0,
+    [
+     "acc:nlcompl"
+    ]
+   ],
+   "NLConstraint": [
+    false,
+    0,
+    0,
+    [
+     "acc:nlcon",
+     "acc:nlalgcon"
+    ]
+   ],
+   "NLLogical": [
+    false,
+    0,
+    0,
+    [
+     "acc:nllogcon",
+     "acc:nllogical"
+    ]
+   ],
+   "NLReifEquiv": [
+    false,
+    0,
+    0,
+    [
+     "acc:nlreifequiv"
+    ]
+   ],
+   "NLReifImpl": [
+    false,
+    0,
+    0,
+    [
+     "acc:nlreifimpl"
+    ]
+   ],
+   "NLReifRimpl": [
+    false,
+    0,
+    0,
+    [
+     "acc:nlreifrimpl"
+    ]
+   ],
+   "NotConstraint": [
+    true,
+    0,
+    0,
+    [
+     "acc:not"
+    ]
+   ],
+   "NumberofConstConstraint": [
+    true,
+    0,
+    0,
+    [
+     "acc:numberofconst"
+    ]
+   ],
+   "NumberofVarConstraint": [
+    true,
+    0,
+    0,
+    [
+     "acc:numberofvar"
+    ]
+   ],
+   "OrConstraint": [
+    true,
+    0,
+    0,
+    [
+     "acc:or",
+     "acc:exists"
+    ]
+   ],
+   "PLConstraint": [
+    true,
+    0,
+    0,
+    [
+     "acc:pl",
+     "acc:pwl",
+     "acc:piecewise"
+    ]
+   ],
+   "PowConstExpConstraint": [
+    true,
+    0,
+    0,
+    [
+     "acc:powc",
+     "acc:powconstexp"
+    ]
+   ],
+   "PowConstraint": [
+    true,
+    0,
+    0,
+    [
+     "acc:pow"
+    ]
+   ],
+   "PowerConeConstraint": [
+    false,
+    0,
+    0,
+    [
+     "acc:powercone"
+    ]
+   ],
+   "QuadConEQ": [
+    true,
+    0,
+    0,
+    [
+     "acc:quadeq"
+    ]
+   ],
+   "QuadConGE": [
+    true,
+    0,
+    0,
+    [
+     "acc:quadge"
+    ]
+   ],
+   "QuadConLE": [
+    true,
+    0,
+    0,
+    [
+     "acc:quadle"
+    ]
+   ],
+   "QuadConRange": [
+    true,
+    0,
+    0,
+    [
+     "acc:quadrange",
+     "acc:quadrng"
+    ]
+   ],
+   "QuadraticConeConstraint": [
+    true,
+    0,
+    0,
+    [
+     "acc:quadcone"
+    ]
+   ],
+   "QuadraticFunctionalConstraint": [
+    true,
+    0,
+    0,
+    [
+     "acc:quadfn",
+     "acc:quadfunccon"
+    ]
+   ],
+   "RotatedQuadraticConeConstraint": [
+    true,
+    0,
+    0,
+    [
+     "acc:rotatedquadcone"
+    ]
+   ],
+   "RoundConstraint": [
+    true,
+    0,
+    0,
+    [
+     "acc:round"
+    ]
+   ],
+   "SDPDotProdConstraint": [
+    false,
+    0,
+    0,
+    [
+     "acc:sdpdotprod",
+     "acc:sdpdot"
+    ]
+   ],
+   "SOS1Constraint": [
+    false,
+    0,
+    0,
+    [
+     "acc:sos1"
+    ]
+   ],
+   "SOS2Constraint": [
+    true,
+    0,
+    0,
+    [
+     "acc:sos2"
+    ]
+   ],
+   "SignpowConstExpConstraint": [
+    false,
+    0,
+    0,
+    [
+     "acc:signpowc",
+     "acc:signpowconstexp"
+    ]
+   ],
+   "SinConstraint": [
+    true,
+    0,
+    0,
+    [
+     "acc:sin"
+    ]
+   ],
+   "SinhConstraint": [
+    true,
+    0,
+    0,
+    [
+     "acc:sinh"
+    ]
+   ],
+   "TanConstraint": [
+    true,
+    0,
+    0,
+    [
+     "acc:tan"
+    ]
+   ],
+   "TanhConstraint": [
+    true,
+    0,
+    0,
+    [
+     "acc:tanh"
+    ]
+   ],
+   "UnaryEncodingConstraint": [
+    true,
+    0,
+    0,
+    [
+     "acc:uenc"
+    ]
+   ]
+  }
+ },
  "cpsat": {
   "date": "20261101",
   "banner": "AMPL/CP-SAT Optimizer [9.15.9999] (Darwin arm64), driver(20261101), MP(20261101)",
