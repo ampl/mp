@@ -50,102 +50,102 @@ Options that only some solvers have name those solvers.
          ampl: option highs_options 'timelimit=60 mipgap=1e-4 threads=4';
          ampl: solve;
 
-**Limits and gaps**
+.. dropdown:: Limits and gaps
 
-* ``lim:time`` (``timelimit``) - time limit in seconds.
-  ``lim:soltime`` (Xpress, COPT) - time limit once a feasible solution is found.
+   * ``lim:time`` (``timelimit``) - time limit in seconds.
+     ``lim:soltime`` (Xpress, COPT) - time limit once a feasible solution is found.
 
-* ``mip:gap``, ``mip:gapabs`` (``mipgap``, ``mipgapabs``) - relative and absolute
-  MIP optimality gaps at which the search stops.
-  :ref:`mip:return_gap <returnMIPgap>` and :ref:`mip:bestbound <returnBestBound>`
-  report the final gap and dual bound.
+   * ``mip:gap``, ``mip:gapabs`` (``mipgap``, ``mipgapabs``) - relative and absolute
+     MIP optimality gaps at which the search stops.
+     :ref:`mip:return_gap <returnMIPgap>` and :ref:`mip:bestbound <returnBestBound>`
+     report the final gap and dual bound.
 
-* :ref:`plateauStop` (``mip:plateau:time``, ``mip:plateau:abstol``,
-  ``mip:plateau:reltol``, ``mip:plateau:warmup``, plus the gap-based options of
-  :ref:`plateauStopBound`) - stop a MIP search once the incumbent (and, optionally,
-  the MIP gap) has not improved enough for a while.
+   * :ref:`plateauStop` (``mip:plateau:time``, ``mip:plateau:abstol``,
+     ``mip:plateau:reltol``, ``mip:plateau:warmup``, plus the gap-based options of
+     :ref:`plateauStopBound`) - stop a MIP search once the incumbent (and, optionally,
+     the MIP gap) has not improved enough for a while.
 
-**Algorithm and search**
+.. dropdown:: Algorithm and search
 
-* ``alg:method`` (``method``) - algorithm for continuous problems (LP/QP) and the
-  root relaxation of a MIP, which can have strong impact on solving time;
-  ``mip:nodemethod`` (Gurobi, CPLEX, MOSEK) - the same for the MIP nodes.
+   * ``alg:method`` (``method``) - algorithm for continuous problems (LP/QP) and the
+     root relaxation of a MIP, which can have strong impact on solving time;
+     ``mip:nodemethod`` (Gurobi, CPLEX, MOSEK) - the same for the MIP nodes.
 
-* ``bar:crossover`` (``crossover``) - whether a basic solution is computed after
-  the barrier algorithm; turning it off can save significant time
-  (MOSEK: ``bar:basis``).
+   * ``bar:crossover`` (``crossover``) - whether a basic solution is computed after
+     the barrier algorithm; turning it off can save significant time
+     (MOSEK: ``bar:basis``).
 
-* ``tech:threads``, ``tech:seed`` (``threads``, ``seed``) - number of threads and
-  random seed. A different seed can change a MIP search markedly; compare
-  formulations or solvers over several seeds.
+   * ``tech:threads``, ``tech:seed`` (``threads``, ``seed``) - number of threads and
+     random seed. A different seed can change a MIP search markedly; compare
+     formulations or solvers over several seeds.
 
-* :ref:`warm-start` (``alg:start``) - start from the current variable values.
-  :ref:`basisio` (``alg:basis``) and :ref:`fixedModel` (``mip:basis``) - pass and
-  return LP bases.
+   * :ref:`warm-start` (``alg:start``) - start from the current variable values.
+     :ref:`basisio` (``alg:basis``) and :ref:`fixedModel` (``mip:basis``) - pass and
+     return LP bases.
 
-* ``alg:relax`` (``relax``) - the solver relaxes integrality after MP's
-  reformulation, so the binaries MP introduces are relaxed too; AMPL option
-  ``relax_integrality`` relaxes the model before it reaches MP.
+   * ``alg:relax`` (``relax``) - the solver relaxes integrality after MP's
+     reformulation, so the binaries MP introduces are relaxed too; AMPL option
+     ``relax_integrality`` relaxes the model before it reaches MP.
 
-* Search emphasis, solver-specific: ``mip:focus`` (Gurobi; CPLEX ``mip:emphasis``),
-  ``mip:heuremphasis`` (Xpress), ``mip:norelheurwork`` (Gurobi),
-  ``alg:solutiontarget`` and ``alg:optimalitytarget`` (Gurobi; CPLEX ``qp:target``).
+   * Search emphasis, solver-specific: ``mip:focus`` (Gurobi; CPLEX ``mip:emphasis``),
+     ``mip:heuremphasis`` (Xpress), ``mip:norelheurwork`` (Gurobi),
+     ``alg:solutiontarget`` and ``alg:optimalitytarget`` (Gurobi; CPLEX ``qp:target``).
 
-**Numerics and tolerances**
+.. dropdown:: Numerics and tolerances
 
-* ``alg:feastol``, ``mip:inttol`` (``feastol``, ``inttol``) - feasibility and
-  integrality tolerances; ``lp:opttol`` (``opttol``; Gurobi, Xpress, CPLEX) -
-  reduced cost tolerance.
+   * ``alg:feastol``, ``mip:inttol`` (``feastol``, ``inttol``) - feasibility and
+     integrality tolerances; ``lp:opttol`` (``opttol``; Gurobi, Xpress, CPLEX) -
+     reduced cost tolerance.
 
-* ``pre:solve`` (``presolve``), ``scale`` - solver presolve and scaling;
-  ``alg:numericfocus`` (``numericfocus``; Gurobi, Xpress, CPLEX),
-  ``mip:intfocus`` (Gurobi), ``alg:refineops`` (Xpress) - numerical emphasis.
-  See :ref:`numerical_accuracy`.
+   * ``pre:solve`` (``presolve``), ``scale`` - solver presolve and scaling;
+     ``alg:numericfocus`` (``numericfocus``; Gurobi, Xpress, CPLEX),
+     ``mip:intfocus`` (Gurobi), ``alg:refineops`` (Xpress) - numerical emphasis.
+     See :ref:`numerical_accuracy`.
 
-**Reformulation**
+.. dropdown:: Reformulation
 
-* ``cvt:bigM`` - universal bound on variables in logical expressions when they
-  have none; relates to the modeling topic recommending
-  :ref:`tight bounds on all variables <tight_bounds>`.
+   * ``cvt:bigM`` - universal bound on variables in logical expressions when they
+     have none; relates to the modeling topic recommending
+     :ref:`tight bounds on all variables <tight_bounds>`.
 
-* ``acc:...`` - which constructs the solver receives natively, and which MP
-  reformulates (:ref:`acceptance-options`); ``cvt:...`` - how MP reformulates
-  (:ref:`explore-reformulations`).
+   * ``acc:...`` - which constructs the solver receives natively, and which MP
+     reformulates (:ref:`acceptance-options`); ``cvt:...`` - how MP reformulates
+     (:ref:`explore-reformulations`).
 
-* We recommend
-  :ref:`original piecewise-linear expressions <piecewise_linear_modeling>`
-  with MP solvers
-  (`AMPL option <https://dev.ampl.com/ampl/reference/options.html>`_
-  ``pl_linearize`` set to 0).
+   * We recommend
+     :ref:`original piecewise-linear expressions <piecewise_linear_modeling>`
+     with MP solvers
+     (`AMPL option <https://dev.ampl.com/ampl/reference/options.html>`_
+     ``pl_linearize`` set to 0).
 
-**Checking and inspecting**
+.. dropdown:: Checking and inspecting
 
-* ``tech:outlev`` (``outlev``) - :ref:`solver log <outlev>`;
-  ``tech:timing`` (``timing``) - :ref:`solution times <report-times>`.
+   * ``tech:outlev`` (``outlev``) - :ref:`solver log <outlev>`;
+     ``tech:timing`` (``timing``) - :ref:`solution times <report-times>`.
 
-* :ref:`solution-check` (``sol:chk:...``) - MP checks the solution against the
-  original model, including its logical constraints, and reports violations.
+   * :ref:`solution-check` (``sol:chk:...``) - MP checks the solution against the
+     original model, including its logical constraints, and reports violations.
 
-* :ref:`writeprob` (``tech:writeprob``, ``writeprob``) and :ref:`writesol`
-  (``tech:writesolution``, ``writesol``) - write the model or the solution in
-  the solver's formats.
+   * :ref:`writeprob` (``tech:writeprob``, ``writeprob``) and :ref:`writesol`
+     (``tech:writesolution``, ``writesol``) - write the model or the solution in
+     the solver's formats.
 
-* Infeasible models: :ref:`iis` (``iis:find``) and
-  :ref:`feasibilityrelaxation` (``alg:feasrelax``).
+   * Infeasible models: :ref:`iis` (``iis:find``) and
+     :ref:`feasibilityrelaxation` (``alg:feasrelax``).
 
-**Several solutions and objectives**
+.. dropdown:: Several solutions and objectives
 
-* :ref:`multiplesolutions` (``sol:stub``, ``sol:count``, ``sol:poollimit``) -
-  control exploration of alternative solutions.
+   * :ref:`multiplesolutions` (``sol:stub``, ``sol:count``, ``sol:poollimit``) -
+     control exploration of alternative solutions.
 
-* :ref:`multipleObjectives` (``obj:multi``) - multi-objective solving, including
-  hierarchical and blended objectives, as well as objective-specific options;
-  ``obj:no`` selects a single objective.
+   * :ref:`multipleObjectives` (``obj:multi``) - multi-objective solving, including
+     hierarchical and blended objectives, as well as objective-specific options;
+     ``obj:no`` selects a single objective.
 
-**Options for all MP solvers**
+.. dropdown:: Options for all MP solvers
 
-* AMPL option :ref:`mp_options <mp-options>` - options for every MP solver, read
-  before ``<solver>_options``; ``tech:optionfile`` reads options from a file.
+   * AMPL option :ref:`mp_options <mp-options>` - options for every MP solver, read
+     before ``<solver>_options``; ``tech:optionfile`` reads options from a file.
 
 
 .. _solver-options:
@@ -437,10 +437,9 @@ Support by solvers
 .. |e| unicode:: U+2713
    :trim:
 
-This table summarizes the solver driver support for each solver feature; some features, 
-denoted by |e| are supported through emulation (aka they are not available in the original
-solver but are emulated by MP). The table is generated from the drivers' feature
-declarations by ``doc/scripts/parseFeatures.py``; for MP2NL, solver features also depend
+This table summarizes the solver driver support for each solver feature; some features,
+denoted by |e|, are supported through emulation (they are not available in the original
+solver but are emulated by MP). For MP2NL, solver features also depend
 on the subsolver. For more solver-specific information, click on the solver name,
 or visit `AMPL Development solver page <https://dev.ampl.com/solvers/index.html>`__.
 
