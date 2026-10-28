@@ -90,8 +90,18 @@ add_prefix(mp_docs_models ${DOC_BASEDIR}/models/
     iis.mod infeasible.mod
     nqueens.mod
   )
-set(mp_docs ${mp_docs} ${mp_docs_models} ${DOC_BASEDIR}/index.rst)
+set(ACCEPTANCE_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/scripts/acceptanceTable.py)
+set(mp_docs ${mp_docs} ${mp_docs_models} ${DOC_BASEDIR}/index.rst
+  ${DOC_BASEDIR}/tables/acceptance.json ${DOC_BASEDIR}/tables/acceptance.rst
+  ${ACCEPTANCE_SCRIPT})
+# Refresh the acceptance tables (modeling-tools.rst) from the drivers on PATH;
+# without solvers (e.g., in CI) the script keeps the saved data.
+set(ACCEPTANCE_COMMAND "")
+if (SPHINX_PYTHON)
+  set(ACCEPTANCE_COMMAND COMMAND ${SPHINX_PYTHON} ${ACCEPTANCE_SCRIPT})
+endif ()
 add_custom_command(OUTPUT ${SPHINX_INDEX_FILE}
+                  ${ACCEPTANCE_COMMAND}
                   COMMAND
                   ${SPHINX_EXECUTABLE} -b html
                   ${DOC_BASEDIR} ${DOC_OUTPUTDIR}

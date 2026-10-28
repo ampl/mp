@@ -141,16 +141,26 @@ at `AMPL Development <https://dev.ampl.com/solvers/index.html>`_.
 Full constraint list
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-List all constraints known by the MP model converter, including some
-internal ones, by running the solver executable with the ``-c``
-command-line switch. Here is a beautified summary of the resulting
-(rather technical) output for a generic solver:
+Every constraint and expression type known to MP, and whether a driver
+receives it natively, is listed by running the solver executable with the
+``-c`` command-line switch; ``<solver> -=acc:`` lists the
+:ref:`acceptance options <acceptance-options>` that change it.
+The tables below summarize the default acceptance of the MP-based drivers.
+Each column header gives the driver's release date; an installed driver
+may differ, so check it with ``<solver> -c``.
 
-.. csv-table::
-   :file: tables/constr_list.csv
-   :widths: 5, 25, 70
-   :header-rows: 1
+* **C** - received natively as a constraint; **E** - received natively inside
+  an expression (tree);
+* **c**, **e** - accepted, but MP reformulates it by default;
+* **–** - not received natively: MP reformulates it, or reports that it cannot
+  (also for types that an older driver does not know);
+* **\*** - the members of the row (e.g. ``=``, ``<=``, ``>=``) differ.
 
+Native acceptance does not imply faster solving; to compare, switch the
+reformulation on or off with the construct's option, for example ``acc:or=0``.
+For MP2NL, acceptance depends on the subsolver, see :ref:`mp2nl`.
+
+.. include:: tables/acceptance.rst
 
 
 .. _explore-reformulations:
