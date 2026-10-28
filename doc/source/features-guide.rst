@@ -25,47 +25,92 @@ reference see :ref:`howto`.
 Important features
 ==================
 
-This section lists most important solver features,
-controlling solver behavior and information flow.
+This section lists the most important solver features and options,
+grouped by purpose.
 Which of them a solver offers, its algorithms and their essential controls
 are described on the solver's page on
 `AMPL Development <https://dev.ampl.com/solvers/index.html>`__.
+Options are written by their full names, followed by short names
+that most MP solvers accept as synonyms; ``<solver> -=`` lists them all.
+Options that only some solvers have name those solvers.
 
-* Option :ref:`lim:time (timelimit), lim:soltimelimit <ampl-solver-options>` -
-  sets solver time limit
+.. tab-set::
 
-* Options :ref:`mipgap, mipgapabs, lp:opttol <ampl-solver-options>` -
-  set required MIP optimality gap and LP reduced cost tolerance
+   .. tab-item:: Python
 
-* Option :ref:`mip:return_gap <returnMIPgap>` requests reporting of the final MIP gap
+      .. code-block:: python
 
-* Options :ref:`alg:method/mip:nodemethod <ampl-solver-options>` -
-  control the method chosen to solve continuous problems (LP/QP),
-  or continuous relaxations of MIP nodes,
-  which can have strong impact on solving time.
+         ampl.solve(solver="highs", highs_options="timelimit=60 mipgap=1e-4 threads=4")
 
-* Option :ref:`crossover/bar:basis <ampl-solver-options>` -
-  controls whether crossover is performed after the barrier algorithm.
-  Turning it off can save significant runtime
+   .. tab-item:: AMPL
 
-* Options :ref:`alg:basis, mip:basis <ampl-solver-options>` -
-  control whether :ref:`LP basis information <basisio>` is input/output
+      .. code-block:: ampl
 
-* Options
-  :ref:`solutiontarget, optimalitytarget, heuremphasis, mipfocus/mipemphasis, norelwork <ampl-solver-options>` -
-  control the overall solving strategy and emphasis
+         ampl: option solver highs;
+         ampl: option highs_options 'timelimit=60 mipgap=1e-4 threads=4';
+         ampl: solve;
 
-* Options
-  :ref:`presolve, numericfocus/numericalemphasis, scale, intfocus, refineops <ampl-solver-options>` -
-  control the numerical emphasis
+**Limits and gaps**
 
-* Options :ref:`feastol, inttol <ampl-solver-options>` -
-  control desired feasibility and integrality tolerances
+* ``lim:time`` (``timelimit``) - time limit in seconds.
+  ``lim:soltime`` (Xpress, COPT) - time limit once a feasible solution is found.
 
-* Option :ref:`cvt:bigM <ampl-solver-options>` -
-  sets universal bounds on variables in logical expressions;
-  relates to the modeling topic recommending
-  :ref:`tight bounds on all variables <tight_bounds>`
+* ``mip:gap``, ``mip:gapabs`` (``mipgap``, ``mipgapabs``) - relative and absolute
+  MIP optimality gaps at which the search stops.
+  :ref:`mip:return_gap <returnMIPgap>` and :ref:`mip:bestbound <returnBestBound>`
+  report the final gap and dual bound.
+
+* :ref:`plateauStop` (``mip:plateau:time``, ``mip:plateau:abstol``,
+  ``mip:plateau:reltol``, ``mip:plateau:warmup``, plus the gap-based options of
+  :ref:`plateauStopBound`) - stop a MIP search once the incumbent (and, optionally,
+  the MIP gap) has not improved enough for a while.
+
+**Algorithm and search**
+
+* ``alg:method`` (``method``) - algorithm for continuous problems (LP/QP) and the
+  root relaxation of a MIP, which can have strong impact on solving time;
+  ``mip:nodemethod`` (Gurobi, CPLEX, MOSEK) - the same for the MIP nodes.
+
+* ``bar:crossover`` (``crossover``) - whether a basic solution is computed after
+  the barrier algorithm; turning it off can save significant time
+  (MOSEK: ``bar:basis``).
+
+* ``tech:threads``, ``tech:seed`` (``threads``, ``seed``) - number of threads and
+  random seed. A different seed can change a MIP search markedly; compare
+  formulations or solvers over several seeds.
+
+* :ref:`warm-start` (``alg:start``) - start from the current variable values.
+  :ref:`basisio` (``alg:basis``) and :ref:`fixedModel` (``mip:basis``) - pass and
+  return LP bases.
+
+* ``alg:relax`` (``relax``) - the solver relaxes integrality after MP's
+  reformulation, so the binaries MP introduces are relaxed too; AMPL option
+  ``relax_integrality`` relaxes the model before it reaches MP.
+
+* Search emphasis, solver-specific: ``mip:focus`` (Gurobi; CPLEX ``mip:emphasis``),
+  ``mip:heuremphasis`` (Xpress), ``mip:norelheurwork`` (Gurobi),
+  ``alg:solutiontarget`` and ``alg:optimalitytarget`` (Gurobi; CPLEX ``qp:target``).
+
+**Numerics and tolerances**
+
+* ``alg:feastol``, ``mip:inttol`` (``feastol``, ``inttol``) - feasibility and
+  integrality tolerances; ``lp:opttol`` (``opttol``; Gurobi, Xpress, CPLEX) -
+  reduced cost tolerance.
+
+* ``pre:solve`` (``presolve``), ``scale`` - solver presolve and scaling;
+  ``alg:numericfocus`` (``numericfocus``; Gurobi, Xpress, CPLEX),
+  ``mip:intfocus`` (Gurobi), ``alg:refineops`` (Xpress) - numerical emphasis.
+  See :ref:`numerical_accuracy`.
+
+**Reformulation**
+
+* ``cvt:bigM`` - universal bound on variables in logical expressions when they
+  have none; relates to the modeling topic recommending
+  :ref:`tight bounds on all variables <tight_bounds>`.
+
+* ``acc:...`` - which constructs the solver receives natively, and which MP
+  reformulates (:ref:`acceptance-options`); ``cvt:...`` - how MP reformulates
+  (:ref:`explore-reformulations`).
 
 * We recommend
   :ref:`original piecewise-linear expressions <piecewise_linear_modeling>`
@@ -73,20 +118,34 @@ are described on the solver's page on
   (`AMPL option <https://dev.ampl.com/ampl/reference/options.html>`_
   ``pl_linearize`` set to 0).
 
-* :ref:`multiplesolutions` (options ``sol:stub, sol:count, sol:poollimit``) -
-  control exploration of alternative solutions
+**Checking and inspecting**
 
-* :ref:`multipleObjectives` (option ``obj:multi``) -
-  controls multi-objective solving, including hierarchical
-  and blended objectives, as well as objective-specific options.
+* ``tech:outlev`` (``outlev``) - :ref:`solver log <outlev>`;
+  ``tech:timing`` (``timing``) - :ref:`solution times <report-times>`.
 
-* :ref:`plateauStop` (options ``mip:plateau:time, mip:plateau:abstol,
-  mip:plateau:reltol, mip:plateau:warmup, mip:plateau:log``, plus
-  ``mip:plateau:warmup:relgap, mip:plateau:warmup:absgap,
-  mip:plateau:absgaptol, mip:plateau:relgaptol`` for solvers that also
-  support :ref:`plateauStopBound`) -
-  stop a MIP search early once the incumbent (and, optionally, the
-  MIP gap) has stopped improving enough for a while.
+* :ref:`solution-check` (``sol:chk:...``) - MP checks the solution against the
+  original model, including its logical constraints, and reports violations.
+
+* :ref:`writeprob` (``tech:writeprob``, ``writeprob``) and :ref:`writesol`
+  (``tech:writesolution``, ``writesol``) - write the model or the solution in
+  the solver's formats.
+
+* Infeasible models: :ref:`iis` (``iis:find``) and
+  :ref:`feasibilityrelaxation` (``alg:feasrelax``).
+
+**Several solutions and objectives**
+
+* :ref:`multiplesolutions` (``sol:stub``, ``sol:count``, ``sol:poollimit``) -
+  control exploration of alternative solutions.
+
+* :ref:`multipleObjectives` (``obj:multi``) - multi-objective solving, including
+  hierarchical and blended objectives, as well as objective-specific options;
+  ``obj:no`` selects a single objective.
+
+**Options for all MP solvers**
+
+* AMPL option :ref:`mp_options <mp-options>` - options for every MP solver, read
+  before ``<solver>_options``; ``tech:optionfile`` reads options from a file.
 
 
 .. _solver-options:
@@ -167,6 +226,8 @@ using ``tech:optionfile``:
 
 For the underlying solver's native options see :ref:`native-options`.
 
+
+.. _mp-options:
 
 Solver-specific vs common MP options
 ''''''''''''''''''''''''''''''''''''''''''''''''
