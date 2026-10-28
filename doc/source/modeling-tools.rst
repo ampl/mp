@@ -58,6 +58,11 @@ or force reformulation.
 Acceptance options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+The acceptance options tell which constraints and expressions a solver
+receives natively; their defaults are listed by ``<solver> -=acc:``.
+A summary per solver is in the Features section of its page on
+`AMPL Development <https://dev.ampl.com/solvers/index.html>`__.
+
 Sometimes it is handy to disable all automatic reformulations,
 for example, to test manual modeling of high-level constructs.
 For that, declare all contraints as natively accepted by the solver:

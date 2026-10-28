@@ -766,7 +766,8 @@ see :ref:`explore-final-model`.
 General nonlinear functions
 **********************************
 
-How nonlinear functions reach the solver depends on its class:
+How nonlinear functions reach the solver depends on its class; each solver's
+page on AMPL Development lists what it receives natively:
 
 .. list-table::
    :header-rows: 1
@@ -774,15 +775,17 @@ How nonlinear functions reach the solver depends on its class:
 
    * - Solvers
      - Handling
-   * - Gurobi, Xpress, SCIP; COPT with ``acc:_expr=1``
+   * - `Gurobi <https://dev.ampl.com/solvers/gurobi/index.html#features>`__, `Xpress <https://dev.ampl.com/solvers/xpress/index.html#features>`__, `SCIP <https://dev.ampl.com/solvers/scip/index.html#features>`__;
+       `COPT <https://dev.ampl.com/solvers/copt/index.html#features>`__ with ``acc:_expr=1``
      - Passed natively as expression trees (:ref:`flat-vs-expressions`).
        Gurobi and SCIP solve globally, Xpress too if its license allows
        (otherwise, or with ``alg:nlpsolver=1``, locally); COPT solves locally.
-   * - Linear-quadratic solvers (CPLEX, HiGHS, MOSEK, CBC, GCG, cuOpt;
-       COPT by default)
+   * - `Linear-quadratic solvers <https://dev.ampl.com/solvers/index.html#linear-and-mixed-integer-solvers>`__
+       (CPLEX, HiGHS, MOSEK, CBC, GCG, cuOpt; COPT by default)
      - Approximated piecewise-linearly (:ref:`nonlinear-pl-approx`), so the
        solver optimizes the approximation.
-   * - NL solvers through :ref:`MP2NL <mp2nl>` (e.g. Knitro, Ipopt, BARON)
+   * - `NL solvers <https://dev.ampl.com/solvers/index.html#nonlinear-solvers>`__ through :ref:`MP2NL <mp2nl>`
+       (e.g. `Knitro <https://dev.ampl.com/solvers/knitro/index.html#features>`__, `Ipopt <https://dev.ampl.com/solvers/ipopt/index.html#features>`__, `BARON <https://dev.ampl.com/solvers/baron/index.html#features>`__)
      - Passed in the NL file, after MP's reformulation of the other constructs.
 
 For example, the Chichinadze test function has many local minima:

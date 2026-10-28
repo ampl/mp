@@ -32,8 +32,10 @@ otherwise.
    * - Class
      - MP-based drivers
      - What MP does
-   * - Linear and mixed-integer
-     - Gurobi, CPLEX, Xpress, COPT, HiGHS, SCIP, MOSEK, CBC, GCG, cuOpt
+   * - `Linear and mixed-integer <https://dev.ampl.com/solvers/index.html#linear-and-mixed-integer-solvers>`__
+     - `Gurobi <https://dev.ampl.com/solvers/gurobi/index.html#features>`__, `CPLEX <https://dev.ampl.com/solvers/cplex/index.html#features>`__, `Xpress <https://dev.ampl.com/solvers/xpress/index.html#features>`__, `COPT <https://dev.ampl.com/solvers/copt/index.html#features>`__,
+       `HiGHS <https://dev.ampl.com/solvers/highs/index.html#features>`__, `SCIP <https://dev.ampl.com/solvers/scip/index.html#features>`__, `MOSEK <https://dev.ampl.com/solvers/mosek/index.html#features>`__, `CBC <https://dev.ampl.com/solvers/cbc/index.html#features>`__,
+       `GCG <https://dev.ampl.com/solvers/gcg/index.html#features>`__, `cuOpt <https://dev.ampl.com/solvers/cuopt/index.html#features>`__
      - Logic becomes indicator or general constraints where the solver has
        them, big-M rows otherwise; other nonlinear functions are
        approximated piecewise-linearly.
@@ -41,13 +43,13 @@ otherwise.
      - MOSEK, COPT, Gurobi, Xpress, CPLEX, SCIP
      - Recognizes second-order and exponential cones from their algebraic
        form (:ref:`socp`).
-   * - Global nonlinear
-     - Gurobi, Xpress, SCIP, BARON (``baronmp``); COPT solves nonlinear
-       models locally (``acc:_expr=1``)
+   * - `Global nonlinear <https://dev.ampl.com/solvers/index.html#nonlinear-solvers>`__
+     - Gurobi, Xpress, SCIP, `BARON <https://dev.ampl.com/solvers/baron/index.html#features>`__ (``baronmp``);
+       COPT solves nonlinear models locally (``acc:_expr=1``)
      - Passes nonlinear functions as expression trees
        (:ref:`flat-vs-expressions`).
-   * - Constraint programming
-     - CP-SAT (integer models)
+   * - `Constraint programming <https://dev.ampl.com/solvers/index.html#constraint-programming-solvers>`__
+     - `CP-SAT <https://dev.ampl.com/solvers/cpsat/index.html#features>`__ (integer models)
      - Receives logic, counting, ``alldiff``, products, ``div`` and ``mod``
        natively. The same AMPL constructs are reformulated for MIP solvers,
        so a constraint-programming model can also be solved by any MIP solver.
@@ -55,12 +57,12 @@ otherwise.
      - :ref:`MP2NL <mp2nl>` (e.g. Knitro, Ipopt, Couenne, BARON)
      - Applies MP's reformulations, then calls the NL solver.
 
-Which constructs a particular solver accepts natively is listed in its
-:ref:`acceptance options <acceptance-options>` (``<solver> -=``); its other
-features are summarized in :ref:`support-by-solvers`. Binaries are available
-through the `AMPL Portal <https://portal.ampl.com>`_, and each solver's page
-on `AMPL Development <https://dev.ampl.com/solvers/index.html>`_ describes its
-options and solver-specific features.
+Each solver's page on `AMPL Development <https://dev.ampl.com/solvers/index.html>`_
+(linked above) summarizes the problem types and expressions it receives natively,
+its algorithms and options. The exact list for an installed driver is in its
+:ref:`acceptance options <acceptance-options>` (``<solver> -=acc:``); other
+features are compared in :ref:`support-by-solvers`. Binaries are available
+through the `AMPL Portal <https://portal.ampl.com>`_.
 
 **Where to read next:**
 :ref:`modeling-formulations` (choosing between formulations),
