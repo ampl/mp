@@ -196,26 +196,26 @@ def acceptance(exe):
 
 
 def cell(entries):
-    """The level reported by `<solver> -c`: C/E - accepted natively as a
-    constraint/expression, lower case if MP's reformulation is preferred
-    by default; '-' - not accepted, MP converts it; 'x' - neither accepted
-    nor convertible; '' - type unknown to this (older) driver;
-    '*' - the members of the row differ."""
+    """The acceptance level reported by `<solver> -c`: C/E - accepted
+    natively as a constraint/expression, lower case if MP's reformulation is
+    preferred by default; '-' - not received natively; '' - type unknown to
+    this (older) driver; '*' - the members of the row differ.
+    -c's "NonConvertible" (no converter for the flat type) is not shown:
+    for readers, what matters is whether the solver receives a construct."""
     def one(e):
         if e is None:
             return ""
-        conv, con, expr, _ = e
+        _, con, expr, _ = e
         s = ("C" if con == 2 else "c" if con == 1 else "") + \
             ("E" if expr == 2 else "e" if expr == 1 else "")
-        return s or ("–" if conv else "×")
+        return s or "–"
     vals = {one(e) for e in entries}
     return vals.pop() if len(vals) == 1 else "\\*"  # escaped for reST
 
 
 def write_table(data):
     solvers = [s for s in DRIVERS if s in data]
-    head = [f"{DRIVERS[s]} {data[s]['date']}" + (" (source)" if data[s].get("source")
-                                                 else "") for s in solvers]
+    head = [f"{DRIVERS[s]} {data[s]['date']}" for s in solvers]
     lines = [
         ".. This file is written by doc/scripts/acceptanceTable.py; do not edit.",
         "",

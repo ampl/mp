@@ -153,12 +153,10 @@ an installed driver may differ, so check it with ``<solver> -c``.
 * **C** - accepted natively as a constraint; **E** - accepted natively inside
   an expression (tree);
 * **c**, **e** - accepted, but MP's reformulation is used by default;
-* **–** - not accepted; MP reformulates it;
-* **×** - neither accepted nor reformulated by MP;
+* **–** - not received natively; MP reformulates it, or reports that it cannot;
 * empty - type unknown to that (older) driver;
 * **\*** - the members of the row (e.g. ``=``, ``<=``, ``>=``) differ.
 
-The cuOpt column is read from the driver's source code.
 Native acceptance does not imply faster solving; to compare, switch the
 reformulation on or off with the construct's option, for example ``acc:or=0``.
 For MP2NL, acceptance depends on the subsolver, see :ref:`mp2nl`.
