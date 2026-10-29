@@ -174,9 +174,12 @@ public:
   /// piecewise-linear expressions.
   /// Set ``option pl_linearize 0;`` in AMPL if the solver
   /// supports PL natively.
-  ACCEPT_CONSTRAINT(SOS1Constraint, Recommended, CG_SOS)
+  /// Not recommended: CBC 2.10.12 returns wrong solutions with some
+  /// SOS models; MP linearizes them by default. acc:sos1/sos2=2
+  /// restore passing them to CBC.
+  ACCEPT_CONSTRAINT(SOS1Constraint, AcceptedButNotRecommended, CG_SOS)
   void AddConstraint(const SOS1Constraint& cc);
-  ACCEPT_CONSTRAINT(SOS2Constraint, Recommended, CG_SOS)
+  ACCEPT_CONSTRAINT(SOS2Constraint, AcceptedButNotRecommended, CG_SOS)
   void AddConstraint(const SOS2Constraint& cc);
 
 };

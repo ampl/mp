@@ -150,7 +150,7 @@ protected:
 private:
   /// These options are stored in the class
   struct Options {
-    int timeLimit_ = 0;
+    double timeLimit_ = 0;
     int outlev_ = 0;
   };
   Options storedOptions_;

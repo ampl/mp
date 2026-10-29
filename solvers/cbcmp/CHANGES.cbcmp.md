@@ -2,6 +2,19 @@ Summary of recent updates to CBCMP for AMPL
 ===========================================
 
 
+## 20261101
+- SOS1/SOS2 constraints, including those from
+  piecewise-linear expressions, are linearized by
+  default, as CBC returned wrong solutions with some
+  SOS models. Set *acc:sos1=2 acc:sos2=2* to pass
+  them to CBC as before.
+- Fixed a crash in multi-objective mode.
+- *lim:time* accepts fractional values (e.g., 10.5),
+  which were rejected.
+- Fixed retrieval of CBC options not set explicitly
+  (failed with *tech:debug*).
+
+
 ## 20260414
 - Changes in MP, in particular new naming for
   auxiliaries.

@@ -88,10 +88,24 @@ int findIndexOf(const std::vector< std::string > cmdargs_, const char* key) {
       return i;
   return -1;
 }
+/// CBC's parameter named \a key, nullptr if none.
+/// Supplies the current (default) value of options not set explicitly,
+/// which are not in cmdargs_.
+static const CbcOrClpParam* findParam(Cbc_Model* m, const char* key) {
+  for (const auto& p : m->cbcData->parameters_)
+    if (p.name() == key)
+      return &p;
+  return nullptr;
+}
+
 int CbcmpCommon::GetSolverOption(const char* key, int &value) const {
   int i = findIndexOf(lp()->cmdargs_, key);
-  if (i) return i;
-  value = atoi(lp()->cmdargs_[i + 1].c_str());
+  if (i >= 0)
+    value = atoi(lp()->cmdargs_[i + 1].c_str());
+  else if (auto p = findParam(lp(), key))
+    value = p->intValue();
+  else
+    return -1;
   return 0;
 }
 
@@ -102,8 +116,12 @@ void CbcmpCommon::SetSolverOption(const char* key, int value) {
 
 int CbcmpCommon::GetSolverOption(const char* key, double &value) const {
   int i = findIndexOf(lp()->cmdargs_, key);
-  if (i<0) return i;
-  value = atof(lp()->cmdargs_[i + 1].c_str());
+  if (i >= 0)
+    value = atof(lp()->cmdargs_[i + 1].c_str());
+  else if (auto p = findParam(lp(), key))
+    value = p->doubleValue();
+  else
+    return -1;
   return 0;
 }
 
@@ -114,8 +132,12 @@ void CbcmpCommon::SetSolverOption(const char* key, double value) {
 
 int CbcmpCommon::GetSolverOption(const char* key, std::string &value) const {
   int i = findIndexOf(lp()->cmdargs_, key);
-  if (i<0) return i;
-  value = lp()->cmdargs_[i + 1];
+  if (i >= 0)
+    value = lp()->cmdargs_[i + 1];
+  else if (auto p = findParam(lp(), key))
+    value = p->currentOption();
+  else
+    return -1;
   return 0;
 }
 

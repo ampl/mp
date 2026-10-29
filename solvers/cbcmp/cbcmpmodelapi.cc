@@ -56,28 +56,28 @@ void CbcmpModelAPI::AddConstraint(const LinConLE& lc) {
     m.AddRow(lc.GetName(), lc.size(), lc.pvars(),
       lc.pcoefs(), -Infinity(), lc.rhs());
   else
-    Cbc_addRow(lp(), nullptr, lc.size(), lc.pvars(), lc.pcoefs(), 'L', lc.rhs());
+    Cbc_addRow(lp(), lc.GetName(), lc.size(), lc.pvars(), lc.pcoefs(), 'L', lc.rhs());
 }
 void CbcmpModelAPI::AddConstraint(const LinConEQ& lc) {
   if(!m.visited)
   m.AddRow(lc.GetName(), lc.size(), lc.pvars(),
     lc.pcoefs(), lc.rhs(), lc.rhs());
   else
-    Cbc_addRow(lp(), nullptr, lc.size(), lc.pvars(), lc.pcoefs(), 'E', lc.rhs());
+    Cbc_addRow(lp(), lc.GetName(), lc.size(), lc.pvars(), lc.pcoefs(), 'E', lc.rhs());
 }
 void CbcmpModelAPI::AddConstraint(const LinConGE& lc) {
   if(!m.visited)
   m.AddRow(lc.GetName(), lc.size(), lc.pvars(),
     lc.pcoefs(), lc.rhs(), Infinity());
   else
-    Cbc_addRow(lp(), nullptr, lc.size(), lc.pvars(), lc.pcoefs(), 'G', lc.rhs());
+    Cbc_addRow(lp(), lc.GetName(), lc.size(), lc.pvars(), lc.pcoefs(), 'G', lc.rhs());
 }
 void CbcmpModelAPI::AddConstraint(const LinConRange& lc) {
   if(!m.visited)
   m.AddRow(lc.GetName(), lc.size(), lc.pvars(),
     lc.pcoefs(), lc.lb(), lc.ub());
   else {
-    Cbc_addRow(lp(), nullptr, lc.size(), lc.pvars(), lc.pcoefs(), 'R', lc.ub());
+    Cbc_addRow(lp(), lc.GetName(), lc.size(), lc.pvars(), lc.pcoefs(), 'R', lc.ub());
     int nrow = Cbc_getNumRows(lp()) - 1;
     Cbc_setRowLower(lp(), nrow, lc.lb());
     Cbc_setRowUpper(lp(), nrow, lc.ub());
