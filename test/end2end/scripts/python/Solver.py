@@ -1387,6 +1387,8 @@ class XPRESSDirectSolver(MPDirectSolver):
 
 
 class CbcMPSolver(MPDirectSolver):
+    CATEGORY = SolverCategory.MILP
+
     def _setLPMethod(self, method : str):
         m  = "simplex" if method == "SIMPLEX" else "ipm"
         return f"alg:method {m}"
@@ -1398,10 +1400,12 @@ class CbcMPSolver(MPDirectSolver):
         return ""
 
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
+        # No quadratic_obj: CBC accepts no quadratic objectives;
+        # no writesol: the driver has no writesol option
         stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
-                 ModelTags.quadratic_obj, ModelTags.sos,
+                 ModelTags.sos,
 
-                 ModelTags.writelp, ModelTags.writesol,
+                 ModelTags.writelp,
 
                  }
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)

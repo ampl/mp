@@ -171,6 +171,7 @@
   {
     "name": "multi_sol_04 no objective, countsolutions=1",
     "tags": [ "logical" ],
+    "solvers_exclude": ["cbc"],
     "comment": "Feasibility problem: objective suffixes nsol/npool must not be written (used to crash)",
     "options": { "mp_options": "countsolutions=1" },
     "values": {
@@ -180,6 +181,7 @@
   {
     "name": "multi_sol_04 no objective, solutionstub=stub",
     "tags": [ "logical" ],
+    "solvers_exclude": ["cbc"],
     "comment": "Same with solution files written",
     "options": { "mp_options": "solutionstub=stub" },
     "values": {

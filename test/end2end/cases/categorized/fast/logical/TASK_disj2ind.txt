@@ -1,0 +1,7 @@
+Open a new task to study simplification of disjunctions into indicators.
+
+AMPL sends implications, such as `b==0 ==> expr <= N`, or `b>0.5 ==> (expr1==N1 && expr2>N2)`, where b is a binary variable, as disjunctions. Such disjunctions can also be present in the user model directly (which MP does not distinguish), or can be produced during MP reformulations. Technically, these disjunctions can be simplified to one or several indicator constraints. In some cases, such a simplification reduces model size and seems to benefit many solvers, including ASL solvers used via MP2NL.
+
+Investigate in which cases model is reduced and stays tight, and in which cases it is not. Suggest method designs to be implemented in the MP Flat Converter and any tradeoffs. Suggest respective end2end test cases, reusing existing ones if possible. Write your findings to the task documents and summarize here.
+
+Consult state-of-the-art. Refer also to MiniZinc presolve code.

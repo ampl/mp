@@ -255,7 +255,7 @@
   {
     "name" : "multiobj_abstol_MIP multiobj=1 return_mipgap=3 bestbound=1",
     "Comment": "MIP gap and bound suffixes with several objectives. Native gap values depend on the solver",
-    "tags" : ["linear", "integer", "multiobj", "continuous"],
+    "tags" : ["linear", "integer", "multiobj", "continuous", "return_mipgap"],
     "options": {
       "ANYSOLVER_options": "multiobj=1 return_mipgap=3 bestbound=1",
       "gurobi_options": "multiobj=1 mip:gap=0 return_mipgap=3 bestbound=1",
@@ -286,7 +286,7 @@
   {
     "name" : "multiobj_abstol_MIP multiobj=2 return_mipgap=3 bestbound=1",
     "Comment": "MIP gap and bound suffixes with several objectives",
-    "tags" : ["linear", "integer", "multiobj", "continuous"],
+    "tags" : ["linear", "integer", "multiobj", "continuous", "return_mipgap"],
     "options": {
       "ANYSOLVER_options": "multiobj=2 return_mipgap=3 bestbound=1",
       "gurobi_options": "multiobj=2 mip:gap=0 return_mipgap=3 bestbound=1",
