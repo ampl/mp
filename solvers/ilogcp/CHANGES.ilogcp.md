@@ -2,7 +2,7 @@ Summary of recent updates to ilogcp for AMPL
 ============================================
 
 
-## 20261101
+## 20261029
 - Integer options (e.g., *lim:fail*, *lim:choicepoint*) accept
   values above 2^31.
 - Options renamed to the MP style with the previous names kept as

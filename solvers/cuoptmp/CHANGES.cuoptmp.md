@@ -2,7 +2,7 @@ Summary of recent updates to cuOpt for AMPL
 ===========================================
 
 
-## 20261101
+## 20261029
 - Option *mip:heuristicsonly* spelled correctly; the old
   spelling *mip:hueristicsonly* remains as a synonym.
 

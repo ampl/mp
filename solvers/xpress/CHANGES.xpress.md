@@ -2,7 +2,7 @@ Summary of recent updates to Xpress for AMPL
 ============================================
 
 
-## 20261101
+## 20261029
 - Fix: a global (spatial branch-and-bound) solve stopped by a time,
   work or node limit, or interrupted, was reported as *solved?*
   (*solve_result_num* 120, "locally optimal solution") with its

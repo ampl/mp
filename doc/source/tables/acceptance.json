@@ -1,7 +1,7 @@
 {
  "gurobi": {
-  "date": "20261101",
-  "banner": "AMPL/Gurobi Optimizer [13.0.3] (Darwin arm64), driver(20261101), MP(20261101)",
+  "date": "20261029",
+  "banner": "AMPL/Gurobi Optimizer [13.0.3] (Darwin arm64), driver(20261029), MP(20261029)",
   "cons": {
    "AbsConstraint": [
     true,
@@ -731,8 +731,8 @@
   }
  },
  "xpress": {
-  "date": "20261101",
-  "banner": "AMPL/XPRESS Optimizer [9.8.1 (46.01.02)] (Darwin arm64), driver(20261101), MP(20261101)",
+  "date": "20261029",
+  "banner": "AMPL/XPRESS Optimizer [9.8.1 (46.01.02)] (Darwin arm64), driver(20261029), MP(20261029)",
   "cons": {
    "AbsConstraint": [
     true,
@@ -1462,8 +1462,8 @@
   }
  },
  "cplex": {
-  "date": "20261101",
-  "banner": "AMPL/CPLEX Optimizer [22.2.0] (Darwin arm64), driver(20261101), MP(20261101)",
+  "date": "20261029",
+  "banner": "AMPL/CPLEX Optimizer [22.2.0] (Darwin arm64), driver(20261029), MP(20261029)",
   "cons": {
    "AbsConstraint": [
     true,
@@ -2193,8 +2193,8 @@
   }
  },
  "copt": {
-  "date": "20261101",
-  "banner": "AMPL/COPT Optimizer [8.0.6] (Darwin arm64), driver(20261101), MP(20261101)",
+  "date": "20261029",
+  "banner": "AMPL/COPT Optimizer [8.0.6] (Darwin arm64), driver(20261029), MP(20261029)",
   "cons": {
    "AbsConstraint": [
     true,
@@ -2924,8 +2924,8 @@
   }
  },
  "mosek": {
-  "date": "20261101",
-  "banner": "AMPL/MOSEK Optimizer [11.2.0] (Darwin arm64), driver(20261101), MP(20261101)",
+  "date": "20261029",
+  "banner": "AMPL/MOSEK Optimizer [11.2.0] (Darwin arm64), driver(20261029), MP(20261029)",
   "cons": {
    "AbsConstraint": [
     true,
@@ -3655,8 +3655,8 @@
   }
  },
  "highs": {
-  "date": "20261101",
-  "banner": "AMPL/HiGHS Optimizer [1.15.1] (Darwin arm64), driver(20261101), MP(20261101)",
+  "date": "20261029",
+  "banner": "AMPL/HiGHS Optimizer [1.15.1] (Darwin arm64), driver(20261029), MP(20261029)",
   "cons": {
    "AbsConstraint": [
     true,
@@ -4386,8 +4386,8 @@
   }
  },
  "scip": {
-  "date": "20261101",
-  "banner": "AMPL/SCIP Optimizer [10.0.2] (Darwin arm64), driver(20261101), MP(20261101)",
+  "date": "20261029",
+  "banner": "AMPL/SCIP Optimizer [10.0.2] (Darwin arm64), driver(20261029), MP(20261029)",
   "cons": {
    "AbsConstraint": [
     true,
@@ -5117,8 +5117,8 @@
   }
  },
  "gcg": {
-  "date": "20261101",
-  "banner": "AMPL/GCG Optimizer [4.0.2] (Darwin arm64), driver(20261101), MP(20261101)",
+  "date": "20261029",
+  "banner": "AMPL/GCG Optimizer [4.0.2] (Darwin arm64), driver(20261029), MP(20261029)",
   "cons": {
    "AbsConstraint": [
     true,
@@ -6493,7 +6493,7 @@
   }
  },
  "cuopt": {
-  "date": "20261101",
+  "date": "20261029",
   "banner": "from source cuoptmp/cuoptmpmodelapi.h",
   "source": true,
   "cons": {
@@ -7225,8 +7225,8 @@
   }
  },
  "cpsat": {
-  "date": "20261101",
-  "banner": "AMPL/CP-SAT Optimizer [9.15.9999] (Darwin arm64), driver(20261101), MP(20261101)",
+  "date": "20261029",
+  "banner": "AMPL/CP-SAT Optimizer [9.15.9999] (Darwin arm64), driver(20261029), MP(20261029)",
   "cons": {
    "AbsConstraint": [
     true,
@@ -7956,8 +7956,8 @@
   }
  },
  "baronmp": {
-  "date": "20261101",
-  "banner": "AMPL/BaronMP Optimizer [25.12.10] (Darwin arm64), driver(20261101), MP(20261101)",
+  "date": "20261029",
+  "banner": "AMPL/BaronMP Optimizer [25.12.10] (Darwin arm64), driver(20261029), MP(20261029)",
   "cons": {
    "AbsConstraint": [
     true,

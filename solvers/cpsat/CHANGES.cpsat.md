@@ -1,7 +1,7 @@
 Summary of recent updates to CP-SAT for AMPL
 ============================================
 
-## 20261101
+## 20261029
 - First release of the CP-SAT driver.
 - Products and integer powers of integer variables are passed
   natively (*acc:mul*, *acc:powc*); before, they were approximated

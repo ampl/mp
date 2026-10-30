@@ -602,7 +602,7 @@ void GecodeSolver::Output(fmt::CStringRef format, const fmt::ArgList &args) {
 }
 
 #ifndef YYYYMMDD
-  #define YYYYMMDD 20261101             // Update with CHANGES.gecode.md
+  #define YYYYMMDD 20261029             // Update with CHANGES.gecode.md
 #endif
 
 GecodeSolver::GecodeSolver()

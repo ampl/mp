@@ -2,7 +2,7 @@ Summary of recent updates to GCG for AMPL
 =========================================
 
 
-## 20261101
+## 20261029
 - 64-bit SCIP parameters (e.g., *lim:nodes*, *lim:stallnodes*)
   accept values above 2^31.
 - Debug builds link again (the GCG 4 release library exports

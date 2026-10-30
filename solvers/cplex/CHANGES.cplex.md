@@ -2,7 +2,7 @@ Summary of recent updates to CPLEX for AMPL
 ==============================================
 
 
-## 20261101
+## 20261029
 - Fix IIS reporting for mixed linear, quadratic, indicator, and SOS
   constraints: keep their index spaces separate to prevent incorrect
   linear IIS suffixes and out-of-bounds writes.

@@ -2,7 +2,7 @@ Summary of recent updates to COPT for AMPL
 ==========================================
 
 
-## 20261101
+## 20261029
 - Fix indicator IIS suffix postsolve: use the same constraint group as
   the model API so indicator conflict members reach the original model.
 - Emulate *mip:basis* for linear algebraic MIPs, with separate

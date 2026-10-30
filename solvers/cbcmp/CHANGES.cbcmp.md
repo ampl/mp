@@ -2,7 +2,7 @@ Summary of recent updates to CBCMP for AMPL
 ===========================================
 
 
-## 20261101
+## 20261029
 - SOS1/SOS2 constraints, including those from
   piecewise-linear expressions, are linearized by
   default, as CBC returned wrong solutions with some

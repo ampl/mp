@@ -6,7 +6,7 @@
       :class: solver-support
       :header-rows: 1
 
-      "Construct (option)","Gurobi 20261101","Xpress 20261101","CPLEX 20261101","COPT 20261101","MOSEK 20261101","HiGHS 20261101","SCIP 20261101","GCG 20261101","CBC 20250814","cuOpt 20261101","CP-SAT 20261101","BARONMP 20261101"
+      "Construct (option)","Gurobi 20261029","Xpress 20261029","CPLEX 20261029","COPT 20261029","MOSEK 20261029","HiGHS 20261029","SCIP 20261029","GCG 20261029","CBC 20250814","cuOpt 20261029","CP-SAT 20261029","BARONMP 20261029"
       "``and``, ``forall`` (``acc:and``)","C","C","–","–","–","–","C","–","–","–","C","–"
       "``or``, ``exists`` (``acc:or``)","C","C","–","–","–","–","C","–","–","–","C","–"
       "``not`` (``acc:not``)","–","–","–","–","–","–","–","–","–","–","–","–"
@@ -22,7 +22,7 @@
       :class: solver-support
       :header-rows: 1
 
-      "Construct (option)","Gurobi 20261101","Xpress 20261101","CPLEX 20261101","COPT 20261101","MOSEK 20261101","HiGHS 20261101","SCIP 20261101","GCG 20261101","CBC 20250814","cuOpt 20261101","CP-SAT 20261101","BARONMP 20261101"
+      "Construct (option)","Gurobi 20261029","Xpress 20261029","CPLEX 20261029","COPT 20261029","MOSEK 20261029","HiGHS 20261029","SCIP 20261029","GCG 20261029","CBC 20250814","cuOpt 20261029","CP-SAT 20261029","BARONMP 20261029"
       "``alldiff`` (``acc:alldiff``)","–","–","–","–","–","–","–","–","–","–","C","–"
       "``count``, ``atmost``, ``atleast``, ``exactly`` (``acc:count``)","–","–","–","–","–","–","–","–","–","–","C","–"
       "``numberof`` (``acc:numberofconst``)","–","–","–","–","–","–","–","–","–","–","C","–"
@@ -33,7 +33,7 @@
       :class: solver-support
       :header-rows: 1
 
-      "Construct (option)","Gurobi 20261101","Xpress 20261101","CPLEX 20261101","COPT 20261101","MOSEK 20261101","HiGHS 20261101","SCIP 20261101","GCG 20261101","CBC 20250814","cuOpt 20261101","CP-SAT 20261101","BARONMP 20261101"
+      "Construct (option)","Gurobi 20261029","Xpress 20261029","CPLEX 20261029","COPT 20261029","MOSEK 20261029","HiGHS 20261029","SCIP 20261029","GCG 20261029","CBC 20250814","cuOpt 20261029","CP-SAT 20261029","BARONMP 20261029"
       "``<<breakpoints; slopes>>`` (``acc:pl``)","C","C","C","–","–","–","–","–","–","–","–","–"
       "``max`` (``acc:max``)","C","CE","–","–","–","–","–","–","–","–","C","–"
       "``min`` (``acc:min``)","C","CE","–","–","–","–","–","–","–","–","C","–"
@@ -46,7 +46,7 @@
       :class: solver-support
       :header-rows: 1
 
-      "Construct (option)","Gurobi 20261101","Xpress 20261101","CPLEX 20261101","COPT 20261101","MOSEK 20261101","HiGHS 20261101","SCIP 20261101","GCG 20261101","CBC 20250814","cuOpt 20261101","CP-SAT 20261101","BARONMP 20261101"
+      "Construct (option)","Gurobi 20261029","Xpress 20261029","CPLEX 20261029","COPT 20261029","MOSEK 20261029","HiGHS 20261029","SCIP 20261029","GCG 20261029","CBC 20250814","cuOpt 20261029","CP-SAT 20261029","BARONMP 20261029"
       "``x*y`` (``acc:mul``)","–","–","–","–","–","–","–","–","","–","C","–"
       "``div`` (``acc:intdiv``)","–","–","–","–","–","–","–","–","","–","C","–"
       "``mod`` (``acc:mod``)","–","–","–","–","–","–","–","–","","–","C","–"
@@ -60,7 +60,7 @@
       :class: solver-support
       :header-rows: 1
 
-      "Construct (option)","Gurobi 20261101","Xpress 20261101","CPLEX 20261101","COPT 20261101","MOSEK 20261101","HiGHS 20261101","SCIP 20261101","GCG 20261101","CBC 20250814","cuOpt 20261101","CP-SAT 20261101","BARONMP 20261101"
+      "Construct (option)","Gurobi 20261029","Xpress 20261029","CPLEX 20261029","COPT 20261029","MOSEK 20261029","HiGHS 20261029","SCIP 20261029","GCG 20261029","CBC 20250814","cuOpt 20261029","CP-SAT 20261029","BARONMP 20261029"
       "quadratic ``<=``, ``=``, ``>=`` (``acc:quadle``)","C","C","C","C","C","–","C","–","–","–","–","C"
       "``lb <= quadratic <= ub`` (``acc:quadrange``)","–","–","–","–","C","–","C","–","–","–","–","C"
       "quadratic expression (``acc:quadfn``)","E","E","–","E","–","–","E","–","–","–","–","E"
@@ -76,7 +76,7 @@
       :class: solver-support
       :header-rows: 1
 
-      "Construct (option)","Gurobi 20261101","Xpress 20261101","CPLEX 20261101","COPT 20261101","MOSEK 20261101","HiGHS 20261101","SCIP 20261101","GCG 20261101","CBC 20250814","cuOpt 20261101","CP-SAT 20261101","BARONMP 20261101"
+      "Construct (option)","Gurobi 20261029","Xpress 20261029","CPLEX 20261029","COPT 20261029","MOSEK 20261029","HiGHS 20261029","SCIP 20261029","GCG 20261029","CBC 20250814","cuOpt 20261029","CP-SAT 20261029","BARONMP 20261029"
       "``exp`` (``acc:exp``)","CE","CE","–","E","–","–","CE","–","–","–","–","CE"
       "constant ``^`` expression (``acc:expa``)","CE","C","–","E","–","–","–","–","–","–","–","CE"
       "``log`` (``acc:log``)","CE","CE","–","E","–","–","CE","–","–","–","–","CE"
@@ -106,7 +106,7 @@
       :class: solver-support
       :header-rows: 1
 
-      "Construct (option)","Gurobi 20261101","Xpress 20261101","CPLEX 20261101","COPT 20261101","MOSEK 20261101","HiGHS 20261101","SCIP 20261101","GCG 20261101","CBC 20250814","cuOpt 20261101","CP-SAT 20261101","BARONMP 20261101"
+      "Construct (option)","Gurobi 20261029","Xpress 20261029","CPLEX 20261029","COPT 20261029","MOSEK 20261029","HiGHS 20261029","SCIP 20261029","GCG 20261029","CBC 20250814","cuOpt 20261029","CP-SAT 20261029","BARONMP 20261029"
       "``complements``, linear (``acc:compl``)","–","–","–","–","–","–","–","–","–","–","–","–"
       "``complements``, quadratic (``acc:complquad``)","–","–","–","–","–","–","–","–","–","–","–","–"
       "``complements``, nonlinear (``acc:nlcompl``)","–","–","–","–","–","–","–","–","–","–","–","–"
@@ -117,7 +117,7 @@
       :class: solver-support
       :header-rows: 1
 
-      "Construct (option)","Gurobi 20261101","Xpress 20261101","CPLEX 20261101","COPT 20261101","MOSEK 20261101","HiGHS 20261101","SCIP 20261101","GCG 20261101","CBC 20250814","cuOpt 20261101","CP-SAT 20261101","BARONMP 20261101"
+      "Construct (option)","Gurobi 20261029","Xpress 20261029","CPLEX 20261029","COPT 20261029","MOSEK 20261029","HiGHS 20261029","SCIP 20261029","GCG 20261029","CBC 20250814","cuOpt 20261029","CP-SAT 20261029","BARONMP 20261029"
       "linear ``<=``, ``=``, ``>=`` (``acc:linle``)","C","C","C","C","C","C","C","C","C","C","C","C"
       "``lb <= linear <= ub`` (``acc:linrange``)","–","–","–","C","C","C","C","C","C","–","C","C"
       "linear expression (``acc:linfn``)","E","E","–","E","–","–","E","–","–","–","–","E"

@@ -2,7 +2,7 @@ Summary of recent updates to HiGHS for AMPL
 ===========================================
 
 
-## 20261101
+## 20261029
 - Fix Windows Debug heap assertions when copying options to the fixed LP:
   retain driver-owned option names instead of freeing names allocated by
   a vendor library using a different C runtime.

@@ -2,7 +2,7 @@ Summary of recent updates to the AMPL MP Library
 ================================================
 
 
-## 20261101
+## 20261029
 - New: AMPL's *floor*, *ceil*, *round(x[, n])* (ties to even),
   *trunc(x[, n])*, *div* and *mod* (also for real numbers and variable
   divisors), before rejected as "unsupported". MIP reformulations:

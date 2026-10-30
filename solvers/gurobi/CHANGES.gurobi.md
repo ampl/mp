@@ -2,7 +2,7 @@ Summary of recent updates to Gurobi for AMPL
 ============================================
 
 
-## 20261101
+## 20261029
 - Prepare for Gurobi 14 (options available when built against 14):
   *alg:method=7* (NL barrier), *alg:concurrentmethod=4*,
   *cut:oa*, *mip:noreltreeheur*, *mip:pdhgheursolutions*,
