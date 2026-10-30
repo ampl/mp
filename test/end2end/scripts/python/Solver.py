@@ -1411,6 +1411,8 @@ class CbcMPSolver(MPDirectSolver):
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
 class MP2NLSolver(MPDirectSolver):
+            CATEGORY = SolverCategory.MP2NL
+
             def _getAMPLOptionsName(self):
                 return "mp2nl"
 

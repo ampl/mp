@@ -30,7 +30,11 @@
     "files" : ["econ2.mod", "econ2.dat"],
     "tags" : ["linear", "continuous", "complementarity"],
     "options": {
-      "mp_options": "cvt:bigm=1e5 cvt:compl=1"
+      "mp_options": "cvt:bigm=1e5 cvt:compl=1",
+      "mp2nl_options": "debug=1"
+    },
+    "values_per_solver_category": {
+      "MP2NL": { "Initial.flat1__nlcompl": 12, "Initial.flat1__nlcon": 0 }
     },
     "values": {
       "Price['AA1']": 0.0,
@@ -49,6 +53,65 @@
       "Level['P4']": 240,
       "max{i in 1 .. _nccons} abs(_ccon[i])": { "max": 1e-5 },
       "min{i in 1 .. _ncons} _con[i].slack": { "min": -1e-5 }
+    }
+  },
+  {
+    "name" : "econ2 compl_range cvt:compl=1 acc:nlcompl=0",
+    "files" : ["econ2.mod", "econ2.dat"],
+    "tags" : ["linear", "continuous", "complementarity", "mp2nl"],
+    "options": {
+      "mp2nl_options": "cvt:bigm=1e5 cvt:compl=1 acc:nlcompl=0 debug=1"
+    },
+    "values": {
+      "Price['AA1']": 0.0,
+      "Price['AC1']": 0.0,
+      "Price['BC1']": 105.7142857142857,
+      "Price['BC2']": 0.0,
+      "Price['NA2']": 0.0,
+      "Price['NA3']": 0.0,
+      "Level['P1']": 240,
+      "Level['P1a']": 1000,
+      "Level['P2']": 220,
+      "Level['P2a']": 680,
+      "Level['P2b']": 200,
+      "Level['P3']": 260,
+      "Level['P3c']": 1000,
+      "Level['P4']": 240,
+      "max{i in 1 .. _nccons} abs(_ccon[i])": { "max": 1e-5 },
+      "min{i in 1 .. _ncons} _con[i].slack": { "min": -1e-5 },
+      "Initial.flat1__nlcompl": 0,
+      "Initial.flat1__nlcon": 20,
+      "Initial.flat1__quadfn": 20,
+      "Initial.flat1__powc": 0
+    }
+  },
+  {
+    "name" : "econ2 compl_range cvt:compl=1 acc:nlcompl=0 cvt:quadcon=0",
+    "files" : ["econ2.mod", "econ2.dat"],
+    "tags" : ["linear", "continuous", "complementarity", "mp2nl"],
+    "options": {
+      "mp2nl_options": "cvt:bigm=1e5 cvt:compl=1 acc:nlcompl=0 cvt:quadcon=0 debug=1"
+    },
+    "values": {
+      "Price['AA1']": 0.0,
+      "Price['AC1']": 0.0,
+      "Price['BC1']": 105.7142857142857,
+      "Price['BC2']": 0.0,
+      "Price['NA2']": 0.0,
+      "Price['NA3']": 0.0,
+      "Level['P1']": 240,
+      "Level['P1a']": 1000,
+      "Level['P2']": 220,
+      "Level['P2a']": 680,
+      "Level['P2b']": 200,
+      "Level['P3']": 260,
+      "Level['P3c']": 1000,
+      "Level['P4']": 240,
+      "max{i in 1 .. _nccons} abs(_ccon[i])": { "max": 1e-5 },
+      "min{i in 1 .. _ncons} _con[i].slack": { "min": -1e-5 },
+      "Initial.flat1__nlcompl": 0,
+      "Initial.flat1__quadfn": 0,
+      "Initial.flat1__powc": { "min": 1 }
     }
   },
   {

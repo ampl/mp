@@ -10,18 +10,22 @@ class SolverCategory(enum.Enum):
     Converter statistics (e.g., 'Initial.flat1__U__indeq' with debug=1)
     depend on it, so a test case can give expected values per category:
     'values_per_solver_category' in modellist.json.
-    Nonlinear functions do not matter for the category."""
+    Nonlinear functions do not matter for the category,
+    except for MP2NL, which writes the NL format."""
     MILP = "MILP"                           # linear constraints only
     MIPWithIndicators = "MIPWithIndicators" # + indicator constraints
     MILPWithLogicals = "MILPWithLogicals"   # + and, or
     CP = "CP"                       # + count, numberof, alldiff, if-then...
     CPLegacy = "CPLegacy"           # old MP framework: no model converter,
                                     # no converter statistics
+    MP2NL = "MP2NL"                 # NL output (MP2NL): NL complementarity
 
     @staticmethod
     def fromAccepted(acc: set):
         """Category of a driver accepting the constraints 'acc'
         (names of its acc:... options without the prefix)"""
+        if "nlcompl" in acc:
+            return SolverCategory.MP2NL
         if acc & {"alldiff", "count", "numberofconst", "numberofvar"}:
             return SolverCategory.CP
         if "indle" in acc and {"and", "or"} <= acc:

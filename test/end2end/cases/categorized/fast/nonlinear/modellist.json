@@ -35,6 +35,32 @@
     }
   },
   {
+    "name" : "div_divisor_1sign acc:div=0 NL quadratics",
+    "tags" : ["quadraticnonconvex", "mp2nl"],
+    "comment": "MP2NL: products from acc:div=0 written as quadratic expressions",
+    "objective": 25.36179802,
+    "options": {
+      "mp2nl_options": "acc:div=0 debug=1"
+    },
+    "values": {
+      "Initial.flat1__quadfn": 3,
+      "Initial.flat1__powc": 0
+    }
+  },
+  {
+    "name" : "div_divisor_1sign acc:div=0 cvt:quadcon=0",
+    "tags" : ["quadraticnonconvex", "mp2nl"],
+    "comment": "MP2NL: products from acc:div=0 reformulated by squares (cvt:quadcon=0)",
+    "objective": 25.36179802,
+    "options": {
+      "mp2nl_options": "acc:div=0 cvt:quadcon=0 debug=1"
+    },
+    "values": {
+      "Initial.flat1__quadfn": 0,
+      "Initial.flat1__powc": { "min": 1 }
+    }
+  },
+  {
     "name" : "expA_1",
     "tags" : ["nonlinear"],
     "values": {

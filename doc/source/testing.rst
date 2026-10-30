@@ -179,9 +179,13 @@ i.e., does not reformulate. Test drivers are therefore assigned a
 * ``MILPWithLogicals``: plus ``and``, ``or`` (Gurobi, Xpress, SCIP);
 * ``CP``: plus ``count``, ``numberof``, ``alldiff``, if-then (CP-SAT);
 * ``CPLegacy``: drivers on the old MP framework, without the model converter
-  and its counts (Gecode, ilogcp).
+  and its counts (Gecode, ilogcp);
+* ``MP2NL``: the MP2NL driver, writing the NL format; for example,
+  complementarity is passed as ``nlcompl`` (unless ``acc:nlcompl=0``).
+  Set ``debug=1`` in *mp2nl_options*: with *mp_options*, an MP subsolver
+  reports its own counts, overriding those of MP2NL.
 
-Nonlinear functions do not influence the category.
+Nonlinear functions do not influence the category, except for ``MP2NL``.
 The test scripts warn when the ``acc:`` options of a driver imply a category
 other than the declared one.
 A case gives *"values"* as for one category and corrections for others in
