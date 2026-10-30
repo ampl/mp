@@ -505,8 +505,16 @@ private:
                        "Should be smaller than (1.0 / [integrality tolerance])",
                        options_.bigM_default_, -1.0, 1e100);
     this->GetEnv().AddStoredOption("cvt:compl cvt:complementarity",
-                             "Complementarity conversion method "
-                             "(if not accepted natively, see acc:compl and acc:nlcompl). "
+                             MPCD( ModelAPIAcceptsAndRecommends(
+                                     (const NLComplementarity*)nullptr) )
+                             ? "Complementarity conversion method. "
+                               "Applies only with acc:nlcompl=0: "
+                               "by default, complementarity is passed natively. "
+                                   "Default 0:\n"
+                                   "\n"
+                                   ".. value-table::\n"
+                             : "Complementarity conversion method "
+                               "(unless accepted natively). "
                                    "Default 0:\n"
                                    "\n"
                                    ".. value-table::\n",

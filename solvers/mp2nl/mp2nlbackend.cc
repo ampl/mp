@@ -72,7 +72,7 @@ MP2NLBackend::ConfigMap MP2NLBackend::config_map_ {
      "acc:sin=0 acc:cos=0 acc:tan=0 acc:asin=0 acc:acos=0 acc:atan=0 "
      "acc:sinh=0 acc:cosh=0 acc:tanh=0 acc:asinh=0 acc:acosh=0 acc:atanh=0 "
      // "acc:log=0 "  // Actually PLApprox performs better
-     "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },
+     "acc:sos1=0 acc:sos2=0 acc:impl=0" },
     { "baronmp",              // Don't need MP2NL actually
      "acc:nlcompl=0 cvt:compl=1 "  // preconvert
      "cvt:multoutcard=0 " },
@@ -97,7 +97,8 @@ MP2NLBackend::ConfigMap MP2NLBackend::config_map_ {
      "acc:log=0 acc:logA=0 acc:exp=0 acc:expA=0 "
      "acc:sin=0 acc:cos=0 acc:tan=0 acc:asin=0 acc:acos=0 acc:atan=0 "
      "acc:sinh=0 acc:cosh=0 acc:tanh=0 acc:asinh=0 acc:acosh=0 acc:atanh=0 "
-     "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },
+     "acc:nlcompl=0 "   // NL complementarity not accepted
+     "acc:sos1=0 acc:sos2=0 acc:impl=0" },
     { "cplexasl",
      "acc:count=0 "
      "acc:alldiff=0 acc:numberofconst=0 acc:numberofvar=0 "
@@ -110,7 +111,8 @@ MP2NLBackend::ConfigMap MP2NLBackend::config_map_ {
      "acc:log=0 acc:logA=0 acc:exp=0 acc:expA=0 "
      "acc:sin=0 acc:cos=0 acc:tan=0 acc:asin=0 acc:acos=0 acc:atan=0 "
      "acc:sinh=0 acc:cosh=0 acc:tanh=0 acc:asinh=0 acc:acosh=0 acc:atanh=0 "
-     "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },
+     "acc:nlcompl=0 "   // NL complementarity not accepted
+     "acc:sos1=0 acc:sos2=0 acc:impl=0" },
     { "xpressasl",
      "acc:count=0 "
      "acc:alldiff=0 acc:numberofconst=0 acc:numberofvar=0 "
@@ -123,7 +125,8 @@ MP2NLBackend::ConfigMap MP2NLBackend::config_map_ {
      "acc:log=0 acc:logA=0 acc:exp=0 acc:expA=0 "
      "acc:sin=0 acc:cos=0 acc:tan=0 acc:asin=0 acc:acos=0 acc:atan=0 "
      "acc:sinh=0 acc:cosh=0 acc:tanh=0 acc:asinh=0 acc:acosh=0 acc:atanh=0 "
-     "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },
+     "acc:nlcompl=0 "   // NL complementarity not accepted
+     "acc:sos1=0 acc:sos2=0 acc:impl=0" },
     { "knitro",
      "cvt:pre:boundsbest=4 "
      "acc:count=0 "
@@ -135,7 +138,7 @@ MP2NLBackend::ConfigMap MP2NLBackend::config_map_ {
      "cvt:compl=1 "   // but add acc:nlcompl=0 to use conversion
      "cvt:multoutcard=0 "
      // minmaxabs: indeed better linearize as Bob said
-     "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },  // @todo compl
+     "acc:sos1=0 acc:sos2=0 acc:impl=0" },
     { "alglib4nl",          // from knitro; ALGLIB ignores NL complementarity
      "cvt:pre:boundsbest=4 "
      "acc:count=0 "
@@ -144,7 +147,7 @@ MP2NLBackend::ConfigMap MP2NLBackend::config_map_ {
      "acc:condlinle=0 acc:condlineq=0 acc:condlinge=0 "
      "acc:condlinlt=0 acc:condlingt=0 acc:ifthen=0 "
      "acc:and=0 acc:or=0 acc:abs=0 acc:max=0 acc:min=0 "
-     "acc:compl=0 acc:nlcompl=0 cvt:compl=1 "  // product a*b=tol: the only
+     "acc:nlcompl=0 cvt:compl=1 "  // product a*b=tol: the only
      "cvt:multoutcard=0 "                       // method solving the tests
      "acc:sos1=0 acc:sos2=0 acc:impl=0" },
     { "lindoglobal",
@@ -155,9 +158,9 @@ MP2NLBackend::ConfigMap MP2NLBackend::config_map_ {
      "acc:condlinle=0 acc:condlineq=0 acc:condlinge=0 "
      "acc:condlinlt=0 acc:condlingt=0 acc:ifthen=0 "
      "acc:and=0 acc:or=0 "   // acc:abs=0 acc:max=0 acc:min=0 "
-     "cvt:compl=1 acc:nlcompl=0"
+     "cvt:compl=1 acc:nlcompl=0 "
      "cvt:multoutcard=0 "
-     "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },   // @todo compl
+     "acc:sos1=0 acc:sos2=0 acc:impl=0" },
     { "couenne",
      "cvt:pre:boundsbest=4 "
      "acc:count=0 "
@@ -170,7 +173,7 @@ MP2NLBackend::ConfigMap MP2NLBackend::config_map_ {
      "cvt:multoutcard=0 cvt:socp=1 "
      "acc:asin=0 acc:acos=0 acc:atan=0 "
      "acc:asinh=0 acc:acosh=0 acc:atanh=0 "
-     "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },  // @todo compl
+     "acc:sos1=0 acc:sos2=0 acc:impl=0" },
     { "bonmin",
      "cvt:pre:boundsbest=4 "
      "acc:count=0 "
@@ -179,9 +182,9 @@ MP2NLBackend::ConfigMap MP2NLBackend::config_map_ {
      "acc:condlinle=0 acc:condlineq=0 acc:condlinge=0 "
      "acc:condlinlt=0 acc:condlingt=0 acc:ifthen=0 "
      "acc:and=0 acc:or=0 acc:abs=0 acc:max=0 acc:min=0 "
-     "cvt:compl=1 "
+     "acc:nlcompl=0 cvt:compl=1 "  // rejects NL complementarity
      "cvt:multoutcard=0 cvt:socp=1 "
-     "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },  // @todo compl
+     "acc:sos1=0 acc:sos2=0 acc:impl=0" },
     { "conopt3",
      "cvt:pre:boundsbest=4 "
      "acc:count=0 "
@@ -192,7 +195,7 @@ MP2NLBackend::ConfigMap MP2NLBackend::config_map_ {
      "acc:and=0 acc:or=0 acc:abs=0 acc:max=0 acc:min=0 "
      "acc:nlcompl=0 cvt:compl=1 "
      "cvt:multoutcard=0 cvt:socp=1 "
-     "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },  // @todo compl
+     "acc:sos1=0 acc:sos2=0 acc:impl=0" },
     { "conopt",
      "cvt:pre:boundsbest=4 "
      "acc:count=0 "
@@ -203,7 +206,7 @@ MP2NLBackend::ConfigMap MP2NLBackend::config_map_ {
      "acc:and=0 acc:or=0 acc:abs=0 acc:max=0 acc:min=0 "
      "acc:nlcompl=0 cvt:compl=1 "
      "cvt:multoutcard=0 cvt:socp=1 "
-     "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },  // @todo compl
+     "acc:sos1=0 acc:sos2=0 acc:impl=0" },
     { "snopt",
      "cvt:pre:boundsbest=4 "
      "acc:count=0 "
@@ -212,10 +215,10 @@ MP2NLBackend::ConfigMap MP2NLBackend::config_map_ {
      "acc:condlinle=0 acc:condlineq=0 acc:condlinge=0 "
      "acc:condlinlt=0 acc:condlingt=0 acc:ifthen=0 "
      "acc:and=0 acc:or=0 acc:abs=0 acc:max=0 acc:min=0 "
-     "cvt:compl=1 "   // but add acc:nlcompl=0 to use conversion
+     "acc:nlcompl=0 cvt:compl=1 "  // ignores NL complementarity
      "cvt:multoutcard=0 cvt:socp=1 "
      // minmaxabs: rely on ASL, or better linearize?
-     "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },  // @todo compl
+     "acc:sos1=0 acc:sos2=0 acc:impl=0" },
     { "ipopt",
      "cvt:pre:boundsbest=4 "
      "acc:count=0 "
@@ -227,7 +230,7 @@ MP2NLBackend::ConfigMap MP2NLBackend::config_map_ {
      "acc:nlcompl=0 cvt:compl=1 "
      "cvt:multoutcard=0 cvt:socp=1 "
      // minmaxabs: indeed better linearize as Bob said?
-     "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },  // @todo compl
+     "acc:sos1=0 acc:sos2=0 acc:impl=0" },
     { "minos",
      "cvt:pre:boundsbest=4 "
      "acc:count=0 "
@@ -236,10 +239,10 @@ MP2NLBackend::ConfigMap MP2NLBackend::config_map_ {
      "acc:condlinle=0 acc:condlineq=0 acc:condlinge=0 "
      "acc:condlinlt=0 acc:condlingt=0 acc:ifthen=0 "
      "acc:and=0 acc:or=0 acc:abs=0 acc:max=0 acc:min=0 "
-     "cvt:compl=1 "   // but add acc:nlcompl=0 to use conversion
+     "acc:nlcompl=0 cvt:compl=1 "  // ignores NL complementarity
      "cvt:multoutcard=0 cvt:socp=1 "
      // minmaxabs: indeed better linearize as Bob said?
-     "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },  // @todo compl
+     "acc:sos1=0 acc:sos2=0 acc:impl=0" },
     { "lgo",
      "cvt:pre:boundsbest=4 "
      "acc:count=0 "
@@ -248,9 +251,9 @@ MP2NLBackend::ConfigMap MP2NLBackend::config_map_ {
      "acc:condlinle=0 acc:condlineq=0 acc:condlinge=0 "
      "acc:condlinlt=0 acc:condlingt=0 acc:ifthen=0 "
      "acc:and=0 acc:or=0 acc:abs=0 acc:max=0 acc:min=0 "
-     "cvt:compl=1 "   // but add acc:nlcompl=0 to use conversion
+     "acc:nlcompl=0 cvt:compl=1 "  // fails with NL complementarity
      "cvt:multoutcard=0 cvt:socp=1 "
-     "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },  // @todo compl
+     "acc:sos1=0 acc:sos2=0 acc:impl=0" },
     { "loqo",
      "acc:count=0 "
      "acc:alldiff=0 acc:numberofconst=0 acc:numberofvar=0 "
@@ -258,9 +261,9 @@ MP2NLBackend::ConfigMap MP2NLBackend::config_map_ {
      "acc:condlinle=0 acc:condlineq=0 acc:condlinge=0 "
      "acc:condlinlt=0 acc:condlingt=0 acc:ifthen=0 "
      "acc:and=0 acc:or=0 acc:abs=0 acc:max=0 acc:min=0 "
-     "cvt:compl=1 "   // but add acc:nlcompl=0 to use conversion
+     "acc:nlcompl=0 cvt:compl=1 "  // fails with NL complementarity
      "cvt:multoutcard=0 cvt:socp=1 "
-     "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },  // @todo compl
+     "acc:sos1=0 acc:sos2=0 acc:impl=0" },
     { "raposa",
      "acc:count=0 "
      "acc:alldiff=0 acc:numberofconst=0 acc:numberofvar=0 "
@@ -270,7 +273,7 @@ MP2NLBackend::ConfigMap MP2NLBackend::config_map_ {
      "acc:and=0 acc:or=0 acc:abs=0 acc:max=0 acc:min=0 "
      "cvt:compl=1 "   // but add acc:nlcompl=0 to use conversion
      "cvt:multoutcard=0 cvt:socp=1 "
-     "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },  // @todo compl
+     "acc:sos1=0 acc:sos2=0 acc:impl=0" },
     { "octeract",
      "acc:count=0 "
      "acc:alldiff=0 acc:numberofconst=0 acc:numberofvar=0 "
@@ -280,11 +283,11 @@ MP2NLBackend::ConfigMap MP2NLBackend::config_map_ {
      "acc:and=0 acc:or=0 acc:abs=0 acc:max=0 acc:min=0 "
      "cvt:compl=1 "   // but add acc:nlcompl=0 to use conversion
      "cvt:multoutcard=0 cvt:socp=1 "
-     "acc:sos1=0 acc:sos2=0 acc:compl=0 acc:impl=0" },  // @todo compl
+     "acc:sos1=0 acc:sos2=0 acc:impl=0" },
     { "ilogcp",
-     "acc:compl=0 cvt:multoutcard=0 " },
+     "cvt:multoutcard=0 " },
     { "gecode",
-     "acc:compl=0 cvt:multoutcard=0 " },
+     "cvt:multoutcard=0 " },
 };
 
 
