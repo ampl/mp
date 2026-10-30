@@ -9,6 +9,16 @@ Summary of recent updates to CBCMP for AMPL
   SOS models. Set *acc:sos1=2 acc:sos2=2* to pass
   them to CBC as before.
 - Fixed a crash in multi-objective mode.
+- Fixed wrong results in multi-objective mode: passes
+  after the first could return the previous pass'
+  solution, as CBC models are not re-solvable after
+  modification. Each pass now solves a fresh copy
+  (warm starts are not passed to multi-objective passes).
+  Per-objective *timelim* is now applied.
+- New options *mip:gap* (*mipgap*) and *mip:gapabs*
+  (*mipgapabs*): standard names of CBC's ratioGap and
+  allowableGap, also usable per objective
+  (suffix option_mipgap).
 - *lim:time* accepts fractional values (e.g., 10.5),
   which were rejected.
 - Fixed retrieval of CBC options not set explicitly

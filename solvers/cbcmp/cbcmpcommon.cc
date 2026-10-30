@@ -81,9 +81,12 @@ int CbcmpCommon::NumSOSCons() const {
   }
   return nSOS;
 }
-int findIndexOf(const std::vector< std::string > cmdargs_, const char* key) {
+/// Index of the last "-key" in cmdargs_ (followed by its value), -1 if none.
+/// The last one is in effect: options can be set repeatedly
+/// (e.g., replayed for each multi-objective pass).
+int findIndexOf(const std::vector< std::string >& cmdargs_, const char* key) {
   std::string argname = std::string("-") + key;
-  for (int i = 0; (i < ((int)cmdargs_.size()) - 1); ++i)
+  for (int i = ((int)cmdargs_.size()) - 2; i >= 0; --i)
     if (argname == cmdargs_[i])
       return i;
   return -1;

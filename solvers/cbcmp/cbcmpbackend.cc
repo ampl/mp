@@ -5,6 +5,7 @@
 #include "mp/env.h"
 #include "mp/flat/model_api_base.h"
 #include "cbcmpbackend.h"
+#include "coin/CbcSOS.hpp"
 
 extern "C" {
   #include "cbcmp-ampls-c-api.h"    // Cbcmp AMPLS C API
@@ -60,8 +61,10 @@ void CbcmpBackend::OpenSolver() {
 }
 
 void CbcmpBackend::CloseSolver() {
-  if ( lp() != NULL ) 
+  if ( lp() != NULL )
     Cbc_deleteModel(lp());
+  if (master_ != NULL && master_ != lp())
+    Cbc_deleteModel(master_);
 }
 
 const char* CbcmpBackend::GetBackendName()
@@ -132,9 +135,67 @@ void CbcmpBackend::SetInterrupter(mp::Interrupter *inter) {
 }
 
 void CbcmpBackend::Solve() {
+  if (GetMM().IsMOEmulationOn())
+    PrepareCopyForSolve();
   // Do not check result. as it returns non-zero for any limit reached
   Cbc_solve(lp());
   WindupCBCMPSolve();
+}
+
+/// Copy SOS constraints of \a from (CbcSOS objects) into \a to
+static void CopyCbcSOS(Cbc_Model* from, Cbc_Model* to) {
+  auto obj = from->solver_->objects();
+  for (int i = 0; i < from->solver_->numberObjects(); ++i)
+    if (auto sos = dynamic_cast<CbcSOS*>(obj[i])) {
+      int starts[] = {0, sos->numberMembers()};
+      Cbc_addSOS(to, 1, starts, sos->members(), sos->weights(),
+                 sos->sosType());
+    }
+}
+
+/// A fresh, unsolved copy of \a m: data, integrality, SOS,
+/// parameters, time limit and print hint.
+/// Not Cbc_clone(): with integer variables, its copies of models
+/// extended by Cbc_addRow() returned infeasible 'optimal' solutions.
+/// Warm starts are not copied.
+static Cbc_Model* CopyCbcModel(Cbc_Model* m) {
+  Cbc_Model* c = Cbc_newModel();
+  const int nc = Cbc_getNumCols(m);
+  Cbc_loadProblem(c, nc, Cbc_getNumRows(m),
+                  Cbc_getVectorStarts(m), Cbc_getIndices(m),
+                  Cbc_getElements(m),
+                  Cbc_getColLower(m), Cbc_getColUpper(m),
+                  Cbc_getObjCoefficients(m),
+                  Cbc_getRowLower(m), Cbc_getRowUpper(m));
+  Cbc_setObjSense(c, Cbc_getObjSense(m));
+  for (int j = 0; j < nc; ++j)
+    if (Cbc_isInteger(m, j))
+      Cbc_setInteger(c, j);
+  CopyCbcSOS(m, c);
+  c->cmdargs_ = m->cmdargs_;
+  Cbc_setMaximumSeconds(c, Cbc_getMaximumSeconds(m));
+  bool hint;
+  OsiHintStrength strength;
+  m->solver_->getHintParam(OsiDoReducePrint, hint, strength);
+  c->solver_->setHintParam(OsiDoReducePrint, hint, strength);
+  return c;
+}
+
+/// A Cbc_Model is not valid for modification after Cbc_solve()
+/// (see Cbc_C_Interface.h): re-solving it after the emulator's changes
+/// returned the previous pass' solution. So each pass solves a copy.
+/// The ModelAPI keeps its own pointer to the unsolved master_.
+/// Options set since the master was created (e.g., per objective)
+/// went to the previous copy, hence the replay.
+void CbcmpBackend::PrepareCopyForSolve() {
+  if (master_ == NULL)
+    master_ = lp();
+  else
+    Cbc_deleteModel(lp());          // the previous pass' copy
+  set_lp(CopyCbcModel(master_));
+  ReplaySolverOptions();
+  if (storedOptions_.timeLimit_ != 0)  // can be set per objective
+    Cbc_setMaximumSeconds(lp(), storedOptions_.timeLimit_);
 }
 
 void CbcmpBackend::WindupCBCMPSolve() { }
@@ -666,6 +727,17 @@ void CbcmpBackend::InitCustomOptions() {
     AddSolverOption(opt.name.data(), opt.desct.data(), opt.par.data(), opt.min, opt.max);
   for (auto& opt : double_options)
     AddSolverOption(opt.name.data(), opt.desct.data(), opt.par.data(), opt.min, opt.max);
+
+  // Standard names, as for other MIP drivers
+  // (also per objective: suffix option_mipgap)
+  AddSolverOption("mip:gap mipgap",
+    "Relative optimality gap |bestbound-bestinteger|/|bestinteger| "
+    "at which to stop (CBC parameter ratioGap).",
+    "ratioGap", 0.0, Infinity());
+  AddSolverOption("mip:gapabs mipgapabs",
+    "Absolute optimality gap |bestbound-bestinteger| "
+    "at which to stop (CBC parameter allowableGap).",
+    "allowableGap", 0.0, Infinity());
 
   AddStoredOption("lim:time timelim timelimit",
     "Limit on solve time (in seconds; default: no limit).",

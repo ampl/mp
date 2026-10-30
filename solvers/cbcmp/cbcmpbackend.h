@@ -128,6 +128,10 @@ protected:
 
   void WindupCBCMPSolve();
 
+  /// Multi-objective emulation: make lp() a fresh copy of the
+  /// unsolved model for the next pass
+  void PrepareCopyForSolve();
+
   void ReportResults() override;
   void ReportCBCMPResults();
 
@@ -148,6 +152,10 @@ protected:
   void AddCBCMPMessages();
 
 private:
+  /// Unsolved model, still modified by the ModelAPI between
+  /// multi-objective passes; nullptr until the first clone
+  Cbc_Model* master_ = nullptr;
+
   /// These options are stored in the class
   struct Options {
     double timeLimit_ = 0;
