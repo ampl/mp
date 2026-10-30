@@ -1,0 +1,44 @@
+[
+  {
+    "name" : "ex1221",
+    "tags" : ["binary", "nonlinear", "quadraticnonconvex"],
+    "comment": "MINLPLib; optimum from minlplib.solu",
+    "objective" : 7.6671800690
+  },
+  {
+    "name" : "ex1222",
+    "tags" : ["binary", "nonlinear"],
+    "comment": "MINLPLib; optimum from minlplib.solu",
+    "objective" : 1.0765430830
+  },
+  {
+    "name" : "ex1223",
+    "tags" : ["binary", "nonlinear", "log"],
+    "comment": "MINLPLib; optimum from minlplib.solu",
+    "objective" : 4.5795824020
+  },
+  {
+    "name" : "nvs03",
+    "tags" : ["integer", "quadratic"],
+    "comment": "MINLPLib; optimum from minlplib.solu",
+    "objective" : 16
+  },
+  {
+    "name" : "st_e13",
+    "tags" : ["binary", "quadratic", "quadraticnonconvex"],
+    "comment": "MINLPLib; optimum from minlplib.solu",
+    "objective" : 2
+  },
+  {
+    "name" : "synthes1",
+    "tags" : ["binary", "nonlinear", "log"],
+    "comment": "MINLPLib; optimum from minlplib.solu",
+    "objective" : 6.0097590900
+  },
+  {
+    "name" : "st_bpv1",
+    "tags" : ["continuous", "quadratic", "quadraticnonconvex"],
+    "comment": "MINLPLib; optimum from minlplib.solu",
+    "objective" : 10
+  }
+]

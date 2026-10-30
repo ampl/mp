@@ -9,8 +9,10 @@ param demand {DEST} >= 0;   # amounts required at destinations
 param rate {ORIG,DEST} >= 0;   # base shipment costs per unit
 param limit {ORIG,DEST} > 0;   # limit on units shipped
 
-var Trans {i in ORIG, j in DEST} >= 0, := 0;
+var Trans {i in ORIG, j in DEST} >= 0, <= .9999 * limit[i,j], := 0;
                                # actual units to be shipped
+                               # (the bound keeps the cost finite;
+                               # x^0.8 has no derivative at the start)
 
 minimize Total_Cost:
    sum {i in ORIG, j in DEST}

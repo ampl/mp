@@ -127,14 +127,14 @@
     "files" : ["nltransb.mod", "nltrans.dat"]
   }, {
     "name" : "nltransc",
-    "objective" : -18911000274274,
+    "objective" : 354276.7169,
     "tags" : ["nonlinear", "continuous"],
     "files" : ["nltransc.mod", "nltrans.dat"]
   }, {
     "name" : "nltransd",
-    "objective" : 354276,
+    "objective" : 354276.7169,
     "tags" : ["nonlinear", "continuous"],
-    "files" : ["nltransc.mod", "nltrans.dat"]
+    "files" : ["nltransd.mod", "nltrans.dat"]
   }, {
     "name" : "osborne1",
     "objective" : 5.464894697e-05,

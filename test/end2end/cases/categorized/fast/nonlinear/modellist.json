@@ -776,5 +776,17 @@
     "name" : "ellipse_nonconvex_nl",
     "tags" : ["continuous", "nonlinear", "quadraticnonconvex"],
     "objective": 2.013167836756
+  },
+  {
+    "name" : "evalerr_01_sqrt_start0",
+    "tags" : ["continuous", "nonlinear"],
+    "comment": "sqrt'(0) at the starting point",
+    "objective": 1.9860679775
+  },
+  {
+    "name" : "evalerr_02_pow_start0",
+    "tags" : ["continuous", "nonlinear"],
+    "comment": "pow'(0, 0.6) at the starting point; global optimum",
+    "objective": 1.1
   }
 ]
