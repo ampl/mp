@@ -30,8 +30,8 @@ public:
   /// Reuse the stored ModelConverter
   using Base::GetMC;
 
-  /// Skip conversion?
-  bool IfDelayConversion(const ItemType& , int ) {
+  /// Keep for Convert2NL(), which makes it NLComplementarity?
+  bool IfKeepUnconverted(const ItemType& , int ) {
     return
         GetMC().IfWantNLOutput()
         && GetMC().UserAcceptsAndRecommends(

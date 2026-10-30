@@ -382,6 +382,7 @@ public:
   using BaseConverter::IfHasCvt_impl; \
   using BaseConverter::IfNeedsCvt_impl; \
   using BaseConverter::IfDelayCvt_impl; \
+  using BaseConverter::IfKeepCvt_impl; \
   using BaseConverter::Convert
 
 

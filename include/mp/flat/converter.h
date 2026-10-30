@@ -614,6 +614,27 @@ public: // for ConstraintKeeper
     return false;
   }
 
+  /// Query if the specific item of the constraint
+  /// is to stay unconverted, despite being not accepted
+  /// by the ModelAPI: unlike IfDelayConversion(),
+  /// also in the final phase (ConvertDelayedItems()).
+  /// For example, items passed to Convert2NL() with NL output.
+  /// This method should not be redefined;
+  /// specialize IfKeepCvt_impl instead.
+  template <class Constraint>
+  bool IfKeepUnconverted(const Constraint& con, int i) {
+    return MPD( IfKeepCvt_impl(con, i) );
+  }
+
+  /// Generic query if a constraint is to stay unconverted.
+  /// Specialize this method, or
+  /// ConstraintConverter::IfKeepUnconverted
+  /// (see class ComplementarityConverter_MIP).
+  template <class Constraint>
+  bool IfKeepCvt_impl(const Constraint& , int ) {
+    return false;
+  }
+
   ////////// Hooks for reformulations spanning several items //////////
   /// A Converter can overload these for specific types,
   /// e.g., to reformulate a parent constraint together
@@ -2372,6 +2393,13 @@ public:
   /// Whether we pass quad con terms to the solver without linearization
   bool IfPassQuadCon() const
   { return options_.passQuadCon_ && ModelAPIAcceptsQC(); }
+
+  /// Whether we pass quad con terms as NL expressions
+  /// (NL output, cvt:quadcon=1)
+  bool IfPassQuadConAsNL() const {
+    return options_.passQuadCon_ && IfWantNLOutput()
+        && MPCD( UserAcceptsAndRecommends((const NLConstraint*)nullptr) );
+  }
 
   /// Whether we pass NL obj terms to the solver without linearization
   bool IfPassNLObj() const { return options_.passNLObj_; }

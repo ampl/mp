@@ -35,6 +35,16 @@ public:
     return false;
   }
 
+  /// Generic check whether the constraint
+  /// is to stay unconverted, also in the final
+  /// conversion phase, despite being not accepted by ModelAPI.
+  /// Example: complementarity with NL output.
+  /// Default: false.
+  template <class ItemType>
+  bool IfKeepUnconverted(const ItemType& , int ) {
+    return false;
+  }
+
   /// Access const ModelConverter
   const ModelConverter& GetMC() const { return mdl_cvt_; }
   /// Access ModelConverter
@@ -126,8 +136,8 @@ public:
 
 /// In the ModelConverter: to use a specific item_cvt_type<>
 /// Assumes Impl is the final ModelConverter type
-/// @note IfNeedsConversion, IfDelayConversion are delegated
-///   to the item_cvt_type<>.
+/// @note IfNeedsConversion, IfDelayConversion, IfKeepUnconverted
+///   are delegated to the item_cvt_type<>.
 #define INSTALL_ITEM_CONVERTER(item_cvt_type) \
   item_cvt_type<Impl> item_cvt__ ## item_cvt_type ## _ \
    { *static_cast<Impl*>(this) }; \
@@ -144,6 +154,11 @@ public:
                      item_cvt_type<Impl>::ItemType& con, int i) { \
       return item_cvt__ ## item_cvt_type ## _ . \
       IfDelayConversion(con, i); \
+  } \
+  bool IfKeepCvt_impl(const typename \
+                     item_cvt_type<Impl>::ItemType& con, int i) { \
+      return item_cvt__ ## item_cvt_type ## _ . \
+      IfKeepUnconverted(con, i); \
   } \
   Context Convert(const typename \
       item_cvt_type<Impl>::ItemType& con, int i) { \

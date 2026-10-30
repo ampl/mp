@@ -451,7 +451,13 @@ public:
   D2I_RECORD_CONSTR(LinConRange, true)
 public:
   ACCEPT_CONSTRAINT(mp::NLConstraint, Recommended, mp::CG_Algebraic)
-  void AddConstraint(const mp::NLConstraint& ) { }
+  void AddConstraint(const mp::NLConstraint& ) { ++n_nlcon_; }
+  ACCEPT_CONSTRAINT(mp::NLComplementarity, Recommended, mp::CG_Algebraic)
+  void AddConstraint(const mp::NLComplementarity& ) { ++n_nlcompl_; }
+  /// Number of NL constraints
+  int NumNLCons() const { return n_nlcon_; }
+  /// Number of NL complementarity constraints
+  int NumNLCompl() const { return n_nlcompl_; }
   ACCEPT_CONSTRAINT(mp::NLAssignEQ, Recommended, mp::CG_General)
   void AddConstraint(const mp::NLAssignEQ& nle)
   { explicified_.push_back(GetVariable(nle)); }
@@ -470,6 +476,8 @@ public:
 private:
   mp::VarArrayDef vars_;
   std::vector<int> explicified_;
+  int n_nlcon_ {0};
+  int n_nlcompl_ {0};
 };
 
 /// Interface (flattener + MIP converter + expression backend)
@@ -501,6 +509,42 @@ public:
   void Add(mp::LogicalExpr e) { this->GetModel().AddCon(e); }
   void Minimize(mp::NumericExpr e)
   { this->GetModel().AddObj(mp::obj::MIN, e); }
+
+  /// Add  c0*v0 + c1*v1 >= 0  complements  v0 >= lb(v0)
+  void Compl2(double c0, int v0, double c1, int v1) {
+    const double coefs[] = {c0, c1};
+    const int vars[] = {v0, v1};
+    this->InputAlgebraicCon(2, coefs, vars, 0.0, INFINITY);
+    this->GetModel().SetComplementarity(
+          this->GetModel().num_algebraic_cons()-1, v0,
+          mp::ComplInfo(mp::ComplInfo::INF_UB));
+  }
+
+  /// Number of used (active or converted) items of type \a Con
+  template <class Con>
+  int NumUsed() {
+    return this->GetFlatCvt().GetConstraintKeeper((Con*)nullptr)
+        .GetNumberOfUsed();
+  }
+
+  /// Convert the model, adding flat constraint \a con
+  /// after flattening, before reformulation.
+  /// E.g., a QuadCon, which the flattener does not produce
+  /// for a ModelAPI not accepting QuadCon.
+  template <class Con>
+  void ConvertModelWith(Con con) {
+    this->PrepareModelConversion();
+    this->GetFlatCvt().StartModelInput();
+    this->ConvertStandardItems();
+    {
+      mp::pre::AutoLinkScope<FlatConverterType> auto_link_scope{
+          this->GetFlatCvt(),         // as the next algebraic constraint
+          this->GetValuePresolver().GetSourceNodes().GetConValues()().Add()
+      };
+      this->GetFlatCvt().AddConstraint(std::move(con));
+    }
+    this->GetFlatCvt().FinishModelInput();
+  }
 };
 
 } // namespace mip_converter_test

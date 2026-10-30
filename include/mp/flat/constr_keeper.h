@@ -456,14 +456,15 @@ protected:
   }
 
   /// Convert item \a i according to \a mode,
-  /// unless it is redundant or (if \a f_may_delay)
-  /// the converter asks to delay it.
+  /// unless it is redundant, the converter keeps it
+  /// unconverted, or (if \a f_may_delay) asks to delay it.
   void ConvertItemInMode(int i, CvtMode mode, bool f_may_delay) {
     if (CvtMode::Skip == mode || cons_[i].IsRedundant())
       return;
     if (CvtMode::IfNeeded == mode)
       ConvertIfNeeded(i);
-    else if (!(f_may_delay && DelayIfRequested(i)))
+    else if (!GetConverter().IfKeepUnconverted(cons_[i].GetCon(), i)
+             && !(f_may_delay && DelayIfRequested(i)))
       CvtMode::TryConvert == mode ? TryConvertItem(i) : ConvertItem(i);
   }
 

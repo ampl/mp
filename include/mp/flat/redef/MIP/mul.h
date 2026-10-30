@@ -127,11 +127,11 @@ public:
 		return !GetMC().IfPassQuadCon();
   }
 
-  /// Skip conversion?
-  bool IfDelayConversion(const ItemType& , int ) {
-    return
-        GetMC().IfPassQuadCon()          // Use enforces
-        || GetMC().IfWantNLOutput();     // Assume QuadExpr accepted
+  /// Keep for Convert2NL()? Assume QuadExpr accepted.
+  /// Otherwise, not accepted QCs are linearized,
+  /// also when the user lowered acc:quad...
+  bool IfKeepUnconverted(const ItemType& , int ) {
+    return GetMC().IfPassQuadConAsNL();
   }
 
   /// Conversion

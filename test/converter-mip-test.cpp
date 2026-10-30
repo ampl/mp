@@ -984,3 +984,56 @@ TEST(IntOpsTest, IntProdBits0__productApproximated) {
   EXPECT_EQ(3, t.NumUsed<mp::PowConstExpConstraint>());  // old behavior
 }
 
+
+
+////////////// NL output: items kept for Convert2NL() //////////////
+
+/// x + y >= 0 complements x >= 0
+static void AddLinCompl(ExprTester& t) {
+  int x = t.Var(0, 10), y = t.Var(-5, 5);
+  t.Compl2(1.0, x, 1.0, y);
+  t.Minimize( t.GetModel().MakeVariable(y) );
+}
+
+TEST(NLOutputTest, Complementarity__keptAsNLComplementarity) {
+  mp::Env e;
+  ExprTester t(e, "cvt:compl=1");
+  AddLinCompl(t);
+  t.ConvertModel();
+  EXPECT_EQ(1, t.Backend().NumNLCompl());
+  EXPECT_EQ(0, t.Backend().NumNLCons());              // no product x*(x+y)
+}
+
+TEST(NLOutputTest, Complementarity__accNLCompl0__reformulated) {
+  mp::Env e;
+  ExprTester t(e, "cvt:compl=1 acc:nlcompl=0");
+  AddLinCompl(t);
+  t.ConvertModel();
+  EXPECT_EQ(0, t.Backend().NumNLCompl());
+  EXPECT_LE(1, t.Backend().NumNLCons());              // product x*(x+y)
+}
+
+/// x*y <= 5, y integer: as a QuadCon
+static mp::QuadConLE MakeQC(ExprTester& t) {
+  int x = t.Var(0, 4), y = t.Var(0, 3, INTEGER);
+  t.Minimize( t.GetModel().MakeVariable(x) );
+  return { { mp::LinTerms{}, mp::QuadTerms{ {1.0}, {x}, {y} } }, {5.0} };
+}
+
+TEST(NLOutputTest, QuadCon__keptAsNLConstraint) {
+  mp::Env e;
+  ExprTester t(e, "");
+  auto qc = MakeQC(t);
+  t.ConvertModelWith(std::move(qc));
+  EXPECT_EQ(1, t.Backend().NumNLCons());
+  EXPECT_EQ(0, t.NumUsed<mp::MulConstraint>());
+}
+
+TEST(NLOutputTest, QuadCon__passquadcon0__linearized) {
+  mp::Env e;
+  ExprTester t(e, "cvt:quadcon=0");
+  auto qc = MakeQC(t);
+  t.ConvertModelWith(std::move(qc));
+  EXPECT_EQ(0, t.Backend().NumNLCons());
+  EXPECT_EQ(1, t.NumUsed<mp::MulConstraint>());       // y expanded
+}
