@@ -1,5 +1,0 @@
-model inline_01.mod
-option mp_options 'outlev=1';
-option solver gurobi;
-solve;
-display _varname, _var;

@@ -1,7 +1,0 @@
-model impl1.mod
-option solver gurobi;
-solve;
-expand;
-solexpand;
-display _con, _conname;
-display _logcon, _logconname;
