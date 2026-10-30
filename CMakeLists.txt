@@ -83,7 +83,7 @@ else()
 endif()
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-set(MP_VERSION 4.2.0)
+set(MP_VERSION 4.2.1)
 if (NOT MP_VERSION MATCHES "^([0-9]+).([0-9]+).([0-9]+)$")
   message(FATAL_ERROR "MP: invalid version format ${MP_VERSION}.")
 endif ()
