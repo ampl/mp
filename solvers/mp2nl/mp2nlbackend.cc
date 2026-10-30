@@ -392,7 +392,7 @@ const char* MP2NLBackend::GetBackendName()
   { return "MP2NLBackend"; }
 
 std::string MP2NLBackend::GetSolverVersion() {
-  return "0.1";
+  return "0.2";
 }
 
 std::string MP2NLBackend::set_external_libs() {

@@ -3,6 +3,7 @@ Summary of recent updates to MP2NL for AMPL
 
 
 ## 20261029
+- Version 0.2.
 - Configuration *alglib4nl* (ALGLIB for AMPL), from Knitro's: logical
   expressions, if-then-else, min/max/abs, SOS and indicators are
   linearized by MP; complementarity is converted with
