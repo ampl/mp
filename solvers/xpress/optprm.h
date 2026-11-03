@@ -21,7 +21,7 @@ namespace mp {
 template <class Impl>
 class CompiledOptimizerOptions {
 public:
-  /// Add up to 331 'Optimizer' parameters
+  /// Add up to 390 'Optimizer' parameters
   void AddOptimizerOptions() {
 
 #ifdef XPRS_ALGAFTERCROSSOVER
@@ -46,6 +46,17 @@ public:
       "\n- (3)  Primal simplex.",
       XPRS_ALGAFTERNETWORK, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_ALGAFTERNETWORK
+
+#ifdef XPRS_ALTERNATIVELPSOLS
+    MPD( AddSolverOption_MergeDuplicates("cut:alternativelpsols alternativelpsols XPRS_ALTERNATIVELPSOLS",
+      "Controls the collection of alternative LP solutions for cut separation and heuristics."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  The solver decides if collecting alternative LP solutions is beneficial or not. This is the default setting."
+      "\n- (0)  Searching for alternative LP solutions is disabled."
+      "\n- (1)  Searching for alternative LP solutions is enabled.",
+      XPRS_ALTERNATIVELPSOLS, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_ALTERNATIVELPSOLS
 
 #ifdef XPRS_ALTERNATIVEREDCOSTS
     MPD( AddSolverOption_MergeDuplicates("pre:alternativeredcosts alternativeredcosts XPRS_ALTERNATIVEREDCOSTS",
@@ -94,8 +105,11 @@ public:
 
 #ifdef XPRS_BACKGROUNDMAXTHREADS
     MPD( AddSolverOption_MergeDuplicates("mip:backgroundmaxthreads backgroundmaxthreads XPRS_BACKGROUNDMAXTHREADS",
-      "Limit the number of threads to use in background jobs (for example in parallel to the root cut loop)."
-      "\n\nDefault: -1, let Xpress decide.",
+      "Limits the number of threads to use in background jobs (for example in parallel to the root cut loop)."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  The number of background threads is decided automatically."
+      "\n- (>= 0)  The number of background threads.",
       XPRS_BACKGROUNDMAXTHREADS, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_BACKGROUNDMAXTHREADS
 
@@ -107,7 +121,9 @@ public:
       "\n- (0)  Feasibility jump heuristic."
       "\n- (1)  Fast branch-and-bound heuristic."
       "\n- (2)  Same as bit 1 but with some additional heuristics enabled."
-      "\n- (3)  Fix-propagate-repair heuristic.",
+      "\n- (3)  Fix-propagate-repair heuristic."
+      "\n- (4)  Auxiliary parallel root cutloop."
+      "\n- (7)  Zero-objective heuristic (called only when no feasible solution is available).",
       XPRS_BACKGROUNDSELECT, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_BACKGROUNDSELECT
 
@@ -117,7 +133,6 @@ public:
       "\n\n"
       "Values (default: 3):\n"
       "\n- (-1)  Automatically determined."
-      "\n- (1)  Unused."
       "\n- (2)  Select the node with the best estimated solution."
       "\n- (3)  Select the node with the best bound on the solution."
       "\n- (4)  Select the deepest node in the search tree (equivalent to depth-first search)."
@@ -137,8 +152,7 @@ public:
       "Branch and Bound: Specifies how to break ties when selecting the next node to work on when a full backtrack is performed. The options are the same as for the BACKTRACK control."
       "\n\n"
       "Values (default: -1):\n"
-      "\n- (-1)  Default selection."
-      "\n- (1)  Unused."
+      "\n- (-1)  Automatically determined."
       "\n- (2)  Select the node with the best estimated solution."
       "\n- (3)  Select the node with the best bound on the solution."
       "\n- (4)  Select the deepest node in the search tree (equivalent to depth-first search)."
@@ -163,14 +177,18 @@ public:
       "\n- (1)  Use the infeasible-start barrier algorithm."
       "\n- (2)  Use the homogeneous self-dual barrier algorithm."
       "\n- (3)  Start with 2 and optionally switch to 1 during the execution."
-      "\n- (4)  Use the hybrid gradient algorithm.",
+      "\n- (4)  Use the hybrid gradient algorithm."
+      "\n- (5)  Use an alternative version of the hybrid gradient algorithm.",
       XPRS_BARALG, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_BARALG
 
 #ifdef XPRS_BARCORES
     MPD( AddSolverOption_MergeDuplicates("pdhg:barcores barcores XPRS_BARCORES",
-      "If set to a positive integer it determines the number of physical CPU cores assumed to be present in the system by the barrier and hybrid gradient algorithms. If the value is set to the default value (-1), Xpress will automatically detect the number of cores."
-      "\n\nDefault: -1(automatically detected)",
+      "Determines the number of physical CPU cores assumed to be present in the system by the barrier and hybrid gradient algorithms."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  Xpress will automatically detect the number of cores."
+      "\n- (>= 1)  The number of physical CPU cores assumed.",
       XPRS_BARCORES, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_BARCORES
 
@@ -180,7 +198,7 @@ public:
       "\n\n"
       "Values (default: 4):\n"
       "\n- (0)  Turns off all crash procedures."
-      "\n- (1-6)  Available strategies with 1 being conservative and 6 being aggressive.",
+      "\n- (>= 1, <= 6)  Available strategies with 1 being conservative and 6 being aggressive.",
       XPRS_BARCRASH, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_BARCRASH
 
@@ -190,7 +208,7 @@ public:
       "\n\n"
       "Values (default: 0):\n"
       "\n- (0)  The default value is determined automatically based on the problem size, structure and algorithm choice."
-      "\n- (>=0)  The tolerance for dual infeasibilities.",
+      "\n- (> 0)  The tolerance for dual infeasibilities.",
       XPRS_BARDUALSTOP, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_BARDUALSTOP
 
@@ -200,14 +218,16 @@ public:
       "\n\n"
       "Values (default: 0):\n"
       "\n- (0)  Determined automatically"
-      "\n- (>0)  Maximum number of consecutive barrier iterations allowed without progress.",
+      "\n- (> 0)  Maximum number of consecutive barrier iterations allowed without progress.",
       XPRS_BARFAILITERLIMIT, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_BARFAILITERLIMIT
 
 #ifdef XPRS_BARFREESCALE
     MPD( AddSolverOption_MergeDuplicates("bar:barfreescale barfreescale XPRS_BARFREESCALE",
       "Defines how the barrier algorithm scales free variables."
-      "\n\nDefault: 1e-6",
+      "\n\n"
+      "Values (default: 1e-6):\n"
+      "\n- (>= 0, <= 1)  Defines how aggressively free variables are scaled.",
       XPRS_BARFREESCALE, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_BARFREESCALE
 
@@ -217,7 +237,7 @@ public:
       "\n\n"
       "Values (default: 0):\n"
       "\n- (0)  The default value is determined automatically based on the problem size, structure and algorithm choice."
-      "\n- (>=0)  The tolerance for the relative duality gap.",
+      "\n- (> 0)  The tolerance for the relative duality gap.",
       XPRS_BARGAPSTOP, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_BARGAPSTOP
 
@@ -227,62 +247,101 @@ public:
       "\n\n"
       "Values (default: 0):\n"
       "\n- (0)  The default value is determined automatically based on the problem size, structure and algorithm choice."
-      "\n- (>=0)  The target tolerance for the relative duality gap.",
+      "\n- (>= 0)  The target tolerance for the relative duality gap.",
       XPRS_BARGAPTARGET, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_BARGAPTARGET
 
 #ifdef XPRS_BARHGEXTRAPOLATE
     MPD( AddSolverOption_MergeDuplicates("pdhg:barhgextrapolate barhgextrapolate XPRS_BARHGEXTRAPOLATE",
       "Extrapolation parameter for the hybrid gradient algorithm. Although theory suggests that a value of 1 is best, slightly smaller values perform better in general."
-      "\n\nDefault: 0.15",
+      "\n\n"
+      "Values (default: 0.15):\n"
+      "\n- (>= 0, <= 1)  Defines the extrapolation parameter for the hybrid gradient algorithm.",
       XPRS_BARHGEXTRAPOLATE, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_BARHGEXTRAPOLATE
 
 #ifdef XPRS_BARHGGPU
     MPD( AddSolverOption_MergeDuplicates("pdhg:barhggpu barhggpu XPRS_BARHGGPU",
-      "Whether to use a GPU for the hybrid gradient algorithm. Even though the GPU implementation of the hybrid 			gradient algorithm is identical in operation and functionality to the CPU implementation, the returned solutions 			can differ between the two versions due to the different architecture of the GPU. 			 			GPU support is not available in the deterministic concurrent LP algorithm. 		"
+      "Whether to use a GPU for the hybrid gradient algorithm. Even though the GPU implementation of the hybrid gradient algorithm is identical in operation and functionality to the CPU implementation, the returned solutions can differ between the two versions due to the different architecture of the GPU. GPU support is not available in the deterministic concurrent LP algorithm."
       "\n\n"
-      "Values (default: 			0, do not use a GPU. 		):\n"
+      "Values (default: 0, do not use a GPU.):\n"
       "\n- (0)  Do not use a GPU."
-      "\n- (1)  Use the GPU.",
+      "\n- (1)  Use the GPU, if available.",
       XPRS_BARHGGPU, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_BARHGGPU
 
+#ifdef XPRS_BARHGGPUALG
+    MPD( AddSolverOption_MergeDuplicates("pdhg:barhggpualg barhggpualg XPRS_BARHGGPUALG",
+      "Defines the GPU algorithm choice. The Nvidia linear algebra libraries offer various ways to calculate matrix-vector products. Some of these require more memory, but offer deterministic execution. On the other hand, there is a limited memory option, but with nondeterministic execution."
+      "\n\n"
+      "Values (default: 0):\n"
+      "\n- (0)  The selected algorithm ensures deterministic runs on GPU."
+      "\n- (1)  Use a faster GPU implementation that may result in nondeterministic runs."
+      "\n- (2)  Use a reduced memory version on GPU, which may result in nondeterministic runs."
+      "\n- (3)  Use a faster and reduced memory implementation on GPU, which may result in nondeterministic runs.",
+      XPRS_BARHGGPUALG, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_BARHGGPUALG
+
 #ifdef XPRS_BARHGGPUBLOCKSIZE
     MPD( AddSolverOption_MergeDuplicates("pdhg:barhggpublocksize barhggpublocksize XPRS_BARHGGPUBLOCKSIZE",
-      "The size of CUDA blocks to use for the GPU calculations. 		"
-      "\n\nDefault: 			256 		",
+      "The size of CUDA blocks to use for the GPU calculations."
+      "\n\nDefault: 256",
       XPRS_BARHGGPUBLOCKSIZE, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_BARHGGPUBLOCKSIZE
+
+#ifdef XPRS_BARHGHALPERN
+    MPD( AddSolverOption_MergeDuplicates("pdhg:barhghalpern barhghalpern XPRS_BARHGHALPERN",
+      "Defines the balance between the regular and the Halpern updates during the iterations. Increasing this parameter increases the Halpern reduction."
+      "\n\n"
+      "Values (default: 0.6):\n"
+      "\n- (>= 0, <= 2)  Controls the contribution of the Halpern update for the hybrid gradient algorithm.",
+      XPRS_BARHGHALPERN, -DBL_MAX, DBL_MAX) );
+#endif  // ifdef XPRS_BARHGHALPERN
 
 #ifdef XPRS_BARHGMAXRESTARTS
     MPD( AddSolverOption_MergeDuplicates("pdhg:barhgmaxrestarts barhgmaxrestarts XPRS_BARHGMAXRESTARTS",
       "The maximum number of restarts in the hybrid gradient algorithm. Restarts play the role of iterations in the hybrid gradient algorithm. A log line is printed at every restart, unless BAROUTPUT is set to 0."
-      "\n\nDefault: 1250",
+      "\n\n"
+      "Values (default: -5000000):\n"
+      "\n- (< 0)  Use the absolute value as a limit on the total number of iterations."
+      "\n- (>= 0)  The maximum number of restarts in the hybrid gradient algorithm.",
       XPRS_BARHGMAXRESTARTS, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_BARHGMAXRESTARTS
 
+#ifdef XPRS_BARHGMINORITERATIONLIMIT
+    MPD( AddSolverOption_MergeDuplicates("pdhg:barhgminoriterationlimit barhgminoriterationlimit XPRS_BARHGMINORITERATIONLIMIT",
+      "Minor iterations are faster but simplified steps in the algorithm. This control determines how many minor iterations can be performed before performing a full step."
+      "\n\n"
+      "Values (default: 0):\n"
+      "\n- (0)  Automatic choice of iteration limit."
+      "\n- (> 0)  Use the given minor iteration limit.",
+      XPRS_BARHGMINORITERATIONLIMIT, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_BARHGMINORITERATIONLIMIT
+
 #ifdef XPRS_BARHGOPS
     MPD( AddSolverOption_MergeDuplicates("pdhg:barhgops barhgops XPRS_BARHGOPS",
-      "Bit-vector control (see Section Bit-vector controls) options for the hybrid gradient algorithm. Bits 1, 2 and 3 control which norms of the coefficient matrix are used for solution normalization. The normalization factor is the maximum of the selected norms. By default, or if all three bits are set to 0, the infinity norm is used. The omega parameter referenced in bits 4, 5 and 6 is a measure of the relative magnitudes of the objective and the right-hand side."
+      "Bit-vector control (see Section Bit-vector controls) options for the hybrid gradient algorithm. Bits 1, 2 and 3 control which norms of the coefficient matrix are used for solution normalization. The normalization factor is the maximum of the selected norms. By default, or if all three bits are set to 0, the L2 norm is used. The omega parameter referenced in bits 4, 5 and 6 is a measure of the relative magnitudes of the objective and the right-hand side. Additional scaling is controlled by bits 8-9. If no bit is set at all then a the default value is determined automatically based on the algorithm choice."
       "\n\n"
-      "Values (default: 24, the infinity norm is used for initialization and the L2 norm for measuring the solution quality.):\n"
+      "Values (default: 0):\n"
       "\n- (0)  Use an asymmetric average for the primal averaging."
       "\n- (1)  Use the 1-norm of the coefficient matrix in normalizing the initial solution."
       "\n- (2)  Use the 2-norm of the coefficient matrix in normalizing the initial solution."
       "\n- (3)  Use the infinity norm of the coefficient matrix in normalizing the initial solution."
       "\n- (4)  Use L2 norm to measure solution quality."
       "\n- (5)  Contract omega towards 1 if the infeasibility is small enough."
-      "\n- (6)  Omega is based on the infeasibility.",
+      "\n- (6)  Omega is based on the infeasibility."
+      "\n- (7)  Turn off Halpern updates."
+      "\n- (8)  Normalize the objective."
+      "\n- (9)  Normalize the RHS.",
       XPRS_BARHGOPS, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_BARHGOPS
 
 #ifdef XPRS_BARHGPRECISION
     MPD( AddSolverOption_MergeDuplicates("pdhg:barhgprecision barhgprecision XPRS_BARHGPRECISION",
-      "			Whether to use single or double precision floating-point arithmetic in the hybrid gardient algorithm. The single precision 			implementation uses less memory and is, in general, faster than the double precision implementation. 			 			This control applies to both the CPU and the GPU implementation of the algorithm. The performance difference is greater 			for the GPU version. 		"
+      "Whether to use single or double precision floating-point arithmetic in the hybrid gradient algorithm. The single precision implementation uses less memory and is, in general, faster than the double precision implementation. This control applies to both the CPU and the GPU implementation of the algorithm. The performance difference is greater for the GPU version."
       "\n\n"
-      "Values (default: 			-1, use double precision for CPU platforms and single precision on GPU platforms. 		):\n"
-      "\n- (-1)  Automatically selected based on the value of BARHGGPU: 			single precision arithmetic is used if BARHGGPU is 1 (GPU execution), 			and double precision arithmetic is used	if BARHGGPU is 0 (CPU execution)."
+      "Values (default: -1, use double precision for CPU platforms and single precision on GPU platforms.):\n"
+      "\n- (-1)  Automatically selected based on the value of BARHGGPU: single precision arithmetic is used if BARHGGPU is 1 (GPU execution), and double precision arithmetic is used if BARHGGPU is 0 (CPU execution)."
       "\n- (0)  Use single precision arithmetic on both CPU and GPU platforms."
       "\n- (1)  Use double precision arithmetic on both CPU and GPU platforms.",
       XPRS_BARHGPRECISION, INT_MIN, INT_MAX) );
@@ -297,8 +356,10 @@ public:
 
 #ifdef XPRS_BARINDEFLIMIT
     MPD( AddSolverOption_MergeDuplicates("bar:barindeflimit barindeflimit XPRS_BARINDEFLIMIT",
-      "Newton Barrier. This limits the number of consecutive indefinite barrier iterations that will be performed. The optimizer will try to minimize (resp. maximize) a QP problem even if the Q matrix is not positive (resp. negative) semi-definite. However, the optimizer may detect that the Q matrix is indefinite and this can result in the optimizer not converging. This control specifies how many indefinite iterations may occur before the optimizer stops and reports that the problem is indefinite. It is usual to specify a value greater than one, and only stop after a series of indefinite matrices, as the problem may be found to be indefinite incorrectly on a few iterations for numerical reasons."
-      "\n\nDefault: 15",
+      "Newton Barrier. This limits the number of consecutive indefinite barrier iterations that will be performed. The Optimizer will try to minimize (resp. maximize) a QP problem even if the Q matrix is not positive (resp. negative) semi-definite. However, the Optimizer may detect that the Q matrix is indefinite and this can result in the Optimizer not converging. This control specifies how many indefinite iterations may occur before the Optimizer stops and reports that the problem is indefinite. It is usual to specify a value greater than one, and only stop after a series of indefinite matrices, as the problem may be found to be indefinite incorrectly on a few iterations for numerical reasons."
+      "\n\n"
+      "Values (default: 15):\n"
+      "\n- (>= 0)  The maximum number of consecutive indefinite barrier iterations.",
       XPRS_BARINDEFLIMIT, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_BARINDEFLIMIT
 
@@ -310,14 +371,16 @@ public:
       "\n- (-2)  Automatically determined."
       "\n- (-1)  Turn iterative solver off."
       "\n- (0)  Use iterative solver for the starting point computation."
-      "\n- (n>0)  Try to apply iterative solver for the first n barrier iterations.",
+      "\n- (> 0)  Specifies the maximum number of barrier iterations to apply the iterative solver.",
       XPRS_BARITERATIVE, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_BARITERATIVE
 
 #ifdef XPRS_BARITERLIMIT
     MPD( AddSolverOption_MergeDuplicates("bar:bariterlimit bariterlimit XPRS_BARITERLIMIT",
-      "Newton barrier: The maximum number of iterations. While the simplex method usually performs a number of iterations which is proportional to the number of constraints (rows) in a problem, the barrier method standardly finds the optimal solution to a given accuracy after a number of iterations which is independent of the problem size. The penalty is rather that the time for each iteration increases with the size of the problem. BARITERLIMIT specifies the maximum number of iterations which will be carried out by the barrier."
-      "\n\nDefault: 500",
+      "Newton barrier: Specifies the maximum number of iterations. While the simplex method usually performs a number of iterations which is proportional to the number of constraints (rows) in a problem, the barrier method standardly finds the optimal solution to a given accuracy after a number of iterations which is independent of the problem size. The penalty is rather that the time for each iteration increases with the size of the problem. BARITERLIMIT specifies the maximum number of iterations which will be carried out by the barrier."
+      "\n\n"
+      "Values (default: 500):\n"
+      "\n- (>= 0)  The maximum number of barrier iterations.",
       XPRS_BARITERLIMIT, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_BARITERLIMIT
 
@@ -326,15 +389,19 @@ public:
       "Newton barrier: Defines how centrality is weighted in the barrier algorithm."
       "\n\n"
       "Values (default: 0.0):\n"
-      "\n- (>=+1.0)  Increases the emphasis on centrality when larger value is set."
-      "\n- (<=-1.0)  Selects a value adaptively in every iteration from [+1, -BARKERNEL].",
+      "\n- (<= -1.0)  Selects a value adaptively in every iteration from [+1, -BARKERNEL]."
+      "\n- (0.0)  The parameter is not taken into account."
+      "\n- (>= +1.0)  Increases the emphasis on centrality when larger value is set.",
       XPRS_BARKERNEL, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_BARKERNEL
 
 #ifdef XPRS_BARLARGEBOUND
     MPD( AddSolverOption_MergeDuplicates("bar:barlargebound barlargebound XPRS_BARLARGEBOUND",
       "Threshold for the barrier to handle large bounds."
-      "\n\nDefault: 0",
+      "\n\n"
+      "Values (default: 0):\n"
+      "\n- (0.0)  The handling of large bounds is turned off."
+      "\n- (> 0.0)  Bounds larger than or equal to this value are considered being large for the barrier.",
       XPRS_BARLARGEBOUND, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_BARLARGEBOUND
 
@@ -343,9 +410,9 @@ public:
       "Defines how the barrier perturbs the objective."
       "\n\n"
       "Values (default: 1e-6):\n"
-      "\n- (>0)  Let the optimizer decide if the objective is perturbed or not and use the parameter value as the scale of the perturbation."
+      "\n- (>= -1, < 0)  Always perturb the objective by the absolute value of the parameter."
       "\n- (0)  Turn off objective perturbation."
-      "\n- (<0)  Always perturb the objective by the absolute value of the parameter.",
+      "\n- (> 0, <= 1)  Let the Optimizer decide if the objective is perturbed or not and use the parameter value as the scale of the perturbation.",
       XPRS_BAROBJPERTURB, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_BAROBJPERTURB
 
@@ -354,9 +421,9 @@ public:
       "Defines how the barrier scales the objective."
       "\n\n"
       "Values (default: -1):\n"
-      "\n- (-1)  Let the optimizer decide."
+      "\n- (-1)  Let the Optimizer decide."
       "\n- (0)  Scale by geometric mean."
-      "\n- (>=0)  Scale such that the largest objective coefficient's largest element does not exceed this number. In quadratic problems, the quadratic diagonal is used as reference valuses instead of the linear objective.",
+      "\n- (>= 0)  Scale such that the largest objective coefficient's largest element does not exceed this number. In quadratic problems, the quadratic diagonal is used as reference valuses instead of the linear objective.",
       XPRS_BAROBJSCALE, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_BAROBJSCALE
 
@@ -378,7 +445,7 @@ public:
       "\n\n"
       "Values (default: 0):\n"
       "\n- (0)  The default value is determined automatically based on the problem size, structure and algorithm choice."
-      "\n- (>=0)  The number of concurrent threads for the sparse matrix ordering algorithm in the Newton-barrier method.",
+      "\n- (>= 0)  The number of concurrent threads for the sparse matrix ordering algorithm in the Newton-barrier method.",
       XPRS_BARORDERTHREADS, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_BARORDERTHREADS
 
@@ -394,7 +461,7 @@ public:
 
 #ifdef XPRS_BARPERTURB
     MPD( AddSolverOption_MergeDuplicates("bar:barperturb barperturb XPRS_BARPERTURB",
-      "Newton barrier: In numerically challenging cases it is often advantageous to apply perturbations on the KKT system to improve its numerical properties. BARPERTURB controlls how much perturbation is allowed during the barrier iterations. By default no perturbation is allowed. Set this parameter with care as larger perturbations may lead to less efficient iterates and the best settings are problem-dependent."
+      "Newton barrier: In numerically challenging cases it is often advantageous to apply perturbations on the KKT system to improve its numerical properties. BARPERTURB controls how much perturbation is allowed during the barrier iterations. By default no perturbation is allowed. Set this parameter with care as larger perturbations may lead to less efficient iterates and the best settings are problem-dependent."
       "\n\nDefault: 0",
       XPRS_BARPERTURB, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_BARPERTURB
@@ -416,14 +483,16 @@ public:
       "\n\n"
       "Values (default: 0):\n"
       "\n- (0)  The default value is determined automatically based on the problem size, structure and algorithm choice."
-      "\n- (>=0)  The tolerance for primal infeasibilities.",
+      "\n- (> 0)  The tolerance for primal infeasibilities.",
       XPRS_BARPRIMALSTOP, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_BARPRIMALSTOP
 
 #ifdef XPRS_BARREFITER
     MPD( AddSolverOption_MergeDuplicates("bar:barrefiter barrefiter XPRS_BARREFITER",
       "Newton barrier: After terminating the barrier algorithm, further refinement steps can be performed. Such refinement steps are especially helpful if the solution is near to the optimum and can improve primal feasibility and decrease the complementarity gap. It is also often advantageous for the crossover algorithm. BARREFITER specifies the maximum number of such refinement iterations."
-      "\n\nDefault: 0",
+      "\n\n"
+      "Values (default: 0):\n"
+      "\n- (>= 0)  The maximum number of refinement iterations after barrier termination.",
       XPRS_BARREFITER, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_BARREFITER
 
@@ -447,9 +516,9 @@ public:
       "Defines how the barrier scales the right hand side."
       "\n\n"
       "Values (default: -1):\n"
-      "\n- (-1)  Let the optimizer decide."
+      "\n- (-1)  Let the Optimizer decide."
       "\n- (0)  Scale by geometric mean."
-      "\n- (>=0)  Scale such that the largest right hand side coefficient's largest element does not exceed this number.",
+      "\n- (>= 0)  Scale such that the largest right hand side coefficient's largest element does not exceed this number.",
       XPRS_BARRHSSCALE, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_BARRHSSCALE
 
@@ -479,22 +548,30 @@ public:
 
 #ifdef XPRS_BARSTARTWEIGHT
     MPD( AddSolverOption_MergeDuplicates("bar:barstartweight barstartweight XPRS_BARSTARTWEIGHT",
-      "Newton barrier: This sets a weight for the warm-start point when warm-start is set for the barrier algorithm. Using larger weight gives more emphasis for the supplied starting point."
-      "\n\nDefault: 0.85",
+      "Newton barrier: This sets the weight for the warm-start point when warm-start is set for the barrier algorithm. Using larger weight gives more emphasis for the supplied starting point."
+      "\n\n"
+      "Values (default: 0.85):\n"
+      "\n- (>= 0, <= 1)  The weight for the barrier warm-start point.",
       XPRS_BARSTARTWEIGHT, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_BARSTARTWEIGHT
 
 #ifdef XPRS_BARSTEPSTOP
     MPD( AddSolverOption_MergeDuplicates("bar:barstepstop barstepstop XPRS_BARSTEPSTOP",
       "Newton barrier: A convergence parameter, representing the minimal step size. On each iteration of the barrier algorithm, a step is taken along a computed search direction. If that step size is smaller than BARSTEPSTOP, the Optimizer will terminate and return the current solution."
-      "\n\nDefault: 1.0E-16",
+      "\n\n"
+      "Values (default: 1.0E-16):\n"
+      "\n- (0)  The default value is determined automatically based on the problem size, structure and algorithm choice."
+      "\n- (> 0)  The minimal step size for the Newton barrier.",
       XPRS_BARSTEPSTOP, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_BARSTEPSTOP
 
 #ifdef XPRS_BARTHREADS
     MPD( AddSolverOption_MergeDuplicates("pdhg:barthreads barthreads XPRS_BARTHREADS",
-      "If set to a positive integer it determines the number of threads implemented to run the Newton-barrier and hybrid gradient algorithms. If the value is set to the default value (-1), the THREADS control will determine the number of threads used."
-      "\n\nDefault: -1(determined by the THREADS control)",
+      "Determines the number of threads implemented to run the Newton-barrier and hybrid gradient algorithms."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  The THREADS control will determine the number of threads used."
+      "\n- (> 0)  The number of threads to use.",
       XPRS_BARTHREADS, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_BARTHREADS
 
@@ -529,7 +606,7 @@ public:
 
 #ifdef XPRS_BRANCHDISJ
     MPD( AddSolverOption_MergeDuplicates("mip:branchdisj branchdisj XPRS_BRANCHDISJ",
-      "Branch and Bound: Determines whether the optimizer should attempt to branch on general split disjunctions during the branch and bound search."
+      "Branch and Bound: Determines whether the Optimizer should attempt to branch on general split disjunctions during the branch and bound search."
       "\n\n"
       "Values (default: -1):\n"
       "\n- (-1)  Automatic selection of the strategy."
@@ -542,7 +619,7 @@ public:
 
 #ifdef XPRS_BRANCHSTRUCTURAL
     MPD( AddSolverOption_MergeDuplicates("mip:branchstructural branchstructural XPRS_BRANCHSTRUCTURAL",
-      "Branch and Bound: Determines whether the optimizer should search for special structure in the problem to branch on during the branch and bound search."
+      "Branch and Bound: Determines whether the Optimizer should search for special structure in the problem to branch on during the branch and bound search."
       "\n\n"
       "Values (default: -1):\n"
       "\n- (-1)  Automatically determined."
@@ -553,8 +630,10 @@ public:
 
 #ifdef XPRS_BREADTHFIRST
     MPD( AddSolverOption_MergeDuplicates("mip:breadthfirst breadthfirst XPRS_BREADTHFIRST",
-      "The number of nodes to include in the best-first search before switching to the local first search (NODESELECTION=4)."
-      "\n\nDefault: 11",
+      "Specifies the number of nodes to include in the best-first search before switching to the local first search (NODESELECTION=4)."
+      "\n\n"
+      "Values (default: 11):\n"
+      "\n- (>= 0)  The number of nodes to include in the best-first search before switching to the local first search.",
       XPRS_BREADTHFIRST, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_BREADTHFIRST
 
@@ -564,7 +643,7 @@ public:
       "\n\n"
       "Values (default: 0):\n"
       "\n- (0)  Callback delay is disabled - the callback is executed every time;"
-      "\n- (n>0)  Callback invocation is suppressed if less than n milliseconds have passed since the last invocation.",
+      "\n- (> 0)  Callback invocation is suppressed if less than the specified number of milliseconds have passed since the last invocation.",
       XPRS_CALLBACKCHECKTIMEDELAY, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_CALLBACKCHECKTIMEDELAY
 
@@ -574,7 +653,7 @@ public:
       "\n\n"
       "Values (default: 0):\n"
       "\n- (0)  Callback delay is disabled - the callback is executed every time;"
-      "\n- (n>0)  Callback invocation if less than n work units, which may be a fraction of a work unit, have passed since the last invocation.",
+      "\n- (> 0)  Callback invocation if less than the specified (potentially fractional) number of work units have passed since the last invocation.",
       XPRS_CALLBACKCHECKTIMEWORKDELAY, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_CALLBACKCHECKTIMEWORKDELAY
 
@@ -602,7 +681,7 @@ public:
     MPD( AddSolverOption_MergeDuplicates("bar:choleskyalg choleskyalg XPRS_CHOLESKYALG",
       "Newton barrier: type of Cholesky factorization used; bit-vector-control (see Section Bit-vector controls)."
       "\n\n"
-      "Values (default: -1 (automatic)):\n"
+      "Values (default: -1):\n"
       "\n- (0)  matrix blocking: 0: automatic setting; 1: manual setting."
       "\n- (1)  if manual selection of matrix blocking: 0: multi-pass; 1: single-pass."
       "\n- (2)  nonseparable QP relaxation: 0: off; 1: on."
@@ -618,8 +697,10 @@ public:
 
 #ifdef XPRS_CHOLESKYTOL
     MPD( AddSolverOption_MergeDuplicates("bar:choleskytol choleskytol XPRS_CHOLESKYTOL",
-      "Newton barrier: The tolerance for pivot elements in the Cholesky decomposition of the normal equations coefficient matrix, computed at each iteration of the barrier algorithm. If the absolute value of the pivot element is less than or equal to CHOLESKYTOL, it merits special treatment in the Cholesky decomposition process."
-      "\n\nDefault: 1.0E-15",
+      "Newton barrier: The tolerance for pivot elements in the Cholesky decomposition of the normal equations coefficient matrix, computed at each iteration of the barrier algorithm."
+      "\n\n"
+      "Values (default: 1.0E-15):\n"
+      "\n- (> 0)  If the absolute value of the pivot element is less than or equal than this value, it merits special treatment in the Cholesky decomposition process.",
       XPRS_CHOLESKYTOL, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_CHOLESKYTOL
 
@@ -628,10 +709,9 @@ public:
       "This bit-vector control (see Section Bit-vector controls) allows for the adjustment of returned solution values such that they are always within bounds."
       "\n\n"
       "Values (default: 0):\n"
-      "\n- (-1)  Determined automatically."
       "\n- (0)  Adjust primal solution to always be within primal bounds. Slacks if provided will be adjusted accordingly."
-      "\n- (1)  Adjust primal slack values to always be within constraint bounds."
-      "\n- (2)  Adjust dual solution to always be within the dual bounds implied by the slacks. Reduced costs, if provided, will be adjusted accordingly."
+      "\n- (1)  Adjust dual solution to always be within the dual bounds implied by the slacks. Reduced costs, if provided, will be adjusted accordingly."
+      "\n- (2)  Adjust primal slack values to always be within constraint bounds."
       "\n- (3)  Adjust reduced costs to always be within dual bounds implied by the primal solution.",
       XPRS_CLAMPING, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_CLAMPING
@@ -655,8 +735,10 @@ public:
 
 #ifdef XPRS_COMPUTEJOBPRIORITY
     MPD( AddSolverOption_MergeDuplicates("tech:computejobpriority computejobpriority XPRS_COMPUTEJOBPRIORITY",
-      "Selects the priority that will be used for remote optimization jobs."
-      "\n\nDefault: 0",
+      "Selects the priority that will be used for remote optimization jobs. A job of priority N will always get scheduled before a job of priority N-1, provided there is sufficient capacity."
+      "\n\n"
+      "Values (default: 0):\n"
+      "\n- (>= -100, <= 100)  The priority for remote optimization jobs. If the value is 0, the value from the configuration file will be used, or priority 0 if neither is specified.",
       XPRS_COMPUTEJOBPRIORITY, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_COMPUTEJOBPRIORITY
 
@@ -678,13 +760,13 @@ public:
       "\n\n"
       "Values (default: -1):\n"
       "\n- (-1)  Determined automatically"
-      "\n- (>0)  Number of threads to use.",
+      "\n- (> 0)  Number of threads to use.",
       XPRS_CONCURRENTTHREADS, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_CONCURRENTTHREADS
 
 #ifdef XPRS_CONFLICTCUTS
     MPD( AddSolverOption_MergeDuplicates("mip:conflictcuts conflictcuts XPRS_CONFLICTCUTS",
-      "Branch and Bound: Specifies how cautious or aggressive the optimizer should be when searching for and applying conflict cuts. Conflict cuts are in-tree cuts derived from nodes found to be infeasible or cut off, which can be used to cut off other branches of the search tree."
+      "Branch and Bound: Specifies how cautious or aggressive the Optimizer should be when searching for and applying conflict cuts. Conflict cuts are in-tree cuts derived from nodes found to be infeasible or cut off, which can be used to cut off other branches of the search tree."
       "\n\n"
       "Values (default: -1):\n"
       "\n- (-1)  Automatic."
@@ -697,22 +779,31 @@ public:
 
 #ifdef XPRS_CORESPERCPU
     MPD( AddSolverOption_MergeDuplicates("tech:corespercpu corespercpu XPRS_CORESPERCPU",
-      "Used to override the detected value of the number of cores on a CPU. The cache size (either detected or specified via the CACHESIZE control) used in Barrier methods will be divided by this amount, and this scaled-down value will be the amount of cache allocated to each Barrier thread"
-      "\n\nDefault: -1",
+      "Used to override the number of cores assumed to be present on a CPU. The cache size (either detected or specified via the CACHESIZE control) used in Barrier methods will be divided by this amount, and this scaled-down value will be the amount of cache allocated to each Barrier thread."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  The number of cores is detected automatically."
+      "\n- (> 0)  The number of cores per CPU.",
       XPRS_CORESPERCPU, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_CORESPERCPU
 
 #ifdef XPRS_COVERCUTS
     MPD( AddSolverOption_MergeDuplicates("cut:covercuts covercuts XPRS_COVERCUTS",
-      "Branch and Bound: The number of rounds of lifted cover inequalities at the root node. A lifted cover inequality is an additional constraint that can be particularly effective at reducing the size of the feasible region without removing potential integral solutions. The process of generating these can be carried out a number of times, further reducing the feasible region, albeit incurring a time penalty. There is usually a good payoff from generating these at the root node, since these inequalities then apply to every subsequent node in the tree search."
-      "\n\nDefault: -1 — determined automatically.",
+      "Branch and Bound: Specifies the number of rounds of lifted cover inequalities at the root node. A lifted cover inequality is an additional constraint that can be particularly effective at reducing the size of the feasible region without removing potential integral solutions. The process of generating these can be carried out a number of times, further reducing the feasible region, albeit incurring a time penalty. There is usually a good payoff from generating these at the root node, since these inequalities then apply to every subsequent node in the tree search."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  Number of rounds determined automatically."
+      "\n- (0)  Off—separation disabled."
+      "\n- (> 0)  Apply this specified number of rounds.",
       XPRS_COVERCUTS, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_COVERCUTS
 
 #ifdef XPRS_CPIALPHA
     MPD( AddSolverOption_MergeDuplicates("tech:cpialpha cpialpha XPRS_CPIALPHA",
       "decay term for confined primal integral computation."
-      "\n\nDefault: 0",
+      "\n\n"
+      "Values (default: 0):\n"
+      "\n- (>= 0.0, < 1.0)  Exponential decay for computing the OBSERVEDPRIMALINTEGRAL. A value of 0 corresponds to computing a regular primal integral without exponential decay.",
       XPRS_CPIALPHA, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_CPIALPHA
 
@@ -720,8 +811,8 @@ public:
     MPD( AddSolverOption_MergeDuplicates("tech:cpuplatform cpuplatform XPRS_CPUPLATFORM",
       "Newton Barrier: Selects the AMD, Intel x86 or ARM vectorization instruction set that Barrier should run optimized code for. On AMD / Intel x86 platforms the SSE2, AVX and AVX2 instruction sets are supported while on ARM platforms the NEON architecture extension can be activated."
       "\n\n"
-      "Values (default: -2, using AVX2 instructions if supported by the CPU):\n"
-      "\n- (-2)  Highest supported [Generic, SSE2, AVX or AVX2]."
+      "Values (default: -2):\n"
+      "\n- (-2)  Highest supported [Generic, SSE2, AVX or AVX2], that is, using AVX2 instructions if supported by the CPU."
       "\n- (-1)  Highest supported solve path consistent code [Generic, SSE2 or AVX]."
       "\n- (0)  Use generic code compatible with all CPUs."
       "\n- (1)  Use SSE2 / NEON optimized code."
@@ -746,19 +837,17 @@ public:
       "Simplex: This determines the type of crash used when the algorithm begins. During the crash procedure, an initial basis is determined which is as close to feasibility and triangularity as possible. A good choice at this stage will significantly reduce the number of iterations required to find an optimal solution. The possible values increase proportionally to their time-consumption."
       "\n\n"
       "Values (default: 2):\n"
-      "\n\nFor the primal simplex algorithm the following choices are available:\n"
       "\n- (0)  Turns off all crash procedures."
       "\n- (1)  For singletons only (one pass)."
       "\n- (2)  For singletons only (multi pass)."
       "\n- (3)  Multiple passes through the matrix considering slacks."
       "\n- (4)  Multiple (≤10) passes through the matrix but only doing slacks at the very end."
-      "\n- (n>10)  As for value 4 but performing at most n - 10 passes."
-      "\n\nFor the dual simplex algorithm, the crash control is interpreted as a bit-vector (see Section Bit-vector controls) for adjusting the behavior of the procedure:\n"
-      "\n- (Bit 0)  Perform standard crash."
-      "\n- (Bit 1)  Perform additional numerical checks during crash."
-      "\n- (Bit 2)  Extend the set of column candidates for crash."
-      "\n- (Bit 3)  Extend the set of row candidates for crash."
-      "\n- (Bit 4)  Force crash, i.e., consider all suitable columns/rows as candidates for crash.",
+      "\n- (> 10)  As for value 4 but performing at most n - 10 passes, where n is the specified control value."
+      "\n- (0)  Perform standard crash."
+      "\n- (1)  Perform additional numerical checks during crash."
+      "\n- (2)  Extend the set of column candidates for crash."
+      "\n- (3)  Extend the set of row candidates for crash."
+      "\n- (4)  Force crash, i.e., consider all suitable columns/rows as candidates for crash.",
       XPRS_CRASH, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_CRASH
 
@@ -783,8 +872,10 @@ public:
 
 #ifdef XPRS_CROSSOVERITERLIMIT
     MPD( AddSolverOption_MergeDuplicates("pdhg:crossoveriterlimit crossoveriterlimit XPRS_CROSSOVERITERLIMIT",
-      "Newton barrier and hybrid gradient: The maximum number of iterations that will be performed in the crossover procedure before the optimization process terminates."
-      "\n\nDefault: 2147483647",
+      "Newton barrier and hybrid gradient: Specifies the maximum number of iterations that will be performed in the crossover procedure before the optimization process terminates."
+      "\n\n"
+      "Values (default: INF):\n"
+      "\n- (>= 0)  The maximum number of crossover iterations.",
       XPRS_CROSSOVERITERLIMIT, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_CROSSOVERITERLIMIT
 
@@ -802,34 +893,137 @@ public:
 
 #ifdef XPRS_CROSSOVERTHREADS
     MPD( AddSolverOption_MergeDuplicates("pdhg:crossoverthreads crossoverthreads XPRS_CROSSOVERTHREADS",
-      "Determines the maximum number of threads that parallel crossover is allowed to use. If CROSSOVERTHREADS is set to the default value (-1), the BARTHREADS control will determine the number of threads used."
-      "\n\nDefault: -1 (determined by the BARTHREADS control)",
+      "Determines the maximum number of threads that parallel crossover is allowed to use."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  The BARTHREADS control will determine the number of crossover threads."
+      "\n- (> 0)  The maximum number of crossover threads.",
       XPRS_CROSSOVERTHREADS, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_CROSSOVERTHREADS
 
+#ifdef XPRS_CUTAGGROWS
+    MPD( AddSolverOption_MergeDuplicates("cut:cutaggrows cutaggrows XPRS_CUTAGGROWS",
+      "	Strategy for row aggregation used when separating Mixed Integer Rounding (MIR) cuts, lifted cover cuts and Strong 	Chvatal-Gomory (CG) cuts. Row aggregation combines several rows of the problem into a single row from which a cut is 	then derived. A more aggressive strategy will try more and more complex row aggregations, which can uncover cuts 	that would otherwise be missed, at the cost of extra computational effort and, in some cases, at the cost of separating 	denser cutting planes that could slow down the node throughput."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  XPRS_CUTAGGROWS_AUTOMATIC Automatic selection of the row aggregation strategy."
+      "\n- (0)  XPRS_CUTAGGROWS_OFF Off. No row aggregation."
+      "\n- (1)  XPRS_CUTAGGROWS_CONSERVATIVE Conservative row aggregation strategy."
+      "\n- (2)  XPRS_CUTAGGROWS_MODERATE Moderate row aggregation strategy."
+      "\n- (3)  XPRS_CUTAGGROWS_AGGRESSIVE Aggressive row aggregation strategy."
+      "\n- (4)  XPRS_CUTAGGROWS_VERYAGGRESSIVE Very aggressive row aggregation strategy.",
+      XPRS_CUTAGGROWS, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_CUTAGGROWS
+
 #ifdef XPRS_CUTDEPTH
     MPD( AddSolverOption_MergeDuplicates("cut:cutdepth cutdepth XPRS_CUTDEPTH",
-      "Branch and Bound: Sets the maximum depth in the tree search at which cuts will be generated. Generating cuts can take a lot of time, and is often less important at deeper levels of the tree since tighter bounds on the variables have already reduced the feasible region. A value of 0 signifies that no cuts will be generated."
-      "\n\nDefault: -1 — determined automatically.",
+      "Branch and Bound: Sets the maximum depth in the tree search at which cuts will be generated. Generating cuts can take a lot of time, and is often less important at deeper levels of the tree since tighter bounds on the variables have already reduced the feasible region."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  The maximum depth is determined automatically."
+      "\n- (0)  No cuts will be generated in the tree search."
+      "\n- (> 0)  The maximum tree depth to generate cuts.",
       XPRS_CUTDEPTH, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_CUTDEPTH
 
 #ifdef XPRS_CUTFACTOR
     MPD( AddSolverOption_MergeDuplicates("cut:cutfactor cutfactor XPRS_CUTFACTOR",
-      "Limit on the number of cuts and cut coefficients the optimizer is allowed to add to the matrix during tree search. The cuts and cut coefficients are limited by CUTFACTOR times the number of rows and coefficients in the initial matrix."
+      "Limit on the number of cuts and cut coefficients the Optimizer is allowed to add to the matrix during tree search. The cuts and cut coefficients are limited by CUTFACTOR times the number of rows and coefficients in the initial matrix."
       "\n\n"
       "Values (default: -1):\n"
-      "\n- (-1)  Let the optimizer decide on the maximum amount of cuts based on CUTSTRATEGY."
-      "\n- (>=0)  Multiple of number of rows and coefficients to use.",
+      "\n- (-1)  Let the Optimizer decide on the maximum amount of cuts based on CUTSTRATEGY."
+      "\n- (>= 0)  Multiple of number of rows and coefficients to use.",
       XPRS_CUTFACTOR, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_CUTFACTOR
 
 #ifdef XPRS_CUTFREQ
     MPD( AddSolverOption_MergeDuplicates("cut:cutfreq cutfreq XPRS_CUTFREQ",
-      "Branch and Bound: This specifies the frequency at which cuts are generated in the tree search. If the depth of the node modulo CUTFREQ is zero, then cuts will be generated."
-      "\n\nDefault: -1 — determined automatically.",
+      "Branch and Bound: Specifies the frequency at which cuts are generated in the tree search. If the depth of the node modulo CUTFREQ is zero, then cuts will be generated."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  The frequency is determined automatically."
+      "\n- (>= 0)  The frequency at which cuts are generated in the tree.",
       XPRS_CUTFREQ, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_CUTFREQ
+
+#ifdef XPRS_CUTFROMCUTROWS
+    MPD( AddSolverOption_MergeDuplicates("cut:cutfromcutrows cutfromcutrows XPRS_CUTFROMCUTROWS",
+      "	Strategy to decide whether cutting planes already added to the matrix may themselves be used as base rows for 	separating new Mixed Integer Rounding (MIR) cuts, lifted cover cuts and Strong Chvatal-Gomory (CG) cuts. A more 	aggressive strategy allows cutting from cut rows more often, which can uncover additional cuts, at the cost of 	extra computational effort and, in some cases, at the cost of separating denser cutting planes that could slow down 	the node throughput."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  XPRS_CUTFROMCUTROWS_AUTOMATIC Automatic selection."
+      "\n- (0)  XPRS_CUTFROMCUTROWS_OFF Off. Only original constraints are used as base rows."
+      "\n- (1)  XPRS_CUTFROMCUTROWS_CONSERVATIVE Conservative strategy."
+      "\n- (2)  XPRS_CUTFROMCUTROWS_MODERATE Moderate strategy."
+      "\n- (3)  XPRS_CUTFROMCUTROWS_AGGRESSIVE Aggressive strategy.",
+      XPRS_CUTFROMCUTROWS, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_CUTFROMCUTROWS
+
+#ifdef XPRS_CUTGOMMAXROUNDS
+    MPD( AddSolverOption_MergeDuplicates("cut:cutgommaxrounds cutgommaxrounds XPRS_CUTGOMMAXROUNDS",
+      "The number of rounds of Gomory cuts or lift-and-project cuts separated at the root node of the branch-and-bound tree search."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  Number of rounds determined automatically."
+      "\n- (0)  No Gomory cut separation at the root node."
+      "\n- (> 0)  Target number of Gomory cut rounds at the root node.",
+      XPRS_CUTGOMMAXROUNDS, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_CUTGOMMAXROUNDS
+
+#ifdef XPRS_CUTGOMMAXTREEROUNDS
+    MPD( AddSolverOption_MergeDuplicates("cut:cutgommaxtreerounds cutgommaxtreerounds XPRS_CUTGOMMAXTREEROUNDS",
+      "The number of rounds of Gomory cuts or lift-and-project cuts separated at a node of the branch-and-bound tree search other than the root node."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  Number of rounds determined automatically."
+      "\n- (0)  No Gomory cut separation at tree nodes."
+      "\n- (> 0)  Target number of Gomory cut rounds at tree nodes.",
+      XPRS_CUTGOMMAXTREEROUNDS, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_CUTGOMMAXTREEROUNDS
+
+#ifdef XPRS_CUTMAXROUNDS
+    MPD( AddSolverOption_MergeDuplicates("cut:cutmaxrounds cutmaxrounds XPRS_CUTMAXROUNDS",
+      "The number of rounds of cuts separated at the root node of the branch-and-bound tree search, for all MIP cut separators except Gomory cuts."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  Number of rounds determined automatically."
+      "\n- (0)  No cut separation at the root node."
+      "\n- (> 0)  Target number of cut rounds at the root node.",
+      XPRS_CUTMAXROUNDS, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_CUTMAXROUNDS
+
+#ifdef XPRS_CUTMAXTREEROUNDS
+    MPD( AddSolverOption_MergeDuplicates("cut:cutmaxtreerounds cutmaxtreerounds XPRS_CUTMAXTREEROUNDS",
+      "The number of rounds of cuts separated at a node of the branch-and-bound tree search other than the root node, for all MIP cut separators except Gomory cuts."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  Number of rounds determined automatically."
+      "\n- (0)  No cut separation at tree nodes."
+      "\n- (> 0)  Target number of cut rounds at tree nodes.",
+      XPRS_CUTMAXTREEROUNDS, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_CUTMAXTREEROUNDS
+
+#ifdef XPRS_CUTOAMAXROUNDS
+    MPD( AddSolverOption_MergeDuplicates("qp:cutoamaxrounds cutoamaxrounds XPRS_CUTOAMAXROUNDS",
+      "The number of rounds of Outer Approximation (OA) cuts for convex quadratic problems and for Second Order Cone Programs (SOCPs) separated at the root node of the branch-and-bound tree search."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  Number of rounds determined automatically."
+      "\n- (0)  No OA cut separation at the root node."
+      "\n- (> 0)  Target number of OA cut rounds at the root node.",
+      XPRS_CUTOAMAXROUNDS, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_CUTOAMAXROUNDS
+
+#ifdef XPRS_CUTOAMAXTREEROUNDS
+    MPD( AddSolverOption_MergeDuplicates("qp:cutoamaxtreerounds cutoamaxtreerounds XPRS_CUTOAMAXTREEROUNDS",
+      "The number of rounds of Outer Approximation (OA) cuts for convex quadratic problems and for Second Order Cone Programs (SOCPs) separated at a node of the branch-and-bound tree search other than the root node."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  Number of rounds determined automatically."
+      "\n- (0)  No OA cut separation at tree nodes."
+      "\n- (> 0)  Target number of OA cut rounds at tree nodes.",
+      XPRS_CUTOAMAXTREEROUNDS, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_CUTOAMAXTREEROUNDS
 
 #ifdef XPRS_CUTSELECT
     MPD( AddSolverOption_MergeDuplicates("cut:cutselect cutselect XPRS_CUTSELECT",
@@ -848,13 +1042,223 @@ public:
       "\n- (16)  Zero-half cuts."
       "\n- (17)  Indicator constraint cuts."
       "\n- (18)  Strong Chvatal-Gomory cuts."
-      "\n- (20)  Farkas cuts.",
+      "\n- (20)  Farkas cuts."
+      "\n- (26)  Path mixing cuts.",
       XPRS_CUTSELECT, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_CUTSELECT
 
+#ifdef XPRS_CUTSEPCLIQUESTRATEGY
+    MPD( AddSolverOption_MergeDuplicates("cut:cutsepcliquestrategy cutsepcliquestrategy XPRS_CUTSEPCLIQUESTRATEGY",
+      "	Strategy for separation of clique cuts. A more aggressive strategy will increase the effort spent in clique cut separation 	and the frequency at which clique cuts are separated during the branch-and-bound tree search. 	If a conservative strategy is selected (i.e., value 1, XPRS_CUTSEPSTRATEGY_CONSERVATIVE), then clique cuts will be 	separated only at the root node of the branch-and-bound tree."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-2)  XPRS_CUTSEPSTRATEGY_AUTOENFORCED Automatic selection of cut separation strategy, enforced regardless of the value of the meta control CUTSEPSTRATEGY."
+      "\n- (-1)  XPRS_CUTSEPSTRATEGY_AUTOMATIC Automatic selection of cut separation strategy."
+      "\n- (0)  XPRS_CUTSEPSTRATEGY_OFF Off. No separation of clique cuts."
+      "\n- (1)  XPRS_CUTSEPSTRATEGY_CONSERVATIVE Conservative cut separation strategy. Clique cuts separated only at the root node."
+      "\n- (2)  XPRS_CUTSEPSTRATEGY_MODERATE Moderate cut separation strategy."
+      "\n- (3)  XPRS_CUTSEPSTRATEGY_AGGRESSIVE Aggressive cut separation strategy.",
+      XPRS_CUTSEPCLIQUESTRATEGY, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_CUTSEPCLIQUESTRATEGY
+
+#ifdef XPRS_CUTSEPCOVERSTRATEGY
+    MPD( AddSolverOption_MergeDuplicates("cut:cutsepcoverstrategy cutsepcoverstrategy XPRS_CUTSEPCOVERSTRATEGY",
+      "	Strategy for separation of lifted cover cuts. A more aggressive strategy will increase the effort spent in lifted cover 	cut separation and the frequency at which lifted cover cuts are separated during the branch-and-bound tree search. 	If a conservative strategy is selected (i.e., value 1, XPRS_CUTSEPSTRATEGY_CONSERVATIVE), then lifted cover cuts 	will be separated only at the root node of the branch-and-bound tree."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-2)  XPRS_CUTSEPSTRATEGY_AUTOENFORCED Automatic selection of cut separation strategy, enforced regardless of the value of the meta control CUTSEPSTRATEGY."
+      "\n- (-1)  XPRS_CUTSEPSTRATEGY_AUTOMATIC Automatic selection of cut separation strategy."
+      "\n- (0)  XPRS_CUTSEPSTRATEGY_OFF Off. No separation of lifted cover cuts."
+      "\n- (1)  XPRS_CUTSEPSTRATEGY_CONSERVATIVE Conservative cut separation strategy. Lifted cover cuts separated only at the root node."
+      "\n- (2)  XPRS_CUTSEPSTRATEGY_MODERATE Moderate cut separation strategy."
+      "\n- (3)  XPRS_CUTSEPSTRATEGY_AGGRESSIVE Aggressive cut separation strategy.",
+      XPRS_CUTSEPCOVERSTRATEGY, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_CUTSEPCOVERSTRATEGY
+
+#ifdef XPRS_CUTSEPFARKASSTRATEGY
+    MPD( AddSolverOption_MergeDuplicates("cut:cutsepfarkasstrategy cutsepfarkasstrategy XPRS_CUTSEPFARKASSTRATEGY",
+      "	Strategy for separation of Farkas cuts. A more aggressive strategy will increase the effort spent in Farkas 	cut separation and the frequency at which Farkas cuts are separated during the branch-and-bound tree search. 	If a conservative strategy is selected (i.e., value 1, XPRS_CUTSEPSTRATEGY_CONSERVATIVE), then Farkas cuts 	will be separated only at the root node of the branch-and-bound tree."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-2)  XPRS_CUTSEPSTRATEGY_AUTOENFORCED Automatic selection of cut separation strategy, enforced regardless of the value of the meta control CUTSEPSTRATEGY."
+      "\n- (-1)  XPRS_CUTSEPSTRATEGY_AUTOMATIC Automatic selection of cut separation strategy."
+      "\n- (0)  XPRS_CUTSEPSTRATEGY_OFF Off. No separation of Farkas cuts."
+      "\n- (1)  XPRS_CUTSEPSTRATEGY_CONSERVATIVE Conservative cut separation strategy. Farkas cuts separated only at the root node."
+      "\n- (2)  XPRS_CUTSEPSTRATEGY_MODERATE Moderate cut separation strategy."
+      "\n- (3)  XPRS_CUTSEPSTRATEGY_AGGRESSIVE Aggressive cut separation strategy.",
+      XPRS_CUTSEPFARKASSTRATEGY, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_CUTSEPFARKASSTRATEGY
+
+#ifdef XPRS_CUTSEPFLOWPATHSTRATEGY
+    MPD( AddSolverOption_MergeDuplicates("cut:cutsepflowpathstrategy cutsepflowpathstrategy XPRS_CUTSEPFLOWPATHSTRATEGY",
+      "	Strategy for separation of flow path cuts. A more aggressive strategy will increase the effort spent in flow path 	cut separation and the frequency at which flow path cuts are separated during the branch-and-bound tree search. 	If a conservative strategy is selected (i.e., value 1, XPRS_CUTSEPSTRATEGY_CONSERVATIVE), then flow path cuts 	will be separated only at the root node of the branch-and-bound tree."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-2)  XPRS_CUTSEPSTRATEGY_AUTOENFORCED Automatic selection of cut separation strategy, enforced regardless of the value of the meta control CUTSEPSTRATEGY."
+      "\n- (-1)  XPRS_CUTSEPSTRATEGY_AUTOMATIC Automatic selection of cut separation strategy."
+      "\n- (0)  XPRS_CUTSEPSTRATEGY_OFF Off. No separation of flow path cuts."
+      "\n- (1)  XPRS_CUTSEPSTRATEGY_CONSERVATIVE Conservative cut separation strategy. Flow path cuts separated only at the root node."
+      "\n- (2)  XPRS_CUTSEPSTRATEGY_MODERATE Moderate cut separation strategy."
+      "\n- (3)  XPRS_CUTSEPSTRATEGY_AGGRESSIVE Aggressive cut separation strategy.",
+      XPRS_CUTSEPFLOWPATHSTRATEGY, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_CUTSEPFLOWPATHSTRATEGY
+
+#ifdef XPRS_CUTSEPGOMORYSTRATEGY
+    MPD( AddSolverOption_MergeDuplicates("cut:cutsepgomorystrategy cutsepgomorystrategy XPRS_CUTSEPGOMORYSTRATEGY",
+      "	Strategy for separation of Gomory cuts. A more aggressive strategy will increase 	the effort spent in Gomory cut separation and the frequency at which Gomory cuts are separated during the 	branch-and-bound tree search. If a conservative strategy is selected (i.e., value 1, 	XPRS_CUTSEPSTRATEGY_CONSERVATIVE), then Gomory cuts will be separated only at the root node of the 	branch-and-bound tree."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-2)  XPRS_CUTSEPSTRATEGY_AUTOENFORCED Automatic selection of cut separation strategy, enforced regardless of the value of the meta control CUTSEPSTRATEGY."
+      "\n- (-1)  XPRS_CUTSEPSTRATEGY_AUTOMATIC Automatic selection of cut separation strategy."
+      "\n- (0)  XPRS_CUTSEPSTRATEGY_OFF Off. No separation of Gomory cuts."
+      "\n- (1)  XPRS_CUTSEPSTRATEGY_CONSERVATIVE Conservative cut separation strategy. Gomory cuts separated only at the root node."
+      "\n- (2)  XPRS_CUTSEPSTRATEGY_MODERATE Moderate cut separation strategy."
+      "\n- (3)  XPRS_CUTSEPSTRATEGY_AGGRESSIVE Aggressive cut separation strategy.",
+      XPRS_CUTSEPGOMORYSTRATEGY, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_CUTSEPGOMORYSTRATEGY
+
+#ifdef XPRS_CUTSEPGUBCOVERSTRATEGY
+    MPD( AddSolverOption_MergeDuplicates("cut:cutsepgubcoverstrategy cutsepgubcoverstrategy XPRS_CUTSEPGUBCOVERSTRATEGY",
+      "	Strategy for separation of lifted GUB cover cuts. A more aggressive strategy will increase the effort spent in lifted GUB 	cover cut separation and the frequency at which lifted GUB cover cuts are separated during the branch-and-bound tree search. 	If a conservative strategy is selected (i.e., value 1, XPRS_CUTSEPSTRATEGY_CONSERVATIVE), then lifted GUB cover 	cuts will be separated only at the root node of the branch-and-bound tree."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-2)  XPRS_CUTSEPSTRATEGY_AUTOENFORCED Automatic selection of cut separation strategy, enforced regardless of the value of the meta control CUTSEPSTRATEGY."
+      "\n- (-1)  XPRS_CUTSEPSTRATEGY_AUTOMATIC Automatic selection of cut separation strategy."
+      "\n- (0)  XPRS_CUTSEPSTRATEGY_OFF Off. No separation of lifted GUB cover cuts."
+      "\n- (1)  XPRS_CUTSEPSTRATEGY_CONSERVATIVE Conservative cut separation strategy. Lifted GUB cover cuts separated only at the root node."
+      "\n- (2)  XPRS_CUTSEPSTRATEGY_MODERATE Moderate cut separation strategy."
+      "\n- (3)  XPRS_CUTSEPSTRATEGY_AGGRESSIVE Aggressive cut separation strategy.",
+      XPRS_CUTSEPGUBCOVERSTRATEGY, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_CUTSEPGUBCOVERSTRATEGY
+
+#ifdef XPRS_CUTSEPIMPLBOUNDSTRATEGY
+    MPD( AddSolverOption_MergeDuplicates("cut:cutsepimplboundstrategy cutsepimplboundstrategy XPRS_CUTSEPIMPLBOUNDSTRATEGY",
+      "	Strategy for separation of implication cuts. A more aggressive strategy will increase the effort spent in implication 	cut separation and the frequency at which implication cuts are separated during the branch-and-bound tree search. 	If a conservative strategy is selected (i.e., value 1, XPRS_CUTSEPSTRATEGY_CONSERVATIVE), then implication cuts 	will be separated only at the root node of the branch-and-bound tree."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-2)  XPRS_CUTSEPSTRATEGY_AUTOENFORCED Automatic selection of cut separation strategy, enforced regardless of the value of the meta control CUTSEPSTRATEGY."
+      "\n- (-1)  XPRS_CUTSEPSTRATEGY_AUTOMATIC Automatic selection of cut separation strategy."
+      "\n- (0)  XPRS_CUTSEPSTRATEGY_OFF Off. No separation of implication cuts."
+      "\n- (1)  XPRS_CUTSEPSTRATEGY_CONSERVATIVE Conservative cut separation strategy. Implication cuts separated only at the root node."
+      "\n- (2)  XPRS_CUTSEPSTRATEGY_MODERATE Moderate cut separation strategy."
+      "\n- (3)  XPRS_CUTSEPSTRATEGY_AGGRESSIVE Aggressive cut separation strategy.",
+      XPRS_CUTSEPIMPLBOUNDSTRATEGY, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_CUTSEPIMPLBOUNDSTRATEGY
+
+#ifdef XPRS_CUTSEPMCFSTRATEGY
+    MPD( AddSolverOption_MergeDuplicates("cut:cutsepmcfstrategy cutsepmcfstrategy XPRS_CUTSEPMCFSTRATEGY",
+      "	Strategy for separation of Multi-Commodity Flow (MCF) cuts. A more aggressive strategy will increase the effort spent 	in MCF cut separation and the frequency at which MCF cuts are separated during the branch-and-bound tree search. 	If a conservative strategy is selected (i.e., value 1, XPRS_CUTSEPSTRATEGY_CONSERVATIVE), then MCF cuts 	will be separated only at the root node of the branch-and-bound tree."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-2)  XPRS_CUTSEPSTRATEGY_AUTOENFORCED Automatic selection of cut separation strategy, enforced regardless of the value of the meta control CUTSEPSTRATEGY."
+      "\n- (-1)  XPRS_CUTSEPSTRATEGY_AUTOMATIC Automatic selection of cut separation strategy."
+      "\n- (0)  XPRS_CUTSEPSTRATEGY_OFF Off. No separation of MCF cuts."
+      "\n- (1)  XPRS_CUTSEPSTRATEGY_CONSERVATIVE Conservative cut separation strategy. MCF cuts separated only at the root node."
+      "\n- (2)  XPRS_CUTSEPSTRATEGY_MODERATE Moderate cut separation strategy."
+      "\n- (3)  XPRS_CUTSEPSTRATEGY_AGGRESSIVE Aggressive cut separation strategy.",
+      XPRS_CUTSEPMCFSTRATEGY, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_CUTSEPMCFSTRATEGY
+
+#ifdef XPRS_CUTSEPMIRSTRATEGY
+    MPD( AddSolverOption_MergeDuplicates("cut:cutsepmirstrategy cutsepmirstrategy XPRS_CUTSEPMIRSTRATEGY",
+      "	Strategy for separation of Mixed Integer Rounding (MIR) cuts. A more aggressive strategy will increase the effort spent in MIR 	cut separation and the frequency at which MIR cuts are separated during the branch-and-bound tree search. 	If a conservative strategy is selected (i.e., value 1, XPRS_CUTSEPSTRATEGY_CONSERVATIVE), then MIR cuts will be 	separated only at the root node of the branch-and-bound tree."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-2)  XPRS_CUTSEPSTRATEGY_AUTOENFORCED Automatic selection of cut separation strategy, enforced regardless of the value of the meta control CUTSEPSTRATEGY."
+      "\n- (-1)  XPRS_CUTSEPSTRATEGY_AUTOMATIC Automatic selection of cut separation strategy."
+      "\n- (0)  XPRS_CUTSEPSTRATEGY_OFF Off. No separation of MIR cuts."
+      "\n- (1)  XPRS_CUTSEPSTRATEGY_CONSERVATIVE Conservative cut separation strategy. MIR cuts separated only at the root node."
+      "\n- (2)  XPRS_CUTSEPSTRATEGY_MODERATE Moderate cut separation strategy."
+      "\n- (3)  XPRS_CUTSEPSTRATEGY_AGGRESSIVE Aggressive cut separation strategy.",
+      XPRS_CUTSEPMIRSTRATEGY, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_CUTSEPMIRSTRATEGY
+
+#ifdef XPRS_CUTSEPPATHMIXSTRATEGY
+    MPD( AddSolverOption_MergeDuplicates("cut:cutseppathmixstrategy cutseppathmixstrategy XPRS_CUTSEPPATHMIXSTRATEGY",
+      "	Strategy for separation of path mixing cuts. A more aggressive strategy will increase the effort spent in path mixing 	cut separation and the frequency at which path mixing cuts are separated during the branch-and-bound tree search. 	If a conservative strategy is selected (i.e., value 1, XPRS_CUTSEPSTRATEGY_CONSERVATIVE), then path mixing cuts 	will be separated only at the root node of the branch-and-bound tree."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-2)  XPRS_CUTSEPSTRATEGY_AUTOENFORCED Automatic selection of cut separation strategy, enforced regardless of the value of the meta control CUTSEPSTRATEGY."
+      "\n- (-1)  XPRS_CUTSEPSTRATEGY_AUTOMATIC Automatic selection of cut separation strategy."
+      "\n- (0)  XPRS_CUTSEPSTRATEGY_OFF Off. No separation of path mixing cuts."
+      "\n- (1)  XPRS_CUTSEPSTRATEGY_CONSERVATIVE Conservative cut separation strategy. Path mixing cuts separated only at the root node."
+      "\n- (2)  XPRS_CUTSEPSTRATEGY_MODERATE Moderate cut separation strategy."
+      "\n- (3)  XPRS_CUTSEPSTRATEGY_AGGRESSIVE Aggressive cut separation strategy.",
+      XPRS_CUTSEPPATHMIXSTRATEGY, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_CUTSEPPATHMIXSTRATEGY
+
+#ifdef XPRS_CUTSEPRLTSTRATEGY
+    MPD( AddSolverOption_MergeDuplicates("global:cutseprltstrategy cutseprltstrategy XPRS_CUTSEPRLTSTRATEGY",
+      "	Strategy for separation of Reformulation-Linearization Technique (RLT) cuts. A more aggressive strategy will increase 	the effort spent in RLT cut separation and the frequency at which RLT cuts are separated during the branch-and-bound 	tree search. If a conservative strategy is selected (i.e., value 1, XPRS_CUTSEPSTRATEGY_CONSERVATIVE), then 	RLT cuts will be separated only at the root node of the branch-and-bound tree."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-2)  XPRS_CUTSEPSTRATEGY_AUTOENFORCED Automatic selection of cut separation strategy, enforced regardless of the value of the meta control CUTSEPSTRATEGY."
+      "\n- (-1)  XPRS_CUTSEPSTRATEGY_AUTOMATIC Automatic selection of cut separation strategy."
+      "\n- (0)  XPRS_CUTSEPSTRATEGY_OFF Off. No separation of RLT cuts."
+      "\n- (1)  XPRS_CUTSEPSTRATEGY_CONSERVATIVE Conservative cut separation strategy. RLT cuts separated only at the root node."
+      "\n- (2)  XPRS_CUTSEPSTRATEGY_MODERATE Moderate cut separation strategy."
+      "\n- (3)  XPRS_CUTSEPSTRATEGY_AGGRESSIVE Aggressive cut separation strategy.",
+      XPRS_CUTSEPRLTSTRATEGY, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_CUTSEPRLTSTRATEGY
+
+#ifdef XPRS_CUTSEPSDPSTRATEGY
+    MPD( AddSolverOption_MergeDuplicates("global:cutsepsdpstrategy cutsepsdpstrategy XPRS_CUTSEPSDPSTRATEGY",
+      "	Strategy for separation of semidefinite programming (SDP) cuts. A more aggressive strategy will increase the effort 	spent in SDP cut separation and the frequency at which SDP cuts are separated during the branch-and-bound tree search. 	If a conservative strategy is selected (i.e., value 1, XPRS_CUTSEPSTRATEGY_CONSERVATIVE), then SDP cuts 	will be separated only at the root node of the branch-and-bound tree."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-2)  XPRS_CUTSEPSTRATEGY_AUTOENFORCED Automatic selection of cut separation strategy, enforced regardless of the value of the meta control CUTSEPSTRATEGY."
+      "\n- (-1)  XPRS_CUTSEPSTRATEGY_AUTOMATIC Automatic selection of cut separation strategy."
+      "\n- (0)  XPRS_CUTSEPSTRATEGY_OFF Off. No separation of SDP cuts."
+      "\n- (1)  XPRS_CUTSEPSTRATEGY_CONSERVATIVE Conservative cut separation strategy. SDP cuts separated only at the root node."
+      "\n- (2)  XPRS_CUTSEPSTRATEGY_MODERATE Moderate cut separation strategy."
+      "\n- (3)  XPRS_CUTSEPSTRATEGY_AGGRESSIVE Aggressive cut separation strategy.",
+      XPRS_CUTSEPSDPSTRATEGY, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_CUTSEPSDPSTRATEGY
+
+#ifdef XPRS_CUTSEPSTRATEGY
+    MPD( AddSolverOption_MergeDuplicates("cut:cutsepstrategy cutsepstrategy XPRS_CUTSEPSTRATEGY",
+      "	Meta control specifying the cut separation strategy for every individual CUTSEP*STRATEGY control left at its 	default value of -1 (automatic). Setting CUTSEPSTRATEGY to a value other than -1 overrides 	the automatic decision for each cut separator whose own control is left to value -1 (automatic). An individual 	control (e.g. CUTSEPCLIQUESTRATEGY) that is set to a value other than -1 always takes precedence 	over this meta control."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  XPRS_CUTSEPSTRATEGY_AUTOMATIC Automatic cut separation strategy."
+      "\n- (0)  XPRS_CUTSEPSTRATEGY_OFF Off. Disable all cut separators set to automatic."
+      "\n- (1)  XPRS_CUTSEPSTRATEGY_CONSERVATIVE Conservative cut separation strategy applied to all cuts separators set to automatic."
+      "\n- (2)  XPRS_CUTSEPSTRATEGY_MODERATE Moderate cut separation strategy applied to all cuts separators set to automatic."
+      "\n- (3)  XPRS_CUTSEPSTRATEGY_AGGRESSIVE Aggressive cut separation strategy applied to all cuts separators set to automatic.",
+      XPRS_CUTSEPSTRATEGY, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_CUTSEPSTRATEGY
+
+#ifdef XPRS_CUTSEPSTRONGCGSTRATEGY
+    MPD( AddSolverOption_MergeDuplicates("cut:cutsepstrongcgstrategy cutsepstrongcgstrategy XPRS_CUTSEPSTRONGCGSTRATEGY",
+      "	Strategy for separation of Strong Chvatal-Gomory (CG) cuts. A more aggressive strategy will increase the effort spent in 	Strong CG cut separation and the frequency at which Strong CG cuts are separated during the 	branch-and-bound tree search. If a conservative strategy is selected (i.e., value 1, 	XPRS_CUTSEPSTRATEGY_CONSERVATIVE), then Strong CG cuts will be separated only at the root node 	of the branch-and-bound tree."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-2)  XPRS_CUTSEPSTRATEGY_AUTOENFORCED Automatic selection of cut separation strategy, enforced regardless of the value of the meta control CUTSEPSTRATEGY."
+      "\n- (-1)  XPRS_CUTSEPSTRATEGY_AUTOMATIC Automatic selection of cut separation strategy."
+      "\n- (0)  XPRS_CUTSEPSTRATEGY_OFF Off. No separation of Strong CG cuts."
+      "\n- (1)  XPRS_CUTSEPSTRATEGY_CONSERVATIVE Conservative cut separation strategy. Strong CG cuts separated only at the root node."
+      "\n- (2)  XPRS_CUTSEPSTRATEGY_MODERATE Moderate cut separation strategy."
+      "\n- (3)  XPRS_CUTSEPSTRATEGY_AGGRESSIVE Aggressive cut separation strategy.",
+      XPRS_CUTSEPSTRONGCGSTRATEGY, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_CUTSEPSTRONGCGSTRATEGY
+
+#ifdef XPRS_CUTSEPZEROHALFSTRATEGY
+    MPD( AddSolverOption_MergeDuplicates("cut:cutsepzerohalfstrategy cutsepzerohalfstrategy XPRS_CUTSEPZEROHALFSTRATEGY",
+      "	Strategy for separation of zero-half cuts. A more aggressive strategy will increase the effort spent in zero-half 	cut separation and the frequency at which zero-half cuts are separated during the branch-and-bound tree search. 	If a conservative strategy is selected (i.e., value 1, XPRS_CUTSEPSTRATEGY_CONSERVATIVE), then zero-half cuts 	will be separated only at the root node of the branch-and-bound tree."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-2)  XPRS_CUTSEPSTRATEGY_AUTOENFORCED Automatic selection of cut separation strategy, enforced regardless of the value of the meta control CUTSEPSTRATEGY."
+      "\n- (-1)  XPRS_CUTSEPSTRATEGY_AUTOMATIC Automatic selection of cut separation strategy."
+      "\n- (0)  XPRS_CUTSEPSTRATEGY_OFF Off. No separation of zero-half cuts."
+      "\n- (1)  XPRS_CUTSEPSTRATEGY_CONSERVATIVE Conservative cut separation strategy. Zero-half cuts separated only at the root node."
+      "\n- (2)  XPRS_CUTSEPSTRATEGY_MODERATE Moderate cut separation strategy."
+      "\n- (3)  XPRS_CUTSEPSTRATEGY_AGGRESSIVE Aggressive cut separation strategy.",
+      XPRS_CUTSEPZEROHALFSTRATEGY, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_CUTSEPZEROHALFSTRATEGY
+
 #ifdef XPRS_CUTSTRATEGY
     MPD( AddSolverOption_MergeDuplicates("cut:cutstrategy cutstrategy XPRS_CUTSTRATEGY",
-      "Branch and Bound: This specifies the cut strategy. A more aggressive cut strategy, generating a greater number of cuts, will result in fewer nodes to be explored, but with an associated time cost in generating the cuts. The fewer cuts generated, the less time taken, but the greater subsequent number of nodes to be explored."
+      "Branch and Bound: This specifies the general cut strategy in terms of limits on the number of cuts and of non-zero cut elements that can be added to the problem. A more aggressive cut strategy, allowing a greater number of cuts and non-zero cut elemenets in the subproblems, will typically result in fewer nodes to be explored, but at the cost of a slowdown in the node throughput (i.e., the more cuts are added, the harder it becomes to solve the LP relaxation of each node subproblem). On the other hand, a more conservative cut strategy will typically improve the node throughput, but at the cost of more nodes to be explored for solving the problem."
       "\n\n"
       "Values (default: -1):\n"
       "\n- (-1)  Automatic selection of the cut strategy."
@@ -873,14 +1277,18 @@ public:
       "\n- (1)  Automatically determined."
       "\n- (2)  Dual simplex."
       "\n- (3)  Primal simplex."
-      "\n- (4)  Newton barrier (or hybrid gradient, if BARALG=4 is set).",
+      "\n- (4)  Newton barrier (or hybrid gradient, if BARALG=4 or BARALG=5 is set)."
+      "\n- (5)  Network simplex.",
       XPRS_DEFAULTALG, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_DEFAULTALG
 
 #ifdef XPRS_DENSECOLLIMIT
     MPD( AddSolverOption_MergeDuplicates("bar:densecollimit densecollimit XPRS_DENSECOLLIMIT",
       "Newton barrier: Columns with more than DENSECOLLIMIT elements are considered to be dense. Such columns will be handled specially in the Cholesky factorization of this matrix."
-      "\n\nDefault: 0 — determined automatically.",
+      "\n\n"
+      "Values (default: 0):\n"
+      "\n- (0)  The limit is determined automatically."
+      "\n- (> 0)  Every column with more than this number of elements is considered dense by the Newton barrier.",
       XPRS_DENSECOLLIMIT, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_DENSECOLLIMIT
 
@@ -940,8 +1348,12 @@ public:
 
 #ifdef XPRS_DUALPERTURB
     MPD( AddSolverOption_MergeDuplicates("lp:dualperturb dualperturb XPRS_DUALPERTURB",
-      "The factor by which the problem will be perturbed prior to optimization by dual simplex. A value of 0.0 results in no perturbation prior to optimization. Note the interconnection to the AUTOPERTURB control. If AUTOPERTURB is set to 1, the decision whether to perturb or not is left to the Optimizer. When the problem is automatically perturbed in dual simplex, however, the value of DUALPERTURB will be used for perturbation."
-      "\n\nDefault: -1 — determined automatically.",
+      "Specifies the factor by which the problem will be perturbed prior to optimization by dual simplex. Note the interconnection to the AUTOPERTURB control. If AUTOPERTURB is set to 1, the decision whether to perturb or not is left to the Optimizer. When the problem is automatically perturbed in dual simplex, however, the value of DUALPERTURB will be used for perturbation."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  The perturbation factor is determined automatically."
+      "\n- (0)  No perturbation prior to optimization."
+      "\n- (> 0)  The perturbation factor.",
       XPRS_DUALPERTURB, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_DUALPERTURB
 
@@ -961,29 +1373,39 @@ public:
 
 #ifdef XPRS_DUALTHREADS
     MPD( AddSolverOption_MergeDuplicates("lp:dualthreads dualthreads XPRS_DUALTHREADS",
-      "Determines the maximum number of threads that dual simplex is allowed to use. If DUALTHREADS is set to the default value (-1), the THREADS control will determine the number of threads used."
-      "\n\nDefault: -1 (determined by the THREADS control)",
+      "Determines the maximum number of threads that dual simplex is allowed to use."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  The threads are determined by the THREADS control."
+      "\n- (> 0)  The maximum number of dual simplex threads.",
       XPRS_DUALTHREADS, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_DUALTHREADS
 
 #ifdef XPRS_EIGENVALUETOL
     MPD( AddSolverOption_MergeDuplicates("qp:eigenvaluetol eigenvaluetol eigenvaltol XPRS_EIGENVALUETOL",
       "A quadratic matrix is considered not to be positive semi-definite, if its smallest eigenvalue is smaller than the negative of this value."
-      "\n\nDefault: 1E-6",
+      "\n\n"
+      "Values (default: 1.0E-6):\n"
+      "\n- (>= 0)  The eigenvalue tolerance.",
       XPRS_EIGENVALUETOL, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_EIGENVALUETOL
 
 #ifdef XPRS_ELIMFILLIN
     MPD( AddSolverOption_MergeDuplicates("pre:elimfillin elimfillin XPRS_ELIMFILLIN",
-      "Amount of fill-in allowed when performing an elimination in presolve ."
-      "\n\nDefault: 7",
+      "Specifies the amount of fill-in allowed when performing an elimination in presolve ."
+      "\n\n"
+      "Values (default: 7):\n"
+      "\n- (0)  No fill-in is allowed."
+      "\n- (> 0)  Amount of fill-in allowed for a single elimination in presolve.",
       XPRS_ELIMFILLIN, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_ELIMFILLIN
 
 #ifdef XPRS_ELIMTOL
     MPD( AddSolverOption_MergeDuplicates("pre:elimtol elimtol XPRS_ELIMTOL",
       "The Markowitz tolerance for the elimination phase of the presolve."
-      "\n\nDefault: 0.001",
+      "\n\n"
+      "Values (default: 0.001):\n"
+      "\n- (> 0, <= 1)  Markowitz tolerance to use.",
       XPRS_ELIMTOL, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_ELIMTOL
 
@@ -999,50 +1421,64 @@ public:
 
 #ifdef XPRS_ETATOL
     MPD( AddSolverOption_MergeDuplicates("lp:etatol etatol XPRS_ETATOL",
-      "Tolerance on eta elements. During each iteration, the basis inverse is premultiplied by an elementary matrix, which is the identity except for one column - the eta vector. Elements of eta vectors whose absolute value is smaller than ETATOL are taken to be zero in this step."
-      "\n\nDefault: 1.0E-13",
+      "Specifies the zero tolerance for eta vector elements. During each iteration, the basis inverse is premultiplied by an elementary matrix, which is the identity except for one column - the eta vector. Elements of eta vectors whose absolute value is smaller than ETATOL are taken to be zero in this step."
+      "\n\n"
+      "Values (default: 1.0E-13):\n"
+      "\n- (> 0)  The zero tolerance for eta vector elements.",
       XPRS_ETATOL, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_ETATOL
 
 #ifdef XPRS_EXTRACOLS
     MPD( AddSolverOption_MergeDuplicates("tech:extracols extracols XPRS_EXTRACOLS",
-      "The initial number of extra columns to allow for in the matrix. If columns are to be added to the matrix, then, for maximum efficiency, space should be reserved for the columns before the matrix is input by setting the EXTRACOLS control. If this is not done, resizing will occur automatically, but more space may be allocated than the user actually requires."
-      "\n\nDefault: 0",
+      "Specifies the initial number of extra columns to allow for in the matrix. If columns are to be added to the matrix, then, for maximum efficiency, space should be reserved for the columns before the matrix is input by setting the EXTRACOLS control. If this is not done, resizing will occur automatically, but more space may be allocated than the user actually requires."
+      "\n\n"
+      "Values (default: 0):\n"
+      "\n- (>= 0)  The initial number of extra columns to allow for in the matrix.",
       XPRS_EXTRACOLS, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_EXTRACOLS
 
 #ifdef XPRS_EXTRAELEMS
     MPD( AddSolverOption_MergeDuplicates("tech:extraelems extraelems XPRS_EXTRAELEMS",
-      "The initial number of extra matrix elements to allow for in the matrix, including coefficients for cuts. If rows or columns are to be added to the matrix, then, for maximum efficiency, space should be reserved for the extra matrix elements before the matrix is input by setting the EXTRAELEMS control. If this is not done, resizing will occur automatically, but more space may be allocated than the user actually requires."
-      "\n\nDefault: Hardware/platform dependent.",
+      "Specifies the initial number of extra matrix elements to allow for in the matrix, including coefficients for cuts. If rows or columns are to be added to the matrix, then, for maximum efficiency, space should be reserved for the extra matrix elements before the matrix is input by setting the EXTRAELEMS control. If this is not done, resizing will occur automatically, but more space may be allocated than the user actually requires."
+      "\n\n"
+      "Values (default: Hardware/platform dependent.):\n"
+      "\n- (>= 0)  The initial number of extra matrix elements to allow for in the matrix, including coefficients for cuts.",
       XPRS_EXTRAELEMS, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_EXTRAELEMS
 
 #ifdef XPRS_EXTRAMIPENTS
     MPD( AddSolverOption_MergeDuplicates("tech:extramipents extramipents XPRS_EXTRAMIPENTS",
-      "The initial number of extra MIP entities to allow for."
-      "\n\nDefault: 0",
+      "Specifies the initial number of extra MIP entities to allow for."
+      "\n\n"
+      "Values (default: 0):\n"
+      "\n- (>= 0)  The initial number of extra MIP entities to allow for.",
       XPRS_EXTRAMIPENTS, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_EXTRAMIPENTS
 
 #ifdef XPRS_EXTRAROWS
     MPD( AddSolverOption_MergeDuplicates("tech:extrarows extrarows XPRS_EXTRAROWS",
-      "The initial number of extra rows to allow for in the matrix, including cuts. If rows are to be added to the matrix, then, for maximum efficiency, space should be reserved for the rows before the matrix is input by setting the EXTRAROWS control. If this is not done, resizing will occur automatically, but more space may be allocated than the user actually requires."
-      "\n\nDefault: 0",
+      "Specifies the initial number of extra rows to allow for in the matrix, including cuts. If rows are to be added to the matrix, then, for maximum efficiency, space should be reserved for the rows before the matrix is input by setting the EXTRAROWS control. If this is not done, resizing will occur automatically, but more space may be allocated than the user actually requires."
+      "\n\n"
+      "Values (default: 0):\n"
+      "\n- (>= 0)  The initial number of extra rows to allow for in the matrix, including cuts.",
       XPRS_EXTRAROWS, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_EXTRAROWS
 
 #ifdef XPRS_EXTRASETELEMS
     MPD( AddSolverOption_MergeDuplicates("tech:extrasetelems extrasetelems XPRS_EXTRASETELEMS",
-      "The initial number of extra elements in sets to allow for in the matrix. If sets are to be added to the matrix, then, for maximum efficiency, space should be reserved for the set elements before the matrix is input by setting the EXTRASETELEMS control. If this is not done, resizing will occur automatically, but more space may be allocated than the user actually requires."
-      "\n\nDefault: 0",
+      "Specifies the initial number of extra elements in sets to allow for in the matrix. If sets are to be added to the matrix, then, for maximum efficiency, space should be reserved for the set elements before the matrix is input by setting the EXTRASETELEMS control. If this is not done, resizing will occur automatically, but more space may be allocated than the user actually requires."
+      "\n\n"
+      "Values (default: 0):\n"
+      "\n- (>= 0)  The initial number of extra elements in sets to allow for in the matrix.",
       XPRS_EXTRASETELEMS, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_EXTRASETELEMS
 
 #ifdef XPRS_EXTRASETS
     MPD( AddSolverOption_MergeDuplicates("tech:extrasets extrasets XPRS_EXTRASETS",
-      "The initial number of extra sets to allow for in the matrix. If sets are to be added to the matrix, then, for maximum efficiency, space should be reserved for the sets before the matrix is input by setting the EXTRASETS control. If this is not done, resizing will occur automatically, but more space may be allocated than the user actually requires."
-      "\n\nDefault: 0",
+      "Specifies the initial number of extra sets to allow for in the matrix. If sets are to be added to the matrix, then, for maximum efficiency, space should be reserved for the sets before the matrix is input by setting the EXTRASETS control. If this is not done, resizing will occur automatically, but more space may be allocated than the user actually requires."
+      "\n\n"
+      "Values (default: 0):\n"
+      "\n- (>= 0)  The initial number of extra sets to allow for in the matrix.",
       XPRS_EXTRASETS, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_EXTRASETS
 
@@ -1074,27 +1510,34 @@ public:
 #ifdef XPRS_FEASTOL
     MPD( AddSolverOption_MergeDuplicates("alg:feastol feastol XPRS_FEASTOL",
       "This tolerance determines when a solution is treated as feasible. If the amount by which a constraint's activity violates its right-hand side or ranged bound is less in absolute magnitude than FEASTOL, then the constraint is treated as satisfied. Similarly, if the amount by which a column violates its bounds is less in absolute magnitude than FEASTOL, those bounds are also treated as satisfied."
-      "\n\nDefault: 1.0E-06",
+      "\n\n"
+      "Values (default: 1.0E-06):\n"
+      "\n- (> 0)  The feasibility tolerance.",
       XPRS_FEASTOL, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_FEASTOL
 
 #ifdef XPRS_FEASTOLPERTURB
     MPD( AddSolverOption_MergeDuplicates("lp:feastolperturb feastolperturb feastol_perturb XPRS_FEASTOLPERTURB",
       "This tolerance determines how much a feasible primal basic solution is allowed to be perturbed when performing basis changes. The tolerance FEASTOL is always considered as an upper limit for the perturbations, but in some cases smaller value can be more desirable."
-      "\n\nDefault: 1.0E-06",
+      "\n\n"
+      "Values (default: 1.0E-06):\n"
+      "\n- (> 0)  The upper limit for basic solution perturbations.",
       XPRS_FEASTOLPERTURB, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_FEASTOLPERTURB
 
 #ifdef XPRS_FEASTOLTARGET
     MPD( AddSolverOption_MergeDuplicates("alg:feastoltarget feastoltarget feastol_target XPRS_FEASTOLTARGET",
       "This specifies the target feasibility tolerance for the solution refiner."
-      "\n\nDefault: 0 — use the value specified by FEASTOL.",
+      "\n\n"
+      "Values (default: 0 — use the value specified by FEASTOL.):\n"
+      "\n- (0)  The value of FEASTOL is used."
+      "\n- (> 0)  The target feasibility tolerance for the solution refiner.",
       XPRS_FEASTOLTARGET, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_FEASTOLTARGET
 
 #ifdef XPRS_FORCEOUTPUT
     MPD( AddSolverOption_MergeDuplicates("tech:forceoutput forceoutput XPRS_FORCEOUTPUT",
-      "Certain names in the problem object may be incompatible with different file formats (such as names containing spaces for LP files). If the optimizer might be unable to read back a problem because of non-standard names, it will first attempt to write it out using an extended naming convention. If the names would not be possible to extend so that they would be reproducible and recognizable, it will give an error message and won't create the file. If the optimizer might be unable to read back a problem because of non-standard names, it will give an error message and won't create the file. This option may be used to force output anyway."
+      "Certain names in the problem object may be incompatible with different file formats (such as names containing spaces for LP files). If the Optimizer might be unable to read back a problem because of non-standard names, it will first attempt to write it out using an extended naming convention. If the names would not be possible to extend so that they would be reproducible and recognizable, it will give an error message and won't create the file. If the Optimizer might be unable to read back a problem because of non-standard names, it will give an error message and won't create the file. This option may be used to force output anyway."
       "\n\n"
       "Values (default: 0):\n"
       "\n- (0)  Check format compatibility, and in case of failure try to extend names so that they are reproducible and recognizable."
@@ -1140,11 +1583,46 @@ public:
       "If a nonlinear problem cannot be solved due to appearing unbounded, it can automatically be regularized by the application of a bounding box on the variables. If this control is set to a negative value, in a second solving attempt all original variables will be bounded by the absolute value of this control. If set to a positive value, there will be a third solving attempt afterwards, if necessary, in which also all auxiliary variables are bounded by this value."
       "\n\n"
       "Values (default: 1.0E+06):\n"
+      "\n- (< 0)  Enabled. Apply lower and upper bounds of this magnitude to all nonlinear original variables if initial LP is unbounded."
       "\n- (0)  Disabled. Problem will return unbounded."
-      "\n- (n<0)  Enabled. Apply lower and upper bounds of this magnitude to all original variables if initial LP is unbounded."
-      "\n- (n>0)  Enabled. Apply lower and upper bounds of this magnitude to all original and auxiliary variables if initial LP and first regularization are unbounded.",
+      "\n- (> 0)  Enabled. Apply lower and upper bounds of this magnitude to all nonlinear original and auxiliary variables if initial LP and first regularization are unbounded.",
       XPRS_GLOBALBOUNDINGBOX, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_GLOBALBOUNDINGBOX
+
+#ifdef XPRS_GLOBALCONVCUTMAXROUNDS
+    MPD( AddSolverOption_MergeDuplicates("global:globalconvcutmaxrounds globalconvcutmaxrounds XPRS_GLOBALCONVCUTMAXROUNDS",
+      "The number of rounds of outer approximation and convexification cuts separated at the root node of the branch-and-bound tree search, when solving an (MI)NLP to global optimality."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  Number of rounds determined automatically."
+      "\n- (0)  No outer approximation or convexification cuts at the root node."
+      "\n- (> 0)  Target number of rounds of outer approximation and convexification cuts at the root node.",
+      XPRS_GLOBALCONVCUTMAXROUNDS, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_GLOBALCONVCUTMAXROUNDS
+
+#ifdef XPRS_GLOBALCONVCUTMAXTREEROUNDS
+    MPD( AddSolverOption_MergeDuplicates("global:globalconvcutmaxtreerounds globalconvcutmaxtreerounds XPRS_GLOBALCONVCUTMAXTREEROUNDS",
+      "The number of rounds of outer approximation and convexification cuts separated at a node of the branch-and-bound tree search other than the root node, when solving an (MI)NLP to global optimality."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  Number of rounds determined automatically."
+      "\n- (0)  No outer approximation or convexification cuts at tree nodes."
+      "\n- (> 0)  Target number of rounds of outer approximation and convexification cuts at tree nodes.",
+      XPRS_GLOBALCONVCUTMAXTREEROUNDS, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_GLOBALCONVCUTMAXTREEROUNDS
+
+#ifdef XPRS_GLOBALINITCUTSTRATEGY
+    MPD( AddSolverOption_MergeDuplicates("global:globalinitcutstrategy globalinitcutstrategy XPRS_GLOBALINITCUTSTRATEGY",
+      "Strategy for the initial tangent/secant convexification cuts added per nonlinear operator when setting up the initial LP relaxation during a global solve. Adding more cuts tightens the problem, resulting in a smaller branch-and-bound tree, at the cost of slowing down each LP solve."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  XPRS_GLOBALINITCUTSTRATEGY_AUTOMATIC Automatic selection of the strategy."
+      "\n- (0)  XPRS_GLOBALINITCUTSTRATEGY_OFF Off. No initial convexification cuts are added."
+      "\n- (1)  XPRS_GLOBALINITCUTSTRATEGY_CONSERVATIVE Conservative strategy."
+      "\n- (2)  XPRS_GLOBALINITCUTSTRATEGY_MODERATE Moderate strategy."
+      "\n- (3)  XPRS_GLOBALINITCUTSTRATEGY_AGGRESSIVE Aggressive strategy.",
+      XPRS_GLOBALINITCUTSTRATEGY, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_GLOBALINITCUTSTRATEGY
 
 #ifdef XPRS_GLOBALLSHEURSTRATEGY
     MPD( AddSolverOption_MergeDuplicates("global:globallsheurstrategy globallsheurstrategy XPRS_GLOBALLSHEURSTRATEGY",
@@ -1159,17 +1637,36 @@ public:
       XPRS_GLOBALLSHEURSTRATEGY, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_GLOBALLSHEURSTRATEGY
 
+#ifdef XPRS_GLOBALMISLPHEURSTRATEGY
+    MPD( AddSolverOption_MergeDuplicates("global:globalmislpheurstrategy globalmislpheurstrategy XPRS_GLOBALMISLPHEURSTRATEGY",
+      "Controls how aggressively a set of MISLP-based root heuristics are run at the root node when solving an (MI)NLP to global optimality."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  XPRS_GLOBALMISLPHEURSTRATEGY_AUTOMATIC Automatic. The solver decides which heuristics to run and how aggressively, based on HEUREMPHASIS."
+      "\n- (0)  XPRS_GLOBALMISLPHEURSTRATEGY_OFF Off. No root heuristics of this kind are run."
+      "\n- (1)  XPRS_GLOBALMISLPHEURSTRATEGY_CONSERVATIVE Conservative. A small set of cheap root heuristics is run with tight effort limits."
+      "\n- (2)  XPRS_GLOBALMISLPHEURSTRATEGY_MODERATE Moderate. A larger set of root heuristics is run with moderate effort limits."
+      "\n- (3)  XPRS_GLOBALMISLPHEURSTRATEGY_AGGRESSIVE Aggressive. The full set of root heuristics is run with generous effort limits.",
+      XPRS_GLOBALMISLPHEURSTRATEGY, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_GLOBALMISLPHEURSTRATEGY
+
 #ifdef XPRS_GLOBALNLPCUTS
     MPD( AddSolverOption_MergeDuplicates("global:globalnlpcuts globalnlpcuts XPRS_GLOBALNLPCUTS",
-      "Limit on the number of rounds of outer approximation and convexification cuts generated for the root node, when solving an (MI)NLP to global optimality."
-      "\n\nDefault: -1 — determined automatically.",
+      "Limits the number of rounds of outer approximation and convexification cuts generated for the root node, when solving an (MI)NLP to global optimality."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  The number of rounds is determined automatically."
+      "\n- (>= 0)  The number of rounds of approximation/convexification cuts at the root node.",
       XPRS_GLOBALNLPCUTS, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_GLOBALNLPCUTS
 
 #ifdef XPRS_GLOBALNUMINITNLPCUTS
     MPD( AddSolverOption_MergeDuplicates("global:globalnuminitnlpcuts globalnuminitnlpcuts XPRS_GLOBALNUMINITNLPCUTS",
       "Specifies the maximum number of tangent cuts when setting up the initial relaxation during a global solve. By default, the algorithm chooses the number of cuts automatically. Adding more cuts tightens the problem, resulting in a smaller branch-and-bound tree, at the cost of slowing down each LP solve."
-      "\n\nDefault: -1 — determined automatically.",
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  The number of tangent cuts is determined automatically."
+      "\n- (>= 0)  The maximum number of tangent cuts.",
       XPRS_GLOBALNUMINITNLPCUTS, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_GLOBALNUMINITNLPCUTS
 
@@ -1193,7 +1690,7 @@ public:
       "Values (default: -1.0):\n"
       "\n- (-1)  The algorithm chooses the effort limit automatically (default)."
       "\n- (0)  Disables cuts on branching entities."
-      "\n- (0<n<1)  Relative effort to spend on cutting on branching entities. Higher values lead to more cuts.",
+      "\n- (> 0, <= 1)  Relative effort to spend on cutting on branching entities. Higher values lead to more cuts.",
       XPRS_GLOBALSPATIALBRANCHCUTTINGEFFORT, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_GLOBALSPATIALBRANCHCUTTINGEFFORT
 
@@ -1216,29 +1713,46 @@ public:
       "Values (default: -1.0):\n"
       "\n- (-1)  The algorithm chooses the effort limit automatically (default)."
       "\n- (0)  Disables propagation on branching entities."
-      "\n- (n>0)  Relative effort to spend on propagating on branching entities. Higher values lead to more propagation.",
+      "\n- (> 0)  Relative effort to spend on propagating on branching entities. Higher values lead to more propagation.",
       XPRS_GLOBALSPATIALBRANCHPROPAGATIONEFFORT, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_GLOBALSPATIALBRANCHPROPAGATIONEFFORT
 
 #ifdef XPRS_GLOBALTREENLPCUTS
     MPD( AddSolverOption_MergeDuplicates("global:globaltreenlpcuts globaltreenlpcuts XPRS_GLOBALTREENLPCUTS",
-      "Limit on the number of rounds of outer approximation and convexification cuts generated for each node in the tree, when solving an (MI)NLP to global optimality."
-      "\n\nDefault: -1 — determined automatically.",
+      "Limits the number of rounds of outer approximation and convexification cuts generated for each node in the tree, when solving an (MI)NLP to global optimality."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  The maximum number of cut rounds is determined automatically."
+      "\n- (>= 0)  The maximum number of cut rounds",
       XPRS_GLOBALTREENLPCUTS, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_GLOBALTREENLPCUTS
 
 #ifdef XPRS_GOMCUTS
     MPD( AddSolverOption_MergeDuplicates("cut:gomcuts gomcuts XPRS_GOMCUTS",
-      "Branch and Bound: The number of rounds of Gomory or lift-and-project cuts at the root node."
-      "\n\nDefault: -1 — determined automatically.",
+      "Branch and Bound: Specifies the number of rounds of Gomory or lift-and-project cuts at the root node."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  Number of rounds determined automatically."
+      "\n- (0)  Off—separation disabled."
+      "\n- (> 0)  Apply this specified number of rounds.",
       XPRS_GOMCUTS, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_GOMCUTS
 
+#ifdef XPRS_GPUCUDADEVICE
+    MPD( AddSolverOption_MergeDuplicates("tech:gpucudadevice gpucudadevice XPRS_GPUCUDADEVICE",
+      "Controls which CUDA device should be used when GPU execution is enabled and there are multiple CUDA devices installed in a system. The first CUDA device number is 0. If the selected CUDA device is invalid or is not found, then an error is returned."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  Use the default device for the current thread (typically 0)."
+      "\n- (>= 0)  Select the CUDA device to use.",
+      XPRS_GPUCUDADEVICE, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_GPUCUDADEVICE
+
 #ifdef XPRS_GPUPLATFORM
     MPD( AddSolverOption_MergeDuplicates("tech:gpuplatform gpuplatform XPRS_GPUPLATFORM",
-      "			Controls what kind of GPU support is enabled overall in Xpress. Individual solver components may disable GPU support. 		"
+      "Controls what kind of GPU support is enabled overall in Xpress. Individual solver components may disable GPU support."
       "\n\n"
-      "Values (default: 			1, use GPU support if available, unless disabled by another control 		):\n"
+      "Values (default: 1, use GPU support if available, unless disabled by another control):\n"
       "\n- (0)  Do not use any GPU support."
       "\n- (1)  Use GPU support based on CUDA (if available).",
       XPRS_GPUPLATFORM, INT_MIN, INT_MAX) );
@@ -1249,16 +1763,42 @@ public:
       "Branch and Bound: Determines whether primal heuristics should be run before the initial LP relaxation has been solved."
       "\n\n"
       "Values (default: -1):\n"
-      "\n- (-1)  Automatic - let the optimizer decide if heuristics should be run."
+      "\n- (-1)  Automatic - let the Optimizer decide if heuristics should be run."
       "\n- (0)  Disabled."
       "\n- (1)  Enabled.",
       XPRS_HEURBEFORELP, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_HEURBEFORELP
 
+#ifdef XPRS_HEURBEFORELPGPUEFFORT
+    MPD( AddSolverOption_MergeDuplicates("mip:heurbeforelpgpueffort heur:heurbeforelpgpueffort heurbeforelpgpueffort XPRS_HEURBEFORELPGPUEFFORT",
+      "Effort dial to control the effort spent inside the selected GPU heuristic method. If a GPU-accelerated heuristic method has been selected, this control can be used to increase or decrease the overall effort spent by the heuristic. For the heuristic enabled by setting HEURBEFORELPGPUMETHOD to XPRS_HEURBEFORELPGPUMETHOD_FEASPUMP, the effort parameter controls the iterations spent inside the primal-dual hybrid gradient algorithm."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-2)  Run with (almost) no effort limit. This can be useful for evaluating whether the heuristic can find a solution without practical working limits"
+      "\n- (-1)  Automatic choice of effort."
+      "\n- (0)  Disable GPU heuristics."
+      "\n- (> 0, <= 100)  Dial the effort for the GPU heuristic by setting a value 1.0, limit the search effort by setting a value",
+      XPRS_HEURBEFORELPGPUEFFORT, -DBL_MAX, DBL_MAX) );
+#endif  // ifdef XPRS_HEURBEFORELPGPUEFFORT
+
+#ifdef XPRS_HEURBEFORELPGPUMETHOD
+    MPD( AddSolverOption_MergeDuplicates("mip:heurbeforelpgpumethod heur:heurbeforelpgpumethod heurbeforelpgpumethod XPRS_HEURBEFORELPGPUMETHOD",
+      "Enables a GPU-accelerated heuristic of the specified type. If enabled, this heuristic is called as a BEFORELP heuristic for multiple rounds. The control value XPRS_HEURBEFORELPGPUMETHOD_FEASPUMP enables a GPU accelerated version of feasibility pump. In each round, the LP relaxation is approximately solved using the Primal Dual Hybrid Gradient algorithm on the GPU, The fractional solution is then rounded, and a heuristic is called to minimize the remaining violations. The effort spent on this final polishing step can be controlled by the user."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  XPRS_HEURBEFORELPGPUMETHOD_AUTOMATIC Leave the decision to the solver."
+      "\n- (0)  XPRS_HEURBEFORELPGPUMETHOD_OFF Disable any GPU heuristic."
+      "\n- (1)  XPRS_HEURBEFORELPGPUMETHOD_FEASPUMP Enable the feasibility pump GPU Heuristic. Use the limit controls as well as the controls of the primal-dual hybrid gradient algorithm to fine-tune the behavior.",
+      XPRS_HEURBEFORELPGPUMETHOD, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_HEURBEFORELPGPUMETHOD
+
 #ifdef XPRS_HEURDEPTH
     MPD( AddSolverOption_MergeDuplicates("mip:heurdepth heur:heurdepth heurdepth XPRS_HEURDEPTH",
       "Branch and Bound: Sets the maximum depth in the tree search at which heuristics will be used to find MIP solutions. It may be worth stopping the heuristic search for solutions after a certain depth in the tree search. A value of 0 signifies that heuristics will not be used. This control no longer has any effect and will be removed from future releases."
-      "\n\nDefault: -1",
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  The maximum depth is determined automatically."
+      "\n- (>= 0)  Maximum depth in the tree search at which heuristics will be used to find MIP solutions.",
       XPRS_HEURDEPTH, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_HEURDEPTH
 
@@ -1267,9 +1807,9 @@ public:
       "Branch and Bound: Simplex iteration limit for reoptimizing during the diving heuristic."
       "\n\n"
       "Values (default: -1):\n"
-      "\n- (>=1)  Fixed iteration limit."
+      "\n- (< 0)  Automatic selection of the iteration limit based on the problem size. The absolute value is used as a multiplier on the automatic selection."
       "\n- (0)  No iteration limit."
-      "\n- (<0)  Automatic selection of the iteration limit based on the problem size. The absolute value is used as a multiplier on the automatic selection.",
+      "\n- (> 0)  Fixed iteration limit.",
       XPRS_HEURDIVEITERLIMIT, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_HEURDIVEITERLIMIT
 
@@ -1278,7 +1818,7 @@ public:
       "The level of randomization to apply in the diving heuristic. The diving heuristic uses priority weights on rows and columns to determine the order in which to e.g. round fractional columns, or the direction in which to round them. This control determines by how large a random factor these weights should be changed."
       "\n\n"
       "Values (default: 0.0):\n"
-      "\n- (0.0-1.0)  Amount of randomization (0.0=none, 1.0=full)",
+      "\n- (>= 0.0, <= 1.0)  Amount of randomization (0.0=none, 1.0=full)",
       XPRS_HEURDIVERANDOMIZE, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_HEURDIVERANDOMIZE
 
@@ -1301,7 +1841,7 @@ public:
       "Values (default: -1):\n"
       "\n- (-2)  Automatic selection biased towards quality"
       "\n- (-1)  Automatic selection biased towards speed."
-      "\n- (0-4)  manual emphasis bias from emphasis on quality (0) to emphasis on speed (4).",
+      "\n- (>= 0, <= 4)  Manual emphasis bias from emphasis on quality (0) to emphasis on speed (4).",
       XPRS_HEURDIVESPEEDUP, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_HEURDIVESPEEDUP
 
@@ -1312,7 +1852,7 @@ public:
       "Values (default: -1):\n"
       "\n- (-1)  Automatic selection of strategy."
       "\n- (0)  Disables the diving heuristic."
-      "\n- (1-18)  Available pre-set strategies for rounding infeasible MIP entities and reoptimizing during the heuristic dive.",
+      "\n- (>= 1, <= 18)  Available pre-set strategies for rounding infeasible MIP entities and reoptimizing during the heuristic dive.",
       XPRS_HEURDIVESTRATEGY, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_HEURDIVESTRATEGY
 
@@ -1330,7 +1870,7 @@ public:
 
 #ifdef XPRS_HEURFORCESPECIALOBJ
     MPD( AddSolverOption_MergeDuplicates("mip:heurforcespecialobj heur:heurforcespecialobj heurforcespecialobj XPRS_HEURFORCESPECIALOBJ",
-      "Branch and Bound: This specifies whether local search heuristics without objective or with an auxiliary objective should always be used, despite the automatic selection of the Optimiezr. Deactivated by default."
+      "Branch and Bound: This specifies whether large neighborhood search (LNS) heuristics without objective or with an auxiliary objective should always be used, despite the automatic selection of the Optimizer. Deactivated by default."
       "\n\n"
       "Values (default: 0):\n"
       "\n- (0)  Disabled."
@@ -1341,7 +1881,10 @@ public:
 #ifdef XPRS_HEURFREQ
     MPD( AddSolverOption_MergeDuplicates("mip:heurfreq heur:heurfreq heurfreq XPRS_HEURFREQ",
       "Branch and Bound: This specifies the frequency at which heuristics are used in the tree search. Heuristics will only be used at a node if the depth of the node is a multiple of HEURFREQ."
-      "\n\nDefault: -1",
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  Automatic."
+      "\n- (>= 0)  The frequency at which heuristics are used in the tree search.",
       XPRS_HEURFREQ, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_HEURFREQ
 
@@ -1359,6 +1902,20 @@ public:
       XPRS_HEURNODES, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_HEURNODES
 
+#ifdef XPRS_HEURSEARCHANALYTICSTRATEGY
+    MPD( AddSolverOption_MergeDuplicates("mip:heursearchanalyticstrategy heur:heursearchanalyticstrategy heursearchanalyticstrategy XPRS_HEURSEARCHANALYTICSTRATEGY",
+      "Strategy control for the Analytic Center (A) large neighborhood search heuristic, an LNS heuristic with an auxiliary objective function. Called seldom and only when no feasible solution is available."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-2)  XPRS_HEURSEARCHSTRATEGY_AUTOENFORCED Automatic enforced. The Optimizer determines the frequency and effort of this heuristic, ignoring the value of HEURSEARCHSTRATEGY."
+      "\n- (-1)  XPRS_HEURSEARCHSTRATEGY_AUTOMATIC Automatic. The Optimizer determines the frequency and effort of this heuristic."
+      "\n- (0)  XPRS_HEURSEARCHSTRATEGY_OFF Disabled."
+      "\n- (1)  XPRS_HEURSEARCHSTRATEGY_CONSERVATIVE Conservative strategy; the heuristic is run less frequently than the default."
+      "\n- (2)  XPRS_HEURSEARCHSTRATEGY_MODERATE Moderate strategy; default level of frequency and effort."
+      "\n- (3)  XPRS_HEURSEARCHSTRATEGY_AGGRESSIVE Aggressive strategy; the heuristic is run more frequently than the default.",
+      XPRS_HEURSEARCHANALYTICSTRATEGY, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_HEURSEARCHANALYTICSTRATEGY
+
 #ifdef XPRS_HEURSEARCHBACKGROUNDSELECT
     MPD( AddSolverOption_MergeDuplicates("mip:heursearchbackgroundselect heur:heursearchbackgroundselect heursearchbackgroundselect XPRS_HEURSEARCHBACKGROUNDSELECT",
       "Bit-vector control (see Section Bit-vector controls) to select which large neighborhood searches to run in the background (for example in parallel to the root cut loop)."
@@ -1368,43 +1925,102 @@ public:
       XPRS_HEURSEARCHBACKGROUNDSELECT, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_HEURSEARCHBACKGROUNDSELECT
 
+#ifdef XPRS_HEURSEARCHCOMBINESTRATEGY
+    MPD( AddSolverOption_MergeDuplicates("mip:heursearchcombinestrategy heur:heursearchcombinestrategy heursearchcombinestrategy XPRS_HEURSEARCHCOMBINESTRATEGY",
+      "Strategy control for the Combine (C) large neighborhood search heuristic, which uses a neighborhood set up through the combination of multiple integer solutions."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-2)  XPRS_HEURSEARCHSTRATEGY_AUTOENFORCED Automatic enforced. The Optimizer determines the frequency and effort of this heuristic, ignoring the value of HEURSEARCHSTRATEGY."
+      "\n- (-1)  XPRS_HEURSEARCHSTRATEGY_AUTOMATIC Automatic. The Optimizer determines the frequency and effort of this heuristic."
+      "\n- (0)  XPRS_HEURSEARCHSTRATEGY_OFF Disabled."
+      "\n- (1)  XPRS_HEURSEARCHSTRATEGY_CONSERVATIVE Conservative strategy; the heuristic is run less frequently than the default."
+      "\n- (2)  XPRS_HEURSEARCHSTRATEGY_MODERATE Moderate strategy; default level of frequency and effort."
+      "\n- (3)  XPRS_HEURSEARCHSTRATEGY_AGGRESSIVE Aggressive strategy; the heuristic is run more frequently than the default.",
+      XPRS_HEURSEARCHCOMBINESTRATEGY, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_HEURSEARCHCOMBINESTRATEGY
+
 #ifdef XPRS_HEURSEARCHCOPYCONTROLS
     MPD( AddSolverOption_MergeDuplicates("mip:heursearchcopycontrols heur:heursearchcopycontrols heursearchcopycontrols XPRS_HEURSEARCHCOPYCONTROLS",
-      "Select how user-set controls should affect local search heuristics."
+      "Select how user-set controls should affect the subproblems solved by large neighborhood search (LNS) heuristics."
       "\n\n"
       "Values (default: 1):\n"
-      "\n- (0)  Do not copy any user-set controls"
-      "\n- (1)  Automatic - Let the Optimizer decide which user-set controls to copy"
-      "\n- (2)  Copy all user-set controls",
+      "\n- (0)  Do not copy any user-set controls into the subproblems."
+      "\n- (1)  Automatic - Let the Optimizer decide which user-set controls to copy."
+      "\n- (2)  Copy all user-set controls.",
       XPRS_HEURSEARCHCOPYCONTROLS, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_HEURSEARCHCOPYCONTROLS
 
 #ifdef XPRS_HEURSEARCHEFFORT
     MPD( AddSolverOption_MergeDuplicates("mip:heursearcheffort heur:heursearcheffort heursearcheffort heureffort XPRS_HEURSEARCHEFFORT",
-      "Adjusts the overall level of the local search heuristics."
-      "\n\nDefault: 1.0",
+      "Adjusts the overall level of the large neighborhood search (LNS) heuristics."
+      "\n\n"
+      "Values (default: 1.0):\n"
+      "\n- (> 0)  Multiplier on the default amount of work the large neighborhood search heuristics should do. A higher value means that all active LNS heuristics are allowed to search larger neighborhoods."
+      "\n- (0)  Disables all LNS heuristics.",
       XPRS_HEURSEARCHEFFORT, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_HEURSEARCHEFFORT
 
 #ifdef XPRS_HEURSEARCHFREQ
     MPD( AddSolverOption_MergeDuplicates("mip:heursearchfreq heur:heursearchfreq heursearchfreq heursearch XPRS_HEURSEARCHFREQ",
-      "Branch and Bound: This specifies how often the local search heuristic should be run in the tree."
+      "Branch and Bound: This specifies how often the large neighborhood search (LNS) heuristic should be run in the tree."
       "\n\n"
       "Values (default: -1):\n"
       "\n- (-1)  Automatic."
       "\n- (0)  Disabled in the tree."
-      "\n- (n>0)  Number of nodes between each run.",
+      "\n- (> 0)  Number of nodes between each run.",
       XPRS_HEURSEARCHFREQ, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_HEURSEARCHFREQ
 
+#ifdef XPRS_HEURSEARCHLPFIRSTSTRATEGY
+    MPD( AddSolverOption_MergeDuplicates("mip:heursearchlpfirststrategy heur:heursearchlpfirststrategy heursearchlpfirststrategy XPRS_HEURSEARCHLPFIRSTSTRATEGY",
+      "Strategy control for the LP first (L) large neighborhood search heuristic, an LNS heuristic with a small neighborhood centered around a node LP solution."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-2)  XPRS_HEURSEARCHSTRATEGY_AUTOENFORCED Automatic enforced. The Optimizer determines the frequency and effort of this heuristic, ignoring the value of HEURSEARCHSTRATEGY."
+      "\n- (-1)  XPRS_HEURSEARCHSTRATEGY_AUTOMATIC Automatic. The Optimizer determines the frequency and effort of this heuristic."
+      "\n- (0)  XPRS_HEURSEARCHSTRATEGY_OFF Disabled."
+      "\n- (1)  XPRS_HEURSEARCHSTRATEGY_CONSERVATIVE Conservative strategy; the heuristic is run less frequently than the default."
+      "\n- (2)  XPRS_HEURSEARCHSTRATEGY_MODERATE Moderate strategy; default level of frequency and effort."
+      "\n- (3)  XPRS_HEURSEARCHSTRATEGY_AGGRESSIVE Aggressive strategy; the heuristic is run more frequently than the default.",
+      XPRS_HEURSEARCHLPFIRSTSTRATEGY, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_HEURSEARCHLPFIRSTSTRATEGY
+
+#ifdef XPRS_HEURSEARCHMIPFIRSTSTRATEGY
+    MPD( AddSolverOption_MergeDuplicates("mip:heursearchmipfirststrategy heur:heursearchmipfirststrategy heursearchmipfirststrategy XPRS_HEURSEARCHMIPFIRSTSTRATEGY",
+      "Strategy control for the MIP first (M) large neighborhood search heuristic, an LNS heuristic with a small neighborhood centered around an integer solution. This heuristic will often provide smaller, incremental improvements to an incumbent solution."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-2)  XPRS_HEURSEARCHSTRATEGY_AUTOENFORCED Automatic enforced. The Optimizer determines the frequency and effort of this heuristic, ignoring the value of HEURSEARCHSTRATEGY."
+      "\n- (-1)  XPRS_HEURSEARCHSTRATEGY_AUTOMATIC Automatic. The Optimizer determines the frequency and effort of this heuristic."
+      "\n- (0)  XPRS_HEURSEARCHSTRATEGY_OFF Disabled."
+      "\n- (1)  XPRS_HEURSEARCHSTRATEGY_CONSERVATIVE Conservative strategy; the heuristic is run less frequently than the default."
+      "\n- (2)  XPRS_HEURSEARCHSTRATEGY_MODERATE Moderate strategy; default level of frequency and effort."
+      "\n- (3)  XPRS_HEURSEARCHSTRATEGY_AGGRESSIVE Aggressive strategy; the heuristic is run more frequently than the default.",
+      XPRS_HEURSEARCHMIPFIRSTSTRATEGY, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_HEURSEARCHMIPFIRSTSTRATEGY
+
+#ifdef XPRS_HEURSEARCHRINSSTRATEGY
+    MPD( AddSolverOption_MergeDuplicates("mip:heursearchrinsstrategy heur:heursearchrinsstrategy heursearchrinsstrategy XPRS_HEURSEARCHRINSSTRATEGY",
+      "Strategy control for the RINS (R) large neighborhood search heuristic, an LNS heuristic that is potentially expensive but good for finding solutions that differ significantly from the incumbent."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-2)  XPRS_HEURSEARCHSTRATEGY_AUTOENFORCED Automatic enforced. The Optimizer determines the frequency and effort of this heuristic, ignoring the value of HEURSEARCHSTRATEGY."
+      "\n- (-1)  XPRS_HEURSEARCHSTRATEGY_AUTOMATIC Automatic. The Optimizer determines the frequency and effort of this heuristic."
+      "\n- (0)  XPRS_HEURSEARCHSTRATEGY_OFF Disabled."
+      "\n- (1)  XPRS_HEURSEARCHSTRATEGY_CONSERVATIVE Conservative strategy; the heuristic is run less frequently than the default."
+      "\n- (2)  XPRS_HEURSEARCHSTRATEGY_MODERATE Moderate strategy; default level of frequency and effort."
+      "\n- (3)  XPRS_HEURSEARCHSTRATEGY_AGGRESSIVE Aggressive strategy; the heuristic is run more frequently than the default.",
+      XPRS_HEURSEARCHRINSSTRATEGY, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_HEURSEARCHRINSSTRATEGY
+
 #ifdef XPRS_HEURSEARCHROOTCUTFREQ
     MPD( AddSolverOption_MergeDuplicates("mip:heursearchrootcutfreq heur:heursearchrootcutfreq heursearchrootcutfreq XPRS_HEURSEARCHROOTCUTFREQ",
-      "How frequently to run the local search heuristic during root cutting. This is given as how many cut rounds to perform between runs of the heuristic. Set to zero to avoid applying the heuristic during root cutting. Branch and Bound: This specifies how often the local search heuristic should be run in the tree."
+      "How frequently to run the large neighborhood search (LNS) heuristics during root cutting. This is given as how many cut rounds to perform between runs of the heuristics. Set to zero to disable all LNS heuristics during root cutting."
       "\n\n"
       "Values (default: -1):\n"
       "\n- (-1)  Automatic."
-      "\n- (0)  Disabled heuristic during cutting."
-      "\n- (n>0)  Number of cutting rounds between each run.",
+      "\n- (0)  Disables LNS heuristics during cutting."
+      "\n- (> 0)  Number of cutting rounds between each run.",
       XPRS_HEURSEARCHROOTCUTFREQ, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_HEURSEARCHROOTCUTFREQ
 
@@ -1417,11 +2033,23 @@ public:
       "\n- (1)  Local search with a small neighborhood centered around a node LP solution."
       "\n- (2)  Local search with a small neighborhood centered around an integer solution. This heuristic will often provide smaller, incremental improvements to an incumbent solution."
       "\n- (3)  Local search with a neighborhood set up through the combination of multiple integer solutions."
-      "\n- (4)  Unused"
       "\n- (5)  Local search without an objective function. Called seldom and only when no feasible solution is available."
       "\n- (6)  Local search with an auxiliary objective function. Called seldom and only when no feasible solution is available.",
       XPRS_HEURSEARCHROOTSELECT, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_HEURSEARCHROOTSELECT
+
+#ifdef XPRS_HEURSEARCHSTRATEGY
+    MPD( AddSolverOption_MergeDuplicates("mip:heursearchstrategy heur:heursearchstrategy heursearchstrategy XPRS_HEURSEARCHSTRATEGY",
+      "Meta strategy control for large neighborhood search (LNS) heuristics. When set to a value other than automatic, it determines the frequency and effort of all LNS heuristics whose individual strategy control is set to automatic. Individual heuristic strategy controls take precedence over this setting."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  XPRS_HEURSEARCHSTRATEGY_AUTOMATIC Each LNS heuristic uses its own default strategy."
+      "\n- (0)  XPRS_HEURSEARCHSTRATEGY_OFF All LNS heuristics set to automatic are disabled."
+      "\n- (1)  XPRS_HEURSEARCHSTRATEGY_CONSERVATIVE Conservative strategy applied to all LNS heuristics set to automatic."
+      "\n- (2)  XPRS_HEURSEARCHSTRATEGY_MODERATE Moderate strategy applied to all LNS heuristics set to automatic."
+      "\n- (3)  XPRS_HEURSEARCHSTRATEGY_AGGRESSIVE Aggressive strategy applied to all LNS heuristics set to automatic.",
+      XPRS_HEURSEARCHSTRATEGY, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_HEURSEARCHSTRATEGY
 
 #ifdef XPRS_HEURSEARCHTREESELECT
     MPD( AddSolverOption_MergeDuplicates("mip:heursearchtreeselect heur:heursearchtreeselect heursearchtreeselect heurtree XPRS_HEURSEARCHTREESELECT",
@@ -1432,11 +2060,24 @@ public:
       "\n- (1)  Local search with a small neighborhood centered around a node LP solution."
       "\n- (2)  Local search with a small neighborhood centered around an integer solution. This heuristic will often provide smaller, incremental improvements to an incumbent solution."
       "\n- (3)  Local search with a neighborhood set up through the combination of multiple integer solutions."
-      "\n- (4)  Unused"
       "\n- (5)  Local search without an objective function. Called seldom and only when no feasible solution is available."
       "\n- (6)  Local search with an auxiliary objective function. Called seldom and only when no feasible solution is available.",
       XPRS_HEURSEARCHTREESELECT, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_HEURSEARCHTREESELECT
+
+#ifdef XPRS_HEURSEARCHZEROOBJSTRATEGY
+    MPD( AddSolverOption_MergeDuplicates("mip:heursearchzeroobjstrategy heur:heursearchzeroobjstrategy heursearchzeroobjstrategy XPRS_HEURSEARCHZEROOBJSTRATEGY",
+      "Strategy control for the Zero Objective (Z) large neighborhood search heuristic, an LNS heuristic without an objective function. Called seldom and only when no feasible solution is available."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-2)  XPRS_HEURSEARCHSTRATEGY_AUTOENFORCED Automatic enforced. The Optimizer determines the frequency and effort of this heuristic, ignoring the value of HEURSEARCHSTRATEGY."
+      "\n- (-1)  XPRS_HEURSEARCHSTRATEGY_AUTOMATIC Automatic. The Optimizer determines the frequency and effort of this heuristic."
+      "\n- (0)  XPRS_HEURSEARCHSTRATEGY_OFF Disabled."
+      "\n- (1)  XPRS_HEURSEARCHSTRATEGY_CONSERVATIVE Conservative strategy; the heuristic is run less frequently than the default."
+      "\n- (2)  XPRS_HEURSEARCHSTRATEGY_MODERATE Moderate strategy; default level of frequency and effort."
+      "\n- (3)  XPRS_HEURSEARCHSTRATEGY_AGGRESSIVE Aggressive strategy; the heuristic is run more frequently than the default.",
+      XPRS_HEURSEARCHZEROOBJSTRATEGY, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_HEURSEARCHZEROOBJSTRATEGY
 
 #ifdef XPRS_HEURSHIFTPROP
     MPD( AddSolverOption_MergeDuplicates("mip:heurshiftprop heur:heurshiftprop heurshiftprop XPRS_HEURSHIFTPROP",
@@ -1456,7 +2097,7 @@ public:
       "Values (default: 0):\n"
       "\n- (-1)  Automatically determined from the THREADS control."
       "\n- (0)  Disabled."
-      "\n- (>=1)  Number of additional threads to dedicate to parallel heuristics.",
+      "\n- (>= 1)  Number of additional threads to dedicate to parallel heuristics.",
       XPRS_HEURTHREADS, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_HEURTHREADS
 
@@ -1517,42 +2158,56 @@ public:
 #ifdef XPRS_INDLINBIGM
     MPD( AddSolverOption_MergeDuplicates("pre:indlinbigm indlinbigm XPRS_INDLINBIGM",
       "During presolve, indicator constraints will be linearized using a BigM coefficient whenever that BigM coefficient is small enough. This control defines the largest BigM for which such a linearized version will be added to the problem in addition to the original constraint. If the BigM is even smaller than INDPRELINBIGM, then the original indicator constraint will additionally be dropped from the problem."
-      "\n\nDefault: 1.0E+05",
+      "\n\n"
+      "Values (default: 1.0E+05):\n"
+      "\n- (>= 0)  Largest Big-M for which linearizations of indicator constraints are added.",
       XPRS_INDLINBIGM, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_INDLINBIGM
 
 #ifdef XPRS_INDPRELINBIGM
     MPD( AddSolverOption_MergeDuplicates("pre:indprelinbigm indprelinbigm XPRS_INDPRELINBIGM",
       "During presolve, indicator constraints will be linearized using a BigM coefficient whenever that BigM coefficient is small enough. This control defines the largest BigM for which the original constraint will be replaced by the linearized version. If the BigM is larger than INDPRELINBIGM but smaller than INDLINBIGM, the linearized row will be added but the original indicator constraint is kept as a numerically stable way to check feasibility."
-      "\n\nDefault: 100.0",
+      "\n\n"
+      "Values (default: 100.0):\n"
+      "\n- (>= 0)  Largest Big-M for which indicator constraints are replaced by their linearization.",
       XPRS_INDPRELINBIGM, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_INDPRELINBIGM
 
 #ifdef XPRS_INPUTTOL
     MPD( AddSolverOption_MergeDuplicates("alg:inputtol inputtol XPRS_INPUTTOL",
-      "The tolerance on input values elements. If any value is less than or equal to INPUTTOL in absolute value, it is treated as zero. For the internal zero tolerance see MATRIXTOL."
-      "\n\nDefault: 0.0",
+      "The zero tolerance for input values. If any value is less than or equal to INPUTTOL in absolute value, it is treated as zero. For the internal zero tolerance see MATRIXTOL."
+      "\n\n"
+      "Values (default: 0.0):\n"
+      "\n- (>= 0)  The zero tolerance for input values.",
       XPRS_INPUTTOL, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_INPUTTOL
 
 #ifdef XPRS_INVERTFREQ
     MPD( AddSolverOption_MergeDuplicates("lp:invertfreq invertfreq XPRS_INVERTFREQ",
       "Simplex: The frequency with which the basis will be inverted. The basis is maintained in a factorized form and on most simplex iterations it is incrementally updated to reflect the step just taken. This is considerably faster than computing the full inverted matrix at each iteration, although after a number of iterations the basis becomes less well-conditioned and it becomes necessary to compute the full inverted matrix. The value of INVERTFREQ specifies the maximum number of iterations between full inversions."
-      "\n\nDefault: -1 — the frequency is determined automatically.",
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  The frequency is determined automatically."
+      "\n- (>= 0)  The frequency with which the basis will be inverted.",
       XPRS_INVERTFREQ, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_INVERTFREQ
 
 #ifdef XPRS_INVERTMIN
     MPD( AddSolverOption_MergeDuplicates("lp:invertmin invertmin XPRS_INVERTMIN",
-      "Simplex: The minimum number of iterations between full inversions of the basis matrix. See the description of INVERTFREQ for details."
-      "\n\nDefault: 3",
+      "Specifies the minimum number of Simplex iterations between full inversions of the basis matrix. See the description of INVERTFREQ for details."
+      "\n\n"
+      "Values (default: 3):\n"
+      "\n- (-1)  The frequency is determined automatically."
+      "\n- (>= 0)  The minimum number of Simplex iterations between full inversions of the basis matrix.",
       XPRS_INVERTMIN, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_INVERTMIN
 
 #ifdef XPRS_IOTIMEOUT
     MPD( AddSolverOption_MergeDuplicates("lim:iotimeout iotimeout XPRS_IOTIMEOUT",
-      "The maximum number of seconds to wait for an I/O operation before it is cancelled."
-      "\n\nDefault: 30",
+      "Specifies the maximum number of seconds to wait for an I/O operation before it is cancelled."
+      "\n\n"
+      "Values (default: 30):\n"
+      "\n- (>= 1)  The maximum number of seconds to wait for I/O operations.",
       XPRS_IOTIMEOUT, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_IOTIMEOUT
 
@@ -1581,15 +2236,21 @@ public:
 
 #ifdef XPRS_LNPBEST
     MPD( AddSolverOption_MergeDuplicates("cut:lnpbest lnpbest XPRS_LNPBEST",
-      "Number of infeasible MIP entities to create lift-and-project cuts for during each round of Gomory cuts at the root node (see GOMCUTS)."
-      "\n\nDefault: 50",
+      "Specifies the maximum number of infeasible MIP entities to create lift-and-project cuts for during each round of Gomory cuts at the root node (see GOMCUTS)."
+      "\n\n"
+      "Values (default: 50):\n"
+      "\n- (>= 0)  The maximum number of infeasible MIP entities to create lift-and-project cuts for.",
       XPRS_LNPBEST, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_LNPBEST
 
 #ifdef XPRS_LNPITERLIMIT
     MPD( AddSolverOption_MergeDuplicates("cut:lnpiterlimit lnpiterlimit XPRS_LNPITERLIMIT",
       "Number of iterations to perform in improving each lift-and-project cut."
-      "\n\nDefault: -1 — determined automatically.",
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  The number of iterations is determined automatically."
+      "\n- (0)  A Gomory cut is created."
+      "\n- (> 0)  The number of improving iterations.",
       XPRS_LNPITERLIMIT, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_LNPITERLIMIT
 
@@ -1604,6 +2265,17 @@ public:
       XPRS_LOCALCHOICE, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_LOCALCHOICE
 
+#ifdef XPRS_LPBACKGROUNDTHREADS
+    MPD( AddSolverOption_MergeDuplicates("lp:lpbackgroundthreads lpbackgroundthreads XPRS_LPBACKGROUNDTHREADS",
+      "Specifies the maximum number of threads to use for background work (typically heuristics) in parallel to the root LP relaxation of a MIP. This control can help finding feasible MIP solutions fast for models with difficult root LP relaxation. The algorithm employed is similar to the one used during pre-root parallel heuristics."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  Automatic selection of LP background threads depending on the choice of HEUREMPHASIS."
+      "\n- (0)  Disable LP background threads"
+      "\n- (> 0)  Enabled. Specifies the number of threads reserved for LP background work.",
+      XPRS_LPBACKGROUNDTHREADS, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_LPBACKGROUNDTHREADS
+
 #ifdef XPRS_LPFLAGS
     MPD( AddSolverOption_MergeDuplicates("mip:lpflags lpflags XPRS_LPFLAGS",
       "A bit-vector control (see Section Bit-vector controls) which defines the algorithm for solving an LP problem or the initial LP relaxation of a MIP problem."
@@ -1611,7 +2283,7 @@ public:
       "Values (default: 0):\n"
       "\n- (0)  Use the dual simplex method."
       "\n- (1)  Use the primal simplex method."
-      "\n- (2)  Use the barrier method (or hybrid gradient method if BARALG=4 is set)."
+      "\n- (2)  Use the barrier method (or hybrid gradient method if BARALG=4 or BARALG=5 is set)."
       "\n- (3)  Use the network simplex method.",
       XPRS_LPFLAGS, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_LPFLAGS
@@ -1629,8 +2301,10 @@ public:
 
 #ifdef XPRS_LPITERLIMIT
     MPD( AddSolverOption_MergeDuplicates("lp:lpiterlimit lpiterlimit XPRS_LPITERLIMIT",
-      "The maximum number of iterations that will be performed by primal simplex or dual simplex before the optimization process terminates. For MIP problems, this is the maximum total number of iterations over all nodes explored by the Branch and Bound method."
-      "\n\nDefault: 2147483647",
+      "Simplex: Specifies the maximum number of iterations that will be performed by primal Simplex or dual Simplex before the optimization process terminates. For MIP problems, this is the maximum total number of iterations over all nodes explored by the Branch and Bound method."
+      "\n\n"
+      "Values (default: INF):\n"
+      "\n- (>= 0)  The overall maximum number of Simplex iterations.",
       XPRS_LPITERLIMIT, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_LPITERLIMIT
 
@@ -1639,9 +2313,9 @@ public:
       "Simplex: The frequency at which the simplex log is printed."
       "\n\n"
       "Values (default: 100):\n"
-      "\n- (n<0)  Detailed output every -n iterations."
+      "\n- (< 0)  Specifies the frequency of a detailed output by the number of Simplex iterations."
       "\n- (0)  Log displayed at the end of the optimization only."
-      "\n- (n>0)  Summary output every n iterations.",
+      "\n- (> 0)  Specifies the frequency of the summary output by the number of Simplex iterations.",
       XPRS_LPLOG, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_LPLOG
 
@@ -1665,41 +2339,48 @@ public:
 #ifdef XPRS_LPREFINEITERLIMIT
     MPD( AddSolverOption_MergeDuplicates("lp:lprefineiterlimit lprefineiterlimit lpref_itlim XPRS_LPREFINEITERLIMIT",
       "This specifies the simplex iteration limit the solution refiner can spend in attempting to increase the accuracy of an LP solution."
-      "\n\nDefault: -1 — determined automatically.",
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  The number of iterations is determined automatically."
+      "\n- (>= 0)  The maximum number of refiner simplex iterations.",
       XPRS_LPREFINEITERLIMIT, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_LPREFINEITERLIMIT
 
 #ifdef XPRS_MARKOWITZTOL
     MPD( AddSolverOption_MergeDuplicates("lp:markowitztol markowitztol XPRS_MARKOWITZTOL",
       "The Markowitz tolerance used for the factorization of the basis matrix."
-      "\n\nDefault: 0.01",
+      "\n\n"
+      "Values (default: 0.01):\n"
+      "\n- (> 0, <= 1)  Defines the Markowitz tolerance.",
       XPRS_MARKOWITZTOL, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_MARKOWITZTOL
 
 #ifdef XPRS_MATRIXTOL
     MPD( AddSolverOption_MergeDuplicates("alg:matrixtol matrixtol XPRS_MATRIXTOL",
-      "The zero tolerance on matrix elements. If the value of a matrix element is less than or equal to MATRIXTOL in absolute value, it is treated as zero. The control applies when solving a problem, for an input tolerance see INPUTTOL."
-      "\n\nDefault: 1.0E-09",
+      "The zero tolerance for matrix elements. If the value of a matrix element is less than or equal to MATRIXTOL in absolute value, it is treated as zero. The control applies when solving a problem, for an input tolerance see INPUTTOL."
+      "\n\n"
+      "Values (default: 1.0E-09):\n"
+      "\n- (> 0)  The zero tolerance for matrix elements.",
       XPRS_MATRIXTOL, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_MATRIXTOL
 
 #ifdef XPRS_MAXCHECKSONMAXCUTTIME
     MPD( AddSolverOption_MergeDuplicates("lim:maxchecksonmaxcuttime maxchecksonmaxcuttime XPRS_MAXCHECKSONMAXCUTTIME",
-      "This control is intended for use where optimization runs that are terminated using the MAXCUTTIME control are required to be reproduced exactly. This control is necessary because of the inherent difficulty in terminating algorithmic software in a consistent way using temporal criteria. The control value relates to the number of times the optimizer checks the MAXCUTTIME criterion up to and including the check when the termination of cutting was activated. To use the control the user first must obtain the value of the CHECKSONMAXCUTTIME attribute after the run returns. This attribute value is the number of times the optimizer checked the MAXCUTTIME criterion during the last call to the optimization routine XPRSmipoptimize. Note that this attribute value will be negative if the optimizer terminated cutting on the MAXCUTTIME criterion. To ensure accurate reproduction of a run the user should first ensure that MAXCUTTIME is set to its default value or to a large value so the run does not terminate again on MAXCUTTIME and then simply set the control MAXCHECKSONMAXCUTTIME to the absolute value of the CHECKSONMAXCUTTIME value."
+      "This control is intended for use where optimization runs that are terminated using the MAXCUTTIME control are required to be reproduced exactly. This control is necessary because of the inherent difficulty in terminating algorithmic software in a consistent way using temporal criteria. The control value relates to the number of times the Optimizer checks the MAXCUTTIME criterion up to and including the check when the termination of cutting was activated. To use the control the user first must obtain the value of the CHECKSONMAXCUTTIME attribute after the run returns. This attribute value is the number of times the Optimizer checked the MAXCUTTIME criterion during the last call to the optimization routine XPRSmipoptimize. Note that this attribute value will be negative if the Optimizer terminated cutting on the MAXCUTTIME criterion. To ensure accurate reproduction of a run the user should first ensure that MAXCUTTIME is set to its default value or to a large value so the run does not terminate again on MAXCUTTIME and then simply set the control MAXCHECKSONMAXCUTTIME to the absolute value of the CHECKSONMAXCUTTIME value."
       "\n\n"
       "Values (default: 0):\n"
       "\n- (0)  Not active."
-      "\n- (n>0)  The number of times the optimizer should check the MAXCUTTIME criterion before triggering a termination.",
+      "\n- (> 0)  The number of times the Optimizer should check the MAXCUTTIME criterion before triggering a termination.",
       XPRS_MAXCHECKSONMAXCUTTIME, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_MAXCHECKSONMAXCUTTIME
 
 #ifdef XPRS_MAXCHECKSONMAXTIME
     MPD( AddSolverOption_MergeDuplicates("lim:maxchecksonmaxtime maxchecksonmaxtime XPRS_MAXCHECKSONMAXTIME",
-      "This control is intended for use where optimization runs that are terminated using the TIMELIMIT (or the deprecated MAXTIME) control are required to be reproduced exactly. This control is necessary because of the inherent difficulty in terminating algorithmic software in a consistent way using temporal criteria. The control value relates to the number of times the optimizer checks the TIMELIMIT criterion up to and including the check when the termination was activated. To use the control the user first must obtain the value of the CHECKSONMAXTIME attribute after the run returns. This attribute value is the number of times the optimizer checked the TIMELIMIT criterion during the last call to the optimization routine XPRSmipoptimize. Note that this attribute value will be negative if the optimizer terminated on the TIMELIMIT criterion. To ensure that a reproduction of a run terminates in the same way the user should first ensure that TIMELIMIT is set to its default value or to a large value so the run does not terminate again on TIMELIMIT and then simply set the control MAXCHECKSONMAXTIME to the absolute value of the CHECKSONMAXTIME value."
+      "This control is intended for use where optimization runs that are terminated using the TIMELIMIT (or the deprecated MAXTIME) control are required to be reproduced exactly. This control is necessary because of the inherent difficulty in terminating algorithmic software in a consistent way using temporal criteria. The control value relates to the number of times the Optimizer checks the TIMELIMIT criterion up to and including the check when the termination was activated. To use the control the user first must obtain the value of the CHECKSONMAXTIME attribute after the run returns. This attribute value is the number of times the Optimizer checked the TIMELIMIT criterion during the last call to the optimization routine XPRSmipoptimize. Note that this attribute value will be negative if the Optimizer terminated on the TIMELIMIT criterion. To ensure that a reproduction of a run terminates in the same way the user should first ensure that TIMELIMIT is set to its default value or to a large value so the run does not terminate again on TIMELIMIT and then simply set the control MAXCHECKSONMAXTIME to the absolute value of the CHECKSONMAXTIME value."
       "\n\n"
       "Values (default: 0):\n"
       "\n- (0)  Not active."
-      "\n- (n>0)  The number of times the optimizer should check the TIMELIMIT (or MAXTIME) criterion before triggering a termination.",
+      "\n- (> 0)  The number of times the Optimizer should check the TIMELIMIT (or MAXTIME) criterion before triggering a termination.",
       XPRS_MAXCHECKSONMAXTIME, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_MAXCHECKSONMAXTIME
 
@@ -1709,7 +2390,7 @@ public:
       "\n\n"
       "Values (default: 0):\n"
       "\n- (0)  No time limit."
-      "\n- (>0)  Stop cut generation after the given number of seconds.",
+      "\n- (> 0)  Stop cut generation after the given number of seconds.",
       XPRS_MAXCUTTIME, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_MAXCUTTIME
 
@@ -1720,52 +2401,65 @@ public:
       "Values (default: -1):\n"
       "\n- (-1)  Search for all IIS."
       "\n- (0)  Do not search for IIS."
-      "\n- (n>0)  Search for the first n IIS.",
+      "\n- (> 0)  Specifies maximum number of IIS searched for.",
       XPRS_MAXIIS, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_MAXIIS
 
 #ifdef XPRS_MAXIMPLIEDBOUND
     MPD( AddSolverOption_MergeDuplicates("pre:maximpliedbound maximpliedbound XPRS_MAXIMPLIEDBOUND",
-      "Presolve: When tighter bounds are calculated during MIP preprocessing, only bounds whose absolute value are smaller than MAXIMPLIEDBOUND will be applied to the problem."
-      "\n\nDefault: 1.0E+08",
+      "Presolve: When tighter bounds are calculated during MIP or nonlinear preprocessing, only bounds whose absolute value are smaller than MAXIMPLIEDBOUND will be applied to the problem."
+      "\n\n"
+      "Values (default: 1.0E+08):\n"
+      "\n- (>= 0)  The maximum size of implied bounds during MIP presolve and nonlinear presolve.",
       XPRS_MAXIMPLIEDBOUND, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_MAXIMPLIEDBOUND
 
 #ifdef XPRS_MAXLOCALBACKTRACK
     MPD( AddSolverOption_MergeDuplicates("mip:maxlocalbacktrack maxlocalbacktrack XPRS_MAXLOCALBACKTRACK",
-      "Branch-and-Bound: How far back up the current dive path the optimizer is allowed to look for a local backtrack candidate node."
+      "Branch-and-Bound: How far back up the current dive path the Optimizer is allowed to look for a local backtrack candidate node."
       "\n\n"
       "Values (default: -1):\n"
       "\n- (-1)  Automatic."
-      "\n- (n>0)  Local backtrack limit.",
+      "\n- (>= 1)  Specifies local backtrack limit.",
       XPRS_MAXLOCALBACKTRACK, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_MAXLOCALBACKTRACK
 
 #ifdef XPRS_MAXMCOEFFBUFFERELEMS
     MPD( AddSolverOption_MergeDuplicates("tech:maxmcoeffbufferelems maxmcoeffbufferelems XPRS_MAXMCOEFFBUFFERELEMS",
-      "The maximum number of matrix coefficients to buffer before flushing into the internal representation of the problem. Buffering coefficients can offer a significant performance gain when you are building a matrix using XPRSchgcoef or XPRSchgmcoef, but can lead to a significant memory overhead for large matrices, which this control allows you to influence."
-      "\n\nDefault: 2147483647",
+      "Specifies the maximum number of matrix coefficients to buffer before flushing into the internal representation of the problem. Buffering coefficients can offer a significant performance gain when you are building a matrix using XPRSchgcoef or XPRSchgmcoef, but can lead to a significant memory overhead for large matrices, which this control allows you to influence."
+      "\n\n"
+      "Values (default: INF):\n"
+      "\n- (>= 0)  The maximum number of matrix coefficients to buffer before flushing into the internal representation of the problem.",
       XPRS_MAXMCOEFFBUFFERELEMS, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_MAXMCOEFFBUFFERELEMS
 
 #ifdef XPRS_MAXMEMORYHARD
     MPD( AddSolverOption_MergeDuplicates("lim:maxmemoryhard maxmemoryhard XPRS_MAXMEMORYHARD",
-      "This control sets the maximum amount of memory in megabytes the optimizer should allocate. If this limit is exceeded, the solve will terminate. This control is designed to make the optimizer stop in a controlled manner, so that the problem object is valid once termination occurs. The solve state will be set to incomplete. This is different to an out of memory condition in which case the optimizer returns an error. The optimizer may still allocate memory once the limit is exceeded to be able to finsish the operations and stop in a controlled manner. When RESOURCESTRATEGY is enabled, the control also has the same effect as MAXMEMORYSOFT and will cause the optimizer to try preserving memory when possible."
-      "\n\nDefault: 0 (no limit)",
+      "This control sets the maximum amount of memory in MB (megabytes) the Optimizer should allocate. If this limit is exceeded, the solve will terminate. This control is designed to make the Optimizer stop in a controlled manner, so that the problem object is valid once termination occurs. The solve state will be set to incomplete. This is different to an out of memory condition in which case the Optimizer returns an error. The Optimizer may still allocate memory once the limit is exceeded to be able to finsish the operations and stop in a controlled manner. When RESOURCESTRATEGY is enabled, the control also has the same effect as MAXMEMORYSOFT and will cause the Optimizer to try preserving memory when possible."
+      "\n\n"
+      "Values (default: 0):\n"
+      "\n- (0)  No limit."
+      "\n- (> 0)  The maximum amount of memory in MB.",
       XPRS_MAXMEMORYHARD, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_MAXMEMORYHARD
 
 #ifdef XPRS_MAXMEMORYSOFT
     MPD( AddSolverOption_MergeDuplicates("lim:maxmemorysoft maxmemorysoft maxmemory XPRS_MAXMEMORYSOFT",
-      "When RESOURCESTRATEGY is enabled, this control sets the maximum amount of memory in megabytes the optimizer targets to allocate. This may change the solving path, but will not cause the solve to terminate early. To set a hard version of the same, please set MAXMEMORYHARD."
-      "\n\nDefault: 0 (no limit)",
+      "When RESOURCESTRATEGY is enabled, this control sets the maximum amount of memory in megabytes (MB) the Optimizer targets to allocate. This may change the solving path, but will not cause the solve to terminate early. To set a hard version of the same, please set MAXMEMORYHARD."
+      "\n\n"
+      "Values (default: 0):\n"
+      "\n- (0)  No limit."
+      "\n- (> 0)  The maximum amount of target memory in MB.",
       XPRS_MAXMEMORYSOFT, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_MAXMEMORYSOFT
 
 #ifdef XPRS_MAXMIPSOL
     MPD( AddSolverOption_MergeDuplicates("lim:maxmipsol maxmipsol XPRS_MAXMIPSOL",
-      "Branch and Bound: This specifies a limit on the number of integer solutions to be found by the Optimizer. It is possible that during optimization the Optimizer will find the same objective solution from different nodes. However, MAXMIPSOL refers to the total number of integer solutions found, and not necessarily the number of distinct solutions."
-      "\n\nDefault: 0",
+      "Branch and Bound: Specifies a limit on the number of integer solutions to be found by the Optimizer. The solve terminates once this limit is reached. It is possible that during optimization the Optimizer will find the same objective solution from different nodes. However, MAXMIPSOL refers to the total number of integer solutions found, and not necessarily the number of distinct solution values."
+      "\n\n"
+      "Values (default: 0):\n"
+      "\n- (0)  No limit."
+      "\n- (> 0)  The maximum number of integer solutions to be found by the Optimizer.",
       XPRS_MAXMIPSOL, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_MAXMIPSOL
 
@@ -1775,21 +2469,25 @@ public:
       "\n\n"
       "Values (default: -1):\n"
       "\n- (-1)  Task limit determined automatically from MIPTHREADS."
-      "\n- (>0)  Fixed task limit.",
+      "\n- (> 0)  Fixed task limit.",
       XPRS_MAXMIPTASKS, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_MAXMIPTASKS
 
 #ifdef XPRS_MAXNODE
     MPD( AddSolverOption_MergeDuplicates("mip:maxnode maxnode XPRS_MAXNODE",
-      "Branch and Bound: The maximum number of nodes that will be explored."
-      "\n\nDefault: 2147483647",
+      "Branch and Bound: Specifies the maximum number of nodes that will be explored."
+      "\n\n"
+      "Values (default: INF):\n"
+      "\n- (>= 0)  The maximum number of Branch and Bound nodes that will be explored.",
       XPRS_MAXNODE, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_MAXNODE
 
 #ifdef XPRS_MAXPAGELINES
     MPD( AddSolverOption_MergeDuplicates("tech:maxpagelines maxpagelines XPRS_MAXPAGELINES",
-      "Number of lines between page breaks in printable output."
-      "\n\nDefault: 23",
+      "Specifies the number of lines between page breaks in printable output."
+      "\n\n"
+      "Values (default: 23):\n"
+      "\n- (>= 0)  The number of lines between page breaks in printable output.",
       XPRS_MAXPAGELINES, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_MAXPAGELINES
 
@@ -1798,7 +2496,7 @@ public:
       "This determines the maximum scaling factor that can be applied during scaling. The maximum is provided as an exponent of a power of 2."
       "\n\n"
       "Values (default: 64):\n"
-      "\n- (0-64)  The maximum is provided an exponent of a power of 2.",
+      "\n- (>= 0, <= 64)  The maximum is provided an exponent of a power of 2.",
       XPRS_MAXSCALEFACTOR, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_MAXSCALEFACTOR
 
@@ -1808,14 +2506,27 @@ public:
       "\n\n"
       "Values (default: 0):\n"
       "\n- (0)  No stall time limit."
-      "\n- (>0)  If an integer solution has been found, stop MIP search after the given number of seconds without a new incumbent. No effect as long as no solution was found.",
+      "\n- (> 0)  If an integer solution has been found, stop MIP search after the given number of seconds without a new incumbent. No effect as long as no solution was found.",
       XPRS_MAXSTALLTIME, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_MAXSTALLTIME
 
+#ifdef XPRS_MAXTOTALTREEFILESIZE
+    MPD( AddSolverOption_MergeDuplicates("lim:maxtotaltreefilesize maxtotaltreefilesize XPRS_MAXTOTALTREEFILESIZE",
+      "Specifies the maximum amount of disk space, in megabytes (MB), that can be used for storing tree data for a single problem. If more than this is required by the solve, it will terminate with an error."
+      "\n\n"
+      "Values (default: 2147483647):\n"
+      "\n- (0)  Do not allow any tree data to be written to disk."
+      "\n- (>= 1)  The maximum size in MB of the tree file(s) on disk.",
+      XPRS_MAXTOTALTREEFILESIZE, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_MAXTOTALTREEFILESIZE
+
 #ifdef XPRS_MAXTREEFILESIZE
     MPD( AddSolverOption_MergeDuplicates("lim:maxtreefilesize maxtreefilesize XPRS_MAXTREEFILESIZE",
-      "The maximum size, in megabytes, to which the tree file may grow, or 0 for no limit. When the tree file reaches this limit, a second tree file will be created. Useful if you are using a filesystem that puts a maximum limit on the size of a file."
-      "\n\nDefault: 0",
+      "Specifies the maximum size, in megabytes (MB), to which a single tree file may grow. When the tree file reaches this limit, a second tree file will be created. Useful if you are using a filesystem that puts a maximum limit on the size of a file."
+      "\n\n"
+      "Values (default: 0):\n"
+      "\n- (0)  No limit for the size of the tree file."
+      "\n- (>= 1)  The maximum size in MB of a tree file.",
       XPRS_MAXTREEFILESIZE, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_MAXTREEFILESIZE
 
@@ -1862,7 +2573,9 @@ public:
 #ifdef XPRS_MIPABSSTOP
     MPD( AddSolverOption_MergeDuplicates("lim:mipabsstop mipabsstop XPRS_MIPABSSTOP",
       "Branch and Bound: The absolute tolerance determining whether the tree search will continue or not. It will terminate if |MIPOBJVAL - BESTBOUND| ≤ MIPABSSTOP where MIPOBJVAL is the value of the best solution's objective function, and BESTBOUND is the current best solution bound. For example, to stop the tree search when a MIP solution has been found and the Optimizer can guarantee it is within 100 of the optimal solution, set MIPABSSTOP to 100."
-      "\n\nDefault: 0.0",
+      "\n\n"
+      "Values (default: 0.0):\n"
+      "\n- (>= 0)  The absolute MIP gap tolerance to terminate.",
       XPRS_MIPABSSTOP, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_MIPABSSTOP
 
@@ -1890,7 +2603,7 @@ public:
       "\n\n"
       "Values (default: -1):\n"
       "\n- (-1)  Automatic - let the solver decide on a node limit."
-      "\n- (>0)  Number of nodes each concurrent solve should complete before a winner is selected.",
+      "\n- (>= 0)  Number of nodes each concurrent solve should complete before a winner is selected.",
       XPRS_MIPCONCURRENTNODES, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_MIPCONCURRENTNODES
 
@@ -1900,8 +2613,8 @@ public:
       "\n\n"
       "Values (default: 0):\n"
       "\n- (-1)  Enabled. The number of concurrent solves depends on MIPTHREADS."
-      "\n- (0, 1)  Disabled"
-      "\n- (n>1)  Enabled. The number of concurrent solves to start is given by n.",
+      "\n- (>= 0, <= 1)  Disabled"
+      "\n- (> 1)  Enabled. Specifies the number of concurrent solves to start.",
       XPRS_MIPCONCURRENTSOLVES, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_MIPCONCURRENTSOLVES
 
@@ -1910,15 +2623,15 @@ public:
       "Branch and Bound: Limits operations that can reduce the MIP solution space."
       "\n\n"
       "Values (default: 1):\n"
-      "\n- (2)  Allow dual reductions on continuous variables only."
+      "\n- (0)  Prevent all dual reductions."
       "\n- (1)  Allow all dual reductions."
-      "\n- (0)  Prevent all dual reductions.",
+      "\n- (2)  Allow dual reductions on non MIP entities only.",
       XPRS_MIPDUALREDUCTIONS, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_MIPDUALREDUCTIONS
 
 #ifdef XPRS_MIPFRACREDUCE
     MPD( AddSolverOption_MergeDuplicates("mip:mipfracreduce mipfracreduce XPRS_MIPFRACREDUCE",
-      "Branch and Bound: Specifies how often the optimizer should run a heuristic to reduce the number of fractional integer variables in the node LP solutions."
+      "Branch and Bound: Specifies how often the Optimizer should run a heuristic to reduce the number of fractional integer variables in the node LP solutions."
       "\n\n"
       "Values (default: -1):\n"
       "\n- (-1)  Automatic."
@@ -1936,7 +2649,7 @@ public:
       "Values (default: 0):\n"
       "\n- (0)  Do not calculate condition numbers."
       "\n- (1)  Calculate conditions numbers on every node, including after each round of root cutting."
-      "\n- (n>1)  Calculate a condition number once per node of every n'th level of the branch-and-bound tree.",
+      "\n- (> 1)  Calculate a condition number once per node of every n'th level of the branch-and-bound tree, where n is the specified control value.",
       XPRS_MIPKAPPAFREQ, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_MIPKAPPAFREQ
 
@@ -1945,7 +2658,7 @@ public:
       "MIP log print control."
       "\n\n"
       "Values (default: -100):\n"
-      "\n- (-n)  Print out summary log at each nth node."
+      "\n- (< 0)  Print out summary log at each nth node."
       "\n- (0)  No printout during MIP tree search."
       "\n- (1)  Only print out summary statement at the end."
       "\n- (2)  Print out detailed log at all solutions found."
@@ -1955,14 +2668,13 @@ public:
 
 #ifdef XPRS_MIPPRESOLVE
     MPD( AddSolverOption_MergeDuplicates("mip:mippresolve mippresolve XPRS_MIPPRESOLVE",
-      "Branch and Bound: Type of integer processing to be performed. If set to 0, no processing will be performed. This is a bit-vector control (see Section Bit-vector controls)."
+      "Branch and Bound: Type of integer processing to be performed at nodes. If set to 0, no processing will be performed. This is a bit-vector control (see Section Bit-vector controls)."
       "\n\n"
       "Values (default: -1):\n"
-      "\n- (0)  Reduced cost fixing will be performed at each node. This can simplify the node before it is solved, by deducing that certain variables' values can be fixed based on additional bounds imposed on other variables at this node."
-      "\n- (1)  Primal reductions will be performed at each node. Uses constraints of the node to tighten the range of variables, often resulting in fixing their values. This greatly simplifies the problem and may even determine optimality or infeasibility of the node before the simplex method commences."
-      "\n- (2)  [Unused] This bit is no longer used to control probing. Refer to the integer control PREPROBING for setting probing level during presolve."
-      "\n- (3)  If node preprocessing is allowed to change bounds on continuous columns."
-      "\n- (4)  Dual reductions will be performed at each node."
+      "\n- (0)  Reduced cost fixing will be performed at each node. This can simplify the node before it is solved, by deducing that certain variables' values can be fixed based on additional bounds imposed on other variables at this node. This bit is deprecated, use NODEREDCOSTTIGHTEN instead."
+      "\n- (1)  Primal reductions will be performed at each node. Uses constraints of the node to tighten the range of variables, often resulting in fixing their values. This greatly simplifies the problem and may even determine optimality or infeasibility of the node before the simplex method commences. This bit is deprecated, use NODEAPPLIEDBOUNDS instead."
+      "\n- (3)  If node preprocessing is allowed to change bounds on non MIP entities (e.g., continuous) columns. This bit is deprecated, use NODEAPPLIEDBOUNDS instead."
+      "\n- (4)  Dual reductions will be performed at each node. This bit is deprecated, use NODEDUALREDUCTIONS instead."
       "\n- (5)  Allow global (non-bound) tightening of the problem during the tree search."
       "\n- (6)  The objective function will be used to find reductions at each node."
       "\n- (7)  [Unused] This bit is no longer used to control restarts. Refer to the integer control MIPRESTART for disabling tree restarts."
@@ -1984,7 +2696,10 @@ public:
 #ifdef XPRS_MIPREFINEITERLIMIT
     MPD( AddSolverOption_MergeDuplicates("lim:miprefineiterlimit miprefineiterlimit XPRS_MIPREFINEITERLIMIT",
       "This defines an effort limit expressed as simplex iterations for the MIP solution refiner. The limit is per reoptimizations in the MIP refiner."
-      "\n\nDefault: -1 — determined automatically.",
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  The effort limit is determined automatically."
+      "\n- (>= 0)  The effort limit in terms of the number of simplex iterations.",
       XPRS_MIPREFINEITERLIMIT, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_MIPREFINEITERLIMIT
 
@@ -2004,8 +2719,10 @@ public:
 
 #ifdef XPRS_MIPRELSTOP
     MPD( AddSolverOption_MergeDuplicates("lim:miprelstop miprelstop XPRS_MIPRELSTOP",
-      "Branch and Bound: This determines when the branch and bound tree search will terminate. Branch and bound tree search will stop if: |MIPOBJVAL - BESTBOUND| ≤ MIPRELSTOP x max(|BESTBOUND|,|MIPOBJVAL|) where MIPOBJVAL is the value of the best solution's objective function and BESTBOUND is the current best solution bound. For example, to stop the tree search when a MIP solution has been found and the Optimizer can guarantee it is within 5% of the optimal solution, set MIPRELSTOP to 0.05."
-      "\n\nDefault: 0.0001",
+      "Branch and Bound: This determines when the branch and bound tree search will terminate. Branch and bound tree search will stop if: |MIPOBJVAL - BESTBOUND| ≤ MIPRELSTOP * max(|BESTBOUND|,|MIPOBJVAL|) where MIPOBJVAL is the value of the best solution's objective function and BESTBOUND is the current best solution bound. For example, to stop the tree search when a MIP solution has been found and the Optimizer can guarantee it is within 5% of the optimal solution, set MIPRELSTOP to 0.05."
+      "\n\n"
+      "Values (default: 0.0001):\n"
+      "\n- (>= 0)  The relative MIP gap tolerance to terminate.",
       XPRS_MIPRELSTOP, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_MIPRELSTOP
 
@@ -2023,17 +2740,34 @@ public:
 
 #ifdef XPRS_MIPRESTARTFACTOR
     MPD( AddSolverOption_MergeDuplicates("mip:miprestartfactor miprestartfactor XPRS_MIPRESTARTFACTOR",
-      "Branch and Bound: Fine tune initial conditions to trigger an in-tree restart. Use a value 1 to increase the aggressiveness with which the Optimizer restarts. Use a value"
-      "\n\nDefault: 1.0",
+      "Branch and Bound: Fine tune initial conditions to trigger an in-tree restart. Note that this control does not affect the initial condition on the gap, which must be set separately."
+      "\n\n"
+      "Values (default: 1.0):\n"
+      "\n- (> 0)  Aggressiveness with which the Optimizer restarts. Use a value 1 to increase the aggressiveness with which the Optimizer restarts and a value",
       XPRS_MIPRESTARTFACTOR, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_MIPRESTARTFACTOR
 
 #ifdef XPRS_MIPRESTARTGAPTHRESHOLD
     MPD( AddSolverOption_MergeDuplicates("mip:miprestartgapthreshold miprestartgapthreshold miprestartgaptol XPRS_MIPRESTARTGAPTHRESHOLD",
-      "Branch and Bound: Initial gap threshold to delay in-tree restart. The restart is delayed initially if the gap, given as a fraction between 0 and 1, is below this threshold. The optimizer adjusts the threshold every time a restart is delayed. Note that there are other criteria that can delay or prevent a restart."
-      "\n\nDefault: 0.02",
+      "Branch and Bound: Initial gap threshold to delay in-tree restart. The restart is delayed initially if the gap, given as a fraction between 0 and 1, is below this threshold. The Optimizer adjusts the threshold every time a restart is delayed. Note that there are other criteria that can delay or prevent a restart."
+      "\n\n"
+      "Values (default: 0.02):\n"
+      "\n- (>= 0.0, <= 1.0)  Initial relative MIP gap to delay in-tree restart.",
       XPRS_MIPRESTARTGAPTHRESHOLD, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_MIPRESTARTGAPTHRESHOLD
+
+#ifdef XPRS_MIPSTOPSTAGE
+    MPD( AddSolverOption_MergeDuplicates("mip:mipstopstage mipstopstage XPRS_MIPSTOPSTAGE",
+      "This control allows stopping a MIP solve in an early stage of the solution process. If the control is set to a stage that is already completed then the next optimization will stop immediately. If the solution process stops due to this control, the STOPSTATUS attribute is set to MIPSTAGE."
+      "\n\n"
+      "Values (default: 0):\n"
+      "\n- (0)  MIPSTOPSTAGE_NONE— Do not stop at an early stage of the solve."
+      "\n- (1)  MIPSTOPSTAGE_PRESOLVE— Stop after presolve."
+      "\n- (2)  MIPSTOPSTAGE_PREROOTHEURS— Stop after heuristics run before the initial relaxation."
+      "\n- (3)  MIPSTOPSTAGE_INITIALRELAXATION— Stop after solving the initial relaxation."
+      "\n- (4)  MIPSTOPSTAGE_ROOT— Stop at the end of the root node.",
+      XPRS_MIPSTOPSTAGE, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_MIPSTOPSTAGE
 
 #ifdef XPRS_MIPTERMINATIONMETHOD
     MPD( AddSolverOption_MergeDuplicates("mip:mipterminationmethod mipterminationmethod mipstop XPRS_MIPTERMINATIONMETHOD",
@@ -2047,22 +2781,30 @@ public:
 
 #ifdef XPRS_MIPTHREADS
     MPD( AddSolverOption_MergeDuplicates("mip:mipthreads mipthreads XPRS_MIPTHREADS",
-      "If set to a positive integer it determines the number of threads implemented to run the parallel MIP code. If MIPTHREADS is set to the default value (-1), the THREADS control will determine the number of threads used."
-      "\n\nDefault: -1 (determined by the THREADS control)",
+      "If set to a positive integer it determines the number of threads implemented to run the parallel MIP code."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  The THREADS control will determine the number of threads used."
+      "\n- (> 0)  The number of threads to run the parallel MIP code",
       XPRS_MIPTHREADS, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_MIPTHREADS
 
 #ifdef XPRS_MIPTOL
     MPD( AddSolverOption_MergeDuplicates("alg:miptol miptol XPRS_MIPTOL",
       "Branch and Bound: This is the tolerance within which a decision variable's value is considered to be integral."
-      "\n\nDefault: 5.0E-06",
+      "\n\n"
+      "Values (default: 5.0E-06):\n"
+      "\n- (> 0)  The integrality tolerance for decision variables.",
       XPRS_MIPTOL, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_MIPTOL
 
 #ifdef XPRS_MIPTOLTARGET
     MPD( AddSolverOption_MergeDuplicates("alg:miptoltarget miptoltarget XPRS_MIPTOLTARGET",
-      "Target MIPTOL value used by the automatic MIP solution refiner as defined by REFINEOPS. Negative and zero values are ignored."
-      "\n\nDefault: 0.0",
+      "Specifies the target MIPTOL value used by the automatic MIP solution refiner as defined by REFINEOPS."
+      "\n\n"
+      "Values (default: 0.0):\n"
+      "\n- (0)  The value of MIPTOL is used."
+      "\n- (> 0)  Target MIPTOL value used by the automatic MIP solution refiner.",
       XPRS_MIPTOLTARGET, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_MIPTOLTARGET
 
@@ -2082,8 +2824,8 @@ public:
       "Provides compatibility of MPS file output for older MPS readers."
       "\n\n"
       "Values (default: 0):\n"
-      "\n- (Bit 0)  Do not write objective sense (OBJSENSE section)."
-      "\n- (Bit 1)  Fixed binaries are written as fixed only (unless used as a base variable for an indicator constraint).",
+      "\n- (0)  Do not write objective sense (OBJSENSE section)."
+      "\n- (1)  Fixed binaries are written as fixed only (unless used as a base variable for an indicator constraint).",
       XPRS_MPS18COMPATIBLE, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_MPS18COMPATIBLE
 
@@ -2149,18 +2891,19 @@ public:
 
 #ifdef XPRS_MULTIOBJOPS
     MPD( AddSolverOption_MergeDuplicates("obj:multi:multiobjops multiobjops XPRS_MULTIOBJOPS",
-      "Modifies the behaviour of the optimizer when solving multi-objective problems."
+      "Modifies the behaviour of the Optimizer when solving multi-objective problems."
       "\n\n"
       "Values (default: 7 (all bits are set, see Section Bit-vector controls for bit-vector controls)):\n"
-      "\n- (0)  XPRS_MULTIOBJOPS_ENABLEDMulti-objective enabled. If this bit is not set, multi-objective problems will treated as single-objective problems, and only objective 0 will be optimized."
-      "\n- (1)  XPRS_MULTIOBJOPS_PRESOLVEApply multi-objective modifications during presolve. If this bit is not set, the original problem will be modified when solving each subsequent objective, and these modifications will remain in the problem after the solve has completed."
-      "\n- (2)  XPRS_MULTIOBJOPS_RCFIXINGReduced cost fixing. If this bit is set, optimality of earlier objectives will be preserved by fixing all non-basic variables with non-zero reduced costs to their bounds. If not set, optimality of earlier objectives will be preserved by adding constraints to the problem.",
+      "\n- (0)  XPRS_MULTIOBJOPS_ENABLED Multi-objective enabled. If this bit is not set, multi-objective problems will treated as single-objective problems, and only objective 0 will be optimized."
+      "\n- (1)  XPRS_MULTIOBJOPS_PRESOLVE Apply multi-objective modifications during presolve. If this bit is not set, the original problem will be modified when solving each subsequent objective, and these modifications will remain in the problem after the solve has completed."
+      "\n- (2)  XPRS_MULTIOBJOPS_RCFIXING Reduced cost fixing. If this bit is set, optimality of earlier objectives will be preserved by fixing all non-basic variables with non-zero reduced costs to their bounds. If not set, optimality of earlier objectives will be preserved by adding constraints to the problem."
+      "\n- (3)  XPRS_MULTIOBJOPS_NOSOLVEATTRIBS If this bit is set, the Optimizer will not save the problem attributes after each objective is solved, which reduces memory usage. The attributes will then no longer be queryable via XPRSgetobjdblattrib or XPRSgetobjintattrib, which will raise an error.",
       XPRS_MULTIOBJOPS, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_MULTIOBJOPS
 
 #ifdef XPRS_MUTEXCALLBACKS
     MPD( AddSolverOption_MergeDuplicates("mip:mutexcallbacks mutexcallbacks XPRS_MUTEXCALLBACKS",
-      "Branch and Bound: This determines whether the callback routines are mutexed from within the optimizer."
+      "Branch and Bound: This determines whether the callback routines are mutexed from within the Optimizer."
       "\n\n"
       "Values (default: 1):\n"
       "\n- (0)  Callbacks are not mutexed."
@@ -2175,16 +2918,66 @@ public:
       "Values (default: -1):\n"
       "\n- (-1)  Automatically determined limit"
       "\n- (0)  No limit."
-      "\n- (n>0)  Limit to n network simplex iterations.",
+      "\n- (> 0)  Limits the number of degenerate pivots of the network simplex algorithm.",
       XPRS_NETSTALLLIMIT, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_NETSTALLLIMIT
+
+#ifdef XPRS_NODEAPPLIEDBOUNDS
+    MPD( AddSolverOption_MergeDuplicates("mip:nodeappliedbounds nodeappliedbounds XPRS_NODEAPPLIEDBOUNDS",
+      "This control determines whether the solver is allowed to apply primal reductions at each node. The solver will use the constraints of the node to tighten the range of variables, often resulting in fixing their values. This can greatly simplify the problem and may even determine optimality or infeasibility of the node before the simplex method commences."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  Automatic: the solver decides if and when to apply primal reductions at nodes."
+      "\n- (0)  Disabled."
+      "\n- (1)  Only apply primal reductions to MIP entities."
+      "\n- (2)  Apply primal reductions to all variables.",
+      XPRS_NODEAPPLIEDBOUNDS, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_NODEAPPLIEDBOUNDS
+
+#ifdef XPRS_NODEDUALREDUCTIONS
+    MPD( AddSolverOption_MergeDuplicates("mip:nodedualreductions nodedualreductions XPRS_NODEDUALREDUCTIONS",
+      "This control determines whether the solver is allowed to apply dual reductions at each node."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  Automatic: the solver decides if and when to apply dual reductions at nodes."
+      "\n- (0)  Disabled."
+      "\n- (1)  Apply dual reductions to all variables."
+      "\n- (2)  Only apply dual reductions to non MIP entities.",
+      XPRS_NODEDUALREDUCTIONS, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_NODEDUALREDUCTIONS
+
+#ifdef XPRS_NODEPRESOLVE
+    MPD( AddSolverOption_MergeDuplicates("mip:nodepresolve nodepresolve XPRS_NODEPRESOLVE",
+      "This control determines whether some form of presolving should be performed at Branch and Bound nodes. Node presolve attempts to simplify the problem by detecting and removing redundant constraints, tightening variable bounds, etc."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  Automatic: the solver decides which reductions to apply, and to which extent."
+      "\n- (0)  Disabled."
+      "\n- (1)  Minimal node presolve is applied."
+      "\n- (2)  Standard node presolve is applied.",
+      XPRS_NODEPRESOLVE, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_NODEPRESOLVE
 
 #ifdef XPRS_NODEPROBINGEFFORT
     MPD( AddSolverOption_MergeDuplicates("mip:nodeprobingeffort nodeprobingeffort XPRS_NODEPROBINGEFFORT",
       "Adjusts the overall level of node probing."
-      "\n\nDefault: 1.0",
+      "\n\n"
+      "Values (default: 1.0):\n"
+      "\n- (>= 0)  Level of the node probing effort.",
       XPRS_NODEPROBINGEFFORT, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_NODEPROBINGEFFORT
+
+#ifdef XPRS_NODEREDCOSTTIGHTEN
+    MPD( AddSolverOption_MergeDuplicates("mip:noderedcosttighten noderedcosttighten XPRS_NODEREDCOSTTIGHTEN",
+      "This control determines whether reduced cost tightening is applied during Branch and Bound."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  Automatic: the solver decides if and when to apply reduced cost tightening."
+      "\n- (0)  Disabled."
+      "\n- (1)  Enabled."
+      "\n- (2)  Aggressive: the solver will search for alternative reduced costs to potentially increase the amount of tightening.",
+      XPRS_NODEREDCOSTTIGHTEN, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_NODEREDCOSTTIGHTEN
 
 #ifdef XPRS_NODESELECTION
     MPD( AddSolverOption_MergeDuplicates("mip:nodeselection nodeselection XPRS_NODESELECTION",
@@ -2222,14 +3015,19 @@ public:
 #ifdef XPRS_OPTIMALITYTOL
     MPD( AddSolverOption_MergeDuplicates("alg:optimalitytol optimalitytol XPRS_OPTIMALITYTOL",
       "Simplex: This is the zero tolerance for reduced costs. On each iteration, the simplex method searches for a variable to enter the basis which has a negative reduced cost. The candidates are only those variables which have reduced costs less than the negative value of OPTIMALITYTOL."
-      "\n\nDefault: 1.0E-06",
+      "\n\n"
+      "Values (default: 1.0E-06):\n"
+      "\n- (> 0)  The zero tolerance for reduced costs.",
       XPRS_OPTIMALITYTOL, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_OPTIMALITYTOL
 
 #ifdef XPRS_OPTIMALITYTOLTARGET
     MPD( AddSolverOption_MergeDuplicates("alg:optimalitytoltarget optimalitytoltarget opttol_target XPRS_OPTIMALITYTOLTARGET",
       "This specifies the target optimality tolerance for the solution refiner."
-      "\n\nDefault: 0 — use the value specified by OPTIMALITYTOL.",
+      "\n\n"
+      "Values (default: 0):\n"
+      "\n- (0)  The value of OPTIMALITYTOL is used."
+      "\n- (> 0)  The target optimality tolerance for the solution refiner.",
       XPRS_OPTIMALITYTOLTARGET, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_OPTIMALITYTOLTARGET
 
@@ -2264,8 +3062,10 @@ public:
 
 #ifdef XPRS_OUTPUTTOL
     MPD( AddSolverOption_MergeDuplicates("alg:outputtol outputtol XPRS_OUTPUTTOL",
-      "Zero tolerance on print values."
-      "\n\nDefault: 1.0E-05",
+      "Specifies the zero tolerance on print values."
+      "\n\n"
+      "Values (default: 1.0E-05):\n"
+      "\n- (>= 0)  The zero tolerance on print values.",
       XPRS_OUTPUTTOL, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_OUTPUTTOL
 
@@ -2278,10 +3078,33 @@ public:
 
 #ifdef XPRS_PIVOTTOL
     MPD( AddSolverOption_MergeDuplicates("lp:pivottol pivottol XPRS_PIVOTTOL",
-      "Simplex: The zero tolerance for matrix elements. On each iteration, the simplex method seeks a nonzero matrix element to pivot on. Any element with absolute value less than PIVOTTOL is treated as zero for this purpose."
-      "\n\nDefault: 1.0E-09",
+      "Simplex: Specifies the zero tolerance for pivot elements. On each iteration, the simplex method seeks a nonzero matrix element to pivot on. Any element with absolute value less than PIVOTTOL is treated as zero for this purpose."
+      "\n\n"
+      "Values (default: 1.0E-09):\n"
+      "\n- (> 0)  The zero tolerance for Simplex pivot elements.",
       XPRS_PIVOTTOL, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_PIVOTTOL
+
+#ifdef XPRS_POOLDUPLICATECHECK
+    MPD( AddSolverOption_MergeDuplicates("sol:poolduplicatecheck poolduplicatecheck XPRS_POOLDUPLICATECHECK",
+      "When extended branch-and-bound search for additional solutions has been enabled through POOLENUMSTRATEGY, this control determines which MIP column entities to consider when checking if two solutions should be considered duplicates. If two solutions are discovered with the same discrete values for the MIP column entities, only the solution with the better objective value is kept."
+      "\n\n"
+      "Values (default: 1):\n"
+      "\n- (1)  Solutions that agree in MIP columns specified using XPRSloadbranchdirs are considered duplicates. If no directives are given, then behaves the same as option 2."
+      "\n- (2)  Solutions must agree in all MIP column entity values to be considered duplicates.",
+      XPRS_POOLDUPLICATECHECK, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_POOLDUPLICATECHECK
+
+#ifdef XPRS_POOLKEEPSOLS
+    MPD( AddSolverOption_MergeDuplicates("sol:poolkeepsols poolkeepsols XPRS_POOLKEEPSOLS",
+      "Limits the number of collected solutions that should automatically be transferred into a next solve. Solutions collected from a MIP solve or from a Global solve can be transferred automatically as warm-start solutions for a subsequent solve, by setting this control to a positive value. Solutions will be transferred the first time a problem is modified after having been solved, or at the start of the next solve if no modifications were applied. The warm-starting is equivalent to calling XPRSaddmipsol on the POOLKEEPSOLS best solutions stored in the pool and therefore supports any solve type that can be warm-started by XPRSaddmipsol."
+      "\n\n"
+      "Values (default: 0):\n"
+      "\n- (-1)  Use all collected solutions as warm-starts for the next solve."
+      "\n- (0)  Do not use any collected solutions for warm-starting"
+      "\n- (> 0)  Use up to the given number of solutions as warm-starts for the next solve.",
+      XPRS_POOLKEEPSOLS, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_POOLKEEPSOLS
 
 #ifdef XPRS_PPFACTOR
     MPD( AddSolverOption_MergeDuplicates("lp:ppfactor ppfactor XPRS_PPFACTOR",
@@ -2336,16 +3159,31 @@ public:
       XPRS_PREBNDREDQUAD, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_PREBNDREDQUAD
 
+#ifdef XPRS_PRECLIQUELIFTING
+    MPD( AddSolverOption_MergeDuplicates("pre:precliquelifting precliquelifting XPRS_PRECLIQUELIFTING",
+      "Presolve: Determines whether to do clique lifting."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  Automatically determined."
+      "\n- (0)  Disabled."
+      "\n- (1)  Enabled.",
+      XPRS_PRECLIQUELIFTING, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_PRECLIQUELIFTING
+
 #ifdef XPRS_PRECLIQUESTRATEGY
     MPD( AddSolverOption_MergeDuplicates("pre:precliquestrategy precliquestrategy XPRS_PRECLIQUESTRATEGY",
       "Determines how much effort to spend on clique covers in presolve."
-      "\n\nDefault: -1",
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  Determined automatically."
+      "\n- (0)  Disabled."
+      "\n- (> 0)  Enabled.",
       XPRS_PRECLIQUESTRATEGY, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_PRECLIQUESTRATEGY
 
 #ifdef XPRS_PRECOEFELIM
     MPD( AddSolverOption_MergeDuplicates("pre:precoefelim precoefelim XPRS_PRECOEFELIM",
-      "Presolve: Specifies whether the optimizer should attempt to recombine constraints in order to reduce the number of non zero coefficients when presolving a mixed integer problem."
+      "Presolve: Specifies whether the Optimizer should attempt to recombine constraints in order to reduce the number of non zero coefficients when presolving a mixed integer problem."
       "\n\n"
       "Values (default: 2):\n"
       "\n- (0)  Disabled."
@@ -2360,15 +3198,18 @@ public:
       "\n\n"
       "Values (default: -1):\n"
       "\n- (-1)  Automatically determined."
-      "\n- (0)  Disable detection of independent components."
-      "\n- (1)  Enable detection of independent components.",
+      "\n- (0)  Disable the detection of independent components."
+      "\n- (1)  Detect and solve independent components after presolving."
+      "\n- (2)  Detect and solve independent components after solving the initial LP relaxation.",
       XPRS_PRECOMPONENTS, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_PRECOMPONENTS
 
 #ifdef XPRS_PRECOMPONENTSEFFORT
     MPD( AddSolverOption_MergeDuplicates("pre:precomponentseffort precomponentseffort XPRS_PRECOMPONENTSEFFORT",
       "Presolve: adjusts the overall effort for the independent component presolver. This control affects working limits for the subproblem solving as well as thresholds when it is called. Increase to put more emphasis on component presolving."
-      "\n\nDefault: 1.0",
+      "\n\n"
+      "Values (default: 1.0):\n"
+      "\n- (>= 0)  Effort of the independent component presolver.",
       XPRS_PRECOMPONENTSEFFORT, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_PRECOMPONENTSEFFORT
 
@@ -2427,8 +3268,8 @@ public:
       "\n- (-1)  Automatically determined."
       "\n- (0)  Disabled."
       "\n- (1)  Cautious strategy, limited effort looking for special structure."
-      "\n- (2)  Same as 2 but checking all candidates."
-      "\n- (3)  Includes 1 and 2 but also looks for more generic column domination.",
+      "\n- (2)  Same as 1 but checking all candidates."
+      "\n- (3)  Includes 2 but also looks for more general column domination.",
       XPRS_PREDOMCOL, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_PREDOMCOL
 
@@ -2445,6 +3286,18 @@ public:
       XPRS_PREDOMROW, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_PREDOMROW
 
+#ifdef XPRS_PREDUALREDUCTIONS
+    MPD( AddSolverOption_MergeDuplicates("mip:predualreductions predualreductions XPRS_PREDUALREDUCTIONS",
+      "This control determines whether the solver is allowed to apply dual reductions during presolve."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  Automatic: the solver decides if and when to apply dual reductions during presolve."
+      "\n- (0)  Disabled."
+      "\n- (1)  Apply dual reductions to all variables."
+      "\n- (2)  Only apply dual reductions to non MIP entities.",
+      XPRS_PREDUALREDUCTIONS, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_PREDUALREDUCTIONS
+
 #ifdef XPRS_PREDUPROW
     MPD( AddSolverOption_MergeDuplicates("pre:preduprow preduprow XPRS_PREDUPROW",
       "Presolve: Determines the type of duplicate rows to look for and eliminate when presolving a problem."
@@ -2457,6 +3310,18 @@ public:
       "\n- (3)  Same as option 2 plus eliminate duplicate rows with more complex penalty variable expressions. (MIP only).",
       XPRS_PREDUPROW, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_PREDUPROW
+
+#ifdef XPRS_PREELIMINATIONS
+    MPD( AddSolverOption_MergeDuplicates("pre:preeliminations preeliminations XPRS_PREELIMINATIONS",
+      "Presolve: Determines whether to performe variable eliminations."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  Automatically determined."
+      "\n- (0)  Disabled."
+      "\n- (1)  Only eliminations on non MIP entities."
+      "\n- (2)  All types of eliminations allowed.",
+      XPRS_PREELIMINATIONS, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_PREELIMINATIONS
 
 #ifdef XPRS_PREELIMQUAD
     MPD( AddSolverOption_MergeDuplicates("qp:preelimquad preelimquad XPRS_PREELIMQUAD",
@@ -2502,6 +3367,29 @@ public:
       XPRS_PRELINDEP, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_PRELINDEP
 
+#ifdef XPRS_PREMIPENTDETECT
+    MPD( AddSolverOption_MergeDuplicates("pre:premipentdetect premipentdetect XPRS_PREMIPENTDETECT",
+      "Presolve: Determines whether to do integer variable and SOS detection."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  Automatically determined."
+      "\n- (0)  Disabled."
+      "\n- (1)  Enabled.",
+      XPRS_PREMIPENTDETECT, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_PREMIPENTDETECT
+
+#ifdef XPRS_PREMIPREDUCTIONS
+    MPD( AddSolverOption_MergeDuplicates("pre:premipreductions premipreductions XPRS_PREMIPREDUCTIONS",
+      "Presolve: Determines whether to do integrality based reductions."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  Automatically determined."
+      "\n- (0)  Disabled."
+      "\n- (1)  Only simple reductions are enabled."
+      "\n- (2)  All reductions, including advanced ones, are enabled.",
+      XPRS_PREMIPREDUCTIONS, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_PREMIPREDUCTIONS
+
 #ifdef XPRS_PREOBJCUTDETECT
     MPD( AddSolverOption_MergeDuplicates("pre:preobjcutdetect preobjcutdetect XPRS_PREOBJCUTDETECT",
       "Presolve: Determines whether to check for constraints that are parallel or near parallel to a linear objective function, and which can safely be removed. This reduction applies to MIPs only."
@@ -2525,8 +3413,10 @@ public:
 
 #ifdef XPRS_PREPERMUTESEED
     MPD( AddSolverOption_MergeDuplicates("pre:prepermuteseed prepermuteseed XPRS_PREPERMUTESEED",
-      "This control sets the seed for the pseudo-random number generator for permuting the problem when starting the presolve. This control only has effects when PREPERMUTE is enabled."
-      "\n\nDefault: 1",
+      "This control specifies the seed for the pseudo-random number generator for permuting the problem when starting the presolve. This control only has effects when PREPERMUTE is enabled."
+      "\n\n"
+      "Values (default: 1):\n"
+      "\n- (>= 1)  The seed for the pseudo-random number generator for permuting the problem when starting the presolve.",
       XPRS_PREPERMUTESEED, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_PREPERMUTESEED
 
@@ -2535,7 +3425,7 @@ public:
       "Presolve: Amount of probing to perform on binary variables during presolve. This is done by fixing a binary to each of its values in turn and analyzing the implications."
       "\n\n"
       "Values (default: -1):\n"
-      "\n- (-1)  Let the optimizer decide on the amount of probing."
+      "\n- (-1)  Let the Optimizer decide on the amount of probing."
       "\n- (0)  Disabled."
       "\n- (+1)  Light probing — only few implications will be examined."
       "\n- (+2)  Full probing — all implications for all binaries will be examined."
@@ -2561,7 +3451,7 @@ public:
       "\n- (-2)  Enable Pre-root parallel heuristics without a specific work limit for this phase. The phase will terminate if a different limit is hit, or if it runs out of heuristic work to do."
       "\n- (-1)  Enablement of Pre-root parallel heuristics is subject to HEUREMPHASIS."
       "\n- (0)  Disable Pre-root parallel heuristics."
-      "\n- (x>0)  Enable Pre-root parallel heuristics with a work limit dependent on problem characteristics, using x as a factor to dial this work limit up or down.",
+      "\n- (> 0)  Enable Pre-root parallel heuristics with a work limit dependent on problem characteristics, using the control value as a factor to dial this work limit up or down.",
       XPRS_PREROOTEFFORT, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_PREROOTEFFORT
 
@@ -2572,7 +3462,7 @@ public:
       "Values (default: -1):\n"
       "\n- (-1)  Use all available threads."
       "\n- (0)  Disable pre-root parallel heuristics."
-      "\n- (n>0)  Use the specified number of threads, superseding the value of THREADS",
+      "\n- (> 0)  Use the specified number of threads, superseding the value of THREADS",
       XPRS_PREROOTTHREADS, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_PREROOTTHREADS
 
@@ -2583,7 +3473,7 @@ public:
       "Values (default: -1):\n"
       "\n- (-1)  No explicit work limit for the Pre-root parallel heuristic phase. If enabled, the work limit for this phase is controlled via PREROOTEFFORT."
       "\n- (0)  Disable Pre-root parallel heuristics."
-      "\n- (x>0)  Enable Pre-root parallel heuristics with an explicit work limit of x work units. If set, this work limit has precedence over any work limit set by PREROOTEFFORT.",
+      "\n- (> 0)  Enable Pre-root parallel heuristics with the given explicit limit of work units. If set, this work limit has precedence over any work limit set by PREROOTEFFORT.",
       XPRS_PREROOTWORKLIMIT, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_PREROOTWORKLIMIT
 
@@ -2603,7 +3493,9 @@ public:
 #ifdef XPRS_PRESOLVEMAXGROW
     MPD( AddSolverOption_MergeDuplicates("pre:presolvemaxgrow presolvemaxgrow XPRS_PRESOLVEMAXGROW",
       "Limit on how much the number of non-zero coefficients is allowed to grow during presolve, specified as a ratio of the number of non-zero coefficients in the original problem."
-      "\n\nDefault: 0.1",
+      "\n\n"
+      "Values (default: 0.1):\n"
+      "\n- (>= 0)  Ratio of the number of non-zero coefficients by which its number is allowed to grow during presolve.",
       XPRS_PRESOLVEMAXGROW, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_PRESOLVEMAXGROW
 
@@ -2615,29 +3507,32 @@ public:
       "\n- (0)  Singleton column removal."
       "\n- (1)  Singleton row removal."
       "\n- (2)  Forcing row removal."
-      "\n- (3)  Dual reductions."
+      "\n- (3)  Dual reductions. This bit is deprecated, use PREDUALREDUCTIONS instead."
       "\n- (4)  Redundant row removal."
       "\n- (5)  Duplicate column removal."
       "\n- (6)  Duplicate row removal."
       "\n- (7)  Strong dual reductions."
-      "\n- (8)  Variable eliminations."
-      "\n- (9)  No IP reductions."
+      "\n- (8)  Variable eliminations. This bit is deprecated, use PREELIMINATIONS instead."
+      "\n- (9)  No IP reductions. This bit is deprecated, use PREMIPREDUCTIONS instead."
       "\n- (10)  No domain changes for MIP entities (e.g., semi-continuous detection or shifting integers)."
-      "\n- (11)  No advanced IP reductions."
-      "\n- (12)  No eliminations on integers."
+      "\n- (11)  No advanced IP reductions. This bit is deprecated, use PREMIPREDUCTIONS instead."
+      "\n- (12)  No eliminations on integers. This bit is deprecated, use PREELIMINATIONS instead."
       "\n- (13)  No reductions based on solution enumeration."
       "\n- (14)  Linearly dependant row removal."
-      "\n- (15)  No integer variable and SOS detection."
+      "\n- (15)  No integer variable and SOS detection. This bit is deprecated, use PREMIPENTDETECT instead."
       "\n- (16)  No implied bounds."
-      "\n- (17)  No clique presolve."
-      "\n- (18)  No mod2 presolve.",
+      "\n- (17)  No clique presolve. This bit is deprecated, use PRECLIQUELIFTING instead."
+      "\n- (18)  No mod2 presolve."
+      "\n- (29)  No dual reductions on global entities. This bit is deprecated, use PREDUALREDUCTIONS instead.",
       XPRS_PRESOLVEOPS, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_PRESOLVEOPS
 
 #ifdef XPRS_PRESOLVEPASSES
     MPD( AddSolverOption_MergeDuplicates("pre:presolvepasses presolvepasses XPRS_PRESOLVEPASSES",
       "Number of reduction rounds to be performed in presolve"
-      "\n\nDefault: 1",
+      "\n\n"
+      "Values (default: 1):\n"
+      "\n- (>= 1)  The number of reduction rounds in presolve.",
       XPRS_PRESOLVEPASSES, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_PRESOLVEPASSES
 
@@ -2674,14 +3569,18 @@ public:
       "\n- (1)  Conventional dj scaling."
       "\n- (2)  Use reluctant switching back to partial pricing."
       "\n- (3)  Use dynamic switching between cheap and expensive pricing strategies."
-      "\n- (4)  Keep solving even after potential cycling is detected.",
+      "\n- (5)  Keep solving even after potential cycling is detected.",
       XPRS_PRIMALOPS, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_PRIMALOPS
 
 #ifdef XPRS_PRIMALPERTURB
     MPD( AddSolverOption_MergeDuplicates("lp:primalperturb primalperturb XPRS_PRIMALPERTURB",
-      "The factor by which the problem will be perturbed prior to optimization by primal simplex. A value of 0.0 results in no perturbation prior to optimization. Note the interconnection to the AUTOPERTURB control. If AUTOPERTURB is set to 1, the decision whether to perturb or not is left to the Optimizer. When the problem is automatically perturbed in primal simplex, however, the value of PRIMALPERTURB will be used for perturbation."
-      "\n\nDefault: -1 — determined automatically.",
+      "The factor by which the problem will be perturbed prior to optimization by primal simplex. Note the interconnection to the AUTOPERTURB control. If AUTOPERTURB is set to 1, the decision whether to perturb or not is left to the Optimizer. When the problem is automatically perturbed in primal simplex, however, the value of PRIMALPERTURB will be used for perturbation."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  The perturbation factor is determined automatically."
+      "\n- (0)  No perturbation prior to optimization."
+      "\n- (> 0)  The perturbation factor.",
       XPRS_PRIMALPERTURB, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_PRIMALPERTURB
 
@@ -2698,7 +3597,9 @@ public:
 #ifdef XPRS_PSEUDOCOST
     MPD( AddSolverOption_MergeDuplicates("mip:pseudocost pseudocost XPRS_PSEUDOCOST",
       "Branch and Bound: The default pseudo cost used in estimation of the degradation associated with an unexplored node in the tree search. A pseudo cost is associated with each integer decision variable and is an estimate of the amount by which the objective function will be worse if that variable is forced to an integral value."
-      "\n\nDefault: 0.01",
+      "\n\n"
+      "Values (default: 0.01):\n"
+      "\n- (>= 0)  Default pseudo cost used in estimation of the degradation associated with an unexplored node in the tree search.",
       XPRS_PSEUDOCOST, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_PSEUDOCOST
 
@@ -2725,8 +3626,11 @@ public:
 
 #ifdef XPRS_QCCUTS
     MPD( AddSolverOption_MergeDuplicates("qp:qccuts qccuts XPRS_QCCUTS",
-      "Branch and Bound: Limit on the number of rounds of outer approximation cuts generated for the root node, when solving a mixed integer quadratic constrained or mixed integer second order conic problem with outer approximation."
-      "\n\nDefault: -1 — determined automatically.",
+      "Branch and Bound: Limits the number of rounds of outer approximation cuts generated for the root node, when solving a mixed integer quadratic constrained or mixed integer second order conic problem with outer approximation."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  The number of cut rounds is determined automatically."
+      "\n- (>= 0)  The number of outer approximation cut rounds at the root node.",
       XPRS_QCCUTS, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_QCCUTS
 
@@ -2780,7 +3684,9 @@ public:
 #ifdef XPRS_RANDOMSEED
     MPD( AddSolverOption_MergeDuplicates("tech:randomseed randomseed XPRS_RANDOMSEED",
       "Sets the initial seed to use for the pseudo-random number generator in the Optimizer. The sequence of random numbers is always reset using the seed when starting a new optimization run."
-      "\n\nDefault: 1",
+      "\n\n"
+      "Values (default: 1):\n"
+      "\n- (>= 1)  Initial seed to use for the pseudo-random number generator.",
       XPRS_RANDOMSEED, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_RANDOMSEED
 
@@ -2815,25 +3721,30 @@ public:
 
 #ifdef XPRS_RELAXTREEMEMORYLIMIT
     MPD( AddSolverOption_MergeDuplicates("lim:relaxtreememorylimit relaxtreememorylimit XPRS_RELAXTREEMEMORYLIMIT",
-      "When the memory used by the branch and bound search tree exceeds the target specified by the TREEMEMORYLIMIT control, the optimizer will try to reduce this by writing nodes to the tree file. In rare cases, usually where the solve has many millions of very small nodes, the tree structural data (which cannot be written to the tree file) will grow large enough to approach or exceed the tree's memory target. When this happens, optimizer performance can degrade greatly as the solver makes heavy use of the tree file in preference to memory. To prevent this, the solver will automatically relax the tree memory limit when it detects this case; the RELAXTREEMEMORYLIMIT control specifies the proportion of the previous memory limit by which to relax it. Set RELAXTREEMEMORYLIMIT to 0.0 to force the Xpress Optimizer to never relax the tree memory limit in this way."
-      "\n\nDefault: 0.1",
+      "When the memory used by the branch and bound search tree exceeds the target specified by the TREEMEMORYLIMIT control, the Optimizer will try to reduce this by writing nodes to the tree file. In rare cases, usually where the solve has many millions of very small nodes, the tree structural data (which cannot be written to the tree file) will grow large enough to approach or exceed the tree's memory target. When this happens, Optimizer performance can degrade greatly as the solver makes heavy use of the tree file in preference to memory. To prevent this, the solver will automatically relax the tree memory limit when it detects this case; the RELAXTREEMEMORYLIMIT control specifies the proportion of the previous memory limit by which to relax it. Set RELAXTREEMEMORYLIMIT to 0.0 to force the Xpress Optimizer to never relax the tree memory limit in this way."
+      "\n\n"
+      "Values (default: 0.1):\n"
+      "\n- (>= 0.0, <= 1.0)  Amount of tree memory limit relaxed as a proportion of TREEMEMORYLIMIT.",
       XPRS_RELAXTREEMEMORYLIMIT, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_RELAXTREEMEMORYLIMIT
 
 #ifdef XPRS_RELPIVOTTOL
     MPD( AddSolverOption_MergeDuplicates("lp:relpivottol relpivottol XPRS_RELPIVOTTOL",
       "Simplex: At each iteration a pivot element is chosen within a given column of the matrix. The relative pivot tolerance, RELPIVOTTOL, is the size of the element chosen relative to the largest possible pivot element in the same column."
-      "\n\nDefault: 1.0E-06",
+      "\n\n"
+      "Values (default: 1.0E-06):\n"
+      "\n- (> 0)  The relative Simplex pivot tolerance.",
       XPRS_RELPIVOTTOL, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_RELPIVOTTOL
 
 #ifdef XPRS_REPAIRINDEFINITEQ
     MPD( AddSolverOption_MergeDuplicates("qp:repairindefiniteq repairindefiniteq XPRS_REPAIRINDEFINITEQ",
-      "Controls if the optimizer should make indefinite quadratic matrices positive definite when it is possible."
+      "	Controls if the Optimizer should make indefinite quadratic matrices over binary columns positive definite when it is possible. 	This is achieved by making the matrix diagonally dominant and it enables solving nonconvex quadratic problems with binary columns without 	relying on linearization or resorting to the Xpress Global Solver."
       "\n\n"
-      "Values (default: 1):\n"
-      "\n- (0)  Repair if possible."
-      "\n- (1)  Do not repair.",
+      "Values (default: -1):\n"
+      "\n- (-1)  Use problem data to decide whether to repair the matrix or not."
+      "\n- (0)  Do not repair."
+      "\n- (1)  Repair if possible.",
       XPRS_REPAIRINDEFINITEQ, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_REPAIRINDEFINITEQ
 
@@ -2842,16 +3753,17 @@ public:
       "Overall time limit for the repairinfeas tool"
       "\n\n"
       "Values (default: 1e+20):\n"
-      "\n- (>0)  Stop repairinfeas search after the given number of seconds.",
+      "\n- (>= 0)  Stop repairinfeas search after the given number of seconds.",
       XPRS_REPAIRINFEASTIMELIMIT, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_REPAIRINFEASTIMELIMIT
 
 #ifdef XPRS_RESOURCESTRATEGY
     MPD( AddSolverOption_MergeDuplicates("tech:resourcestrategy resourcestrategy XPRS_RESOURCESTRATEGY",
-      "Controls whether the optimizer is allowed to make nondeterministic decisions if memory is running low in an effort to preserve memory and finish the solve. Available memory (or container limits) are automatically detected but can also be changed by MAXMEMORYSOFT and MAXMEMORYHARD"
+      "Controls whether the Optimizer is allowed to make nondeterministic decisions if memory is running low in an effort to preserve memory and finish the solve. Available memory (or container limits) are automatically detected but can also be changed by MAXMEMORYSOFT and MAXMEMORYHARD"
       "\n\n"
       "Values (default: 0):\n"
-      "\n- (1)  Allow the optimizer to change the solve path if necessary to preserve memory when getting close to one of the memory limits.",
+      "\n- (0)  Do not allow the Optimizer to change the solve path only to preserve memory."
+      "\n- (1)  Allow the Optimizer to change the solve path if necessary to preserve memory when getting close to one of the memory limits.",
       XPRS_RESOURCESTRATEGY, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_RESOURCESTRATEGY
 
@@ -2871,7 +3783,7 @@ public:
       "Determines if presolving should be performed on the problem after the tree search has finished with root cutting and heuristics."
       "\n\n"
       "Values (default: -1):\n"
-      "\n- (-1)  Let the optimizer decide if the problem should be presolved again."
+      "\n- (-1)  Let the Optimizer decide if the problem should be presolved again."
       "\n- (0)  Disabled."
       "\n- (+1)  Always presolve the root problem.",
       XPRS_ROOTPRESOLVE, INT_MIN, INT_MAX) );
@@ -2882,16 +3794,18 @@ public:
       "Number of infeasible MIP entities to initialize pseudo costs for on each node."
       "\n\n"
       "Values (default: -1):\n"
-      "\n- (-1)  determined automatically."
-      "\n- (0)  disable strong branching."
-      "\n- (n>0)  perform strong branching on up to n entities at each node.",
+      "\n- (-1)  Determined automatically."
+      "\n- (0)  Disable strong branching."
+      "\n- (> 0)  Perform strong branching on up to the specified number of entities at each node.",
       XPRS_SBBEST, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_SBBEST
 
 #ifdef XPRS_SBEFFORT
     MPD( AddSolverOption_MergeDuplicates("mip:sbeffort sbeffort XPRS_SBEFFORT",
       "Adjusts the overall amount of effort when using strong branching to select an infeasible MIP entity to branch on."
-      "\n\nDefault: 1.0",
+      "\n\n"
+      "Values (default: 1.0):\n"
+      "\n- (>= 0)  The strong branching effort.",
       XPRS_SBEFFORT, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_SBEFFORT
 
@@ -2901,14 +3815,18 @@ public:
       "\n\n"
       "Values (default: -1):\n"
       "\n- (-1)  Automatically determined."
-      "\n- (1-6)  Different variants of local pseudo costs.",
+      "\n- (>= 1, <= 6)  Different variants of local pseudo costs.",
       XPRS_SBESTIMATE, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_SBESTIMATE
 
 #ifdef XPRS_SBITERLIMIT
     MPD( AddSolverOption_MergeDuplicates("mip:sbiterlimit sbiterlimit XPRS_SBITERLIMIT",
-      "Number of dual iterations to perform the strong branching for each entity."
-      "\n\nDefault: -1 — determined automatically.",
+      "Specifies the number of dual iterations to perform during strong branching for each MIP entity."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  The number of dual iterations is determined automatically."
+      "\n- (0)  Disables strong branching. Instead, the entity at the head of the candidate list will be selected for branching."
+      "\n- (> 0)  The number of dual iterations for strong branching per MIP entity.",
       XPRS_SBITERLIMIT, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_SBITERLIMIT
 
@@ -2919,7 +3837,7 @@ public:
       "Values (default: -2):\n"
       "\n- (-2)  Automatic (low effort)."
       "\n- (-1)  Automatic (high effort)."
-      "\n- (n>=0)  Include n entities in the candidate list (but always at least SBBEST candidates).",
+      "\n- (>= 0)  Include the given number of entities in the candidate list (but always at least SBBEST candidates).",
       XPRS_SBSELECT, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_SBSELECT
 
@@ -2946,6 +3864,61 @@ public:
       "\n- (15)  Enable explicit linear slack scaling.",
       XPRS_SCALING, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_SCALING
+
+#ifdef XPRS_SCALINGBIGM
+    MPD( AddSolverOption_MergeDuplicates("pre:scalingbigm scalingbigm XPRS_SCALINGBIGM",
+      "Whether to apply special handling of big-M rows during scaling."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  The big-M handling is determined automatically."
+      "\n- (0)  Disable special handling of big-M rows; they are treated as normal rows during scaling."
+      "\n- (1)  Enable special handling of big-M rows.",
+      XPRS_SCALINGBIGM, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_SCALINGBIGM
+
+#ifdef XPRS_SCALINGMETHOD
+    MPD( AddSolverOption_MergeDuplicates("pre:scalingmethod scalingmethod XPRS_SCALINGMETHOD",
+      "Which scaling method to use."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  The scaling method is determined automatically."
+      "\n- (0)  Disable scaling."
+      "\n- (1)  Use maximum element scaling (also called equilibrium scaling)."
+      "\n- (2)  Use geometric mean scaling."
+      "\n- (3)  Use Curtis-Reid scaling."
+      "\n- (4)  Use maximum element plus Curtis-Reid scaling.",
+      XPRS_SCALINGMETHOD, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_SCALINGMETHOD
+
+#ifdef XPRS_SCALINGOPS
+    MPD( AddSolverOption_MergeDuplicates("pre:scalingops scalingops XPRS_SCALINGOPS",
+      "This bit-vector control (see Section Bit-vector controls) is allows finer-grained control of the scaling process. In most circumstances it should not be necessary to change it from it's default value."
+      "\n\n"
+      "Values (default: 3, meaning bits 0 and 1 are set):\n"
+      "\n- (0)  Row scaling."
+      "\n- (1)  Column scaling."
+      "\n- (2)  Row scaling again."
+      "\n- (8)  Exclude the quadratic part of constraint when calculating scaling factors."
+      "\n- (10)  Do not scale rows up."
+      "\n- (11)  Do not scale columns down."
+      "\n- (12)  Do not apply automatic objective scaling."
+      "\n- (13)  RHS scaling."
+      "\n- (14)  Disable aggressive quadratic scaling."
+      "\n- (15)  Enable explicit linear slack scaling.",
+      XPRS_SCALINGOPS, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_SCALINGOPS
+
+#ifdef XPRS_SCALINGORDER
+    MPD( AddSolverOption_MergeDuplicates("pre:scalingorder scalingorder XPRS_SCALINGORDER",
+      "When scaling is applied relative to presolve."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  The scaling order is determined automatically, typically after presolve only."
+      "\n- (1)  Scale after presolve."
+      "\n- (2)  Scale before presolve."
+      "\n- (3)  Scale both before and after presolve.",
+      XPRS_SCALINGORDER, INT_MIN, INT_MAX) );
+#endif  // ifdef XPRS_SCALINGORDER
 
 #ifdef XPRS_SDPCUTSTRATEGY
     MPD( AddSolverOption_MergeDuplicates("qp:sdpcutstrategy sdpcutstrategy XPRS_SDPCUTSTRATEGY",
@@ -2994,7 +3967,7 @@ public:
       "\n\n"
       "Values (default: -1):\n"
       "\n- (-1)  Use the PRESOLVEOPS setting specified for the original problem."
-      "\n- (>=0)  Use the value for the PRESOLVEOPS parameter for solving the subproblems during the sifting algorithm.",
+      "\n- (>= 0)  Use the value for the PRESOLVEOPS parameter for solving the subproblems during the sifting algorithm.",
       XPRS_SIFTPRESOLVEOPS, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_SIFTPRESOLVEOPS
 
@@ -3005,7 +3978,7 @@ public:
       "Values (default: -1):\n"
       "\n- (-1)  Dual simplex."
       "\n- (0)  Barrier."
-      "\n- (>0)  Use the barrier algorithm while the number of dual infeasibilities is larger than this value, otherwise use dual simplex.",
+      "\n- (> 0)  Use the barrier algorithm while the number of dual infeasibilities is larger than this value, otherwise use dual simplex.",
       XPRS_SIFTSWITCH, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_SIFTSWITCH
 
@@ -3014,14 +3987,17 @@ public:
       "The maximum time in seconds that the Optimizer will run a MIP solve before it terminates, given that a solution has been found. As long as no solution has been found, this control will have no effect."
       "\n\n"
       "Values (default: 1e+20):\n"
-      "\n- (>0)  If an integer solution has been found, stop MIP search after the given number of seconds, otherwise continue until an integer solution is finally found.",
+      "\n- (0)  The value is ignored."
+      "\n- (> 0)  If an integer solution has been found, stop MIP search after the given number of seconds, otherwise continue until an integer solution is finally found.",
       XPRS_SOLTIMELIMIT, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_SOLTIMELIMIT
 
 #ifdef XPRS_SOSREFTOL
     MPD( AddSolverOption_MergeDuplicates("alg:sosreftol sosreftol XPRS_SOSREFTOL",
-      "The minimum relative gap between the ordering values of elements in a special ordered set. The gap divided by the absolute value of the larger of the two adjacent values must be at least SOSREFTOL."
-      "\n\nDefault: 1.0E-06",
+      "Specifies the minimum relative gap between the ordering values of elements in a special ordered set. Within the same set, two ordering values must not be the same and for any two values the gap divided by the absolute value of the larger of the two values must be at least SOSREFTOL."
+      "\n\n"
+      "Values (default: 1.0E-06):\n"
+      "\n- (> 0)  The minimum relative gap between the ordering values of elements in a special ordered set.",
       XPRS_SOSREFTOL, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_SOSREFTOL
 
@@ -3052,7 +4028,7 @@ public:
       "\n\n"
       "Values (default: -1):\n"
       "\n- (-1)  Determined automatically based on hardware configuration."
-      "\n- (>0)  Number of threads to use.",
+      "\n- (> 0)  Number of threads to use.",
       XPRS_THREADS, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_THREADS
 
@@ -3061,28 +4037,39 @@ public:
       "The maximum time in seconds that the Optimizer will run before it terminates, including the problem setup time and solution time. For MIP problems, this is the total time taken to solve all nodes."
       "\n\n"
       "Values (default: 1e+20):\n"
-      "\n- (>0)  Stop LP or MIP search after the given number of seconds.",
+      "\n- (>= 0)  Stop LP or MIP search after the given number of seconds.",
       XPRS_TIMELIMIT, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_TIMELIMIT
 
 #ifdef XPRS_TRACE
     MPD( AddSolverOption_MergeDuplicates("pre:trace trace XPRS_TRACE",
       "Display the infeasibility diagnosis during presolve. If non-zero, an explanation of the logical deductions made by presolve to deduce infeasibility or unboundedness will be displayed on screen or sent to the message callback function."
-      "\n\nDefault: 0",
+      "\n\n"
+      "Values (default: 0):\n"
+      "\n- (< 0)  Explanation is displayed."
+      "\n- (0)  Explanation is not displayed."
+      "\n- (> 0)  Explanation is displayed.",
       XPRS_TRACE, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_TRACE
 
 #ifdef XPRS_TREECOMPRESSION
     MPD( AddSolverOption_MergeDuplicates("mip:treecompression treecompression treecompress XPRS_TREECOMPRESSION",
-      "When writing nodes to the gloal file, the optimizer can try to use data-compression techniques to reduce the size of the tree file on disk. The TREECOMPRESSION control determines the strength of the data-compression algorithm used; higher values give superior data-compression at the affect of decreasing performance, while lower values compress quicker but not as effectively. Where TREECOMPRESSION is set to 0, no data compression will be used on the tree file."
-      "\n\nDefault: 2",
+      "When writing nodes to the tree file, the Optimizer can try to use data-compression techniques to reduce the size of the tree file on disk. The TREECOMPRESSION control determines the strength of the data-compression algorithm used; higher values give superior data-compression at the effect of decreasing performance, while lower values compress quicker but not as effectively. Where TREECOMPRESSION is set to 0, no data compression will be used on the tree file."
+      "\n\n"
+      "Values (default: 2):\n"
+      "\n- (0)  No data compression will be used on the tree file."
+      "\n- (>= 1, <= 9)  The strength of the data-compression algorithm used.",
       XPRS_TREECOMPRESSION, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_TREECOMPRESSION
 
 #ifdef XPRS_TREECOVERCUTS
     MPD( AddSolverOption_MergeDuplicates("cut:treecovercuts treecovercuts XPRS_TREECOVERCUTS",
-      "Branch and Bound: The number of rounds of lifted cover inequalities generated at nodes other than the root node in the tree. Compare with the description for COVERCUTS. A value of -1 indicates the number of rounds is determined automatically."
-      "\n\nDefault: -1",
+      "Branch and Bound: Specifies the number of rounds of lifted cover inequalities generated at nodes other than the root node in the tree. Compare with the description for COVERCUTS."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  Number of rounds determined automatically."
+      "\n- (0)  Off—separation disabled."
+      "\n- (> 0)  Apply this specified number of rounds.",
       XPRS_TREECOVERCUTS, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_TREECOVERCUTS
 
@@ -3121,35 +4108,49 @@ public:
 #ifdef XPRS_TREEFILELOGINTERVAL
     MPD( AddSolverOption_MergeDuplicates("mip:treefileloginterval treefileloginterval XPRS_TREEFILELOGINTERVAL",
       "This control sets the interval between progress messages output while writing tree data to the tree file, in seconds. The solve is slowed greatly while data is being written to the tree file and this output allows the user to see how much progress is being made."
-      "\n\nDefault: 60",
+      "\n\n"
+      "Values (default: 60):\n"
+      "\n- (>= 1)  The interval between progress messages output in seconds.",
       XPRS_TREEFILELOGINTERVAL, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_TREEFILELOGINTERVAL
 
 #ifdef XPRS_TREEGOMCUTS
     MPD( AddSolverOption_MergeDuplicates("cut:treegomcuts treegomcuts XPRS_TREEGOMCUTS",
-      "Branch and Bound: The number of rounds of Gomory cuts generated at nodes other than the first node in the tree. Compare with the description for GOMCUTS. A value of -1 indicates the number of rounds is determined automatically."
-      "\n\nDefault: -1",
+      "Branch and Bound: The number of rounds of Gomory cuts generated at nodes other than the first node in the tree. Compare with the description for GOMCUTS."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  Number of rounds determined automatically."
+      "\n- (0)  Off—separation disabled."
+      "\n- (> 0)  Apply this specified number of rounds.",
       XPRS_TREEGOMCUTS, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_TREEGOMCUTS
 
 #ifdef XPRS_TREEMEMORYLIMIT
     MPD( AddSolverOption_MergeDuplicates("lim:treememorylimit treememorylimit treememlimit XPRS_TREEMEMORYLIMIT",
-      "A soft limit, in megabytes, for the amount of memory to use in storing the branch and bound search tree. This doesn't include memory used for presolve, heuristics, solving the LP relaxation, etc. When set to 0 (the default), the optimizer will calculate a limit automatically based on the amount of free physical memory detected in the machine. When the memory used by the branch and bound tree exceeds this limit, the optimizer will try to reduce the memory usage by writing lower-rated sections of the tree to a file called the 'tree file'. Though the solve can continue if it cannot bring the tree memory usage below the specified limit, performance will be inhibited and a message will be printed to the log."
-      "\n\nDefault: 0 (calculate limit automatically)",
+      "A soft limit, in MB (megabytes), for the amount of memory to use in storing the branch and bound search tree. This doesn't include memory used for presolve, heuristics, solving the LP relaxation, etc. When the memory used by the branch and bound tree exceeds this limit, the Optimizer will try to reduce the memory usage by writing lower-rated sections of the tree to a file called the 'tree file'. Though the solve can continue if it cannot bring the tree memory usage below the specified limit, performance will be inhibited and a message will be printed to the log."
+      "\n\n"
+      "Values (default: 0):\n"
+      "\n- (0)  The tree memory limit is calculated automatically based on the amount of free physical memory detected in the machine."
+      "\n- (> 0)  The tree memory limit in MB.",
       XPRS_TREEMEMORYLIMIT, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_TREEMEMORYLIMIT
 
 #ifdef XPRS_TREEMEMORYSAVINGTARGET
     MPD( AddSolverOption_MergeDuplicates("mip:treememorysavingtarget treememorysavingtarget treememtarget XPRS_TREEMEMORYSAVINGTARGET",
-      "When the memory used by the branch-and-bound search tree exceeds the limit specified by the TREEMEMORYLIMIT control, the optimizer will try to save memory by writing lower-rated sections of the tree to the tree file. The target amount of memory to save will be enough to bring memory usage back below the limit, plus enough extra to give the tree room to grow. The TREEMEMORYSAVINGTARGET control specifies the extra proportion of the tree's size to try to save; for example, if the tree memory limit is 1000Mb and TREEMEMORYSAVINGTARGET is 0.1, when the tree size exceeds 1000Mb the optimizer will try to reduce the tree size to 900Mb. Reducing the value of TREEMEMORYSAVINGTARGET will cause less extra nodes of the tree to be written to the tree file, but will result in the memory saving routine being triggered more often (as the tree will have less room in which to grow), which can reduce performance. Increasing the value of TREEMEMORYSAVINGTARGET will cause additional, more highly-rated nodes, of the tree to be written to the tree file, which can cause performance issues if these nodes are required later in the solve."
-      "\n\nDefault: 0.4",
+      "When the memory used by the branch-and-bound search tree exceeds the limit specified by the TREEMEMORYLIMIT control, the Optimizer will try to save memory by writing lower-rated sections of the tree to the tree file. The target amount of memory to save will be enough to bring memory usage back below the limit, plus enough extra to give the tree room to grow. The TREEMEMORYSAVINGTARGET control specifies the extra proportion of the tree's size to try to save; for example, if the tree memory limit is 1000Mb and TREEMEMORYSAVINGTARGET is 0.1, when the tree size exceeds 1000Mb the Optimizer will try to reduce the tree size to 900Mb. Reducing the value of TREEMEMORYSAVINGTARGET will cause less extra nodes of the tree to be written to the tree file, but will result in the memory saving routine being triggered more often (as the tree will have less room in which to grow), which can reduce performance. Increasing the value of TREEMEMORYSAVINGTARGET will cause additional, more highly-rated nodes, of the tree to be written to the tree file, which can cause performance issues if these nodes are required later in the solve."
+      "\n\n"
+      "Values (default: 0.4):\n"
+      "\n- (>= 0.01, <= 1.0)  Extra amount of tree memory saved as a proportion of TREEMEMORYLIMIT.",
       XPRS_TREEMEMORYSAVINGTARGET, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_TREEMEMORYSAVINGTARGET
 
 #ifdef XPRS_TREEQCCUTS
     MPD( AddSolverOption_MergeDuplicates("qp:treeqccuts treeqccuts XPRS_TREEQCCUTS",
       "Branch and Bound: Limit on the number of rounds of outer approximation cuts generated for nodes other than the root node, when solving a mixed integer quadratic constrained or mixed integer second order conic problem with outer approximation."
-      "\n\nDefault: -1 — determined automatically.",
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  The number of cut rounds is determined automatically."
+      "\n- (>= 0)  The number of outer approximation cut rounds at non-root tree nodes.",
       XPRS_TREEQCCUTS, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_TREEQCCUTS
 
@@ -3170,7 +4171,7 @@ public:
       "\n\n"
       "Values (default: 0):\n"
       "\n- (0)  No time limit."
-      "\n- (>0)  Stop the tuner after the given number of seconds.",
+      "\n- (> 0)  Stop the tuner after the given number of seconds.",
       XPRS_TUNERMAXTIME, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_TUNERMAXTIME
 
@@ -3234,7 +4235,7 @@ public:
       "\n\n"
       "Values (default: 0):\n"
       "\n- (0)  Solve the original problem only for each setting."
-      "\n- (n>0)  Solve the original problem and n permuted problems for each setting.",
+      "\n- (> 0)  Solve the original problem and the given number of permuted problems for each setting.",
       XPRS_TUNERPERMUTE, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_TUNERPERMUTE
 
@@ -3261,7 +4262,8 @@ public:
       "\n- (7)  Gap only."
       "\n- (8)  Best bound only."
       "\n- (9)  Best integer solution only."
-      "\n- (10)  Best primal integral. (Only for individual instances, not for problem sets)",
+      "\n- (10)  Best primal integral. (Only for individual instances, not for problem sets)"
+      "\n- (11)  Least deterministic work consumed. Compares runs by the amount of algorithmic work (in work units) used to reach the final solution.",
       XPRS_TUNERTARGET, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_TUNERTARGET
 
@@ -3272,7 +4274,7 @@ public:
       "Values (default: 1):\n"
       "\n- (-1)  Choose automaticlly."
       "\n- (1)  The tuner will run in sequential."
-      "\n- (n>1)  The tuner will run in parallel with n threads.",
+      "\n- (> 1)  The tuner will run in parallel with the given number of threads.",
       XPRS_TUNERTHREADS, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_TUNERTHREADS
 
@@ -3281,14 +4283,14 @@ public:
       "Tuner: whether the tuner should prints detailed information for each run."
       "\n\n"
       "Values (default: 1):\n"
-      "\n- (1)  Print extra information."
-      "\n- (0)  Print less information.",
+      "\n- (0)  Print less information."
+      "\n- (1)  Print extra information.",
       XPRS_TUNERVERBOSE, INT_MIN, INT_MAX) );
 #endif  // ifdef XPRS_TUNERVERBOSE
 
 #ifdef XPRS_USERSOLHEURISTIC
     MPD( AddSolverOption_MergeDuplicates("mip:usersolheuristic heur:usersolheuristic usersolheuristic XPRS_USERSOLHEURISTIC",
-      "Determines how much effort to put into running a local search heuristic to find a feasible integer solution from a partial or infeasible user solution."
+      "Determines how much effort to put into running a large neighborhood search heuristic to find a feasible integer solution from a partial or infeasible user solution."
       "\n\n"
       "Values (default: -1):\n"
       "\n- (-1)  Automatically determined."
@@ -3318,10 +4320,10 @@ public:
 
 #ifdef XPRS_WORKLIMIT
     MPD( AddSolverOption_MergeDuplicates("lim:worklimit worklimit XPRS_WORKLIMIT",
-      "The maximum work (measured in work units) that the Optimizer will run before it terminates. WORK is accumulated during the search and ever increasing. In contrast to TIME, WORK is independent of the hardware and platform on which the search is conducted. The WORKLIMIT serves as a deterministic stopping criterion. When it is reached, it leaves the optimizer in a reproducible state."
+      "The maximum work (measured in work units) that the Optimizer will run before it terminates. WORK is accumulated during the search and ever increasing. In contrast to TIME, WORK is independent of the hardware and platform on which the search is conducted. The WORKLIMIT serves as a deterministic stopping criterion. When it is reached, it leaves the Optimizer in a reproducible state."
       "\n\n"
       "Values (default: 1e+20):\n"
-      "\n- (>0)  Stop LP or MIP search when the given number of work units is reached.",
+      "\n- (>= 0)  Stop LP or MIP search when the given number of work units is reached.",
       XPRS_WORKLIMIT, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XPRS_WORKLIMIT
 

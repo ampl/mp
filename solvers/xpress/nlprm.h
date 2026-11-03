@@ -21,7 +21,7 @@ namespace mp {
 template <class Impl>
 class CompiledNonlinearOptions {
 public:
-  /// Add up to 254 'Nonlinear' parameters
+  /// Add up to 259 'Nonlinear' parameters
   void AddNonlinearOptions() {
 
 #ifdef XKTR_PARAM_ALGORITHM
@@ -60,14 +60,14 @@ public:
 
 #ifdef XKTR_PARAM_BAR_FEASMODETOL
     MPD( AddSolverOption_MergeDuplicates("xktr:bar_feasmodetol bar_feasmodetol xktr_param_bar_feasmodetol XKTR_PARAM_BAR_FEASMODETOL KNITRO_PARAM_BAR_FEASMODETOL",
-      "Specifies the tolerance in equation that determines whether Knitro will force subsequent iterates to remain feasible."
+      "Specifies the tolerance in the equation that determines whether Knitro will force subsequent iterates to remain feasible."
       "\n\nDefault: 1.0e-4",
       XKTR_PARAM_BAR_FEASMODETOL, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XKTR_PARAM_BAR_FEASMODETOL
 
 #ifdef XKTR_PARAM_BAR_INITMU
     MPD( AddSolverOption_MergeDuplicates("xktr:bar_initmu bar_initmu xktr_param_bar_initmu XKTR_PARAM_BAR_INITMU KNITRO_PARAM_BAR_INITMU",
-      "Specifies the initial value for the barrier parameter : μ used with the barrier algorithms. This option has no effect on the Active Set algorithm."
+      "Specifies the initial value for the barrier parameter μ used with the barrier algorithms. This option has no effect on the Active Set algorithm."
       "\n\nDefault: 1.0e-1",
       XKTR_PARAM_BAR_INITMU, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XKTR_PARAM_BAR_INITMU
@@ -79,7 +79,7 @@ public:
       "Values (default: 0):\n"
       "\n- (0)  (auto) Let Knitro automatically choose the strategy."
       "\n- (1)  (yes) Shift the initial slacks and multipliers to improve barrier algorithm performance."
-      "\n- (2)  (no) Do no alter the initial slacks and multipliers.",
+      "\n- (2)  (no) Do not alter the initial slacks and multipliers.",
       XKTR_PARAM_BAR_INITPT, INT_MIN, INT_MAX) );
 #endif  // ifdef XKTR_PARAM_BAR_INITPT
 
@@ -170,7 +170,7 @@ public:
 #ifdef XKTR_PARAM_FEASTOLABS
     MPD( AddSolverOption_MergeDuplicates("xktr:feastolabs feastolabs xktr_param_feastolabs XKTR_PARAM_FEASTOLABS KNITRO_PARAM_FEASTOLABS",
       "Specifies the final absolute stopping tolerance for the feasibility error."
-      "\n\nDefault: 0.0e0",
+      "\n\nDefault: -1.0",
       XKTR_PARAM_FEASTOLABS, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XKTR_PARAM_FEASTOLABS
 
@@ -196,7 +196,7 @@ public:
       "\n- (3)  (sr1) Knitro computes a (dense) quasi-Newton SR1 Hessian."
       "\n- (4)  (finite_diff) Knitro computes Hessian-vector products using finite-differences."
       "\n- (5)  (product) User provides a routine to compute the Hessian-vector products."
-      "\n- (6)  (lbfgs) Knitro computes a limited-memory quasi-Newton BFGS Hessian (its size is determined by the option lmsize)."
+      "\n- (6)  (lbfgs) Knitro computes a limited-memory quasi-Newton BFGS Hessian (its size is determined by the option KNITRO_PARAM_LMSIZE)."
       "\n- (7)  (gauss_newton) Knitro computes a Gauss-Newton approximation of the hessian (available for least-squares only, and default value for least-squares)",
       XKTR_PARAM_HESSOPT, INT_MIN, INT_MAX) );
 #endif  // ifdef XKTR_PARAM_HESSOPT
@@ -228,7 +228,7 @@ public:
 
 #ifdef XKTR_PARAM_MAXCGIT
     MPD( AddSolverOption_MergeDuplicates("xktr:maxcgit maxcgit xktr_param_maxcgit XKTR_PARAM_MAXCGIT KNITRO_PARAM_MAXCGIT",
-      "Specifies the number of limited memory pairs stored when approximating the Hessian using the limited-memory quasi-Newton BFGS option."
+      "Specifies the maximum number of conjugate gradient (CG) iterations Knitro is allowed to perform during one minor iteration."
       "\n\n"
       "Values (default: 0):\n"
       "\n- (0)  Let Knitro automatically choose a value based on the problem size."
@@ -254,7 +254,7 @@ public:
       "\n- (0)  (auto) Let Knitro automatically choose the branching rule."
       "\n- (1)  (most_frac) Use most fractional (most infeasible) branching."
       "\n- (2)  (pseudcost) Use pseudo-cost branching."
-      "\n- (3)  (strong) Use strong branching (see options XKTR_PARAM_MIP_STRONG_CANDLIM, XKTR_PARAM_MIP_STRONG_LEVEL, XKTR_PARAM_MIP_STRONG_MAXIT for further control of strong branching procedure).",
+      "\n- (3)  (strong) Use strong branching (see options KNITRO_PARAM_MIP_STRONG_CANDLIM, KNITRO_PARAM_MIP_STRONG_LEVEL, KNITRO_PARAM_MIP_STRONG_MAXIT for further control of strong branching procedure).",
       XKTR_PARAM_MIP_BRANCHRULE, INT_MIN, INT_MAX) );
 #endif  // ifdef XKTR_PARAM_MIP_BRANCHRULE
 
@@ -287,6 +287,13 @@ public:
       XKTR_PARAM_MIP_HEURISTIC_MAXIT, INT_MIN, INT_MAX) );
 #endif  // ifdef XKTR_PARAM_MIP_HEURISTIC_MAXIT
 
+#ifdef XKTR_PARAM_MIP_HEUR_MAXIT
+    MPD( AddSolverOption_MergeDuplicates("xktr:mip_heur_maxit mip_heur_maxit xktr_param_mip_heur_maxit XKTR_PARAM_MIP_HEUR_MAXIT KNITRO_PARAM_MIP_HEUR_MAXIT",
+      "Specifies the maximum number of iterations to allow for MIP heuristic, if one is enabled."
+      "\n\nDefault: 100",
+      XKTR_PARAM_MIP_HEUR_MAXIT, INT_MIN, INT_MAX) );
+#endif  // ifdef XKTR_PARAM_MIP_HEUR_MAXIT
+
 #ifdef XKTR_PARAM_MIP_IMPLICATNS
     MPD( AddSolverOption_MergeDuplicates("xktr:mip_implicatns mip_implicatns xktr_param_mip_implicatns XKTR_PARAM_MIP_IMPLICATNS KNITRO_PARAM_MIP_IMPLICATNS",
       "Specifies whether or not to add constraints to the MIP derived from logical implications."
@@ -305,14 +312,14 @@ public:
 #endif  // ifdef XKTR_PARAM_MIP_INTEGERTOL
 
 #ifdef XKTR_PARAM_MIP_INTGAPABS
-    MPD( AddSolverOption_MergeDuplicates("xktr:mip_intgapabs mip_intgapabs xktr_param_mip_intgapabs XKTR_PARAM_MIP_INTGAPABS KNITRO_PARAM_INTGAPABS",
+    MPD( AddSolverOption_MergeDuplicates("xktr:mip_intgapabs mip_intgapabs xktr_param_mip_intgapabs XKTR_PARAM_MIP_INTGAPABS KNITRO_PARAM_MIP_INTGAPABS",
       "The absolute integrality gap stop tolerance for MIP."
       "\n\nDefault: 1.0e-6",
       XKTR_PARAM_MIP_INTGAPABS, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XKTR_PARAM_MIP_INTGAPABS
 
 #ifdef XKTR_PARAM_MIP_INTGAPREL
-    MPD( AddSolverOption_MergeDuplicates("xktr:mip_intgaprel mip_intgaprel xktr_param_mip_intgaprel XKTR_PARAM_MIP_INTGAPREL KNITRO_PARAM_INTGAPREL",
+    MPD( AddSolverOption_MergeDuplicates("xktr:mip_intgaprel mip_intgaprel xktr_param_mip_intgaprel XKTR_PARAM_MIP_INTGAPREL KNITRO_PARAM_MIP_INTGAPREL",
       "The relative integrality gap stop tolerance for MIP."
       "\n\nDefault: 1.0e-6",
       XKTR_PARAM_MIP_INTGAPREL, -DBL_MAX, DBL_MAX) );
@@ -368,7 +375,7 @@ public:
 
 #ifdef XKTR_PARAM_MIP_OUTINTERVAL
     MPD( AddSolverOption_MergeDuplicates("xktr:mip_outinterval mip_outinterval xktr_param_mip_outinterval XKTR_PARAM_MIP_OUTINTERVAL KNITRO_PARAM_MIP_OUTINTERVAL",
-      "Specifies node printing interval for XKTR_PARAM_MIP_OUTLEVEL when XKTR_PARAM_MIP_OUTLEVEL 0."
+      "Specifies node printing interval for KNITRO_PARAM_MIP_OUTLEVEL when KNITRO_PARAM_MIP_OUTLEVEL 0."
       "\n\n"
       "Values (default: 10):\n"
       "\n- (0)  Print output every node."
@@ -400,7 +407,7 @@ public:
 
 #ifdef XKTR_PARAM_MIP_ROOTALG
     MPD( AddSolverOption_MergeDuplicates("xktr:mip_rootalg mip_rootalg xktr_param_mip_rootalg XKTR_PARAM_MIP_ROOTALG KNITRO_PARAM_MIP_ROOTALG",
-      "Specifies which algorithm to use for the root node solve in MIP (same options as XKTR_PARAM_ALGORITHM user option)."
+      "Specifies which algorithm to use for the root node solve in MIP (same options as KNITRO_PARAM_ALGORITHM user option)."
       "\n\nDefault: 0",
       XKTR_PARAM_MIP_ROOTALG, INT_MIN, INT_MAX) );
 #endif  // ifdef XKTR_PARAM_MIP_ROOTALG
@@ -461,6 +468,20 @@ public:
       XKTR_PARAM_MIP_TERMINATE, INT_MIN, INT_MAX) );
 #endif  // ifdef XKTR_PARAM_MIP_TERMINATE
 
+#ifdef XKTR_PARAM_NCVX_QCQP_INIT
+    MPD( AddSolverOption_MergeDuplicates("xktr:ncvx_qcqp_init ncvx_qcqp_init xktr_param_ncvx_qcqp_init XKTR_PARAM_NCVX_QCQP_INIT KNITRO_PARAM_NCVX_QCQP_INIT",
+      "Specifies the initialization strategy used for non-convex QPs and QCQPs."
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  (auto) Knitro will automatically determine the strategy."
+      "\n- (0)  (none) No special initialization strategy is used."
+      "\n- (1)  (linear) Initialize by solving a linear relaxation."
+      "\n- (2)  (hybrid) Initialize by solving a hybrid formulation."
+      "\n- (3)  (penalty) Initialize by solving a penalty formulation."
+      "\n- (4)  (cvxquad) Initialize by solving a convex quadratic relaxation.",
+      XKTR_PARAM_NCVX_QCQP_INIT, INT_MIN, INT_MAX) );
+#endif  // ifdef XKTR_PARAM_NCVX_QCQP_INIT
+
 #ifdef XKTR_PARAM_OBJRANGE
     MPD( AddSolverOption_MergeDuplicates("xktr:objrange objrange xktr_param_objrange XKTR_PARAM_OBJRANGE KNITRO_PARAM_OBJRANGE",
       "Specifies the extreme limits of the objective function for purposes of determining unboundedness."
@@ -499,7 +520,7 @@ public:
 
 #ifdef XKTR_PARAM_PRESOLVE
     MPD( AddSolverOption_MergeDuplicates("xktr:presolve presolve xktr_param_presolve XKTR_PARAM_PRESOLVE KNITRO_PARAM_PRESOLVE",
-      "Determine whether or not to use the Knitro presolver to try to simplify the model by removing variables or constraints. Specifies conditions for terminating the MIP algorithm."
+      "Determines whether or not to use the Knitro presolver to try to simplify the model by removing variables or constraints."
       "\n\n"
       "Values (default: 1):\n"
       "\n- (0)  (none) Do not use Knitro presolver."
@@ -537,7 +558,7 @@ public:
 
 #ifdef XKTR_PARAM_SOLTYPE
     MPD( AddSolverOption_MergeDuplicates("xktr:soltype soltype xktr_param_soltype XKTR_PARAM_SOLTYPE KNITRO_PARAM_SOLTYPE",
-      "This option specifies the solution returned by Knitro. Generally, the solution converged to by Knitro is a locally optimal solution that corresponds to the best feasible solution found. However, on rare occasions, Knitro may enounter a feasible solution during the optimization process that has a better objective value than the final solution converged to by Knitro. Setting soltype = 1 in this case will return this iterate."
+      "This option specifies the solution returned by Knitro. Generally, the solution converged to by Knitro is a locally optimal solution that corresponds to the best feasible solution found. However, on rare occasions, Knitro may encounter a feasible solution during the optimization process that has a better objective value than the final solution converged to by Knitro. Setting KNITRO_PARAM_SOLTYPE = 1 in this case will return this iterate."
       "\n\n"
       "Values (default: 0):\n"
       "\n- (0)  (final) Always return the final solution to which Knitro converges."
@@ -547,7 +568,7 @@ public:
 
 #ifdef XKTR_PARAM_XTOL
     MPD( AddSolverOption_MergeDuplicates("xktr:xtol xtol xktr_param_xtol XKTR_PARAM_XTOL KNITRO_PARAM_XTOL",
-      "The optimization process will terminate if the relative change in all components of the solution point estimate is less than xtol."
+      "The optimization process will terminate if the relative change in all components of the solution point estimate is less than KNITRO_PARAM_XTOL."
       "\n\nDefault: 1.0e-15",
       XKTR_PARAM_XTOL, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XKTR_PARAM_XTOL
@@ -557,22 +578,22 @@ public:
       "Bit map describing the SLP algorithm(s) to be used"
       "\n\n"
       "Values (default: 166 (sets bits 1, 2, 5, 7)):\n"
-      "\n- (0)  Do not apply step bounds."
-      "\n- (1)  Apply step bounds to SLP delta vectors only when required."
-      "\n- (2)  Estimate step bounds from early SLP iterations."
-      "\n- (3)  Use dynamic damping."
-      "\n- (4)  Do not update values which are converged within strict tolerance."
-      "\n- (5)  Retain previous value when cascading if determining row is zero."
-      "\n- (6)  Reset XSLP_DELTA_Z to zero when converged and continue SLP."
-      "\n- (7)  Quick convergence check."
-      "\n- (8)  Escalate penalties."
-      "\n- (9)  Use the primal simplex algorithm when all error vectors become inactive."
-      "\n- (11)  Continue optimizing after penalty cost reaches maximum."
-      "\n- (12)  Accept a solution which has converged even if there are still significant active penalty error vectors."
-      "\n- (13)  Skip the solution polishing step if the LP postsolve returns a slightly infeasible, but claimed optimal solution."
-      "\n- (14)  Step bounds are updated to accomodate cascaded values (otherwise cascaded values are pushed to respect step bounds)."
-      "\n- (15)  Apply clamping when converged on extended criteria only with some variables having active step bounds."
-      "\n- (16)  Apply clamping when converged on extended criteria only.",
+      "\n- (0)  XPRS_SLPNOSTEPBOUNDS Do not apply step bounds."
+      "\n- (1)  XPRS_SLPSTEPBOUNDSASREQUIRED Apply step bounds to SLP delta vectors only when required."
+      "\n- (2)  XPRS_SLPESTIMATESTEPBOUNDS Estimate step bounds from early SLP iterations."
+      "\n- (3)  XPRS_SLPDYNAMICDAMPING Use dynamic damping."
+      "\n- (4)  XPRS_SLPHOLDVALUES Do not update values which are converged within strict tolerance."
+      "\n- (5)  XPRS_SLPRETAINPREVIOUSVALUE Retain previous value when cascading if determining row is zero."
+      "\n- (6)  XPRS_SLPRESETDELTAZ Reset SLPDELTA_Z to zero when converged and continue SLP."
+      "\n- (7)  XPRS_SLPQUICKCONVERGENCECHECK Quick convergence check."
+      "\n- (8)  XPRS_SLPESCALATEPENALTIES Escalate penalties."
+      "\n- (9)  XPRS_SLPSWITCHTOPRIMAL Use the primal simplex algorithm when all error vectors become inactive."
+      "\n- (11)  XPRS_SLPMAXCOSTOPTION Continue optimizing after penalty cost reaches maximum."
+      "\n- (12)  XPRS_SLPRESIDUALERRORS Accept a solution which has converged even if there are still significant active penalty error vectors."
+      "\n- (13)  XPRS_SLPNOLPPOLISHING Skip the solution polishing step if the LP postsolve returns a slightly infeasible, but claimed optimal solution."
+      "\n- (14)  XPRS_SLPCASCADEDBOUNDS Step bounds are updated to accommodate cascaded values (otherwise cascaded values are pushed to respect step bounds)."
+      "\n- (15)  XPRS_SLPCLAMPEXTENDEDACTIVESB Apply clamping when converged on extended criteria only with some variables having active step bounds."
+      "\n- (16)  XPRS_SLPCLAMPEXTENDEDALL Apply clamping when converged on extended criteria only.",
       XSLP_ALGORITHM, INT_MIN, INT_MAX) );
 #endif  // ifdef XSLP_ALGORITHM
 
@@ -581,11 +602,11 @@ public:
       "Bit map activating additional options supporting model / solution path analysis"
       "\n\n"
       "Values (default: 0):\n"
-      "\n- (3)  Include an extended iteration summary."
-      "\n- (4)  Run infeasibility analysis on infeasible iterations."
-      "\n- (6)  Write the linearizations to disk at every XSLP_AUTOSAVE iterations."
-      "\n- (7)  Write the initial basis of the linearizations to disk at every XSLP_AUTOSAVE iterations."
-      "\n- (8)  Create an XSLP save file at every XSLP_AUTOSAVE iterations.",
+      "\n- (3)  XPRS_SLPANALYZE_EXTENDEDFINALSUMMARY Include an extended iteration summary."
+      "\n- (4)  XPRS_SLPANALYZE_INFEASIBLE_ITERATION Run infeasibility analysis on infeasible iterations."
+      "\n- (6)  XPRS_SLPANALYZE_SAVELINEARIZATIONS Write the linearizations to disk at every SLPAUTOSAVE iterations."
+      "\n- (7)  XPRS_SLPANALYZE_SAVEITERBASIS Write the initial basis of the linearizations to disk at every SLPAUTOSAVE iterations."
+      "\n- (8)  XPRS_SLPANALYZE_SAVEFILE Create an XSLP save file at every SLPAUTOSAVE iterations.",
       XSLP_ANALYZE, INT_MIN, INT_MAX) );
 #endif  // ifdef XSLP_ANALYZE
 
@@ -608,18 +629,18 @@ public:
       "Bit map describing the SLP augmentation method(s) to be used"
       "\n\n"
       "Values (default: 12 (sets bits 2 and 3)):\n"
-      "\n- (0)  Minimum augmentation."
-      "\n- (1)  Even handed augmentation."
-      "\n- (2)  Penalty error vectors on all non-linear equality constraints."
-      "\n- (3)  Penalty error vectors on all non-linear inequality constraints."
-      "\n- (4)  Penalty vectors to exceed step bounds."
-      "\n- (5)  Use arithmetic means to estimate penalty weights."
-      "\n- (6)  Estimate step bounds from values of row coefficients."
-      "\n- (7)  Estimate step bounds from absolute values of row coefficients."
-      "\n- (8)  Row-based step bounds."
-      "\n- (9)  Penalty error vectors on all constraints."
-      "\n- (10)  Intial values do not imply an SLP variable."
-      "\n- (12)  Avoid running an LP around fixed initial values trying to get feasible.",
+      "\n- (0)  XPRS_SLPMINIMUMAUGMENTATION Minimum augmentation."
+      "\n- (1)  XPRS_SLPEVENHANDEDAUGMENTATION Even handed augmentation."
+      "\n- (2)  XPRS_SLPEQUALITYERRORVECTORS Penalty error vectors on all non-linear equality constraints."
+      "\n- (3)  XPRS_SLPALLERRORVECTORS Penalty error vectors on all non-linear inequality constraints."
+      "\n- (4)  XPRS_SLPPENALTYDELTAVECTORS Penalty vectors to exceed step bounds."
+      "\n- (5)  XPRS_SLPAMEANWEIGHT Use arithmetic means to estimate penalty weights."
+      "\n- (6)  XPRS_SLPSBFROMVALUES Estimate step bounds from values of row coefficients."
+      "\n- (7)  XPRS_SLPSBFROMABSVALUES Estimate step bounds from absolute values of row coefficients."
+      "\n- (8)  XPRS_SLPSTEPBOUNDROWS Row-based step bounds."
+      "\n- (9)  XPRS_SLPALLROWERRORVECTORS Penalty error vectors on all constraints."
+      "\n- (10)  XPRS_SLPNOUPDATEIFONLYIV Initial values do not imply an SLP variable."
+      "\n- (12)  XPRS_SLPSKIPIVLPHEURISTICS Avoid running an LP around fixed initial values trying to get feasible.",
       XSLP_AUGMENTATION, INT_MIN, INT_MAX) );
 #endif  // ifdef XSLP_AUGMENTATION
 
@@ -670,9 +691,9 @@ public:
       "Controls behaviour when the barrier is used to solve the linearizations"
       "\n\n"
       "Values (default: -1):\n"
-      "\n- (0)  Check objective progress when no crossover is applied."
-      "\n- (1)  Fall back to dual simplex if too many numerical problems are reported by the barrier."
-      "\n- (2)  If a non-vertex converged solution found by barrier without crossover can be returned as a final solution.",
+      "\n- (0)  XPRS_SLPBARSTARTOPS_STALLING_OBJECTIVE Check objective progress when no crossover is applied."
+      "\n- (1)  XPRS_SLPBARSTARTOPS_STALLING_NUMERICAL Fall back to dual simplex if too many numerical problems are reported by the barrier."
+      "\n- (2)  XPRS_SLPBARSTARTOPS_ALLOWINTERIORSOLUTION If a non-vertex converged solution found by barrier without crossover can be returned as a final solution.",
       XSLP_BARSTARTOPS, INT_MIN, INT_MAX) );
 #endif  // ifdef XSLP_BARSTARTOPS
 
@@ -686,7 +707,7 @@ public:
 #ifdef XSLP_CALCTHREADS
     MPD( AddSolverOption_MergeDuplicates("slp:calcthreads calcthreads xslp_calcthreads XSLP_CALCTHREADS NLPCALCTHREADS",
       "Number of threads used for formula and derivatives evaluations"
-      "\n\nDefault: -1 (determined by XSLP_THREADS)",
+      "\n\nDefault: -1 (determined by NLPTHREADS)",
       XSLP_CALCTHREADS, INT_MIN, INT_MAX) );
 #endif  // ifdef XSLP_CALCTHREADS
 
@@ -695,15 +716,15 @@ public:
       "Bit map describing the cascading to be used"
       "\n\n"
       "Values (default: 257):\n"
-      "\n- (0)  Apply cascading to all variables with determining rows."
-      "\n- (1)  Apply cascading to SLP variables which appear in coefficients and which would change by more than XPRS_FEASTOL."
-      "\n- (2)  Apply cascading to all SLP variables which appear in coefficients."
-      "\n- (3)  Apply cascading to SLP variables which are structural and which would change by more than XPRS_FEASTOL."
-      "\n- (4)  Apply cascading to all SLP variables which are structural."
-      "\n- (5)  Create secondary order groupping DR rows with instantiated user functions together in the order."
-      "\n- (6)  In cases where the determining column is below XSLP_DRCOLTOL, fix at the previous rather than current value."
-      "\n- (7)  In cases where the determining column is below XSLP_DRCOLTOL, fix within a range XSLP_DRFIXRANGE of previous value."
-      "\n- (8)  Automatically determine whether to apply cascading.",
+      "\n- (0)  XPRS_SLPCASCADE_ALL Apply cascading to all variables with determining rows."
+      "\n- (1)  XPRS_SLPCASCADE_COEF_VAR Apply cascading to SLP variables which appear in coefficients and which would change by more than FEASTOL."
+      "\n- (2)  XPRS_SLPCASCADE_ALL_COEF_VAR Apply cascading to all SLP variables which appear in coefficients."
+      "\n- (3)  XPRS_SLPCASCADE_STRUCT_VAR Apply cascading to SLP variables which are structural and which would change by more than FEASTOL."
+      "\n- (4)  XPRS_SLPCASCADE_ALL_STRUCT_VAR Apply cascading to all SLP variables which are structural."
+      "\n- (5)  XPRS_SLPCASCADE_SECONDARY_GROUPS Create secondary order groupping DR rows with instantiated user functions together in the order."
+      "\n- (6)  XPRS_SLPCASCADE_DRCOL_PREVOUSVALUE In cases where the determining column is below SLPDRCOLTOL, fix at the previous rather than current value."
+      "\n- (7)  XPRS_SLPCASCADE_DRCOL_PVRANGE In cases where the determining column is below SLPDRCOLTOL, fix within a range SLPDRFIXRANGE of previous value."
+      "\n- (8)  XPRS_SLPCASCADE_AUTOAPPLY Automatically determine whether to apply cascading.",
       XSLP_CASCADE, INT_MIN, INT_MAX) );
 #endif  // ifdef XSLP_CASCADE
 
@@ -751,30 +772,31 @@ public:
 
 #ifdef XSLP_CLAMPVALIDATIONTOL_A
     MPD( AddSolverOption_MergeDuplicates("slp:clampvalidationtol_a clampvalidationtol_a xslp_clampvalidationtol_a XSLP_CLAMPVALIDATIONTOL_A SLPCLAMPVALIDATIONTOL_A",
-      "Absolute validation tolerance for applying XSLP_CLAMPSHRINK"
+      "Absolute validation tolerance for applying SLPCLAMPSHRINK"
       "\n\nDefault: 1.0e-06",
       XSLP_CLAMPVALIDATIONTOL_A, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XSLP_CLAMPVALIDATIONTOL_A
 
 #ifdef XSLP_CLAMPVALIDATIONTOL_R
     MPD( AddSolverOption_MergeDuplicates("slp:clampvalidationtol_r clampvalidationtol_r xslp_clampvalidationtol_r XSLP_CLAMPVALIDATIONTOL_R SLPCLAMPVALIDATIONTOL_R",
-      "Relative validation tolerance for applying XSLP_CLAMPSHRINK"
+      "Relative validation tolerance for applying SLPCLAMPSHRINK"
       "\n\nDefault: 1.0e-06",
       XSLP_CLAMPVALIDATIONTOL_R, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XSLP_CLAMPVALIDATIONTOL_R
 
 #ifdef XSLP_CONTROL
     MPD( AddSolverOption_MergeDuplicates("slp:control control xslp_control XSLP_CONTROL",
-      "Bit map describing which Xpress NonLinear functions also activate the corresponding Optimizer Library function"
+      "Bit map describing which Xpress NonLinear functions also activate the corresponding Optimizer Library function and which Optimizer functions call corresponding nonlinear functions"
       "\n\n"
       "Values (default: 0 (no bits set)):\n"
-      "\n- (0)  Xpress NonLinear problem management functions do NOT invoke the corresponding Optimizer Library function for the underlying linear problem."
-      "\n- (1)  XSLPcopycontrols does NOT invoke XPRScopycontrols."
-      "\n- (2)  XSLPcopycallbacks does NOT invoke XPRScopycallbacks."
-      "\n- (3)  XSLPcopyprob does NOT invoke XPRScopyprob."
-      "\n- (4)  XSLPsetdefaults does NOT invoke XPRSsetdefaults."
-      "\n- (5)  XSLPsave does NOT invoke XPRSsave."
-      "\n- (6)  XSLPrestore does NOT invoke XPRSrestore.",
+      "\n- (0)  XSLP_CONTROLBIT_NOTHING Xpress NonLinear problem management functions do NOT invoke the corresponding Optimizer Library function for the underlying linear problem."
+      "\n- (1)  XSLP_CONTROLBIT_NOCOPYCONTROLSXSLPcopycontrols does NOT invoke XPRScopycontrols."
+      "\n- (2)  XSLP_CONTROLBIT_NOCOPYCALLBACKSXSLPcopycallbacks does NOT invoke XPRScopycallbacks."
+      "\n- (3)  XSLP_CONTROLBIT_NOCOPYPROBXSLPcopyprob does NOT invoke XPRScopyprob."
+      "\n- (4)  XSLP_CONTROLBIT_NOSETDEFAULTSXSLPsetdefaults does NOT invoke XPRSsetdefaults."
+      "\n- (5)  XSLP_CONTROLBIT_NOSAVEXSLPsave does NOT invoke XPRSsave."
+      "\n- (6)  XSLP_CONTROLBIT_NORESTOREXSLPrestore does NOT invoke XPRSrestore."
+      "\n- (7)  XSLP_CONTROLBIT_NONLPPOSTSOLVEXPRSpostsolve does NOT invoke XPRSnlppostsolve.",
       XSLP_CONTROL, INT_MIN, INT_MAX) );
 #endif  // ifdef XSLP_CONTROL
 
@@ -783,21 +805,21 @@ public:
       "Bit map describing which convergence tests should be carried out"
       "\n\n"
       "Values (default: 39935 (bits 0-9, 11-12, and 15 are set)):\n"
-      "\n- (0)  Execute the closure tolerance checks."
-      "\n- (1)  Execute the delta tolerance checks."
-      "\n- (2)  Execute the matrix tolerance checks."
-      "\n- (3)  Execute the impact tolerance checks."
-      "\n- (4)  Execute the slack impact tolerance checks."
-      "\n- (5)  Check for user provided convergence."
-      "\n- (6)  Execute the objective range checks."
-      "\n- (7)  Execute the objective range + constraint activity check."
-      "\n- (8)  Execute the objective range + active step bound check."
-      "\n- (9)  Execute the convergence continuation check."
-      "\n- (10)  Take scaling of individual variables / rows into account."
-      "\n- (11)  Execute the validation target convergence checks."
-      "\n- (12)  Execute the first order optimality target convergence checks."
-      "\n- (13)  Allow convex quadratic problems to converge on extended criteria."
-      "\n- (15)  Do not declare converged if still sufficient improvement in objective.",
+      "\n- (0)  XPRS_SLPCONVERGEBIT_CTOL Execute the closure tolerance checks."
+      "\n- (1)  XPRS_SLPCONVERGEBIT_ATOL Execute the delta tolerance checks."
+      "\n- (2)  XPRS_SLPCONVERGEBIT_MTOL Execute the matrix tolerance checks."
+      "\n- (3)  XPRS_SLPCONVERGEBIT_ITOL Execute the impact tolerance checks."
+      "\n- (4)  XPRS_SLPCONVERGEBIT_STOL Execute the slack impact tolerance checks."
+      "\n- (5)  XPRS_SLPCONVERGEBIT_USER Check for user provided convergence."
+      "\n- (6)  XPRS_SLPCONVERGEBIT_VTOL Execute the objective range checks."
+      "\n- (7)  XPRS_SLPCONVERGEBIT_XTOL Execute the objective range + constraint activity check."
+      "\n- (8)  XPRS_SLPCONVERGEBIT_OTOL Execute the objective range + active step bound check."
+      "\n- (9)  XPRS_SLPCONVERGEBIT_WTOL Execute the convergence continuation check."
+      "\n- (10)  XPRS_SLPCONVERGEBIT_EXTENDEDSCALING Take scaling of individual variables / rows into account."
+      "\n- (11)  XPRS_SLPCONVERGEBIT_VALIDATION Execute the validation target convergence checks."
+      "\n- (12)  XPRS_SLPCONVERGEBIT_VALIDATION_K Execute the first order optimality target convergence checks."
+      "\n- (13)  XPRS_SLPCONVERGEBIT_NOQUADCHECK Allow convex quadratic problems to converge on extended criteria."
+      "\n- (15)  XPRS_SLPCONVERGEBIT_REQUIRE_OTOL_R Do not declare converged if still sufficient improvement in objective.",
       XSLP_CONVERGENCEOPS, INT_MIN, INT_MAX) );
 #endif  // ifdef XSLP_CONVERGENCEOPS
 
@@ -810,7 +832,7 @@ public:
 
 #ifdef XSLP_CUTSTRATEGY
     MPD( AddSolverOption_MergeDuplicates("mislp:cutstrategy cutstrategy xslp_cutstrategy XSLP_CUTSTRATEGY SLPCUTSTRATEGY",
-      "Determines whihc cuts to apply in the MISLP search when the default SLP-in-MIP strategy is used."
+      "Determines which cuts to apply in the MISLP search when the default SLP-in-MIP strategy is used."
       "\n\nDefault: 0",
       XSLP_CUTSTRATEGY, INT_MIN, INT_MAX) );
 #endif  // ifdef XSLP_CUTSTRATEGY
@@ -915,7 +937,7 @@ public:
 
 #ifdef XSLP_DELTAZLIMIT
     MPD( AddSolverOption_MergeDuplicates("slp:deltazlimit deltazlimit xslp_deltazlimit XSLP_DELTAZLIMIT SLPDELTAZLIMIT",
-      "Number of SLP iterations during which to apply XSLP_DELTA_Z"
+      "Number of SLP iterations during which to apply XPRS_SLPDELTA_Z"
       "\n\nDefault: 0",
       XSLP_DELTAZLIMIT, INT_MIN, INT_MAX) );
 #endif  // ifdef XSLP_DELTAZLIMIT
@@ -988,7 +1010,7 @@ public:
 
 #ifdef XSLP_DRCOLDJTOL
     MPD( AddSolverOption_MergeDuplicates("slp:drcoldjtol drcoldjtol xslp_drcoldjtol XSLP_DRCOLDJTOL SLPDRCOLDJTOL",
-      "Reduced cost tolerance on the delta variable when fixing due to the determining column being below XSLP_DRCOLTOL."
+      "Reduced cost tolerance on the delta variable when fixing due to the determining column being below SLPDRCOLTOL."
       "\n\nDefault: 0.0",
       XSLP_DRCOLDJTOL, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XSLP_DRCOLDJTOL
@@ -1002,7 +1024,7 @@ public:
 
 #ifdef XSLP_DRFIXRANGE
     MPD( AddSolverOption_MergeDuplicates("slp:drfixrange drfixrange xslp_drfixrange XSLP_DRFIXRANGE SLPDRFIXRANGE",
-      "The range around the previous value where variables are fixed in cascading if the determining column is below XSLP_DRCOLTOL."
+      "The range around the previous value where variables are fixed in cascading if the determining column is below SLPDRCOLTOL."
       "\n\nDefault: 0.1",
       XSLP_DRFIXRANGE, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XSLP_DRFIXRANGE
@@ -1075,7 +1097,10 @@ public:
 #ifdef XSLP_ERRORMAXCOST
     MPD( AddSolverOption_MergeDuplicates("slp:errormaxcost errormaxcost xslp_errormaxcost XSLP_ERRORMAXCOST SLPERRORMAXCOST",
       "Maximum penalty cost multiplier for penalty error vectors"
-      "\n\nDefault: XPRS_PLUSINFINITY",
+      "\n\n"
+      "Values (default: -1.0):\n"
+      "\n- (-1)  Let the solver decide."
+      "\n- (>=0)  Maximum penalty cost multiplier.",
       XSLP_ERRORMAXCOST, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XSLP_ERRORMAXCOST
 
@@ -1164,10 +1189,10 @@ public:
       "Bit map for controlling solution updates"
       "\n\n"
       "Values (default: 3 (bit 0,1)):\n"
-      "\n- (0)  retain best solution according to the merit function."
-      "\n- (1)  check cascaded solutions against improvements in the merit function."
-      "\n- (2)  force minimum step sizes in line search."
-      "\n- (3)  accept the trust region step is the line search returns a zero step size.",
+      "\n- (0)  XPRS_SLPFILTER_KEEPBEST retain best solution according to the merit function."
+      "\n- (1)  XPRS_SLPFILTER_CASCADE check cascaded solutions against improvements in the merit function."
+      "\n- (2)  XPRS_SLPFILTER_ZEROLINESEARCH force minimum step sizes in line search."
+      "\n- (3)  XPRS_SLPFILTER_ZEROLINESEARCHTR accept the trust region step is the line search returns a zero step size.",
       XSLP_FILTER, INT_MIN, INT_MAX) );
 #endif  // ifdef XSLP_FILTER
 
@@ -1187,12 +1212,12 @@ public:
       "Bit map for determining the method of evaluating user functions and their derivatives"
       "\n\n"
       "Values (default: 0):\n"
-      "\n- (3)  evaluate function whenever independent variables change."
-      "\n- (4)  evaluate function when independent variables change outside tolerances."
-      "\n- (5)  application of bits 3-4: 0 = functions which do not have a defined re-evaluation mode;1 = all functions."
-      "\n- (6)  tangential derivatives."
-      "\n- (7)  forward derivatives"
-      "\n- (8)  application of bits 6-7: 0 = functions which do not have a defined derivative mode;1 = all functions.",
+      "\n- (3)  XPRS_NLPRECALC evaluate function whenever independent variables change."
+      "\n- (4)  XPRS_NLPTOLCALC evaluate function when independent variables change outside tolerances."
+      "\n- (5)  XPRS_NLPALLCALCS application of bits 3-4: 0 = functions which do not have a defined re-evaluation mode;1 = all functions."
+      "\n- (6)  XPRS_NLP2DERIVATIVE tangential derivatives."
+      "\n- (7)  XPRS_NLP1DERIVATIVE forward derivatives"
+      "\n- (8)  XPRS_NLPALLDERIVATIVES application of bits 6-7: 0 = functions which do not have a defined derivative mode;1 = all functions.",
       XSLP_FUNCEVAL, INT_MIN, INT_MAX) );
 #endif  // ifdef XSLP_FUNCEVAL
 
@@ -1205,7 +1230,7 @@ public:
 
 #ifdef XSLP_GRIDHEURSELECT
     MPD( AddSolverOption_MergeDuplicates("slp:gridheurselect gridheurselect xslp_gridheurselect XSLP_GRIDHEURSELECT SLPGRIDHEURSELECT",
-      "Bit map selectin which heuristics to run if the problem has variable with an integer delta"
+      "Bit map selecting which heuristics to run if the problem has a variable with an integer delta"
       "\n\n"
       "Values (default: 6):\n"
       "\n- (0)  Enumeration: try all combinations."
@@ -1242,7 +1267,7 @@ public:
 
 #ifdef XSLP_INFEASLIMIT
     MPD( AddSolverOption_MergeDuplicates("slp:infeaslimit infeaslimit xslp_infeaslimit XSLP_INFEASLIMIT SLPINFEASLIMIT",
-      "The maximum number of consecutive infeasible SLP iterations which can occur before Xpress-SLP terminates"
+      "The maximum number of consecutive infeasible or unbounded SLP iterations which can occur before Xpress-SLP terminates"
       "\n\nDefault: 3",
       XSLP_INFEASLIMIT, INT_MIN, INT_MAX) );
 #endif  // ifdef XSLP_INFEASLIMIT
@@ -1256,7 +1281,7 @@ public:
 
 #ifdef XSLP_ITERFALLBACKOPS
     MPD( AddSolverOption_MergeDuplicates("slp:iterfallbackops iterfallbackops xslp_iterfallbackops XSLP_ITERFALLBACKOPS SLPITERFALLBACKOPS",
-      "Alternative LP level control values for numerically challengeing problems"
+      "Alternative LP level control values for numerically challenging problems"
       "\n\nDefault: none",
       XSLP_ITERFALLBACKOPS) );
 #endif  // ifdef XSLP_ITERFALLBACKOPS
@@ -1399,7 +1424,7 @@ public:
 
 #ifdef XSLP_MINSBFACTOR
     MPD( AddSolverOption_MergeDuplicates("slp:minsbfactor minsbfactor xslp_minsbfactor XSLP_MINSBFACTOR SLPMINSBFACTOR",
-      "Factor by which step bounds can be decreased beneath XSLP_ATOL_A"
+      "Factor by which step bounds can be decreased beneath SLPATOL_A"
       "\n\nDefault: 1.0",
       XSLP_MINSBFACTOR, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XSLP_MINSBFACTOR
@@ -1429,18 +1454,17 @@ public:
     MPD( AddSolverOption_MergeDuplicates("mislp:mipalgorithm mipalgorithm xslp_mipalgorithm XSLP_MIPALGORITHM SLPMIPALGORITHM",
       "Bitmap describing the MISLP algorithms to be used"
       "\n\n"
-      "Values (default: 17 (bits 0 and4 are set)):\n"
-      "\n\n\n"
-      "\n- (0)  Solve initial SLP to convergence."
-      "\n- (2)  Relax step bounds according to XSLP_MIPRELAXSTEPBOUNDS after initial node."
-      "\n- (3)  Fix step bounds according to XSLP_MIPFIXSTEPBOUNDS after initial node."
-      "\n- (4)  Relax step bounds according to XSLP_MIPRELAXSTEPBOUNDS at each node."
-      "\n- (5)  Fix step bounds according to XSLP_MIPFIXSTEPBOUNDS at each node."
-      "\n- (6)  Limit iterations at each node to XSLP_MIPITERLIMIT."
-      "\n- (7)  Relax step bounds according to XSLP_MIPRELAXSTEPBOUNDS after MIP solution is found."
-      "\n- (8)  Fix step bounds according to XSLP_MIPFIXSTEPBOUNDS after MIP solution is found."
-      "\n- (9)  Use MIP at each SLP iteration instead of SLP at each node."
-      "\n- (10)  Use MIP on converged SLP solution and then SLP on the resulting MIP solution.",
+      "Values (default: 17 (bits 0 and 4 are set)):\n"
+      "\n- (0)  XPRS_SLPMIPINITIALSLP Solve initial SLP to convergence."
+      "\n- (2)  XPRS_SLPMIPINITIALRELAXSLP Relax step bounds according to SLPMIPRELAXSTEPBOUNDS after initial node."
+      "\n- (3)  XPRS_SLPMIPINITIALFIXSLP Fix step bounds according to SLPMIPFIXSTEPBOUNDS after initial node."
+      "\n- (4)  XPRS_SLPMIPNODERELAXSLP Relax step bounds according to SLPMIPRELAXSTEPBOUNDS at each node."
+      "\n- (5)  XPRS_SLPMIPNODEFIXSLP Fix step bounds according to SLPMIPFIXSTEPBOUNDS at each node."
+      "\n- (6)  XPRS_SLPMIPNODELIMITSLP Limit iterations at each node to SLPMIPITERLIMIT."
+      "\n- (7)  XPRS_SLPMIPFINALRELAXSLP Relax step bounds according to SLPMIPRELAXSTEPBOUNDS after MIP solution is found."
+      "\n- (8)  XPRS_SLPMIPFINALFIXSLP Fix step bounds according to SLPMIPFIXSTEPBOUNDS after MIP solution is found."
+      "\n- (9)  XPRS_SLPMIPWITHINSLP Use MIP at each SLP iteration instead of SLP at each node."
+      "\n- (10)  XPRS_SLPSLPTHENMIP Use MIP on converged SLP solution and then SLP on the resulting MIP solution.",
       XSLP_MIPALGORITHM, INT_MIN, INT_MAX) );
 #endif  // ifdef XSLP_MIPALGORITHM
 
@@ -1467,7 +1491,7 @@ public:
 
 #ifdef XSLP_MIPCUTOFF_R
     MPD( AddSolverOption_MergeDuplicates("mislp:mipcutoff_r mipcutoff_r xslp_mipcutoff_r XSLP_MIPCUTOFF_R SLPMIPCUTOFF_R",
-      "Absolute objective function cutoff for MIP termination"
+      "Relative objective function cutoff for MIP termination"
       "\n\nDefault: 0.00001",
       XSLP_MIPCUTOFF_R, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XSLP_MIPCUTOFF_R
@@ -1498,7 +1522,6 @@ public:
       "Bitmap describing the step-bound fixing strategy during MISLP"
       "\n\n"
       "Values (default: 0):\n"
-      "\n\n\n"
       "\n- (0)  Fix step bounds on structural SLP variables which are not in coefficients."
       "\n- (1)  Fix step bounds on all structural SLP variables."
       "\n- (2)  Fix step bounds on SLP variables appearing only in coefficients."
@@ -1546,13 +1569,24 @@ public:
       "Bitmap describing the step-bound relaxation strategy during MISLP"
       "\n\n"
       "Values (default: 15 (relax all types)):\n"
-      "\n\n\n"
       "\n- (0)  Relax step bounds on structural SLP variables which are not in coefficients."
       "\n- (1)  Relax step bounds on all structural SLP variables."
       "\n- (2)  Relax step bounds on SLP variables appearing only in coefficients."
       "\n- (3)  Relax step bounds on SLP variables appearing in coefficients.",
       XSLP_MIPRELAXSTEPBOUNDS, INT_MIN, INT_MAX) );
 #endif  // ifdef XSLP_MIPRELAXSTEPBOUNDS
+
+#ifdef XSLP_MISLPALGORITHM
+    MPD( AddSolverOption_MergeDuplicates("mislp:mislpalgorithm mislpalgorithm xslp_mislpalgorithm XSLP_MISLPALGORITHM SLPMISLPALGORITHM",
+      "Selects the MISLP strategy used to combine SLP with the branch-and-bound search"
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  XPRS_SLPMISLPALGORITHM_AUTOMATIC Fall back to bits 9 and 10 of SLPMIPALGORITHM. By default neither bit is set, which is equivalent to XPRS_SLPMISLPALGORITHM_SLPINMIP."
+      "\n- (0)  XPRS_SLPMISLPALGORITHM_SLPINMIP Use SLP at each node of the branch and bound search."
+      "\n- (1)  XPRS_SLPMISLPALGORITHM_MIPINSLP Solve the linearization in each SLP iteration as an MILP."
+      "\n- (2)  XPRS_SLPMISLPALGORITHM_SLPMIPSLP Solve the continuous relaxation, solve an MILP on the final linearization and then fix all integers and solve with SLP again.",
+      XSLP_MISLPALGORITHM, INT_MIN, INT_MAX) );
+#endif  // ifdef XSLP_MISLPALGORITHM
 
 #ifdef XSLP_MSMAXBOUNDRANGE
     MPD( AddSolverOption_MergeDuplicates("slp:msmaxboundrange msmaxboundrange xslp_msmaxboundrange XSLP_MSMAXBOUNDRANGE MSMAXBOUNDRANGE",
@@ -1602,7 +1636,7 @@ public:
 
 #ifdef XSLP_MULTISTART_MAXTIME
     MPD( AddSolverOption_MergeDuplicates("slp:multistart_maxtime multistart_maxtime xslp_multistart_maxtime XSLP_MULTISTART_MAXTIME MULTISTART_MAXTIME",
-      "The maximum total time to be spent in the mutlistart search."
+      "The maximum total time to be spent in the multistart search."
       "\n\nDefault: 0 (no upper limit)",
       XSLP_MULTISTART_MAXTIME, INT_MIN, INT_MAX) );
 #endif  // ifdef XSLP_MULTISTART_MAXTIME
@@ -1624,7 +1658,7 @@ public:
 #ifdef XSLP_MULTISTART_THREADS
     MPD( AddSolverOption_MergeDuplicates("slp:multistart_threads multistart_threads xslp_multistart_threads XSLP_MULTISTART_THREADS MULTISTART_THREADS",
       "The maximum number of threads to be used in multistart"
-      "\n\nDefault: -1 (determined by XSLP_THREADS)",
+      "\n\nDefault: -1 (determined by NLPTHREADS)",
       XSLP_MULTISTART_THREADS, INT_MIN, INT_MAX) );
 #endif  // ifdef XSLP_MULTISTART_THREADS
 
@@ -1640,9 +1674,9 @@ public:
       "Controls whether to call FICO Xpress Global or one of the local solvers"
       "\n\n"
       "Values (default: -1):\n"
-      "\n- (-1)  If the license allows and there are no user functions or multistart jobs, FICO Xpress Global will be called, otherwise a local solver."
-      "\n- (1)  The algorithm selected by XSLP_SOLVER will be used to find a locally optimal solution"
-      "\n- (2)  FICO Xpress Global will be used to find a globally optimal solution",
+      "\n- (-1)  XPRS_NLPSOLVER_AUTOMATIC If the license allows and there are no user functions or multistart jobs, FICO Xpress Global will be called, otherwise a local solver."
+      "\n- (1)  XPRS_NLPSOLVER_LOCAL The algorithm selected by LOCALSOLVER will be used to find a locally optimal solution"
+      "\n- (2)  XPRS_NLPSOLVER_GLOBAL FICO Xpress Global will be used to find a globally optimal solution",
       XSLP_NLPSOLVER, INT_MIN, INT_MAX) );
 #endif  // ifdef XSLP_NLPSOLVER
 
@@ -1750,11 +1784,11 @@ public:
     MPD( AddSolverOption_MergeDuplicates("slp:presolvelevel presolvelevel xslp_presolvelevel XSLP_PRESOLVELEVEL NLPPRESOLVELEVEL",
       "This control determines the level of changes presolve may carry out on the problem and whether column/row indices may change"
       "\n\n"
-      "Values (default: XSLP_PRESOLVELEVEL_FULL):\n"
-      "\n- (1)  Individual rows only presolve, no dropped columns/rows or index changes, no nonlinear transformations (XSLP_PRESOLVELEVEL_LOCALIZED)."
-      "\n- (2)  All linear presolve that does not drop columns/rows, no index changes, no nonlinear transformations (XSLP_PRESOLVELEVEL_BASIC)."
-      "\n- (3)  Full linear presolve including dropping columns/rows and index changes, no nonlinear transformations (XSLP_PRESOLVELEVEL_LINEAR)."
-      "\n- (4)  Full presolve (XSLP_PRESOLVELEVEL_FULL).",
+      "Values (default: 4):\n"
+      "\n- (1)  Individual rows only presolve, no dropped columns/rows or index changes, no nonlinear transformations (NLPPRESOLVELEVEL_LOCALIZED)."
+      "\n- (2)  All linear presolve that does not drop columns/rows, no index changes, no nonlinear transformations (NLPPRESOLVELEVEL_BASIC)."
+      "\n- (3)  Full linear presolve including dropping columns/rows and index changes, no nonlinear transformations (NLPPRESOLVELEVEL_LINEAR)."
+      "\n- (4)  Full presolve (NLPPRESOLVELEVEL_FULL).",
       XSLP_PRESOLVELEVEL, INT_MIN, INT_MAX) );
 #endif  // ifdef XSLP_PRESOLVELEVEL
 
@@ -1808,7 +1842,7 @@ public:
 
 #ifdef XSLP_PROBING
     MPD( AddSolverOption_MergeDuplicates("slp:probing probing xslp_probing XSLP_PROBING NLPPROBING",
-      "This control determines whether probing on a subset of variables should be performed prior to starting the main algorithm. Probing runs multiple times bound reduction in order to further tighten the bounding box."
+      "This control determines whether probing on a subset of variables should be performed prior to starting the main algorithm. Probing runs bound reduction multiple times in order to further tighten the bounding box."
       "\n\n"
       "Values (default: -1):\n"
       "\n- (-1)  Automatic."
@@ -1826,19 +1860,30 @@ public:
       "Controls the problem reformulations carried out before augmentation. This allows SLP to take advantage of dedicated algorithms for special problem classes."
       "\n\n"
       "Values (default: 511 (bits 0 — 8 incl. are set)):\n"
-      "\n- (0)  Solve convex quadratic objectives using the XPRS library ."
-      "\n- (1)  Convert non-convex quadratic objectives to SLP constructs ."
-      "\n- (2)  Solve convex quadratic constraints using the XPRS library."
-      "\n- (3)  Convert non-convex QCQP constraints to SLP constructs."
-      "\n- (4)  Keep second order cones in the XPRS problem to keep them in the linearizations."
-      "\n- (5)  Convexity of a quadratic only problem may be checked by calling the optimizer to solve the instance."
-      "\n- (6)  Convert pievewise linear functions to MIP constructs."
-      "\n- (7)  Convert ABS functions to MIP constraints if the full problem can be made not nonlinear."
-      "\n- (8)  Convert MIN and MAX functions to MIP expressions if the full problem can be made not nonlinear."
-      "\n- (9)  Always convert ABS expressions."
-      "\n- (10)  Always convert MIN and MAX expressions.",
+      "\n- (0)  XPRS_NLPREFORMULATE_SLP2QP Solve convex quadratic objectives using the XPRS library ."
+      "\n- (1)  XPRS_NLPREFORMULATE_QP2SLP Convert non-convex quadratic objectives to SLP constructs ."
+      "\n- (2)  XPRS_NLPREFORMULATE_SLP2QCQP Solve convex quadratic constraints using the XPRS library."
+      "\n- (3)  XPRS_NLPREFORMULATE_QCQP2SLP Convert non-convex QCQP constraints to SLP constructs."
+      "\n- (4)  XPRS_NLPREFORMULATE_SOCP2SLP Keep second order cones in the XPRS problem to keep them in the linearizations."
+      "\n- (5)  XPRS_NLPREFORMULATE_QPSOLVE Convexity of a quadratic only problem may be checked by calling the optimizer to solve the instance."
+      "\n- (6)  XPRS_NLPREFORMULATE_PWL Convert piecewise linear functions to MIP constructs."
+      "\n- (7)  XPRS_NLPREFORMULATE_ABS Convert ABS functions to MIP constraints if the full problem can be made not nonlinear."
+      "\n- (8)  XPRS_NLPREFORMULATE_MINMAX Convert MIN and MAX functions to MIP expressions if the full problem can be made not nonlinear."
+      "\n- (9)  XPRS_NLPREFORMULATE_ALLABS Always convert ABS expressions."
+      "\n- (10)  XPRS_NLPREFORMULATE_ALLMINMAX Always convert MIN and MAX expressions.",
       XSLP_REFORMULATE, INT_MIN, INT_MAX) );
 #endif  // ifdef XSLP_REFORMULATE
+
+#ifdef XSLP_RETURNSOLUTION
+    MPD( AddSolverOption_MergeDuplicates("slp:returnsolution returnsolution xslp_returnsolution XSLP_RETURNSOLUTION SLPRETURNSOLUTION",
+      "Selects whether XPRSgetsolution returns the final converged iterate or the best merit-function iterate"
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  XPRS_SLPRETURNSOLUTION_AUTOMATIC Fall back to bit 0 of SLPFILTER: return the best merit-function iterate if the bit is set (the default), or the final converged iterate if it is not."
+      "\n- (1)  XPRS_SLPRETURNSOLUTION_BEST Return the solution which had the best value according to the merit function."
+      "\n- (2)  XPRS_SLPRETURNSOLUTION_FINALITERATE Return the final converged iterate.",
+      XSLP_RETURNSOLUTION, INT_MIN, INT_MAX) );
+#endif  // ifdef XSLP_RETURNSOLUTION
 
 #ifdef XSLP_SAMECOUNT
     MPD( AddSolverOption_MergeDuplicates("slp:samecount samecount xslp_samecount XSLP_SAMECOUNT SLPSAMECOUNT",
@@ -1895,12 +1940,12 @@ public:
       "\n\n"
       "Values (default: 1):\n"
       "\n- (0)  No re-scaling."
-      "\n- (1)  Re-scale every SLP iteration up to XSLP_SCALECOUNT iterations after the end of barrier optimization."
-      "\n- (2)  Re-scale every SLP iteration up to XSLP_SCALECOUNT iterations in total."
+      "\n- (1)  Re-scale every SLP iteration up to SLPSCALECOUNT iterations after the end of barrier optimization."
+      "\n- (2)  Re-scale every SLP iteration up to SLPSCALECOUNT iterations in total."
       "\n- (3)  Re-scale every SLP iteration until primal simplex is automatically invoked."
       "\n- (4)  Re-scale every SLP iteration."
-      "\n- (5)  Re-scale every XSLP_SCALECOUNT SLP iterations."
-      "\n- (6)  Re-scale every XSLP_SCALECOUNT SLP iterations after the end of barrier optimization.",
+      "\n- (5)  Re-scale every SLPSCALECOUNT SLP iterations."
+      "\n- (6)  Re-scale every SLPSCALECOUNT SLP iterations after the end of barrier optimization.",
       XSLP_SCALE, INT_MIN, INT_MAX) );
 #endif  // ifdef XSLP_SCALE
 
@@ -1944,6 +1989,18 @@ public:
       XSLP_SOLVER, INT_MIN, INT_MAX) );
 #endif  // ifdef XSLP_SOLVER
 
+#ifdef XSLP_STEPBOUNDING
+    MPD( AddSolverOption_MergeDuplicates("slp:stepbounding stepbounding xslp_stepbounding XSLP_STEPBOUNDING SLPSTEPBOUNDING",
+      "Selects the step bounding strategy used by SLP"
+      "\n\n"
+      "Values (default: -1):\n"
+      "\n- (-1)  Automatic: fall back to bits 0 and 1 of SLPALGORITHM (default). By default bit 1 (XPRS_SLPSTEPBOUNDSASREQUIRED) is set and bit 0 is not, which is equivalent to XPRS_SLPSTEPBOUNDING_ASREQUIRED."
+      "\n- (0)  XPRS_SLPSTEPBOUNDING_NEVER Do not apply step bounds."
+      "\n- (1)  XPRS_SLPSTEPBOUNDING_ALWAYS Always apply step bounds."
+      "\n- (2)  XPRS_SLPSTEPBOUNDING_ASREQUIRED Apply step bounds to SLP delta vectors only when required.",
+      XSLP_STEPBOUNDING, INT_MIN, INT_MAX) );
+#endif  // ifdef XSLP_STEPBOUNDING
+
 #ifdef XSLP_STOL_A
     MPD( AddSolverOption_MergeDuplicates("slp:stol_a stol_a xslp_stol_a XSLP_STOL_A SLPSTOL_A",
       "Absolute slack convergence tolerance"
@@ -1977,7 +2034,7 @@ public:
       "Defines if user functions are allowed to be called in parallel"
       "\n\n"
       "Values (default: 0 (no parallel user function calls)):\n"
-      "\n- (0)  user function are not thread safe, and will not be called in parallel"
+      "\n- (0)  user functions are not thread safe, and will not be called in parallel"
       "\n- (1)  user functions are thread safe, and may be called in parallel",
       XSLP_THREADSAFEUSERFUNC, INT_MIN, INT_MAX) );
 #endif  // ifdef XSLP_THREADSAFEUSERFUNC
@@ -1998,23 +2055,23 @@ public:
 
 #ifdef XSLP_TRACEMASKOPS
     MPD( AddSolverOption_MergeDuplicates("slp:tracemaskops tracemaskops xslp_tracemaskops XSLP_TRACEMASKOPS SLPTRACEMASKOPS",
-      "Controls the information printed for XSLP_TRACEMASK. The order in which the information is printed is determined by the order of bits in XSLP_TRACEMASKOPS."
+      "Controls the information printed for SLPTRACEMASK. The order in which the information is printed is determined by the order of bits in SLPTRACEMASKOPS."
       "\n\n"
       "Values (default: -1):\n"
-      "\n- (0)  The variable name is used as a mask, not as an exact fit."
-      "\n- (1)  Use mask to trace rows."
-      "\n- (2)  Use mask to trace columns."
-      "\n- (3)  Use mask to trace cascaded SLP variables."
-      "\n- (4)  Show row / column category."
-      "\n- (5)  Trace slack values."
-      "\n- (6)  Trace dual values."
-      "\n- (7)  Trace row penalty multiplier."
-      "\n- (8)  Trace variable values (as returned by the lineariation)."
-      "\n- (9)  Trace reduced costs."
-      "\n- (10)  Trace slp value (value used in linearization and cascaded)."
-      "\n- (11)  Trace step bounds."
-      "\n- (12)  Trace convergence status."
-      "\n- (13)  Trace line search.",
+      "\n- (0)  XPRS_SLPTRACEMASK_GENERALFIT The variable name is used as a mask, not as an exact fit."
+      "\n- (1)  XPRS_SLPTRACEMASK_ROWS Use mask to trace rows."
+      "\n- (2)  XPRS_SLPTRACEMASK_COLS Use mask to trace columns."
+      "\n- (3)  XPRS_SLPTRACEMASK_CASCADE Use mask to trace cascaded SLP variables."
+      "\n- (4)  XPRS_SLPTRACEMASK_TYPE Show row / column category."
+      "\n- (5)  XPRS_SLPTRACEMASK_SLACK Trace slack values."
+      "\n- (6)  XPRS_SLPTRACEMASK_DUAL Trace dual values."
+      "\n- (7)  XPRS_SLPTRACEMASK_WEIGHT Trace row penalty multiplier."
+      "\n- (8)  XPRS_SLPTRACEMASK_SOLUTION Trace variable values (as returned by the linearization)."
+      "\n- (9)  XPRS_SLPTRACEMASK_REDUCEDCOST Trace reduced costs."
+      "\n- (10)  XPRS_SLPTRACEMASK_SLPVALUE Trace slp value (value used in linearization and cascaded)."
+      "\n- (11)  XPRS_SLPTRACEMASK_STEPBOUND Trace step bounds."
+      "\n- (12)  XPRS_SLPTRACEMASK_CONVERGE Trace convergence status."
+      "\n- (13)  XPRS_SLPTRACEMASK_LINESEARCH Trace line search.",
       XSLP_TRACEMASKOPS, INT_MIN, INT_MAX) );
 #endif  // ifdef XSLP_TRACEMASKOPS
 
@@ -2055,7 +2112,7 @@ public:
 
 #ifdef XSLP_VALIDATIONTARGET_R
     MPD( AddSolverOption_MergeDuplicates("slp:validationtarget_r validationtarget_r xslp_validationtarget_r XSLP_VALIDATIONTARGET_R NLPVALIDATIONTARGET_R",
-      "Feasiblity target tolerance"
+      "Feasibility target tolerance"
       "\n\nDefault: 1e-6",
       XSLP_VALIDATIONTARGET_R, -DBL_MAX, DBL_MAX) );
 #endif  // ifdef XSLP_VALIDATIONTARGET_R
@@ -2170,12 +2227,12 @@ public:
       "Bitmap determining the behavior of the placeholder deletion procedure"
       "\n\n"
       "Values (default: 0):\n"
-      "\n- (0)  (=1) Remove placeholders in nonbasic SLP variables"
-      "\n- (1)  (=2) Remove placeholders in nonbasic delta variables"
-      "\n- (2)  (=4) Remove placeholders in a basic SLP variable if its update row is nonbasic"
-      "\n- (3)  (=8) Remove placeholders in a basic delta variable if its update row is nonbasic and the corresponding SLP variable is nonbasic"
-      "\n- (4)  (=16) Remove placeholders in a basic delta variable if the determining row for the corresponding SLP variable is nonbasic"
-      "\n- (5)  (=32) Print information about zero placeholders",
+      "\n- (0)  (=1) XPRS_SLPZEROCRITERION_NBSLPVAR Remove placeholders in nonbasic SLP variables"
+      "\n- (1)  (=2) XPRS_SLPZEROCRITERION_NBDELTA Remove placeholders in nonbasic delta variables"
+      "\n- (2)  (=4) XPRS_SLPZEROCRITERION_SLPVARNBUPDATEROW Remove placeholders in a basic SLP variable if its update row is nonbasic"
+      "\n- (3)  (=8) XPRS_SLPZEROCRITERION_DELTANBUPSATEROW Remove placeholders in a basic delta variable if its update row is nonbasic and the corresponding SLP variable is nonbasic"
+      "\n- (4)  (=16) XPRS_SLPZEROCRITERION_DELTANBDRROW Remove placeholders in a basic delta variable if the determining row for the corresponding SLP variable is nonbasic"
+      "\n- (5)  (=32) XPRS_SLPZEROCRITERION_PRINT Print information about zero placeholders",
       XSLP_ZEROCRITERION, INT_MIN, INT_MAX) );
 #endif  // ifdef XSLP_ZEROCRITERION
 
