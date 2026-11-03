@@ -3,6 +3,17 @@
 
 namespace mp {
 
+void XpressmpModelAPI::InitCustomOptions() {
+  GetEnv().AddStoredOption("alg:logfixedbin logfixedbin",
+      "Type of arguments of logical constraints (AND, OR) "
+      "that are fixed to 0 or 1:\n"
+      "\n"
+      "| 0 - Continuous (behavior before 20261103; "
+      "fails without presolve)\n"
+      "| 1 - Binary (default).",
+      storedOptions_.logFixedBin_);
+}
+
 void XpressmpModelAPI::InitProblemModificationPhase(
     const FlatModelInfo*) {
 }
@@ -227,7 +238,8 @@ void XpressmpModelAPI::addGenCon(
       auto marker {'B'};
       XPRESSMP_CCALL( XPRSgetlb(this->lp(), &lb, var, var) );
       XPRESSMP_CCALL( XPRSgetub(this->lp(), &ub, var, var) );
-      const bool fixed01 = lb==ub && (0.0==lb || 1.0==lb);
+      const bool fixed01 = storedOptions_.logFixedBin_
+          && lb==ub && (0.0==lb || 1.0==lb);
       if ((lb<=0.0 && ub>=1.0) || fixed01)
         XPRESSMP_CCALL(XPRSchgcoltype(lp(), 1,
                                       &var, &marker));

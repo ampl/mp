@@ -24,7 +24,8 @@ Summary of recent updates to Xpress for AMPL
   presolve reductions and heuristics.
 - Fix: logical (AND/OR) constraints with an argument fixed to 0 or 1
   failed without Xpress presolve ("?942 ... non-binary variable");
-  such arguments are now passed as binary variables.
+  such arguments are now passed as binary variables. Option
+  *alg:logfixedbin=0* restores the previous (continuous) type.
 
 
 ## 20261029

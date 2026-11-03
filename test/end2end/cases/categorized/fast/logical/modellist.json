@@ -1066,5 +1066,19 @@
     "values": {
       "solve_result_num": 0
     }
+  },
+  {
+    "name" : "or_fixed_arg_01 logfixedbin=0",
+    "files" : ["or_fixed_arg_01.mod"],
+    "tags" : ["logical", "linear"],
+    "options": {
+      "presolve": "0",
+      "xpress_options": "logfixedbin=0"
+    },
+    "comment": "Xpress: old type (continuous) of fixed OR/AND arguments, with presolve",
+    "objective": 2,
+    "values": {
+      "solve_result_num": 0
+    }
   }
 ]

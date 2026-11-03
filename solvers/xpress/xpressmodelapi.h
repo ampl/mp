@@ -71,6 +71,9 @@ public:
   /// Class name
   static const char* GetTypeName() { return "XpressmpModelAPI"; }
 
+  /// Init XpressmpModelAPI driver options
+  void InitCustomOptions();
+
   /// Called before problem input.
   /// Chanve to allocate storage
   void InitProblemModificationPhase(const FlatModelInfo*);
@@ -385,6 +388,12 @@ private:
 
   std::vector<int> con_formula_rowind_, con_formula_starts_;
   NLParams con_formulas_;
+
+  struct Options {
+    /// Type of AND/OR arguments fixed to 0/1:
+    /// 0 - continuous (old), 1 - binary
+    int logFixedBin_ {1};
+  } storedOptions_;
 };
 
 } // namespace mp
