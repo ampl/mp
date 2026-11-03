@@ -27,6 +27,14 @@
 #include "optprm.h"
 #include "nlprm.h"
 
+/// Xpress 10 (48.01) has a built-in solution pool (POOLLIMIT, ...,
+/// XPRSgetpoolsolution()); the MSP/MSE API is deprecated there.
+#if XPVERSION >= 48
+#define XPRESSMP_HAS_BUILTIN_POOL 1
+#else
+#define XPRESSMP_HAS_BUILTIN_POOL 0
+#endif
+
 namespace mp {
 
 class XpressmpBackend :
@@ -190,6 +198,14 @@ protected:
   pre::ValueMapDbl DualSolution() override;
   ArrayRef<double> DualSolution_LP();
 
+  /// Built-in solution pool (Xpress 10) used, see sol:poolapi?
+  bool UseBuiltinPool() const
+  { return XPRESSMP_HAS_BUILTIN_POOL && storedOptions_.poolApi_; }
+  /// Built-in pool: set POOLLIMIT, POOLRELGAP, POOLABSGAP, POOLENUMSTRATEGY
+  /// from sol:poollimit, sol:poolgap, sol:poolgapabs, sol:poolmode
+  void SetupBuiltinPool();
+  /// Built-in pool: report its solutions (best first), see ReportXPRESSMPPool()
+  void ReportBuiltinPool();
   /// Attach the solution pool to the problem and prepare the enumerator
   void CreateSolutionPoolEnvironment();
   /// Enumerate the sol:poollimit best solutions into the pool
@@ -285,6 +301,8 @@ private:
     double poolGap_ = 1e100;        // sol:poolgap, relative
     double poolGapAbs_ = 1e100;     // sol:poolgapabs
     int nonconvex_ = -1;            // deprecated qp:nonconvex, -1: unset
+    int removedControl_ = 0;        // options for controls removed in Xpress 10
+    int poolApi_ = XPRESSMP_HAS_BUILTIN_POOL;  // sol:poolapi
     bool fBarrier_ = 0;
     bool fPrimal_ = 0;
     bool fDual_ = 0;

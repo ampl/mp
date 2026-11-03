@@ -2,6 +2,28 @@ Summary of recent updates to Xpress for AMPL
 ============================================
 
 
+## unreleased
+- Xpress 10.0 (Optimizer 48.01.01) and 9.9.1 (47.01.02) supported, as
+  well as 9.8; the driver selects the version-specific code at compile
+  time.
+- Xpress 10: solution pool (*sol:stub*, *sol:count*) with the built-in
+  pool of the Optimizer (*sol:poolapi=1*, default): *sol:poollimit*,
+  *sol:poolgap*, *sol:poolgapabs* and *sol:poolmode* set POOLLIMIT,
+  POOLRELGAP, POOLABSGAP and POOLENUMSTRATEGY (synonyms *poolrelgap*,
+  *poolabsgap*, *poolenumstrategy*). *sol:poolmode=1* extends the
+  search through fractional branching, 2 (default) enumerates fully.
+  New *sol:poolduplicatecheck*, *sol:poolkeepsols*. *sol:poolapi=0*
+  uses the previous MIP solution pool and enumerator (deprecated in
+  Xpress 10).
+- Options for controls deprecated or removed in newer Xpress versions
+  (e.g., *covercuts*, *gomcuts*, *scaling*, *cutselect*; removed:
+  *cachesize*, *l1cache*, *sleeponthreadwait*, *heurdepth*,
+  *heurmaxsol*, *heurnodes*) are kept; removed ones are ignored.
+- New options for Xpress 10 controls, e.g. the cut separation
+  strategies (*cut:cutsep...*), scaling (*pre:scalingmethod*, ...),
+  presolve reductions and heuristics.
+
+
 ## 20261029
 - Fix: a global (spatial branch-and-bound) solve stopped by a time,
   work or node limit, or interrupted, was reported as *solved?*

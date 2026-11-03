@@ -388,7 +388,8 @@ void XpressmpBackend::Solve() {
   auto flags = XPRESSSolveFlags();
   int solvest=0, solst=0;
   pool_best_x_.clear();
-  if (IsMIP() && need_multiple_solutions() && storedOptions_.nPoolMode_) {
+  if (IsMIP() && need_multiple_solutions() && storedOptions_.nPoolMode_
+      && !UseBuiltinPool()) {
     EnumerateSolutions();
     TakePoolBestAsPrimary();
   } else      // with sol:poolmode=0 the attached pool collects the solutions found
@@ -589,6 +590,10 @@ std::string XpressmpBackend::DoXpressFixedModel()
   void XpressmpBackend::ReportXPRESSMPPool() {
     if (!IsMIP())
       return;
+    if (UseBuiltinPool()) {
+      ReportBuiltinPool();
+      return;
+    }
     auto ids = PoolSolutionIdsBestFirst();
     int nReported = 0;
     for (int id: ids) {
@@ -863,7 +868,48 @@ std::string XpressmpBackend::DoXpressFixedModel()
   }
 
 
+  /// Report the built-in pool's solutions: best first already,
+  /// limited by POOLLIMIT, POOLRELGAP, POOLABSGAP
+  void XpressmpBackend::ReportBuiltinPool() {
+#if XPRESSMP_HAS_BUILTIN_POOL
+    int nPool = 0;
+    XPRESSMP_CCALL(XPRSgetintattrib(lp(), XPRS_POOLSIZE, &nPool));
+    std::vector<double> x(NumVars());
+    for (int i=0; i < nPool && i < std::max(1, storedOptions_.nbest_); ++i) {
+      int status = 0;
+      double obj = 0.0;
+      XPRESSMP_CCALL(XPRSgetpoolsolobjval(lp(), i, &status, &obj));
+      if (XPRS_SOLAVAILABLE_NOTFOUND == status)
+        break;
+      XPRESSMP_CCALL(XPRSgetpoolsolution(lp(), i, &status,
+                                         x.data(), 0, NumVars() - 1));
+      auto mv = GetValuePresolver().PostsolveSolution({ x });
+      ReportIntermediateSolution(
+        { mv.GetVarValues()(), mv.GetConValues()(), { obj } });
+    }
+#endif
+  }
+
+  /// sol:pool* options -> the built-in pool's controls.
+  /// The pool gaps apply relative to the best solution,
+  /// as sol:poolgap, sol:poolgapabs.
+  void XpressmpBackend::SetupBuiltinPool() {
+#if XPRESSMP_HAS_BUILTIN_POOL
+    SetSolverOption(XPRS_POOLLIMIT, std::max(1, storedOptions_.nbest_));
+    if (storedOptions_.poolGap_ < 1e100)
+      SetSolverOption(XPRS_POOLRELGAP, storedOptions_.poolGap_);
+    if (storedOptions_.poolGapAbs_ < 1e100)
+      SetSolverOption(XPRS_POOLABSGAP, storedOptions_.poolGapAbs_);
+    SetSolverOption(XPRS_POOLENUMSTRATEGY,   // sol:poolmode = strategy
+                    std::max(0, std::min(2, storedOptions_.nPoolMode_)));
+#endif
+  }
+
   void XpressmpBackend::CreateSolutionPoolEnvironment() {
+    if (UseBuiltinPool()) {
+      SetupBuiltinPool();
+      return;
+    }
     XPRESSMP_CCALL(XPRS_msp_probattach(msp_, lp()));
     if (outlev_ > 0)
       XPRESSMP_CCALL(XPRS_mse_addcbmsghandler(mse_, xp_mse_display, NULL, 0));
@@ -1003,7 +1049,8 @@ std::string XpressmpBackend::DoXpressFixedModel()
 
   static const mp::OptionValueInfo values_pool_mode[] = {
     { "0", "Just collect the solutions found during the normal solve", 0},
-    { "1", "Same as 2", 1},
+    { "1", "Same as 2; with sol:poolapi=1 (Xpress 10), extend the search "
+           "to solutions reachable through fractional branching", 1},
     { "2", "Seek \"poollimit\" best solutions (default); "
            "the solutions reported are limited by poolgap and poolgapabs", 2}
   };
@@ -1241,9 +1288,15 @@ void XpressmpBackend::InitCustomOptions() {
     "",
     XPRS_SOLTIMELIMIT, 0.0, Infinity());
 
+#ifdef XPRS_SLEEPONTHREADWAIT
   AddSolverOption("tech:sleeponthreadwait sleeponthreadwait",
     "Deprecated: ignored by the current Xpress library.",
     XPRS_SLEEPONTHREADWAIT, values_sleeponthreadwait,  -1);
+#else                       // removed in Xpress 10: keep accepting it
+  AddStoredOption("tech:sleeponthreadwait sleeponthreadwait",
+    "Deprecated: ignored.\n\n.. value-table::\n",
+    storedOptions_.removedControl_, values_sleeponthreadwait);
+#endif
 
   AddSolverOption("lim:iter iterlim",
     "",
@@ -1302,19 +1355,32 @@ void XpressmpBackend::InitCustomOptions() {
     "solution pool (see sol:stub, sol:count). Default 10.",
     storedOptions_.nbest_);
 
-  AddStoredOption("sol:poolmode ams_mode poolmode",
+#if XPRESSMP_HAS_BUILTIN_POOL
+  AddStoredOption("sol:poolapi poolapi",
+    "Solution pool API for sol:stub/sol:count:\n"
+    "\n"
+    "| 0 - MIP solution pool and enumerator (XPRSmipsolpool, "
+    "XPRSmipsolenum; deprecated in Xpress 10)\n"
+    "| 1 - Built-in solution pool (default): sol:poollimit, sol:poolgap, "
+    "sol:poolgapabs and sol:poolmode set POOLLIMIT, POOLRELGAP, "
+    "POOLABSGAP and POOLENUMSTRATEGY; sol:pooldups, sol:pooldualred, "
+    "sol:pooldupcol apply to API 0 only (see POOLDUPLICATECHECK).",
+    storedOptions_.poolApi_, 0, 1);
+#endif
+
+  AddStoredOption("sol:poolmode ams_mode poolmode poolenumstrategy",
     "Search mode for MIP solutions when sol:stub/sol:count are specified "
     "to request finding several alternative solutions:\n"
     "\n.. value-table::\n",
     storedOptions_.nPoolMode_, values_pool_mode);
 
-  AddStoredOption("sol:poolgap ams_eps poolgap",
+  AddStoredOption("sol:poolgap ams_eps poolgap poolrelgap",
     "Relative tolerance for reporting alternate MIP solutions "
     "(default: no limit): a solution is reported if its objective "
     "is within poolgap * |best objective| of the best one.",
     storedOptions_.poolGap_);
 
-  AddStoredOption("sol:poolgapabs ams_epsabs poolgapabs",
+  AddStoredOption("sol:poolgapabs ams_epsabs poolgapabs poolabsgap",
     "Absolute tolerance for reporting alternate MIP solutions "
     "(default: no limit).",
     storedOptions_.poolGapAbs_);
@@ -1613,6 +1679,7 @@ void XpressmpBackend::InitCustomOptions() {
     "",
     XPRS_BARALG, INT_MIN, INT_MAX);
 
+#ifdef XPRS_CACHESIZE
   AddSolverOption("bar:cachesize cachesize",
     "Deprecated: ignored by the current Xpress library.",
     XPRS_CACHESIZE, -1, INT_MAX);
@@ -1620,6 +1687,12 @@ void XpressmpBackend::InitCustomOptions() {
     AddSolverOption("bar:l1cache l1cache",
     "Deprecated: ignored by the current Xpress library.",
                     XPRS_L1CACHE, -1, INT_MAX);
+#else                       // removed in Xpress 10: keep accepting them
+  AddStoredOption("bar:cachesize cachesize", "Deprecated: ignored.",
+    storedOptions_.removedControl_, -1, INT_MAX);
+  AddStoredOption("bar:l1cache l1cache", "Deprecated: ignored.",
+    storedOptions_.removedControl_, -1, INT_MAX);
+#endif
 
   AddSolverOption("bar:corespercpu",
     "",
