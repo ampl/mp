@@ -22,6 +22,9 @@ Summary of recent updates to Xpress for AMPL
 - New options for Xpress 10 controls, e.g. the cut separation
   strategies (*cut:cutsep...*), scaling (*pre:scalingmethod*, ...),
   presolve reductions and heuristics.
+- Fix: logical (AND/OR) constraints with an argument fixed to 0 or 1
+  failed without Xpress presolve ("?942 ... non-binary variable");
+  such arguments are now passed as binary variables.
 
 
 ## 20261029

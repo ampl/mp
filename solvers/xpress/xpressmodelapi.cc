@@ -219,18 +219,26 @@ void XpressmpModelAPI::addGenCon(
   const auto& args = c.GetArguments();
   auto colindices = args.data();
   if (fMarkArgsBinary) {
-    auto MarkBinaryIfNotFixed = [&,this](int var) {
+    // Xpress requires binary AND/OR arguments (?942 without presolve).
+    // Changing the type to 'B' resets the bounds to [0, 1],
+    // so restore a fixed value (e.g., MP's constant 1).
+    auto MarkBinary = [&,this](int var) {
       double lb, ub;
       auto marker {'B'};
       XPRESSMP_CCALL( XPRSgetlb(this->lp(), &lb, var, var) );
       XPRESSMP_CCALL( XPRSgetub(this->lp(), &ub, var, var) );
-      if (lb<=0.0 && ub>=1.0)
+      const bool fixed01 = lb==ub && (0.0==lb || 1.0==lb);
+      if ((lb<=0.0 && ub>=1.0) || fixed01)
         XPRESSMP_CCALL(XPRSchgcoltype(lp(), 1,
                                       &var, &marker));
+      if (fixed01) {
+        auto bt {'B'};
+        XPRESSMP_CCALL(XPRSchgbounds(lp(), 1, &var, &bt, &lb));
+      }
     };
-    MarkBinaryIfNotFixed(c.GetResultVar());
+    MarkBinary(c.GetResultVar());
     for (int var: args)
-      MarkBinaryIfNotFixed(var);
+      MarkBinary(var);
   }
   XPRESSMP_CCALL(XPRSaddgencons(lp(), 1, (int)args.size(),
     0, type, resultant, colstart, colindices, NULL, NULL));

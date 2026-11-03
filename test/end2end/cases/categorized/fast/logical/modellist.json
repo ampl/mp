@@ -1053,5 +1053,18 @@
       "mp_options": "debug=1 acc:indle=0 acc:indeq=0 acc:indge=0 acc:and=0 acc:or=0 acc:not=0 acc:ifthen=0 acc:count=0"
     },
     "objective": 9600
+  },
+  {
+    "name" : "or_fixed_arg_01",
+    "tags" : ["logical", "linear"],
+    "options": {
+      "presolve": "0",
+      "xpress_options": "presolve=0"
+    },
+    "comment": "Fixed argument of native OR/AND without presolve (Xpress ?942)",
+    "objective": 2,
+    "values": {
+      "solve_result_num": 0
+    }
   }
 ]
