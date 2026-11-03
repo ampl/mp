@@ -28,7 +28,10 @@ Run end-to-end tests
       python3 test/end2end/run.py solver [another_solver [...]] [--options 'acc:max=0']
 
   The ``solver`` and ``ampl`` executables are expected to be on the system path,
-  or use options ``--ampl``, ``--bin_path``.
+  or use options ``--ampl`` (default ``$MP_TEST_AMPL``), ``--bin_path``.
+  With ``--ampl_fallback`` (default ``$MP_TEST_AMPL_FALLBACK``), a release
+  AMPL is used instead when the selected one is not found or is a sanitizer
+  build, whose diagnostics would appear in every solver log.
 
 * Detailed results are saved into a CSV report file, see ``--reportstub``.
 

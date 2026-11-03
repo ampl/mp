@@ -6,6 +6,7 @@ from runModels import runModels,writeModels
 import Exporter
 import Solver
 import SolverCollection
+import AmplExecutable
 import multiprocessing
 
 
@@ -33,6 +34,7 @@ class Tester:
     def run_from_command_line(self):
         args = self.parseOptions()
         args= vars(args)
+        args["ampl"] = AmplExecutable.resolve(args["ampl"], args["ampl_fallback"])
         if args["export_ampl"]:
             MPS = args["export_ampl"]=="mps"
             print("export_ampl option specified, will only export the models")
@@ -72,8 +74,15 @@ class Tester:
                             help="nl support: REFORMULATION, NATIVE or NATIVEPL")
         parser.add_argument("--options", type=str, metavar="", default="",
                             help="extra solver options")
-        parser.add_argument("--ampl", type=str, metavar="", default="ampl",
-                            help="path to AMPL executable")
+        parser.add_argument("--ampl", type=str, metavar="",
+                            default=os.environ.get("MP_TEST_AMPL", "ampl"),
+                            help="path to AMPL executable "
+                                 "(default: $MP_TEST_AMPL or ampl)")
+        parser.add_argument("--ampl_fallback", type=str, metavar="",
+                            default=os.environ.get("MP_TEST_AMPL_FALLBACK", ""),
+                            help="release AMPL executable used when --ampl "
+                                 "is not found or is a sanitizer build "
+                                 "(default: $MP_TEST_AMPL_FALLBACK)")
         parser.add_argument("--bin_path", type=str, metavar="", default="",
                             help="default path to look for solver executables")
         parser.add_argument("--reportstub", type=str, metavar="", default="report",
