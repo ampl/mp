@@ -859,6 +859,14 @@ on each entity via suffix values (e.g. variable suffix ``ubpen`` on variables, d
 value 0). 
 Penaly weights < 0 are treated as Infinity, allowing no violation.
 
+The penalties can be prices per unit of violation, so that the relaxation
+answers how much has to give and where it is cheapest. Modes 4-6 also return
+the best plan for the original objective among those with the least
+penalized violation. To trade the violation against the original objective
+at a given price, add a priced slack variable to the model instead.
+To find which constraints conflict, see :ref:`iis`, and
+`AMPL Colab notebooks on feasibility relaxation <https://colab.ampl.com/tags/feasibility-relaxation.html>`__.
+
 .. list-table::
    :header-rows: 0
 
@@ -887,7 +895,7 @@ Penaly weights < 0 are treated as Infinity, allowing no violation.
        * **1** - Yes, minimizing the weighted sum of violations
        * **2** - Yes, minimizing the weighted sum of squared violations
        * **3** - Yes, minimizing the weighted count of violations
-       * **3-6** - Same objective as 1-3, but also optimize the original objective, subject to the violation being minimized
+       * **4-6** - Same objective as 1-3, but also optimize the original objective, subject to the violation being minimized
    * - **Example**
      - Use :ref:`this model <infeasibleModel>`
 
@@ -974,6 +982,17 @@ if to count additional solutions and return them in the ``nsol`` problem suffix.
 Specifying a stub name automatically enables the solutions count; found solutions are written to 
 files [``solutionstub1.sol'``,  ... ``solutionstub<nsol>.sol``]. Option ``sol:poollimit``
 constrains the number of alternative solutions.
+
+Pool solutions need not differ in the decisions that matter: they can differ
+only in continuous variables, or be symmetric copies of one plan (identical
+units swapped). For alternatives that differ on purpose, use *modeling to
+generate alternatives* (MGA): keep the original objective within a budget,
+maximize the distance from the plans found so far on the primary decisions,
+and repeat. The budget can be a constraint on a defined variable that the
+original objective also uses, or a :ref:`hierarchy <multipleObjectives>`
+with ``.objreltol``. With symmetric units, measure the distance on aggregates
+(for example, units on per type).
+See `AMPL Colab notebooks on MGA <https://colab.ampl.com/tags/mga.html>`__.
 
 
 .. list-table::
@@ -1350,6 +1369,18 @@ difficult model, see also :ref:`reading-solver-results`.
           c2.iis = mem
           c3.iis = mem
           c4.iis = non
+
+       AMPL's presolve runs before the solver sees the model. It can fix
+       variables and remove constraints that it resolves, and these
+       deductions are not part of the IIS: an IIS of the presolved model
+       can look smaller than the conflict in the model as written.
+       ``option presolve 0;`` gives an IIS in terms of the original
+       constraints and bounds.
+
+An IIS shows which constraints conflict, not by how much. To measure the
+violation, or to choose which constraints should give way, use a
+:ref:`feasibility relaxation <feasibilityrelaxation>` with penalties.
+See `AMPL Colab notebooks on IIS <https://colab.ampl.com/tags/iis.html>`__.
 
 
 MIP-only features

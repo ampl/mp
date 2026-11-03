@@ -75,6 +75,23 @@ mode (``obj:multi=1``), in particular for LPs. Consult
 and
 `AMPL Colab notebooks with lexicographical objectives <https://colab.ampl.com/tags/lexicographic-objectives.html>`__.
 
+- **A tolerance of 0 means "not set".** AMPL suffixes have default value 0,
+  so ``.objreltol 0`` leaves the solver's default degradation in place,
+  which need not be 0. To allow no degradation, set a very small value,
+  such as ``1e-20``.
+- **Solvers apply their own tolerances.** A pass bound is met within the
+  solver's feasibility tolerance and computed with its own conventions, so a
+  plan can exceed the nominal bound slightly, and a near-exact bound can make
+  a later pass infeasible. If a later pass is reported infeasible with a
+  near-zero tolerance, use a small positive one (e.g. ``1e-6``).
+- **Trade-off curves.** A tolerance turns the hierarchy into the
+  epsilon-constraint method: sweeping ``.objreltol`` of the first objective
+  traces the trade-off curve between it and the next one. Each point is only
+  weakly efficient, since the first objective is capped, not re-optimized;
+  adding a copy of it as the last (lowest-priority) objective makes the
+  points efficient. See
+  `AMPL Colab notebooks on Pareto fronts <https://colab.ampl.com/tags/pareto-front.html>`__.
+
 
 Nonlinear multiple objectives
 **************************************
