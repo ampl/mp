@@ -537,6 +537,10 @@ if (NOT DEFINED XPRESS_PARAMS_XML_DIR)
   set(XPRESS_PARAMS_XML_DIR "" CACHE PATH
     "Directory with the Xpress parameter database (optimizerparams.xml, nonlinearparams.xml); when set, solvers/xpress/optprm.h and nlprm.h are regenerated before the xpress driver is built")
 endif()
+if (NOT DEFINED XPRESS_PARAMS_LEGACY_XML_DIRS)
+  set(XPRESS_PARAMS_LEGACY_XML_DIRS "" CACHE STRING
+    "Directories with parameter databases of older Xpress versions (list, newest first); their controls missing in XPRESS_PARAMS_XML_DIR (deprecated or removed) are kept as options, #ifdef-guarded")
+endif()
 if (NOT DEFINED XPRESS_PARAMS_INCLUDE_DIR)
   set(XPRESS_PARAMS_INCLUDE_DIR "" CACHE PATH
     "Directory with xprs.h and xslp.h used to verify control types; default: <XPRESS_PARAMS_XML_DIR>/../include")
@@ -572,18 +576,31 @@ if (XPRESS_PARAMS_XML_DIR)
       message(FATAL_ERROR "Xpress header ${hdr} not found; set XPRESS_PARAMS_INCLUDE_DIR")
     endif()
   endforeach()
+  set(xpress_params_legacy_opt "")
+  set(xpress_params_legacy_nl "")
+  set(xpress_params_legacy_deps "")
+  foreach (dir ${XPRESS_PARAMS_LEGACY_XML_DIRS})
+    list(APPEND xpress_params_legacy_opt --legacy ${dir}/optimizerparams.xml)
+    list(APPEND xpress_params_legacy_nl --legacy ${dir}/nonlinearparams.xml)
+    list(APPEND xpress_params_legacy_deps
+      ${dir}/optimizerparams.xml ${dir}/nonlinearparams.xml)
+  endforeach()
   set(xpress_params_src_dir ${PROJECT_SOURCE_DIR}/solvers/xpress)
   set(xpress_params_gen_dir ${PROJECT_BINARY_DIR}/xpress-options)
   file(MAKE_DIRECTORY ${xpress_params_gen_dir})
   add_custom_command(OUTPUT ${xpress_params_gen_dir}/optprm.h
     COMMAND parse-xpress-options ${xpress_params_xml_opt}
-      ${xpress_params_gen_dir}/optprm.h Optimizer XPRS ${xpress_params_hdrs}
+      ${xpress_params_gen_dir}/optprm.h Optimizer XPRS
+      ${xpress_params_legacy_opt} ${xpress_params_hdrs}
     DEPENDS parse-xpress-options ${xpress_params_xml_opt} ${xpress_params_hdrs}
+      ${xpress_params_legacy_deps}
     COMMENT "Generating Xpress optimizer options (optprm.h)")
   add_custom_command(OUTPUT ${xpress_params_gen_dir}/nlprm.h
     COMMAND parse-xpress-options ${xpress_params_xml_nl}
-      ${xpress_params_gen_dir}/nlprm.h Nonlinear - --nonlinear ${xpress_params_hdrs}
+      ${xpress_params_gen_dir}/nlprm.h Nonlinear - --nonlinear
+      ${xpress_params_legacy_nl} ${xpress_params_hdrs}
     DEPENDS parse-xpress-options ${xpress_params_xml_nl} ${xpress_params_hdrs}
+      ${xpress_params_legacy_deps}
     COMMENT "Generating Xpress nonlinear options (nlprm.h)")
   # The generated headers replace the committed ones only when they differ,
   # so an unchanged database does not rebuild the driver.

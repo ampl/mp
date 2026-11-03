@@ -174,12 +174,20 @@ class ParamListTranslator {
 
   std::map<std::string, Param> params_;
   std::map<std::string, int> prefixes_;
+  bool legacy_ {false};
+  int n_legacy_ {0};
 public:
   /// Construct
   ParamListTranslator(const char* prefix, bool nonlinear,
                       const HeaderControlTypes& ht)
       : key_prefix_(prefix ? prefix : ""), nonlinear_(nonlinear),
         hdr_types_(ht) { }
+  /// Legacy mode: add only parameters missing so far,
+  /// i.e., from an older database (--legacy)
+  void SetLegacyMode(bool legacy) { legacy_ = legacy; }
+  /// Number of parameters added in legacy mode
+  int NumLegacy() const { return n_legacy_; }
+
   /// Start output
   bool Start(const char* xmlfile, const char* filename, const char* classname) {
     classname_ = classname;
@@ -212,15 +220,21 @@ public:
                 << ": not exposed as an option" << std::endl;
       return;
     }
+    if (nonlinear_)
+      PreferLegacyNonlinearName(prm);
     prm.xml_name_ = prm.name_main_;
     auto name_w_pref = key_prefix_;
     if (name_w_pref.size())
       name_w_pref += '_';
     name_w_pref += prm.NameMain();
     if (params_.end() != params_.find(name_w_pref)) {
+      if (legacy_)          // known from the current database
+        return;
       RAISE( "parameter '"
             << name_w_pref << "' repeated.");
     }
+    if (legacy_)
+      ++n_legacy_;
     prm.name_main_ = name_w_pref;
     auto ht = hdr_types_.Type(name_w_pref);
     if ("attr" == ht) {
@@ -228,11 +242,8 @@ public:
                 << ": the header declares it as an attribute" << std::endl;
       return;
     }
-    if (hdr_types_.IsDeprecated(name_w_pref)) {
-      std::cerr << "WARNING: Skipping param " << name_w_pref
-                << ": deprecated in the header" << std::endl;
-      return;
-    }
+    // Deprecated controls stay options (they still work);
+    // removed ones compile out via #ifdef.
     if (ht.size()) {
       std::string xt = ("integer"==prm.type_) ? "int" : prm.type_;
       if (xt != ht) {
@@ -247,6 +258,20 @@ public:
   }
 
 protected:
+  /// Xpress 10 names nonlinear controls like optimizer ones
+  /// (SLPETOL_A, macro XPRS_SLPETOL_A), keeping the 9.x name
+  /// (XSLP_ETOL_A, an alias macro in xslp.h) as name2.
+  /// Use the 9.x name as the main one, so that the macro is
+  /// defined in both versions and option names stay the same;
+  /// the new name becomes a synonym.
+  static void PreferLegacyNonlinearName(Param& prm) {
+    auto is_legacy = [](const std::string& nm) {
+      return 0 == nm.find("XSLP_") || 0 == nm.find("XKTR_");
+    };
+    if (!is_legacy(prm.name_main_) && is_legacy(prm.name2_))
+      std::swap(prm.name_main_, prm.name2_);
+  }
+
   /// Open output file
   bool OpenFile(const char* name) {
     ofs_.open(name);
@@ -380,7 +405,11 @@ protected:
   }
 
   /// Controls present in the database that make no sense as options
-  const std::set<std::string> kControlsNotExposed { "VERSION" };
+  /// POOLLIMIT, POOLRELGAP, POOLABSGAP, POOLENUMSTRATEGY (Xpress 10):
+  /// set from the driver's sol:poollimit, sol:poolgap, sol:poolgapabs,
+  /// sol:poolmode, which have the native names as synonyms.
+  const std::set<std::string> kControlsNotExposed { "VERSION",
+    "POOLLIMIT", "POOLRELGAP", "POOLABSGAP", "POOLENUMSTRATEGY" };
 
   /// Short names differing from the XML name
   /// (established AMPL keywords of the ASL driver)
@@ -543,9 +572,14 @@ public:
       const char* name, BasicTreeWalker& wlk) override {
     if (0 == std::strcmp("paramVal", name)) {
       auto vstr = wlk.GetAttribute("value");
-      if (!vstr)
-        RAISE("For param " << prm_.NameMain()
-                           << ", a value list entry has no value attr");
+      if (!vstr) {
+        auto range = GetRange(wlk);              // Xpress 10: value ranges
+        if (range.empty())
+          RAISE("For param " << prm_.NameMain()
+                             << ", a value list entry has no value attr");
+        prm_.values_.push_back({range, GetText(wlk)});
+        return;
+      }
       if ('\0' == *vstr) {                   // a group heading
         prm_.values_.push_back({"", GetText(wlk)});
         return;
@@ -563,9 +597,29 @@ public:
       }
       prm_.values_map_[vstr] = vtext;
       prm_.values_.push_back({vstr, vtext});
+    } else if (0 == std::strcmp("paramValText", name)) {  // Xpress 9.9
+      prm_.values_.push_back({"", GetText(wlk)});        // a group heading
     } else {
       RAISE("unknown <paramValues>'s subnode: " << name);
     }
+  }
+
+protected:
+  /// Value range of a <paramVal> given by attributes
+  /// lowerincl, lowerexcl, upperincl, upperexcl, e.g., ">= 0, < 10".
+  /// @return empty if none
+  static std::string GetRange(BasicTreeWalker& wlk) {
+    static const std::pair<const char*, const char*> bounds[] = {
+      {"lowerincl", ">= "}, {"lowerexcl", "> "},
+      {"upperincl", "<= "}, {"upperexcl", "< "} };
+    std::string result;
+    for (const auto& bnd: bounds)
+      if (auto val = wlk.GetAttribute(bnd.first)) {
+        if (!result.empty())
+          result += ", ";
+        result += std::string(bnd.second) + val;
+      }
+    return result;
   }
 };
 
@@ -603,7 +657,8 @@ public:
     } else if (0 == std::strcmp("paramValues", name)) {
       ValueListHandler vlh(prm_);
       wlk.Walk(vlh);
-    } else if (0 == std::strcmp("paramNote", name)) {
+    } else if (0 == std::strcmp("paramNote", name)
+               || 0 == std::strcmp("paramUnit", name)) {  // Xpress 10
       // skip
     } else {
       RAISE("unknown <param>'s subnode: " << name);
@@ -649,18 +704,39 @@ public:
 }  // namespace mp
 
 
+/// Add the parameters of an older XML database \a xml
+/// missing in the current one, e.g., controls deprecated
+/// and no longer documented but still working
+void AddLegacyParams(const char* xml, mp::ParamListTranslator& plt) {
+  auto n0 = plt.NumLegacy();
+  auto pwlk = mp::MakeDefaultXMLWalker();
+  if (!pwlk->ReadFile(xml))
+    RAISE("Error reading legacy XML file '" << xml << "'");
+  if ( std::strcmp("paramList", pwlk->GetName()) )
+    RAISE("Unknown top-level entry: " << pwlk->GetName());
+  mp::ParamListHandler prmlh(plt);
+  pwlk->Walk(prmlh);
+  std::cout << "   " << plt.NumLegacy() - n0
+            << " parameters added from the older database '"
+            << xml << "'" << std::endl;
+}
+
 int main(int argc, const char** argv) {
   if (argc<4)
     RAISE( "Usage: parse-xpress-options <params.xml> <output.h> <ClassName>"
-          " [<key prefix>|-] [--nonlinear] [<xprs.h> [<xslp.h> ...]]\n"
+          " [<key prefix>|-] [--nonlinear] [--legacy <old.xml> ...]"
+          " [<xprs.h> [<xslp.h> ...]]\n"
           "  <params.xml>  XML parameter database from the Xpress SDK\n"
           "  <output.h>    C++ header to write (mix-in class Compiled<ClassName>Options)\n"
           "  <key prefix>  common macro prefix, e.g. XPRS for optimizerparams.xml;"
           " '-' for none\n"
           "  --nonlinear   nonlinearparams.xml: use the slp/mislp/xktr prefixes\n"
+          "  --legacy      older database (repeatable): its parameters missing in"
+          " <params.xml>\n"
+          "                are added too (#ifdef-guarded as all)\n"
           "  <xprs.h> ...  Xpress C headers; when given, control types are taken"
           " from them\n"
-          "                and controls they declare as attributes or deprecated"
+          "                and controls they declare as attributes"
           " are skipped." );
 
   std::cout << "Processing XML parameter database file '"
@@ -669,9 +745,14 @@ int main(int argc, const char** argv) {
   const char* prefix = (argc>4 && std::strcmp("-", argv[4])) ? argv[4] : nullptr;
   bool nonlinear = false;
   mp::HeaderControlTypes hdr_types;
+  std::vector<const char*> legacy_xmls;
   for (int i=5; i<argc; ++i) {
     if (0 == std::strcmp("--nonlinear", argv[i])) {
       nonlinear = true;
+    } else if (0 == std::strcmp("--legacy", argv[i])) {
+      if (++i == argc)
+        RAISE("--legacy needs an XML file");
+      legacy_xmls.push_back(argv[i]);
     } else if (!hdr_types.ReadFile(argv[i]))
       RAISE("Cannot read header file '" << argv[i] << "'");
     else
@@ -688,6 +769,9 @@ int main(int argc, const char** argv) {
 
       mp::ParamListHandler prmlh(plt);  // to handle individual <param>s
       pwlk->Walk(prmlh);
+      plt.SetLegacyMode(true);          // older databases: missing params
+      for (auto xml: legacy_xmls)
+        AddLegacyParams(xml, plt);
 
       std::cout << "Writing header file '"
                 << argv[2] << "' with mix-in class '"
