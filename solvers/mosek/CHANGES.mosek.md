@@ -2,6 +2,35 @@ Summary of recent updates to MOSEK for AMPL
 ===========================================
 
 
+## Unreleased
+- The driver can be built with MOSEK 12.0 (currently a BETA) as well as
+  with MOSEK 11. Changes in behavior when linked with MOSEK 12:
+  - MOSEK 12 rewrote the simplex and the linear interior-point
+    optimizers. Dual and primal simplex, free simplex (now dual and
+    primal concurrently and deterministic with several threads) and the
+    interior-point method are as before; *alg:method* values 6 and 7 (the
+    "new" simplex of MOSEK 11) select the dual and primal simplex.
+    New *alg:method* values: 9 = primal-dual simplex, 10 = concurrent
+    optimizer (both experimental).
+  - For linear problems the interior-point optimizer returns only the
+    basic solution by default (MOSEK 11: both). The driver always used the
+    basic solution when there was one, so results are unchanged;
+    *bar:basis=0* returns the interior-point solution. MOSEK's
+    *MSK_IPAR_REQUEST_INTPNT* is available through *tech:optionnative*.
+  - *pre:folding*: folding is also used when a basic solution is required;
+    value 2 (MOSEK 11's "unless basic") now means 1 and the default is 1.
+  - *lp:solveform* and *bar:solveform* are one setting
+    (*MSK_IPAR_SOLVE_FORM*).
+  - New options *bar:neartol* and *lp:concdeterministic*.
+  - New termination codes (ticks limit, ill-conditioned basis) are
+    reported as time limit and numerical trouble.
+  - The solver version shown by *-v* includes the vendor's state
+    (e.g. "12.0.1 BETA").
+  - Parameters removed by MOSEK 12 (e.g. *MSK_IPAR_SIM_NON_SINGULAR*,
+    *MSK_IPAR_SIM_REFORMULATION*, *MSK_IPAR_SIM_SAVE_LU*) are rejected
+    by MOSEK if given through *tech:optionnative*.
+
+
 ## 20261029
 - Emulate *mip:basis* for linear algebraic MIPs, with separate
   *mip:basis:timelimit* and *mip:basis:iterlimit* options.
