@@ -122,8 +122,15 @@ const char* MosekBackend::GetBackendName()
   { return "MosekBackend"; }
 
 std::string MosekBackend::GetSolverVersion() {
-  return fmt::format("{}.{}.{}", MSK_VERSION_MAJOR,
+  auto version = fmt::format("{}.{}.{}", MSK_VERSION_MAJOR,
     MSK_VERSION_MINOR, MSK_VERSION_REVISION);
+#ifdef MSK_VERSION_STATE
+  // Show the vendor's state of a prerelease (e.g. BETA)
+  if (std::string(MSK_VERSION_STATE) != "" &&
+      std::string(MSK_VERSION_STATE) != "PRODUCTION")
+    version += " " + std::string(MSK_VERSION_STATE);
+#endif
+  return version;
 }
 
 void MosekBackend::InitOptionParsing() {
@@ -427,6 +434,13 @@ std::pair<int, std::string> MosekBackend::GetLimitResult(bool has_solution) {
     return result(sol::LIMIT_FEAS_INTERRUPT, sol::LIMIT_NO_FEAS_INTERRUPT, "interrupted");
   case MSK_RES_TRM_SERVER_MAX_MEMORY:
     return result(sol::LIMIT_FEAS_SOFTMEM, sol::LIMIT_NO_FEAS_SOFTMEM, "memory limit");
+#if MSK_VERSION_MAJOR >= 12
+  case MSK_RES_TRM_MAX_TICKS:
+    return result(sol::LIMIT_FEAS_TIME, sol::LIMIT_NO_FEAS_TIME,
+                  "optimizer ticks limit");
+  case MSK_RES_TRM_ILL_CONDITIONED_BASIS:
+    return result(sol::UNCERTAIN, sol::NUMERIC, "ill-conditioned basis");
+#endif
   case MSK_RES_TRM_STALL:
     return result(sol::UNCERTAIN, sol::NUMERIC, "stalling");
   case MSK_RES_TRM_NUMERICAL_PROBLEM:
@@ -512,6 +526,12 @@ std::string MosekBackend::ConvertMOSEKTermStatus() {
     return { ", maximum allowed time reached" };
   case MSK_RES_TRM_OBJECTIVE_RANGE:
     return { ", objective range" };
+#if MSK_VERSION_MAJOR >= 12
+  case MSK_RES_TRM_MAX_TICKS:
+    return { ", optimizer ticks limit reached" };
+  case MSK_RES_TRM_ILL_CONDITIONED_BASIS:
+    return { ", ill-conditioned basis" };
+#endif
   case MSK_RES_TRM_STALL:
     return { ", stalling" };
   case MSK_RES_TRM_NUMERICAL_PROBLEM:
@@ -585,6 +605,34 @@ void MosekBackend::FinishOptionParsing() {
 ////////////////////////////// OPTIONS /////////////////////////////////
 
 
+// The AMPL values below are stable across MOSEK versions. The third field
+// is informational: the value typed by the user is passed on by
+// MosekCommon::SetSolverOption(), which translates the values of the
+// parameters whose enumeration MOSEK 12 renumbered (see mosekcommon.cc).
+// MOSEK 12 rewrote the simplex optimizers: the "new" simplex of MOSEK 11
+// (values 6, 7) is the standard one, so these values stay accepted and
+// select the (new) dual and primal simplex.
+#if MSK_VERSION_MAJOR >= 12
+static const mp::OptionValueInfo alg_values_method[] = {
+  { "0", "Optimizer for conic constraints", MSK_OPTIMIZER_CONIC},
+  { "1", "Dual simplex", MSK_OPTIMIZER_DUAL_SIMPLEX},
+  { "2", "Automatic (default)", MSK_OPTIMIZER_FREE},
+  { "3", "Free simplex: dual and primal simplex concurrently, "
+         "deterministic by default (dual simplex with one thread)",
+         MSK_OPTIMIZER_FREE_SIMPLEX},
+  { "4", "Interior-point method", MSK_OPTIMIZER_INTPNT},
+  { "5", "Mixed-integer optimizer", MSK_OPTIMIZER_MIXED_INT},
+  { "6", "Dual simplex (MOSEK 11 'new dual simplex', same as 1)",
+         MSK_OPTIMIZER_DUAL_SIMPLEX},
+  { "7", "Primal simplex (MOSEK 11 'new primal simplex', same as 8)",
+         MSK_OPTIMIZER_PRIMAL_SIMPLEX},
+  { "8", "Primal simplex", MSK_OPTIMIZER_PRIMAL_SIMPLEX},
+  { "9", "Primal-dual simplex (experimental)",
+         MSK_OPTIMIZER_PRIMAL_DUAL_SIMPLEX},
+  { "10", "Concurrent optimizer for continuous linear problems (experimental)",
+         MSK_OPTIMIZER_CONCURRENT}
+};
+#else
 static const mp::OptionValueInfo alg_values_method[] = {
   { "0", "Optimizer for conic constraints", MSK_OPTIMIZER_CONIC},
   { "1", "Dual simplex", MSK_OPTIMIZER_DUAL_SIMPLEX},
@@ -596,6 +644,7 @@ static const mp::OptionValueInfo alg_values_method[] = {
   { "7", "New primal simplex (MOSEK 11)", MSK_OPTIMIZER_NEW_PRIMAL_SIMPLEX},
   { "8", "Primal simplex", MSK_OPTIMIZER_PRIMAL_SIMPLEX}
 };
+#endif
 
 static const mp::OptionValueInfo values_bar_intpnt_basis[] = {
     { "0", "Never", MSK_BI_NEVER},
@@ -609,12 +658,23 @@ static const mp::OptionValueInfo alg_values_presolve_use[] = {
   { "1", "Use presolve", 1},
   { "2", "Automatic (default)", 2}
 };
+#if MSK_VERSION_MAJOR >= 12
+// MOSEK 12 dropped FREE_UNLESS_BASIC: folding is also used when a basic
+// solution is required. Value 2 stays accepted and means FREE.
+static const mp::OptionValueInfo values_prefoldinguse_[] = {
+  { "0", "Disabled", MSK_FOLDING_MODE_OFF},
+  { "1", "The solver decides on the usage and amount of folding (default)", MSK_FOLDING_MODE_FREE },
+  { "2", "Same as 1 (value of MOSEK 11, which disabled folding if the basic solution is requested)", MSK_FOLDING_MODE_FREE},
+  { "3", "Full folding is always performed regardless of workload", MSK_FOLDING_MODE_FORCE },
+};
+#else
 static const mp::OptionValueInfo values_prefoldinguse_[] = {
   { "0", "Disabled", MSK_FOLDING_MODE_OFF},
   { "1", "The solver decides on the usage and amount of folding", MSK_FOLDING_MODE_FREE },
   { "2", "If only the interior-point solution is requested then the solver decides; if the basic solution is requested then folding is disabled (default)", MSK_FOLDING_MODE_FREE_UNLESS_BASIC},
   { "3", "Full folding is always performed regardless of workload", MSK_FOLDING_MODE_FORCE },
 };
+#endif
 static const mp::OptionValueInfo values_premipfoldinguse_[] = {
   { "-1", "Automatic (default)", -1},
   { "0", "Disabled", 0},
@@ -644,6 +704,22 @@ static const mp::OptionValueInfo values_mip_presolve_dual_ray[] = {
   { "2", "Higher amount of analysis", 2}
 };
 
+#if MSK_VERSION_MAJOR >= 12
+static const mp::OptionValueInfo values_mio_optimizer[] = {
+  { "0", "Optimizer for conic constraints", MSK_OPTIMIZER_CONIC},
+  { "1", "Dual simplex", MSK_OPTIMIZER_DUAL_SIMPLEX},
+  { "2", "Automatic (default)", MSK_OPTIMIZER_FREE},
+  { "3", "Free simplex", MSK_OPTIMIZER_FREE_SIMPLEX},
+  { "4", "Interior-point method", MSK_OPTIMIZER_INTPNT},
+  { "6", "Dual simplex (MOSEK 11 'new dual simplex', same as 1)",
+         MSK_OPTIMIZER_DUAL_SIMPLEX},
+  { "7", "Primal simplex (MOSEK 11 'new primal simplex', same as 8)",
+         MSK_OPTIMIZER_PRIMAL_SIMPLEX},
+  { "8", "Primal simplex", MSK_OPTIMIZER_PRIMAL_SIMPLEX},
+  { "9", "Primal-dual simplex (experimental)",
+         MSK_OPTIMIZER_PRIMAL_DUAL_SIMPLEX}
+};
+#else
 static const mp::OptionValueInfo values_mio_optimizer[] = {
   { "0", "Optimizer for conic constraints", MSK_OPTIMIZER_CONIC},
   { "1", "Dual simplex", MSK_OPTIMIZER_DUAL_SIMPLEX},
@@ -654,6 +730,7 @@ static const mp::OptionValueInfo values_mio_optimizer[] = {
   { "7", "New primal simplex", MSK_OPTIMIZER_NEW_PRIMAL_SIMPLEX},
   { "8", "Primal simplex", MSK_OPTIMIZER_PRIMAL_SIMPLEX}
 };
+#endif
 
 static const mp::OptionValueInfo values_mio_nodeselect[] = {
   { "0", "Automatic (default)", MSK_MIO_NODE_SELECTION_FREE},
@@ -759,7 +836,8 @@ void MosekBackend::InitCustomOptions() {
   // ********** ALG OPTIONS **********
   AddMosekOption("alg:method method lpmethod simplex",
                   "Which algorithm to use for non-MIP problems or for the root node of MIP problems:\n"
-                  "\n.. value-table::\n", MSK_IPAR_OPTIMIZER, alg_values_method, 2);
+                  "\n.. value-table::\n", MSK_IPAR_OPTIMIZER, alg_values_method,
+                  2);
 
   AddMosekOption("alg:feastol basistolx",
                  "Primal feasibility tolerance of the simplex optimizers "
@@ -792,10 +870,28 @@ void MosekBackend::InitCustomOptions() {
     "\n.. value-table::\n",
     MSK_IPAR_SIM_DEGEN, values_sim_degen, 1);
 
+#if MSK_VERSION_MAJOR >= 12
+  // MOSEK 12 has the single parameter MSK_IPAR_SOLVE_FORM for the simplex
+  // and the interior-point optimizers for continuous problems
+  AddMosekOption("lp:solveform simsolveform bar:solveform intpntsolveform",
+    "Whether the simplex and interior-point optimizers solve the primal "
+    "or the dual problem (MSK_IPAR_SOLVE_FORM; in MOSEK 11 the "
+    "optimizers had separate parameters, and bar:solveform is a "
+    "synonym here):\n"
+    "\n.. value-table::\n",
+    MSK_IPAR_SOLVE_FORM, values_solve_form, (int)MSK_SOLVE_FREE);
+
+  AddMosekOption("lp:concdeterministic concdeterministic",
+    "0/1: whether the concurrent simplex of the free simplex optimizer "
+    "(alg:method=3) is deterministic (MSK_IPAR_CONCURRENT_DETERMINISTIC, "
+    "default 1).",
+    MSK_IPAR_CONCURRENT_DETERMINISTIC, 0, 1);
+#else
   AddMosekOption("lp:solveform simsolveform",
     "Whether the simplex optimizers solve the primal or the dual problem:\n"
     "\n.. value-table::\n",
-    MSK_IPAR_SIM_SOLVE_FORM, values_solve_form, 0);
+    MSK_IPAR_SIM_SOLVE_FORM, values_solve_form, (int)MSK_SOLVE_FREE);
+#endif
 
   // ********** BARRIER OPTIONS **********
   AddMosekOption("bar:iterlim bariterlim",
@@ -837,10 +933,21 @@ void MosekBackend::InitCustomOptions() {
     "\n.. value-table::\n",
     MSK_IPAR_INTPNT_ORDER_METHOD, values_bar_order, 0);
 
+#if MSK_VERSION_MAJOR >= 12
+  // (bar:solveform is registered with lp:solveform)
+  AddMosekOption("bar:neartol intpnttolnearrel",
+                 "Multiplier of the interior-point tolerances for linear "
+                 "problems: if the prescribed accuracy cannot be reached but "
+                 "the solution satisfies all tolerances multiplied by this "
+                 "value, it is declared optimal "
+                 "(MSK_DPAR_INTPNT_TOL_NEAR_REL, min 1, default 100).",
+                 MSK_DPAR_INTPNT_TOL_NEAR_REL, 1.0, Infinity());
+#else
   AddMosekOption("bar:solveform intpntsolveform",
     "Whether the interior-point optimizer solves the primal or the dual problem:\n"
     "\n.. value-table::\n",
-    MSK_IPAR_INTPNT_SOLVE_FORM, values_solve_form, 0);
+    MSK_IPAR_INTPNT_SOLVE_FORM, values_solve_form, (int)MSK_SOLVE_FREE);
+#endif
 
   // ********** PRESOLVER OPTIONS **********
   AddMosekOption("pre:aggregate aggregate", 
@@ -872,7 +979,12 @@ void MosekBackend::InitCustomOptions() {
   AddMosekOption("pre:folding folding foldinguse",
     "Whether to use folding in presolve (for MIP problems use mip:symmetry):\n"
     "\n.. value-table::\n",
-    MSK_IPAR_FOLDING_USE, values_prefoldinguse_, 2);
+    MSK_IPAR_FOLDING_USE, values_prefoldinguse_,
+#if MSK_VERSION_MAJOR >= 12
+    1);
+#else
+    2);
+#endif
 
   AddStoredOption("pre:scale scale",
     "Whether to use scaling in presolve. Applies to both simplex and interior point method:\n"

@@ -75,12 +75,101 @@ void MosekCommon::CheckParamSet(MSKrescodee code, MSKparametertypee type,
                        value, ParamName(type, key), desc, symb));
 }
 
+#if MSK_VERSION_MAJOR >= 12
+namespace {
+
+/// The values of the AMPL options for the optimizer parameters and for
+/// folding follow the numbering of the MOSEK 11 enumerations, which
+/// scripts depend on. MOSEK 12 renumbered the optimizer enumeration and
+/// dropped a folding mode, so the values are translated.
+struct ValueMap { int ampl; int mosek; };
+
+const ValueMap optimizer_to_mosek[] = {
+  {0, MSK_OPTIMIZER_CONIC},
+  {1, MSK_OPTIMIZER_DUAL_SIMPLEX},
+  {2, MSK_OPTIMIZER_FREE},
+  {3, MSK_OPTIMIZER_FREE_SIMPLEX},
+  {4, MSK_OPTIMIZER_INTPNT},
+  {5, MSK_OPTIMIZER_MIXED_INT},
+  {6, MSK_OPTIMIZER_DUAL_SIMPLEX},        // MOSEK 11: new dual simplex
+  {7, MSK_OPTIMIZER_PRIMAL_SIMPLEX},      // MOSEK 11: new primal simplex
+  {8, MSK_OPTIMIZER_PRIMAL_SIMPLEX},
+  {9, MSK_OPTIMIZER_PRIMAL_DUAL_SIMPLEX},
+  {10, MSK_OPTIMIZER_CONCURRENT}
+};
+/// Reverse direction: the deprecated interior-point optimizer, which
+/// has no AMPL value, is shown as the interior-point optimizer.
+const ValueMap optimizer_from_mosek[] = {
+  {10, MSK_OPTIMIZER_CONCURRENT},
+  {0, MSK_OPTIMIZER_CONIC},
+  {4, MSK_OPTIMIZER_DEPRECATED_INTPNT},
+  {1, MSK_OPTIMIZER_DUAL_SIMPLEX},
+  {2, MSK_OPTIMIZER_FREE},
+  {3, MSK_OPTIMIZER_FREE_SIMPLEX},
+  {4, MSK_OPTIMIZER_INTPNT},
+  {5, MSK_OPTIMIZER_MIXED_INT},
+  {9, MSK_OPTIMIZER_PRIMAL_DUAL_SIMPLEX},
+  {8, MSK_OPTIMIZER_PRIMAL_SIMPLEX}
+};
+const ValueMap folding_to_mosek[] = {
+  {0, MSK_FOLDING_MODE_OFF},
+  {1, MSK_FOLDING_MODE_FREE},
+  {2, MSK_FOLDING_MODE_FREE},             // MOSEK 11: free unless basic
+  {3, MSK_FOLDING_MODE_FORCE}
+};
+const ValueMap folding_from_mosek[] = {
+  {0, MSK_FOLDING_MODE_OFF},
+  {1, MSK_FOLDING_MODE_FREE},
+  {3, MSK_FOLDING_MODE_FORCE}
+};
+
+template <size_t N>
+int Translate(const ValueMap (&map)[N], int value, bool to_mosek) {
+  for (const auto& m : map)
+    if (value == (to_mosek ? m.ampl : m.mosek))
+      return to_mosek ? m.mosek : m.ampl;
+  return value;   // not an AMPL value: MOSEK rejects it, or it is displayed as is
+}
+
+/// Optimizer parameters share one numbering
+bool IsOptimizerParam(MSKiparame key) {
+  return MSK_IPAR_OPTIMIZER == key || MSK_IPAR_MIO_ROOT_OPTIMIZER == key
+      || MSK_IPAR_MIO_NODE_OPTIMIZER == key;
+}
+
+int AmplToMosekValue(MSKiparame key, int value) {
+  if (IsOptimizerParam(key))
+    return Translate(optimizer_to_mosek, value, true);
+  if (MSK_IPAR_FOLDING_USE == key)
+    return Translate(folding_to_mosek, value, true);
+  return value;
+}
+
+int MosekToAmplValue(MSKiparame key, int value) {
+  if (IsOptimizerParam(key))
+    return Translate(optimizer_from_mosek, value, false);
+  if (MSK_IPAR_FOLDING_USE == key)
+    return Translate(folding_from_mosek, value, false);
+  return value;
+}
+
+}  // namespace
+#else
+namespace {
+// Same numbering as the AMPL options
+int AmplToMosekValue(MSKiparame, int value) { return value; }
+int MosekToAmplValue(MSKiparame, int value) { return value; }
+}  // namespace
+#endif
+
 void MosekCommon::GetSolverOption(MSKiparame key, int &value) const {
   MOSEK_CCALL(MSK_getintparam(lp(), key, &value));
+  value = MosekToAmplValue(key, value);
 }
 
 void MosekCommon::SetSolverOption(MSKiparame key, int value) {
-  CheckParamSet(MSK_putintparam(lp(), key, value),
+  // Rejection messages show the value as given by the user
+  CheckParamSet(MSK_putintparam(lp(), key, AmplToMosekValue(key, value)),
                 MSK_PAR_INT_TYPE, key, std::to_string(value));
 }
 
