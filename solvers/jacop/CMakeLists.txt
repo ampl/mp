@@ -3,7 +3,18 @@
 check_module(jacop build_jacop EXTERNAL)
 
 if (build_jacop)
-  file(GLOB JACOP_JAR_PATH ${PROJECT_SOURCE_DIR}/thirdparty/jacop/jacop-*.jar)
+  # Directory containing jacop-<version>.jar, to be given with
+  # -DJACOP_JAR_DIR=<dir>; there is no default location.
+  if (NOT JACOP_JAR_DIR)
+    message(FATAL_ERROR "JACOP_JAR_DIR is not set. Set it to the directory "
+      "containing the JaCoP JAR (jacop-<version>.jar).")
+  endif ()
+  file(GLOB JACOP_JAR_PATH ${JACOP_JAR_DIR}/jacop-*.jar)
+  list(LENGTH JACOP_JAR_PATH num_jacop_jars)
+  if (NOT num_jacop_jars EQUAL 1)
+    message(FATAL_ERROR "Expected exactly one jacop-<version>.jar in "
+      "${JACOP_JAR_DIR}, found ${num_jacop_jars}.")
+  endif ()
   get_filename_component(jar ${JACOP_JAR_PATH} NAME)
   set(JACOP_JAR ${jar} CACHE STRING "JaCoP JAR file name.")
   if (CMAKE_SIZEOF_VOID_P EQUAL 4)
@@ -43,7 +54,8 @@ if (build_jacop)
     
     include(UseJava)
     set(CMAKE_JAVA_INCLUDE_PATH ${JACOP_JAR_PATH})
-    set(CMAKE_JAVA_COMPILE_FLAGS -source 1.7 -target 1.7 -Xlint:-options)
+    # JaCoP itself requires Java 8; JDK 20+ no longer supports older targets.
+    set(CMAKE_JAVA_COMPILE_FLAGS -source 1.8 -target 1.8 -Xlint:-options)
     add_jar(ampljacop-java InterruptingListener.java SolutionListener.java
       OUTPUT_NAME ampljacop OUTPUT_DIR ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
     add_custom_command(TARGET ampljacop-java

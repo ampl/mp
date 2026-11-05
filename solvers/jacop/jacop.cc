@@ -471,7 +471,7 @@ void JaCoPSolver::SetEnumOption(
   for (mp::ValueArrayRef::iterator
       i = opt.values().begin(), e = opt.values().end(); i != e; ++i) {
     if (value == i->value) {
-      *ptr = reinterpret_cast<const char*>(i->data);
+      *ptr = reinterpret_cast<const char*>(std::get<intptr_t>(i->data));
       return;
     }
   }
