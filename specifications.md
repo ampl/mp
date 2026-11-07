@@ -43,6 +43,8 @@ Outputs include solver models, SOL results and suffixes, optional diagnostic exp
 
 End-to-end fixtures consist of models/data/scripts or NL files and `modellist.json` descriptions containing feature tags, options, expected objective/values, and optional output checks. Missing or invalid fixture metadata should be investigated separately from solver correctness. Numerical validation uses the case's bounds/tolerances, not exact floating-point equality by default.
 
+Fixtures tagged `script` execute their own solves in their file's directory. When a per-case timeout is configured, the end-to-end runner applies its solver-descendant cleanup watcher to script execution as well as ordinary solves. A native solver's time-limit option alone does not replace this protection for wrapped solvers.
+
 ### 2.3 Non-functional requirements and compatibility
 
 **Current:** the core build requires C++17. Optional driver dependencies and build choices constrain portability. CMake supports standalone and embedded use; generated binaries/libraries are placed in configured `bin/` and `lib/` directories.

@@ -94,7 +94,10 @@ following items, where non-compulsory items are italicized:
 
 * **"tags": ["linear", "continuous"]**: tags specifying model type, the case
   is executed only if the tags are a subset of the solver's ones. Except the
-  tag **"run"** which means the test case is an AMPL script.
+  tag **"script"** which means the test case is an AMPL script. Such a
+  case executes its own solves and runs in the file's directory, so relative
+  model, data, and include paths are resolved there.
+  ``--timeout`` also protects script execution, including its solves.
   List **"continuous"** whenever the model has continuous variables
   (including AMPL's ``var x in 1..9``): drivers for integer models only
   skip such cases. Tag **"mpdriver"** marks a case that needs an MP driver
@@ -215,3 +218,8 @@ Unit tests
 
 Unit tests are in the folder :file:`test`.
 Compulsory are tests `converter-flat-test` and `converter-mip-test`.
+
+With the end-to-end Python dependencies installed, run the script-timeout
+regression checks with ``python3 -m unittest discover -s
+test/end2end/scripts/python -p test_script_timeout.py``. They include a
+short-lived subprocess test of solver-descendant cleanup.

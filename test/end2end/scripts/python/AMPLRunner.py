@@ -261,6 +261,13 @@ class AMPLRunner(object):
         mp = str(Path(model.getFilePath()).parent.absolute().resolve())
         if model.isScript() or model.doCd():
             self._ampl.cd(mp)
+        if model.isScript() and self._timeout is not None:
+            # Scripts perform their own solves during include. Protect that
+            # execution too: native/wrapped solvers can exceed their limits.
+            return TimeoutFunc.run_with_timeout_cleanup_multiprocessing_watcher(
+                lambda: self.readModel(model),
+                TimeoutFunc.cleanup_non_immediate_descendants,
+                self._timeout, 5)
         return self.readModel(model)
     
     def get_output(self) -> str:

@@ -75,7 +75,7 @@
     }
   }, {
     "name" : "nash",
-    "tags" : ["nonlinear", "continuous", "complementarity"],
+    "tags" : ["nonlinear", "continuous", "complementarity", "script"],
     "files" : ["nash.run"],
     "values": {
       "max{i in 1 .. _nccons} abs(_ccon[i])": { "max": 1e-5 },
@@ -83,7 +83,7 @@
     }
   }, {
     "name" : "obstacle",
-    "tags" : ["nonlinear", "continuous", "complementarity"],
+    "tags" : ["nonlinear", "continuous", "complementarity", "script"],
     "files" : ["obstacle.run"],
     "values": {
       "max{i in 1 .. _nccons} abs(_ccon[i])": { "max": 1e-5 },
