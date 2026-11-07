@@ -858,7 +858,10 @@ static const mp::OptionValueInfo lp_values_method[] = {
   { "3", "Crossover", 3},
   { "4", "Concurrent (simplex and barrier simultaneously)", 4},
   { "5", "Choose between simplex and barrier automatically", 5},
-  { "6", "First-order method (PDLP). See also alg:gpumode.", 6}
+  { "6", "First-order method (PDLP). See also alg:gpumode.", 6},
+#if COPT_VERSION_MAJOR >= 9
+  { "7", "Hybrid: choose simplex, barrier, or PDLP based on the problem", 7}
+#endif
 };
 
 static const mp::OptionValueInfo concurrentlpmode_values[] = {
@@ -866,7 +869,10 @@ static const mp::OptionValueInfo concurrentlpmode_values[] = {
     { "0","CPU only(simplex + barrier).", 0},
     { "1" ,"CPU(simplex + barrier) + GPU/PDLP (on GPU device 0)", 1},
     {"2","CPU(simplex + barrier) + GPU/barrier (on GPU device 0)", 2},
-    {"3", "CPU(simplex + barrier) + GPU/PDLP + GPU/barrier (on GPU device 0 and GPU device 1)", 3}
+    {"3", "CPU(simplex + barrier) + GPU/PDLP + GPU/barrier (on GPU device 0 and GPU device 1)", 3},
+#if COPT_VERSION_MAJOR >= 9
+    {"4", "CPU only (simplex + barrier), deterministic mode", 4}
+#endif
 };
 
 static const mp::OptionValueInfo lp_values_gpu[] = {
@@ -884,7 +890,10 @@ static const mp::OptionValueInfo mip_start_values_[] = {
     { "-1", "Automatic (default)", -1},
     { "0", "Off", 0},
     { "1", "Only load full and feasible MIP starts", 1},
-    { "2", " Only load feasible ones (complete partial solutions by solving subMIPs).", 2}
+    { "2", " Only load feasible ones (complete partial solutions by solving subMIPs).", 2},
+#if COPT_VERSION_MAJOR >= 9
+    { "3", "Accept all MIP starts (for hierarchical multi-objective optimization)", 3}
+#endif
 };
 
 static const mp::OptionValueInfo alg_values_level[] = {
@@ -921,7 +930,13 @@ static const mp::OptionValueInfo lp_barorder_values_[] = {
   { "-1", "Choose automatically (default)", -1},
   { "0", "Approximate Minimum Degree (AMD)", 0},
   { "1", "Nested Dissection (ND1)", 1},
-  { "2", "Modified Nested Dissection (ND2)", 2}
+  { "2", "Modified Nested Dissection (ND2)", 2},
+#if COPT_VERSION_MAJOR >= 9
+  { "3", "Nested Dissection (ND3)", 3},
+  { "4", "Concurrent strategy 1", 4},
+  { "5", "Concurrent strategy 2", 5},
+  { "6", "Concurrent strategy 3", 6}
+#endif
 };
 
 static const mp::OptionValueInfo values_nonconvex[] = {
@@ -1357,6 +1372,16 @@ void CoptBackend::InitCustomOptions() {
     "Number of MIP tasks in parallel (at most 256);\n"
     "default -1 ==> automatic.",
     COPT_INTPARAM_MIPTASKS, -1, 256);
+
+#if COPT_VERSION_MAJOR >= 9
+  AddSolverOption("mip:concurrent concurrentmip",
+    "Number of concurrent MIP solves with different settings (COPT 9). "
+    "Default -1 lets COPT choose; 0 or 1 disables concurrent MIP. "
+    "Values 2..64 request that many simultaneous solves. "
+    "This differs from tech:miptasks, which controls tasks within a solve. "
+    "COPT does not support concurrent MIP with user callbacks or lazy constraints.",
+    COPT_INTPARAM_CONCURRENTMIP, -1, 64);
+#endif
 
   
   AddSolverOption("lim:mipnlpiterlimit mipnlpiterlimit",

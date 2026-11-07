@@ -1,5 +1,21 @@
 [
   {
+    "name": "copt_versions", "files": ["copt_versions.run"],
+    "tags": [
+      "script",
+      "linear",
+      "continuous",
+      "integer",
+      "mpdriver"
+    ],
+    "solvers": [
+      "copt"
+    ],
+    "output": [
+      "COPT version guards: OK"
+    ]
+  },
+  {
     "name" : "Check_Standard_Options",
     "files" : ["diet.mod", "diet.dat"],
     "tags" : ["continuous"],

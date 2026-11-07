@@ -10,6 +10,12 @@ if (TARGET gecode)
     LIBS amplgecode-static)
 endif ()
 
+if (TARGET amplcopt-static)
+  add_mp_test(copt-test copt-test.cc LIBS amplcopt-static)
+  target_include_directories(copt-test PRIVATE
+    ${PROJECT_SOURCE_DIR}/solvers ${COPT_INCLUDE_DIRS})
+endif ()
+
 if (TARGET ilogcp)
   # Include the gtest source in test instead of linking with the library to
   # avoid a problem when gtest is built with a different runtime than ilogcp.

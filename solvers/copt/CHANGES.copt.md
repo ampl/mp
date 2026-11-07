@@ -1,6 +1,16 @@
 Summary of recent updates to COPT for AMPL
 ==========================================
 
+## Unreleased
+- Support COPT 9 Beta while retaining builds with COPT 8.0.6.
+- COPT 9 builds advertise hybrid LP (*alg:method=7*), deterministic
+  concurrent LP (*alg:method=4 lp:concurrentmode=4*), barrier orderings
+  *lp:barorder=3..6*, and *mip:startmode=3* for hierarchical multi-objective
+  optimization.
+- Add *mip:concurrent* (*concurrentmip*) for COPT 9. Values 0 or 1 disable
+  concurrent MIP; the default -1 retains the vendor's automatic selection.
+- Keep COPT 8 option tables and range checking unchanged; new features
+  are guarded by the SDK major version at compilation.
 
 ## 20261029
 - Fix indicator IIS suffix postsolve: use the same constraint group as

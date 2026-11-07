@@ -1,0 +1,60 @@
+# Exercise new choices and explicit legacy choices with either COPT SDK.
+reset;
+var x >= 0;
+var y >= 0;
+minimize cost: x + 2*y;
+s.t. demand: x + y >= 3;
+option copt_options 'threads=2';
+solve;
+if not (solve_result_num = 0 and abs(cost.val-3) < 1e-7) then { printf "COPT version check failed\n"; exit 1; }
+param v9 binary;
+let v9 := if match(solve_message, 'COPT 8[.]') = 0 then 1 else 0;
+
+option copt_options 'threads=2 alg:method=7';
+solve;
+if not ((v9 and solve_result_num = 0 and abs(cost.val-3) < 1e-7)
+   or (not v9 and solve_result_num = 500)) then { printf "COPT version check failed\n"; exit 1; }
+option copt_options 'threads=2 alg:method=4 lp:concurrentmode=4';
+solve;
+if not ((v9 and solve_result_num = 0 and abs(cost.val-3) < 1e-7)
+   or (not v9 and solve_result_num = 500)) then { printf "COPT version check failed\n"; exit 1; }
+for {ord in 3..6} {
+  option copt_options ('threads=2 alg:method=2 lp:barorder=' & ord);
+  solve;
+  if not ((v9 and solve_result_num = 0 and abs(cost.val-3) < 1e-7)
+     or (not v9 and solve_result_num = 500)) then { printf "COPT version check failed\n"; exit 1; }
+}
+# Explicit choices preserve the old algorithm paths on both SDKs.
+option copt_options 'threads=2 alg:method=1 lp:concurrentmode=0 lp:barorder=2';
+solve;
+if not (solve_result_num = 0 and abs(cost.val-3) < 1e-7) then { printf "COPT version check failed\n"; exit 1; }
+option copt_options 'threads=2 alg:method=2 lp:barorder=2';
+solve;
+if not (solve_result_num = 0 and abs(cost.val-3) < 1e-7) then { printf "COPT version check failed\n"; exit 1; }
+
+reset;
+var x integer >= 0;
+var y integer >= 0;
+minimize cost: x + 2*y;
+s.t. demand: 2*x + 3*y >= 7;
+option copt_options 'threads=2';
+solve;
+param v9 binary;
+let v9 := if match(solve_message, 'COPT 8[.]') = 0 then 1 else 0;
+for {mode in 0..2} {
+  option copt_options ('threads=2 mip:concurrent=' & mode);
+  solve;
+  if not ((v9 and solve_result_num = 0 and abs(cost.val-4) < 1e-7)
+     or (not v9 and solve_result_num = 500)) then { printf "COPT version check failed\n"; exit 1; }
+}
+option copt_options 'threads=2 mip:startmode=3';
+solve;
+if not ((v9 and solve_result_num = 0 and abs(cost.val-4) < 1e-7)
+   or (not v9 and solve_result_num = 500)) then { printf "COPT version check failed\n"; exit 1; }
+option copt_options 'threads=2 mip:concurrent=65';
+solve;
+if not (solve_result_num = 500) then { printf "COPT version check failed\n"; exit 1; }
+option copt_options 'threads=2 mip:startmode=2';
+solve;
+if not (solve_result_num = 0 and abs(cost.val-4) < 1e-7) then { printf "COPT version check failed\n"; exit 1; }
+printf 'COPT version guards: OK\n';
