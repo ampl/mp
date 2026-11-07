@@ -1,6 +1,10 @@
 Summary of recent updates to the AMPL MP Library
 ================================================
 
+## Unreleased
+- Fix undefined behavior in shared constraint/expression acceptance queries:
+  no-argument calls no longer bind a null pointer to a model API reference.
+  Existing virtual API-taking calls and acceptance levels are preserved.
 
 ## 20261029
 - Fix: with NL output (MP2NL), complementarity constraints were

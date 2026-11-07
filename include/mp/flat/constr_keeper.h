@@ -228,23 +228,24 @@ public:
   }
 
   /// Acceptance level of this constraint type in the ModelAPI
+  ConstraintAcceptanceLevel GetModelAPIAcceptance() const {
+    return Backend::AcceptanceLevel((Constraint*)nullptr);
+  }
+
+  /// Keep virtual dispatch without fabricating an unused ModelAPI reference.
   ConstraintAcceptanceLevel GetModelAPIAcceptance(
-      const BasicFlatModelAPI&  = *(BasicFlatModelAPI*)nullptr)
-      const override {
-    return
-        // static_cast<const Backend&>( ba ).
-        Backend::
-        AcceptanceLevel((Constraint*)nullptr);
+      const BasicFlatModelAPI&) const override {
+    return GetModelAPIAcceptance();
   }
 
   /// Acceptance level of the corresponding expression type in the ModelAPI
+  ExpressionAcceptanceLevel GetModelAPIAcceptanceEXPR() const {
+    return Backend::AcceptanceLevel((FlatExprType*)nullptr);
+  }
+
   ExpressionAcceptanceLevel GetModelAPIAcceptanceEXPR(
-      const BasicFlatModelAPI&  = *(BasicFlatModelAPI*)nullptr)
-      const override {
-    return
-        // static_cast<const Backend&>( ba ).
-        Backend::
-        AcceptanceLevel((FlatExprType*)nullptr);
+      const BasicFlatModelAPI&) const override {
+    return GetModelAPIAcceptanceEXPR();
   }
 
   /// Acceptance level of the overall expression interface in the ModelAPI

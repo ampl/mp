@@ -8,6 +8,19 @@ namespace {
 using InterfaceTester_MaxConstraint =
              InterfaceTesterWithBackendAcceptingConstraints<mp::MaxConstraint>;
 
+TEST_F(InterfaceTester_MaxConstraint, AcceptanceQueriesKeepVirtualAndDirectResults) {
+  const auto& keeper = GetInterface().GetFlatCvt().GetConstraintKeeper(
+      (const mp::MaxConstraint*)nullptr);
+  const mp::BasicConstraintKeeper& base = keeper;
+  const auto& api = GetBackend();
+  EXPECT_EQ(mp::ConstraintAcceptanceLevel::Recommended,
+            keeper.GetModelAPIAcceptance());
+  EXPECT_EQ(keeper.GetModelAPIAcceptance(), base.GetModelAPIAcceptance(api));
+  EXPECT_EQ(mp::ExpressionAcceptanceLevel::NotAccepted,
+            keeper.GetModelAPIAcceptanceEXPR());
+  EXPECT_EQ(keeper.GetModelAPIAcceptanceEXPR(), base.GetModelAPIAcceptanceEXPR(api));
+}
+
 TEST_F(InterfaceTester_MaxConstraint, MaximumConstraintIsPassedToBackend) {
   auto con=GetModel().AddCon(5.0, 5.0);
   const auto args = GetInterface().AddVars(3, -1.0, 11.0);
