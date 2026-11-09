@@ -3,9 +3,8 @@ Summary of recent updates to CPLEX for AMPL
 
 
 ## 20261029
-- Fix IIS reporting for mixed linear, quadratic, indicator, and SOS
-  constraints: keep their index spaces separate to prevent incorrect
-  linear IIS suffixes and out-of-bounds writes.
+- Correct *.iis* values for models mixing linear, quadratic,
+  indicator, and SOS constraints.
 - Option *obj:multi:stats=1* reports multi-objective pass
   statistics in native mode (*obj:multi=1*).
 - Add separate fixed-model limits *mip:basis:timelimit* and

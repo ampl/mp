@@ -5,12 +5,10 @@ Summary of recent updates to GCG for AMPL
 ## 20261029
 - 64-bit SCIP parameters (e.g., *lim:nodes*, *lim:stallnodes*)
   accept values above 2^31.
-- Debug builds link again (the GCG 4 release library exports
-  GCGgetOrigprob only as a macro).
 - Options aligned with GCG 4.0.2 / SCIP 10.0.2: corrected defaults,
-  ranges and texts; *det:postprocess* now sets detection/postprocess
-  (it set the postprocess detector); *pre:settings* applied the cut
-  settings instead of presolving.
+  ranges and texts; *det:postprocess* now controls detection
+  postprocessing; *pre:settings* now controls presolving instead
+  of cut settings.
 - A value rejected by GCG now aborts with a message naming the AMPL
   option, the value and the valid range.
 - MP-standard names with the previous spellings as synonyms:

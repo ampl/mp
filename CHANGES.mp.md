@@ -1,11 +1,6 @@
 Summary of recent updates to the AMPL MP Library
 ================================================
 
-## Unreleased
-- Fix undefined behavior in shared constraint/expression acceptance queries:
-  no-argument calls no longer bind a null pointer to a model API reference.
-  Existing virtual API-taking calls and acceptance levels are preserved.
-
 ## 20261029
 - Fix: with NL output (MP2NL), complementarity constraints were
   reformulated (by *cvt:compl*) instead of being passed as NL
@@ -15,31 +10,23 @@ Summary of recent updates to the AMPL MP Library
   (before, the NL output ignored *cvt:quadcon=0*).
 - New: AMPL's *floor*, *ceil*, *round(x[, n])* (ties to even),
   *trunc(x[, n])*, *div* and *mod* (also for real numbers and variable
-  divisors), before rejected as "unsupported". MIP reformulations:
-  floor/ceil by bounds with *cvt:mip:eps*, round with an even/odd
-  decomposition, div/mod by quotient and remainder as in MiniZinc's
-  linearization library. Options *acc:floor*, *acc:ceil*,
+  divisors), before rejected as "unsupported". The floor/ceil MIP
+  reformulations use the tolerance *cvt:mip:eps*. Options *acc:floor*,
+  *acc:ceil*,
   *acc:round*, *acc:intdiv*, *acc:mod*.
 - Products of variables with a bounded integer factor are reformulated
-  exactly for MIP solvers without (nonconvex) quadratics, by binary
-  expansion of the integer factor (option *cvt:mip:intprodbits*, default
-  30; 0 restores the piecewise-linear approximation); integer powers
+  exactly for MIP solvers without (nonconvex) quadratics (option
+  *cvt:mip:intprodbits*, default 30; 0 restores the piecewise-linear approximation); integer powers
   x^k likewise. Before, such products were approximated.
 - Fix: with *cvt:quadcon=0*, quadratic range constraints were still
   passed to solvers accepting them (e.g., MOSEK).
-- New functional constraint *r = x\*y* (*acc:mul*) for solvers taking
-  products of variables natively (CP-SAT): quadratic terms of
-  non-binary variables become such constraints instead of the
-  piecewise-linear approximation of *((x+y)^2-x^2-y^2)/2*; equal
-  products share one constraint. The default of *cvt:multoutcard*
-  is now per solver (1 for CP-SAT: a product of sums stays one
-  product of two auxiliary variables).
+- CP-SAT supports exact integer-variable products natively (*acc:mul*),
+  replacing the previous piecewise-linear approximation. The default
+  of *cvt:multoutcard* is now per solver (1 for CP-SAT, retaining
+  products of sums rather than expanding them).
 - Fix: inlining algebraic subexpressions into an objective
   (*cvt:pre:unnest*) could make it quadratic for solvers without
   quadratic objectives (*cvt:quadobj=0*), which then failed.
-- Fix: checking whether an auxiliary variable can be replaced by its
-  defining expression (e.g., for MP2NL and expression-based solvers)
-  could add an unused copy of a comparison to the model.
 - Fix: a dual ray requested for a model without constraints
   (MOSEK, "infeasible or unbounded") failed with "map::at".
 - Fix: *tech:writegraph* wrote empty names for auxiliary variables.
@@ -51,9 +38,8 @@ Summary of recent updates to the AMPL MP Library
   becomes one linear equality, without an SOS2 constraint.
 - Fix: chained piecewise-linear terms (one term's argument depends
   on another term's result) could get wrong solutions in solvers
-  without native SOS2. The results of piecewise-linear terms now
-  receive bounds from their arguments' domains, also when these
-  are narrowed later, e.g., by linear constraints.
+  without native SOS2. Bounds imposed by linear constraints are now
+  respected throughout such chains.
 - Change: the MIP reformulation of a nonconvex piecewise-linear
   term (solvers without native SOS2, e.g., HiGHS, MOSEK, or
   *acc:pl=0 acc:sos2=0*) no longer limits an unbounded argument to
@@ -68,7 +54,7 @@ Summary of recent updates to the AMPL MP Library
 - Fix: *AMPLSSolve* (AMPLS C API) called the solver once, skipping
   the iterations of the multiobjective emulator (*obj:multi=2*, or
   *obj:multi=1* without native support); postsolving the results then
-  read uninitialized objectives and crashed. It now solves as drivers
+  could crash. It now completes the multiobjective solve as drivers
   do. This affected ASL drivers run with mp2nl=1.
 - AMPLS C API: *AMPLSReportError* writes the .sol file with a
   solve result and message after a failed *AMPLSLoadNLModel* or
@@ -76,25 +62,22 @@ Summary of recent updates to the AMPL MP Library
 - Fix: 64-bit integer options rejected values above 2^31
   ("this number is larger than an int"); they are now parsed
   as 64-bit integers.
-- Fix: the IIS of a model with logical constraints or if-then-else
-  expressions marked many unrelated constraints (*upp*): every
-  constraint that used a constant, e.g. the implicit else-0 of
-  *if ... then*, received the IIS status of MP's shared fixed
-  variable for that constant. Constants are no longer linked to
-  the constraints using them. Constraints sharing a subexpression
-  that is in the IIS are all reported.
+- Fix: IIS reporting for models with logical constraints or
+  if-then-else expressions could mark unrelated constraints as
+  members (*upp*). Only applicable constraints are now marked;
+  constraints sharing a subexpression in the IIS are all reported.
 - Fix: with several objectives (*obj:multi*), *mip:return_gap* and
-  *mip:bestbound* stopped debug builds with an assertion in
-  *ReportSuffix*; release builds were unaffected. The objective
+  *mip:bestbound* stopped Debug builds with an assertion;
+  Release builds were unaffected. The objective
   suffixes *.relmipgap*, *.absmipgap* and *.bestbound* carry the value
   for the first objective and 0 for the others.
 - Option *cvt:pre:boundsbest* value 4: best-known bounds for all
   variables when the submitted model has no nonlinear or quadratic
   constraints or objectives, hard bounds otherwise. MP2NL sets it in
   the configurations of the nonlinear subsolvers (knitro, ipopt,
-  conopt, snopt, minos, lgo, bonmin, couenne, baron, lindoglobal):
-  on MILPs the bounds speed up their branch-and-bound, on MINLPs the
-  bounds of auxiliary results degrade their barrier subproblems.
+  conopt, snopt, minos, lgo, bonmin, couenne, baron, lindoglobal).
+  This selects best-known bounds for linear models while retaining
+  hard bounds for models with nonlinear or quadratic expressions.
 - Option *cvt:pre:boundsbest* has values 2 and 3: 2 submits the
   best-known bounds of all result variables except those of smooth
   nonlinear expressions (exp, log, pow, trigonometric functions,
@@ -109,8 +92,6 @@ Summary of recent updates to the AMPL MP Library
   Results of logical constraints, indicator binaries and arguments
   of logical constraints submitted to the solver stay integer.
   Solvers without continuous variables (CP-SAT) default to 1.
-  Fixed variables made continuous (*cvt:pre:continuous_fixed_vars*)
-  no longer change MP's internal variable types.
 - Fix: the big-M linearization of an indicator *b==v ==> c'x >= d*
   (or *<=*) dropped the row when *d* equalled the body's best-known
   bound, although that bound is not submitted by default

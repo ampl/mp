@@ -3,9 +3,8 @@ Summary of recent updates to HiGHS for AMPL
 
 
 ## 20261029
-- Fix Windows Debug heap assertions when copying options to the fixed LP:
-  retain driver-owned option names instead of freeing names allocated by
-  a vendor library using a different C runtime.
+- Fix an assertion failure in Windows Debug builds during MIP basis
+  recovery.
 - A quadratic objective with integer variables (MIQP, which HiGHS
   cannot solve) is reported as such, suggesting *cvt:quadobj=0*;
   before, the message was "argument index out of range".
@@ -41,8 +40,7 @@ Summary of recent updates to HiGHS for AMPL
   them by a limited MIP search (*mip:maxstartnodes*); *mip:start=2*
   selects the previous driver-side completion by fixing and solving.
   A start rejected by HiGHS gives a warning instead of aborting.
-- *mip:basis* emulation: the fixed LP is obtained with HiGHS's own
-  Highs_getFixedLp and solved with all user options copied (tolerances,
+- *mip:basis* emulation: the fixed LP respects user options (tolerances,
   presolve, seed, ...), except the algorithm, limits and file output.
 - IIS computation (*iis:find=1*, suffix .iis) via HiGHS's IIS finder;
   *iis:strategy* (default -1: true IIS, relaxation for MIPs) and
@@ -52,7 +50,7 @@ Summary of recent updates to HiGHS for AMPL
   optimal basis and for the fixed LP of *mip:basis*.
 - Feasibility relaxation *alg:feasrelax=1* (weighted sum of violations,
   penalties from *alg:lbpen/ubpen/rhspen* or suffixes .lbpen/.ubpen/.rhspen,
-  negative = no violation allowed) via Highs_feasibilityRelaxation;
+  negative = no violation allowed);
   the other modes are not available in HiGHS and are rejected.
 - Option *obj:blend* removed: it had no effect because HiGHS's native
   multi-objective handling is not used (MP emulates multiple objectives).

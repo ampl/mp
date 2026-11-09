@@ -4,8 +4,7 @@ Summary of recent updates to Xpress for AMPL
 
 ## unreleased
 - Xpress 10.0 (Optimizer 48.01.01) and 9.9.1 (47.01.02) supported, as
-  well as 9.8; the driver selects the version-specific code at compile
-  time.
+  well as 9.8.
 - Xpress 10: solution pool (*sol:stub*, *sol:count*) with the built-in
   pool of the Optimizer (*sol:poolapi=1*, default): *sol:poollimit*,
   *sol:poolgap*, *sol:poolgapabs* and *sol:poolmode* set POOLLIMIT,
@@ -33,8 +32,7 @@ Summary of recent updates to Xpress for AMPL
   work or node limit, or interrupted, was reported as *solved?*
   (*solve_result_num* 120, "locally optimal solution") with its
   incumbent; it is now reported as a limit (e.g. 402, "time limit,
-  feasible solution"; 4xx without a feasible solution), from
-  XPRS_NLPSTOPSTATUS (or XPRS_STOPSTATUS).
+  feasible solution"; 4xx without a feasible solution).
 - Fix: in a native multi-objective solve (*obj:multi=1*), the MIP gap
   combined the first objective's value with the last pass's bound; it
   is now the last pass's gap.
@@ -46,16 +44,13 @@ Summary of recent updates to Xpress for AMPL
   visited, not the pool's best; the MIP gap and *.bestbound* referred
   to the enumerator's search. The primary solution is now the pool's
   best, and the bound is valid for it.
-- Options generated from the Xpress parameter database are named after
+- Xpress options are named after
   the control with MP prefixes (e.g. *mip:backtrack*, *lp:autoperturb*,
   *bar:algaftercrossover*, *slp:algorithm*) instead of *<topic>:xprs_<name>*;
   the control name (*backtrack*) and *XPRS_<NAME>* are synonyms, and the
   ASL driver's keywords (*treeoutlev*, *mipops*, *heurroot*, ...) are
-  accepted. The headers are regenerated from the SDK database at build
-  time when it is available, with the control types verified against
-  the SDK headers.
-- The vendor documentation is used for every option in the database;
-  wrong defaults in the driver's own texts are gone.
+  accepted.
+- Corrected option help and defaults to match Xpress documentation.
 - *qp:nonconvex* is deprecated: the convexity check is *qp:convexitychk*
   (*convexitychk*, IFCHECKCONVEXITY). *tech:globalfilemax* and
   *tech:globalfileloginterval* are synonyms of *lim:maxtreefilesize* and
@@ -63,16 +58,16 @@ Summary of recent updates to Xpress for AMPL
   *tech:sleeponthreadwait* are ignored by Xpress.
 - *heurdepth* now sets HEURDEPTH as in the ASL driver (it was a synonym
   of *lim:heurdiveiterlimit*); *heurfreq* is no longer ambiguous.
-- Solution pool: *sol:pooldups* (duplicate policy) is set on the pool
-  object and works, and distinct solutions are the default (the pool
+- Solution pool: *sol:pooldups* now controls duplicate reporting,
+  and distinct solutions are the default (the pool
   used to report duplicates up to the limit); new *sol:poolgap*,
   *sol:poolgapabs* and *sol:poolmode* with the same meaning as in the
   Gurobi and CPLEX drivers; *sol:poollimit* defaults to 10 as
   documented; *obj:multi:ops* and *obj:multi:log* added.
 - New *tech:optionnative* (*tech:param*, *param*): any Xpress control by
   name, "NAME=value" or "NAME=?"; *alg:readbasis* (*basisin*): starting
-  basis from a .bas file. Rows are now named in the Xpress model, so
-  basis files written with *tech:writesolution* can be read back.
+  basis from a .bas file. Basis files written with
+  *tech:writesolution* can now be read back.
 - Add separate fixed-model limits *mip:basis:timelimit* and
   *mip:basis:iterlimit*.
 - Retain the MIP solution when a supplementary fixed solve reaches a limit.

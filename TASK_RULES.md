@@ -46,6 +46,8 @@ If the user or an authorized project workflow supplies a canonical record outsid
 
 A separate public issue/PR summary may describe deliverables safely, but must not duplicate the private progress log or expose its contents or location.
 
+Task records are not release notes. Summarize customer-visible changes in solver READMEs and changelogs rather than copying implementation or validation checkpoints. Do not link private task records from public documentation. Internal-only work needs no customer changelog entry; supported build and extension guidance belongs in the public developer manual.
+
 ## Record contents
 
 Keep `task.md` concise and current. Use the following fields or equivalent headings:

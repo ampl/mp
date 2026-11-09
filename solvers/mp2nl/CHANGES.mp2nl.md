@@ -7,9 +7,9 @@ Summary of recent updates to MP2NL for AMPL
 - Fix: complementarity was reformulated (e.g., product with Knitro's
   configuration) instead of written as NL complementarity
   (*acc:nlcompl=2*, default), since 20261029.
-- Configurations no longer set *acc:compl*, which has no effect in
-  MP2NL (it accepts complementarity as *acc:nlcompl*). The help of
-  *cvt:compl* says that it applies only with *acc:nlcompl=0*.
+- Use *acc:nlcompl* to control native complementarity in MP2NL;
+  *acc:compl* has no effect. Reformulations selected by *cvt:compl*
+  apply only with *acc:nlcompl=0*.
 - New configurations of solvers not accepting NL complementarity
   convert it (*acc:nlcompl=0*): *gurobiasl*, *cplexasl*, *xpressasl*
   (disjunction), *bonmin*, *snopt*, *minos*, *lgo*, *loqo* (product,
@@ -24,8 +24,8 @@ Summary of recent updates to MP2NL for AMPL
   expressions, if-then-else, min/max/abs, SOS and indicators are
   linearized by MP; complementarity is converted with
   *cvt:compl=1* (product): ALGLIB ignores NL complementarity
-  constraints, and the disjunctive and Fischer-Burmeister forms failed
-  on the tests. Its time limit and relative gap are *timeout* and
+  constraints. The product form is the supported default for this
+  configuration. Its time limit and relative gap are *timeout* and
   *pdgap*.
 - *lim:time* (did nothing), and new *mip:gap*, *mip:gapabs*, are
   passed to the subsolver as its own keywords (e.g., Knitro's
@@ -33,15 +33,12 @@ Summary of recent updates to MP2NL for AMPL
   *epsr*, *epsa*) for the known configurations. They can be set per
   objective in a multi-objective solve (suffixes *.option_timelimit*,
   *.option_mipgap*), which used to fail with "Option not found".
-- Fix: in a multi-objective solve (*obj:multi*), the NL file of
-  every pass after the first had a wrong header (counts only for
-  the items added since the previous pass); the subsolver read
-  wrong data or stopped.
-- Objective suffixes (e.g., *.objpriority*) are no longer passed
-  on to the auxiliary variables and constraints of the objective's
-  conversion. Knitro 16.0.0 with *use_asl=0* misreads binary NL
-  files with any suffix, so a multi-objective solve of a model with
-  logical expressions returned a zero solution.
+- Fix: multi-objective passes after the first could submit an invalid
+  NL model, causing the subsolver to read wrong data or stop.
+- Fix: multi-objective models with logical expressions could return
+  an incorrect zero solution with Knitro 16.0.0 and *use_asl=0*.
+  Unnecessary objective suffixes are now omitted from submitted models;
+  Knitro's binary NL reader still has limitations with suffixes.
 
 
 ## 20260624

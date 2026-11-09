@@ -11,9 +11,8 @@ Summary of recent updates to CBCMP for AMPL
 - Fixed a crash in multi-objective mode.
 - Fixed wrong results in multi-objective mode: passes
   after the first could return the previous pass'
-  solution, as CBC models are not re-solvable after
-  modification. Each pass now solves a fresh copy
-  (warm starts are not passed to multi-objective passes).
+  solution. Each pass now returns its own result.
+  Warm starts are not passed to multi-objective passes.
   Per-objective *timelim* is now applied.
 - New options *mip:gap* (*mipgap*) and *mip:gapabs*
   (*mipgapabs*): standard names of CBC's ratioGap and

@@ -219,3 +219,9 @@ Proposed ongoing stages; no dates or completion claims are implied.
 - Review Python test dependency metadata, including the standard-library `multiprocessing` entry.
 - Document actual CI coverage by job; NL Writer wheel builds do not demonstrate full library/driver correctness.
 - Confirm legacy-driver maintenance and migration plans; the current HOWTO does not give a retirement schedule.
+
+## 9. Documentation audiences and ownership
+
+Solver READMEs describe current customer use: supported problem classes and versions, installation and runtime requirements, invocation, options and defaults, limitations, compatibility, and migration controls. Release changelogs describe customer-visible changes, including the trigger and outcome of fixes, affected versions, and changed defaults. Beta and experimental availability must remain explicit; build compatibility alone does not establish shipping, platform, or performance guarantees.
+
+The public developer manual owns supported source-build and extension procedures. Technical specifications own requirements, interface contracts, and architectural decisions. Task records own investigation, implementation, and validation evidence in a destination appropriate to their visibility. Customer documentation must not expose private tracking or depend on private infrastructure. Purely internal changes need no customer release note.

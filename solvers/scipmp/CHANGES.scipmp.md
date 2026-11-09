@@ -37,8 +37,8 @@ Summary of recent updates to SCIP for AMPL
   verbosity is 0 (the concurrent solve printed regardless).
 - Unavailable LP duals (after SCIP presolving) are reported as absent
   instead of zeros; SCIP's reason is shown with *tech:outlev=1*.
-- Solve results for the primal and dual bound limits (SCIP statuses
-  PRIMALLIMIT, DUALLIMIT).
+- Report primal and dual bound limits with the corresponding solve
+  result codes.
 
 
 ## 20260624

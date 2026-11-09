@@ -3,15 +3,14 @@ Summary of recent updates to Gurobi for AMPL
 
 
 ## 20261029
-- Prepare for Gurobi 14 (options available when built against 14):
+- Add options requiring Gurobi 14:
   *alg:method=7* (NL barrier), *alg:concurrentmethod=4*,
   *cut:oa*, *mip:noreltreeheur*, *mip:pdhgheursolutions*,
   *mip:pdhgheurtime*, *mip:pdhgheurwork*, *nlbar:initmu*,
   *nlbar:startpush*; *alg:pdhggpu* follows the 14 range.
   New option *obj:multi:inheritparams* (all versions) controls
   parameter inheritance of multi-objective passes, whose Gurobi
-  default changes in 14. Solution pool values are read via
-  *PoolNX*/*PoolNObjVal*.
+  default changes in 14.
 - Add separate fixed-model limits *mip:basis:timelimit* and
   *mip:basis:iterlimit*.
 - Align option documentation with Gurobi 13.0.3 parameters:

@@ -68,23 +68,18 @@ See `IBM ILOG CPLEX CP Optimizer Options for AMPL
 solve_result_num values
 -----------------------
 
-Here is a table of ``solve_result_num`` values that ``ilogcp`` can return
-to an AMPL session, along with the text that appears in the associated
-``solve_message``.
+Solve result codes follow MP conventions: 0 denotes an optimal solution
+(or a solution to a satisfaction problem), 100 a feasible solution without
+proven optimality, 200 infeasibility, and 300 unboundedness with a feasible
+solution (350 without one).
+Limits use 400-series codes, including time limits (402/472), solution
+limits (408), interrupts (401/471), fail limits (430/490), branch limits
+(431/491), and choice point limits (432/492). Infeasible or unbounded
+is 450; errors use 500-series codes. Where paired codes are listed,
+the first indicates a feasible solution and the second no feasible solution.
 
-=====   ===============================
-Value   Message
-=====   ===============================
-  0     optimal solution
-100     feasible solution
-200     infeasible problem
-201     infeasible or unbounded problem
-300     unbounded problem
-400     limit
-403     solution limit
-500     error
-600     interrupted
-=====   ===============================
+The CPLEX backend also reports its applicable limit and numerical statuses.
+Run ``ilogcp -!`` for the full list of result codes and messages.
 
 ------------
 

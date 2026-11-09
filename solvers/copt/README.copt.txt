@@ -25,13 +25,12 @@ the possibilities, invoke
 
      copt -=
 
-COPT 9 and compatibility with COPT 8
------------------------------------
+COPT 9 Beta and compatibility with COPT 8
+----------------------------------------
 
-The driver can be built with COPT 8.0.6 or COPT 9. New COPT 9 option
-choices are enabled at compilation when using COPT 9 headers. Use the
-matching vendor runtime for each build; this is not runtime SDK switching.
-The vendor's existing defaults are retained.
+The driver supports COPT 8.0.6 and COPT 9 Beta. Use the matching COPT
+runtime for your driver version. The options below require COPT 9;
+existing vendor defaults are retained.
 
   Option / COPT 9 choice                Meaning
   alg:method=7                         Hybrid simplex/barrier/PDLP selection
@@ -52,23 +51,18 @@ Explicit legacy choices remain available: alg:method=1 (dual simplex),
 alg:method=2 (barrier), alg:method=5 (simplex/barrier selection),
 alg:method=4 lp:concurrentmode=0 (CPU concurrent LP), lp:barorder=-1..2,
 and mip:startmode=-1..2. To disable concurrent MIP in a COPT 9 build, use
-mip:concurrent=0 or 1. COPT 8 builds do not register mip:concurrent and
-reject the new numeric choices using the vendor parameter bounds.
+mip:concurrent=0 or 1. With COPT 8, mip:concurrent is unavailable and
+the new numeric choices are rejected.
 These controls preserve algorithm selection, not identical numerical
 results or performance across vendor releases.
 
-COPT 9 also supplies APIs for reading per-worker parameter settings. The
-driver does not yet expose these APIs: the Beta manual does not specify
-the file/string format, and a successful API return alone does not confirm
-that settings were applied. Existing tech:optionnative and parameter-file
-options continue to control ordinary model parameters.
+Per-worker parameter configuration for concurrent MIP is not exposed by
+the driver. Use tech:optionnative and parameter-file options for ordinary
+model parameters.
 
-The COPT 9 release notes describe new vendor BLAS/LAPACK implementations,
-improved barrier ordering, SDP, MIP, QP and GPU PDLP performance. These
-changes require no new model API. GPU execution still requires a supported
-Windows/Linux CUDA environment; macOS tests exercise CPU paths.
-General NLP remains a local solver; COPT 9 does not introduce a documented
-general MINLP or native complementarity interface.
+GPU execution requires a supported Windows/Linux CUDA environment.
+General NLP is solved locally; general MINLP and native complementarity
+are not supported by this interface.
 
 Installing
 ----------

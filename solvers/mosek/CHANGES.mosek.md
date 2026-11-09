@@ -3,13 +3,10 @@ Summary of recent updates to MOSEK for AMPL
 
 
 ## Unreleased
-- The driver can be built with MOSEK 12.0 (currently a BETA) as well as
-  with MOSEK 11. Changes in behavior when linked with MOSEK 12:
-  - MOSEK 12 rewrote the simplex and the linear interior-point
-    optimizers. Dual and primal simplex, free simplex (now dual and
-    primal concurrently and deterministic with several threads) and the
-    interior-point method are as before; *alg:method* values 6 and 7 (the
-    "new" simplex of MOSEK 11) select the dual and primal simplex.
+- Support MOSEK 12.0 BETA alongside MOSEK 11. With MOSEK 12:
+  - Free simplex runs dual and primal simplex concurrently and is
+    deterministic with several threads. *alg:method* values 6 and 7
+    (the "new" simplex of MOSEK 11) select dual and primal simplex.
     New *alg:method* values: 9 = primal-dual simplex, 10 = concurrent
     optimizer (both experimental).
   - For linear problems the interior-point optimizer returns only the
@@ -46,11 +43,11 @@ Summary of recent updates to MOSEK for AMPL
   stalling and numerical problems get their own codes (previously all
   400 "feasible primal"); a feasible solution without a termination
   reason is reported as 'solved?'.
-- Ctrl-C now interrupts MOSEK (the handler was a stub).
-- An input basis for constraints was ignored (every status was reset
-  before mapping); a starting basis or point now goes to the basic
-  solution of an LP. Simplex iteration counts include the dual
-  iterations; the node count is the number of branches.
+- Ctrl-C now interrupts MOSEK.
+- An input constraint basis was ignored; starting bases and points
+  are now honored for the basic solution of an LP. Simplex iteration
+  counts include the dual iterations; the node count is the number
+  of branches.
 - *tech:logfile* without *tech:outlev* writes the standard log to the
   file with a quiet console (the file was empty).
 - New options: *alg:feastol*, *alg:dualfeastol* (simplex tolerances;

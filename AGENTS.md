@@ -13,6 +13,13 @@
 - Update the specification when an authorized change affects documented behavior, public interfaces, compatibility guarantees, or significant design decisions.
 - Keep documentation and development instructions self-contained for an independent checkout. Do not reference private consuming repositories or require access to their specifications or infrastructure.
 
+## Customer-facing documentation
+
+- Solver READMEs and release changelogs are customer-facing. Describe supported use, observable behavior, options and defaults, limitations, compatibility, and required migration. Describe fixes by their user-visible trigger and outcome.
+- Omit implementation mechanisms, local validation/provenance, private task references, and investigation history from these documents. Put supported build/extension instructions in public developer documentation and investigation evidence in the authorized task record.
+- Preserve material technical caveats, beta/experimental status, version availability, and controls that retain previous behavior. Do not add unverified capability, release, platform, or performance claims. Internal-only changes do not require customer release notes.
+- Review the recent entries and current usage documentation for every affected driver. Keep README guidance current and changelog entries chronological; do not rewrite unrelated historical releases.
+
 ## Changes and validation
 
 - Preserve unrelated local changes and generated artifacts. Follow existing conventions and keep changes scoped to the task.

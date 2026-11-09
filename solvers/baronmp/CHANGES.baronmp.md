@@ -9,12 +9,13 @@ Summary of recent updates to BARONMP for AMPL
   *pre:mdo*, *mip:nodesel*, *alg:nouter1*, *alg:noutiter*,
   *alg:noutpervar*, *alg:numloc*, *pre:obttdo*, *alg:outgrid*, *pre:pdo*,
   *pre:tdo*, *alg:wantdual*.
-- Fixed: with *numsol* > 1 the last of BARON's solutions was reported
-  instead of the best; the alternative solutions were reported
-  numsol times each; *sol:stub* files were written into BARON's scratch
-  directory (deleted afterwards) instead of the working directory;
-  a relative *tech:scratch* path failed; limits with an intermediate
-  feasible solution were reported as "without a feasible solution".
+- With *numsol* > 1, report the best solution and each alternative
+  once, instead of reporting the last solution and repeated alternatives.
+- Keep *sol:stub* solution files in the working directory after solving;
+  they were previously deleted with BARON's scratch directory.
+- Accept relative *tech:scratch* paths, which previously failed.
+- Correct limit messages when an intermediate feasible solution exists;
+  they previously said "without a feasible solution".
 
 
 ## 20260624
