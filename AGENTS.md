@@ -20,6 +20,10 @@
 - Preserve material technical caveats, beta/experimental status, version availability, and controls that retain previous behavior. Do not add unverified capability, release, platform, or performance claims. Internal-only changes do not require customer release notes.
 - Review the recent entries and current usage documentation for every affected driver. Keep README guidance current and changelog entries chronological; do not rewrite unrelated historical releases.
 
+- During development, update one short note per customer outcome rather than appending one per commit. Keep detailed option/reference material in its owning public documentation.
+- At release-candidate preparation or release PR opening, read and apply [the release-notes skill](skills/mp-release-notes/SKILL.md). Before tagging/packaging, confirm its review covers the final diff; repeat affected checks after late changes. Aim for roughly two minutes of main-entry reading, preserving consequential caveats over a word limit.
+- Describe final shipped behavior against the preceding release. Highlight regressions only when they affected a shipped build; omit intermediate breakages fixed within the same release. Preserve published release boundaries and affected-version facts during authorized editorial consolidation.
+
 ## Changes and validation
 
 - Preserve unrelated local changes and generated artifacts. Follow existing conventions and keep changes scoped to the task.

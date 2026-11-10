@@ -48,6 +48,8 @@ A separate public issue/PR summary may describe deliverables safely, but must no
 
 Task records are not release notes. Summarize customer-visible changes in solver READMEs and changelogs rather than copying implementation or validation checkpoints. Do not link private task records from public documentation. Internal-only work needs no customer changelog entry; supported build and extension guidance belongs in the public developer manual.
 
+For release preparation, keep a concise coverage map from customer-visible changes to final release bullets or public documentation destinations. Track completed consolidation and any late changes needing re-review in the canonical record; do not turn the public changelog into that progress log. Follow the release workflow linked from AGENTS.md.
+
 ## Record contents
 
 Keep `task.md` concise and current. Use the following fields or equivalent headings:

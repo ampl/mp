@@ -4,9 +4,8 @@ Summary of recent updates to MP2NL for AMPL
 
 ## 20261029
 - Version 0.2.
-- Fix: complementarity was reformulated (e.g., product with Knitro's
-  configuration) instead of written as NL complementarity
-  (*acc:nlcompl=2*, default), since 20261029.
+- Native NL complementarity remains the default (*acc:nlcompl=2*),
+  including with Knitro's configuration.
 - Use *acc:nlcompl* to control native complementarity in MP2NL;
   *acc:compl* has no effect. Reformulations selected by *cvt:compl*
   apply only with *acc:nlcompl=0*.
@@ -17,9 +16,10 @@ Summary of recent updates to MP2NL for AMPL
   MINOS and SNOPT ignored NL complementarity
   constraints, the others failed.
 - Quadratic constraints created by reformulations (e.g., *acc:div=0*)
-  are written as quadratic expressions again, as before 20261029
-  (*cvt:quadcon=0* linearizes them). ASL MIP solvers may need their
-  nonconvex options (e.g., Gurobi's *nonconvex=2*).
+  continue to be written as NL quadratic expressions by default.
+  *cvt:quadcon=0* now requests linearization (previously ignored for NL
+  output). ASL MIP solvers may need their nonconvex options
+  (e.g., Gurobi's *nonconvex=2*).
 - Configuration *alglib4nl* (ALGLIB for AMPL): logical
   expressions, if-then-else, min/max/abs, SOS and indicators are
   linearized by MP; complementarity is converted with

@@ -176,6 +176,21 @@ See
 for examples.
 
 
+Ordinary gap and bound suffixes
+**************************************
+
+For a single optimized objective, ``mip:return_gap`` requests
+``.relmipgap`` / ``.absmipgap`` and ``mip:bestbound`` requests ``.bestbound``.
+With multiple active objectives, use the pass statistics below instead:
+ordinary suffixes do not provide independent certificates for every objective.
+Some paths report a current/final-pass scalar on the first objective and leave
+other entries zero. Those zeros do not establish a zero gap or a valid bound.
+
+A pass bound applies to its weighted objective. When several objectives share
+one pass, it is not generally a bound on each original objective separately.
+Unavailability must not be interpreted as optimality.
+
+
 Multi-objective solve statistics (experimental)
 ***********************************************************************************
 
