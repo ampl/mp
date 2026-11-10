@@ -17,6 +17,15 @@ int main(int, char** argv) {
 }
 #endif
 
+#ifdef MP_LINK_WITH_SHARED_LIB
+// Entry point for the executable linked with the shared library.
+// Call RunBackendApp() directly: forwarding to main() would, on Linux,
+// bind to the executable's main(), which calls back into mp2nl_main().
+extern "C" AMPLS_C_EXPORT int mp2nl_main(int, char** argv) {
+  return mp::RunBackendApp(argv, CreateMP2NLBackend);
+}
+#endif
+
 extern "C" int main2(int, char** argv, CCallbacks cb) {
   return mp::RunBackendApp(argv, CreateMP2NLBackend, cb);
 }
