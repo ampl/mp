@@ -875,7 +875,7 @@ means the construct is written in NL, not that every subsolver can solve it.
      - ``acc:nlcompl=0`` enables the formulation selected by ``cvt:compl``.
    * - Quadratic constraints
      - ``cvt:quadcon=1`` preserves quadratic expressions in NL output by default.
-     - ``cvt:quadcon=0`` requests linearization, including quadratic ranges.
+     - ``cvt:quadcon=0`` requests linearization.
 
 ``acc:compl`` is not the complementarity control for MP2NL. Setting ``cvt:compl``
 alone does not force conversion while NL complementarity is accepted. Known

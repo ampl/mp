@@ -90,8 +90,8 @@ bridge use ``mp_options`` (see :ref:`mp2nl-option-routing`). Use the same time,
 thread and numerical settings in both runs. Check the generated constraint
 counts or exported model to confirm which treatment was used. See
 :ref:`acceptance-options`; ``acc:_all=0`` is a broader experiment, changing other
-constructs too. These options do not linearize every kind of logical expression
-or request quadratic-indicator linearization.
+constructs too. The former three options linearize only linear indicators;
+other logical expressions and quadratic indicators have separate controls.
 
 Provide tight, justified variable bounds: MP sizes big-M constants from bounds
 (see :ref:`declared-bounds-bigm`). Native indicators avoid requiring a manually
@@ -102,9 +102,10 @@ matter to both treatments, so measure rather than concluding that tightening
 bounds cannot help indicators.
 
 Write a separate formulation when it adds structural knowledge that the
-option-based comparison does not: a tighter data-derived M, convex-hull
-inequalities, perspective constraints or a scheduling formulation from the
-literature. A hand-written big-M need not equal MP's bound-derived one. Check
+option-based comparison does not: a tighter data-derived M (see the
+:ref:`capacity-bound example <declared-bounds-bigm>`), convex-hull inequalities
+(see :ref:`known-formulations`), :ref:`perspective constraints <perspective>`
+or a scheduling formulation from the literature. A hand-written big-M need not equal MP's bound-derived one. Check
 mathematical equivalence, variable counts and original-model residuals before
 attributing a timing difference to indicators alone.
 
@@ -139,6 +140,8 @@ inequalities for the dwell times. It beat both the purely logical and the
 purely hand-written formulation at every size. Restate what MP states well,
 and keep what the literature has proven strongest.
 
+
+.. _known-formulations:
 
 Known formulations for common structures
 *******************************************

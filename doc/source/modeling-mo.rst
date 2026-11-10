@@ -213,7 +213,8 @@ Use the outputs according to their scope:
      - Scalar backend information; not a collection of per-pass certificates.
      - Not a substitute for multiobjective pass statistics.
    * - ``.objpass_*``
-     - Statistics for the weighted optimization pass associated with an objective.
+     - Statistics for the weighted optimization pass associated with an objective,
+       requested with ``obj:multi:stats=1``.
      - Emulation collects them; native availability depends on the driver.
 
 With option `obj:multi:stats=1`, the following suffixes are available
