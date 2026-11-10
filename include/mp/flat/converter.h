@@ -1041,6 +1041,7 @@ public:
                         });
       const auto& vcs = vm.GetVarValues()();    // vars
       std::vector<std::string> vs(vcs.begin(), vcs.end());
+      NameUnnamedVars(vs);
       BaseFlatModel::AddVarNames(vs);
       const auto& ocs = vm.GetObjValues()();    // objs
       auto& obj = BaseFlatModel::get_objectives();
@@ -1049,6 +1050,16 @@ public:
         obj[i].set_name(ocs[i]);
       ConstraintManager::CopyNamesFromValueNodes();  // cons
     }
+  }
+
+  /// Generate names for variables left unnamed by name presolve.
+  /// Shared constants (MakeFixedVar()) belong to no item, so no name
+  /// reaches them; some solvers reject empty names (HiGHS fails the
+  /// solve). Same scheme as ItemNamer, e.g., for tech:writegraph.
+  static void NameUnnamedVars(std::vector<std::string>& names) {
+    for (size_t i = 0; i < names.size(); ++i)
+      if (names[i].empty())
+        names[i] = "_svar" + std::to_string(i + 1) + '_';
   }
 
   template <class Con>
