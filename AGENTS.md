@@ -24,6 +24,8 @@
 - At release-candidate preparation or release PR opening, read and apply [the release-notes skill](skills/mp-release-notes/SKILL.md). Before tagging/packaging, confirm its review covers the final diff; repeat affected checks after late changes. Aim for roughly two minutes of main-entry reading, preserving consequential caveats over a word limit.
 - Describe final shipped behavior against the preceding release. Highlight regressions only when they affected a shipped build; omit intermediate breakages fixed within the same release. Preserve published release boundaries and affected-version facts during authorized editorial consolidation.
 
+- In customer changelogs, identify references by guide and section names, understandable without clicking. Use canonical public HTTPS hyperlinks rather than repository-relative source paths or build-specific cross-reference syntax; prefer maintained usage documentation over another changelog for behavior explanations. Verify titles, anchors and feature coverage, and coordinate publication of new targets with the release notes. Repository-relative links remain appropriate in source-only developer/agent instructions.
+
 ## Changes and validation
 
 - Preserve unrelated local changes and generated artifacts. Follow existing conventions and keep changes scoped to the task.

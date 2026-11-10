@@ -42,3 +42,11 @@ intentional changes in defaults or explicit controls. Validate customer claims
 against test semantics: a test that asserts placeholder zeros does not establish
 meaningful per-objective reporting. Record a coverage map in the task/release
 record rather than adding implementation detail to the changelog.
+
+Customer changelogs are republished at different URL paths. Identify each
+reference by its public guide and section names, using canonical public HTTPS
+hyperlinks rather than repository-relative source files or Sphinx roles. Prefer
+usage documentation over another changelog for explanations. Validate titles,
+fragments and feature coverage in both repository and publication contexts;
+publish new documentation targets before or with the release notes. Preserve
+stable labels and existing public anchors when reorganizing the guide.

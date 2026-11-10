@@ -6,7 +6,8 @@ Choosing between formulations
 MP lets you state logic directly (``==>``, ``or``, ``atmost``, ``count``,
 set membership, ``if-then``), and every such model also has hand-written
 alternatives: binaries with big-M constraints, or a reformulation from the
-literature. All of them are exact. They can differ by orders of magnitude in
+literature. Compare alternatives that preserve the intended model, accounting
+for valid bounds, tolerances and any approximations. They can differ greatly in
 solving time, and **which one is faster is often not predictable from the
 model text**. This section collects rules that held up in measurement on
 scheduling, energy, network design and disjunctive test problems, and cheap
@@ -24,8 +25,8 @@ integer optimum.
 Compare root bounds before benchmarking
 *******************************************
 
-Solving the continuous relaxation of each formulation takes seconds and shows
-whether a reformulation strengthens anything at all. With logical
+Solving the continuous relaxation can be a cheaper first comparison and shows
+whether a reformulation improves the relaxation bound. With logical
 constraints in the model, two details matter:
 
 - Use the solver option *alg:relax* (``relax=1``). It relaxes integrality of
@@ -58,9 +59,13 @@ constraints in the model, two details matter:
          ampl: solve;
          HiGHS 1.15.1: optimal solution; objective 711143.2092
 
-A tightening that does not move the root bound is rarely worth a benchmark.
-The converse does not hold: equal root bounds do not predict equal speed
-(see :ref:`tighter-not-faster`).
+Use root bounds to understand a formulation, not to predict its solve time.
+Equal root bounds can accompany very different search behavior
+(see :ref:`tighter-not-faster`). Follow the relaxation check with fixed-budget
+solves on matching data and seeds. Compare feasible objectives, remaining gaps,
+time to solutions where available, and limits/failures as well as solved-case
+times. Keep threads, limits, tolerances and memory controls fixed, and check
+returned points against the original model.
 
 
 .. _indicator-vs-bigm:
@@ -68,31 +73,40 @@ The converse does not hold: equal root bounds do not predict equal speed
 Indicator constraints or big-M
 *********************************
 
-MP passes an implication ``b = 1 ==> constraint`` to solvers with native
-indicator support as an indicator constraint, and linearizes it with a
-big-M constant for the others (see :ref:`tight_bounds`; the constant is sized
-from declared bounds, see :ref:`declared-bounds-bigm`). It is tempting to
-replace every hand-written big-M pair by an indicator, since an indicator
-needs no constant. That is a real risk when the constant is *honest*, i.e.
-derivable from the data:
+Start by expressing the implication directly in AMPL, for example
+``b = 1 ==> constraint``. MP passes it to a solver's native indicator handler
+where supported and selected, or reformulates it otherwise. This keeps one
+semantic model while allowing a controlled comparison of treatments.
 
-- A big-M row with a good constant contributes LP relaxation strength. A
-  native indicator is enforced by branching and may contribute none
-  (Bonami, Lodi, Tramontani & Wiese 2015).
-- Measured on an electricity market clearing model whose constant was the
-  width of the regulated price band: the indicator formulation was 2.5 times
-  slower on the small instance and hit the time limit on the medium one,
-  where big-M proved optimality. Tightening the declared bounds halved the
-  big-M formulation's time and changed the indicator formulation's time by
-  exactly 0%.
-- So, when an indicator formulation is slow, tightening variable bounds is
-  not the remedy. Look for a provably tighter constant, or go back to big-M.
+Solve first with the driver's defaults. Then solve the same model and data
+with the following MP options to request linearization of linear indicators:
 
-This is not "indicators lose". Equality implications (``b ==> x = c``) and
-implications whose big-M would be numerically dangerous often do better as
-indicators. **Write both and measure.** Also count the variables after a
-conversion: if making implications checkable forced new disaggregated
-variables into the model, it has become a different formulation.
+.. code-block:: text
+
+    acc:indeq=0 acc:indle=0 acc:indge=0
+
+Place these controls in the MP driver's option string; with an embedded MP2NL
+bridge use ``mp_options`` (see :ref:`mp2nl-option-routing`). Use the same time,
+thread and numerical settings in both runs. Check the generated constraint
+counts or exported model to confirm which treatment was used. See
+:ref:`acceptance-options`; ``acc:_all=0`` is a broader experiment, changing other
+constructs too. These options do not linearize every kind of logical expression
+or request quadratic-indicator linearization.
+
+Provide tight, justified variable bounds: MP sizes big-M constants from bounds
+(see :ref:`declared-bounds-bigm`). Native indicators avoid requiring a manually
+chosen M, but they are not universally faster. A valid tight big-M formulation
+can strengthen the relaxation (Bonami, Lodi, Tramontani & Wiese 2015); native
+handling and solver presolve can lead to different search behavior. Bounds can
+matter to both treatments, so measure rather than concluding that tightening
+bounds cannot help indicators.
+
+Write a separate formulation when it adds structural knowledge that the
+option-based comparison does not: a tighter data-derived M, convex-hull
+inequalities, perspective constraints or a scheduling formulation from the
+literature. A hand-written big-M need not equal MP's bound-derived one. Check
+mathematical equivalence, variable counts and original-model residuals before
+attributing a timing difference to indicators alone.
 
 
 Logic in implications, and facets

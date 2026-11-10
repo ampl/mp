@@ -74,7 +74,9 @@ For individual constraint types, to disable reformulations,
 declare them as natively accepted:
 e.g., ``acc:alldiff=2``. Or, to apply MP reformulation,
 despite the solver natively accepting the construct,
-set the option to 0: ``acc:or=0``.
+set the option to 0: ``acc:or=0``. For a focused comparison of indicators
+and MP linearization on one model, see :ref:`indicator-vs-bigm`. Setting an
+acceptance option does not add a capability to a solver which lacks it.
 In detail, a constraint's or expression's
 individual
 acceptance option can have some or all of the following values:
@@ -802,6 +804,8 @@ such a construct may misread the model without any error message, and return
 a confident wrong status.
 
 
+.. _mp2nl-option-routing:
+
 Where the options go
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -814,7 +818,7 @@ Where the options go
   there is usually rejected by the subsolver, and the solve fails with a
   message such as *NLSolver: call "..." failed*.
 - With a driver that has the bridge built in (``mp2nl=1``), pass MP's
-  ``cvt:...`` and ``sol:chk:...`` options through the AMPL option
+  ``cvt:...``, ``acc:...`` and ``sol:chk:...`` options through the AMPL option
   ``mp_options``, not through the driver's own option string, for the same
   reason.
 - ``lim:time`` (and ``mip:gap``) are translated into the subsolver's own
@@ -850,12 +854,53 @@ So: logic needs a subsolver for integer variables (an MINLP solver);
 complementarity alone, with a smooth reformulation, can go to an NLP solver.
 
 
+.. _mp2nl-native-output:
+
+Native NL output and forced reformulation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+MP2NL's configuration must match the subsolver's capabilities. Native NL output
+means the construct is written in NL, not that every subsolver can solve it.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 28 38 34
+
+   * - Construct
+     - Native output
+     - Force MP reformulation
+   * - Complementarity
+     - ``acc:nlcompl=2`` preserves NL complementarity when supported by the
+       selected configuration/subsolver.
+     - ``acc:nlcompl=0`` enables the formulation selected by ``cvt:compl``.
+   * - Quadratic constraints
+     - ``cvt:quadcon=1`` preserves quadratic expressions in NL output by default.
+     - ``cvt:quadcon=0`` requests linearization, including quadratic ranges.
+
+``acc:compl`` is not the complementarity control for MP2NL. Setting ``cvt:compl``
+alone does not force conversion while NL complementarity is accepted. Known
+subsolver configurations set these controls as needed; inspect them rather than
+assuming that all subsolvers have the same defaults. For example, a solver which
+ignores NL complementarity needs reformulation rather than native forwarding.
+
+Quadratic expressions can be nonconvex even if they were introduced by an MP
+reformulation. An ASL MIP subsolver may need a native nonconvex setting, such as
+Gurobi's ``nonconvex=2``. Put such settings in the subsolver's option string,
+as described in :ref:`mp2nl-option-routing`. Linearization may use approximations
+or require finite bounds; consult :ref:`nonlinear-functions` before choosing it.
+
+Since release 20261029, ``cvt:quadcon=0`` is honored for NL output; earlier NL
+output ignored it. The default native complementarity/quadratic behavior is
+unchanged. Use the controls above to request a different formulation explicitly.
+
+
 .. _mp2nl-complementarity:
 
 Complementarity reformulations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-For a subsolver without native complementarity support, *cvt:compl* selects
+With ``acc:nlcompl=0`` (set by configurations without native complementarity
+support), *cvt:compl* selects
 the reformulation of :math:`a \ge 0,\ b \ge 0,\ a \perp b`:
 
 =========  ===============================================================
@@ -879,8 +924,13 @@ Subsolver configurations, files, statuses
   subsolver: which constructs MP2NL linearizes for it (``acc:...=0``) and which
   defaults it sets (e.g. *cvt:compl*). If the subsolver binary has a different
   name, choose a configuration with ``config=<name>``.
-- ``stub=<path>`` keeps the reformulated NL file as ``<path>.nl``, to inspect
-  what the subsolver received or to attach to a support request.
+- ``mp2nl -=acc:`` and ``mp2nl -=cvt:`` list the acceptance and reformulation
+  controls. ``printconfigs`` shows configuration-specific settings; option help
+  alone is not a substitute for checking the selected configuration.
+- ``nl:stub=<path>`` (alias ``stub``) keeps the translated NL file as
+  ``<path>.nl``. Inspect this file and the ``outlev=1`` model counts to check
+  which complementarity, quadratic and integer constructs reach the subsolver.
+  A request for native output does not validate the subsolver's support.
 - The status is the subsolver's (codes in :ref:`solve-result-codes`). A local
   solver's "optimal" on a nonconvex model is a local optimum; some subsolvers
   report a time-limit stop as a failure. Read ``solve_message`` and the

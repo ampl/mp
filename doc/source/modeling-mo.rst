@@ -191,8 +191,30 @@ one pass, it is not generally a bound on each original objective separately.
 Unavailability must not be interpreted as optimality.
 
 
+.. _multiobj-pass-statistics:
+
 Multi-objective solve statistics (experimental)
 ***********************************************************************************
+
+Use the outputs according to their scope:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 28 42 30
+
+   * - Output
+     - Meaning
+     - Availability
+   * - Ordinary objective ``.relmipgap``, ``.absmipgap``, ``.bestbound``
+     - Useful for a single optimized objective. In multiobjective mode,
+       entries can contain a current/final-pass scalar or padding.
+     - Do not infer multiobjective optimality from zero entries.
+   * - Ordinary problem-level gap/bound suffixes
+     - Scalar backend information; not a collection of per-pass certificates.
+     - Not a substitute for multiobjective pass statistics.
+   * - ``.objpass_*``
+     - Statistics for the weighted optimization pass associated with an objective.
+     - Emulation collects them; native availability depends on the driver.
 
 With option `obj:multi:stats=1`, the following suffixes are available
 after a multi-objective solve:
@@ -205,6 +227,11 @@ after a multi-objective solve:
   statistics of the pass of this objective, where available from the solver.
 
 Objectives blended into the same pass receive the same values.
+For example, a lower bound of 14 on ``2*f + g`` is a certificate for that
+weighted sum, not separate bounds of 14 on ``f`` and ``g``. Even a zero pass
+gap does not mean either component was independently minimized. Evaluate
+original objectives normally after solving and use ``.objpass`` to identify
+which objectives share statistics.
 
 In Gurobi native mode (`obj:multi=1`), the statistics are as described
 at `Gurobi multi-objective documentation <https://docs.gurobi.com/projects/optimizer/en/current/reference/attributes/multiobjective.html>`__.
@@ -213,7 +240,9 @@ In CPLEX native mode, they are taken from CPLEX's per-subproblem information
 is computed from the objective value and the best bound,
 NaN for continuous passes where CPLEX reports no bound).
 Other solvers with native multi-objective support
-do not provide pass statistics; use `obj:multi=2` to obtain them via emulation.
+do not provide pass statistics; use `obj:multi=2` to obtain them via emulation. Read the driver's warning and capability
+information: absent output/default zero is not a reported metric. In emulation,
+unavailable numeric statistics are NaN as described below.
 
 In all modes, the pass objective is the weighted sum of the objectives
 of that priority level, optimized in the sense of the first objective.

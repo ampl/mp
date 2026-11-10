@@ -289,6 +289,8 @@ that use relational operators, and in particular are linearized where all of the
     maximize WeightSum:
        sum {t in TRAJ} max {n in NODE} weight[t,n] * Use[n];
 
+.. _original-pl-expressions:
+
 General piecewise-linear expressions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -297,22 +299,40 @@ A piecewise-linear expression
 is defined by a list of ``n`` *breakpoints* and ``n+1``
 *slopes*. The *var* must be a reference to a single variable.
 
-We recommend setting `AMPL option <https://dev.ampl.com/ampl/reference/options.html>`_
-``pl_linearize`` to 0 for MP solvers. Then piecewise-linear expressions are represented to the solver
-in the form of expression trees. The MP-based interface transforms them to use a solver's native
-methods for piecewise-linear functions (Gurobi, CPLEX, Xpress), and linearizes them for other
-solvers (for example COPT, HiGHS, MOSEK).
+We recommend the `AMPL option <https://dev.ampl.com/ampl/reference/options.html>`_
+``option pl_linearize 0;`` for MP solvers. This passes original ``<<...>>``
+expressions to MP instead of using AMPL's currently default linearization.
+The processing route depends on both that option and the solver's capabilities:
 
-When AMPL option ``pl_linearize`` is at its default value of 1, AMPL linearizes these
-piecewise-linear expressions, and sends the linearized versions to the solver. The linearization
-is continuous where possible, in certain convex and concave cases (where the slopes are
-increasing and decreasing, respectively); but in general, the linearization includes both
-continuous and binary variables.
+.. list-table:: Original AMPL PL expressions
+   :header-rows: 1
+   :widths: 26 38 36
 
-When a piecewise-linear function is linearized (rather than being handled natively by the solver),
-numerical accuracy becomes a concern. To promote numerical stability, it is recommended that
-the argument and result variables be explicitly bounded within at most [-1e+4,+1e+4]. See more in the section
-on :ref:`numerical_accuracy`.
+   * - Input/control
+     - Treatment
+     - Bounds and numerical guidance
+   * - AMPL ``pl_linearize=1`` (current default)
+     - AMPL sends its linearized formulation, adding binaries where necessary.
+     - This bypasses MP's original-PL-expression reformulation path.
+   * - AMPL ``pl_linearize=0``; native PL accepted
+     - MP passes the PL expression to the solver's native handler.
+     - Check the driver's ``acc:pl`` setting and solver capabilities.
+   * - AMPL ``pl_linearize=0``; MP reformulates using native SOS2
+     - MP uses SOS2; unbounded argument sides are represented by rays.
+     - No artificial argument truncation is needed by default.
+   * - AMPL ``pl_linearize=0``; no native SOS2
+     - MP forms a MIP reformulation of a nonconvex PL expression.
+     - Finite argument bounds are required; ``cvt:pl:domain`` explicitly permits
+       domain restriction with a warning. Use cautiously.
+
+These routes concern original AMPL PL expressions. MP's approximations of other
+nonlinear functions are separate; see :ref:`nonlinear-pl-approx`. Do not confuse
+``cvt:pl:domain`` with the approximation-domain option ``cvt:plapprox:domain``.
+
+Use justified argument/result bounds and suitable units/scaling rather than
+restricting feasible values merely to fit a numerical range. See
+:ref:`Numerical accuracy -- Piecewise-linear functions <pl-numerical-guidance>`
+for finite-bound requirements, truncation risk and tolerances.
 
 A convex piecewise-linear cost charged only while a unit is on (a
 semicontinuous variable) has a stronger linear formulation, the

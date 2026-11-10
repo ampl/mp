@@ -99,17 +99,25 @@ instead:
 ``!=`` is safe on variables declared ``integer``.
 
 
+.. _pl-numerical-guidance:
+
 Piecewise-linear functions
 *****************************
 
 Piecewise-linear expressions can be modeled in AMPL directly, or arise from
 approximations of other functions. Solvers which support PL expressions,
 usually handle them algorithmically in a numerically stable way. Otherwise,
-if PL expressions are linearized, it is recommended to have the argument
-and result variables bounded in :math:`\pm10^4` (the tighter the better;
-for :ref:`approximated nonlinear functions <nonlinear-functions>`,
-hard bounds of up to :math:`\pm10^6` are imposed by default).
-The MIP linearization of a nonconvex PL expression via SOS2 constraints
+if PL expressions are linearized, use tight, justified bounds on their
+arguments/results and scale units to keep magnitudes moderate (roughly
+:math:`\pm10^4` can be a useful scaling target, not a restriction on valid models).
+Do not impose arbitrary bounds that change the feasible set. For
+:ref:`approximated nonlinear functions <nonlinear-functions>`, approximation
+controls may impose domain limits, by default up to :math:`\pm10^6`;
+check that those domains cover the intended model.
+For original AMPL PL expressions, MP's route is selected by the recommended
+AMPL option ``pl_linearize=0``; AMPL's default ``pl_linearize=1`` linearizes them
+before MP. See :ref:`original-pl-expressions` for the route comparison.
+The MIP reformulation of a nonconvex PL expression without native SOS2
 needs finite bounds on the argument: an unbounded argument is an error,
 unless a limit is set with the option *cvt:pl:domain* (use with caution:
 the solver's feasibility tolerance is amplified by up to this value,

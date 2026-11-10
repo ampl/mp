@@ -11,17 +11,17 @@ Summary of recent updates to the AMPL MP Library
   bounds instead of silently truncating at +-1e6; `cvt:pl:domain` explicitly
   permits truncation, with a warning (use cautiously). Native SOS2 now handles
   unbounded argument domains exactly. AMPL's default `pl_linearize=1` bypasses
-  this MP reformulation path. See [PL numerical guidance](doc/source/modeling-numerics.rst).
+  this MP reformulation path. See [MP Modeling Guide: Numerical accuracy — Piecewise-linear functions](https://mp.ampl.com/modeling-numerics.html#piecewise-linear-functions).
 - Fixed underestimated objectives from indicator linearization and unrelated
   constraints marked as IIS members in models with logical/conditional expressions.
+  Fixed `cvt:quadcon=0` for quadratic range constraints, including solvers
+  with native quadratic support.
 - Fixed **multiobjective emulation** (`obj:multi=2`, or `obj:multi=1` without
   native support) producing wrong solutions when opposite-sense objectives
   share a priority.
-- **MP2NL:** native NL complementarity and quadratic output retain their earlier
-  default behavior. `acc:nlcompl=0` requests complementarity reformulation;
-  `cvt:quadcon=0` now requests quadratic linearization, including range
-  constraints (previously ignored for NL output). See the
-  [MP2NL notes](solvers/mp2nl/CHANGES.mp2nl.md) for subsolver compatibility.
+- **MP2NL:** `cvt:quadcon=0` now requests quadratic linearization in NL output
+  (previously ignored). See [MP Modeling Guide: Tools & details — Meta-driver MP2NL](https://mp.ampl.com/modeling-tools.html#mp2nl)
+  for native output, complementarity and subsolver settings.
 
 **New modeling support**
 
@@ -33,7 +33,7 @@ Summary of recent updates to the AMPL MP Library
   `cvt:mip:intprodbits` defaults to 30; 0 restores piecewise-linear approximation.
   CP-SAT supports exact integer-variable products natively (`acc:mul`), with
   `cvt:multoutcard=1` retaining products of sums. See
-  [expression modeling](doc/source/modeling-expressions.rst).
+  [MP Modeling Guide: Expressions supported — Quadratic and power operators](https://mp.ampl.com/modeling-expressions.html#quadratic-and-power-operators).
 
 **Options and reporting**
 
@@ -44,14 +44,15 @@ Summary of recent updates to the AMPL MP Library
   4 uses inferred bounds for linear models and hard bounds otherwise. MP2NL
   uses 4 in its nonlinear-subsolver configurations. `cvt:pre:auxint` defaults
   to 0, allowing continuous auxiliaries where integrality is implied; 1 keeps
-  integer auxiliaries (CP-SAT defaults to 1). See driver option help for details.
+  integer auxiliaries (CP-SAT defaults to 1). See [MP Modeling Guide: Efficiency considerations — Automatic bounds and auxiliary integrality](https://mp.ampl.com/modeling-efficiency.html#automatic-bounds-and-auxiliary-integrality)
+  and driver option help.
 - Added MIP basis recovery for linear algebraic MIPs in COPT, MOSEK, HiGHS and
   SCIP, plus independent `mip:basis:timelimit` and `mip:basis:iterlimit` controls.
 - Improved emulated multiobjective pass statistics: separate bounds from gaps
   and report stopped/unrun passes. Fixed Debug assertions when requesting
   ordinary gap/bound suffixes with several objectives; these suffixes do not
   provide independent certificates for every objective. Use `obj:multi:stats=1`
-  and the [pass-statistics documentation](doc/source/modeling-mo.rst).
+  and the [MP Modeling Guide: Multiple objectives — Multi-objective solve statistics (experimental)](https://mp.ampl.com/modeling-mo.html#multi-objective-solve-statistics-experimental).
 - Solution checking now applies `sol:chk:feastol` to recomputed conditional
   comparisons and recomputes only eliminated auxiliaries.
 - Fixed objective-conversion failures with `cvt:quadobj=0`, MOSEK dual-ray

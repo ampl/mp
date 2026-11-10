@@ -111,6 +111,54 @@ Solver performance can often be improved by tightening bounds on the variables. 
 These bounds are observed to substantially improve Gurobi's performance in this case.
 
 
+.. _automatic-bounds-and-auxiliary-integrality:
+
+Automatic bounds and auxiliary integrality
+**********************************************
+
+MP can infer bounds on variables and intermediate expression results. Supplying
+those bounds to the solver can help some formulations and hinder others; test
+the choice rather than assuming more bounds always improve performance.
+The ``cvt:pre:boundsbest`` option controls which inferred bounds are submitted:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 12 88
+
+   * - Value
+     - Submitted bounds
+   * - 0
+     - Hard bounds only (general default).
+   * - 1
+     - Best-known bounds for all variables.
+   * - 2
+     - Best-known bounds except for result variables of smooth nonlinear
+       expressions, such as products, divisions, powers, exp and log.
+   * - 3
+     - Best-known bounds only for those smooth-expression result variables.
+   * - 4
+     - Best-known bounds for a submitted model with no quadratic/nonlinear
+       objectives or constraints; hard bounds otherwise.
+
+MP2NL selects 4 in its nonlinear-subsolver configurations. Bounds that fix a
+variable are always submitted. These settings do not replace necessary valid
+model bounds; in particular, see :ref:`declared-bounds-bigm` for big-M sizing.
+Explicit bounded auxiliary variables, as above, can expose modeling knowledge;
+first check whether automatic handling already provides the needed information.
+
+The separate option ``cvt:pre:auxint`` controls submission of auxiliary result
+variables whose integrality follows from their defining constraints:
+
+- 0 (general default): submit them as continuous, while MP retains their known
+  integrality for its reformulations;
+- 1: submit them as integer; this is the default for CP-SAT, which has no
+  continuous variables.
+
+This does not relax original integer variables or auxiliaries required to be
+integer by a submitted constraint, such as indicator binaries. Inspect the
+submitted model and compare fixed-budget solves if changing this control.
+
+
 .. _declared-bounds-bigm:
 
 Declared bounds set the big-M constants

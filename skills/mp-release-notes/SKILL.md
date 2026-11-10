@@ -39,6 +39,20 @@ Do not turn placeholders, assertions or build compatibility into feature claims.
 For blended multiobjective passes, distinguish weighted pass certificates from
 individual-objective bounds and gaps.
 
+## Make references work after publication
+
+Name the public guide and section in reference text so readers can find it
+without clicking. Use canonical public HTTPS targets in changelogs, which are
+republished under different URL paths; do not link repository-relative .rst/.md
+sources or use publisher-specific cross-reference roles there. Prefer the owning
+usage guide over another changelog for behavioral explanations. Maintain stable
+section labels/anchors and preserve published anchors when reorganizing pages.
+Check the target title, fragment and actual feature coverage, not just HTTP
+success. Check both repository rendering and the published changelog context.
+New or revised guide content must be published before or together with its release
+notes; a working URL with outdated instructions does not satisfy this check.
+Keep repository-relative links for source-only workflow/developer references.
+
 ## Check coverage and hand off
 
 Keep a concise map of customer-visible changes to the final bullets or their

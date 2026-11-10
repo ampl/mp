@@ -2,7 +2,8 @@ MP2NL driver for AMPL
 ====================
 
 MP2NL is a metadriver to run existing NL solvers through
-the MP library. See documentation at https://mp.ampl.com/.
+the MP library. See the MP Modeling Guide, Tools & details > Meta-driver MP2NL:
+https://mp.ampl.com/modeling-tools.html#mp2nl
 
 Normally MP2NL is invoked by AMPL's solve command, which gives the
 invocation
