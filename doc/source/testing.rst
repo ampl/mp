@@ -110,9 +110,6 @@ following items, where non-compulsory items are italicized:
 * *"options": { "ANYSOLVER_options": "iisfind=1", "baron_options": "iisfind=12", "send_statuses": "0" }*.
   Option key ending with ``ANYSOLVER_options`` is for any solver, except when
   a solver-specific key is present (like ``baron_options``).
-  Other keys starting with ``ANYSOLVER_`` set the solver's AMPL option
-  of that suffix, e.g., ``"ANYSOLVER_auxfiles": "rc"`` sets
-  ``highs_auxfiles`` for HiGHS (pass variable and constraint names).
   Moreover, ``mp_options`` applies to all MP drivers.
   ASL drivers skip cases with ``mp_options`` or with MP (namespaced)
   options such as ``cvt:bigm=1e5`` in their options; an ASL driver built

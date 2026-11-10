@@ -1082,13 +1082,13 @@
     }
   },
   {
-    "name" : "names_const_01 auxfiles=rc",
+    "name" : "names_const_01 highs_auxfiles=rc",
     "files" : ["names_const_01.mod"],
     "tags" : ["logical", "linear", "continuous"],
     "options": {
-      "ANYSOLVER_auxfiles": "rc"
+      "highs_auxfiles": "rc"
     },
-    "comment": "Shared constant variables need names when names are passed: HiGHS rejected empty names",
+    "comment": "Shared constant variables need names when names are passed (solve reads <solver>_auxfiles, not auxfiles): HiGHS rejected empty names",
     "objective": 6,
     "values": {
       "solve_result_num": 0
