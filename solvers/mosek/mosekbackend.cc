@@ -1620,7 +1620,9 @@ void MosekBackend::AddMIPStart(
     // Use integer part of given solution to construct initial solution by solving for continuous part.
     MOSEK_CCALL(MSK_putintparam(lp(), MSK_IPAR_MIO_CONSTRUCT_SOL, MSK_ON));
   }
-  MOSEK_CCALL(MSK_putxx(lp(), MSK_SOL_ITG, (MSKrealt *)x0.data()));
+  // Put the start solution in the appropriate solution type for current problem
+  MOSEK_CCALL(MSK_putxx(lp(), GetSolutionTypeForStart(),
+                        (MSKrealt *)x0.data()));
 }
 
 ArrayRef<double> MosekBackend::Ray()
