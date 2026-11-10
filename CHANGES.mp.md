@@ -1,6 +1,13 @@
 Summary of recent updates to the AMPL MP Library
 ================================================
 
+## Unreleased
+
+- Fixed a regression in 20261029: with variable names passed to the solver
+  (for example `option highs_auxfiles rc;`), HiGHS failed some logical
+  models with "Error -1 for call ... Highs_passColName". Columns that MP
+  adds for constant values now get generated names (`_svar<n>_`).
+
 ## 20261029
 
 **Compatibility and correctness**

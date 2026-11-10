@@ -1080,5 +1080,18 @@
     "values": {
       "solve_result_num": 0
     }
+  },
+  {
+    "name" : "names_const_01 auxfiles=rc",
+    "files" : ["names_const_01.mod"],
+    "tags" : ["logical", "linear", "continuous"],
+    "options": {
+      "ANYSOLVER_auxfiles": "rc"
+    },
+    "comment": "Shared constant variables need names when names are passed: HiGHS rejected empty names",
+    "objective": 6,
+    "values": {
+      "solve_result_num": 0
+    }
   }
 ]
