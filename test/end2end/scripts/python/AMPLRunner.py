@@ -390,6 +390,9 @@ class AMPLRunner(object):
                     if val_before is not None:       # E.g., if the tests are run with mp_options='cvt:prod=0',
                         val += ' '                   # we append the new value.
                         val += val_before            # Can be useful for MP2NL.
+                elif name.startswith("ANYSOLVER_"):   # Other any-solver option,
+                    name = (slvname[:-len("options")]  # e.g., ANYSOLVER_auxfiles
+                            + name[len("ANYSOLVER_"):])  # -> highs_auxfiles
                 if slvname==name:
                     slvval = slvval + ' ' + val                   # Prepend 'default' options like nthreads
                 else:
