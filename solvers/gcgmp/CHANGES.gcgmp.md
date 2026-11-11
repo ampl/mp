@@ -2,6 +2,13 @@ Summary of recent updates to GCG for AMPL
 =========================================
 
 
+## Unreleased
+- Builds of GCG without OpenMP (e.g., on Windows) no longer stop
+  at startup with "Unknown GCG/SCIP parameter
+  'pricing/masterpricer/nthreads'"; *tech:threads* is available
+  only where GCG supports parallel pricing.
+
+
 ## 20261029
 - 64-bit SCIP parameters (e.g., *lim:nodes*, *lim:stallnodes*)
   accept values above 2^31.
