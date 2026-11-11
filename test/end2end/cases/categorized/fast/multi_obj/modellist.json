@@ -713,5 +713,20 @@
     "tags" : ["integer", "logical", "multiobj"],
     "options": { "ANYSOLVER_options": "multiobj=2 multiobjstats=1", "solution_round": "6" },
     "values": { "solve_result": "infeasible" }
+  },
+  {
+    "name" : "obj_objno_01_qp objno=2",
+    "tags" : ["quadratic", "continuous"],
+    "files" : ["obj_objno_01_qp.mod"],
+    "options": { "ANYSOLVER_options": "objno=2" },
+    "values": { "f2": 1 }
+  },
+  {
+    "name" : "obj_objno_02_nl objno=2",
+    "tags" : ["nonlinear", "continuous"],
+    "files" : ["obj_objno_02_nl.mod"],
+    "options": { "ANYSOLVER_options": "objno=2" },
+    "comment": "f2 is 1.049 at the minimizer of f1; tolerance for piecewise-linear approximations",
+    "values": { "if abs(f2-1)<=0.01 then 1 else 0": 1 }
   }
 ]
