@@ -42,10 +42,14 @@ endfunction ()
 # ADDITIONAL_DEPS is a list of targets that the solver depends on, this 
 # ensures that the binaries are built in the correct order, useful when
 # renaming a driver after it is built 
+#
+# SOURCE_DIR names the solver directory with the sources (default: <name>),
+# so that one driver's sources can be built as a further target <name>,
+# for example the same driver linked with a different solver library.
 function(add_ampl_solver name)
   cmake_parse_arguments(add_ampl_solver
     "DLL_RUNTIME;EXTERNAL;SHARED_LIB;OLD_SHARED_LIB;OVERRIDELIBS"
-    "MODULE;EXENAME;VERSION"
+    "MODULE;EXENAME;VERSION;SOURCE_DIR"
     "ADDITIONAL_SOURCES;INCLUDE_DIRS;LIBRARIES;DEFINITIONS;ADDITIONAL_DEPS"
     ${ARGN})
   get_property(MP_BASE_DIR GLOBAL PROPERTY MP_BASE_DIR)
@@ -118,13 +122,14 @@ function(add_ampl_solver name)
   if (add_ampl_solver_DLL_RUNTIME AND MSVC)
     set(use_dll_runtime True)
   endif ()
-  if (EXISTS ${MP_BASE_DIR}/solvers/${name})
+  get_var(srcname add_ampl_solver_SOURCE_DIR ${name})
+  if (EXISTS ${MP_BASE_DIR}/solvers/${srcname})
     # Add directory name to sources.
     set(sources )
     foreach (src ${source_names})
-      set(sources ${sources} ${MP_BASE_DIR}/solvers/${name}/${src})
+      set(sources ${sources} ${MP_BASE_DIR}/solvers/${srcname}/${src})
     endforeach ()
-    set(dir  ${MP_BASE_DIR}/solvers/${name}/)
+    set(dir  ${MP_BASE_DIR}/solvers/${srcname}/)
   else ()
     set(sources ${source_names})
     set(dir )
@@ -159,10 +164,10 @@ function(add_ampl_solver name)
     # if we want the drivers linked with the shared library, we need to add main.cc to the shared library,
     # as it will be consumed from the driver
     if(${MP_LINK_WITH_SHARED_LIB})
-        add_library(${shared_lib} SHARED ${MP_BASE_DIR}/solvers/${name}/${name}-lib.c ${dir}main.cc)
+        add_library(${shared_lib} SHARED ${MP_BASE_DIR}/solvers/${srcname}/${srcname}-lib.c ${dir}main.cc)
         target_compile_definitions(${shared_lib} PUBLIC MP_LINK_WITH_SHARED_LIB)
     else()
-        add_library(${shared_lib} SHARED ${MP_BASE_DIR}/solvers/${name}/${name}-lib.c ${dir}main.cc)
+        add_library(${shared_lib} SHARED ${MP_BASE_DIR}/solvers/${srcname}/${srcname}-lib.c ${dir}main.cc)
     endif()
     target_compile_definitions(${shared_lib} PRIVATE MP_SOLVER=${name} MP_SOLVER_LIBRARY)
     target_link_libraries(${shared_lib} PRIVATE ${static_lib})
