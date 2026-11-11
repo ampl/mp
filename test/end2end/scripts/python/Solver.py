@@ -952,6 +952,55 @@ class SnoptSolver(AMPLSolver):
                 print("No solution, string: {}".format(n))
                 self._stats["objective"] = None
 
+class MinosSolver(SnoptSolver):
+    """MINOS ASL driver (local NLP solver, no integer variables, no time limit option)."""
+
+    def _setTimeLimit(self, seconds):
+        return ""                       # rely on the runner's --timeout
+
+    def _getAMPLOptionsName(self):
+        return "minos"
+
+    def _doParseSolution(self, st, stdout=None):
+        if not st:
+            return super()._doParseSolution(st, stdout)
+        # The objective is on the second line: "N iterations, objective V"
+        super()._doParseSolution([" ".join(l.strip() for l in st)], stdout)
+
+
+class PathSolver(AMPLSolver):
+    """PATH ASL driver: complementarity problems, no objective."""
+
+    def _setLPMethod(self, method : str):
+        return ""
+
+    def _setTimeLimit(self, seconds):
+        return ""                       # rely on the runner's --timeout
+
+    def _setNThreads(self, threads):
+        return ""
+
+    def _getAMPLOptionsName(self):
+        return "path"
+
+    def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
+        stags = {ModelTags.continuous,
+                 ModelTags.linear,
+                 ModelTags.quadratic,
+                 ModelTags.quadraticnonconvex,
+                 ModelTags.nonlinear, ModelTags.log, ModelTags.trigonometric,
+                 ModelTags.complementarity}
+        super().__init__(exeName, timeout, nthreads, otherOptions, stags)
+
+    def _doParseSolution(self, st, stdout=None):
+        if not st:
+            self._stats["outmsg"] = "Solution file empty"
+            self._stats["timelimit"] = False
+            return None
+        self._stats["outmsg"] = st[0]
+        self._stats["timelimit"] = "limit" in st[0]
+
+
 class OcteractSolver(AMPLSolver):
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
         stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,

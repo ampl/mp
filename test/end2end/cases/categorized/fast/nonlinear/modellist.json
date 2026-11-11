@@ -814,5 +814,42 @@
     "tags" : ["continuous", "nonlinear"],
     "comment": "pow'(0, 0.6) at the starting point; global optimum",
     "objective": 1.1
+  },
+  {
+    "name" : "evalerr_03_objsqrt_lincons",
+    "tags" : ["continuous", "nonlinear"],
+    "comment": "sqrt'(0) in the objective at the start; constraint Jacobian (1 nonlinear, 4 linear rows) is defined there",
+    "objective": 1.98412290133
+  },
+  {
+    "name" : "pow_08_frac_obj_con",
+    "tags" : ["continuous", "nonlinear"],
+    "comment": "x^c, non-integer constant c, in objective and active constraint (values, gradients, Hessians)",
+    "objective": -8.749131162
+  },
+  {
+    "name" : "asinh_02_neg_arg",
+    "tags" : ["continuous", "nonlinear"],
+    "comment": "asinh of a negative argument at the optimum",
+    "objective": -3.41521869402,
+    "values": {
+      "if abs(y-asinh(x))<=1e-5 then 1 else 0": 1,
+      "if abs(x+1.74562)<=1e-3 then 1 else 0": 1
+    }
+  },
+  {
+    "name" : "ifthen_nl_01_const_then",
+    "tags" : ["continuous", "nonlinear"],
+    "comment": "if-then-else with a constant 'then' branch taken at the optimum, summed with other nonlinear terms",
+    "objective": 1.0,
+    "values": {
+      "if abs(x-2)<=1e-3 and abs(y-3)<=1e-3 then 1 else 0": 1
+    }
+  },
+  {
+    "name" : "defvar_nl_02_linear_alias",
+    "tags" : ["continuous", "nonlinear"],
+    "comment": "defined variables aliasing variables, used in a nonlinear defined variable with several product terms",
+    "objective": 2.31988251575
   }
 ]
