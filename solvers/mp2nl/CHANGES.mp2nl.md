@@ -2,6 +2,12 @@ Summary of recent updates to MP2NL for AMPL
 ==========================================
 
 
+## unreleased
+- Windows: a temporary directory with a long path (close to or beyond
+  the 248-character limit for directories) is now supported. When the
+  temporary directory cannot be used, MP2NL stops with an error message
+  instead of terminating abnormally.
+
 ## 20261029
 - Version 0.2.
 - Native NL complementarity remains the default (*acc:nlcompl=2*),

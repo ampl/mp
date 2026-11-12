@@ -30,6 +30,10 @@
 
 #if defined(_WIN32) || defined(_WIN64)
   #include <io.h>     // _mktemp[_s]
+  #ifndef NOMINMAX
+    #define NOMINMAX
+  #endif
+  #include <windows.h> // GetShortPathNameW
 #elif __APPLE__
   #include <unistd.h> // mkdtemp
 #else
@@ -537,12 +541,96 @@ NLSolver::NLSolver(mp::NLUtils* put)
 
 NLSolver::~NLSolver() { DestroyAutoStub(); }
 
+#if defined(_WIN32) || defined(_WIN64)
+namespace {
+
+/// Extended-length prefixes: with them Windows accepts paths
+/// beyond MAX_PATH without any system or manifest setting.
+const std::wstring kExtPrefix = L"\\\\?\\";
+const std::wstring kExtPrefixUNC = L"\\\\?\\UNC\\";
+
+/// Room needed below the temporary directory: our subdirectory,
+/// the file stub and an extension (".sol", ".nl", ...).
+const std::size_t kStubRoom = 48;
+
+/// Longest directory path Windows creates in the ordinary form
+/// (MAX_PATH less an 8.3 file name).
+const std::size_t kMaxPlainDir = 247;
+
+bool FitsPlainForm(const std::filesystem::path& dir)
+{ return dir.native().size() + kStubRoom <= kMaxPlainDir; }
+
+/// Absolute path \a dir in extended-length form
+/// (needs backslashes and no "." / ".." components).
+std::filesystem::path ExtendedLengthForm(
+    const std::filesystem::path& dir) {
+  const auto& w = dir.native();
+  if (0 == w.compare(0, kExtPrefix.size(), kExtPrefix))
+    return dir;
+  if (0 == w.compare(0, 2, L"\\\\"))        // \\server\share
+    return kExtPrefixUNC + w.substr(2);
+  return kExtPrefix + w;
+}
+
+/// The 8.3 form of \a dir, or an empty path when the volume
+/// keeps no short names (or on failure).
+std::filesystem::path ShortForm(const std::filesystem::path& dir) {
+  auto ext = ExtendedLengthForm(dir).native();
+  std::wstring buf(ext.size() + 1, L'\0');
+  auto n = GetShortPathNameW(
+        ext.c_str(), &buf[0], (DWORD)buf.size());
+  if (!n || n >= buf.size())
+    return {};
+  buf.resize(n);
+  if (0 == buf.compare(0, kExtPrefixUNC.size(), kExtPrefixUNC))
+    return L"\\\\" + buf.substr(kExtPrefixUNC.size());
+  if (0 == buf.compare(0, kExtPrefix.size(), kExtPrefix))
+    return buf.substr(kExtPrefix.size());
+  return buf;
+}
+
+/// A form of the temporary directory \a dir under which our files,
+/// and the solver reading them, stay within the Windows path limits:
+/// \a dir itself, unchanged, when short enough; else its 8.3 form
+/// (accepted by any program), else the extended-length form.
+/// Windows applies its limits to the fully qualified path, so the
+/// length is measured on the absolute form even when \a dir is
+/// relative; the two long-path forms are absolute.
+std::filesystem::path UsableTempDir(
+    const std::filesystem::path& dir, std::error_code& ec) {
+  auto abs = std::filesystem::absolute(dir, ec);
+  if (ec)
+    return dir;
+  abs = abs.lexically_normal().make_preferred();
+  if (FitsPlainForm(abs))
+    return dir;
+  auto shrt = ShortForm(abs);
+  if (!shrt.empty() && FitsPlainForm(shrt))
+    return shrt;
+  return ExtendedLengthForm(abs);
+}
+
+}  // namespace
+#endif  // _WIN32
+
 void NLSolver::InitAutoStub() {
   // init file stub
   std::random_device dev;
   std::mt19937 prng(dev());
   std::uniform_int_distribution<unsigned long> rand(0);
-  auto path = std::filesystem::temp_directory_path();
+  // Error-code overloads below: a missing or too long temporary
+  // directory must end with a message, not an uncaught exception.
+  std::error_code ec;
+  auto path = std::filesystem::temp_directory_path(ec);
+  if (ec)
+    Utils().myexit("Could not find the temp directory: "
+                   + ec.message());
+#if defined(_WIN32) || defined(_WIN64)
+  path = UsableTempDir(path, ec);
+  if (ec)
+    Utils().myexit("Could not resolve the temp directory '"
+                   + path.string() + "': " + ec.message());
+#endif
   path /= "nlw2_"; // via '/'
   char rnds[64] = "rndhex";
   std::snprintf(rnds, sizeof(rnds)-1, "%lX", rand(prng));
@@ -552,11 +640,11 @@ void NLSolver::InitAutoStub() {
   pathstr_ = path.string();
 
 #if defined(_WIN32) || defined(_WIN64)
-  auto p1 = _mktemp((char*)pathstr_.c_str());
-  assert(p1);
-  if (!std::filesystem::create_directory(pathstr_))
-    Utils().myexit("Could not create temp dir '"
-                   + pathstr_ + "'");
+  if (!_mktemp((char*)pathstr_.c_str())
+      || !std::filesystem::create_directory(pathstr_, ec) || ec)
+    Utils().myexit("Could not create temp dir '" + pathstr_ + "'"
+                   + (ec ? ": " + ec.message() : std::string())
+                   + "\n(check the TMP/TEMP directory)");
 #else
   if (!mkdtemp((char*)pathstr_.c_str()))
     Utils().myexit("Could not create a temp dir\n"
