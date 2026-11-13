@@ -140,7 +140,7 @@
     "name": "infeas_lcon_05 .funcpieces IN",
     "tags": [ "logical", "nonlinear", "funcpieces" ],
     "options": {
-      "mp_options": "debug=1"
+      "mp_options": "debug=1 acc:_expr=0"
     },
     "values": {
       "Initial.test_funcpieces_presolved": 7
@@ -161,7 +161,7 @@
     "name": "infeas_lcon_06 .funcpieces IN",
     "tags": [ "logical", "nonlinear", "funcpieces" ],
     "options": {
-      "mp_options": "debug=1"
+      "mp_options": "debug=1 acc:_expr=0"
     },
     "values": {
       "Initial.test_funcpieces_presolved": -2
@@ -171,7 +171,7 @@
     "name": "infeas_lcon_07 .funcpieces IN",
     "tags": [ "logical", "nonlinear", "funcpieces" ],
     "options": {
-      "mp_options": "debug=1"
+      "mp_options": "debug=1 acc:_expr=0"
     },
     "values": {
       "Initial.test_funcpieces_presolved": 9
@@ -242,5 +242,23 @@
       "scip"
     ],
     "comment": "Requires native indicators with free variables and IIS reporting; the first indicator is irrelevant."
+  },
+  {
+    "name": "infeas_nl_01 .iis OUT nonlinear",
+    "tags": [ "nonlinear", "iis" ],
+    "options": {
+      "ANYSOLVER_options": "iis=1"
+    },
+    "values": {
+      "solve_result": "infeasible",
+      "N1.iis": "mem",
+      "A1.iis": "non",
+      "L1.iis": "non",
+      "N2.iis": "non"
+    },
+    "solvers": [
+      "gurobi"
+    ],
+    "comment": "Gurobi 14 keeps nonlinear constraints in their own list (IISNLConstr)."
   }
 ]

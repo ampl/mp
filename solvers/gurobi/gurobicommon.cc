@@ -18,6 +18,14 @@ int GurobiCommon::NumGenCons() const {
   return GrbGetIntAttr(GRB_INT_ATTR_NUMGENCONSTRS);
 }
 
+int GurobiCommon::NumNLCons() const {
+#ifdef GRB_INT_ATTR_NUMNLCONSTRS
+  return GrbGetIntAttr(GRB_INT_ATTR_NUMNLCONSTRS);
+#else
+  return 0;
+#endif
+}
+
 int GurobiCommon::NumVars() const {
   return GrbGetIntAttr(GRB_INT_ATTR_NUMVARS);
 }

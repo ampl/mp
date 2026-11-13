@@ -239,7 +239,8 @@
   {
     "name": "funcpieces_01_lcon funcpiecesuf=1",
     "tags": [ "nonlinear", "funcpieces" ],
-    "options": { "mp_options": "debug=1 funcpiecesuf=1" },
+    "options": { "mp_options": "debug=1 funcpiecesuf=1 acc:_expr=0" },
+    "comment": "acc:_expr=0: Gurobi 14 accepts .funcpieces only on function constraints",
     "values": {
       "Initial.test_funcpieces_presolved": 38
     }
@@ -247,7 +248,7 @@
   {
     "name": "funcpieces_02 sin log max abs",
     "tags": [ "nonlinear", "funcpieces" ],
-    "options": { "mp_options": "debug=1" },
+    "options": { "mp_options": "debug=1 acc:_expr=0" },
     "objective": -2.32,
     "values": {
       "Initial.test_funcpieces_presolved": 50

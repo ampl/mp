@@ -185,9 +185,15 @@ public:
   /// Whether accepts NLObjective
 #if (GRB_VERSION_MAJOR==13 && GRB_VERSION_MINOR>=9) || GRB_VERSION_MAJOR>=14
 #define __GRB_NL_OBJCON__
+  /// Constraints added by GRBaddnlconstr() form their own list
+  /// in Gurobi (attributes NumNLConstrs, IISNLConstr, ...),
+  /// separate from the general constraints.
+  #define GRB_NLCON_GROUP CG_Nonlinear
   static int AcceptsNLObj() { return 1; }
   void SetNLObjective(int, const NLObjective&);
 #else
+  /// GRBaddgenconstrNL(): a general constraint
+  #define GRB_NLCON_GROUP CG_General
   static int AcceptsNLObj() { return 0; }
 #endif  // GRBsetnlobj
 
@@ -207,7 +213,7 @@ public:
   Expr GetZeroExpression() { return MakeEmptyExpr(); }
 
 #ifdef __GRB_NL_OBJCON__
-  ACCEPT_CONSTRAINT(NLConstraint, Recommended, CG_Algebraic)
+  ACCEPT_CONSTRAINT(NLConstraint, Recommended, GRB_NLCON_GROUP)
   void AddConstraint(const NLConstraint& nl);
 #else
   /// Gurobi 12 has no classical NL range constraint
@@ -217,17 +223,17 @@ public:
   /// NLAssignEQ: algebraic expression expicifier.
   /// Meaning: var == expr.
   /// @note Accessors: GetName(), GetExpression(nle), GetVariable(nle).
-  ACCEPT_CONSTRAINT(NLAssignEQ, Recommended, CG_General)
+  ACCEPT_CONSTRAINT(NLAssignEQ, Recommended, GRB_NLCON_GROUP)
   void AddConstraint(const NLAssignEQ& nle);
   /// NLAssignLE: algebraic expression expicifier in positive context.
   /// Meaning: var <= expr.
   /// @note Accessors: GetName(), GetExpression(nle), GetVariable(nle).
-  ACCEPT_CONSTRAINT(NLAssignLE, Recommended, CG_General)
+  ACCEPT_CONSTRAINT(NLAssignLE, Recommended, GRB_NLCON_GROUP)
   void AddConstraint(const NLAssignLE& nle);
   /// NLAssignGE: algebraic expression expicifier in negative context.
   /// Meaning: var >= expr.
   /// @note Accessors: GetName(), GetExpression(nle), GetVariable(nle).
-  ACCEPT_CONSTRAINT(NLAssignGE, Recommended, CG_General)
+  ACCEPT_CONSTRAINT(NLAssignGE, Recommended, GRB_NLCON_GROUP)
   void AddConstraint(const NLAssignGE& nle);
 
   /// @brief Accept NLAffineExpr.

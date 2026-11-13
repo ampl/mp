@@ -67,6 +67,8 @@ public:
   int NumQPCons() const;
   int NumSOSCons() const;
   int NumGenCons() const;
+  /// Constraints added by GRBaddnlconstr(); 0 before Gurobi 14
+  int NumNLCons() const;
   int NumVars() const;
   int NumObjs() const;
   int ModelSense() const;

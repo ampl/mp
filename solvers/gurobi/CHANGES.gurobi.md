@@ -2,6 +2,22 @@ Summary of recent updates to Gurobi for AMPL
 ============================================
 
 
+## unreleased
+- New option *alg:pdhgearlycrossover* (Gurobi 14+) controls how
+  early PDHG starts concurrent crossover; 0 restores the Gurobi 13
+  behavior.
+- *pre:sparsify* documents value 2 (all model types).
+  Documented ranges of *pre:funcpieceerror*, *pre:funcpiecelength*
+  and *pre:funcpieces* follow the Gurobi limits.
+- With Gurobi 14, *iis:find* reports nonlinear constraints as
+  IIS members and suffix *.iisforce* applies to them, as with
+  Gurobi 13.
+- With Gurobi 14, suffixes *.funcpieces*, *.funcpieceerror*,
+  *.funcpiecelength*, *.funcpieceratio* and *.funcnonlinear* apply
+  only to function constraints; set *acc:_expr=0* to pass nonlinear
+  functions that way, as with Gurobi 13.
+
+
 ## 20261029
 - Add options requiring Gurobi 14:
   *alg:method=7* (NL barrier), *alg:concurrentmethod=4*,
