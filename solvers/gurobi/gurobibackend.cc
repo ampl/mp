@@ -698,10 +698,17 @@ pre::ValueMapInt GurobiBackend::ConsIIS() {
   std::vector<int> iis_gencon =
       GrbGetIntAttrArray(GRB_INT_ATTR_IIS_GENCONSTR, NumGenCons());
   ConvertIIS2AMPL(iis_gencon);
-  return {{{ CG_Linear, iis_lincon },
+  pre::ValueMapInt result {{{ CG_Linear, iis_lincon },
         { CG_Quadratic, iis_qc },
       { CG_SOS, iis_soscon },
       { CG_General, iis_gencon }}};
+#ifdef GRB_INT_ATTR_IIS_NLCONSTR      // Gurobi 14: separate NL constraints
+  std::vector<int> iis_nlcon =
+      GrbGetIntAttrArray(GRB_INT_ATTR_IIS_NLCONSTR, NumNLCons());
+  ConvertIIS2AMPL(iis_nlcon);
+  result(CG_Nonlinear) = std::move(iis_nlcon);
+#endif
+  return result;
 }
 
 double GurobiBackend::MIPGap() {
@@ -1027,6 +1034,12 @@ void GurobiBackend::InputGurobiIISForceParams() {
         Swap_0_vs_minus1(iisf);
         GrbSetIntAttrArray(GRB_INT_ATTR_IIS_GENCONSTRFORCE, iisf);
       }
+#ifdef GRB_INT_ATTR_IIS_NLCONSTRFORCE
+      if (iisf = mv.GetConValues()(CG_Nonlinear), iisf.size()) {
+        Swap_0_vs_minus1(iisf);
+        GrbSetIntAttrArray(GRB_INT_ATTR_IIS_NLCONSTRFORCE, iisf);
+      }
+#endif
     }
     /// IIS(LB/UB)Force: from vars, cons, and objectives (but only passed into vars)
     auto mv0lb = ReadModelSuffixInt( {
@@ -2745,7 +2758,9 @@ void GurobiBackend::InitCustomOptions() {
                   "0/1*: whether to consider the individual .funcpiece... "
                   "suffixes in objectives and constraints, which impact "
                   "Gurobi's approximation quality of nonlinear constraints, "
-                  "beyond the corresponding global options",
+                  "beyond the corresponding global options. "
+                  "With Gurobi 14 the suffixes apply only to function "
+                  "constraints, obtained by setting acc:_expr=0",
                   storedOptions_.fFuncPieceSuf_, 0, 1);
 
 

@@ -9,6 +9,13 @@ Summary of recent updates to Gurobi for AMPL
 - *pre:sparsify* documents value 2 (all model types).
   Documented ranges of *pre:funcpieceerror*, *pre:funcpiecelength*
   and *pre:funcpieces* follow the Gurobi limits.
+- With Gurobi 14, *iis:find* reports nonlinear constraints as
+  IIS members, and suffix *.iisforce* applies to them. Previously
+  they were missing from the reported IIS.
+- With Gurobi 14, suffixes *.funcpieces*, *.funcpieceerror*,
+  *.funcpiecelength*, *.funcpieceratio* and *.funcnonlinear* apply
+  only to function constraints; set *acc:_expr=0* to pass nonlinear
+  functions that way, as with Gurobi 13.
 
 
 ## 20261029
