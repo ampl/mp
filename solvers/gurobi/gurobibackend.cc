@@ -1708,6 +1708,13 @@ static const mp::OptionValueInfo values_predual[] = {
   { "2", "Form both primal and dual and use two threads to "
     "choose heuristically between them.", 2}
 };
+static const mp::OptionValueInfo values_presparsify[] = {
+  { "-1", "Automatic choice (default)", -1},
+  { "0", "No", 0},
+  { "1", "Yes, for MIP models", 1},
+  { "2", "Yes, for all models, including LP and MIP relaxations.", 2}
+};
+
 static const mp::OptionValueInfo values_funcnonlinear[] = {
   {"-1", "Piecewise-linear approximation", -1},
   {"0", "Automatic (default)", 0},
@@ -1929,6 +1936,16 @@ void GurobiBackend::InitCustomOptions() {
 #endif
 
 
+#ifdef GRB_DBL_PAR_PDHGEARLYCROSSOVER
+  AddSolverOption("alg:pdhgearlycrossover pdhgearlycrossover",
+      "How early PDHG starts concurrent crossover (Gurobi 14+): "
+      "the first crossover thread starts once the PDHG iterate satisfies "
+      "the feasibility and convergence tolerances relaxed by a factor "
+      "of 10^value. Value 0 runs crossover only after PDHG has finished, "
+      "as in Gurobi 13 (default 2; should be in [0, 16]).",
+      GRB_DBL_PAR_PDHGEARLYCROSSOVER, 0.0, 16.0);
+#endif
+
   AddOptionSynonyms_OutOfLine("alg:infunbdinfo infunbdinfo InfUnbdInfo", "alg:rays");
 
   AddSolverOption("bar:convtol barconvtol",
@@ -1942,7 +1959,8 @@ void GurobiBackend::InitCustomOptions() {
     "(default -1 = automatic choice).", GRB_INT_PAR_BARCORRECTORS, -1, GRB_MAXINT);
 
   AddSolverOption("bar:crossover crossover",
-    "How to transform a barrier solution to a basic one:\n"
+    "How to transform an interior LP solution (from barrier, PDHG "
+    "or NL barrier) to a basic one:\n"
     "\n.. value-table::\n", GRB_INT_PAR_CROSSOVER, values_barcrossover, -1);
 
   AddSolverOption("bar:crossoverbasis crossoverbasis",
@@ -2685,14 +2703,14 @@ void GurobiBackend::InitCustomOptions() {
       "The "
       "value can be overridden by suffix .funcpieceerror of the "
       "individual constraints.",
-                  GRB_DBL_PAR_FUNCPIECEERROR, 0.0, GRB_INFINITY);
+                  GRB_DBL_PAR_FUNCPIECEERROR, 1e-6, 1e6);
 
   AddSolverOption("pre:funcpiecelength funcpiecelength",
       "Deprecated by Gurobi together with function constraints. "
       "If 'funcpieces=1', this option or suffix "
       "provide the length of each piece of the piecewise-linear "
       "approximation.",
-                  GRB_DBL_PAR_FUNCPIECELENGTH, 0.0, GRB_INFINITY);
+                  GRB_DBL_PAR_FUNCPIECELENGTH, 1e-5, 1e6);
 
   AddSolverOption("pre:funcpieceratio funcpieceratio",
       "Deprecated by Gurobi together with function constraints. "
@@ -2721,7 +2739,7 @@ void GurobiBackend::InitCustomOptions() {
       "     error bound is provided in the 'funcpieceerror' option/suffix\n"
       "| -2 - Bounds the relative error of the approximation; the "
       "     error bound is provided in the 'funcpieceerror' option/suffix.",
-                  GRB_INT_PAR_FUNCPIECES, -2, GRB_MAXINT);
+                  GRB_INT_PAR_FUNCPIECES, -2, 200000000);
 
   AddStoredOption("pre:funcpiecesuf funcpiecesuf funcpiecesuffixes",
                   "0/1*: whether to consider the individual .funcpiece... "
@@ -2808,7 +2826,7 @@ void GurobiBackend::InitCustomOptions() {
     "Whether Gurobi's presolve should use its \"sparsify reduction\", "
     "which sometimes gives significant problem-size reductions:\n"
         "\n.. value-table::\n",
-    GRB_INT_PAR_PRESPARSIFY, values_autonoyes_, -1);
+    GRB_INT_PAR_PRESPARSIFY, values_presparsify, -1);
 
 
 

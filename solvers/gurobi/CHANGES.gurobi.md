@@ -2,6 +2,15 @@ Summary of recent updates to Gurobi for AMPL
 ============================================
 
 
+## unreleased
+- New option *alg:pdhgearlycrossover* (Gurobi 14+) controls how
+  early PDHG starts concurrent crossover; 0 restores the Gurobi 13
+  behavior.
+- *pre:sparsify* documents value 2 (all model types).
+  Documented ranges of *pre:funcpieceerror*, *pre:funcpiecelength*
+  and *pre:funcpieces* follow the Gurobi limits.
+
+
 ## 20261029
 - Add options requiring Gurobi 14:
   *alg:method=7* (NL barrier), *alg:concurrentmethod=4*,
