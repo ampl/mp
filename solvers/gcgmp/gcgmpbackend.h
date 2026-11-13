@@ -155,6 +155,11 @@ private:
   template <class... Args>
   void AddGcgOption(const char* names, const char* descr,
                     const char* key, Args&&... args) {
+    // Some parameters exist only in some GCG builds, e.g.
+    // pricing/masterpricer/nthreads only with OpenMP (not with MSVC):
+    // offer no option for a parameter the linked GCG lacks.
+    if (!SCIPgetParam(getSCIP(), key))
+      return;
     RecordOptionName(key, PrimaryName(names));
     if constexpr (2 == sizeof...(Args)
                   && (std::is_same_v<std::decay_t<Args>, int> && ...)) {
