@@ -3,6 +3,12 @@ Summary of recent updates to the AMPL MP Library
 
 ## Unreleased
 
+- Fixed wrong results of the multi-objective emulator with nonlinear
+  objectives (for example `exp(x)`) when the first objective has a negative
+  `.objweight`: the pass objective's nonlinear part was relaxed in the wrong
+  direction, so a solver could report an unbounded or a wrong optimal
+  solution. Solvers that take nonlinear objectives natively were affected
+  with `cvt:nlobj=0` or when the objective was reformulated.
 - Fixed a wrong objective in models with a convex quadratic objective whose
   squared terms have a coefficient other than 1 (for example `maximize
   3*x - 0.8*x^2`) when the model also has quadratic constraints recognized
