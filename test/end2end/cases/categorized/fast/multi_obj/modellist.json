@@ -631,6 +631,33 @@
     }
   },
   {
+    "name" : "multiobj_QP_01 multiobj=1 native handling needs linear objectives",
+    "files" : ["multiobj_QP_01.mod"],
+    "tags" : ["quadratic", "continuous", "multiobj"],
+    "solvers" : ["gurobi", "cplex", "xpress", "copt"],
+    "comment" : "Solver-native multi-objective optimization takes linear objectives only: the driver stops with a message instead of dropping the quadratic objective",
+    "options": { "mp_options": "multiobj=1" },
+    "values": {
+      "if solve_result_num >= 500 and solve_result_num < 600 then 1": 1,
+      "solve_message": {
+        "contains": "all of them must be linear"
+      }
+    }
+  },
+  {
+    "name" : "multiobj_QP_02 multiobj=1 equal priorities, native handling needs linear objectives",
+    "files" : ["multiobj_QP_02.mod"],
+    "tags" : ["quadratic", "continuous", "multiobj"],
+    "solvers" : ["gurobi", "cplex", "xpress", "copt"],
+    "options": { "mp_options": "multiobj=1" },
+    "values": {
+      "if solve_result_num >= 500 and solve_result_num < 600 then 1": 1,
+      "solve_message": {
+        "contains": "all of them must be linear"
+      }
+    }
+  },
+  {
     "name" : "multiobj_NL_01 multiobj=2 negative weight, nonlinear objective",
     "files" : ["multiobj_NL_01.mod"],
     "tags" : ["nonlinear", "multiobj"],

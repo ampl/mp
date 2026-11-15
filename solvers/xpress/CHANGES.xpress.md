@@ -3,6 +3,9 @@ Summary of recent updates to Xpress for AMPL
 
 
 ## unreleased
+- Several objectives with *obj:multi=1* (native multi-objective optimization)
+  where one is quadratic: the driver now stops with a message to use
+  *obj:multi=2* (MP emulation) instead of the Optimizer's error ?1138.
 - Xpress 10.0 (Optimizer 48.01.01) and 9.9.1 (47.01.02) supported, as
   well as 9.8.
 - Xpress 10: solution pool (*sol:stub*, *sol:count*) with the built-in
@@ -25,6 +28,20 @@ Summary of recent updates to Xpress for AMPL
   failed without Xpress presolve ("?942 ... non-binary variable");
   such arguments are now passed as binary variables. Option
   *alg:logfixedbin=0* restores the previous (continuous) type.
+- Fix: duals, basis statuses (*sstatus*, in and out) and IIS membership
+  of the algebraic constraints were assigned to the wrong constraints
+  on models with indicator constraints, and also with function or
+  nonlinear constraints; a primal-dual warm start (initial primal and
+  dual values without statuses) could crash the driver on models with
+  indicator constraints. IIS membership of piecewise-linear constraints
+  is now reported.
+- Fix: after a nonlinear (local or global) solve, basis statuses were
+  reported as *low* for every variable and constraint; no basis is
+  reported now. *mip:basis* on a nonlinear MIP failed (the fixed model
+  was solved as an LP); the fixed model is now solved as a nonlinear
+  problem, by default with a local solver, which gives duals but no
+  basis. New options *mip:basis:nlpsolver* (local, global, or as in the
+  main solve) and *mip:basis:localsolver* select how.
 
 
 ## 20261029

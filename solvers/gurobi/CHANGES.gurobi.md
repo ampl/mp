@@ -2,6 +2,16 @@ Summary of recent updates to Gurobi for AMPL
 ============================================
 
 
+## unreleased
+- Several objectives with *obj:multi=1* where one is quadratic or nonlinear:
+  the message now says that natively handled objectives must all be linear
+  and suggests *obj:multi=2* (MP emulation).
+- Fix: *mip:basis* on a model with nonlinear constraints reported zero
+  duals and the same basis status for every variable and constraint;
+  Gurobi has no duals for such models, so the fixed-model solve is
+  skipped, with a message.
+
+
 ## 20261029
 - Add options requiring Gurobi 14:
   *alg:method=7* (NL barrier), *alg:concurrentmethod=4*,

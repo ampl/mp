@@ -235,5 +235,29 @@
     "options": {
       "cplex_options": "droptol=1e-6"
     }
+  },
+  {
+    "name": "ind_dual_01 duals next to indicators mip:basis=1",
+    "tags": [ "logical", "integer", "fixmodel" ],
+    "solvers": [ "gurobi", "cplex", "xpress", "gurobi_mp2nl", "cplex_mp2nl", "xpress_mp2nl" ],
+    "comment": "Native indicators and a fixed-model solve with duals: the other drivers emulate mip:basis for linear models only",
+    "options": { "mp_options": "mip:basis=1" },
+    "objective": 28,
+    "values": {
+      "Demand[1].dual": 1,
+      "Demand[2].dual": 2,
+      "Demand[3].dual": 3
+    }
+  },
+  {
+    "name": "nl_dual_01 duals of the fixed nonlinear model mip:basis=1",
+    "tags": [ "nonlinear", "integer", "fixmodel" ],
+    "solvers": [ "xpress", "xpress_mp2nl" ],
+    "comment": "Gurobi has no duals for nonlinear models, so the fixed solve is skipped there",
+    "options": { "mp_options": "mip:basis=1" },
+    "values": {
+      "c.dual": 1,
+      "l.dual": 0
+    }
   }
 ]

@@ -1292,6 +1292,26 @@ void GurobiBackend::ReportGurobiPool() {
   }
 }
 
+/// Whether the model has a nonlinear-expression general constraint
+/// (GRB_GENCONSTR_NL, Gurobi 12+): such a model is an NLP once its
+/// integers are fixed, and Gurobi has no duals for it. Function constraints
+/// (exp, log, ...) of older versions are not counted: their fixed model
+/// was a plain LP.
+bool GurobiBackend::HasNLGenCons() {
+#ifdef GRB_GENCONSTR_NL
+  int n = 0;
+  if (GRBgetintattr(model(), GRB_INT_ATTR_NUMGENCONSTRS, &n))
+    return false;
+  for (int i = 0; i < n; ++i) {
+    int type = -1;
+    if (!GRBgetintattrelement(model(), GRB_INT_ATTR_GENCONSTRTYPE, i, &type)
+        && GRB_GENCONSTR_NL == type)
+      return true;
+  }
+#endif  // GRB_GENCONSTR_NL
+  return false;
+}
+
 void GurobiBackend::ConsiderGurobiFixedModel() {
   if (!IsMIP())
     return;
@@ -1299,6 +1319,20 @@ void GurobiBackend::ConsiderGurobiFixedModel() {
     int i=0;
     if (GRBgetintparam(env(), GRB_INT_PAR_QCPDUAL, &i) || i == 0)
       return;
+  }
+  {
+    // With nonlinear constraints (attribute IsNLP, Gurobi 13.9+, or NL
+    // general constraints), the fixed model is an NLP: Gurobi has no duals
+    // nor basis for it ("Pi" is for convex continuous models), so a
+    // supplementary solve would give zeros
+    int is_nlp = 0;
+    if ((!GRBgetintattr(model(), "IsNLP", &is_nlp) && is_nlp)
+        || HasNLGenCons()) {
+      AddToSolverMessage("mip:basis: no fixed-model solve for a model "
+                         "with nonlinear constraints (Gurobi gives no "
+                         "duals for them).\n");
+      return;
+    }
   }
   if (GRBmodel* mdl = GRBfixedmodel(model()))
     model_fixed_ = mdl;

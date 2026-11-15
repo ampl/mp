@@ -242,5 +242,19 @@
       "scip"
     ],
     "comment": "Requires native indicators with free variables and IIS reporting; the first indicator is irrelevant."
+  },
+  {
+    "name": "iis_ind_rows_01 IIS of rows and an indicator",
+    "tags": [ "logical", "iis" ],
+    "solvers": [ "gurobi", "cplex", "xpress", "copt", "highs", "gurobi_mp2nl", "cplex_mp2nl", "xpress_mp2nl", "copt_mp2nl", "highs_mp2nl" ],
+    "comment": "The IIS is unique; the algebraic rows must not be shifted by the indicator row of Xpress",
+    "options": { "ANYSOLVER_options": "iis=1" },
+    "values": {
+      "solve_result": "infeasible",
+      "FixB.iis": [ "mem", "low" ],
+      "Demand.iis": [ "mem", "low" ],
+      "Ind[2].iis": "mem",
+      "Pair[1].iis": "non"
+    }
   }
 ]

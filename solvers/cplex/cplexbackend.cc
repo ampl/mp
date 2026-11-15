@@ -136,6 +136,9 @@ namespace mp {
 
 
   bool CplexBackend::IsMIP() const {
+    // The fixed model of an MIQCP is typed QCP, but the result stays a MIP's
+    if (CPXPROB_MIQCP == original_model_type_)
+      return true;
     auto type = CPXgetprobtype(env(), lp());
     return !((type == CPXPROB_LP) || (type == CPXPROB_QP)
       || (type == CPXPROB_QCP));
@@ -379,7 +382,7 @@ namespace mp {
   }
 
 ArrayRef<double> CplexBackend::PrimalSolution() {
-  if (fixed_model_failed_) return mip_result_before_fixed_.primal;
+  if (fixed_model_failed_ || fixed_qcp_) return mip_result_before_fixed_.primal;
   // if (!HasSolution())
   //   return std::vector<double>();
   int num_vars = NumVars();
@@ -412,7 +415,7 @@ ArrayRef<double> CplexBackend::DualSolution_LP() {
 }
 
 double CplexBackend::ObjectiveValue() const {
-  if (fixed_model_failed_) return mip_result_before_fixed_.objective;
+  if (fixed_model_failed_ || fixed_qcp_) return mip_result_before_fixed_.objective;
   double objval = -Infinity();
   if(hasSolution_)
     CPLEX_CALL(CPXgetobjval(env(), lp(), &objval));
@@ -512,6 +515,7 @@ void CplexBackend::RedirectOutput() {
 void CplexBackend::Solve() {
   have_mip_result_before_fixed_ = false;
   fixed_model_failed_ = false;
+  fixed_qcp_ = false;
     if (!storedOptions_.tunefileprm.empty())
         DoCPLEXTune();
 
@@ -1028,7 +1032,8 @@ void CplexBackend::ComputeIIS() {
   "contradiction", "time limit", "iteration limit", "node limit",
   "objective limit", "memory limit", "user request" };
   
-  int nGroups = NumQPCons() + NumSOSCons() + NumIndicatorCons();
+  int nGroups = NumQPCons() + NumSOSCons() + NumIndicatorCons()
+      + NumPWLCons();
   //if (nGroups > 0) // use ext routines if we have non linear constraints
   if(true)
   {
@@ -1084,6 +1089,11 @@ void CplexBackend::ComputeIIS() {
     for (int i = 0; i < NumSOSCons(); i++) {
       grpInd[j] = i;
       grpType[j++] = CPX_CON_SOS;
+    }
+    // Then all piecewise-linear constraints
+    for (int i = 0; i < NumPWLCons(); i++) {
+      grpInd[j] = i;
+      grpType[j++] = CPX_CON_PWL;
     }
     
     // Calculate information on the above defined groups
@@ -1155,6 +1165,10 @@ void CplexBackend::ComputeIIS() {
       iisRowIndices.push_back(i);
       iisRowValues.push_back(grpStat[j++]);
     }
+    for (int i = 0; i < NumPWLCons(); i++) {
+      iisRowIndices.push_back(i);
+      iisRowValues.push_back(grpStat[j++]);
+    }
   }
   else {
     CPLEX_CALL(CPXrefineconflict(env(), lp(), &nr, &nc));
@@ -1219,7 +1233,8 @@ pre::ValueMapInt CplexBackend::ConsIIS() {
       iis_lincon(NumLinCons(), (int)IISStatus::non),
       iis_qc(NumQPCons(), (int)IISStatus::non),
       iis_indcon(NumIndicatorCons(), (int)IISStatus::non),
-      iis_soscon(NumSOSCons(), (int)IISStatus::non);
+      iis_soscon(NumSOSCons(), (int)IISStatus::non),
+      iis_pwl(NumPWLCons(), (int)IISStatus::non);
 
   // Extended conflicts concatenate type-local indices. Only the linear
   // prefix indexes iis_lincon; other groups have separate index spaces.
@@ -1233,10 +1248,13 @@ pre::ValueMapInt CplexBackend::ConsIIS() {
     iis_indcon[i] = (int)IISCplexToAMPL(iisRowValues[j++]);
   for (int i = 0; iisGrouped_ && i < NumSOSCons(); i++)
     iis_soscon[i] = (int)IISCplexToAMPL(iisRowValues[j++]);
+  for (int i = 0; iisGrouped_ && i < NumPWLCons(); i++)
+    iis_pwl[i] = (int)IISCplexToAMPL(iisRowValues[j++]);
   return { {{ CG_Linear, iis_lincon },
         { CG_Quadratic, iis_qc },
       { CG_SOS, iis_soscon },
-      { CG_General, iis_indcon }} };
+      { CG_Piecewiselinear, iis_pwl },
+      { CG_Indicator, iis_indcon }} };
 }
 
 void CplexBackend::InputExtras() {
@@ -1284,6 +1302,16 @@ void CplexBackend::ConsiderCplexFixedModel() {
     return;
   }
   result.objective = ObjectiveValue();
+  if (CPXPROB_MIQCP == CPXgetprobtype(env(), lp()) &&
+      NumIndicatorCons() + NumSOSCons() + NumPWLCons() > 0) {
+    // CPLEX's continuous QCP solver ignores these constraints, the fixed
+    // model would not be the model of the MIP
+    AddToSolverMessage("Fixed MIP for mip:basis skipped: indicator, SOS "
+                       "or piecewise-linear constraints in an MIQCP.");
+    mip_result_before_fixed_ = std::move(result);
+    fixed_model_failed_ = true;
+    return;
+  }
   result.gap = MIPGap();
   result.absolute_gap = MIPGapAbs();
   result.bound = BestDualBound();
@@ -1343,7 +1371,7 @@ std::string CplexBackend::DoCplexFixedModel() {
     // fix variables manually:
     auto sol = PrimalSolution();
     std::vector<char> types(NumVars());
-    CPLEX_CALL(CPXgetctype(env(), lp(), types.data(), 0, NumVars()));
+    CPLEX_CALL(CPXgetctype(env(), lp(), types.data(), 0, NumVars() - 1)); // end inclusive
     int nint = CPXgetnumbin(env(), lp()) + CPXgetnumint(env(), lp());
     std::vector<int> indices(nint);
     std::vector<double> bound(nint);
@@ -1357,6 +1385,11 @@ std::string CplexBackend::DoCplexFixedModel() {
       }
     }
     CPLEX_CALL(CPXchgbds(env(), lp(), nint, indices.data(), type.data(), bound.data()));
+    // With the integers fixed, solve the continuous QCP: CPXlpopt is not
+    // available for MIQCP nor QCP; the barrier gives duals (no basis)
+    CPLEX_CALL(CPXchgprobtype(env(), lp(), CPXPROB_QCP));
+    Contopt = CPXbaropt;
+    fixed_qcp_ = true;   // keep reporting the MIP point and objective
   }
   else
     CPLEX_CALL(CPXchgprobtype(env(), lp(), new_model_type));
@@ -1390,6 +1423,12 @@ std::string CplexBackend::DoCplexFixedModel() {
   int optimstatus = CPXgetstat(env(), lp());
   if (optimstatus != CPX_STAT_OPTIMAL)
     return fmt::format("Fixed model status {}", optimstatus);
+  if (CPXbaropt == Contopt) {          // the fixed QCP of an MIQCP
+    int cnt = CPXgetbaritcnt(env(), lp());
+    AddToSolverMessage(fmt::format("Fixed MIP for mip:basis: {} barrier iteration{}",
+      cnt, "s"[cnt == 1.]));
+    return {};
+  }
   int cnt = CPXgetitcnt(env(), lp());
   AddToSolverMessage(fmt::format("Fixed MIP for mip:basis: {} simplex iteration{}",
     cnt, "s"[cnt == 1.]));

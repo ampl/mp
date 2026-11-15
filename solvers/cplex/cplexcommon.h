@@ -64,6 +64,7 @@ protected:
   int NumObjs() const;
   int NumQPCons() const;
   int NumIndicatorCons() const;
+  int NumPWLCons() const;
   int NumSOSCons() const;
   int ModelSense() const;
   bool HasQObj() const;

@@ -15,7 +15,9 @@ void XpressmpModelAPI::InitCustomOptions() {
 }
 
 void XpressmpModelAPI::InitProblemModificationPhase(
-    const FlatModelInfo*) {
+    const FlatModelInfo* fi) {
+  const auto oi = fi->GetObjInfo();
+  num_obj_total_ = oi[0] + oi[1] + oi[2];
 }
 
 void XpressmpModelAPI::FinishProblemModificationPhase() {
@@ -114,6 +116,12 @@ void XpressmpModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo )
 }
 
 void XpressmpModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective& qo) {
+  // Xpress's native multi-objective optimization takes linear objectives
+  // only; with a quadratic one the solve fails it refuses additional objectives next to a quadratic one.
+  if (num_obj_total_ > 1)
+    throw std::runtime_error(
+        "When several objectives are handled natively, all of them must be "
+        "linear. Use obj:multi=2 (MP emulation) or a single objective.");
   if (1 > iobj) {
     // fmt::format("Setting first quadratic objective\n");
     SetLinearObjective(iobj, qo);                         // add the linear part

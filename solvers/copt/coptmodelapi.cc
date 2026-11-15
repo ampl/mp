@@ -3,7 +3,9 @@
 namespace mp {
 
 void CoptModelAPI::InitProblemModificationPhase(const FlatModelInfo* fi) {
-  num_lin_obj_ = fi->GetObjInfo()[0];
+  const auto oi = fi->GetObjInfo();
+  num_lin_obj_ = oi[0];
+  num_obj_total_ = oi[0] + oi[1] + oi[2];
 }
 
 void CoptModelAPI::AddVariables(const VarArrayDef& v) {
@@ -50,6 +52,13 @@ void CoptModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
 
 
 void CoptModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective& qo) {
+  // COPT's native multi-objective optimization takes linear objectives
+  // only; the quadratic part of one of several objectives would be
+  // dropped silently (the solve would return the other objectives' optimum).
+  if (num_obj_total_ > 1)
+    throw std::runtime_error(
+        "When several objectives are handled natively, all of them must be "
+        "linear. Use obj:multi=2 (MP emulation) or a single objective.");
   if (1 > iobj) {
     SetLinearObjective(iobj, qo);                         // add the linear part
     const auto& qt = qo.GetQPTerms();
@@ -194,6 +203,7 @@ void CoptModelAPI::AddGenericCone(int conetype,
             default:
                 throw std::runtime_error("Unsupported cone type");
 		}
+        return;       // the shortcut cone is the whole constraint
     }
     // Otherwise use affine cones
     // General affine case.
