@@ -3,6 +3,12 @@ Summary of recent updates to the AMPL MP Library
 
 ## Unreleased
 
+- Fixed a wrong objective in models with a convex quadratic objective whose
+  squared terms have a coefficient other than 1 (for example `maximize
+  3*x - 0.8*x^2`) when the model also has quadratic constraints recognized
+  as second-order cones: the objective's cone used the coefficient instead of
+  its square root, so the objective term was off (0.8 became 0.64).
+  Observed with BARON through MP.
 - Fixed a regression in 20261029: with variable names passed to the solver
   (for example `option highs_auxfiles rc;`), HiGHS failed some logical
   models with "Error -1 for call ... Highs_passColName". Columns that MP
