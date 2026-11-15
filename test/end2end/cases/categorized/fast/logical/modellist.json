@@ -1093,5 +1093,71 @@
     "values": {
       "solve_result_num": 0
     }
+  },
+  {
+    "name" : "funcbnd_exp_01",
+    "solvers" : ["gurobi", "scip", "baronmp"],
+    "tags" : ["logical", "nonlinear", "continuous"],
+    "options": {
+      "mp_options": "acc:indle=0 acc:indge=0 acc:indeq=0 acc:condlinle=0 acc:condlinge=0 acc:condlineq=0"
+    },
+    "comment": "Result bounds from the argument bounds: the big-M of the implication needs them",
+    "objective": -0.6931471806
+  },
+  {
+    "name" : "funcbnd_expa_01",
+    "solvers" : ["gurobi", "baronmp"],
+    "tags" : ["logical", "nonlinear", "continuous"],
+    "options": {
+      "mp_options": "acc:indle=0 acc:indge=0 acc:indeq=0 acc:condlinle=0 acc:condlinge=0 acc:condlineq=0"
+    },
+    "comment": "Result bounds from the argument bounds: the big-M of the implication needs them. Not for SCIP, which approximates a^x piecewise-linearly (1%)",
+    "objective": -2.0
+  },
+  {
+    "name" : "funcbnd_log_01",
+    "solvers" : ["gurobi", "scip", "baronmp"],
+    "tags" : ["logical", "nonlinear", "continuous"],
+    "options": {
+      "mp_options": "acc:indle=0 acc:indge=0 acc:indeq=0 acc:condlinle=0 acc:condlinge=0 acc:condlineq=0"
+    },
+    "comment": "Result bounds from the argument bounds: the big-M of the implication needs them",
+    "objective": -2.7182818285
+  },
+  {
+    "name" : "funcbnd_loga_01",
+    "solvers" : ["gurobi", "scip", "baronmp"],
+    "tags" : ["logical", "nonlinear", "continuous"],
+    "options": {
+      "mp_options": "acc:indle=0 acc:indge=0 acc:indeq=0 acc:condlinle=0 acc:condlinge=0 acc:condlineq=0"
+    },
+    "comment": "Result bounds from the argument bounds: the big-M of the implication needs them",
+    "objective": -3.1622776602
+  },
+  {
+    "name" : "funcbnd_exp_01 funcbndtol=-1",
+    "files" : ["funcbnd_exp_01.mod"],
+    "solvers" : ["gurobi"],
+    "tags" : ["logical", "nonlinear", "continuous"],
+    "options": {
+      "mp_options": "acc:indle=0 acc:indge=0 acc:indeq=0 acc:condlinle=0 acc:condlinge=0 acc:condlineq=0 cvt:pre:funcbndtol=-1"
+    },
+    "comment": "Old behavior: no bounds from the argument, the big-M is refused",
+    "values": {
+      "if solve_result_num >= 500 and solve_result_num < 600 then 1": 1
+    }
+  },
+  {
+    "name" : "funcbnd_log_01 funcbndtol=-1",
+    "files" : ["funcbnd_log_01.mod"],
+    "solvers" : ["gurobi"],
+    "tags" : ["logical", "nonlinear", "continuous"],
+    "options": {
+      "mp_options": "acc:indle=0 acc:indge=0 acc:indeq=0 acc:condlinle=0 acc:condlinge=0 acc:condlineq=0 cvt:pre:funcbndtol=-1"
+    },
+    "comment": "Old behavior: no bounds from the argument, the big-M is refused",
+    "values": {
+      "if solve_result_num >= 500 and solve_result_num < 600 then 1": 1
+    }
   }
 ]

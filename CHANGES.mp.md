@@ -19,6 +19,16 @@ Summary of recent updates to the AMPL MP Library
   (for example `option highs_auxfiles rc;`), HiGHS failed some logical
   models with "Error -1 for call ... Highs_passColName". Columns that MP
   adds for constant values now get generated names (`_svar<n>_`).
+- Result bounds of `exp`, `a^x`, `log` and `log10`/`log_a` now follow
+  from the bounds of their argument (they were only `>= 0` for the
+  exponentials and unbounded for the logarithms). Logical and indicator
+  constraints that contain such a function with a bounded argument, for
+  example `b == 0 ==> exp(x) <= 2` with `x <= 5`, no longer stop with
+  "Set bounds on variables participating in logical expressions" when the
+  solver needs big-M (`acc:ind...=0`, or no native indicators). New option
+  *cvt:pre:funcbndtol* (default 1e-12) is the relative margin added to the
+  computed bounds against rounding; a negative value restores the previous
+  behavior.
 
 ## 20261029
 

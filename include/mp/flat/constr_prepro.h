@@ -955,38 +955,82 @@ public:
   }
 
   ////////////////////// NONLINEAR FUNCTIONS //////////////////////
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      ExpConstraint& , PreprocessInfo& prepro) {
-    prepro.narrow_result_bounds(0.0, MPD( Infty() ));
+  /// Result range of a monotone function f over the argument bounds
+  /// [lb, ub], widened by the relative margin cvt:pre:funcbndtol.
+  /// Infinite ends stay infinite.
+  /// @return {lb, ub}, or {-Infty, Infty} if f is undefined (NaN)
+  ///   or if the margin is negative (the old behavior, no such bounds)
+  template <class F>
+  std::pair<double, double> MonotoneRange(F f, double lb, double ub) {
+    const double tol = MPCD( FuncBoundTol() );
+    const double r0 = f(lb), r1 = f(ub);
+    if (tol < 0.0 || std::isnan(r0) || std::isnan(r1))
+      return { MPD( MinusInfty() ), MPD( Infty() ) };
+    const double rl = std::min(r0, r1), ru = std::max(r0, r1);
+    const auto widen = [tol](double r, double dir) {  // 0*inf is NaN
+      return (0.0 == tol || std::isinf(r)) ? r : r + dir * tol * std::fabs(r);
+    };
+    return { widen(rl, -1.0), widen(ru, 1.0) };
   }
 
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      ExpAConstraint& , PreprocessInfo& prepro) {
-    prepro.narrow_result_bounds(0.0, MPD( Infty() ));
+  /// Bounds of the argument; the lower bound of a logarithm's argument
+  /// is at least 0
+  std::pair<double, double> LogArgBounds(int x) {
+    return { std::max(0.0, MPD( lb(x) )), MPD( ub(x) ) };
   }
 
+  /// Bound the result of exp(x): positive, and by the argument's bounds
   template <class PreprocessInfo>
   void PreprocessConstraint(
-      LogConstraint& c, PreprocessInfo& ) {
-    auto x = c.GetArguments()[0];  // if no positive lb,
+      ExpConstraint& c, PreprocessInfo& prepro) {
+    const auto x = c.GetArguments()[0];
+    const auto r = MonotoneRange(
+        [](double v) { return std::exp(v); }, MPD( lb(x) ), MPD( ub(x) ));
+    prepro.narrow_result_bounds(std::max(0.0, r.first), r.second);
+  }
+
+  /// Bound the result of a^x, a>0: positive, and by the argument's bounds
+  template <class PreprocessInfo>
+  void PreprocessConstraint(
+      ExpAConstraint& c, PreprocessInfo& prepro) {
+    const auto x = c.GetArguments()[0];
+    const double a = c.GetParameters()[0];
+    const auto r = MonotoneRange(
+        [a](double v) { return std::pow(a, v); }, MPD( lb(x) ), MPD( ub(x) ));
+    prepro.narrow_result_bounds(std::max(0.0, r.first), r.second);
+  }
+
+  /// Narrow the argument of a logarithm to nonnegative (see
+  /// cvt:pre:boundlogarg), and bound the result by the argument's bounds
+  template <class PreprocessInfo>
+  void PreprocessConstraint(
+      LogConstraint& c, PreprocessInfo& prepro) {
+    const auto x = c.GetArguments()[0];  // if no positive lb,
     if (MPCD( IfBoundLogArg() )) {
       MPD( NarrowVarBounds(x, 0.0, MPD( Infty() )) );
     } else {
       MPD( NarrowVarBestBounds(x, 0.0, MPD( Infty() )) );
     }
+    const auto xb = LogArgBounds(x);
+    const auto r = MonotoneRange(
+        [](double v) { return std::log(v); }, xb.first, xb.second);
+    prepro.narrow_result_bounds(r.first, r.second);
   }
 
+  /// As for Log, with base a>0
   template <class PreprocessInfo>
   void PreprocessConstraint(
-      LogAConstraint& c, PreprocessInfo& ) {
+      LogAConstraint& c, PreprocessInfo& prepro) {
+    const auto x = c.GetArguments()[0];
     if (MPCD( IfBoundLogArg() ))
-      MPD( NarrowVarBounds(
-          c.GetArguments()[0], 0.0, MPD( Infty() )) );
+      MPD( NarrowVarBounds(x, 0.0, MPD( Infty() )) );
     else
-      MPD( NarrowVarBestBounds(
-          c.GetArguments()[0], 0.0, MPD( Infty() )) );
+      MPD( NarrowVarBestBounds(x, 0.0, MPD( Infty() )) );
+    const auto xb = LogArgBounds(x);
+    const double la = std::log(c.GetParameters()[0]);
+    const auto r = MonotoneRange(
+        [la](double v) { return std::log(v) / la; }, xb.first, xb.second);
+    prepro.narrow_result_bounds(r.first, r.second);
   }
 
   template <class PreprocessInfo>
