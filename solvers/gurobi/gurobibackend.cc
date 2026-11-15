@@ -702,7 +702,7 @@ pre::ValueMapInt GurobiBackend::ConsIIS() {
         { CG_Quadratic, iis_qc },
       { CG_SOS, iis_soscon },
       { CG_General, iis_gencon }}};
-#ifdef GRB_INT_ATTR_IIS_NLCONSTR      // Gurobi 14: separate NL constraints
+#ifdef MP_GRB_NLCON_LIST      // Gurobi 14: separate NL constraints
   std::vector<int> iis_nlcon =
       GrbGetIntAttrArray(GRB_INT_ATTR_IIS_NLCONSTR, NumNLCons());
   ConvertIIS2AMPL(iis_nlcon);
@@ -958,12 +958,31 @@ void GurobiBackend::InputGurobiExtras() {
   SetPartitionValues();
 }
 
+/// Suffixes .funcpiece... apply to function constraints only; nonlinear
+/// constraints (Gurobi 14) ignore them: tell the user once per suffix
+template <class Values>
+void GurobiBackend::WarnFuncSuffixOnNLCons(
+    const char* suffix, const Values& nl_cons_values) {
+#ifdef MP_GRB_NLCON_LIST
+  for (auto v: nl_cons_values) {
+    if (v != 0.0) {
+      AddWarning(std::string("FUNCPIECE_SUFFIX_NL_") + suffix,
+        fmt::format("Suffix .{} is ignored for nonlinear constraints "
+                    "(Gurobi 14); use acc:_expr=0 to pass them as "
+                    "function constraints.", suffix));
+      return;
+    }
+  }
+#endif
+}
+
 void GurobiBackend::InputGurobiFuncApproxParams() {
   if (funcpiecesuf()) {
     auto suf_mask = // not from variables but can from obj,
         suf::Kind::CON_BIT | suf::Kind::OBJ_BIT; // see funcpieces_01_01_obj.mod
     if (auto mv0 = ReadModelSuffixInt( {"funcpieces", suf_mask } )) {
       auto mv = GetValuePresolver().PresolveGenericInt( mv0 );
+      WarnFuncSuffixOnNLCons("funcpieces", mv.GetConValues()(CG_Nonlinear));
       const auto& fp_gen = mv.GetConValues()(CG_General);
       auto i1 = GurobiSetFuncConAttributes(GRB_INT_ATTR_FUNCPIECES, fp_gen);
       if (i1>=0 && debug_mode())
@@ -971,16 +990,19 @@ void GurobiBackend::InputGurobiFuncApproxParams() {
     }
     if (auto mv0 = ReadModelSuffixDbl( {"funcpieceratio", suf_mask} )) {
       auto mv = GetValuePresolver().PresolveGenericDbl( mv0 );
+      WarnFuncSuffixOnNLCons("funcpieceratio", mv.GetConValues()(CG_Nonlinear));
       GurobiSetFuncConAttributes(GRB_DBL_ATTR_FUNCPIECERATIO,
                                  mv.GetConValues()(CG_General));
     }
     if (auto mv0 = ReadModelSuffixDbl( {"funcpiecelength", suf_mask} )) {
       auto mv = GetValuePresolver().PresolveGenericDbl( mv0 );
+      WarnFuncSuffixOnNLCons("funcpiecelength", mv.GetConValues()(CG_Nonlinear));
       GurobiSetFuncConAttributes(GRB_DBL_ATTR_FUNCPIECELENGTH,
                                  mv.GetConValues()(CG_General));
     }
     if (auto mv0 = ReadModelSuffixDbl( {"funcpieceerror", suf_mask} )) {
       auto mv = GetValuePresolver().PresolveGenericDbl( mv0 );
+      WarnFuncSuffixOnNLCons("funcpieceerror", mv.GetConValues()(CG_Nonlinear));
       GurobiSetFuncConAttributes(GRB_DBL_ATTR_FUNCPIECEERROR,
                                  mv.GetConValues()(CG_General));
     }
@@ -1034,8 +1056,12 @@ void GurobiBackend::InputGurobiIISForceParams() {
         Swap_0_vs_minus1(iisf);
         GrbSetIntAttrArray(GRB_INT_ATTR_IIS_GENCONSTRFORCE, iisf);
       }
-#ifdef GRB_INT_ATTR_IIS_NLCONSTRFORCE
+#ifdef MP_GRB_NLCON_LIST
       if (iisf = mv.GetConValues()(CG_Nonlinear), iisf.size()) {
+        // The array must have one entry per NL constraint of Gurobi
+        if (iisf.size() != (size_t)NumNLCons())
+          MP_RAISE("IIS force: the array for the nonlinear constraints "
+                   "has a wrong size");
         Swap_0_vs_minus1(iisf);
         GrbSetIntAttrArray(GRB_INT_ATTR_IIS_NLCONSTRFORCE, iisf);
       }

@@ -19,7 +19,7 @@ int GurobiCommon::NumGenCons() const {
 }
 
 int GurobiCommon::NumNLCons() const {
-#ifdef GRB_INT_ATTR_NUMNLCONSTRS
+#ifdef MP_GRB_NLCON_LIST
   return GrbGetIntAttr(GRB_INT_ATTR_NUMNLCONSTRS);
 #else
   return 0;
