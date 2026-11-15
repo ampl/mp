@@ -30,10 +30,6 @@
 
 #if defined(_WIN32) || defined(_WIN64)
   #include <io.h>     // _mktemp[_s]
-  #ifndef NOMINMAX
-    #define NOMINMAX
-  #endif
-  #include <windows.h> // GetShortPathNameW
 #elif __APPLE__
   #include <unistd.h> // mkdtemp
 #else
@@ -541,73 +537,45 @@ NLSolver::NLSolver(mp::NLUtils* put)
 
 NLSolver::~NLSolver() { DestroyAutoStub(); }
 
-#if defined(_WIN32) || defined(_WIN64)
+std::string QuoteCommandArg(const std::string& arg) {
+#ifdef _WIN32
+  // No Windows file name contains '"', and escaping one
+  // would not survive cmd.exe anyway.
+  if (arg.find('"') != arg.npos)
+    return {};
+  // Backslashes are literal except before '"': double the
+  // trailing ones so that the closing quote stays a quote.
+  // ('%' is still expanded by cmd.exe within quotes; there is
+  // no reliable escape for it on a cmd /c command line.)
+  auto n_trailing = arg.size() - (arg.find_last_not_of('\\') + 1);
+  return '"' + arg + std::string(n_trailing, '\\') + '"';
+#else
+  // Within single quotes sh takes every character literally;
+  // a single quote itself is closed, escaped, and reopened.
+  std::string q = "'";
+  for (char c: arg) {
+    if ('\'' == c)
+      q += "'\\''";
+    else
+      q += c;
+  }
+  return q + '\'';
+#endif  // _WIN32
+}
+
+#ifdef _WIN32
 namespace {
 
-/// Extended-length prefixes: with them Windows accepts paths
-/// beyond MAX_PATH without any system or manifest setting.
-const std::wstring kExtPrefix = L"\\\\?\\";
-const std::wstring kExtPrefixUNC = L"\\\\?\\UNC\\";
-
-/// Room needed below the temporary directory: our subdirectory,
-/// the file stub and an extension (".sol", ".nl", ...).
-const std::size_t kStubRoom = 48;
-
-/// Longest directory path Windows creates in the ordinary form
-/// (MAX_PATH less an 8.3 file name).
-const std::size_t kMaxPlainDir = 247;
-
-bool FitsPlainForm(const std::filesystem::path& dir)
-{ return dir.native().size() + kStubRoom <= kMaxPlainDir; }
-
-/// Absolute path \a dir in extended-length form
-/// (needs backslashes and no "." / ".." components).
-std::filesystem::path ExtendedLengthForm(
-    const std::filesystem::path& dir) {
-  const auto& w = dir.native();
-  if (0 == w.compare(0, kExtPrefix.size(), kExtPrefix))
-    return dir;
-  if (0 == w.compare(0, 2, L"\\\\"))        // \\server\share
-    return kExtPrefixUNC + w.substr(2);
-  return kExtPrefix + w;
-}
-
-/// The 8.3 form of \a dir, or an empty path when the volume
-/// keeps no short names (or on failure).
-std::filesystem::path ShortForm(const std::filesystem::path& dir) {
-  auto ext = ExtendedLengthForm(dir).native();
-  std::wstring buf(ext.size() + 1, L'\0');
-  auto n = GetShortPathNameW(
-        ext.c_str(), &buf[0], (DWORD)buf.size());
-  if (!n || n >= buf.size())
-    return {};
-  buf.resize(n);
-  if (0 == buf.compare(0, kExtPrefixUNC.size(), kExtPrefixUNC))
-    return L"\\\\" + buf.substr(kExtPrefixUNC.size());
-  if (0 == buf.compare(0, kExtPrefix.size(), kExtPrefix))
-    return buf.substr(kExtPrefix.size());
-  return buf;
-}
-
-/// A form of the temporary directory \a dir under which our files,
-/// and the solver reading them, stay within the Windows path limits:
-/// \a dir itself, unchanged, when short enough; else its 8.3 form
-/// (accepted by any program), else the extended-length form.
-/// Windows applies its limits to the fully qualified path, so the
-/// length is measured on the absolute form even when \a dir is
-/// relative; the two long-path forms are absolute.
-std::filesystem::path UsableTempDir(
-    const std::filesystem::path& dir, std::error_code& ec) {
-  auto abs = std::filesystem::absolute(dir, ec);
-  if (ec)
-    return dir;
-  abs = abs.lexically_normal().make_preferred();
-  if (FitsPlainForm(abs))
-    return dir;
-  auto shrt = ShortForm(abs);
-  if (!shrt.empty() && FitsPlainForm(shrt))
-    return shrt;
-  return ExtendedLengthForm(abs);
+/// Append ".exe" to the solver unless it ends with it;
+/// a quoted solver path gets it before the closing quote.
+void AppendExe(std::string& call) {
+  const std::string ending{".exe"};
+  auto end = call.size();
+  if (end && '"' == call.back())
+    --end;
+  if (end < ending.size()
+      || 0 != call.compare(end - ending.size(), ending.size(), ending))
+    call.insert(end, ending);
 }
 
 }  // namespace
@@ -618,19 +586,15 @@ void NLSolver::InitAutoStub() {
   std::random_device dev;
   std::mt19937 prng(dev());
   std::uniform_int_distribution<unsigned long> rand(0);
-  // Error-code overloads below: a missing or too long temporary
-  // directory must end with a message, not an uncaught exception.
+  // Error-code overloads below: a missing temporary directory, or
+  // one whose path is too long (Windows limits directory paths to
+  // 248 characters), must end with a message, not an uncaught
+  // exception.
   std::error_code ec;
   auto path = std::filesystem::temp_directory_path(ec);
   if (ec)
     Utils().myexit("Could not find the temp directory: "
                    + ec.message());
-#if defined(_WIN32) || defined(_WIN64)
-  path = UsableTempDir(path, ec);
-  if (ec)
-    Utils().myexit("Could not resolve the temp directory '"
-                   + path.string() + "': " + ec.message());
-#endif
   path /= "nlw2_"; // via '/'
   char rnds[64] = "rndhex";
   std::snprintf(rnds, sizeof(rnds)-1, "%lX", rand(prng));
@@ -641,7 +605,7 @@ void NLSolver::InitAutoStub() {
 
 #if defined(_WIN32) || defined(_WIN64)
   if (!_mktemp((char*)pathstr_.c_str())
-      || !std::filesystem::create_directory(pathstr_, ec) || ec)
+      || !std::filesystem::create_directory(pathstr_, ec))
     Utils().myexit("Could not create temp dir '" + pathstr_ + "'"
                    + (ec ? ": " + ec.message() : std::string())
                    + "\n(check the TMP/TEMP directory)");
@@ -689,17 +653,23 @@ bool NLSolver::Solve(const std::string& solver,
     return (err_msg_="NLSolver: provide filestub.", false);
   if (solver.empty())
     return (err_msg_="NLSolver: provide solver.", false);
+  auto stub = QuoteCommandArg(GetFileStub());
+  if (stub.empty())
+    return (err_msg_="NLSolver: file stub '" + GetFileStub()
+            + "' cannot be passed on a command line.", false);
   auto call = solver;
 #ifdef _WIN32
-  const std::string ending{".exe"};
-  if (solver.length() < ending.length()
-      || (0 != solver.compare(solver.length() - ending.length(), ending.length(), ending)))
-    call += ending;
+  AppendExe(call);
 #endif  // _WIN32
   call += ' ';
-  call += GetFileStub();
+  call += stub;
   call += " -AMPL ";
   call += solver_opts;
+#ifdef _WIN32
+  // cmd.exe /c removes the first and the last double quote when
+  // the command has more than two; let it remove this outer pair.
+  call = '"' + call + '"';
+#endif  // _WIN32
   if (auto status = std::system(call.c_str()))
     return (err_msg_="NLSolver: call \""
         + call + "\" failed (code "

@@ -46,6 +46,15 @@ namespace mp {
 
 struct NLHeader;
 
+/// Quote \a arg for a command line run by std::system():
+/// in double quotes on Windows (cmd.exe), in single quotes
+/// elsewhere (sh).
+///
+/// @return the quoted argument, or an empty string if \a arg
+///   cannot be quoted (on Windows, when it contains a double
+///   quote, which no file name can).
+std::string QuoteCommandArg(const std::string& arg);
+
 /**
   \rst
   Class `~mp::NLSolver`.
@@ -198,7 +207,10 @@ public:
 
   /// Solve after loading model.
   ///
-  /// @param solver: solver executable, such as "gurobi".
+  /// @param solver: solver executable, such as "gurobi";
+  ///   passed to the command line as given, so a path with
+  ///   spaces must come quoted. On Windows, ".exe" is appended
+  ///   if missing (before a closing quote).
   /// @param solver_opts: string of solver options,
   ///   such as "outlev=1 writeprob=model.lp".
   ///

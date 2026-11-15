@@ -3,10 +3,11 @@ Summary of recent updates to MP2NL for AMPL
 
 
 ## unreleased
-- Windows: a temporary directory with a long path (close to or beyond
-  the 248-character limit for directories) is now supported. When the
-  temporary directory cannot be used, MP2NL stops with an error message
-  instead of terminating abnormally.
+- When the temporary directory cannot be used (missing, or on Windows
+  a path close to the 248-character limit for directories), MP2NL stops
+  with an error message instead of terminating abnormally.
+- The NL file stub is quoted on the solver command line, so temporary
+  directories with spaces or other shell characters in their path work.
 
 ## 20261029
 - Version 0.2.
