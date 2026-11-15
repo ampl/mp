@@ -265,8 +265,11 @@ namespace mp {
   void BaronmpModelAPI::addLinear(const std::string& name,
     double lhs, double rhs,
     size_t nvars, const int* vars, const double* coeffs){
-    if (nvars == 0)
+    if (nvars == 0) {                // BARON has no equation for it
+      lp()->skippedConsPositions.push_back(
+            (int)(cons.size() + lp()->skippedConsPositions.size()));
       return;
+    }
     fmt::MemoryWriter w;
     appendNameAndLhs(w, createConName(name), lhs, rhs);
     for (size_t i = 0; i < nvars; i++)
@@ -305,7 +308,7 @@ namespace mp {
       for (auto i = 1; i < c.GetArguments().size(); ++i)
         w << fmt::format(", {}", varName(c.GetArguments()[i]));
     }
-    w << ") = 0;\n";
+    w << ") == 0;\n";
     cons.push_back(w.str());
 
   }
