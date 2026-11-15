@@ -452,7 +452,8 @@ void ScipModelAPI::AddConstraint( const QuadraticConeConstraint& qc ) {
 
   std::vector<double> param;
   for (size_t i = 1; i < qc.GetParameters().size(); i++) {
-    param.push_back(std::sqrt(qc.GetParameters()[i]));
+    // SCIP's SOC constraint squares the coefficients, like MP's cone does
+    param.push_back(qc.GetParameters()[i]);
   }
 
   SCIP_CONS* cons;

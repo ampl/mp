@@ -4,6 +4,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <unordered_map>
 
 #include "mp/backend-mip.h"
 #include "mp/flat/backend_flat.h"
@@ -176,6 +177,13 @@ private:
   }
 
   void InputDecomposition();
+
+  /// Index in GCG's decomposition data of variable i, or -1
+
+  int findDecompVarIndex(size_t i);
+
+  std::unordered_map<SCIP_VAR*, int> decomp_var_index_;
+  bool decomp_var_index_built_ = false;
   
   /// These options are stored in the class
   struct Options {

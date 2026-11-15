@@ -1630,12 +1630,17 @@ public:
             "MP2NL_subsolver_solution_fewer_alg_cons",
             "The subsolver reported fewer duals than algebraic constraints");
       }
-      duals_.resize(nac_sol);
+      // Indexed by the original constraint index (the NL order is
+      // permuted), so size by the constraint count, not by nac_sol
+      duals_.assign(n_alg_cons, 0.0);
       int j=0;
       for ( ; rd.Size(); ++j ) {
-        int j0 = mapi_.GetOldAlgConIndex(j);
-        assert(j0>=0 && j0 < n_alg_cons);
-        duals_[j0] = rd.ReadNext();
+        double y = rd.ReadNext();
+        if (j < n_alg_cons) {          // extra duals are dropped
+          int j0 = mapi_.GetOldAlgConIndex(j);
+          assert(j0>=0 && j0 < n_alg_cons);
+          duals_[j0] = y;
+        }
       }
     }
   }
@@ -1662,9 +1667,12 @@ public:
       primals_.resize(n_vars);
       int j=0;
       for ( ; rd.Size(); ++j ) {
-        int j0 = mapi_.GetOldVarIndex(j);
-        assert(j0>=0 && j0 < n_vars);
-        primals_[j0] = rd.ReadNext();
+        double x = rd.ReadNext();
+        if (j < n_vars) {            // extra values are dropped
+          int j0 = mapi_.GetOldVarIndex(j);
+          assert(j0>=0 && j0 < n_vars);
+          primals_[j0] = x;
+        }
       }
     }
   }

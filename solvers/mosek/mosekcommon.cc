@@ -22,12 +22,18 @@ double MosekCommon::getDblAttr(MSKdinfitem_enum name) const  {
   return value;
 }
 
+// The task's dimensions. Not MSK_IINF_OPT_NUMCON/OPT_NUMVAR: those
+// optimizer information items are 0 before the first optimization.
 int MosekCommon::NumLinCons() const {
-	return getIntAttr(MSK_IINF_OPT_NUMCON);
+  MSKint32t n = 0;
+  MOSEK_CCALL(MSK_getnumcon(lp(), &n));
+  return n;
 }
 
 int MosekCommon::NumVars() const {
-  return getIntAttr(MSK_IINF_OPT_NUMVAR);
+  MSKint32t n = 0;
+  MOSEK_CCALL(MSK_getnumvar(lp(), &n));
+  return n;
 }
 
 int MosekCommon::NumObjs() const {

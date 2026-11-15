@@ -2,6 +2,11 @@ Summary of recent updates to MP2NL for AMPL
 ==========================================
 
 
+## unreleased
+- Fix: a subsolver solution with fewer duals than algebraic
+  constraints could corrupt memory.
+
+
 ## 20261029
 - Version 0.2.
 - Native NL complementarity remains the default (*acc:nlcompl=2*),

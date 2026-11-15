@@ -1181,7 +1181,7 @@ void CbcmpBackend::AddMIPStart(ArrayRef<double> x0_unpres,
       val.push_back(x0[i]);
     }
   }
-  Cbc_setMIPStartI(lp(), val.size(), idx.data(), x0.data());
+  Cbc_setMIPStartI(lp(), val.size(), idx.data(), val.data());   // sparse pairs
 }
 
 

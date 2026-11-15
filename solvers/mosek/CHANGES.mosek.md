@@ -2,6 +2,11 @@ Summary of recent updates to MOSEK for AMPL
 ===========================================
 
 
+## unreleased
+- Fix: *writeprob* used generic names (x0, con0) instead of the AMPL
+  names when name files were available.
+
+
 ## Unreleased
 - Support MOSEK 12.0 BETA alongside MOSEK 11. With MOSEK 12:
   - Free simplex runs dual and primal simplex concurrently and is
