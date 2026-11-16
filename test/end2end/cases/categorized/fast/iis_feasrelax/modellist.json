@@ -251,14 +251,12 @@
     },
     "values": {
       "solve_result": "infeasible",
-      "N1.iis": "mem",
+      "N1.iis": ["mem", "upp"],
       "A1.iis": "non",
       "L1.iis": "non",
       "N2.iis": "non"
     },
-    "solvers": [
-      "gurobi"
-    ],
-    "comment": "Gurobi 14 keeps nonlinear constraints in their own list (IISNLConstr)."
+    "solvers": [ "gurobi", "cplex", "xpress", "highs", "gurobi_mp2nl", "cplex_mp2nl", "xpress_mp2nl", "highs_mp2nl" ],
+    "comment": "Gurobi 14 keeps nonlinear constraints in their own list (IISNLConstr). Xpress reports the upper side only. Not COPT (8.0.6 stops on this model in its NLP preview) and not SCIP (no IIS of nonlinear constraints)."
   }
 ]
