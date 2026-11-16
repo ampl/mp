@@ -6,9 +6,9 @@ Summary of recent updates to COPT for AMPL
   optimization) where one is quadratic: the quadratic objective was dropped
   silently and the solve returned the optimum of the linear objectives. The
   driver now stops with a message; use `obj:multi=2` (MP emulation), a
-  single objective, or `cvt:quadobj=0` and `cvt:nlobj=0` (synonyms
-  `passquadobj`, `passnlobj`), which move quadratic and nonlinear
-  objective terms into constraints so that all objectives are linear.
+  single objective, or `cvt:quadobj=0` and `cvt:nlobj=0`, which move quadratic and
+  nonlinear objective terms into constraints so that all objectives are
+  linear.
 - A cone made of a single native COPT cone no longer also adds the same
   cone again as affine cones.
 - Support COPT 9 Beta alongside COPT 8.0.6.
