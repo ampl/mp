@@ -5,7 +5,9 @@ Summary of recent updates to Gurobi for AMPL
 ## unreleased
 - Several objectives with *obj:multi=1* where one is quadratic or nonlinear:
   the message now says that natively handled objectives must all be linear
-  and suggests *obj:multi=2* (MP emulation).
+  and suggests *obj:multi=2* (MP emulation) or *cvt:quadobj=0* and
+  *cvt:nlobj=0* (synonyms *passquadobj*, *passnlobj*), which move quadratic
+  and nonlinear objective terms into constraints.
 - Fix: *mip:basis* on a model with nonlinear constraints reported zero
   duals and the same basis status for every variable and constraint;
   Gurobi has no duals for such models, so the fixed-model solve is

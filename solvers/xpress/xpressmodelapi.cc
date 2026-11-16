@@ -121,7 +121,9 @@ void XpressmpModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective&
   if (num_obj_total_ > 1)
     throw std::runtime_error(
         "When several objectives are handled natively, all of them must be "
-        "linear. Use obj:multi=2 (MP emulation) or a single objective.");
+        "linear. Use cvt:quadobj=0 and cvt:nlobj=0 (synonyms passquadobj, "
+        "passnlobj) to move quadratic and nonlinear objective terms into "
+        "constraints, obj:multi=2 (MP emulation), or a single objective.");
   if (1 > iobj) {
     // fmt::format("Setting first quadratic objective\n");
     SetLinearObjective(iobj, qo);                         // add the linear part

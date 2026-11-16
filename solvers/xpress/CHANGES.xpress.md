@@ -5,7 +5,9 @@ Summary of recent updates to Xpress for AMPL
 ## unreleased
 - Several objectives with *obj:multi=1* (native multi-objective optimization)
   where one is quadratic: the driver now stops with a message to use
-  *obj:multi=2* (MP emulation) instead of the Optimizer's error ?1138.
+  *obj:multi=2* (MP emulation) or to move quadratic and nonlinear objective
+  terms into constraints with *cvt:quadobj=0* and *cvt:nlobj=0* (synonyms
+  *passquadobj*, *passnlobj*), instead of the Optimizer's error ?1138.
 - Xpress 10.0 (Optimizer 48.01.01) and 9.9.1 (47.01.02) supported, as
   well as 9.8.
 - Xpress 10: solution pool (*sol:stub*, *sol:count*) with the built-in

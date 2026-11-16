@@ -658,6 +658,17 @@
     }
   },
   {
+    "name" : "multiobj_QP_02 multiobj=1 cvt:quadobj=0 moves the quadratic objective to a constraint, native handling works",
+    "files" : ["multiobj_QP_02.mod"],
+    "tags" : ["quadratic", "continuous", "multiobj"],
+    "solvers" : ["gurobi", "xpress", "copt"],
+    "comment" : "The remedy named in the error message of the previous case: with cvt:quadobj=0 both objectives are linear, so the solver-native multi-objective optimization is used (not CPLEX: its native multi-objective optimization does not take a quadratic constraint)",
+    "options": { "mp_options": "multiobj=1 cvt:quadobj=0" },
+    "values": {
+      "if solve_result_num < 100 then 1": 1
+    }
+  },
+  {
     "name" : "multiobj_NL_01 multiobj=2 negative weight, nonlinear objective",
     "files" : ["multiobj_NL_01.mod"],
     "tags" : ["nonlinear", "multiobj"],
