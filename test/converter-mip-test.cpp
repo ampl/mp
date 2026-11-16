@@ -664,7 +664,8 @@ void SplitBounds(Tester& t, bool& ite_lb_best, bool& exp_lb_best) {
   ASSERT_LE(1, (int)expl.size());
   for (int v: expl)
     if (INTEGER != t.InternalType(v))
-      exp_lb_best = t.Backend().lb(v) == 0.0;       // best-known lb of exp
+      exp_lb_best = 0.99 < t.Backend().lb(v)        // best-known lb of exp
+          && t.Backend().lb(v) <= 1.0;               // (z >= 0), widened by funcbndtol
   for (int v=t.Backend().NumVars(); --v > 2; )
     if (INTEGER == t.InternalType(v) && t.Backend().lb(v) < t.Backend().ub(v))
       ite_lb_best = t.Backend().ub(v) == 5.0;
