@@ -1,6 +1,8 @@
 #ifndef QCONES2QC_H
 #define QCONES2QC_H
 
+#include <cmath>
+
 #include "mp/flat/redef/redef_base.h"
 #include "mp/flat/constr_std.h"
 
@@ -41,9 +43,11 @@ public:
       GetMC().AddConstraint(std::move(qc));
     } else {
       // Reproduce fixed RHS, better for Mosek & COPT. conic/socp_10
-      // c[0] is -c0^2 here: the fixed value enters squared, (c0*v)^2
+      // c[0] is -c0^2 here: the fixed value enters squared, (c0*v)^2.
+      // The cone also needs v >= 0: a negative v gives a negative
+      // right-hand side, (c0^2)*v*|v|, so the row is infeasible.
       const double v0 = GetMC().fixed_value(x[0]);
-      auto rhs = -c[0] * v0 * v0;
+      auto rhs = -c[0] * v0 * std::fabs(v0);
       c.erase(c.begin());
       auto x0 = x;
       x0.erase(x0.begin());

@@ -148,6 +148,17 @@
     "tags" : ["socp"]
   },
   {
+    "name" : "socp_19_fixed_x0_negative",
+    "options": {
+      "presolve": 0
+    },
+    "values": {
+      "solve_result": "infeasible"
+    },
+    "comment" : "The first cone variable fixed at a negative value: infeasible. The quadratic constraint used the squared value and found a solution",
+    "tags" : ["socp"]
+  },
+  {
     "name" : "expcones_08__rhs_extra_term",
     "objective" : 1.1092731703,
     "solvers" : ["gurobi", "cplex", "xpress", "copt", "scip", "baronmp"],
