@@ -93,8 +93,9 @@ public:
 
   /// Override this to your error handler.
   /// Not using exceptions by default.
-  /// Only called on a wrong output format string
-  /// (internal error.)
+  /// Called on a wrong output format string (internal error)
+  /// and when NLSolver cannot create its temporary directory.
+  /// The default exits; MP2NL throws, to report a solve failure.
   virtual void myexit(const std::string& msg) {
     // No help including <cstdio> after <stdio.h> on Mac
     using namespace std;

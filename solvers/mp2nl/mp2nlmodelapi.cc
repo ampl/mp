@@ -1,4 +1,5 @@
 #include <cstring>
+#include <stdexcept>
 #include <unordered_map>
 
 #include "mp2nlmodelapi.h"
@@ -1487,6 +1488,18 @@ void MP2NLModelAPI::FeedColNames(ColNameWriter& wrt) {
 }
 
 
+/// NLUtils for MP2NL: errors that NLSolver reports via myexit()
+/// (such as an unusable temporary directory) are thrown,
+/// so that Solve() can turn them into a solve failure
+/// with a message, and a solution file is still written.
+class MP2NLUtils : public mp::NLUtils {
+public:
+  /// Throw instead of exiting
+  void myexit(const std::string& msg) override
+  { throw std::runtime_error(msg); }
+};
+
+
 /// Implement NLSolverIntf
 class MP2NLSolverImpl
     : public MP2NLSolverIntf,
@@ -1499,7 +1512,13 @@ public:
   void Solve(const char* solver, const char* sopts) override {
     if_solve_attempted_ = true;
     nlsol_.SetFileStub(mapi_.GetFileStub());
-    if_solve_ok_ = nlsol_.Solve(mapi_, *this, solver, sopts);
+    thrown_msg_.clear();
+    try {
+      if_solve_ok_ = nlsol_.Solve(mapi_, *this, solver, sopts);
+    } catch (const std::exception& e) {
+      if_solve_ok_ = false;
+      thrown_msg_ = e.what();
+    }
   }
 
   /// AMPL solve result code
@@ -1513,7 +1532,8 @@ public:
     if (if_solve_ok_)
       solve_message_final_ = solve_message_;
     else {
-      solve_message_final_ = nlsol_.GetErrorMessage();
+      solve_message_final_ = thrown_msg_.size()
+          ? thrown_msg_ : nlsol_.GetErrorMessage();
       if (solve_message_.size()) {
         solve_message_final_ +=
             "\nOriginal solve message: ";
@@ -1779,9 +1799,11 @@ protected:
 private:
   MP2NLModelAPI& mapi_;
 
-  mp::NLUtils utils_;
+  MP2NLUtils utils_;
 
   mp::NLSolver nlsol_ { &utils_ };
+
+  std::string thrown_msg_;      // error thrown by NLSolver, if any
 
   bool if_suf_data_registered_ {};
   std::array<int, 4> nitems_ {};

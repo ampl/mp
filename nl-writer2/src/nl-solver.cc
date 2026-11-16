@@ -606,12 +606,12 @@ void NLSolver::InitAutoStub() {
 #if defined(_WIN32) || defined(_WIN64)
   if (!_mktemp((char*)pathstr_.c_str())
       || !std::filesystem::create_directory(pathstr_, ec))
-    Utils().myexit("Could not create temp dir '" + pathstr_ + "'"
+    FailAutoStub("Could not create temp dir '" + pathstr_ + "'"
                    + (ec ? ": " + ec.message() : std::string())
                    + "\n(check the TMP/TEMP directory)");
 #else
   if (!mkdtemp((char*)pathstr_.c_str()))
-    Utils().myexit("Could not create a temp dir\n"
+    FailAutoStub("Could not create a temp dir\n"
                    "from pattern '" + pathstr_ + "'");
 #endif
   path = pathstr_;
@@ -619,6 +619,13 @@ void NLSolver::InitAutoStub() {
   std::snprintf(rnds, sizeof(rnds)-1, "%lX", rand(prng));
   path /= rnds;
   filestub_ = path.string();
+}
+
+void NLSolver::FailAutoStub(const std::string& msg) {
+  // The directory was not created by us: do not delete it
+  // if a throwing myexit() lets the destructor run.
+  pathstr_.clear();
+  Utils().myexit(msg);
 }
 
 void NLSolver::DestroyAutoStub() {

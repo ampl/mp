@@ -5,7 +5,8 @@ Summary of recent updates to MP2NL for AMPL
 ## unreleased
 - When the temporary directory cannot be used (missing, or on Windows
   a path close to the 248-character limit for directories), MP2NL stops
-  with an error message instead of terminating abnormally.
+  with an error message instead of terminating abnormally:
+  the failure and its message are reported to AMPL in the solution file.
 - The NL file stub is quoted on the solver command line, so temporary
   directories with spaces or other shell characters in their path work.
 - Library API: the close and model functions are now *AMPLSClose_mp2nl*

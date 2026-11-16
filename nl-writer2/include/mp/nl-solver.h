@@ -242,6 +242,8 @@ public:
 
 protected:
   void InitAutoStub();
+  /// Forget the directory name and report the error via myexit()
+  void FailAutoStub(const std::string& msg);
   void DestroyAutoStub();
   mp::NLUtils& Utils() const { return *p_ut_; }
 
