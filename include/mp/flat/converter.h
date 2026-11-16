@@ -2099,7 +2099,9 @@ private:
                        "Relative margin by which the result bounds of "
                        "exp, expA, log and logA, computed from the "
                        "bounds of their argument, are widened, "
-                       "to absorb rounding. 0: exact bounds. "
+                       "to absorb rounding. 0: no margin (a computed "
+                       "bound can then be tighter than the true one "
+                       "by a rounding error). "
                        "Negative: do not bound the results this way "
                        "(old behavior: exp, expA >= 0, no bounds for log). "
                        "Default 1e-12.",

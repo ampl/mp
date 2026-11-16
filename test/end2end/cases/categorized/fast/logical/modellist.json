@@ -1159,5 +1159,16 @@
     "values": {
       "if solve_result_num >= 500 and solve_result_num < 600 then 1": 1
     }
+  },
+  {
+    "name" : "funcbnd_log_02_int funcbndtol=0",
+    "files" : ["funcbnd_log_02_int.mod"],
+    "solvers" : ["highs", "copt", "highs_mp2nl", "copt_mp2nl"],
+    "tags" : ["nonlinear"],
+    "options": {
+      "mp_options": "cvt:pre:funcbndtol=0"
+    },
+    "comment": "Piecewise-linear approximation of log over an integer argument: with exact result bounds the last breakpoint x = 5 was lost (x = 5 reported, 0.324 instead of 0.259)",
+    "objective": 0.3062943611
   }
 ]

@@ -339,8 +339,13 @@ template <class FuncCon>
 void BasicPLApproximator<FuncCon>::ConsiderIntegrality() {
   /// Simple case when N breakpoints >= N integer points
   if (laPrm_.is_x_int && !laPrm_.fUsePeriod) {
-    auto x0=std::ceil(laPrm_.grDomOut.lbx);
-    auto xN=std::floor(laPrm_.grDomOut.ubx);
+    // The domain may come from clipping by function values, e.g.,
+    // exp(log(5)) = 4.999...: round with a tolerance, so that an
+    // integer bound is not lost (the solver would extrapolate there)
+    const auto tol = [](double v) { return 1e-9 * std::max(1.0, std::fabs(v)); };
+    const auto lbx = laPrm_.grDomOut.lbx, ubx = laPrm_.grDomOut.ubx;
+    auto x0=std::ceil(lbx - tol(lbx));
+    auto xN=std::floor(ubx + tol(ubx));
     auto N = int(xN - x0 + 1);
     if (N <= laPrm_.plPoints.size()) {
       laPrm_.plPoints.clear();
