@@ -1488,6 +1488,14 @@ void MP2NLModelAPI::FeedColNames(ColNameWriter& wrt) {
 }
 
 
+/// Thrown by MP2NLUtils::myexit(): only this error becomes a solve
+/// failure in Solve(); other exceptions keep their usual handling
+/// (BackendApp reports them with their own exit code)
+class NLSolverExit : public std::runtime_error {
+public:
+  using std::runtime_error::runtime_error;
+};
+
 /// NLUtils for MP2NL: errors that NLSolver reports via myexit()
 /// (such as an unusable temporary directory) are thrown,
 /// so that Solve() can turn them into a solve failure
@@ -1496,7 +1504,7 @@ class MP2NLUtils : public mp::NLUtils {
 public:
   /// Throw instead of exiting
   void myexit(const std::string& msg) override
-  { throw std::runtime_error(msg); }
+  { throw NLSolverExit(msg); }
 };
 
 
@@ -1515,7 +1523,7 @@ public:
     thrown_msg_.clear();
     try {
       if_solve_ok_ = nlsol_.Solve(mapi_, *this, solver, sopts);
-    } catch (const std::exception& e) {
+    } catch (const NLSolverExit& e) {
       if_solve_ok_ = false;
       thrown_msg_ = e.what();
     }
