@@ -257,6 +257,6 @@
       "N2.iis": "non"
     },
     "solvers": [ "gurobi", "cplex", "xpress", "highs", "gurobi_mp2nl", "cplex_mp2nl", "xpress_mp2nl", "highs_mp2nl" ],
-    "comment": "Gurobi 14 keeps nonlinear constraints in their own list (IISNLConstr). Xpress reports the upper side only. Not COPT (8.0.6 stops on this model in its NLP preview) and not SCIP (no IIS of nonlinear constraints)."
+    "comment": "Gurobi 14 keeps nonlinear constraints in their own list (IISNLConstr). Xpress reports the upper side only. Not COPT (no IIS for models with quadratic or conic constraints; mixed-integer exponential cones are not supported) and not SCIP (no IIS of nonlinear constraints)."
   }
 ]
