@@ -940,16 +940,16 @@ void MP2NLBackend::DoWriteProblem(const std::string& name) {
 
 
 // AMPLs
-AMPLS_MP_Solver* Open_MP2NL(CCallbacks cb = {}) {
+AMPLS_MP_Solver* Open_mp2nl(CCallbacks cb = {}) {
   return AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend>{new mp::MP2NLBackend()},
     cb);
 }
 
-void AMPLSClose_MP2NL(AMPLS_MP_Solver* slv) {
+void AMPLSClose_mp2nl(AMPLS_MP_Solver* slv) {
   AMPLS__internal__Close(slv);
 }
 
-void* AMPLSGetModel_MP2NL(AMPLS_MP_Solver* slv) {
+void* AMPLSGetModel_mp2nl(AMPLS_MP_Solver* slv) {
   return
     dynamic_cast<mp::MP2NLBackend*>(AMPLSGetBackend(slv));
 }

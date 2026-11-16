@@ -8,6 +8,9 @@ Summary of recent updates to MP2NL for AMPL
   with an error message instead of terminating abnormally.
 - The NL file stub is quoted on the solver command line, so temporary
   directories with spaces or other shell characters in their path work.
+- Library API: the close and model functions are now *AMPLSClose_mp2nl*
+  and *AMPLSGetModel_mp2nl*, lower case like *AMPLSOpen_mp2nl* and the
+  other MP libraries (were *AMPLSClose_MP2NL*, *AMPLSGetModel_MP2NL*).
 
 ## 20261029
 - Version 0.2.
