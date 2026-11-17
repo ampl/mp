@@ -1393,6 +1393,10 @@ public:
         && lb-ub
                > std::max(std::abs(lb), std::abs(ub))
                      * MPCD( model_feas_tol_rel() )) {
+      if (!bestb && options_.declareInfeasVarBnd_)
+        MP_INFEAS(fmt::format(
+            "bounds [{:.17}, {:.17}] of {}[{}] are contradictory "
+            "(cvt:pre:infeasvarbnd)", lb, ub, kind, i+1));
       GetEnv().AddWarning(
           std::string(kind) + (bestb ? " best-known" : "") + " bounds",
           fmt::format("Bounds [{:.17}, {:.17}]\nof {}[{}] "
@@ -1800,6 +1804,7 @@ private:
     int preprocessInequalityRhs_ = 1;
     int preprocessInequalityResultBounds_ = 1;
     int preprocessIneq2BndEq_ = 1;
+    int declareInfeasVarBnd_ = 1;
     int preprocessIneq2Related_ = 1;
     int preprocessVarBnd_ = 3;
 
@@ -2096,6 +2101,21 @@ private:
                        "to avoid fake MIPs. Off by default for solvers "
                        "without continuous variables.",
                        GetModel().if_make_fixed_vars_continuous(), 0, 1);
+
+    GetEnv().AddOption("cvt:pre:infeasvarbnd infeasvarbnd",
+                       "0/1*: Declare the model infeasible in the converter "
+                       "when the bounds of a variable become contradictory "
+                       "(lower > upper). With 0, the contradictory bounds "
+                       "are passed on to the solver, which can then, e.g., "
+                       "compute an IIS; most solvers fail with an error "
+                       "if such a variable is an indicator binary.",
+                       options_.declareInfeasVarBnd_, 0, 1);
+
+    GetEnv().AddOption("cvt:pre:roundintbnd roundintbnd",
+                       "0/1*: Round the bounds of integer variables "
+                       "inwards (lower up, upper down), so that, e.g., "
+                       "[1, 0.17] becomes [1, 0].",
+                       GetModel().if_round_int_bounds(), 0, 1);
 
     GetEnv().AddOption("cvt:pre:boundlogarg boundlogarg",
                        "0*/1: Bound logarithm arguments to nonnegative.",

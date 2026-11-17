@@ -151,6 +151,12 @@ public:
                        "AMPL customer support.");
       static_cast<Converter&>(cvt).PropagateResult(
             GetConstraint(i), lb, ub, ctx);
+    } catch (const Error& err) {      // keep the exit code, e.g., 200 (MP_INFEAS)
+      MP_RAISE_WITH_CODE(err.exit_code(), Converter::GetTypeName() +
+               std::string(": propagating result for constraint ") +
+               std::to_string(i) + "\nof type '" +
+               Constraint::GetTypeName() +
+               "':\n" + err.what());
     } catch (const std::exception& exc) {
       MP_RAISE(Converter::GetTypeName() +
                std::string(": propagating result for constraint ") +
@@ -190,6 +196,9 @@ public:
     try {
       const bool any_revived = ConvertRevived();
       return ConvertAllFrom(i_cvt_last_) || any_revived;
+    } catch (const Error& err) {      // keep the exit code
+      MP_RAISE_WITH_CODE(err.exit_code(), Converter::GetTypeName()
+                         + std::string(": ") + err.what());
     } catch (const std::exception& exc) {
       MP_RAISE(Converter::GetTypeName() + std::string(": ")
                              + exc.what());
@@ -306,6 +315,12 @@ public:
         || !GetConverter().IfWantNLOutput()) {
       try {
         AddAllUnbridged(be, vnam);
+      } catch (const Error& err) {    // keep the exit code
+        MP_RAISE_WITH_CODE(err.exit_code(),
+                 std::string("Adding constraint of type '") +
+                 Constraint::GetTypeName() + "' to " +
+                 Backend::GetTypeName() + std::string(": ") +
+                 err.what());
       } catch (const std::exception& exc) {
         MP_RAISE(std::string("Adding constraint of type '") +
                  Constraint::GetTypeName() + "' to " +

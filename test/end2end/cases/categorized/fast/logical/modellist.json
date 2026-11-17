@@ -1146,5 +1146,21 @@
     "values": {
       "solve_result": "infeasible"
     }
+  },
+  {
+    "name" : "holes_eq_bound_loop_01",
+    "files" : ["holes_eq_bound_loop_01.mod"],
+    "tags" : ["logical", "integer"],
+    "comment": "Domain hole of a variable: x==ub and x>=ub were rewritten into each other endlessly (stack overflow)",
+    "objective": -37
+  },
+  {
+    "name" : "indicator_contradict_bounds_01",
+    "files" : ["indicator_contradict_bounds_01.mod"],
+    "tags" : ["logical", "integer"],
+    "comment": "Indicator flag with contradictory bounds: infeasible, not a solver error (cvt:pre:infeasvarbnd)",
+    "values": {
+      "solve_result": "infeasible"
+    }
   }
 ]

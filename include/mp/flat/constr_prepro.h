@@ -376,7 +376,10 @@ public:
   bool IfPreprocessHole(
       const Body& body, double rhs, PreprocessInfo& prepro) {
     if constexpr (std::is_same_v<Body, LinTerms>) {
-      if (1 != body.size() || !MPCD( IfPreproHoles() )
+      // Equality at a bound is left to the other rewrites: the result
+      // x >= b is rewritten back to x == ub by IfPreprocess2BndEq(),
+      // which would recurse endlessly.
+      if (0 == kind || 1 != body.size() || !MPCD( IfPreproHoles() )
           || MPCD( IfPreproBoundsOnly() ))
         return false;
       const int x = body.var(0);
