@@ -3,6 +3,24 @@ Summary of recent updates to MP2NL for AMPL
 
 
 ## unreleased
+
+- Fix: a solution file left by an earlier solve (a reused `nl:stub`, or the
+  previous pass of a multi-objective emulation) was read as the result of a
+  solve in which the subsolver wrote no solution. Such a solve now fails with
+  a message.
+- Fix: a solution written by the subsolver before it exited with a nonzero
+  code was discarded; it is kept now. The exit code is reported as the
+  subsolver's exit code.
+- Fix: subsolver options (`solver_options`) were interpreted by the shell:
+  characters such as `;` or `$` acted as commands and quoted values were
+  split. Each option is now passed as one argument; quotes group words.
+- Fix: the solution values, duals and suffixes of a previous pass were
+  reported after a pass that failed or returned no such data.
+- Fix: logical constraints were counted as nonlinear objectives in the NL
+  header.
+- Fix: NL files written through the NLModel API for quadratic objectives with
+  one or two terms were invalid, and nonlinear variables were miscounted
+  (CONOPT returned a wrong optimum).
 - When the temporary directory cannot be used (missing, or on Windows
   a path close to the 248-character limit for directories), MP2NL stops
   with an error message instead of terminating abnormally:

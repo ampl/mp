@@ -21,6 +21,8 @@
  */
 
 #include <cstring>
+#include <cstdio>   // remove
+#include <cctype>
 #include <algorithm>
 #include <numeric>
 #include <vector>
@@ -34,6 +36,10 @@
   #include <unistd.h> // mkdtemp
 #else
   #include <cstdlib>  // mkdtemp
+#endif
+
+#ifndef _WIN32
+  #include <sys/wait.h>  // WEXITSTATUS
 #endif
 
 #include "mp/nl-solver.hpp"
@@ -113,24 +119,41 @@ public:
     if (!Q.num_nz_) {
       ew.NPut(c0);             // linear, write the offset
     } else {
+      // An NL sum needs at least 3 arguments ("o54" with fewer is
+      // rejected by readers): one term is written as is, two as "o0".
       bool if_offset = (c0);
       int num_el = Q.num_nz_ + if_offset;
-      auto sumw = ew.OPutN(nl::SUM, num_el);
-      if (if_offset)
-        sumw.NPut(c0);
-      auto pos_end = Q.num_nz_;
-      for (auto i=NLME().NumCols(); i--; ) {
-        for (auto pos=Q.start_[i]; pos!=pos_end; ++pos) {
-          auto coef = 0.5 * Q.value_[pos];
-          auto prod1 = sumw.OPut2(nl::MUL);
-          prod1.NPut(coef);
-          auto prod2 = prod1.OPut2(nl::MUL);
-          prod2.VPut(VPerm(i), NLME().ColName(i));   // x
-          prod2.VPut(VPerm(Q.index_[pos]),
-                     NLME().ColName(Q.index_[pos])); // y
-        }
-        pos_end = Q.start_[i];
+      if (1 == num_el) {
+        PutQuadTerms(ew, c0, if_offset, Q);
+      } else if (2 == num_el) {
+        auto addw = ew.OPut2(nl::ADD);
+        PutQuadTerms(addw, c0, if_offset, Q);
+      } else {
+        auto sumw = ew.OPutN(nl::SUM, num_el);
+        PutQuadTerms(sumw, c0, if_offset, Q);
       }
+    }
+  }
+
+  /// Write the objective offset (if any) and the quadratic terms
+  /// 0.5 * Q_ij * x_i * x_j one by one into the writer \a w.
+  template <class ExprWriter, class Hessian>
+  void PutQuadTerms(ExprWriter& w, double c0, bool if_offset,
+                    const Hessian& Q) {
+    if (if_offset)
+      w.NPut(c0);
+    auto pos_end = Q.num_nz_;
+    for (auto i=NLME().NumCols(); i--; ) {
+      for (auto pos=Q.start_[i]; pos!=pos_end; ++pos) {
+        auto coef = 0.5 * Q.value_[pos];
+        auto prod1 = w.OPut2(nl::MUL);
+        prod1.NPut(coef);
+        auto prod2 = prod1.OPut2(nl::MUL);
+        prod2.VPut(VPerm(i), NLME().ColName(i));   // x
+        prod2.VPut(VPerm(Q.index_[pos]),
+                   NLME().ColName(Q.index_[pos])); // y
+      }
+      pos_end = Q.start_[i];
     }
   }
 
@@ -378,11 +401,19 @@ protected:
     auto Q=NLME().Hessian();
     if (Q.num_nz_) {
       ++header_.num_nl_objs;                // STATS
-      for (auto i=Q.num_nz_; i--; ) {
-        assert(i<nlv_obj_.size());
-        nlv_obj_[Q.index_[i]] = true;
-        ++header_.num_nl_vars_in_objs;      // STATS
+      // Hessian is stored by one index (start_) and the other (index_):
+      // both variables of a nonzero are nonlinear, each counted once.
+      auto pos_end = Q.num_nz_;
+      for (auto i=NLME().NumCols(); i--; ) {
+        for (auto pos=Q.start_[i]; pos!=pos_end; ++pos) {
+          assert(Q.index_[pos]<nlv_obj_.size());
+          nlv_obj_[i] = true;
+          nlv_obj_[Q.index_[pos]] = true;
+        }
+        pos_end = Q.start_[i];
       }
+      header_.num_nl_vars_in_objs =         // STATS
+          std::count(nlv_obj_.begin(), nlv_obj_.end(), true);
     }
   }
 
@@ -563,8 +594,65 @@ std::string QuoteCommandArg(const std::string& arg) {
 #endif  // _WIN32
 }
 
-#ifdef _WIN32
 namespace {
+
+/// Exit code of a process from the value returned by std::system():
+/// on POSIX it is a wait status (exit 1 is reported as 256).
+int ExitCode(int status) {
+#ifdef WIFEXITED
+  if (WIFEXITED(status))
+    return WEXITSTATUS(status);
+  if (WIFSIGNALED(status))
+    return 128 + WTERMSIG(status);
+#endif
+  return status;
+}
+
+/// Split \a opts at white space, keeping text within single or double
+/// quotes together (quotes removed).
+std::vector<std::string> SplitOptions(const std::string& opts) {
+  std::vector<std::string> tokens;
+  std::string cur;
+  bool in_token = false;
+  char quote = 0;
+  for (char c: opts) {
+    if (quote) {
+      if (c == quote)
+        quote = 0;
+      else
+        cur += c;
+    } else if ('"' == c || '\'' == c) {
+      quote = c;
+      in_token = true;
+    } else if (std::isspace(static_cast<unsigned char>(c))) {
+      if (in_token)
+        tokens.push_back(std::move(cur));
+      cur.clear();
+      in_token = false;
+    } else {
+      cur += c;
+      in_token = true;
+    }
+  }
+  if (in_token)
+    tokens.push_back(std::move(cur));
+  return tokens;
+}
+
+/// Append the solver options to \a call, each one quoted for the shell,
+/// so that nothing in them is interpreted. False if one cannot be quoted.
+bool AppendQuotedOptions(std::string& call, const std::string& opts) {
+  for (const auto& tok: SplitOptions(opts)) {
+    auto q = QuoteCommandArg(tok);
+    if (q.empty())
+      return false;
+    call += ' ';
+    call += q;
+  }
+  return true;
+}
+
+#ifdef _WIN32
 
 /// Append ".exe" to the solver unless it ends with it;
 /// a quoted solver path gets it before the closing quote.
@@ -578,8 +666,8 @@ void AppendExe(std::string& call) {
     call.insert(end, ending);
 }
 
-}  // namespace
 #endif  // _WIN32
+}  // namespace
 
 void NLSolver::InitAutoStub() {
   // init file stub
@@ -670,17 +758,31 @@ bool NLSolver::Solve(const std::string& solver,
 #endif  // _WIN32
   call += ' ';
   call += stub;
-  call += " -AMPL ";
-  call += solver_opts;
+  call += " -AMPL";
+  if (!AppendQuotedOptions(call, solver_opts))
+    return (err_msg_="NLSolver: solver options cannot be passed "
+            "on a command line: " + solver_opts, false);
 #ifdef _WIN32
   // cmd.exe /c removes the first and the last double quote when
   // the command has more than two; let it remove this outer pair.
   call = '"' + call + '"';
 #endif  // _WIN32
-  if (auto status = std::system(call.c_str()))
+  // A result left by a previous solve (the stub can be reused) must
+  // never be taken for the result of this one.
+  const auto solfile = GetFileStub() + ".sol";
+  std::remove(solfile.c_str());
+  auto status = std::system(call.c_str());
+  bool have_sol = std::filesystem::exists(solfile);
+  if (status && !have_sol)
     return (err_msg_="NLSolver: call \""
         + call + "\" failed (code "
-        + std::to_string(status) + ").", false);
+        + std::to_string(ExitCode(status)) + ").", false);
+  if (!have_sol)
+    return (err_msg_="NLSolver: call \"" + call
+            + "\" wrote no solution file.", false);
+  if (status)    // A solution was written: keep it, note the exit code
+    err_msg_ = "NLSolver: the solver exited with code "
+        + std::to_string(ExitCode(status)) + " after writing a solution.";
   return true;
 }
 

@@ -157,6 +157,63 @@ TEST(NLSolverTest, AutoStubInTempDirWithShellCharacters) {
   EXPECT_EQ(stub, ReadFile(stub + ".ok"));
 }
 
+/// A fresh scratch stub with a model file, for the solver call tests.
+struct StubFixture {
+  ScratchDir dir {"nlw2 call test"};
+  std::string stub {(dir.path() / "model").string()};
+  StubFixture() { std::ofstream(stub + ".nl") << "not read\n"; }
+};
+
+TEST(NLSolverTest, SolutionOfPreviousSolveIsNotReused) {
+  StubFixture f;
+  std::ofstream(f.stub + ".sol") << "stale result\n";
+  ThrowingUtils utils;
+  mp::NLSolver nlsol(&utils);
+  nlsol.SetFileStub(f.stub);
+  // The solver exits with 0 but writes no solution
+  EXPECT_FALSE(nlsol.Solve(Solver(), "nosol"));
+  EXPECT_NE(std::string::npos,
+            std::string(nlsol.GetErrorMessage()).find("wrote no solution"));
+  EXPECT_FALSE(fs::exists(f.stub + ".sol"));
+}
+
+TEST(NLSolverTest, FailedCallReportsExitCode) {
+  StubFixture f;
+  ThrowingUtils utils;
+  mp::NLSolver nlsol(&utils);
+  nlsol.SetFileStub(f.stub);
+  EXPECT_FALSE(nlsol.Solve(Solver(), "nosol_exit7"));
+  // The exit code itself, not the raw wait status (1792 for 7)
+  EXPECT_NE(std::string::npos,
+            std::string(nlsol.GetErrorMessage()).find("(code 7)"));
+}
+
+TEST(NLSolverTest, SolutionWrittenBeforeNonzeroExitIsKept) {
+  StubFixture f;
+  ThrowingUtils utils;
+  mp::NLSolver nlsol(&utils);
+  nlsol.SetFileStub(f.stub);
+  EXPECT_TRUE(nlsol.Solve(Solver(), "exit7"));
+  EXPECT_TRUE(fs::exists(f.stub + ".sol"));
+  EXPECT_NE(std::string::npos,
+            std::string(nlsol.GetErrorMessage()).find("code 7"));
+}
+
+TEST(NLSolverTest, SolverOptionsAreNotInterpretedByShell) {
+  StubFixture f;
+  ThrowingUtils utils;
+  mp::NLSolver nlsol(&utils);
+  nlsol.SetFileStub(f.stub);
+  const auto injected = (f.dir.path() / "INJECTED").string();
+  // Each option is one argument; quotes group words, nothing else is special
+  ASSERT_TRUE(nlsol.Solve(
+      Solver(), "outlev=0;touch  \"" + injected + "\"  \"log=a b.txt\"  $HOME"))
+      << nlsol.GetErrorMessage();
+  EXPECT_FALSE(fs::exists(injected));
+  EXPECT_EQ("outlev=0;touch\n" + injected + "\nlog=a b.txt\n$HOME\n",
+            ReadFile(f.stub + ".args"));
+}
+
 TEST(NLSolverTest, MissingTempDirGivesMessage) {
   ScratchDir parent("nlw2 test parent");
   TempDirOverride tmp(parent.path() / "missing");

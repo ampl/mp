@@ -513,8 +513,9 @@ void MP2NLModelAPI::MarkNLVars(
   if (expr.IsEmptyExpr()) {
     // nothing
   } else {
+    // kind: 0 algebraic con, 1 logical con, 2 objective
     std::vector<bool>& var_nl_flags
-        = kind ? is_var_nlo_ : is_var_nlc_;
+        = (2==kind) ? is_var_nlo_ : is_var_nlc_;
     if (expr.IsVariable()) {         // we still count it as non-linear
       var_nl_flags.at(expr.GetVarIndex()) = true;
     } else {
@@ -526,9 +527,9 @@ void MP2NLModelAPI::MarkNLVars(
     if (0==kind) {
       is_alg_con_nl_.at(i_item) = true;   // nonlinear cons
       ++mark_data_.nnlc_;
-    } else {
-      ++mark_data_.nnlo_;
-    }
+    } else if (2==kind) {
+      ++mark_data_.nnlo_;                 // nonlinear objs
+    }                                     // logical cons: only var flags
   }
 }
 
@@ -1519,6 +1520,7 @@ public:
   /// Solve
   void Solve(const char* solver, const char* sopts) override {
     if_solve_attempted_ = true;
+    ResetSolution();       // result of a previous solve must not survive
     nlsol_.SetFileStub(mapi_.GetFileStub());
     thrown_msg_.clear();
     try {
@@ -1526,6 +1528,33 @@ public:
     } catch (const NLSolverExit& e) {
       if_solve_ok_ = false;
       thrown_msg_ = e.what();
+    }
+    DropStaleSolution();
+  }
+
+  /// Forget the result code, message, and the "received" flags of
+  /// a previous solve. The primal and dual values are kept here:
+  /// NLSolver::Solve() writes them as the initial guess of the next
+  /// pass (warm start) before calling the subsolver.
+  void ResetSolution() {
+    sresult_ = -1;
+    objno_used_ = -1;
+    nbs_ = 0;
+    solve_message_.clear();
+    got_primal_ = got_dual_ = got_options_ = false;
+  }
+
+  /// After the solve: whatever the subsolver did not return (failure,
+  /// or no such section in its .sol) must not be left from a previous
+  /// solve, it would be reported as a part of this one.
+  void DropStaleSolution() {
+    if (!got_primal_)
+      GetX().clear();
+    if (!got_dual_)
+      GetY().clear();
+    if (!got_options_) {
+      suf_map_.clear();
+      if_suf_data_registered_ = false;
     }
   }
 
@@ -1628,6 +1657,7 @@ public:
    * @return non-zero to stop solution input.
    */
   int OnAMPLOptions(const AMPLOptions& ) {
+    got_options_ = true;
     suf_map_.clear();              // clear for new solution
     if_suf_data_registered_ = false;
     return 0;
@@ -1645,6 +1675,7 @@ public:
    */
   template <class VecReader>
   void OnDualSolution(VecReader& rd) {
+    got_dual_ = true;
     auto& duals_ = GetY();
     duals_.clear();
     if (int nac_sol = rd.Size()) {
@@ -1674,6 +1705,7 @@ public:
    */
   template <class VecReader>
   void OnPrimalSolution(VecReader& rd) {
+    got_primal_ = true;
     auto& primals_ = GetX();
     primals_.clear();
     if (int nv_sol = rd.Size()) {
@@ -1820,6 +1852,7 @@ private:
   std::unordered_map<std::string, MP2NLModelSuffix> suf_map_;
 
   /// Solution
+  bool got_primal_ {}, got_dual_ {}, got_options_ {};   // in this solve's .sol
   bool if_solve_attempted_ {};
   bool if_solve_ok_ {};     // return NLSolver's error message if not
   std::string solve_message_;
