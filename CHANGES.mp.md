@@ -22,8 +22,10 @@ Summary of recent updates to the AMPL MP Library
   stop with an error ("not a binary variable"). Now the converter declares
   the model infeasible: option `cvt:pre:infeasvarbnd` (default 1; 0 passes
   the contradictory bounds on, for example to get an IIS from a solver
-  that accepts them). The bounds of integer variables are rounded inwards
-  (option `cvt:pre:roundintbnd`, default 1).
+  that accepts them).
+- The bounds of integer and implied-integer variables (including integral
+  constants) are rounded inwards; option `cvt:pre:roundintbnd` is the
+  tolerance (default 1e-9, negative: no rounding).
 
 - Fixed a regression in 20261029: with variable names passed to the solver
   (for example `option highs_auxfiles rc;`), HiGHS failed some logical

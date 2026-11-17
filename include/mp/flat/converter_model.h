@@ -262,18 +262,18 @@ public:
     return type;
   }
 
-  /// Round the bounds of integer variables inwards
-  /// (cvt:pre:roundintbnd)?
-  int if_round_int_bounds() const { return if_round_int_bounds_; }
-  /// Round the bounds of integer variables inwards?
-  int& if_round_int_bounds() { return if_round_int_bounds_; }
+  /// Tolerance of rounding the bounds of integer variables inwards
+  /// (cvt:pre:roundintbnd), negative: no rounding
+  double round_int_bound_tol() const { return round_int_bound_tol_; }
+  /// Tolerance of rounding the bounds of integer variables inwards
+  double& round_int_bound_tol() { return round_int_bound_tol_; }
 
-  /// A bound of an integer variable rounded inwards
-  /// (lb up, ub down, tolerance 1e-9, finite values only)
+  /// A bound of an integer or implied-integer variable rounded inwards
+  /// (lb up, ub down, within cvt:pre:roundintbnd, finite values only)
   double RoundIntBound(int v, double b, bool is_lb) const {
-    if (if_round_int_bounds_ && var::INTEGER == var_type_[v]
-        && std::isfinite(b)) {
-      constexpr double tol = 1e-9;
+    if (round_int_bound_tol_ >= 0.0 && std::isfinite(b)
+        && (var::INTEGER == var_type_[v] || is_var_implied_int(v))) {
+      const double tol = round_int_bound_tol_;
       return is_lb ? std::ceil(b - tol) : std::floor(b + tol);
     }
     return b;
@@ -300,6 +300,7 @@ public:
   /// Improve best-known lb
   void set_best_lb(int v, double l) {
     assert(0<=v && v<num_vars());
+    l = RoundIntBound(v, l, true);
     if (var_lb_best_[v]<l)
       var_lb_best_[v] = l;
   }
@@ -307,6 +308,7 @@ public:
   /// Improve best-known ub
   void set_best_ub(int v, double u) {
     assert(0<=v && v<num_vars());
+    u = RoundIntBound(v, u, false);
     if (var_ub_best_[v]>u)
       var_ub_best_[v] = u;
   }
@@ -804,8 +806,9 @@ private:
   mutable bool model_nl_ {false}, model_nl_known_ {false};
   /// Submit implied-integer auxiliaries as integer?
   int if_submit_aux_int_ {0};
-  /// Round integer variable bounds inwards (cvt:pre:roundintbnd)
-  int if_round_int_bounds_ {1};
+  /// Tolerance of rounding integer variable bounds inwards
+  /// (cvt:pre:roundintbnd), negative: off
+  double round_int_bound_tol_ {1e-9};
   /// Set a per-variable flag, growing the vector on demand
   static void SetVarFlag(std::vector<bool>& flags, int v) {
     assert(v>=0);

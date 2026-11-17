@@ -1145,6 +1145,8 @@ public:
     auto it = map_fixed_vars_.find(value);
     if (map_fixed_vars_.end()==it) {
       auto v = GetModel().AddVar__basic(value, value);
+      if (value == std::round(value))        // known to be integer
+        MarkVarImpliedInt(v);
       it = map_fixed_vars_.insert({value, v}).first;
     }
     // A constant is shared and belongs to no item: no autolink.
@@ -2112,10 +2114,13 @@ private:
                        options_.declareInfeasVarBnd_, 0, 1);
 
     GetEnv().AddOption("cvt:pre:roundintbnd roundintbnd",
-                       "0/1*: Round the bounds of integer variables "
-                       "inwards (lower up, upper down), so that, e.g., "
-                       "[1, 0.17] becomes [1, 0].",
-                       GetModel().if_round_int_bounds(), 0, 1);
+                       "Tolerance for rounding the bounds of integer "
+                       "variables inwards (lower bound up, upper bound "
+                       "down): a lower bound b becomes ceil(b - tol), "
+                       "an upper bound floor(b + tol), so that, e.g., "
+                       "[1, 0.17] becomes [1, 0]. Negative: no rounding. "
+                       "Default 1e-9.",
+                       GetModel().round_int_bound_tol(), -1.0, 1.0);
 
     GetEnv().AddOption("cvt:pre:boundlogarg boundlogarg",
                        "0*/1: Bound logarithm arguments to nonnegative.",
