@@ -34,6 +34,10 @@ public:
   /// keep implied-integer auxiliaries integer (cvt:pre:auxint)
   static int AuxIntDefault() { return 1; }
 
+  /// ... and keeps fixed integer variables integer, instead of
+  /// making them continuous (cvt:pre:continuous_fixed_vars)
+  static int FixedVarsContinuousDefault() { return 0; }
+
   /// Products are native: keep a product of sums as one product
   /// of two auxiliary variables (cvt:multoutcard)
   static double MultOutCardDefault() { return 1.0; }

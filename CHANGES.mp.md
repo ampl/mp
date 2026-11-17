@@ -3,6 +3,19 @@ Summary of recent updates to the AMPL MP Library
 
 ## Unreleased
 
+- Fixed wrong results of the conversion of logical constructs (all solvers):
+  - a comparison shared by a disjunction and an if-then-else condition lost
+    one of its two implications when the if-then-else result was bounded by a
+    strict comparison (`<`, `>`);
+  - an integer variable fixed at a fractional value (`2*x == 1`) was made
+    continuous and the model reported optimal;
+  - `abs()` of a variable fixed at a negative value made `abs(x) > c` infeasible;
+  - comparisons `x == c` for constants outside the domain of a variable that was
+    fixed later were left free in the unary encoding, so infeasible models
+    were reported optimal;
+  - contradictory bounds of an auxiliary variable stopped the conversion with
+    an error instead of reporting infeasibility.
+
 - Fixed a regression in 20261029: with variable names passed to the solver
   (for example `option highs_auxfiles rc;`), HiGHS failed some logical
   models with "Error -1 for call ... Highs_passColName". Columns that MP

@@ -220,9 +220,11 @@ public:
       prepro.set_result_var(argvar);
       return;
     } else if (ub<=0.0 && !MPCD( IfPreproBoundsOnly() )) {
-      auto res = MPD( AssignResult2Args(   // create newvar = -argvar
+      // The result can be a constant (argvar fixed at a negative value):
+      // then it needs a fixed variable, get_var() of a constant is garbage
+      auto res = MPD( AssignResultVar2Args(  // create newvar = -argvar
             LinearFunctionalConstraint({ {{-1.0}, {argvar}}, 0.0 })) );
-      prepro.set_result_var(res.get_var());
+      prepro.set_result_var(res);
       return;
     }
     prepro.narrow_result_bounds(0.0, std::max(-lb, ub));

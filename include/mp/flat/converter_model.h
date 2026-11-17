@@ -662,8 +662,18 @@ public:
     // Make fixed vars continuous
     if (if_make_fixed_vars_continuous())
       for (auto i=var_lb_subm_.size(); i--; ) {
-        if (var_lb_subm_[i] >= var_ub_subm_[i])
+        if (var_lb_subm_[i] >= var_ub_subm_[i]) {
+          // An integer variable fixed at a fractional value (2*x==1)
+          // is infeasible: it must stay integer, or the solver
+          // would "solve" the model with x=0.5
+          const auto v = var_lb_subm_[i];
+          if (var_lb_subm_[i] > var_ub_subm_[i])
+            continue;     // contradictory bounds: infeasible, keep the type
+          if (var::INTEGER == var_type_subm_[i]
+              && std::fabs(v - std::round(v)) > 1e-6)
+            continue;
           var_type_subm_[i] = var::CONTINUOUS;   // avoid MIP classification
+        }
       }
   }
 

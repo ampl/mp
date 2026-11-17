@@ -1415,8 +1415,11 @@ public:
   /// MakeComplementVar()
   int MakeComplementVar(int bvar) {
     if ( !(lb(bvar)==0.0 && ub(bvar)==1.0) ) {
-      // Should be (hard-?)fixed at 0 or 1
-      MP_ASSERT_ALWAYS( ((!lb(bvar) && !ub(bvar))
+      // Should be (hard-?)fixed at 0 or 1. Contradictory bounds
+      // (lb>ub) mean the model is infeasible (already warned about):
+      // keep going, the solver will report it, instead of failing
+      MP_ASSERT_ALWAYS( lb(bvar) > ub(bvar)
+                        || ((!lb(bvar) && !ub(bvar))
                         || (1.0==lb(bvar) && 1.0==ub(bvar))),
                 "Asked to complement variable with best-known bounds "
                     + std::to_string(lb(bvar))
@@ -2083,9 +2086,15 @@ private:
                        "constraint, e.g., indicator binaries, are not affected.",
                        GetModel().if_submit_aux_int(), 0, 1);
 
+    GetModel().if_make_fixed_vars_continuous()
+        = ModelAPI::FixedVarsContinuousDefault();
     GetEnv().AddOption("cvt:pre:continuous_fixed_vars continuous_fixed_vars ctg_fixed",
+                       ModelAPI::FixedVarsContinuousDefault() ?
                        "0/1*: Make fixed variables continuous, "
-                       "to avoid fake MIPs.",
+                       "to avoid fake MIPs." :
+                       "0*/1: Make fixed variables continuous, "
+                       "to avoid fake MIPs. Off by default for solvers "
+                       "without continuous variables.",
                        GetModel().if_make_fixed_vars_continuous(), 0, 1);
 
     GetEnv().AddOption("cvt:pre:boundlogarg boundlogarg",

@@ -1093,5 +1093,58 @@
     "values": {
       "solve_result_num": 0
     }
+  },
+  {
+    "name" : "ctx_ite_or_shared_cmp_01",
+    "files" : ["ctx_ite_or_shared_cmp_01.mod"],
+    "tags" : ["logical", "integer"],
+    "comment": "A comparison shared by a root disjunction and an if-then-else condition: both implications are needed",
+    "objective": -6
+  },
+  {
+    "name" : "bounds_contradict_complement_01 presolve 0",
+    "files" : ["bounds_contradict_complement_01.mod"],
+    "tags" : ["logical", "integer"],
+    "options": {
+      "presolve": 0
+    },
+    "comment": "Contradictory bounds of an auxiliary variable: infeasible, not an error",
+    "values": {
+      "solve_result": "infeasible"
+    }
+  },
+  {
+    "name" : "int_fixed_fractional_01 presolve 0",
+    "files" : ["int_fixed_fractional_01.mod"],
+    "tags" : ["integer"],
+    "options": {
+      "presolve": 0
+    },
+    "comment": "An integer variable fixed at a fractional value: infeasible",
+    "values": {
+      "solve_result": "infeasible"
+    }
+  },
+  {
+    "name" : "abs_fixed_negative_01 presolve 0",
+    "files" : ["abs_fixed_negative_01.mod"],
+    "tags" : ["integer"],
+    "options": {
+      "presolve": 0
+    },
+    "comment": "abs() of a variable fixed at a negative value",
+    "objective": -2
+  },
+  {
+    "name" : "uenc_fixed_var_01 presolve 0",
+    "files" : ["uenc_fixed_var_01.mod"],
+    "tags" : ["logical", "integer"],
+    "options": {
+      "presolve": 0
+    },
+    "comment": "Comparisons of a variable fixed later with constants outside its domain: their flags must be fixed to 0",
+    "values": {
+      "solve_result": "infeasible"
+    }
   }
 ]

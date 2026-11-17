@@ -94,12 +94,22 @@ void CpsatModelAPI::AddVariables(const VarArrayDef& v) {
     // those are fine if the value is integer
     const bool fixed_int = v.plb()[i] == v.pub()[i] &&
         IsIntegerValue(v.plb()[i]);
-    if (v.ptype()[i] != var::Type::INTEGER && !fixed_int)
+    // Contradictory bounds (lb>ub) make the model infeasible, whatever
+    // the type: do not complain about the type
+    const bool contradictory = v.plb()[i] > v.pub()[i];
+    if (v.ptype()[i] != var::Type::INTEGER && !fixed_int && !contradictory)
       throw std::runtime_error(fmt::format(
           "CP-SAT supports integer variables only; "
           "variable {} is continuous", d->vars.size()));
-    const auto lb = LowerBoundToInt64(v.plb()[i]);
-    const auto ub = UpperBoundToInt64(v.pub()[i]);
+    auto lb = LowerBoundToInt64(v.plb()[i]);
+    auto ub = UpperBoundToInt64(v.pub()[i]);
+    if (lb > ub) {
+      // An empty domain (also: an integer variable fixed at a fractional
+      // value) is rejected by CP-SAT as an invalid model, not reported
+      // as infeasible. Keep a valid domain and state the infeasibility.
+      d->builder.AddLinearConstraint(sat::LinearExpr(int64_t{0}), Domain(1, 1));
+      lb = ub;
+    }
     d->var_lb.push_back(lb);
     d->var_ub.push_back(ub);
     d->vars.push_back(d->builder.NewIntVar(Domain(lb, ub)));
