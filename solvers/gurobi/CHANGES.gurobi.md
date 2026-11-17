@@ -2,6 +2,11 @@ Summary of recent updates to Gurobi for AMPL
 ============================================
 
 
+## unreleased
+
+- Fix: *kappa_exact=2* wrote the exact condition number to the *.kappa*
+  suffix instead of *.kappa_exact*.
+
 ## 20261029
 - Add options requiring Gurobi 14:
   *alg:method=7* (NL barrier), *alg:concurrentmethod=4*,

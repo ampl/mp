@@ -711,8 +711,8 @@ protected:
     {
       try {
         double value = KappaExact();
-        ReportSingleSuffix(suf_objkappa, value);
-        ReportSingleSuffix(suf_probkappa, value);
+        ReportSingleSuffix(suf_objkappa_exact, value);
+        ReportSingleSuffix(suf_probkappa_exact, value);
       } catch (const std::exception& exc) {
         AddWarning("KAPPA_EXACT", exc.what());
       }
