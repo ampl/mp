@@ -2,6 +2,13 @@ Summary of recent updates to CPLEX for AMPL
 ==============================================
 
 
+## unreleased
+
+- Fix: indicator constraints with an equality were passed to CPLEX with an
+  invalid sense, which CPLEX 22.2 mishandled (wrong results or violated
+  indicators). Note: CPLEX 22.2 can still return a suboptimal solution with
+  native equality indicators; *acc:indeq=0* avoids them.
+
 ## 20261029
 - Correct *.iis* values for models mixing linear, quadratic,
   indicator, and SOS constraints.
