@@ -23,8 +23,7 @@ Summary of recent updates to the AMPL MP Library
   the model infeasible: option `cvt:pre:infeasvarbnd` (default 1; 0 passes
   the contradictory bounds on, for example to get an IIS from a solver
   that accepts them).
-- The bounds of integer and implied-integer variables (including integral
-  constants) are rounded inwards; option `cvt:pre:roundintbnd` is the
+- The bounds of integer and implied-integer variables are rounded inwards; option `cvt:pre:roundintbnd` is the
   tolerance (default 1e-9, negative: no rounding).
 
 - Fixed a regression in 20261029: with variable names passed to the solver

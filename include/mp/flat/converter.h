@@ -1145,8 +1145,6 @@ public:
     auto it = map_fixed_vars_.find(value);
     if (map_fixed_vars_.end()==it) {
       auto v = GetModel().AddVar__basic(value, value);
-      if (value == std::round(value))        // known to be integer
-        MarkVarImpliedInt(v);
       it = map_fixed_vars_.insert({value, v}).first;
     }
     // A constant is shared and belongs to no item: no autolink.
