@@ -1521,6 +1521,12 @@ class MP2NLOverMPSolver(MPDirectSolver):
        ...) goes to both; the case's own 'mp2nl_options' go to MP2NL.
        Not covered: input suffixes that MP2NL does not forward to the
        subsolver (.iisforce, .funcpieces, ...) and statistics suffixes."""
+
+    def mapExpectedValueName(self, name: str) -> str:
+        """A case's 'values' describe the MP driver's model, which MP2NL
+        reports with prefix sub_ (values_per_solver_category MP2NL:
+        MP2NL's own). Used by the runner where it supports it."""
+        return re.sub(r"\bInitial\.(flat[01]_|option___)", r"Initial.sub_\1", name)
     CATEGORY = SolverCategory.MP2NL
     _option_names = {}              # executable -> names and synonyms
 
