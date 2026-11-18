@@ -964,5 +964,12 @@
       "Initial.flat1__lineq": 0,
       "Initial.flat1__nlassigneq": 0
     }
+  },
+  {
+    "name" : "exp_square_ctx_01",
+    "solvers": ["gurobi", "scip", "knitro", "baron", "baronmp", "lindoglobal", "gurobi_mp2nl", "scip_mp2nl", "baronmp_mp2nl"],
+    "tags" : ["integer", "nonlinear", "logical", "log"],
+    "comment": "One-sided relaxation of exp() must submit the bound used for the context of its square",
+    "objective": -8.7
   }
 ]

@@ -45,6 +45,10 @@ Summary of recent updates to the AMPL MP Library
   only, default -1: no limit). A linear subexpression not inlined stays a
   variable with its linear definition and the bounds implied by it.
   `cvt:pre:unnest=31 cvt:pre:linfill=-1` restores the old behavior.
+- Fixed a wrong result with expressions passed to the solver (e.g., Gurobi 14,
+  `acc:_expr=1`): a function result relaxed to one inequality by context
+  (e.g., `v <= exp(.)` inside `log(1 + v^2)`) lost its implied bounds
+  (`v >= 0`), on which the context relied. They are now passed to the solver.
 
 - Fixed a regression in 20261029: with variable names passed to the solver
   (for example `option highs_auxfiles rc;`), HiGHS failed some logical

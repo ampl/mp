@@ -822,10 +822,18 @@ protected:
     assert( MPCD(IsProperVar(resvar)) );
     if (con.GetContext().IsMixed())
       MPD( AddConstraint(NLAssignEQ(resvar)) );
-    else if (con.GetContext().HasPositive())
-      MPD( AddConstraint(NLAssignLE(resvar)) );
-    else
-      MPD( AddConstraint(NLAssignGE(resvar)) );
+    else {
+      // One-sided: the side of the result's best-known bounds that
+      // the inequality drops (lower for v <= f(x), upper for
+      // v >= f(x)) no longer follows from the model, but contexts
+      // may rely on it (e.g., v >= 0 in v^2): submit that side
+      if (con.GetContext().HasPositive()) {
+        MPD( NarrowVarBounds(resvar, MPCD( lb(resvar) ), MPD( Infty() )) );
+        MPD( AddConstraint(NLAssignLE(resvar)) );
+      } else {
+        MPD( NarrowVarBounds(resvar, MPD( MinusInfty() ), MPCD( ub(resvar) )) );
+        MPD( AddConstraint(NLAssignGE(resvar)) );
+      }
     }
   }
 
