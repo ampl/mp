@@ -42,7 +42,38 @@ public:
         result = result || DoConsiderInliningInIndicators();
       }
     }
+    if (flags & 32) {
+      nlfc = MPCD( GetNumberOfAddable(
+          (LinearFunctionalConstraint*)nullptr) );
+      nqfc = MPCD( GetNumberOfAddable(
+          (QuadraticFunctionalConstraint*)nullptr) );
+      if ((nlfc && fLin_) || (nqfc && fQuad_))
+        DoConsiderInliningInFuncCons();
+    }
     return result;
+  }
+
+  /// Final pass (cvt:pre:unnest bit 32): revisit all items
+  /// from the start. In the main loop, each item is visited
+  /// once; a subexpression can be created after its parent
+  /// was visited (e.g., NOT linearized into an LFC).
+  /// @return whether anything was inlined
+  bool ReconsiderInliningAlgExpr(int flags) {
+    if (!(flags & 32) || !(flags & (2 | 4))
+        || !(MPCD( GetNumberOfAddable(
+                 (LinearFunctionalConstraint*)nullptr) )
+             || MPCD( GetNumberOfAddable(
+                    (QuadraticFunctionalConstraint*)nullptr) )))
+      return false;
+    fLin_ = flags & 2;
+    fQuad_ = flags & 4;
+    last_con_.fill(0);
+    n_inlined_ = 0;
+    DoConsiderInliningStaticAlgCons();
+    if (flags & 16)
+      DoConsiderInliningInIndicators();
+    DoConsiderInliningInFuncCons();
+    return n_inlined_ > 0;
   }
 
   /// Check if the variable can be eliminated.
@@ -53,6 +84,36 @@ public:
         CanBeEliminated_FastCheck(var)
         &&
         !MPCD( IfSubmittedVarBoundsStrongerThanInitExpr(var) );
+  }
+
+  /// Can the result variable \a v of LFC \a lfc be inlined:
+  /// CanBeEliminated() and the fill within cvt:pre:linfill.
+  bool CanInline(int v, const LinearFunctionalConstraint& lfc) const {
+    return CanBeEliminated(v)
+        && IfFillWithin(v, lfc.GetAffineExpr().GetBody().size(),
+                        MPCD( LinFillLimit() ));
+  }
+
+  /// Can the result variable \a v of QFC \a qfc be inlined:
+  /// CanBeEliminated() and the fill of its quadratic part
+  /// within cvt:pre:quadfill.
+  bool CanInline(int v, const QuadraticFunctionalConstraint& qfc) const {
+    return CanBeEliminated(v)
+        && IfFillWithin(v, qfc.GetQuadExpr().GetBody().GetQPTerms().size(),
+                        MPCD( QuadFillLimit() ));
+  }
+
+  /// Is the fill from inlining a subexpression with \a k terms
+  /// into all uses of its result \a v within \a limit
+  /// (negative: no limit)? Upper bound of the fill:
+  /// (u-1)(k-1)-2 for u uses: u*k terms added, u references
+  /// and the definition (k+1 entries) removed. Merging with
+  /// existing terms can only reduce it.
+  bool IfFillWithin(int v, size_t k, int limit) const {
+    if (limit < 0)
+      return true;
+    const long long u = MPCD( VarUsage(v) );
+    return (u-1) * ((long long)k - 1) - 2 <= limit;
   }
 
   /// Check if the variable can be eliminated.
@@ -94,11 +155,20 @@ protected:
     return false;
   }
 
+  /// Inline into the bodies of linear and quadratic
+  /// functional constraints (cvt:pre:unnest bit 32),
+  /// i.e., subexpressions of expressions defining
+  /// other variables.
+  void DoConsiderInliningInFuncCons() {
+    Walk2Inline<LinearFunctionalConstraint>(14);
+    Walk2Inline<QuadraticFunctionalConstraint>(15);
+  }
+
   /// @param iType: con type index
   template <class Con>
   void Walk2Inline(size_t iType) {
     auto& ck = MPD( GetConstraintKeeper( (Con*)nullptr) );
-    ck.ForEachActive(
+    n_inlined_ += ck.ForEachActive(
         [this](const Con& con, int i) {
           return MPD( InlineAlgExpr(con, i) );
         }, last_con_.at(iType), ck.Size());
@@ -122,6 +192,7 @@ protected:
         pre::AutoLinkScope auto_link_scope
             { *(Impl*)this, obj_src };
         MPD( UncountArgRefs(obj) );
+        ++n_inlined_;          // the final pass must reconvert then
         obj.GetLinTerms() = std::move(qexpr.GetBody().GetLinTerms());
         obj.GetQPTerms() = std::move(qexpr.GetBody().GetQPTerms());
         if (qexpr.constant_term()) {
@@ -205,6 +276,71 @@ protected:
     return false;
   }
 
+  /// Inline algebraic subexpressions into the body
+  /// of a linear functional constraint r = c'x + d
+  /// (cvt:pre:unnest bit 32).
+  /// @return true iff \a con has been replaced
+  bool InlineAlgExpr(const LinearFunctionalConstraint& con, int i) {
+    const auto& ae = con.GetAffineExpr();
+    if (!HasAlgExpr(ae.GetBody()))
+      return false;
+    RedefineByCollected(con, i,
+                        CollectAlgSubExpr(ae.GetBody(), {}),
+                        ae.constant_term());
+    return true;
+  }
+
+  /// Inline algebraic subexpressions into the linear part
+  /// of a quadratic functional constraint
+  /// (cvt:pre:unnest bit 32).
+  /// @return true iff \a con has been replaced
+  bool InlineAlgExpr(const QuadraticFunctionalConstraint& con, int i) {
+    const auto& qe = con.GetQuadExpr();
+    if (!HasAlgExpr(qe.GetBody().GetLinTerms()))
+      return false;
+    RedefineByCollected(con, i,
+                        CollectAlgSubExpr(qe.GetBody()),
+                        qe.constant_term());
+    return true;
+  }
+
+  /// Redefine the result variable of functional
+  /// constraint \a con by the collected expression
+  /// \a qexpr plus \a constant: an LFC, or a QFC
+  /// if quadratic terms remain. The new item gets the context
+  /// of \a con; no propagation is needed, as the inlined
+  /// subexpressions' arguments have received it already.
+  /// RedefineVariable() marks \a con bridged.
+  template <class FuncCon>
+  void RedefineByCollected(
+      const FuncCon& con, int i, EExpr qexpr, double constant) {
+    const int resvar = con.GetResultVar();
+    const auto ctx = con.GetContext().IsNone()
+        ? Context::CTX_MIX : con.GetContext();
+    qexpr.add_to_constant(constant);
+    const double cst = qexpr.constant_term();
+    const bool f_const =             // terms cancelled, e.g., b + (1-b)
+        qexpr.GetLinTerms().empty() && qexpr.GetQPTerms().empty();
+    auto auto_link_scope = MPD( MakeAutoLinker(con, i) );
+    if (qexpr.GetQPTerms().size()) {
+      QuadraticFunctionalConstraint qfc {
+        { { std::move(qexpr.GetLinTerms()),
+            std::move(qexpr.GetQPTerms()) },
+          qexpr.constant_term() } };
+      qfc.AddContext(ctx);
+      MPD( RedefineVariable(resvar, std::move(qfc)) );
+    } else {
+      LinearFunctionalConstraint lfc {
+        { std::move(qexpr.GetLinTerms()), qexpr.constant_term() } };
+      lfc.AddContext(ctx);
+      MPD( RedefineVariable(resvar, std::move(lfc)) );
+    }
+    // A constant: fix the result, so that it is not used as
+    // an expression without variables (Xpress: invalid formula)
+    if (f_const)
+      MPD( NarrowVarBounds(resvar, cst, cst) );
+  }
+
   /// @return recursively collect linear and/or quadratic
   /// subexpressions
   /// @todo Consider \a fQuad_
@@ -251,12 +387,12 @@ protected:
       if ((pLFC = MPCD(
                template GetActiveInitExpressionOfType<
                    LinearFunctionalConstraint>(vi) ))
-          && CanBeEliminated(vi)) {
+          && CanInline(vi, *pLFC)) {
         inline_alg_subexpr(pLFC->GetAffineExpr(), ci, vi);
       } else if ((pQFC = MPCD(
                       template GetActiveInitExpressionOfType<
                           QuadraticFunctionalConstraint>(vi) ))
-                 && CanBeEliminated(vi)) {
+                 && CanInline(vi, *pQFC)) {
         inline_alg_subexpr(pQFC->GetArguments(), ci, vi);
       } else
         ae_untouched.add_term(ci, vi);
@@ -286,14 +422,14 @@ protected:
       if (auto pLFC = MPCD(
               template GetActiveInitExpressionOfType<
                   LinearFunctionalConstraint>(vi) ))
-        if (CanBeEliminated(vi))
+        if (CanInline(vi, *pLFC))
           return true;
       if (auto pQFC = MPCD(
               template GetActiveInitExpressionOfType<
                   QuadraticFunctionalConstraint>(vi) )) {
         if (pQFC->GetArguments().GetLinTerms().size()
             || fQuad_)
-          if (CanBeEliminated(vi))
+          if (CanInline(vi, *pQFC))
             return true;
       }
     }
@@ -303,7 +439,8 @@ protected:
 
 private:
   bool fLin_ {}, fQuad_ {};
-  std::array<int, 14> last_con_ {};   // does this init to 0's?
+  std::array<int, 16> last_con_ {};   // per item type: next to visit
+  int n_inlined_ {};                  // items replaced, in a walk
 };
 
 }  // namespace mp

@@ -851,5 +851,118 @@
     "tags" : ["continuous", "nonlinear"],
     "comment": "defined variables aliasing variables, used in a nonlinear defined variable with several product terms",
     "objective": 2.31988251575
+  },
+  {
+    "name" : "inline_lin_bounds_01",
+    "solvers": ["gurobi", "xpress", "scip", "knitro", "baron", "baronmp", "lindoglobal", "conopt", "gurobi_mp2nl", "xpress_mp2nl", "scip_mp2nl", "baronmp_mp2nl"],
+    "tags" : ["continuous", "nonlinear"],
+    "comment": "Linear subexpression with stronger bounds (abs(x-2*y) <= 1) stays a variable (cvt:pre:unnest bit 32): its bound is active",
+    "objective": -0.72817181715
+  },
+  {
+    "name" : "inline_lin_bounds_01 boundsbest=0",
+    "solvers": ["gurobi", "xpress", "scip", "knitro", "baron", "baronmp", "lindoglobal", "conopt", "gurobi_mp2nl", "xpress_mp2nl", "scip_mp2nl", "baronmp_mp2nl"],
+    "files" : ["inline_lin_bounds_01.mod"],
+    "tags" : ["continuous", "nonlinear"],
+    "options": {
+      "mp_options": "cvt:pre:boundsbest=0",
+      "mp2nl_options": "solver_options='cvt:pre:boundsbest=0'"
+    },
+    "objective": -0.72817181715
+  },
+  {
+    "name" : "inline_lin_bounds_01 boundsbest=1",
+    "solvers": ["gurobi", "xpress", "scip", "knitro", "baron", "baronmp", "lindoglobal", "conopt", "gurobi_mp2nl", "xpress_mp2nl", "scip_mp2nl", "baronmp_mp2nl"],
+    "files" : ["inline_lin_bounds_01.mod"],
+    "tags" : ["continuous", "nonlinear"],
+    "options": {
+      "mp_options": "cvt:pre:boundsbest=1",
+      "mp2nl_options": "solver_options='cvt:pre:boundsbest=1'"
+    },
+    "objective": -0.72817181715
+  },
+  {
+    "name" : "inline_lin_bounds_01 boundsbest=4",
+    "solvers": ["gurobi", "xpress", "scip", "knitro", "baron", "baronmp", "lindoglobal", "conopt", "gurobi_mp2nl", "xpress_mp2nl", "scip_mp2nl", "baronmp_mp2nl"],
+    "files" : ["inline_lin_bounds_01.mod"],
+    "tags" : ["continuous", "nonlinear"],
+    "options": {
+      "mp_options": "cvt:pre:boundsbest=4",
+      "mp2nl_options": "solver_options='cvt:pre:boundsbest=4'"
+    },
+    "objective": -0.72817181715
+  },
+  {
+    "name" : "inline_lin_bounds_01 unnest=31",
+    "solvers": ["gurobi", "xpress", "scip", "knitro", "baron", "baronmp", "lindoglobal", "conopt", "gurobi_mp2nl", "xpress_mp2nl", "scip_mp2nl", "baronmp_mp2nl"],
+    "files" : ["inline_lin_bounds_01.mod"],
+    "tags" : ["continuous", "nonlinear"],
+    "options": {
+      "mp_options": "cvt:pre:unnest=31",
+      "mp2nl_options": "solver_options='cvt:pre:unnest=31'"
+    },
+    "objective": -0.72817181715
+  },
+  {
+    "name" : "inline_lin_bounds_02",
+    "solvers": ["gurobi", "xpress", "scip", "knitro", "baron", "baronmp", "lindoglobal", "conopt", "gurobi_mp2nl", "xpress_mp2nl", "scip_mp2nl", "baronmp_mp2nl"],
+    "tags" : ["continuous", "nonlinear"],
+    "comment": "Linear subexpression without stronger bounds: inlined",
+    "objective": -1.302585093
+  },
+  {
+    "name" : "inline_quad_in_lin_01",
+    "solvers": ["gurobi", "xpress", "scip", "knitro", "baron", "baronmp", "lindoglobal", "gurobi_mp2nl", "xpress_mp2nl", "scip_mp2nl", "baronmp_mp2nl"],
+    "tags" : ["continuous", "binary", "nonlinear", "logical", "quadraticnonconvex"],
+    "comment": "Quadratic subexpression in the linear expression of an if-then-else branch inside sqrt",
+    "objective": -2.3905243
+  },
+  {
+    "name" : "inline_lin_const_01",
+    "solvers": ["gurobi", "xpress", "scip", "knitro", "baron", "baronmp", "lindoglobal", "gurobi_mp2nl", "xpress_mp2nl", "scip_mp2nl", "baronmp_mp2nl"],
+    "tags" : ["integer", "nonlinear", "logical", "quadraticnonconvex"],
+    "comment": "Inlined linear (and the linear part of a quadratic) expression whose terms cancel to a nonzero constant inside exp (cvt:pre:unnest bit 32); Xpress failed with an invalid formula",
+    "objective": 7.1073379274
+  },
+  {
+    "name" : "inline_quad_lin_01",
+    "solvers": ["gurobi", "scip"],
+    "tags" : ["continuous", "integer", "nonlinear", "logical", "quadraticnonconvex"],
+    "comment": "Quadratic subexpression in a linear expression defining another variable, inside exp (cvt:pre:unnest bit 32)",
+    "objective": -2.6534264
+  },
+  {
+    "name" : "inline_quad_lin_01 noquad",
+    "files" : ["inline_quad_lin_01.mod"],
+    "solvers": ["gurobi"],
+    "tags" : ["continuous", "integer", "nonlinear", "logical", "quadraticnonconvex"],
+    "comment": "Quadratic constraints and indicators not accepted: no cycles",
+    "options": { "mp_options": "acc:quadle=0 acc:quadeq=0 acc:quadge=0 acc:indquadle=0 acc:indquadeq=0 acc:indquadge=0" },
+    "objective": -2.6534264
+  },
+  {
+    "name" : "inline_fill_chain_01",
+    "solvers": ["gurobi", "scip"],
+    "tags" : ["continuous", "nonlinear", "logical"],
+    "comment": "Shared chain links kept as variables by cvt:pre:linfill (default 10)",
+    "options": { "mp_options": "debug=1" },
+    "objective": 19.94313443,
+    "values": {
+      "Initial.flat1__lineq": 13,
+      "Initial.flat1__nlassigneq": 0
+    }
+  },
+  {
+    "name" : "inline_fill_chain_01 linfill=-1",
+    "files" : ["inline_fill_chain_01.mod"],
+    "solvers": ["gurobi", "scip"],
+    "tags" : ["continuous", "nonlinear", "logical"],
+    "comment": "No fill limit: all links inlined",
+    "options": { "mp_options": "debug=1 cvt:pre:linfill=-1" },
+    "objective": 19.94313443,
+    "values": {
+      "Initial.flat1__lineq": 0,
+      "Initial.flat1__nlassigneq": 0
+    }
   }
 ]

@@ -1266,5 +1266,107 @@
     "tags" : ["logical", "integer"],
     "comment": "Indicator flags fixed after the indicators were created: folded (cvt:pre:indfixedflag)",
     "objective": -7
+  },
+  {
+    "name" : "inline_lin_nested_not_01",
+    "tags" : ["logical", "integer"],
+    "comment": "Linear functional constraints of equivalences contain those of NOTs: inlined (cvt:pre:unnest bit 32); CPLEX and Xpress through MP2NL failed",
+    "objective": -2
+  },
+  {
+    "name" : "inline_lin_nested_not_01 struct",
+    "files" : ["inline_lin_nested_not_01.mod"],
+    "tags" : ["logical", "integer"],
+    "solvers": ["gurobi", "xpress", "scip"],
+    "comment": "No linear expressions or NL assignments left in the final model",
+    "options": { "mp_options": "debug=1" },
+    "objective": -2,
+    "values": {
+      "Initial.flat1__linfn": 0,
+      "Initial.flat1__nlassigneq": 0
+    }
+  },
+  {
+    "name" : "inline_lin_nested_not_01 unnest=31",
+    "files" : ["inline_lin_nested_not_01.mod"],
+    "tags" : ["logical", "integer"],
+    "solvers": ["gurobi", "xpress", "scip"],
+    "comment": "Old behavior (cvt:pre:unnest=31): nested linear expressions as NL assignments",
+    "options": { "mp_options": "debug=1 cvt:pre:unnest=31" },
+    "objective": -2,
+    "values": {
+      "Initial.flat1__linfn": 4,
+      "Initial.flat1__nlassigneq": 2
+    }
+  },
+  {
+    "name" : "inline_lin_rand_01",
+    "tags" : ["logical", "integer"],
+    "comment": "Generated; equivalences with NOT (cvt:pre:unnest bit 32)",
+    "objective": -11
+  },
+  {
+    "name" : "inline_lin_rand_01 struct",
+    "files" : ["inline_lin_rand_01.mod"],
+    "tags" : ["logical", "integer"],
+    "solvers": ["gurobi", "xpress", "scip"],
+    "options": { "mp_options": "debug=1" },
+    "objective": -11,
+    "values": {
+      "Initial.flat1__linfn": 0,
+      "Initial.flat1__nlassigneq": 0
+    }
+  },
+  {
+    "name" : "inline_lin_rand_02",
+    "tags" : ["logical", "integer", "nonlinear", "trigonometric"],
+    "comment": "Generated; nested NOT in equivalences, sqrt(1 + sin(.)^2) (cvt:pre:unnest bit 32)",
+    "objective": -11.899009165927
+  },
+  {
+    "name" : "inline_lin_cancel_01",
+    "tags" : ["logical", "integer"],
+    "comment": "Inlined nested linear expressions whose terms cancel (cvt:pre:unnest bit 32)",
+    "objective": -2
+  },
+  {
+    "name" : "inline_quad_ind_01",
+    "solvers": ["gurobi", "scip", "xpress"],
+    "tags" : ["continuous", "integer", "binary", "logical", "quadraticnonconvex"],
+    "comment": "Quadratic subexpression in an indicator body next to a linearized NOT (cvt:pre:unnest)",
+    "objective": -3.3333333
+  },
+  {
+    "name" : "inline_quad_ind_01 noindquad",
+    "files" : ["inline_quad_ind_01.mod"],
+    "solvers": ["gurobi"],
+    "tags" : ["continuous", "integer", "binary", "logical", "quadraticnonconvex"],
+    "comment": "Quadratic indicators not accepted: inlining must not cycle with their conversion",
+    "options": { "mp_options": "acc:indquadle=0 acc:indquadeq=0 acc:indquadge=0" },
+    "objective": -3.3333333
+  },
+  {
+    "name" : "inline_quad_ind_01 noquad",
+    "files" : ["inline_quad_ind_01.mod"],
+    "solvers": ["gurobi"],
+    "tags" : ["continuous", "integer", "binary", "logical", "quadraticnonconvex"],
+    "comment": "Quadratic constraints and indicators not accepted: no cycles",
+    "options": { "mp_options": "acc:quadle=0 acc:quadeq=0 acc:quadge=0 acc:indquadle=0 acc:indquadeq=0 acc:indquadge=0" },
+    "objective": -3.3333333
+  },
+  {
+    "name" : "inline_quad_bin_01",
+    "tags" : ["binary", "logical", "prod_with_bin_var"],
+    "comment": "Products of binaries in nested linear expressions and indicators",
+    "objective": -3
+  },
+  {
+    "name" : "inline_quad_bin_01 noquad",
+    "files" : ["inline_quad_bin_01.mod"],
+    "solvers": ["gurobi"],
+    "tags" : ["binary", "logical", "prod_with_bin_var"],
+    "comment": "Quadratic constraints and indicators not accepted: no cycles",
+    "options": { "mp_options": "acc:quadle=0 acc:quadeq=0 acc:quadge=0 acc:indquadle=0 acc:indquadeq=0 acc:indquadge=0" },
+    "objective": -3
   }
 ]

@@ -467,7 +467,8 @@ protected:
   void ConvertDelayedItems() {
     if_final_cvt_phase_ = true;
     while (GetModel().ConvertDelayedItems(*this)
-           || MPD( ReassessFixedFlagIndicators() ))
+           || MPD( ReassessFixedFlagIndicators() )
+           || MPD( ReconsiderInliningAlgExpr(MPCD( IfPreproUnnest() )) ))
       MP_DISPATCH( ConvertAllConstraints() );
   }
 
@@ -1836,7 +1837,9 @@ private:
     int preprocessIneq2Related_ = 1;
     int preprocessVarBnd_ = 3;
 
-    int preproUnnest_ = 31;
+    int preproUnnest_ = 63;
+    int linFill_ = 10;
+    int quadFill_ = -1;
     int preproSortUnify_  = 1;
     int boundLogArg_ = 0;
 
@@ -2040,11 +2043,36 @@ private:
                        "|  2 - Linear subexpressions in algebraic constraints\n"
                        "|  4 - Linear and quadratic subexpressions in algebraic constraints\n"
                        "|  8 - MIN/MAX\n"
-                       "| 16 - Algebraic subexpressions in indicator constraints.\n"
+                       "| 16 - Algebraic subexpressions in indicator constraints\n"
+                       "| 32 - Algebraic subexpressions in expressions "
+                       "defining other variables, e.g., NOT in an "
+                       "equivalence (avoids linear terms in NL output)\n"
                        "\n"
-                       "See also option cvt:dvelim concerning only the input model. "
-                       "Default 31.",
-        options_.preproUnnest_, 0, 31);
+                       "16 and 32 need 2 or 4. Not inlined: results with "
+                       "stronger bounds (cvt:pre:boundsbest), "
+                       "cvt:dvelim=0. "
+                       "Default 63 (31 with cvt:pre:linfill=-1: the behavior before bit 32). "
+                       "See also cvt:pre:linfill, cvt:pre:quadfill, "
+                       "cvt:dvelim, cvt:expr:nlassign.",
+        options_.preproUnnest_, 0, 63);
+    GetEnv().AddOption("cvt:pre:linfill linfill",
+                       "Limit on the fill from inlining a shared linear "
+                       "subexpression (cvt:pre:unnest): an upper bound "
+                       "(u-1)(k-1)-2 for k terms and u uses. Negative: "
+                       "no limit. A subexpression not inlined stays a "
+                       "variable defined by a linear equality, with the "
+                       "bounds implied by it. Applies to all bits of "
+                       "cvt:pre:unnest. Default 10. "
+                       "See also cvt:pre:unnest, cvt:pre:quadfill, "
+                       "cvt:dvelim, cvt:expr:nlassign.",
+                       options_.linFill_, -1, INT_MAX);
+    GetEnv().AddOption("cvt:pre:quadfill quadfill",
+                       "Similar limit for quadratic subexpressions, "
+                       "with k the number of their quadratic terms. "
+                       "Default -1 (no limit). "
+                       "See also cvt:pre:unnest, cvt:pre:linfill, "
+                       "cvt:dvelim, cvt:expr:nlassign.",
+                       options_.quadFill_, -1, INT_MAX);
     GetEnv().AddOption("cvt:pre:sort cvt:sort",
                        "0/1*: Sort and eliminate duplicates in arguments "
                        "of AND, OR, MIN, MAX. Sort arguments of "
@@ -2352,7 +2380,9 @@ private:
                        fmt::format("Above which reference count, "
                                    "an algebraic formula node should be assigned to a variable "
                                    "(see acc: options). 0 means all nodes assigned. "
-                                   "Default {}.", options_.nlassign_lev_).c_str(),
+                                   "Default {}. See also cvt:pre:unnest, "
+                                   "cvt:pre:linfill, cvt:pre:quadfill, cvt:dvelim.",
+                                   options_.nlassign_lev_).c_str(),
                        options_.nlassign_lev_, 0, INT_MAX);
 
     GetEnv().AddOption("cvt:expr:nlreif expr:nlreif expr:nlreify",
@@ -2473,6 +2503,11 @@ public:
   const VarBinaryBounds& GetVarBinaryBounds() const { return var_bin_bnds_; }
 
   /// Whether inline nested forall, exists, lin/quad expr
+  /// cvt:pre:linfill
+  int LinFillLimit() const { return options_.linFill_; }
+  /// cvt:pre:quadfill
+  int QuadFillLimit() const { return options_.quadFill_; }
+
   int IfPreproUnnest() const
   { return MPCD( CanPreprocess(options_.preproUnnest_) ); }
 

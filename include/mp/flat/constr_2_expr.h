@@ -64,16 +64,45 @@ public:
       assert(                  // Check: the result var has \a con as the init expr
           MPD( template GetInitExpressionOfType<Con>(con.GetResultVar()) )
           == &con);
-      if ( MPCD(CanBeEliminated(con.GetResultVar())) ) {
+      if ( MPCD(CanBeEliminated(con.GetResultVar()))
+           && IfInlinableAsExpr(con) ) {
         auto refcountmax = con.IsLogical() ?    // Ok to leave as expression:
                                MPD(NLReifLevel()) :
                                MPD(NLAssignLevel());
         if (MPCD( VarUsage(con.GetResultVar()) ) <= refcountmax ) {
           MPD( MarkAsExpression(con.GetResultVar()) ); // can be changed later?
         } // ModelAPI handles them as expressions
-      }
+      } else if ( MPCD(CanBeEliminated(con.GetResultVar())) )
+        SubmitExprBounds(con);  // kept by cvt:pre:linfill
       // Else: if submitted bounds stronger, e.g., result fixed,
       // or defined variable marked by dvelim=0, leave as variable
+    }
+  }
+
+  /// Can \a con's result be used as an expression?
+  /// A linear expression whose inlining exceeds cvt:pre:linfill
+  /// stays a variable with its linear definition, so that
+  /// linear terms are not written as nonlinear expressions.
+  template <class Con>
+  bool IfInlinableAsExpr(const Con& con) const {
+    if constexpr (std::is_same_v<Con, LinearFunctionalConstraint>)
+      return MPCD( CanInline(con.GetResultVar(), con) );
+    return true;
+  }
+
+  /// A linear expression kept as a variable by cvt:pre:linfill:
+  /// its bounds, implied by the expression, become hard bounds.
+  /// Otherwise they would be lost where the expression would
+  /// have been inlined, e.g., a solver behind MP2NL needs them
+  /// for big-M constraints of logical expressions.
+  template <class Con>
+  void SubmitExprBounds(const Con& con) {
+    if constexpr (std::is_same_v<Con, LinearFunctionalConstraint>) {
+      const auto& ae = con.GetAffineExpr();
+      auto bnd = MPD( ComputeBoundsAndType(ae.GetBody()) );
+      MPD( NarrowVarBounds(con.GetResultVar(),
+                           bnd.lb() + ae.constant_term(),
+                           bnd.ub() + ae.constant_term()) );
     }
   }
 
@@ -797,6 +826,7 @@ protected:
       MPD( AddConstraint(NLAssignLE(resvar)) );
     else
       MPD( AddConstraint(NLAssignGE(resvar)) );
+    }
   }
 
   /// Add expr = var assignment (NLReifEquiv, NLReifImpl, NLRImpl)

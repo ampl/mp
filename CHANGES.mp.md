@@ -32,6 +32,19 @@ Summary of recent updates to the AMPL MP Library
   variable"). Such indicators are now replaced by their implied constraint,
   or dropped: option `cvt:pre:indfixedflag` (default 1; 0 restores the old
   behavior; off with `cvt:pre:all=0`).
+- Linear (and quadratic) subexpressions are now also inlined into the
+  expressions defining other variables, for example the linearization of
+  `not` inside an equivalence. With NL output (MP2NL, `acc:_expr=1`), such
+  linear terms were written as nonlinear expressions; CPLEX and Xpress
+  through MP2NL then rejected the model ("not convex quadratic"), and
+  nonlinear solvers received linear parts as nonlinear. New bit 32 of
+  option `cvt:pre:unnest` (default now 63).
+- The inlining of shared subexpressions is limited by the fill it can cause
+  (upper bound (u-1)(k-1)-2 for k terms and u uses): options
+  `cvt:pre:linfill` (default 10) and `cvt:pre:quadfill` (quadratic terms
+  only, default -1: no limit). A linear subexpression not inlined stays a
+  variable with its linear definition and the bounds implied by it.
+  `cvt:pre:unnest=31 cvt:pre:linfill=-1` restores the old behavior.
 
 - Fixed a regression in 20261029: with variable names passed to the solver
   (for example `option highs_auxfiles rc;`), HiGHS failed some logical
