@@ -1426,6 +1426,9 @@ ArrayRef<int> MosekBackend::VarStatii() {
       case MSK_SK_FIX:
         s = (int)BasicStatus::equ;
         break;
+      case MSK_SK_INF:   // part of an infeasibility certificate: no basis
+        s = (int)BasicStatus::none;
+        break;
       default:
         MP_RAISE(fmt::format("Unknown Mosek VBasis value: {}", s));
     }
@@ -1459,6 +1462,9 @@ ArrayRef<int> MosekBackend::ConStatii() {
         break;
       case MSK_SK_FIX:
         s = (int)BasicStatus::equ;
+        break;
+      case MSK_SK_INF:   // part of an infeasibility certificate: no basis
+        s = (int)BasicStatus::none;
         break;
       default:
         MP_RAISE(fmt::format("Unknown Mosek VBasis value: {}", s));

@@ -3,6 +3,9 @@ Summary of recent updates to MOSEK for AMPL
 
 
 ## Unreleased
+- Fix: the basis status of an infeasibility certificate stopped the
+  driver with "Unknown Mosek VBasis value: 6"; such variables and
+  constraints now get status *none*.
 - Support MOSEK 12.0 BETA alongside MOSEK 11. With MOSEK 12:
   - Free simplex runs dual and primal simplex concurrently and is
     deterministic with several threads. *alg:method* values 6 and 7

@@ -4,6 +4,9 @@ Summary of recent updates to CPLEX for AMPL
 
 ## unreleased
 
+- Fix: *alg:feasrelax* 1-3 (minimize the relaxation only) reported
+  "limit, feasible solution" (solve result 400) when the minimal
+  relaxation was found; now "minimal relaxation found" (solved).
 - Fix: indicator constraints with an equality were passed to CPLEX with an
   invalid sense, which CPLEX 22.2 mishandled (wrong results or violated
   indicators). Note: CPLEX 22.2 can still return a suboptimal solution with

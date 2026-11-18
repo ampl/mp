@@ -986,14 +986,20 @@ std::pair<int, std::string> CplexBackend::GetSolveResult(int optimstatus) {
           "unbounded problem, no feasible solution returned" };
   case CPX_STAT_OPTIMAL_FACE_UNBOUNDED:
     return { sol::UNBOUNDED_NO_FEAS, "model has an unbounded optimal face" };
-  case CPX_STAT_FEASIBLE:
-  case CPXMIP_FEASIBLE:
   case CPX_STAT_FEASIBLE_RELAXED_INF:
   case CPX_STAT_FEASIBLE_RELAXED_QUAD:
   case CPX_STAT_FEASIBLE_RELAXED_SUM:
   case CPXMIP_FEASIBLE_RELAXED_INF:
   case CPXMIP_FEASIBLE_RELAXED_QUAD:
   case CPXMIP_FEASIBLE_RELAXED_SUM:
+    // FeasOpt modes MIN_* (alg:feasrelax 1-3) only minimize the
+    // relaxation: CPLEX ends with these statuses when the minimal
+    // relaxation is found (modes OPT_* end with *_OPTIMAL_RELAXED_*).
+    if (feasrelax() >= 1 && feasrelax() <= 3)
+      return { sol::SOLVED, "minimal relaxation found" };
+    return { sol::LIMIT_FEAS, "limit, feasible solution" };
+  case CPX_STAT_FEASIBLE:
+  case CPXMIP_FEASIBLE:
     return { sol::LIMIT_FEAS, "limit, feasible solution" };
   case CPX_STAT_CONFLICT_ABORT_DETTIME_LIM:
   case CPX_STAT_CONFLICT_ABORT_TIME_LIM:

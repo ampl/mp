@@ -245,7 +245,7 @@
   },
   {
     "name": "infeasvarbnd_01",
-    "tags": [ "linear" ],
+    "tags": [ "linear", "continuous" ],
     "comment": "Contradictory bounds from singleton constraints: the converter declares infeasibility (cvt:pre:infeasvarbnd)",
     "options": { "presolve": 0 },
     "values": { "solve_result": "infeasible" }
@@ -254,8 +254,8 @@
     "name": "infeasvarbnd_01 infeasvarbnd=0",
     "files": ["infeasvarbnd_01.mod"],
     "tags": [ "linear" ],
-    "solvers": ["gurobi", "highs", "cplex", "xpress", "scip", "copt"],
-    "comment": "The bounds are passed on (cvt:pre:infeasvarbnd=0): the solver finds infeasibility",
+    "solvers": ["gurobi", "highs", "cplex", "xpress", "scip", "copt", "mosek"],
+    "comment": "The bounds are passed on (cvt:pre:infeasvarbnd=0): the solver finds infeasibility; MOSEK's certificate has basis status MSK_SK_INF",
     "options": { "presolve": 0, "ANYSOLVER_options": "cvt:pre:infeasvarbnd=0" },
     "values": { "solve_result": "infeasible" }
   },

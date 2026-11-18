@@ -2566,7 +2566,16 @@ void XpressmpBackend::ComputeIIS() {
   SetStatus( GetSolveResult() );
 }
 
+/// Xpress may not identify an IIS (e.g., when infeasibility is
+/// detected before the IIS search); XPRSgetiisdata() then fails
+/// with error 721. Report no IIS members and warn instead.
+bool XpressmpBackend::IfIISAvailable() {
+  return getIntAttr(XPRS_NUMIIS) > 0;
+}
+
 IIS XpressmpBackend::GetIIS() {
+  if (!IfIISAvailable())
+    AddWarning("IIS_NONE", "Xpress identified no IIS");
   auto variis = VarsIIS();
   auto coniis = ConsIIS();
   auto mv = GetValuePresolver().PostsolveIIS(
@@ -2597,25 +2606,30 @@ IISStatus XpressmpBackend::IIS_VarToAMPL(char c) {
 }
 
 ArrayRef<int> XpressmpBackend::VarsIIS() {
+  std::vector<int> iis(NumVars(), (int)IISStatus::non);
+  if (!IfIISAvailable())
+    return iis;
   int nconsiis, nvarsiis;
   XPRESSMP_CCALL(XPRSgetiisdata(lp(), 1, &nconsiis, &nvarsiis, 0, 0, 0, 0, 0, 0, 0, 0));
   std::vector<int> vars(nvarsiis);
   std::vector<char> bounds(nvarsiis);
   XPRESSMP_CCALL(XPRSgetiisdata(lp(), 1, &nconsiis, &nvarsiis, 0,
     vars.data(), 0, bounds.data(), 0, 0, 0, 0));
-  std::vector<int> iis(NumVars(), (int)IISStatus::non);
   for (int i = 0; i < nvarsiis; i++)
     iis[vars[i]] = (int)IIS_VarToAMPL(bounds[i]);
   return iis;
 }
 
 pre::ValueMapInt XpressmpBackend::ConsIIS() {
-  int nconsiis, nvarsiis;
-  XPRESSMP_CCALL(XPRSgetiisdata(lp(), 1, &nconsiis, &nvarsiis, 0, 0, 0, 0, 0, 0, 0, 0));
+  int nconsiis = 0, nvarsiis = 0;
+  if (IfIISAvailable())
+    XPRESSMP_CCALL(XPRSgetiisdata(lp(), 1, &nconsiis, &nvarsiis,
+                                  0, 0, 0, 0, 0, 0, 0, 0));
   std::vector<int> cons(nconsiis);
   std::vector<char> contype(nconsiis);
-  XPRESSMP_CCALL(XPRSgetiisdata(lp(), 1, &nconsiis, &nvarsiis, cons.data(),
-    0, contype.data(), 0, 0, 0, 0, 0));
+  if (nconsiis)
+    XPRESSMP_CCALL(XPRSgetiisdata(lp(), 1, &nconsiis, &nvarsiis, cons.data(),
+      0, contype.data(), 0, 0, 0, 0, 0));
   std::vector<int> iis_algcon(NumLinCons(), (int)IISStatus::non);
   std::vector<int> iis_sos(NumSOSCons(), (int)IISStatus::non);
   std::vector<int> iis_pl(NumPWLs(), (int)IISStatus::non);
