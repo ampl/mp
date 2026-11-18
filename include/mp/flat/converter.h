@@ -1423,8 +1423,7 @@ public:
       if (options_.declareInfeasVarBnd_)
         MP_INFEAS(fmt::format(
             "{}bounds [{:.17}, {:.17}] of {}[{}] are contradictory "
-            "(cvt:pre:infeasvarbnd; 0 passes them on, e.g., for "
-            "iis:find or alg:feasrelax)", bestb ? "best-known " : "",
+            "(cvt:pre:infeasvarbnd)", bestb ? "best-known " : "",
             lb, ub, kind, i+1));
       GetEnv().AddWarning(
           std::string(kind) + (bestb ? " best-known" : "") + " bounds",
@@ -2167,12 +2166,13 @@ private:
                        "when the bounds of a variable become contradictory "
                        "(lower > upper), also best-known bounds deduced by "
                        "the converter. With 0, the contradictory bounds "
-                       "are passed on to the solver, for example for "
-                       "iis:find or alg:feasrelax; note that they can be "
-                       "deduced from several constraints, which the IIS "
-                       "or the relaxation then does not show; most solvers "
-                       "fail with an error if such a variable is an "
-                       "indicator binary.",
+                       "are passed on to the solver. Note: they can be "
+                       "deduced from several constraints, so an IIS "
+                       "(iis:find) or a relaxation (alg:feasrelax) then "
+                       "concerns the deduced bounds rather than those "
+                       "constraints, and some solvers return a wrong "
+                       "relaxation (HiGHS); most solvers fail with an "
+                       "error if such a variable is an indicator binary.",
                        options_.declareInfeasVarBnd_, 0, 1);
 
     GetEnv().AddOption("cvt:pre:indfixedflag indfixedflag",
@@ -2190,8 +2190,10 @@ private:
                        "down): a lower bound b becomes ceil(b - tol), "
                        "an upper bound floor(b + tol), so that, e.g., "
                        "[1, 0.17] becomes [1, 0]. The tolerance used is "
-                       "max(tol, 1e-13*|b|), at most 0.5. "
-                       "Negative: no rounding. Default 1e-9.",
+                       "max(tol, 1e-13*|b|), at most 0.5. Negative: "
+                       "no rounding, which can give wrong results when "
+                       "a computed bound is slightly below or above an "
+                       "integer. Default 1e-9.",
                        GetModel().round_int_bound_tol(), -1.0, 1.0);
 
     GetEnv().AddOption("cvt:pre:boundlogarg boundlogarg",

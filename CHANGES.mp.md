@@ -22,9 +22,8 @@ Summary of recent updates to the AMPL MP Library
   bounds deduced by the converter, made Xpress and SCIP stop with an error
   ("not a binary variable"). Now the converter declares the model
   infeasible: option `cvt:pre:infeasvarbnd` (default 1; 0 passes
-  the contradictory bounds on, for example for `iis:find` or
-  `alg:feasrelax`; bounds deduced from several constraints then appear
-  in the IIS or the relaxation instead of those constraints).
+  the contradictory bounds on; an IIS or a relaxation then concerns
+  these deduced bounds rather than the constraints they come from).
 - The bounds of integer and implied-integer variables are rounded inwards; option `cvt:pre:roundintbnd` is the
   tolerance (default 1e-9, at least 1e-13 relative to the bound; negative:
   no rounding).

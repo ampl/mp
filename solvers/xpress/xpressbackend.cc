@@ -2560,7 +2560,9 @@ void XpressmpBackend::SetBasis(SolutionBasis basis) {
 
 void XpressmpBackend::ComputeIIS() {
   int status;
+  iis_search_failed_ = true;           // until XPRSiisfirst() returns
   XPRESSMP_CCALL(XPRSiisfirst(lp(), 1, &status));
+  iis_search_failed_ = false;
 //  switch (status) {
 //  case XPRS_IIS_COMPLETED:
   SetStatus( GetSolveResult() );
@@ -2574,7 +2576,7 @@ bool XpressmpBackend::IfIISAvailable() {
 }
 
 IIS XpressmpBackend::GetIIS() {
-  if (!IfIISAvailable())
+  if (!IfIISAvailable() && !iis_search_failed_)  // a failure is reported
     AddWarning("IIS_NONE", "Xpress identified no IIS");
   auto variis = VarsIIS();
   auto coniis = ConsIIS();

@@ -88,11 +88,16 @@ public:
   /// marking is kept.
   template <class Con>
   bool IfInlinableAsExpr(const Con& con) const {
-    if constexpr (std::is_same_v<Con, LinearFunctionalConstraint>
-                  || std::is_same_v<Con, QuadraticFunctionalConstraint>)
-      if ((MPCD( IfPreproUnnest() ) & 32)
-          && (MPCD( IfPreproUnnest() ) & 6))     // 32 needs 2 or 4
+    if constexpr (std::is_same_v<Con, LinearFunctionalConstraint>) {
+      if ((MPCD( IfPreproUnnest() ) & 32)        // 32 with 2 or 4
+          && (MPCD( IfPreproUnnest() ) & 6))
         return MPCD( CanInline(con.GetResultVar(), con) );
+    } else if constexpr (
+        std::is_same_v<Con, QuadraticFunctionalConstraint>) {
+      if ((MPCD( IfPreproUnnest() ) & 32)        // quadratic: 32 with 4
+          && (MPCD( IfPreproUnnest() ) & 4))
+        return MPCD( CanInline(con.GetResultVar(), con) );
+    }
     return true;
   }
 
