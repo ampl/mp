@@ -744,6 +744,7 @@ bool NLSolver::LoadModel(const NLModel& mdl) {
 
 bool NLSolver::Solve(const std::string& solver,
                   const std::string& solver_opts) {
+  err_msg_.clear();     // a note of a previous solve must not survive
   if (GetFileStub().empty())
     return (err_msg_="NLSolver: provide filestub.", false);
   if (solver.empty())

@@ -1525,6 +1525,9 @@ public:
     thrown_msg_.clear();
     try {
       if_solve_ok_ = nlsol_.Solve(mapi_, *this, solver, sopts);
+      if (if_solve_ok_ && *nlsol_.GetErrorMessage())   // e.g., exit code
+        mapi_.GetEnv().AddWarning(                    // after a solution
+            "MP2NL_subsolver_exit_code", nlsol_.GetErrorMessage());
     } catch (const NLSolverExit& e) {
       if_solve_ok_ = false;
       thrown_msg_ = e.what();
@@ -1541,7 +1544,7 @@ public:
     objno_used_ = -1;
     nbs_ = 0;
     solve_message_.clear();
-    got_primal_ = got_dual_ = got_options_ = false;
+    got_primal_ = got_dual_ = got_options_ = got_suffix_ = false;
   }
 
   /// After the solve: whatever the subsolver did not return (failure,
@@ -1552,10 +1555,14 @@ public:
       GetX().clear();
     if (!got_dual_)
       GetY().clear();
-    if (!got_options_) {
-      suf_map_.clear();
-      if_suf_data_registered_ = false;
-    }
+    if (!got_options_ && !got_suffix_)
+      ClearSuffixes();
+  }
+
+  /// Forget the suffixes of a previous solution
+  void ClearSuffixes() {
+    suf_map_.clear();
+    if_suf_data_registered_ = false;
   }
 
   /// AMPL solve result code
@@ -1658,8 +1665,7 @@ public:
    */
   int OnAMPLOptions(const AMPLOptions& ) {
     got_options_ = true;
-    suf_map_.clear();              // clear for new solution
-    if_suf_data_registered_ = false;
+    ClearSuffixes();               // clear for new solution
     return 0;
   }
 
@@ -1785,6 +1791,11 @@ public:
 protected:
   template <class SuffixReader>
   void OnSuffix(SuffixReader& sr) {
+    if (!got_suffix_) {            // first suffix of this .sol
+      got_suffix_ = true;
+      if (!got_options_)           // .sol without an Options section:
+        ClearSuffixes();           // not cleared by OnAMPLOptions()
+    }
     if (!if_suf_data_registered_) {
       if_suf_data_registered_ = true;
       RegisterSuffixData();
@@ -1852,7 +1863,8 @@ private:
   std::unordered_map<std::string, MP2NLModelSuffix> suf_map_;
 
   /// Solution
-  bool got_primal_ {}, got_dual_ {}, got_options_ {};   // in this solve's .sol
+  bool got_primal_ {}, got_dual_ {}, got_options_ {},   // in this solve's .sol
+    got_suffix_ {};
   bool if_solve_attempted_ {};
   bool if_solve_ok_ {};     // return NLSolver's error message if not
   std::string solve_message_;

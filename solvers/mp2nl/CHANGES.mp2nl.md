@@ -13,8 +13,8 @@ Summary of recent updates to MP2NL for AMPL
   solve in which the subsolver wrote no solution. Such a solve now fails with
   a message.
 - Fix: a solution written by the subsolver before it exited with a nonzero
-  code was discarded; it is kept now. The exit code is reported as the
-  subsolver's exit code.
+  code was discarded; it is kept now, and the exit code is reported in a
+  warning.
 - Fix: subsolver options (`solver_options`) were interpreted by the shell:
   characters such as `;` or `$` acted as commands and quoted values were
   split. Each option is now passed as one argument; quotes group words.
