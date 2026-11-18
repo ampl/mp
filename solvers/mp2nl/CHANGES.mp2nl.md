@@ -4,6 +4,10 @@ Summary of recent updates to MP2NL for AMPL
 
 ## unreleased
 
+- The debug statistics returned by the subsolver (problem suffixes
+  `flat0_*`, `flat1_*` and `option___*` with `debug=1`) are now reported
+  with prefix `sub_`, for example `sub_flat1__lineq`. Before, they
+  overwrote MP2NL's own statistics of the same names.
 - Fix: a solution file left by an earlier solve (a reused `nl:stub`, or the
   previous pass of a multi-objective emulation) was read as the result of a
   solve in which the subsolver wrote no solution. Such a solve now fails with

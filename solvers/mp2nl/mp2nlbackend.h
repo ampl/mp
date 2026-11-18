@@ -161,6 +161,8 @@ protected:
 
   void ReportSuffixes() override;
   void ReportModelSuffix(const MP2NLModelSuffix& modelsuf);
+  /// Name for a subsolver's problem suffix (counters get sub_)
+  static std::string ProblemSuffixName(const std::string& name);
   void ReportMP2NLPool();
 
   std::vector<double> getPoolSolution(int i);

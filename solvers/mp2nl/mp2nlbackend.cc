@@ -1,5 +1,6 @@
 #include <vector>
 #include <climits>
+#include <cstring>
 #include <cfloat>
 #include <filesystem>
 
@@ -531,9 +532,24 @@ void MP2NLBackend::ReportModelSuffix(
                  2 | modelsuf.flags_, suf_post.GetObjValues()(),
                  modelsuf.table_);
   if (modelsuf.values_[3].size())
-    ReportSuffix(modelsuf.name_,
+    ReportSuffix(ProblemSuffixName(modelsuf.name_),
                  3 | modelsuf.flags_, modelsuf.values_[3],
                  modelsuf.table_);
+}
+
+/// Name for a subsolver's problem suffix: the debug statistics
+/// (debug=1: counters flat0_*, flat1_* and option values option___*)
+/// get prefix sub_, so that they do not overwrite MP2NL's own
+/// with the same names. Applies to an MP2NL subsolver
+/// too (sub_sub_flat1_*).
+std::string MP2NLBackend::ProblemSuffixName(const std::string& name) {
+  auto starts = [&name](const char* pre) {
+    return 0 == name.compare(0, std::strlen(pre), pre);
+  };
+  if (starts("flat0_") || starts("flat1_") || starts("option___")
+      || starts("sub_"))
+    return "sub_" + name;
+  return name;
 }
 
 void MP2NLBackend::ReportMP2NLResults() {
