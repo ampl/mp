@@ -941,7 +941,11 @@ void GurobiBackend::InputExtras() {
 void GurobiBackend::InputGurobiExtras() {
   if (need_multiple_solutions())
     GrbSetIntParam(GRB_INT_PAR_POOLSEARCHMODE, storedOptions_.nPoolMode_);
-  if (need_ray_primal() || need_ray_dual())
+  // Rays are returned for continuous models only. On a MIP
+  // (integer variables, SOS or general constraints) InfUnbdInfo=1
+  // is useless, and Gurobi 13-14 can then return a wrong
+  // "optimal" solution (root relaxation unbounded)
+  if ((need_ray_primal() || need_ray_dual()) && !IsMIP())
     GrbSetIntParam(GRB_INT_PAR_INFUNBDINFO, 1);
   InputGurobiFuncApproxParams();
   InputGurobiIISForceParams();

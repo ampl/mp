@@ -966,6 +966,13 @@
     }
   },
   {
+    "name" : "ite_nested_quad_01",
+    "solvers": ["gurobi", "scip", "knitro", "baron", "baronmp", "lindoglobal", "gurobi_mp2nl", "scip_mp2nl", "baronmp_mp2nl"],
+    "tags" : ["continuous", "nonlinear", "logical", "quadraticnonconvex", "trigonometric"],
+    "comment": "Gurobi: wrong optimum with InfUnbdInfo=1 (now set for continuous models only)",
+    "objective": -10.3
+  },
+  {
     "name" : "exp_square_ctx_01",
     "solvers": ["gurobi", "scip", "knitro", "baron", "baronmp", "lindoglobal", "gurobi_mp2nl", "scip_mp2nl", "baronmp_mp2nl"],
     "tags" : ["integer", "nonlinear", "logical", "log"],
