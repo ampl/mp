@@ -1381,6 +1381,7 @@
   {
     "name" : "roundint_bnd_02",
     "tags" : ["logical", "integer"],
+    "solvers": ["gurobi", "xpress", "cplex", "highs", "scip", "copt", "mosek", "mp2nl", "gurobi_mp2nl", "xpress_mp2nl", "cplex_mp2nl", "highs_mp2nl", "scip_mp2nl", "copt_mp2nl", "mosek_mp2nl"],
     "comment": "Rounded large integer bound used as big-M of an implication (cvt:pre:roundintbnd)",
     "options": { "presolve": 0 },
     "objective" : 168000007,
@@ -1390,6 +1391,7 @@
     "name" : "roundint_bnd_02 roundintbnd=-1",
     "files" : ["roundint_bnd_02.mod"],
     "tags" : ["logical", "integer"],
+    "solvers": ["gurobi", "xpress", "cplex", "highs", "scip", "copt", "mp2nl", "gurobi_mp2nl", "xpress_mp2nl", "cplex_mp2nl", "highs_mp2nl", "scip_mp2nl", "copt_mp2nl"],
     "comment": "No rounding of integer bounds (cvt:pre:roundintbnd=-1)",
     "options": { "presolve": 0, "mp_options": "cvt:pre:roundintbnd=-1" },
     "objective" : 168000007,

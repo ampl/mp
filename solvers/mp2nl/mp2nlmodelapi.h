@@ -120,12 +120,6 @@ public:
   /// Note: 0 means all nodes outlined.
   static int NLAssignLevelDefault() { return INT_MAX; }
 
-  /// Contradictory variable bounds are passed on to the
-  /// subsolver: it declares infeasibility, or relaxes the model
-  /// or computes an IIS when asked to (its own options).
-  /// @note Option *cvt:pre:infeasvarbnd*.
-  static int DeclareInfeasVarBndDefault() { return 0; }
-
   /// Same for logical expressions.
   /// Request explicification because NL format
   /// does not support logical defined variables.

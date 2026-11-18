@@ -2191,7 +2191,9 @@ private:
                        "are passed on to the solver, which can then "
                        "relax the model or compute an IIS; most solvers "
                        "fail with an error if such a variable is an "
-                       "indicator binary. Default {}.",
+                       "indicator binary. MP2NL does not see the "
+                       "subsolver's options: to have the subsolver relax "
+                       "the model or compute an IIS, set 0. Default {}.",
                        options_.declareInfeasVarBnd_).c_str(),
                        options_.declareInfeasVarBnd_, 0, 1);
 
