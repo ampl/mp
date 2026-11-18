@@ -544,6 +544,25 @@ protected:
   }
 
 public:
+  /// Convert the items behind the conversion cursor which
+  /// need conversion only now (Converter::IfNeedsConversion()),
+  /// e.g., an indicator whose binary was fixed after the
+  /// main loop had passed it. Respects IfKeepUnconverted().
+  /// @return whether any converted
+  bool ConvertNeededBehindCursor() {
+    if (CvtMode::Skip == GetConversionMode())
+      return false;
+    bool any = false;
+    for (int i=0; i<=i_cvt_last_; ++i)
+      if (!cons_[i].IsRedundant()
+          && !GetConverter().IfKeepUnconverted(cons_[i].GetCon(), i)
+          && GetConverter().IfNeedsConversion(cons_[i].GetCon(), i)) {
+        ConvertConstraintStd(cons_[i], i);
+        any = true;
+      }
+    return any;
+  }
+
   /// Convert the items delayed in the main conversion loop,
   /// without delaying them again.
   /// @return whether there were any

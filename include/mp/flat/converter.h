@@ -466,8 +466,32 @@ protected:
   /// From here on, no delays are accepted.
   void ConvertDelayedItems() {
     if_final_cvt_phase_ = true;
-    while (GetModel().ConvertDelayedItems(*this))
+    while (GetModel().ConvertDelayedItems(*this)
+           || MPD( ReassessFixedFlagIndicators() ))
       MP_DISPATCH( ConvertAllConstraints() );
+  }
+
+  /// Fold the indicators passed in the main loop
+  /// whose binary has been fixed since then
+  /// (see BasicIndicatorConverter_MIP).
+  /// @return whether any
+  bool ReassessFixedFlagIndicators() {
+    if (!MPCD( IfPreproIndFixedFlag() ))
+      return false;
+    return ConvertNeededBehindCursor<
+        IndicatorConstraintLinLE, IndicatorConstraintLinEQ,
+        IndicatorConstraintLinGE, IndicatorConstraintQuadLE,
+        IndicatorConstraintQuadEQ, IndicatorConstraintQuadGE>();
+  }
+
+  /// ConvertNeededBehindCursor() for each type in \a Cons.
+  /// @return whether any converted
+  template <class... Cons>
+  bool ConvertNeededBehindCursor() {
+    bool any = false;
+    ((any = GET_CONSTRAINT_KEEPER(Cons).ConvertNeededBehindCursor()
+            || any), ...);
+    return any;
   }
 
 public:
@@ -1808,6 +1832,7 @@ private:
     int preprocessInequalityResultBounds_ = 1;
     int preprocessIneq2BndEq_ = 1;
     int declareInfeasVarBnd_ = 1;
+    int preprocessIndFixedFlag_ = 1;
     int preprocessIneq2Related_ = 1;
     int preprocessVarBnd_ = 3;
 
@@ -2114,6 +2139,15 @@ private:
                        "if such a variable is an indicator binary.",
                        options_.declareInfeasVarBnd_, 0, 1);
 
+    GetEnv().AddOption("cvt:pre:indfixedflag indfixedflag",
+                       "0/1*: Fold an indicator constraint whose binary "
+                       "variable becomes fixed after the indicator "
+                       "was created: keep only the implied constraint "
+                       "(binary at the indicator's value) or drop it. "
+                       "With 0, only indicators whose binary is fixed "
+                       "already when they are created are folded.",
+                       options_.preprocessIndFixedFlag_, 0, 1);
+
     GetEnv().AddOption("cvt:pre:roundintbnd roundintbnd",
                        "Tolerance for rounding the bounds of integer "
                        "variables inwards (lower bound up, upper bound "
@@ -2370,6 +2404,20 @@ public:
   /// Whether preprocess inequality into ==LB/UB
   bool IfPreproIneq2BndEq() const
   { return MPCD( CanPreprocess(options_.preprocessIneq2BndEq_) ); }
+
+  /// Whether to fold indicators whose binary is fixed
+  /// after their creation
+  bool IfPreproIndFixedFlag() const
+  { return MPCD( CanPreprocess(options_.preprocessIndFixedFlag_) ); }
+
+  /// Can an indicator with binary \a b be folded
+  /// (IfPreproIndFixedFlag()): \a b is fixed at 0 or 1?
+  bool IfIndicatorFlagFoldable(int b) const {
+    if (!MPCD( IfPreproIndFixedFlag() ) || !MPCD( is_fixed(b) ))
+      return false;
+    const auto v = MPCD( fixed_value(b) );
+    return 0.0 == v || 1.0 == v;
+  }
 
   /// Whether to unify related inequalities
   bool IfPreproIneq2Related() const

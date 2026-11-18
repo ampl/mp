@@ -1171,5 +1171,100 @@
     "values": {
       "solve_result": "infeasible"
     }
+  },
+  {
+    "name" : "fixed_indicator_flag_01",
+    "files" : ["fixed_indicator_flag_01.mod"],
+    "tags" : ["logical", "integer"],
+    "comment": "Indicator flag fixed after the indicator was created: folded (cvt:pre:indfixedflag)",
+    "objective": -6
+  },
+  {
+    "name" : "fixed_indicator_flag_01_struct",
+    "files" : ["fixed_indicator_flag_01.mod"],
+    "tags" : ["logical", "integer"],
+    "solvers": ["gurobi"],
+    "comment": "Indicators accepted: the one with the flag's value becomes its equality, the other is dropped",
+    "options": {
+      "mp_options": "debug=1"
+    },
+    "objective": -6,
+    "values": {
+      "Initial.flat1__indeq": 0,
+      "Initial.flat1__lineq": 1,
+      "Initial.flat1__linle": 2
+    }
+  },
+  {
+    "name" : "fixed_indicator_flag_01_linearized",
+    "files" : ["fixed_indicator_flag_01.mod"],
+    "tags" : ["logical", "integer"],
+    "solvers": ["gurobi"],
+    "comment": "Indicators linearized (acc:indeq=0): folded as well, no big-M rows on the constant flag",
+    "options": {
+      "mp_options": "debug=1 acc:indeq=0"
+    },
+    "objective": -6,
+    "values": {
+      "Initial.flat1__indeq": 0,
+      "Initial.flat1__lineq": 1,
+      "Initial.flat1__linle": 2
+    }
+  },
+  {
+    "name" : "fixed_indicator_flag_01_nofold",
+    "files" : ["fixed_indicator_flag_01.mod"],
+    "tags" : ["logical", "integer"],
+    "solvers": ["gurobi"],
+    "comment": "Old behavior (cvt:pre:indfixedflag=0): indicators with a constant flag reach the solver",
+    "options": {
+      "mp_options": "debug=1 cvt:pre:indfixedflag=0"
+    },
+    "objective": -6,
+    "values": {
+      "Initial.flat1__indeq": 2,
+      "Initial.flat1__lineq": 0
+    }
+  },
+  {
+    "name" : "fixed_indicator_flag_01_nofold_linearized",
+    "files" : ["fixed_indicator_flag_01.mod"],
+    "tags" : ["logical", "integer"],
+    "solvers": ["gurobi"],
+    "comment": "Old behavior, linearized: big-M rows on the constant flag",
+    "options": {
+      "mp_options": "debug=1 acc:indeq=0 cvt:pre:indfixedflag=0"
+    },
+    "objective": -6,
+    "values": {
+      "Initial.flat1__indeq": 0,
+      "Initial.flat1__lineq": 0,
+      "Initial.flat1__linle": 4
+    }
+  },
+  {
+    "name" : "fixed_indicator_flag_01_preall0",
+    "files" : ["fixed_indicator_flag_01.mod"],
+    "tags" : ["logical", "integer"],
+    "solvers": ["gurobi"],
+    "comment": "cvt:pre:all=0 switches the folding off together with the other presolve",
+    "options": {
+      "mp_options": "cvt:pre:all=0"
+    },
+    "objective": -6
+  },
+  {
+    "name" : "fixed_indicator_flag_02",
+    "files" : ["fixed_indicator_flag_02.mod"],
+    "tags" : ["logical", "integer"],
+    "comment": "Indicator flag fixed after the indicator was created: folded (cvt:pre:indfixedflag)",
+    "objective": 36
+  },
+  {
+    "name" : "fixed_indicator_flag_03",
+    "files" : ["fixed_indicator_flag_03.mod"],
+    "tags" : ["logical", "integer"],
+    "comment": "Indicator flags fixed after the indicators were created: folded (cvt:pre:indfixedflag)",
+    "objective": -7
   }
 ]

@@ -26,6 +26,12 @@ Summary of recent updates to the AMPL MP Library
   that accepts them).
 - The bounds of integer and implied-integer variables are rounded inwards; option `cvt:pre:roundintbnd` is the
   tolerance (default 1e-9, negative: no rounding).
+- An indicator constraint whose flag became fixed only after the indicator
+  was created (for example, `if x <= 1 then ...` with `x <= 1` implied by
+  another constraint) made Xpress and SCIP stop with an error ("not a binary
+  variable"). Such indicators are now replaced by their implied constraint,
+  or dropped: option `cvt:pre:indfixedflag` (default 1; 0 restores the old
+  behavior; off with `cvt:pre:all=0`).
 
 - Fixed a regression in 20261029: with variable names passed to the solver
   (for example `option highs_auxfiles rc;`), HiGHS failed some logical
