@@ -139,7 +139,9 @@ public:
 
 
   /// Get error message.
-  /// Nonempty iff error occurred.
+  /// Nonempty if an error occurred; after a successful Solve(),
+  /// a note (e.g., the solver's nonzero exit code after writing
+  /// a solution). Cleared by the next Solve().
   const char* GetErrorMessage() const { return err_msg_.c_str(); }
 
   /// Get model load result code.

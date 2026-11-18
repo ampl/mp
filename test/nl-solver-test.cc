@@ -199,6 +199,19 @@ TEST(NLSolverTest, SolutionWrittenBeforeNonzeroExitIsKept) {
             std::string(nlsol.GetErrorMessage()).find("code 7"));
 }
 
+TEST(NLSolverTest, NoteOfPreviousSolveIsCleared) {
+  StubFixture f;
+  ThrowingUtils utils;
+  mp::NLSolver nlsol(&utils);
+  nlsol.SetFileStub(f.stub);
+  ASSERT_TRUE(nlsol.Solve(Solver(), "exit7"));
+  ASSERT_NE(std::string::npos,
+            std::string(nlsol.GetErrorMessage()).find("code 7"));
+  // A clean solve after it must not report the old exit code
+  ASSERT_TRUE(nlsol.Solve(Solver(), ""));
+  EXPECT_STREQ("", nlsol.GetErrorMessage());
+}
+
 TEST(NLSolverTest, SolverOptionsAreNotInterpretedByShell) {
   StubFixture f;
   ThrowingUtils utils;
