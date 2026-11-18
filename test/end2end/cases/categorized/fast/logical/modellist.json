@@ -1422,5 +1422,22 @@
       "Initial.flat1__linfn": 4,
       "Initial.flat1__nlassigneq": 2
     }
+  },
+  {
+    "name" : "roundint_bnd_03",
+    "tags" : ["logical", "integer"],
+    "solvers": ["gurobi", "xpress", "cplex", "highs", "scip", "copt", "mp2nl", "gurobi_mp2nl", "xpress_mp2nl", "cplex_mp2nl", "highs_mp2nl", "scip_mp2nl", "copt_mp2nl"],
+    "comment": "A fractional data bound of a large integer variable is not rounded to the nearest integer (cvt:pre:roundintbnd): infeasible",
+    "options": { "presolve": 0 },
+    "values": { "solve_result": "infeasible" }
+  },
+  {
+    "name" : "roundint_bnd_04",
+    "tags" : ["logical", "integer"],
+    "solvers": ["gurobi", "xpress", "cplex", "highs", "copt", "mp2nl", "gurobi_mp2nl", "xpress_mp2nl", "cplex_mp2nl", "highs_mp2nl", "copt_mp2nl"],
+    "comment": "A computed bound 2000000000.0000002 of an integer variable rounds to 2000000000 (cvt:pre:roundintbnd); SCIP accepts x = 2e9-50 within its relative feasibility tolerance",
+    "options": { "presolve": 0 },
+    "objective" : 0,
+    "values": { "x - 2000000000": 0, "y": 0 }
   }
 ]

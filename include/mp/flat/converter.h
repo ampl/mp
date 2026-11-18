@@ -1420,10 +1420,11 @@ public:
                      * MPCD( model_feas_tol_rel() )) {
       // Best-known bounds are implied by the model as well:
       // contradictory ones also prove infeasibility
-      if (options_.declareInfeasVarBnd_ && !IfInfeasAnalysisRequested())
+      if (options_.declareInfeasVarBnd_)
         MP_INFEAS(fmt::format(
             "{}bounds [{:.17}, {:.17}] of {}[{}] are contradictory "
-            "(cvt:pre:infeasvarbnd)", bestb ? "best-known " : "",
+            "(cvt:pre:infeasvarbnd; 0 passes them on, e.g., for "
+            "iis:find or alg:feasrelax)", bestb ? "best-known " : "",
             lb, ub, kind, i+1));
       GetEnv().AddWarning(
           std::string(kind) + (bestb ? " best-known" : "") + " bounds",
@@ -1434,26 +1435,6 @@ public:
       return true;
     }
     return true;
-  }
-
-  /// Whether the user asked the solver to analyze an infeasible model
-  /// (alg:feasrelax, iis:find). Then contradictory bounds are passed on
-  /// with a warning instead of stopping the conversion
-  /// (cvt:pre:infeasvarbnd): the solver's relaxation or IIS is the
-  /// requested result. Options are looked up by name because they belong
-  /// to the backend; a driver without them has nothing to analyze.
-  bool IfInfeasAnalysisRequested() const {
-    for (const char* name: {"alg:feasrelax", "iis:find"}) {
-      if (const auto* opt = GetEnv().FindOption(name)) {
-        try {
-          int value = 0;
-          opt->GetValue(value);
-          if (value > 0)
-            return true;
-        } catch (const std::exception&) { }    // not an int option
-      }
-    }
-    return false;
   }
 
   /// var_type()
@@ -1852,7 +1833,7 @@ private:
     int preprocessInequalityRhs_ = 1;
     int preprocessInequalityResultBounds_ = 1;
     int preprocessIneq2BndEq_ = 1;
-    int declareInfeasVarBnd_ = ModelAPI::DeclareInfeasVarBndDefault();
+    int declareInfeasVarBnd_ = 1;
     int preprocessIndFixedFlag_ = 1;
     int preprocessIneq2Related_ = 1;
     int preprocessVarBnd_ = 3;
@@ -2182,19 +2163,16 @@ private:
                        GetModel().if_make_fixed_vars_continuous(), 0, 1);
 
     GetEnv().AddOption("cvt:pre:infeasvarbnd infeasvarbnd",
-                       fmt::format(
-                       "0/1: Declare the model infeasible in the converter "
+                       "0/1*: Declare the model infeasible in the converter "
                        "when the bounds of a variable become contradictory "
                        "(lower > upper), also best-known bounds deduced by "
-                       "the converter. With 0, or when alg:feasrelax or "
-                       "iis:find is requested, the contradictory bounds "
-                       "are passed on to the solver, which can then "
-                       "relax the model or compute an IIS; most solvers "
+                       "the converter. With 0, the contradictory bounds "
+                       "are passed on to the solver, for example for "
+                       "iis:find or alg:feasrelax; note that they can be "
+                       "deduced from several constraints, which the IIS "
+                       "or the relaxation then does not show; most solvers "
                        "fail with an error if such a variable is an "
-                       "indicator binary. MP2NL does not see the "
-                       "subsolver's options: to have the subsolver relax "
-                       "the model or compute an IIS, set 0. Default {}.",
-                       options_.declareInfeasVarBnd_).c_str(),
+                       "indicator binary.",
                        options_.declareInfeasVarBnd_, 0, 1);
 
     GetEnv().AddOption("cvt:pre:indfixedflag indfixedflag",
@@ -2211,9 +2189,8 @@ private:
                        "variables inwards (lower bound up, upper bound "
                        "down): a lower bound b becomes ceil(b - tol), "
                        "an upper bound floor(b + tol), so that, e.g., "
-                       "[1, 0.17] becomes [1, 0]. The tolerance is "
-                       "relative: tol is multiplied by max(1, |b|), "
-                       "at most 0.5. "
+                       "[1, 0.17] becomes [1, 0]. The tolerance used is "
+                       "max(tol, 1e-13*|b|), at most 0.5. "
                        "Negative: no rounding. Default 1e-9.",
                        GetModel().round_int_bound_tol(), -1.0, 1.0);
 

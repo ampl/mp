@@ -90,7 +90,8 @@ public:
   bool IfInlinableAsExpr(const Con& con) const {
     if constexpr (std::is_same_v<Con, LinearFunctionalConstraint>
                   || std::is_same_v<Con, QuadraticFunctionalConstraint>)
-      if (MPCD( IfPreproUnnest() ) & 32)
+      if ((MPCD( IfPreproUnnest() ) & 32)
+          && (MPCD( IfPreproUnnest() ) & 6))     // 32 needs 2 or 4
         return MPCD( CanInline(con.GetResultVar(), con) );
     return true;
   }

@@ -199,11 +199,6 @@ public:
   /// @note Option *cvt:expr:nlassign*.
   static int NLAssignLevelDefault() { return 1; }
 
-  /// Whether the converter declares the model infeasible
-  /// when variable bounds become contradictory.
-  /// @note Option *cvt:pre:infeasvarbnd*.
-  static int DeclareInfeasVarBndDefault() { return 1; }
-
   /// Same for logical expressions.
   /// @note Option *cvt:expr:nlreif*.
   static int NLReifLevelDefault() { return 1; }

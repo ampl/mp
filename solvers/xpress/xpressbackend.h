@@ -267,7 +267,6 @@ protected:
   std::vector<int> ConStatii(ArrayRef<int>);
 
   /// Whether Xpress identified an IIS
-
   bool IfIISAvailable();
 
   ArrayRef<int> VarsIIS();

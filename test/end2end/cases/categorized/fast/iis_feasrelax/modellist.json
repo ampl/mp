@@ -263,18 +263,16 @@
     "name": "infeasvarbnd_01 feasrelax=1",
     "files": ["infeasvarbnd_01.mod"],
     "tags": [ "linear", "feasrelax" ],
-    "solvers": ["gurobi", "cplex", "copt"],
-    "comment": "With alg:feasrelax, contradictory bounds are passed on and relaxed; HiGHS returns x=0 also without contradictory bounds",
+    "comment": "Contradictory deduced bounds are declared infeasible also with alg:feasrelax (relaxing them would not relax the user's constraints)",
     "options": { "presolve": 0, "ANYSOLVER_options": "feasrelax=1" },
-    "values": { "x": [2, 3] }
+    "values": { "solve_result": "infeasible" }
   },
   {
     "name": "infeasvarbnd_01 iisfind=1",
     "files": ["infeasvarbnd_01.mod"],
     "tags": [ "linear", "iis" ],
-    "solvers": ["gurobi", "highs", "cplex", "scip"],
-    "comment": "With iis:find, contradictory bounds are passed on and the solver's IIS contains x",
+    "comment": "Contradictory deduced bounds are declared infeasible also with iis:find (an IIS of the bounds would not show the user's constraints)",
     "options": { "presolve": 0, "ANYSOLVER_options": "iisfind=1" },
-    "values": { "x.iis": ["fix", "mem", "low", "upp"] }
+    "values": { "solve_result": "infeasible" }
   }
 ]
