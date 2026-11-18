@@ -1254,9 +1254,13 @@
     "solvers": ["gurobi"],
     "comment": "cvt:pre:all=0 switches the folding off together with the other presolve",
     "options": {
-      "mp_options": "cvt:pre:all=0"
+      "mp_options": "debug=1 cvt:pre:all=0"
     },
-    "objective": -6
+    "objective": -6,
+    "values": {
+      "Initial.flat1__indeq": 3,
+      "Initial.flat1__lineq": 4
+    }
   },
   {
     "name" : "fixed_indicator_flag_02",
@@ -1373,5 +1377,48 @@
     "comment": "Quadratic constraints and indicators not accepted: no cycles",
     "options": { "mp_options": "acc:quadle=0 acc:quadeq=0 acc:quadge=0 acc:indquadle=0 acc:indquadeq=0 acc:indquadge=0" },
     "objective": -3
+  },
+  {
+    "name" : "roundint_bnd_02",
+    "tags" : ["logical", "integer"],
+    "comment": "Rounded large integer bound used as big-M of an implication (cvt:pre:roundintbnd)",
+    "options": { "presolve": 0 },
+    "objective" : 168000007,
+    "values": { "x - 168000000": 7 }
+  },
+  {
+    "name" : "roundint_bnd_02 roundintbnd=-1",
+    "files" : ["roundint_bnd_02.mod"],
+    "tags" : ["logical", "integer"],
+    "comment": "No rounding of integer bounds (cvt:pre:roundintbnd=-1)",
+    "options": { "presolve": 0, "mp_options": "cvt:pre:roundintbnd=-1" },
+    "objective" : 168000007,
+    "values": { "x - 168000000": 7 }
+  },
+  {
+    "name" : "inline_lin_nested_not_01 unnest=31 linfill=-1",
+    "files" : ["inline_lin_nested_not_01.mod"],
+    "tags" : ["logical", "integer"],
+    "solvers": ["gurobi", "xpress", "scip"],
+    "comment": "Old behavior (cvt:pre:unnest=31 cvt:pre:linfill=-1): nested linear expressions as NL assignments",
+    "options": { "mp_options": "debug=1 cvt:pre:unnest=31 cvt:pre:linfill=-1" },
+    "objective": -2,
+    "values": {
+      "Initial.flat1__linfn": 4,
+      "Initial.flat1__nlassigneq": 2
+    }
+  },
+  {
+    "name" : "inline_lin_nested_not_01 preall0",
+    "files" : ["inline_lin_nested_not_01.mod"],
+    "tags" : ["logical", "integer"],
+    "solvers": ["gurobi", "xpress", "scip"],
+    "comment": "cvt:pre:all=0: no inlining into expressions, cvt:pre:linfill without effect",
+    "options": { "mp_options": "debug=1 cvt:pre:all=0" },
+    "objective": -2,
+    "values": {
+      "Initial.flat1__linfn": 4,
+      "Initial.flat1__nlassigneq": 2
+    }
   }
 ]

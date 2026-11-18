@@ -21,5 +21,22 @@
     "comment": "floor, ceil, round (ties to even), trunc, round(x,1), real div/mod",
     "objective" : 18.2123,
     "values": { "a": 4, "b": 3.3, "c": 2.6, "e": 7.5, "g": 0.33, "h": 1.5 }
+  },
+  {
+    "name" : "roundint_bnd_01",
+    "tags" : ["linear"],
+    "comment": "Large integer bound 16800000.7/0.1 rounded with a relative tolerance (cvt:pre:roundintbnd); an absolute one gave 168000006 and infeasibility",
+    "options": { "presolve": 0 },
+    "objective" : 168000007,
+    "values": { "x - 168000000": 7 }
+  },
+  {
+    "name" : "roundint_bnd_01 roundintbnd=-1",
+    "files" : ["roundint_bnd_01.mod"],
+    "tags" : ["linear"],
+    "comment": "No rounding of integer bounds (cvt:pre:roundintbnd=-1)",
+    "options": { "presolve": 0, "mp_options": "cvt:pre:roundintbnd=-1" },
+    "objective" : 168000007,
+    "values": { "x - 168000000": 7 }
   }
 ]

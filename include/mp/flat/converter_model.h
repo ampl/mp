@@ -269,11 +269,16 @@ public:
   double& round_int_bound_tol() { return round_int_bound_tol_; }
 
   /// A bound of an integer or implied-integer variable rounded inwards
-  /// (lb up, ub down, within cvt:pre:roundintbnd, finite values only)
+  /// (lb up, ub down, within cvt:pre:roundintbnd, finite values only).
+  /// The tolerance is relative to max(1, |b|): a computed bound like
+  /// 16800000.7/0.1 = 168000006.99999997 must still round to 168000007.
+  /// It is capped at 0.5, so that a huge bound is not rounded
+  /// outwards by a whole unit.
   double RoundIntBound(int v, double b, bool is_lb) const {
     if (round_int_bound_tol_ >= 0.0 && std::isfinite(b)
         && (var::INTEGER == var_type_[v] || is_var_implied_int(v))) {
-      const double tol = round_int_bound_tol_;
+      const double tol = std::min(
+          0.5, round_int_bound_tol_ * std::max(1.0, std::fabs(b)));
       return is_lb ? std::ceil(b - tol) : std::floor(b + tol);
     }
     return b;

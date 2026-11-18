@@ -73,36 +73,43 @@ public:
           MPD( MarkAsExpression(con.GetResultVar()) ); // can be changed later?
         } // ModelAPI handles them as expressions
       } else if ( MPCD(CanBeEliminated(con.GetResultVar())) )
-        SubmitExprBounds(con);  // kept by cvt:pre:linfill
+        SubmitExprBounds(con);  // kept by cvt:pre:linfill/quadfill
       // Else: if submitted bounds stronger, e.g., result fixed,
       // or defined variable marked by dvelim=0, leave as variable
     }
   }
 
   /// Can \a con's result be used as an expression?
-  /// A linear expression whose inlining exceeds cvt:pre:linfill
-  /// stays a variable with its linear definition, so that
+  /// With bit 32 of cvt:pre:unnest, a linear (quadratic) expression
+  /// whose inlining exceeds cvt:pre:linfill (cvt:pre:quadfill)
+  /// stays a variable with its defining equality, so that
   /// linear terms are not written as nonlinear expressions.
+  /// Without that bit (e.g., cvt:pre:all=0), the previous
+  /// marking is kept.
   template <class Con>
   bool IfInlinableAsExpr(const Con& con) const {
-    if constexpr (std::is_same_v<Con, LinearFunctionalConstraint>)
-      return MPCD( CanInline(con.GetResultVar(), con) );
+    if constexpr (std::is_same_v<Con, LinearFunctionalConstraint>
+                  || std::is_same_v<Con, QuadraticFunctionalConstraint>)
+      if (MPCD( IfPreproUnnest() ) & 32)
+        return MPCD( CanInline(con.GetResultVar(), con) );
     return true;
   }
 
-  /// A linear expression kept as a variable by cvt:pre:linfill:
-  /// its bounds, implied by the expression, become hard bounds.
-  /// Otherwise they would be lost where the expression would
-  /// have been inlined, e.g., a solver behind MP2NL needs them
-  /// for big-M constraints of logical expressions.
+  /// A linear or quadratic expression kept as a variable by
+  /// cvt:pre:linfill/quadfill: its bounds, implied by the expression,
+  /// become hard bounds. Otherwise they would be lost where
+  /// the expression would have been inlined, e.g., a solver
+  /// behind MP2NL needs them for big-M constraints of logical
+  /// expressions.
   template <class Con>
   void SubmitExprBounds(const Con& con) {
     if constexpr (std::is_same_v<Con, LinearFunctionalConstraint>) {
-      const auto& ae = con.GetAffineExpr();
-      auto bnd = MPD( ComputeBoundsAndType(ae.GetBody()) );
-      MPD( NarrowVarBounds(con.GetResultVar(),
-                           bnd.lb() + ae.constant_term(),
-                           bnd.ub() + ae.constant_term()) );
+      auto bnd = MPD( ComputeBoundsAndType(con.GetAffineExpr()) );
+      MPD( NarrowVarBounds(con.GetResultVar(), bnd.lb(), bnd.ub()) );
+    } else if constexpr (
+        std::is_same_v<Con, QuadraticFunctionalConstraint>) {
+      auto bnd = MPD( ComputeBoundsAndType(con.GetQuadExpr()) );
+      MPD( NarrowVarBounds(con.GetResultVar(), bnd.lb(), bnd.ub()) );
     }
   }
 

@@ -1420,7 +1420,7 @@ public:
                      * MPCD( model_feas_tol_rel() )) {
       // Best-known bounds are implied by the model as well:
       // contradictory ones also prove infeasibility
-      if (options_.declareInfeasVarBnd_)
+      if (options_.declareInfeasVarBnd_ && !IfInfeasAnalysisRequested())
         MP_INFEAS(fmt::format(
             "{}bounds [{:.17}, {:.17}] of {}[{}] are contradictory "
             "(cvt:pre:infeasvarbnd)", bestb ? "best-known " : "",
@@ -1434,6 +1434,26 @@ public:
       return true;
     }
     return true;
+  }
+
+  /// Whether the user asked the solver to analyze an infeasible model
+  /// (alg:feasrelax, iis:find). Then contradictory bounds are passed on
+  /// with a warning instead of stopping the conversion
+  /// (cvt:pre:infeasvarbnd): the solver's relaxation or IIS is the
+  /// requested result. Options are looked up by name because they belong
+  /// to the backend; a driver without them has nothing to analyze.
+  bool IfInfeasAnalysisRequested() const {
+    for (const char* name: {"alg:feasrelax", "iis:find"}) {
+      if (const auto* opt = GetEnv().FindOption(name)) {
+        try {
+          int value = 0;
+          opt->GetValue(value);
+          if (value > 0)
+            return true;
+        } catch (const std::exception&) { }    // not an int option
+      }
+    }
+    return false;
   }
 
   /// var_type()
@@ -1832,7 +1852,7 @@ private:
     int preprocessInequalityRhs_ = 1;
     int preprocessInequalityResultBounds_ = 1;
     int preprocessIneq2BndEq_ = 1;
-    int declareInfeasVarBnd_ = 1;
+    int declareInfeasVarBnd_ = ModelAPI::DeclareInfeasVarBndDefault();
     int preprocessIndFixedFlag_ = 1;
     int preprocessIneq2Related_ = 1;
     int preprocessVarBnd_ = 3;
@@ -2062,7 +2082,10 @@ private:
                        "no limit. A subexpression not inlined stays a "
                        "variable defined by a linear equality, with the "
                        "bounds implied by it. Applies to all bits of "
-                       "cvt:pre:unnest. Default 10. "
+                       "cvt:pre:unnest; with bit 32, also to the "
+                       "expressions written for solvers accepting them "
+                       "(acc:_expr=1, MP2NL). No effect with "
+                       "cvt:pre:all=0. Default 10. "
                        "See also cvt:pre:unnest, cvt:pre:quadfill, "
                        "cvt:dvelim, cvt:expr:nlassign.",
                        options_.linFill_, -1, INT_MAX);
@@ -2159,12 +2182,17 @@ private:
                        GetModel().if_make_fixed_vars_continuous(), 0, 1);
 
     GetEnv().AddOption("cvt:pre:infeasvarbnd infeasvarbnd",
-                       "0/1*: Declare the model infeasible in the converter "
+                       fmt::format(
+                       "0/1: Declare the model infeasible in the converter "
                        "when the bounds of a variable become contradictory "
-                       "(lower > upper). With 0, the contradictory bounds "
-                       "are passed on to the solver, which can then, e.g., "
-                       "compute an IIS; most solvers fail with an error "
-                       "if such a variable is an indicator binary.",
+                       "(lower > upper), also best-known bounds deduced by "
+                       "the converter. With 0, or when alg:feasrelax or "
+                       "iis:find is requested, the contradictory bounds "
+                       "are passed on to the solver, which can then "
+                       "relax the model or compute an IIS; most solvers "
+                       "fail with an error if such a variable is an "
+                       "indicator binary. Default {}.",
+                       options_.declareInfeasVarBnd_).c_str(),
                        options_.declareInfeasVarBnd_, 0, 1);
 
     GetEnv().AddOption("cvt:pre:indfixedflag indfixedflag",
@@ -2181,8 +2209,10 @@ private:
                        "variables inwards (lower bound up, upper bound "
                        "down): a lower bound b becomes ceil(b - tol), "
                        "an upper bound floor(b + tol), so that, e.g., "
-                       "[1, 0.17] becomes [1, 0]. Negative: no rounding. "
-                       "Default 1e-9.",
+                       "[1, 0.17] becomes [1, 0]. The tolerance is "
+                       "relative: tol is multiplied by max(1, |b|), "
+                       "at most 0.5. "
+                       "Negative: no rounding. Default 1e-9.",
                        GetModel().round_int_bound_tol(), -1.0, 1.0);
 
     GetEnv().AddOption("cvt:pre:boundlogarg boundlogarg",

@@ -978,5 +978,43 @@
     "tags" : ["integer", "nonlinear", "logical", "log"],
     "comment": "One-sided relaxation of exp() must submit the bound used for the context of its square",
     "objective": -8.7
+  },
+  {
+    "name" : "quadfill_nl_01",
+    "solvers": ["scip"],
+    "tags" : ["continuous", "nonlinear"],
+    "comment": "Shared quadratic subexpression inlined into 4 nonlinear functions (no cvt:pre:quadfill limit)",
+    "options": { "mp_options": "debug=1" },
+    "objective": 2,
+    "values": { "Initial.flat1__quadeq": 0 }
+  },
+  {
+    "name" : "quadfill_nl_01 quadfill=0",
+    "files" : ["quadfill_nl_01.mod"],
+    "solvers": ["scip"],
+    "tags" : ["continuous", "nonlinear"],
+    "comment": "cvt:pre:quadfill=0: the subexpression stays a variable defined by a quadratic equality",
+    "options": { "mp_options": "debug=1 cvt:pre:quadfill=0" },
+    "objective": 2,
+    "values": { "Initial.flat1__quadeq": 1 }
+  },
+  {
+    "name" : "linfill_gate_01",
+    "solvers": ["scip"],
+    "tags" : ["continuous", "nonlinear"],
+    "comment": "Shared linear subexpression above cvt:pre:linfill stays a variable with a linear equality",
+    "options": { "mp_options": "debug=1" },
+    "objective": 4.88545,
+    "values": { "Initial.flat1__linfn": 1, "Initial.flat1__lineq": 3 }
+  },
+  {
+    "name" : "linfill_gate_01 preall0",
+    "files" : ["linfill_gate_01.mod"],
+    "solvers": ["scip"],
+    "tags" : ["continuous", "nonlinear"],
+    "comment": "cvt:pre:all=0: cvt:pre:linfill has no effect, the expression is written as before",
+    "options": { "mp_options": "debug=1 cvt:pre:all=0" },
+    "objective": 4.88545,
+    "values": { "Initial.flat1__linfn": 4, "Initial.flat1__lineq": 1 }
   }
 ]
