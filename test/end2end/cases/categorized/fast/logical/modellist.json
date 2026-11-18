@@ -200,6 +200,11 @@
   },
   {
     "name" : "int_ne_05_ctx_redef",
+    "comment": "mip:round=1: a solver may return x = 5 + 1e-15, then AMPL evaluates x<=5 false",
+    "options": {
+      "mp_options": "mip:round=1",
+      "mp2nl_options": "mip:round=1"
+    },
     "objective" : -19,
     "tags" : ["logical"],
     "values": {
