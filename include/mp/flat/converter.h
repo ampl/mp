@@ -1393,10 +1393,13 @@ public:
         && lb-ub
                > std::max(std::abs(lb), std::abs(ub))
                      * MPCD( model_feas_tol_rel() )) {
-      if (!bestb && options_.declareInfeasVarBnd_)
+      // Best-known bounds are implied by the model as well:
+      // contradictory ones also prove infeasibility
+      if (options_.declareInfeasVarBnd_)
         MP_INFEAS(fmt::format(
-            "bounds [{:.17}, {:.17}] of {}[{}] are contradictory "
-            "(cvt:pre:infeasvarbnd)", lb, ub, kind, i+1));
+            "{}bounds [{:.17}, {:.17}] of {}[{}] are contradictory "
+            "(cvt:pre:infeasvarbnd)", bestb ? "best-known " : "",
+            lb, ub, kind, i+1));
       GetEnv().AddWarning(
           std::string(kind) + (bestb ? " best-known" : "") + " bounds",
           fmt::format("Bounds [{:.17}, {:.17}]\nof {}[{}] "

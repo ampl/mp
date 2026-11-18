@@ -1162,5 +1162,14 @@
     "values": {
       "solve_result": "infeasible"
     }
+  },
+  {
+    "name" : "indicator_contradict_bounds_02",
+    "files" : ["indicator_contradict_bounds_02.mod"],
+    "tags" : ["logical", "integer"],
+    "comment": "Indicator flag with contradictory best-known bounds: infeasible, not a solver error (cvt:pre:infeasvarbnd)",
+    "values": {
+      "solve_result": "infeasible"
+    }
   }
 ]
