@@ -182,6 +182,15 @@ public:
   /// Expressions
 #ifdef GRB_OPCODE_CONSTANT
 
+  /// Constraint group of the nonlinear constraints: their own group
+  /// if Gurobi lists them separately (see MP_GRB_NLCON_LIST), else the
+  /// general constraints. A member, not a macro, to not leak from here.
+#ifdef MP_GRB_NLCON_LIST
+  static constexpr int NLConGroup() { return CG_Nonlinear; }
+#else
+  static constexpr int NLConGroup() { return CG_General; }
+#endif
+
   /// Whether accepts NLObjective
 #if (GRB_VERSION_MAJOR==13 && GRB_VERSION_MINOR>=9) || GRB_VERSION_MAJOR>=14
 #define __GRB_NL_OBJCON__
@@ -207,7 +216,7 @@ public:
   Expr GetZeroExpression() { return MakeEmptyExpr(); }
 
 #ifdef __GRB_NL_OBJCON__
-  ACCEPT_CONSTRAINT(NLConstraint, Recommended, CG_Algebraic)
+  ACCEPT_CONSTRAINT(NLConstraint, Recommended, NLConGroup())
   void AddConstraint(const NLConstraint& nl);
 #else
   /// Gurobi 12 has no classical NL range constraint
@@ -217,17 +226,17 @@ public:
   /// NLAssignEQ: algebraic expression expicifier.
   /// Meaning: var == expr.
   /// @note Accessors: GetName(), GetExpression(nle), GetVariable(nle).
-  ACCEPT_CONSTRAINT(NLAssignEQ, Recommended, CG_General)
+  ACCEPT_CONSTRAINT(NLAssignEQ, Recommended, NLConGroup())
   void AddConstraint(const NLAssignEQ& nle);
   /// NLAssignLE: algebraic expression expicifier in positive context.
   /// Meaning: var <= expr.
   /// @note Accessors: GetName(), GetExpression(nle), GetVariable(nle).
-  ACCEPT_CONSTRAINT(NLAssignLE, Recommended, CG_General)
+  ACCEPT_CONSTRAINT(NLAssignLE, Recommended, NLConGroup())
   void AddConstraint(const NLAssignLE& nle);
   /// NLAssignGE: algebraic expression expicifier in negative context.
   /// Meaning: var >= expr.
   /// @note Accessors: GetName(), GetExpression(nle), GetVariable(nle).
-  ACCEPT_CONSTRAINT(NLAssignGE, Recommended, CG_General)
+  ACCEPT_CONSTRAINT(NLAssignGE, Recommended, NLConGroup())
   void AddConstraint(const NLAssignGE& nle);
 
   /// @brief Accept NLAffineExpr.

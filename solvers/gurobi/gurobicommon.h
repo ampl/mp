@@ -67,6 +67,8 @@ public:
   int NumQPCons() const;
   int NumSOSCons() const;
   int NumGenCons() const;
+  /// Constraints added by GRBaddnlconstr(); 0 before Gurobi 14
+  int NumNLCons() const;
   int NumVars() const;
   int NumObjs() const;
   int ModelSense() const;
@@ -147,6 +149,15 @@ public:
 #define GRB_CALL( call ) do { if (call) MP_RAISE( \
     GRBgeterrormsg(env()) \
   ); } while (0)
+/// Gurobi keeps constraints added by GRBaddnlconstr() in a list of their own
+/// (attributes NumNLConstrs, IISNLConstr, IISNLConstrForce). The driver puts
+/// them into constraint group CG_Nonlinear only if the header has all of
+/// these attributes; otherwise they stay general constraints.
+#if defined(GRB_INT_ATTR_NUMNLCONSTRS) && \
+    defined(GRB_INT_ATTR_IIS_NLCONSTR) && \
+    defined(GRB_INT_ATTR_IIS_NLCONSTRFORCE)
+  #define MP_GRB_NLCON_LIST
+#endif
 /// Convenience macro: call & warn on error
 #define GRB_CALL_WARN( call ) do { if (int e=call) AddWarning( \
     "GRB_" + std::to_string(e), \

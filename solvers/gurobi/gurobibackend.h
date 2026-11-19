@@ -220,6 +220,9 @@ protected:
   /// .funcpieces etc.
   /// Override the corresponding Gurobi options.
   void InputGurobiFuncApproxParams();
+  /// Warn if a .funcpiece... suffix is set on nonlinear constraints
+  template <class Values>
+  void WarnFuncSuffixOnNLCons(const char* suffix, const Values& values);
   /// .iisforce
   void InputGurobiIISForceParams();
   /// Functional nonlinear cons attributes need a filter
