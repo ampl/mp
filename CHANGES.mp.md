@@ -3,6 +3,16 @@ Summary of recent updates to the AMPL MP Library
 
 ## Unreleased
 
+- Fixed `div`, `mod`, `floor`, `ceil`, `round` and `trunc`:
+  - their results get the bounds the converter derives as hard bounds.
+    Without them, a solver behind MP2NL that linearizes logical
+    expressions stopped with "Set bounds on variables participating in
+    logical expressions", and SCIP could report a wrong optimum;
+  - `x div y` with a variable divisor whose `abs(y)` also appears in the
+    model stopped with "Part of expression redefinition could be lost".
+- Contradictory equalities of an integer variable (`x == 1 and x == -1`)
+  stopped with the error "vector"; the model is now reported infeasible.
+
 - Fixed wrong results of the conversion of logical constructs (all solvers):
   - a comparison shared by a disjunction and an if-then-else condition lost
     one of its two implications when the if-then-else result was bounded by a

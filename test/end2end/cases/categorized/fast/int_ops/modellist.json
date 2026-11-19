@@ -40,5 +40,27 @@
     "options": { "presolve": 0, "mp_options": "cvt:pre:roundintbnd=-1" },
     "objective" : 168000007,
     "values": { "x - 168000000": 7 }
+  },
+  {
+    "name" : "int_ops_03",
+    "tags" : ["integer", "int_ops"],
+    "comment": "x div y with abs(y) in the objective: no internal error from reusing the one-sided abs",
+    "options": { "presolve": 0 },
+    "objective" : 10
+  },
+  {
+    "name" : "int_ops_04",
+    "tags" : ["integer", "int_ops"],
+    "comment": "Conditional x div y: hard result bounds (SCIP 10.0.2 reported 22 without them)",
+    "options": { "presolve": 0 },
+    "objective" : 10
+  },
+  {
+    "name" : "int_ops_05",
+    "tags" : ["integer", "int_ops"],
+    "solvers": ["gurobi", "highs", "scip", "cplex", "xpress", "copt", "highs_mp2nl", "scip_mp2nl", "gurobi_mp2nl", "cplex_mp2nl"],
+    "comment": "div and trunc in logical expressions: hard result bounds, also for a big-M subsolver behind MP2NL",
+    "options": { "presolve": 0 },
+    "objective" : 1
   }
 ]

@@ -1443,5 +1443,12 @@
     "options": { "presolve": 0 },
     "objective" : 0,
     "values": { "x - 2000000000": 0, "y": 0 }
+  },
+  {
+    "name" : "eq_contradict_01",
+    "tags" : ["logical", "integer"],
+    "comment": "x == 1 and x == -1: infeasible, not the exception 'vector' from an empty unary encoding",
+    "options": { "presolve": 0 },
+    "values": { "solve_result": "infeasible" }
   }
 ]

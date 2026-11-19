@@ -1238,6 +1238,21 @@ public:
   /// Shortcut ub_hard(var)
   double ub_hard(int var) const { return this->GetModel().ub_hard(var); }
 
+  /// Whether the result of a functional constraint of type \a Con
+  /// gets its preprocessed bounds as hard bounds (as logical results
+  /// do): integer rounding and division (floor, ceil, round, trunc,
+  /// div, mod). Their conversions use big-M constraints, which need
+  /// the bounds also in a solver behind MP2NL, which receives only
+  /// the hard bounds by default.
+  template <class Con>
+  static constexpr bool IfHardResultBounds() {
+    return std::is_same_v<Con, FloorConstraint>
+        || std::is_same_v<Con, CeilConstraint>
+        || std::is_same_v<Con, RoundConstraint>
+        || std::is_same_v<Con, IntDivConstraint>
+        || std::is_same_v<Con, ModConstraint>;
+  }
+
   /// Lower bound of \a var as the solver will see it:
   /// best-known if submitted (cvt:pre:boundsbest, or fixed), else hard
   double lb_subm(int var) const {
@@ -2052,7 +2067,8 @@ private:
                        "16 and 32 need 2 or 4. Not inlined: results with "
                        "stronger bounds (cvt:pre:boundsbest), "
                        "cvt:dvelim=0. "
-                       "Default 63 (31 with cvt:pre:linfill=-1: the behavior before bit 32). "
+                       "Default 63; 31 together with cvt:pre:linfill=-1 "
+                       "gives the behavior before bit 32. "
                        "See also cvt:pre:linfill, cvt:pre:quadfill, "
                        "cvt:dvelim, cvt:expr:nlassign.",
         options_.preproUnnest_, 0, 63);

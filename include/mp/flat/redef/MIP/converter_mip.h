@@ -409,6 +409,10 @@ protected:
       MP_RAISE("Equality-comparing variables with domain out of integer range not implemented");
     const int lb = (int)std::round(lb_dbl);
     const int ub = (int)std::round(ub_dbl);
+    if (lb > ub)        // empty domain (contradictory bounds passed on
+      MP_INFEAS(fmt::format(  // by cvt:pre:infeasvarbnd=0): no encoding
+          "Unary encoding: the domain [{}, {}] of a variable is empty",
+          lb_dbl, ub_dbl));
     std::vector<int> unaryEncVars(ub-lb+1);
     int nTaken=0;
     // Compared constants outside the (possibly later narrowed) domain,
