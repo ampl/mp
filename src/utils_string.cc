@@ -55,10 +55,13 @@ bool ends_with(std::string_view fullString, std::string_view ending) {
 namespace {
 
 /// Whether a line is laid out by its author (a table): two spaces
-/// after the indentation
+/// between its words
 bool IsLaidOut(std::string_view line) {
   const auto start = line.find_first_not_of(' ');
-  return start != line.npos && line.find("  ", start) != line.npos;
+  if (start == line.npos)
+    return false;
+  line = line.substr(0, line.find_last_not_of(' ') + 1);  // not trailing
+  return line.find("  ", start) != line.npos;
 }
 
 /// Append \a line, wrapped at \a width, to \a out.
@@ -75,11 +78,14 @@ void WrapLine(std::string_view line, std::size_t width, std::string& out) {
       cut = rest.find(' ');
     if (cut == rest.npos)
       break;
-    out.append(rest.substr(0, cut));
-    out += '\n';
-    out.append(indent);
+    const auto end = rest.find_last_not_of(' ', cut);   // no trailing spaces
+    out.append(rest.substr(0, end == rest.npos ? 0 : end + 1));
     rest.remove_prefix(cut);
     rest.remove_prefix(std::min(rest.find_first_not_of(' '), rest.size()));
+    if (rest.empty())                            // only spaces were left
+      return;
+    out += '\n';
+    out.append(indent);
   }
   out.append(rest);
 }

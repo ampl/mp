@@ -3,6 +3,9 @@ Summary of recent updates to HiGHS for AMPL
 
 
 ## Unreleased
+- Fix: *alg:feasrelax* reported "solved" when the model could not be
+  repaired by relaxing the allowed elements (infinite relaxation cost);
+  now "infeasible".
 - Fix: *alg:feasrelax* on a model with integer variables reported the
   MIP gap and bound of the solve before the relaxation.
 - Fix: with *alg:feasrelax*, a variable or constraint with lower bound >

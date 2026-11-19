@@ -51,7 +51,7 @@
   {
     "name" : "int_ops_04",
     "tags" : ["integer", "int_ops"],
-    "comment": "Conditional x div y: hard result bounds (SCIP 10.0.2 reported 22 without them)",
+    "comment": "Conditional x div y: hard result bounds (SCIP 10.0.2 reported 22 without them). 10, not 3: MP treats the divisor as nonzero everywhere (known limitation, warning divisor_domain_0)",
     "options": { "presolve": 0 },
     "objective" : 10
   },

@@ -23,6 +23,8 @@ class HighsBackend :
   std::vector<int> iisVars_, iisCons_;
   /// Whether the solve was a feasibility relaxation
   bool feasrelaxDone_ = false;
+  /// The relaxed point violates a non-relaxable element
+  bool feasrelaxViolatesFixed_ = false;
   void DestroyFixedLP();
   /// Copy the user's options to the fixed-LP instance
   void CopyOptionsToFixedLP(void* fixed);
@@ -131,6 +133,11 @@ public:
                           const std::vector<double>& rhspen);
   /// Fail if HiGHS reports a relaxation cheaper than \a min_cost
   void CheckFeasRelaxCost(double min_cost);
+  /// Whether the relaxed point violates an element with a negative
+  /// (not relaxable) penalty
+  bool ViolatesNonRelaxable(const std::vector<double>& lbpen,
+                            const std::vector<double>& ubpen,
+                            const std::vector<double>& rhspen);
 
   /**
   * Obtain inf/unbounded rays

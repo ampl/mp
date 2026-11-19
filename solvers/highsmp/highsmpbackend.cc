@@ -360,6 +360,50 @@ double HighsBackend::MinFeasRelaxCost(const std::vector<double>& lbpen,
   return cost;
 }
 
+/// Penalty \a k of \a local, or \a global if empty; negative: fixed
+static bool IsRelaxable(const std::vector<double>& local, double global,
+                        size_t k) {
+  return FeasRelaxPenalty(local, global, (int)k) >= 0.0;
+}
+
+/// Whether value \a v violates [lb, ub] on a side that may not be relaxed
+static bool ViolatesFixedSide(double v, double lb, double ub,
+                              bool lb_relax, bool ub_relax) {
+  const double tol = 1e-6;
+  return (!lb_relax && v < lb - tol * (1.0 + std::fabs(lb)))
+      || (!ub_relax && v > ub + tol * (1.0 + std::fabs(ub)));
+}
+
+/// HiGHS can return a point that violates elements which may not be
+/// relaxed (negative penalty), reporting it as a relaxed solution:
+/// check the point against them.
+bool HighsBackend::ViolatesNonRelaxable(const std::vector<double>& lbpen,
+                                        const std::vector<double>& ubpen,
+                                        const std::vector<double>& rhspen) {
+  const int n = NumVars(), m = NumLinCons();
+  std::vector<double> x(n), r(m), lb(std::max(n, m)), ub(std::max(n, m));
+  int num = 0, nnz = 0;
+  if (kHighsStatusError == loader().Highs_getSolution(
+          lp(), x.data(), NULL, r.data(), NULL))
+    return false;
+  if (n && kHighsStatusError != loader().Highs_getColsByRange(lp(), 0, n-1,
+          &num, NULL, lb.data(), ub.data(), &nnz, NULL, NULL, NULL))
+    for (int j = 0; j < n; ++j)
+      if (ViolatesFixedSide(x[j], lb[j], ub[j],
+                            IsRelaxable(lbpen, this->lbpen(), j),
+                            IsRelaxable(ubpen, this->ubpen(), j)))
+        return true;
+  if (m && loader().Highs_getRowsByRange
+      && kHighsStatusError != loader().Highs_getRowsByRange(lp(), 0, m-1,
+          &num, lb.data(), ub.data(), &nnz, NULL, NULL, NULL))
+    for (int i = 0; i < m; ++i) {
+      const bool rel = IsRelaxable(rhspen, this->rhspen(), i);
+      if (ViolatesFixedSide(r[i], lb[i], ub[i], rel, rel))
+        return true;
+    }
+  return false;
+}
+
 /// HiGHS 1.15 does not relax a column or row with lower > upper:
 /// Highs_feasibilityRelaxation() returns Ok without solving and leaves
 /// a point with violation cost 0. Fail if the reported cost is below
@@ -400,6 +444,7 @@ void HighsBackend::DoHighsFeasRelax() {
     MP_RAISE("HiGHS feasibility relaxation failed");
   CheckFeasRelaxCost(min_cost);
   feasrelaxDone_ = true;
+  feasrelaxViolatesFixed_ = ViolatesNonRelaxable(lbpen, ubpen, rhspen);
   /// Original objective value at the relaxed solution
   int pst = kHighsSolutionStatusNone;
   loader().Highs_getIntInfoValue(lp(), "primal_solution_status", &pst);
@@ -422,6 +467,8 @@ void HighsBackend::DoHighsFeasRelax() {
 }
 
 void HighsBackend::Solve() {
+  feasrelaxDone_ = false;         // per solve (e.g., a repeated AMPLSSolve)
+  feasrelaxViolatesFixed_ = false;
   if (feasrelax()) {
     DoHighsFeasRelax();
     WindupHIGHSSolve();
@@ -993,6 +1040,9 @@ std::pair<int, std::string> HighsBackend::GetSolveResult() {
     // judge by the solution it left.
     int pst = kHighsSolutionStatusNone;
     loader().Highs_getIntInfoValue(lp(), "primal_solution_status", &pst);
+    if (kHighsSolutionStatusNone != pst && feasrelaxViolatesFixed_)
+      return { sol::INFEASIBLE,       // a non-relaxable element is violated
+               "infeasible, not repairable by the feasibility relaxation" };
     if (kHighsSolutionStatusNone != pst)   // the point violates the original model
       return { sol::SOLVED, "feasibility relaxation solved" };
     return { sol::FAILURE, "feasibility relaxation found no solution" };

@@ -326,8 +326,17 @@
     "files": ["feasrelax_pen_02.mod"],
     "tags": [ "linear", "feasrelax" ],
     "solvers": ["gurobi", "highs", "cplex", "copt"],
-    "comment": "Zero .rhspen: relaxing c1 is free",
+    "comment": "Zero .rhspen: relaxing c1 is free, so c2 holds (any x+y in [0, 1] costs 0)",
     "options": { "presolve": 0, "ANYSOLVER_options": "feasrelax=1" },
-    "values": { "solve_result": "solved", "x+y": 0 }
+    "values": { "solve_result": "solved", "if x+y <= 1 + 1e-6 then 1": 1 }
+  },
+  {
+    "name": "feasrelax_pen_03 feasrelax=1 nothing relaxable",
+    "files": ["feasrelax_pen_03.mod"],
+    "tags": [ "linear", "feasrelax" ],
+    "solvers": ["gurobi", "highs", "cplex"],
+    "comment": "No element may be relaxed: infeasible (HiGHS reported a violating point as solved)",
+    "options": { "presolve": 0, "ANYSOLVER_options": "feasrelax=1 lbpen=-1 ubpen=-1" },
+    "values": { "solve_result": "infeasible" }
   }
 ]

@@ -4,10 +4,12 @@ Summary of recent updates to the AMPL MP Library
 ## Unreleased
 
 - Fixed `div`, `mod`, `floor`, `ceil`, `round` and `trunc`:
-  - their results get the bounds the converter derives as hard bounds.
-    Without them, a solver behind MP2NL that linearizes logical
-    expressions stopped with "Set bounds on variables participating in
-    logical expressions", and SCIP could report a wrong optimum;
+  - the bounds of their results that follow from the bounds of the
+    arguments are now passed to the solver also when *cvt:pre:boundsbest*
+    is off (MP2NL's default). Without them, a solver behind MP2NL that
+    linearizes logical expressions stopped with "Set bounds on variables
+    participating in logical expressions", and SCIP could report a wrong
+    optimum;
   - `x div y` with a variable divisor whose `abs(y)` also appears in the
     model stopped with "Part of expression redefinition could be lost".
 - Contradictory equalities of an integer variable (`x == 1 and x == -1`)
@@ -16,17 +18,24 @@ Summary of recent updates to the AMPL MP Library
   variables that the conversion adds (for example, for `abs()`, `max()` or
   logical expressions) could be relaxed at no cost, so a reported "solved"
   relaxation could violate the original constraints. They are no longer
-  relaxed; only the model's own constraints and bounds are.
+  relaxed. Limitations: logical constraints are in general not relaxed
+  (their linearization consists of added constraints, and solvers do not
+  relax native ones); and the converter's presolve can use the bounds
+  implied by a relaxable constraint to simplify other constraints, so a
+  relaxed solution can still violate a constraint that was simplified
+  away. Set *cvt:pre:all=0* to avoid such simplifications.
 - New warning when the domain of a divisor of `/`, `div` or `mod`
   contains 0: the divisor is treated as nonzero in the whole model, also
   where the division is not evaluated (for example, in an if-then-else
   branch not taken).
 - Bounds of integer variables are rounded inwards within
   max(*cvt:pre:roundintbnd*, 16 units in the last place of the bound)
-  instead of a relative 1e-13: large bounds such as 1e9 + 5e-5 keep
-  their fractional part.
+  instead of max(*cvt:pre:roundintbnd*, 1e-13 times the bound): large
+  bounds such as 1e9 + 5e-5 keep their fractional part (before, it was
+  rounded away).
 - Warnings and error messages are wrapped at 60 characters (tables and
-  explicit line breaks are kept).
+  explicit line breaks are kept). New option *tech:msgwidth* sets the
+  width; 0 restores the previous, unwrapped output.
 
 - Fixed wrong results of the conversion of logical constructs (all solvers):
   - a comparison shared by a disjunction and an if-then-else condition lost

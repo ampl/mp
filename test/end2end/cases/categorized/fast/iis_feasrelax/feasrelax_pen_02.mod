@@ -1,7 +1,7 @@
 # -------------------------------------------------------------
 # feasrelax_pen_02.mod
 # .rhspen semantics: relaxing c1 is free (zero penalty),
-# so c1 is relaxed: x + y = 0.
+# so c1 is relaxed and c2 holds: x + y <= 1.
 # -------------------------------------------------------------
 suffix rhspen IN;
 var x >= 0 <= 10;

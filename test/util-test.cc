@@ -97,6 +97,9 @@ TEST(UtilTest, WrapLines) {
   // tables (two spaces inside a line) are kept
   const std::string table = "  Type          MaxAbs [Name]   MaxRel [Name]";
   EXPECT_EQ(table, WrapLines(table, 20));
+  // no trailing spaces or empty continuation lines
+  EXPECT_EQ("aaa\nbbb", WrapLines("aaa bbb   ", 5));
+  EXPECT_EQ("  aaa\n  bbb  ", WrapLines("  aaa bbb  ", 7));  // the last piece is kept
   EXPECT_EQ("", WrapLines(""));
   EXPECT_EQ("\n\n", WrapLines("\n\n"));
 }
