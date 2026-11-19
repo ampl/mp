@@ -62,5 +62,20 @@
     "comment": "div and trunc in logical expressions: hard result bounds, also for a big-M subsolver behind MP2NL",
     "options": { "presolve": 0 },
     "objective" : 1
+  },
+  {
+    "name" : "div_warn_01",
+    "tags" : ["integer", "int_ops"],
+    "solvers" : ["gurobi", "highs", "cplex", "scip", "xpress", "copt"],
+    "comment": "Warning divisor_domain_0 for a divisor whose domain contains 0",
+    "values": { "if match(solve_message, 'divisor_domain_0') > 0 then 1": 1 }
+  },
+  {
+    "name" : "cpsat_fixed_frac_01",
+    "solvers" : ["cpsat"],
+    "tags" : ["integer"],
+    "comment": "A variable fixed at 2.5 is passed to CP-SAT as a constant",
+    "objective" : 8.5,
+    "values": { "x": 2.5, "y": 2 }
   }
 ]

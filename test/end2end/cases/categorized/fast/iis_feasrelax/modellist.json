@@ -338,5 +338,32 @@
     "comment": "No element may be relaxed: infeasible (HiGHS reported a violating point as solved)",
     "options": { "presolve": 0, "ANYSOLVER_options": "feasrelax=1 lbpen=-1 ubpen=-1" },
     "values": { "solve_result": "infeasible" }
+  },
+  {
+    "name": "feasrelax_ubpen_01 feasrelax=1",
+    "files": ["feasrelax_ubpen_01.mod"],
+    "tags": [ "linear", "feasrelax" ],
+    "solvers": ["gurobi", "highs", "cplex", "copt"],
+    "comment": "x.ubpen 0.5 < c.rhspen 1: the bound of x is relaxed",
+    "options": { "presolve": 0, "ANYSOLVER_options": "feasrelax=1" },
+    "values": { "solve_result": "solved", "x": 2, "y": 1 }
+  },
+  {
+    "name": "feasrelax_ubpen_02 feasrelax=1",
+    "files": ["feasrelax_ubpen_02.mod"],
+    "tags": [ "linear", "feasrelax" ],
+    "solvers": ["gurobi", "highs", "cplex", "copt"],
+    "comment": "x.ubpen 100 > c.rhspen 1: c is relaxed, x keeps its bound",
+    "options": { "presolve": 0, "ANYSOLVER_options": "feasrelax=1" },
+    "values": { "solve_result": "solved", "x": 1, "y": 1 }
+  },
+  {
+    "name": "infeas_int_01 feasopt=3 rejected CPLEX",
+    "files": ["infeas_int_01.mod"],
+    "tags": [ "linear", "feasrelax" ],
+    "solvers": ["cplex"],
+    "comment": "alg:feasopt outside 0..2 is rejected (crashed before)",
+    "options": { "cplex_options": "feasopt=3" },
+    "values": { "solve_result": "failure" }
   }
 ]
