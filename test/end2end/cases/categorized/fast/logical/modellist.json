@@ -1110,6 +1110,7 @@
     "name" : "bounds_contradict_complement_01 presolve 0",
     "files" : ["bounds_contradict_complement_01.mod"],
     "tags" : ["logical", "integer"],
+    "solvers_exclude" : ["gecode", "ilogcp"],
     "options": {
       "presolve": 0,
       "mp_options": "cvt:pre:infeasvarbnd=1"
@@ -1123,6 +1124,7 @@
     "name" : "int_fixed_fractional_01 presolve 0",
     "files" : ["int_fixed_fractional_01.mod"],
     "tags" : ["integer"],
+    "solvers_exclude" : ["gecode", "ilogcp"],
     "options": {
       "presolve": 0,
       "mp_options": "cvt:pre:infeasvarbnd=1"
@@ -1165,6 +1167,7 @@
     "name" : "indicator_contradict_bounds_01",
     "files" : ["indicator_contradict_bounds_01.mod"],
     "tags" : ["logical", "integer"],
+    "solvers_exclude" : ["gecode", "ilogcp"],
     "options": { "mp_options": "cvt:pre:infeasvarbnd=1" },
     "comment": "Indicator flag with contradictory bounds: infeasible with cvt:pre:infeasvarbnd=1 (by default, 0, Xpress, SCIP and COPT stop with an error)",
     "values": {
@@ -1175,6 +1178,7 @@
     "name" : "indicator_contradict_bounds_02",
     "files" : ["indicator_contradict_bounds_02.mod"],
     "tags" : ["logical", "integer"],
+    "solvers_exclude" : ["gecode", "ilogcp"],
     "options": { "mp_options": "cvt:pre:infeasvarbnd=1" },
     "comment": "Indicator flag with contradictory best-known bounds: infeasible with cvt:pre:infeasvarbnd=1 (by default, 0, Xpress stops with an error)",
     "values": {

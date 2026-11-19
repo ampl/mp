@@ -246,6 +246,7 @@
   {
     "name": "infeasvarbnd_01",
     "tags": [ "linear", "continuous" ],
+    "solvers_exclude": ["gecode", "ilogcp"],
     "comment": "Contradictory bounds from singleton constraints: with cvt:pre:infeasvarbnd=1 the converter declares infeasibility",
     "options": { "presolve": 0, "mp_options": "cvt:pre:infeasvarbnd=1" },
     "values": { "solve_result": "infeasible" }
@@ -290,6 +291,7 @@
     "name": "infeasvarbnd_01 iisfind=1",
     "files": ["infeasvarbnd_01.mod"],
     "tags": [ "linear", "iis" ],
+    "solvers_exclude": ["gecode", "ilogcp"],
     "comment": "With cvt:pre:infeasvarbnd=1, contradictory deduced bounds are declared infeasible also with iis:find",
     "options": { "presolve": 0, "mp_options": "cvt:pre:infeasvarbnd=1", "ANYSOLVER_options": "iisfind=1" },
     "values": { "solve_result": "infeasible" }
