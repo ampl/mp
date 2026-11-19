@@ -1381,7 +1381,8 @@ void XpressmpBackend::InitCustomOptions() {
   AddStoredOption("sol:poolgap ams_eps poolgap poolrelgap",
     "Relative tolerance for reporting alternate MIP solutions "
     "(default: no limit): a solution is reported if its objective "
-    "is within poolgap * |best objective| of the best one.",
+    "is within poolgap * |best objective| of the best one. "
+    "With the best objective near 0, use sol:poolgapabs.",
     storedOptions_.poolGap_);
 
   AddStoredOption("sol:poolgapabs ams_epsabs poolgapabs poolabsgap",

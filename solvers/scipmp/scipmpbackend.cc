@@ -1212,7 +1212,9 @@ void ScipBackend::InitCustomOptions() {
 
   AddStoredOption("sol:poolgap poolgap ams_eps",
     "Relative tolerance for reporting alternative solutions "
-    "(default: no limit).",
+    "(default: no limit): a solution is reported if its objective "
+    "is within poolgap * |best objective| of the best one. "
+    "With the best objective near 0, use sol:poolgapabs.",
     storedOptions_.poolGap_, -1.0, SCIP_REAL_MAX);
 
   AddStoredOption("sol:poolgapabs poolgapabs ams_epsabs",

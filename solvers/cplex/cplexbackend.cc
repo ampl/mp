@@ -2707,7 +2707,9 @@ void CplexBackend::InitCustomOptions() {
   // Solution pool controls
   AddCplexParamOption("sol:poolgap ams_eps poolgap",
     "Relative tolerance for reporting alternate MIP solutions "
-    "(default: 1e75).", CPX_PARAM_SOLNPOOLGAP, 0.0, DBL_MAX);
+    "(default: 1e75). "
+    "With the best objective near 0, use sol:poolgapabs.",
+    CPX_PARAM_SOLNPOOLGAP, 0.0, DBL_MAX);
   AddCplexParamOption("sol:poolgapabs ams_epsabs poolagap poolgapabs",
     "Absolute tolerance for reporting alternate MIP solutions "
     "(default: 1e75).",CPX_PARAM_SOLNPOOLAGAP, 0.0, DBL_MAX);

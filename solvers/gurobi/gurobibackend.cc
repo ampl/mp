@@ -2838,7 +2838,8 @@ void GurobiBackend::InitCustomOptions() {
   /// Rely on MP's built-in options solutionstub or countsolutions
   AddSolverOption("sol:poolgap ams_eps poolgap",
       "Relative tolerance for reporting alternate MIP solutions "
-      "		(default: Infinity, no limit).",
+      "		(default: Infinity, no limit). "
+      "With the best objective near 0, use sol:poolgapabs.",
       GRB_DBL_PAR_POOLGAP, 0.0, DBL_MAX);
   AddSolverOption("sol:poolgapabs ams_epsabs poolgapabs",
       "Absolute tolerance for reporting alternate MIP solutions "
