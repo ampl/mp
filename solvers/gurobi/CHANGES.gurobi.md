@@ -2,7 +2,7 @@ Summary of recent updates to Gurobi for AMPL
 ============================================
 
 
-## unreleased
+## 20261119
 - Support for Gurobi 14:
   - New option *alg:pdhgearlycrossover* controls how early PDHG starts
     concurrent crossover; 0 runs crossover only after PDHG has finished.
