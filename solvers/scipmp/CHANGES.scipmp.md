@@ -2,6 +2,15 @@ Summary of recent updates to SCIP for AMPL
 ==========================================
 
 
+## unreleased
+- Fix: with *sol:poolmode* 1 or 2 and a small *sol:poollimit*, the
+  reported solutions could miss the optimal one (the enumeration stops
+  after *sol:poollimit* solutions in no particular order). The best
+  solution of the solve is now always reported. The option's help text
+  showed default 0; the default is 2.
+- *sol:poolgap* help: with the best objective near 0, use
+  *sol:poolgapabs*.
+
 ## 20261029
 - 64-bit SCIP parameters (e.g., *lim:nodes*, *lim:totalnodes*,
   *lim:stallnodes*) accept values above 2^31.
