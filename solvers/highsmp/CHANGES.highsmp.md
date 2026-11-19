@@ -3,6 +3,8 @@ Summary of recent updates to HiGHS for AMPL
 
 
 ## Unreleased
+- Fix: *alg:feasrelax* on a model with integer variables reported the
+  MIP gap and bound of the solve before the relaxation.
 - Fix: with *alg:feasrelax*, a variable or constraint with lower bound >
   upper bound (e.g., contradictory bounds passed on by
   *cvt:pre:infeasvarbnd=0*) gave an unrelaxed point reported as a relaxed

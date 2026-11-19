@@ -92,11 +92,19 @@ void CpsatModelAPI::AddVariables(const VarArrayDef& v) {
   for (int i = 0; i < (int)v.size(); ++i) {
     // MP represents constants as fixed (continuous) variables;
     // those are fine if the value is integer
-    const bool fixed_int = v.plb()[i] == v.pub()[i] &&
-        IsIntegerValue(v.plb()[i]);
+    const bool fixed = v.plb()[i] == v.pub()[i];
+    const bool fixed_int = fixed && IsIntegerValue(v.plb()[i]);
     // Contradictory bounds (lb>ub) make the model infeasible, whatever
     // the type: do not complain about the type
     const bool contradictory = v.plb()[i] > v.pub()[i];
+    d->var_const.push_back(NAN);
+    if (fixed && !fixed_int && v.ptype()[i] != var::Type::INTEGER) {
+      d->var_const.back() = v.plb()[i];  // see Var(); a placeholder at 0
+      d->var_lb.push_back(0);
+      d->var_ub.push_back(0);
+      d->vars.push_back(d->builder.NewIntVar(Domain(0, 0)));
+      continue;
+    }
     if (v.ptype()[i] != var::Type::INTEGER && !fixed_int && !contradictory)
       throw std::runtime_error(fmt::format(
           "CP-SAT supports integer variables only; "
@@ -123,21 +131,35 @@ void CpsatModelAPI::SetLinearObjective(int iobj, const LinearObjective& lo) {
   const auto n = (size_t)lo.num_terms();
   const auto coefs = lo.coefs();
   const auto vars = lo.vars();
-  bool all_int = true;
-  for (size_t j = 0; j < n; ++j)
-    if (!IsIntegerValue(coefs[j]))
+  // Variables fixed at non-integer values (constants) go to the offset
+  std::vector<double> cs;
+  std::vector<int> vs;
+  double offset = 0.0;
+  for (size_t j = 0; j < n; ++j) {
+    const double c = data()->var_const.at(vars[j]);
+    if (std::isnan(c)) {
+      cs.push_back(coefs[j]);
+      vs.push_back(vars[j]);
+    } else
+      offset += coefs[j] * c;
+  }
+  bool all_int = IsIntegerValue(offset);
+  for (double c: cs)
+    if (!IsIntegerValue(c))
       all_int = false;
   const bool maximize = (lo.obj_sense() == obj::Type::MAX);
   if (all_int) {
-    auto e = BuildLinExpr(n,
-        [&](size_t j) { return coefs[j]; },
-        [&](size_t j) { return vars[j]; },
+    auto e = BuildLinExpr(cs.size(),
+        [&](size_t j) { return cs[j]; },
+        [&](size_t j) { return vs[j]; },
         [this](int v) { return Var(v); });
+    e += sat::LinearExpr(ToInt64(offset, "objective constant"));
     if (maximize) b.Maximize(e); else b.Minimize(e);
   } else {                                   // floating-point objective
     sat::DoubleLinearExpr e;
-    for (size_t j = 0; j < n; ++j)
-      e.AddTerm(Var(vars[j]), coefs[j]);
+    for (size_t j = 0; j < cs.size(); ++j)
+      e.AddTerm(Var(vs[j]), cs[j]);
+    e += offset;
     if (maximize) b.Maximize(e); else b.Minimize(e);
   }
 }

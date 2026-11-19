@@ -2,6 +2,10 @@ Summary of recent updates to CP-SAT for AMPL
 ============================================
 
 ## unreleased
+- An objective with a non-integer constant (e.g., `x + y + 2.5`) is
+  accepted; before, the solve failed with "variable N is continuous".
+- Fix: a solve after another solver's solve in the same AMPL session
+  failed with "solution hint contains duplicate variables".
 - Fixed integer variables are kept integer (*cvt:pre:continuous_fixed_vars*
   is 0 by default for CP-SAT).
 - Models with contradictory variable bounds, or with an integer variable

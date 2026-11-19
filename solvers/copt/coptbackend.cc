@@ -711,8 +711,12 @@ double CoptBackend::getPoolObjective(int i)
 bool CoptBackend::IsWithinPoolGap(double obj, double best) const {
   double worsening = (obj - best)
       * (getIntAttr(COPT_INTATTR_OBJSENSE) == COPT_MAXIMIZE ? -1 : 1);
-  return worsening <= storedOptions_.poolGapAbs_
-      && worsening <= storedOptions_.poolGap_ * std::fabs(best);
+  // The default gaps (1e100) mean no limit; the relative one
+  // must not become 0 when the best objective is 0
+  return (storedOptions_.poolGapAbs_ >= 1e100
+          || worsening <= storedOptions_.poolGapAbs_)
+      && (storedOptions_.poolGap_ >= 1e100
+          || worsening <= storedOptions_.poolGap_ * std::fabs(best));
 }
 
 /// Report the pool solutions found during the search, best first,
@@ -759,8 +763,14 @@ std::pair<int, std::string> CoptBackend::GetSolveResult() {
   namespace sol = mp::sol;
 
   if (feasrelax_solved_) {       // COPT_FeasRelax() does not set the status attributes
-    if (getIntAttr(COPT_INTATTR_HASFEASRELAXSOL))
+    if (getIntAttr(COPT_INTATTR_HASFEASRELAXSOL)) {
+      // Modes optimizing the original objective (alg:feasrelax 4-6):
+      // an unbounded second phase leaves an infinite objective
+      if (std::fabs(getDblAttr(COPT_DBLATTR_FEASRELAXOBJ)) >= COPT_INFINITY)
+        return { sol::UNBOUNDED_FEAS,
+              "feasibility relaxation unbounded (original objective)" };
       return { sol::SOLVED, "feasibility relaxation solved" };
+    }
     return { sol::FAILURE, "feasibility relaxation failed" };
   }
 

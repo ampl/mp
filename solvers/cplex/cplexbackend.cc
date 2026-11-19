@@ -530,22 +530,22 @@ void CplexBackend::Solve() {
   }
   if (NumObjs() > 1
       || multiobj()==1)                  // User set multiobj=1
-    CPLEX_CALL(CPXmultiobjopt(env(), lp(), NULL));
+    CPLEX_CALL_THROW(CPXmultiobjopt(env(), lp(), NULL));
   else {
     auto type = CPXgetprobtype(env(), lp());
     if ((type == CPXPROB_MIQCP) || (type == CPXPROB_MIQP) || (type == CPXPROB_MILP))
     {
       if (storedOptions_.cpxMethod_ == CPX_ALG_BENDERS)
-        CPLEX_CALL(CPXbendersopt(env(), lp()));
+        CPLEX_CALL_THROW(CPXbendersopt(env(), lp()));
       else if (2 == storedOptions_.populate_)
-        CPLEX_CALL(CPXpopulate(env(), lp()));
+        CPLEX_CALL_THROW(CPXpopulate(env(), lp()));
       else
-        CPLEX_CALL(CPXmipopt(env(), lp()));
+        CPLEX_CALL_THROW(CPXmipopt(env(), lp()));
     }
     else if ((type == CPXPROB_QP) || (type == CPXPROB_QCP))
-      CPLEX_CALL(CPXqpopt(env(), lp()));
+      CPLEX_CALL_THROW(CPXqpopt(env(), lp()));
     else
-      CPLEX_CALL(CPXlpopt(env(), lp()));
+      CPLEX_CALL_THROW(CPXlpopt(env(), lp()));
   }
   if (feasrelax())
   {
@@ -879,9 +879,9 @@ void CplexBackend::ReportCPLEXResults() {
     CPLEX_CALL(CPXmbasewrite(env(), lp(), storedOptions_.endBasis_.c_str()));
  
   if (storedOptions_.bestnode_) {
-    double obj;
-    CPLEX_CALL(CPXgetbestobjval(env(), lp(), &obj));
-    std::vector<double> dbl(1, obj);
+    // The MIP's bound, also after a fixed-model solve (mip:basis), whose
+    // continuous model has none (CPXgetbestobjval failed, obj unset)
+    std::vector<double> dbl(1, BestDualBound());
     ReportSuffix(sufBestNodeObj, dbl);
     ReportSuffix(sufBestNodeProb, dbl);
   }
@@ -2025,6 +2025,12 @@ void CplexBackend::setSolutionMethod() {
 void CplexBackend::FinishOptionParsing() {
   // cplexasl-compatible feasopt/feasoptobj -> alg:feasrelax
   if (storedOptions_.feasopt_) {
+    if (storedOptions_.feasopt_ < 0 || storedOptions_.feasopt_ > 2)
+      MP_RAISE(fmt::format("Rejecting alg:feasopt={}: must be 0, 1 or 2",
+                           storedOptions_.feasopt_));
+    if (storedOptions_.feasoptobj_ < 1 || storedOptions_.feasoptobj_ > 3)
+      MP_RAISE(fmt::format("Rejecting alg:feasoptobj={}: must be 1, 2 or 3",
+                           storedOptions_.feasoptobj_));
     static const int mode_by_obj[] = { 0, 1, 3, 2 };  // sum, count, squares
     int mode = mode_by_obj[storedOptions_.feasoptobj_];
     if (2 == storedOptions_.feasopt_)

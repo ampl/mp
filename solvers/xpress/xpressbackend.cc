@@ -581,8 +581,12 @@ std::string XpressmpBackend::DoXpressFixedModel()
 
   bool XpressmpBackend::IsWithinPoolGap(double obj, double best) const {
     double worsening = (obj - best) * (getDblAttr(XPRS_OBJSENSE) >= 0 ? 1 : -1);
-    return worsening <= storedOptions_.poolGapAbs_
-        && worsening <= storedOptions_.poolGap_ * std::fabs(best);
+    // The default gaps (1e100) mean no limit; the relative one
+    // must not become 0 when the best objective is 0
+    return (storedOptions_.poolGapAbs_ >= 1e100
+            || worsening <= storedOptions_.poolGapAbs_)
+        && (storedOptions_.poolGap_ >= 1e100
+            || worsening <= storedOptions_.poolGap_ * std::fabs(best));
   }
 
   /// Report the pool solutions, best first, within the pool gaps

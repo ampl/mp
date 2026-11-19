@@ -78,6 +78,12 @@ protected:
 #define CPLEX_CALL( call ) do { if (int e=call) \
         GetException(#call, e, env()); } while (0)
 
+/// As CPLEX_CALL, but a failure stops the solve with CPLEX's message
+/// (CPLEX_CALL only builds the exception). For the optimization calls,
+/// whose failure (e.g., 5002, nonconvex model) leaves no solution.
+#define CPLEX_CALL_THROW( call ) do { if (int e=call) \
+        throw GetException(#call, e, env()); } while (0)
+
 } // namespace mp
 
 #endif // CPLEXCOMMON_H

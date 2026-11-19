@@ -4,6 +4,12 @@ Summary of recent updates to CPLEX for AMPL
 
 ## unreleased
 
+- Fix: *alg:feasoptobj* outside 1..3 crashed the driver; such values of
+  *alg:feasopt* and *alg:feasoptobj* are now rejected.
+- Fix: *mip:bestnode* had a garbage value with *mip:basis=1*.
+- Fix: a failure of CPLEX's optimizer (e.g., error 5002 for a nonconvex
+  quadratic constraint) gave an unknown result (-1); it is now reported
+  as a failure (500) with CPLEX's message.
 - Fix: *alg:feasrelax* 1-3 (minimize the relaxation only) reported
   "limit, feasible solution" (solve result 400) when the minimal
   relaxation was found; now "minimal relaxation found" (solved).

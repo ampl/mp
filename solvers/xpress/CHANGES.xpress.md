@@ -3,6 +3,9 @@ Summary of recent updates to Xpress for AMPL
 
 
 ## unreleased
+- Fix: with the legacy solution pool (*sol:poolapi=0*, also all
+  Xpress 9 versions), a best objective value of 0 reported only the
+  solutions with that value, as if *sol:poolgap* were 0.
 - Fix: *iis:find* on a model for which Xpress identifies no IIS (e.g.,
   a variable with contradictory bounds) failed with "?721 No IIS has been
   identified yet"; now all *.iis* values are *non* and warning IIS_NONE

@@ -1621,19 +1621,24 @@ ipm_optimality_tolera
 	  "iis_time_limit", 0.0, DBL_MAX);
 }
 
+/// After alg:feasrelax, HiGHS's MIP gap and bound are those of the
+/// solve before the relaxation: report the relaxation as solved
+/// (gap 0, bound = its objective), as for other solvers
 double HighsBackend::MIPGap() {
-  if (!IsMIP())
+  if (!IsMIP() || feasrelaxDone_)
     return 0;
   return getDblAttr("mip_gap");
 }
 double HighsBackend::BestDualBound() {
   if (!IsMIP())
     return 0;
+  if (feasrelaxDone_)
+    return ObjectiveValue();
   return getDblAttr("mip_dual_bound");
 }
 
 double HighsBackend::MIPGapAbs() {
-  if (!IsMIP())
+  if (!IsMIP() || feasrelaxDone_)
     return 0;
   return std::fabs(
     ObjectiveValue() - BestDualBound());
