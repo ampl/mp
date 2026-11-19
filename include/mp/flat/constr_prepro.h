@@ -781,6 +781,20 @@ public:
     }
   }
 
+  /// Warn if the domain [\a ly, \a uy] of a divisor in \a op
+  /// contains 0: the divisor is then treated as nonzero in the whole
+  /// model, also where the division is not evaluated.
+  void WarnDivisorDomainContains0(double ly, double uy, const char* op) {
+    if (ly <= 0.0 && uy >= 0.0 && ly < uy)
+      MPD( AddWarning("divisor_domain_0", fmt::format(
+        "The domain [{}, {}] of a divisor in '{}' contains 0.\n"
+        "The divisor is treated as nonzero in the whole model, also\n"
+        "where the division is not evaluated (for example, in an\n"
+        "if-then-else branch not taken), which can cut off solutions.\n"
+        "Bound the divisor away from 0 if this is not intended.",
+        ly, uy, op)) );
+  }
+
   /// Preprocess Div
   template <class PreprocessInfo>
   void PreprocessConstraint(
@@ -788,6 +802,7 @@ public:
     auto& m = MPD( GetModel() );
     auto v1 = c.GetArguments()[0], v2 = c.GetArguments()[1];
     const auto l1=m.lb(v1), u1=m.ub(v1), l2=m.lb(v2), u2=m.ub(v2);
+    WarnDivisorDomainContains0(l2, u2, "/");
 		if (l1 > MPD( PracticallyMinusInf() ) &&
 				u1 < MPD( PracticallyInf() ) &&
 				l2 > MPD( PracticallyMinusInf() ) &&
@@ -879,6 +894,7 @@ public:
         ly=MPCD( lb(y) ), uy=MPCD( ub(y) );
     if (0.0==ly && 0.0==uy)
       MP_RAISE("Division by 0 in 'div'");
+    WarnDivisorDomainContains0(ly, uy, "div");
     if (1.0==ly && 1.0==uy && MPCD( is_var_integer(x) )) {
       prepro.set_result_var(x);
       return;
@@ -912,6 +928,7 @@ public:
         ly=MPCD( lb(y) ), uy=MPCD( ub(y) );
     if (0.0==ly && 0.0==uy)
       MP_RAISE("Division by 0 in 'mod'");
+    WarnDivisorDomainContains0(ly, uy, "mod");
     const bool f_int = IsIntegerValued(x) && IsIntegerValued(y);
     auto b = std::max(std::fabs(lx), std::fabs(ux));
     if (IsFiniteRange(ly, uy))

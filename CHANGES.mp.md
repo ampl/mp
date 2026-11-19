@@ -17,6 +17,10 @@ Summary of recent updates to the AMPL MP Library
   logical expressions) could be relaxed at no cost, so a reported "solved"
   relaxation could violate the original constraints. They are no longer
   relaxed; only the model's own constraints and bounds are.
+- New warning when the domain of a divisor of `/`, `div` or `mod`
+  contains 0: the divisor is treated as nonzero in the whole model, also
+  where the division is not evaluated (for example, in an if-then-else
+  branch not taken).
 
 - Fixed wrong results of the conversion of logical constructs (all solvers):
   - a comparison shared by a disjunction and an if-then-else condition lost
