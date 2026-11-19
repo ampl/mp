@@ -735,6 +735,10 @@ std::string XpressmpBackend::DoXpressFixedModel()
           (XPRS_NLPSOLSTATUS_SOLUTION_NODUALS==solstatus ||
                         XPRS_NLPSOLSTATUS_GLOBALLYOPTIMAL_NODUALS==solstatus)
                                   ? ", no duals" : ", with duals";
+      // A MINLP's duals come only from the fixed model (mip:basis),
+      // reported on its own line
+      if (IsMIP())
+        msg_duals.clear();
 
       // A global (spatial B&B) solve stopped by a limit reports
       // NLPSTATUS_LOCALLY_OPTIMAL for its incumbent: report the limit.

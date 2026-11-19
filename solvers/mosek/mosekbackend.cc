@@ -271,6 +271,9 @@ MSKsoltypee MosekBackend::GetSolutionTypeToFetch() {
 }
 
 void MosekBackend::Solve() {
+  // A Ctrl-C of an earlier solve in this process (e.g., a repeated
+  // AMPLSSolve()) must not stop this one at the first callback
+  interrupt_requested = false;
   auto res = MSK_optimizetrm(lp(), &termCode_);
   if (MSK_RES_ERR_CON_Q_NOT_PSD == res) {
     AddWarning("Nonconvex QC",

@@ -3,6 +3,8 @@ Summary of recent updates to MOSEK for AMPL
 
 
 ## Unreleased
+- Fix: after an interrupted solve (Ctrl-C), a later solve in the same
+  process (AMPLS API) stopped at once.
 - Fix: with an infeasibility certificate, the driver took its status
   keys for a basis and stopped with "Unknown Mosek VBasis value: 6".
   A certificate has no basis: no *.sstatus* is returned for it.

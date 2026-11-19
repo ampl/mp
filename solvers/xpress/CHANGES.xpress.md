@@ -3,6 +3,8 @@ Summary of recent updates to Xpress for AMPL
 
 
 ## unreleased
+- The solve message of a MINLP no longer says "no duals" when
+  *mip:basis* provides duals from the fixed model.
 - Fix: with the legacy solution pool (*sol:poolapi=0*, also all
   Xpress 9 versions), a best objective value of 0 reported only the
   solutions with that value, as if *sol:poolgap* were 0.
