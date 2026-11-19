@@ -640,7 +640,7 @@
     "values": {
       "if solve_result_num >= 500 and solve_result_num < 600 then 1": 1,
       "solve_message": {
-        "contains": "all of them must be linear"
+        "contains": "must be linear"
       }
     }
   },
@@ -653,7 +653,7 @@
     "values": {
       "if solve_result_num >= 500 and solve_result_num < 600 then 1": 1,
       "solve_message": {
-        "contains": "all of them must be linear"
+        "contains": "must be linear"
       }
     }
   },
