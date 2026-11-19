@@ -10,6 +10,9 @@ Summary of recent updates to SCIP for AMPL
   showed default 0; the default is 2.
 - *sol:poolgap* help: with the best objective near 0, use
   *sol:poolgapabs*.
+- Fix: a model exported with *tech:writemodel* (for example, CIP) that
+  had indicator constraints could not be read back correctly, as they
+  all had the same name; unnamed indicators now get unique names.
 
 ## 20261029
 - 64-bit SCIP parameters (e.g., *lim:nodes*, *lim:totalnodes*,

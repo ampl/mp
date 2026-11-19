@@ -193,13 +193,21 @@ void ScipModelAPI::AddConstraint(const OrConstraint &dc)  {
 }
 
 
+std::string ScipModelAPI::IndicatorName(const char* name) {
+  ++n_indicators_;
+  if (name && *name)
+    return name;
+  return "ind" + std::to_string(n_indicators_);
+}
+
 void ScipModelAPI::helpIndicatorLin(const int* pvars, const double* pcoefs, const size_t size, const char* name, const double rhs, const int binary_var, const int binary_value, SCIP_Bool lessthanineq) {
   SCIP_VAR** vars = NULL;
   SCIP_CCALL( SCIPallocBufferArray(getSCIP(), &vars, size) );
   for (size_t i = 0; i < size; i++)
     vars[i] = getPROBDATA()->vars[pvars[i]];
   SCIP_CONS* cons;
-  SCIP_CCALL( SCIPcreateConsIndicatorGeneric(getSCIP(), &cons, name, getPROBDATA()->vars[binary_var],
+  SCIP_CCALL( SCIPcreateConsIndicatorGeneric(getSCIP(), &cons,
+    IndicatorName(name).c_str(), getPROBDATA()->vars[binary_var],
     (int)size, vars, (double*)pcoefs, rhs, binary_value, lessthanineq, TRUE, FALSE, TRUE, TRUE, TRUE, FALSE, FALSE, FALSE, FALSE) );
   SCIP_CCALL( SCIPaddCons(getSCIP(), cons) );
   SCIP_CCALL( SCIPreleaseCons(getSCIP(), &cons) );
@@ -219,10 +227,13 @@ void ScipModelAPI::AddConstraint(const IndicatorConstraintLinEQ &ic)  {
   }
   SCIP_CONS* cons1;
   SCIP_CONS* cons2;
-  SCIP_CCALL( SCIPcreateConsIndicatorGeneric(getSCIP(), &cons1, ic.GetName(),getPROBDATA()->vars[ic.get_binary_var()],
+  const auto name = IndicatorName(ic.GetName());     // two halves
+  SCIP_CCALL( SCIPcreateConsIndicatorGeneric(getSCIP(), &cons1,
+    (name + "_le").c_str(), getPROBDATA()->vars[ic.get_binary_var()],
     (int)ic.get_constraint().size(), vars, (double*)ic.get_constraint().pcoefs(), ic.get_constraint().rhs(),
     ic.get_binary_value(), TRUE, TRUE, FALSE, TRUE, TRUE, TRUE, FALSE, FALSE, FALSE, FALSE) );
-  SCIP_CCALL( SCIPcreateConsIndicatorGeneric(getSCIP(), &cons2, ic.GetName(),getPROBDATA()->vars[ic.get_binary_var()],
+  SCIP_CCALL( SCIPcreateConsIndicatorGeneric(getSCIP(), &cons2,
+    (name + "_ge").c_str(), getPROBDATA()->vars[ic.get_binary_var()],
     (int)ic.get_constraint().size(), vars, (double*)ic.get_constraint().pcoefs(), ic.get_constraint().rhs(),
     ic.get_binary_value(), FALSE, TRUE, FALSE, TRUE, TRUE, TRUE, FALSE, FALSE, FALSE, FALSE) );
   SCIP_CCALL( SCIPaddCons(getSCIP(), cons1) );
