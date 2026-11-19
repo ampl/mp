@@ -12,6 +12,9 @@ Summary of recent updates to Gurobi for AMPL
   duals and the same basis status for every variable and constraint;
   Gurobi has no duals for such models, so the fixed-model solve is
   skipped, with a message.
+
+
+## 20261119
 - Support for Gurobi 14:
   - New option *alg:pdhgearlycrossover* controls how early PDHG starts
     concurrent crossover; 0 runs crossover only after PDHG has finished.
