@@ -334,6 +334,7 @@ protected:
       return GetSolution();
     };
     i_solve_=0;
+    GetMM().StartSolveIterations();    // e.g., a repeated AMPLSSolve()
     StartRecordingMOPassStats();
     while ((SetupPlateau(),            // Save plateau options before MO options
         GetMM().PrepareSolveIteration(get_stt, get_sol))) {

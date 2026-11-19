@@ -364,6 +364,16 @@ public:
     return !(n_solve_iter_++);
   }
 
+  /// Start a run of solve iterations: a repeated run (e.g., a
+  /// second AMPLSSolve()) solves the model again. Not with emulated
+  /// multiple objectives: their passes have changed the model.
+  void StartSolveIterations() {
+    if (MPCD( IsMOActive() ) && MPCD( IsMOFinished() ))
+      MP_RAISE("A repeated solve is not supported with emulated "
+               "multiple objectives");
+    n_solve_iter_ = 0;
+  }
+
   /// Objective weights, adapted according to obj:multi:weight
   ArrayRef<double> GetObjWeightsAdapted() { return MPD( GetMOWeightsLegacy() ); }
 

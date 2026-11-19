@@ -189,6 +189,10 @@ public:
       override
   { return GetFlatCvt().PrepareNextSolveIteration(get_stt, get_sol); }
 
+  /// Start a run of solve iterations
+  void StartSolveIterations() override
+  { GetFlatCvt().StartSolveIterations(); }
+
   /// Is/was MultiObj Emulator used?
   bool IsMOEmulationOn() const override
   { return GetFlatCvt().IsMOActive(); }
