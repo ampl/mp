@@ -464,7 +464,7 @@ void CplexBackend::DoWriteSolution(const std::string& file) {
     return;
   }
   AddWarning("UnknownResultExt",
-             fmt::format("Unknown or non-supported result extension: '{}'.\n"
+             fmt::format("Unknown or non-supported result extension: '{}'. "
                          "Trying to write the file as solution", file));
   CPLEX_CALL(CPXsolwrite(env(), lp(), file.c_str()));
 }

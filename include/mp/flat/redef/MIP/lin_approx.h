@@ -215,11 +215,11 @@ public:
             std::string("PLApproxDomain_") + con.GetTypeName(),
             std::string("Argument domain of a '")
                 + con.GetTypeName()
-                + "'\n"
+                + "' "
                   "has been reduced to ["
                 + std::to_string(lbx1) + ", "
                 + std::to_string(ubx1)
-                + "] for numerical reasons\n"
+                + "] for numerical reasons "
                   "(partially controlled by cvt:plapprox:domain.)");
       }
       GetMC().RedefineVariable(y,

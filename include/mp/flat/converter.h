@@ -1442,8 +1442,8 @@ public:
             lb, ub, kind, i+1));
       GetEnv().AddWarning(
           std::string(kind) + (bestb ? " best-known" : "") + " bounds",
-          fmt::format("Bounds [{:.17}, {:.17}]\nof {}[{}] "
-                      "contradict pre:eps and pre:epsrel.\n"
+          fmt::format("Bounds [{:.17}, {:.17}] of {}[{}] "
+                      "contradict pre:eps and pre:epsrel. "
                       "Model can be infeasible "
                       "(cvt:pre:infeasvarbnd=1 declares it so)",
                       lb, ub, kind, i+1).c_str());
@@ -2622,8 +2622,8 @@ protected:
       if (xx.size() < MPCD( num_vars() )) {
         MPCD( GetEnv() ).AddWarning(
             "FewerVariables",
-            fmt::format("Solver reported {} variables,\n"
-                        "less than {} received.\n"
+            fmt::format("Solver reported {} variables, "
+                        "less than {} received. "
                         "Solution might be incorrect.",
                         xx.size(), MPCD( num_vars() )));
         xx.resize( MPCD( num_vars() ) );

@@ -277,11 +277,11 @@ void MosekBackend::Solve() {
   auto res = MSK_optimizetrm(lp(), &termCode_);
   if (MSK_RES_ERR_CON_Q_NOT_PSD == res) {
     AddWarning("Nonconvex QC",
-               "Mosek reported the problem as nonconvex QCP.\n"
-               "If the constraints are in fact Second-Order Cones,\n"
-               "make sure they have standard SOCP forms, and\n"
-               "the objective is linear by moving the\n"
-               "quadratic terms into auxiliary SOC constraints.\n"
+               "Mosek reported the problem as nonconvex QCP. "
+               "If the constraints are in fact Second-Order Cones, "
+               "make sure they have standard SOCP forms, and "
+               "the objective is linear by moving the "
+               "quadratic terms into auxiliary SOC constraints. "
                "See mp.ampl.com/modeling-expressions.html#conic-optimization.");
 
   }

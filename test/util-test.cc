@@ -23,6 +23,7 @@
 #include "gtest/gtest.h"
 #include "mp/error.h"
 #include "mp/os.h"
+#include "mp/solver-base.h"
 #include "mp/utils-string.h"
 #include "util.h"
 #include "gtest-extra.h"
@@ -99,7 +100,23 @@ TEST(UtilTest, WrapLines) {
   EXPECT_EQ(table, WrapLines(table, 20));
   // no trailing spaces or empty continuation lines
   EXPECT_EQ("aaa\nbbb", WrapLines("aaa bbb   ", 5));
-  EXPECT_EQ("  aaa\n  bbb  ", WrapLines("  aaa bbb  ", 7));  // the last piece is kept
+  // the end of the text is kept as given
+  EXPECT_EQ("  aaa\n  bbb  ", WrapLines("  aaa bbb  ", 7));
   EXPECT_EQ("", WrapLines(""));
   EXPECT_EQ("\n\n", WrapLines("\n\n"));
+}
+
+// The header of a warning is kept, its text wrapped with indentation
+TEST(UtilTest, WarningToStringWrapsText) {
+  const mp::BasicSolver::WarningsMap::value_type one{
+    "key", {1, "aaa bbb ccc ddd"}};
+  EXPECT_EQ("WARNING:  \"key\"\n  aaa bbb\n  ccc ddd",
+            mp::BasicSolver::ToString(one, 10));
+  EXPECT_EQ("WARNING:  \"key\"\n  aaa bbb ccc ddd",
+            mp::BasicSolver::ToString(one, 0));
+  const mp::BasicSolver::WarningsMap::value_type several{
+    "a_long_warning_key", {3, "aaa bbb"}};
+  EXPECT_EQ("WARNING.  3 case(s) of \"a_long_warning_key\". One of them:"
+            "\n  aaa\n  bbb",
+            mp::BasicSolver::ToString(several, 6));
 }

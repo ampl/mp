@@ -712,7 +712,7 @@ protected:
       if (ExpressionAcceptanceLevel::Recommended
           != ie.GetCK()->GetChosenAcceptanceLevelEXPR())
         MPD(GetEnv()).AddWarning("NLP_interface_linfn_quadfn",
-                                 "For (MI)NLP native interface (acc:_expr=1),\n"
+                                 "For (MI)NLP native interface (acc:_expr=1), "
                                  "acc:linfn=4 acc:quadfn=4 are required.");
     }
   }

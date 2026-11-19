@@ -162,9 +162,9 @@ protected:
   /// Fill native multi-objective pass information
   virtual MultiobjPassStats GetMultiobjPassStats() {
     AddWarning("MOPassStats",
-               "Multiobjective pass statistics\n"
-               "not implemented for this solver.\n"
-               "Use multi-objective emulator\n"
+               "Multiobjective pass statistics "
+               "not implemented for this solver. "
+               "Use multi-objective emulator "
                "(obj:multi=2).");
     return {};
   }

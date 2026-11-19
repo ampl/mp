@@ -990,14 +990,15 @@ void BasicSolver::PrintWarnings() {
 std::string BasicSolver::ToString(
     const WarningsMap::value_type& wrn, int width) {
   assert(wrn.second.first);
-  const auto text = wrn.second.first>1   // several warnings of this kind
+  const auto header = wrn.second.first>1   // several warnings of this kind
       ? fmt::format(
-          "WARNING.  {} case(s) of \"{}\". One of them:\n  {}",
-          wrn.second.first, wrn.first, wrn.second.second)
-      : fmt::format(
-          "WARNING:  \"{}\"\n  {}",
-          wrn.first, wrn.second.second);
-  return width > 0 ? WrapLines(text, width) : text;
+          "WARNING.  {} case(s) of \"{}\". One of them:",
+          wrn.second.first, wrn.first)
+      : fmt::format("WARNING:  \"{}\"", wrn.first);
+  // Only the text is wrapped: the header's double space would make
+  // WrapLines() keep it as a laid-out line anyway.
+  const auto text = "  " + wrn.second.second;
+  return header + '\n' + (width > 0 ? WrapLines(text, width) : text);
 }
 
 #ifdef MP_DATE

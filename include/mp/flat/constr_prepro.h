@@ -607,7 +607,7 @@ public:
     if (cc.GetConstraint().empty()) {
 #ifndef NDEBUG
       MPD(AddWarning("empty_cmp",
-                     "Empty comparison in a logical constraint\n  of type '"
+                     "Empty comparison in a logical constraint of type '"
                      + std::string(cc.GetTypeName()) + "'"));
 #endif
       auto res = ComputeValue(cc, std::vector<double>{});
@@ -787,10 +787,10 @@ public:
   void WarnDivisorDomainContains0(double ly, double uy, const char* op) {
     if (ly <= 0.0 && uy >= 0.0 && ly < uy)
       MPD( AddWarning("divisor_domain_0", fmt::format(
-        "The domain [{}, {}] of a divisor in '{}' contains 0.\n"
-        "The divisor is treated as nonzero in the whole model, also\n"
-        "where the division is not evaluated (for example, in an\n"
-        "if-then-else branch not taken), which can cut off solutions.\n"
+        "The domain [{}, {}] of a divisor in '{}' contains 0. "
+        "The divisor is treated as nonzero in the whole model, also "
+        "where the division is not evaluated (for example, in an "
+        "if-then-else branch not taken), which can cut off solutions. "
         "Bound the divisor away from 0 if this is not intended.",
         ly, uy, op)) );
   }
