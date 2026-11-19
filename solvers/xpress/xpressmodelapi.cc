@@ -117,7 +117,8 @@ void XpressmpModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo )
 
 void XpressmpModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective& qo) {
   // Xpress's native multi-objective optimization takes linear objectives
-  // only; with a quadratic one the solve fails it refuses additional objectives next to a quadratic one.
+  // only: next to a quadratic one, it refuses the additional objectives
+  // and the solve fails.
   if (num_obj_total_ > 1)
     throw std::runtime_error(
         "When several objectives are handled natively, all of them must be "

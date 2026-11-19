@@ -958,15 +958,18 @@ public:
   /// Result range of a monotone function f over the argument bounds
   /// [lb, ub], widened by the relative margin cvt:pre:funcbndtol.
   /// Infinite ends stay infinite.
-  /// @return {lb, ub}, or {-Infty, Infty} if f is undefined (NaN)
+  /// @return {lb, ub}, or {-Infty, Infty} if f is undefined (NaN),
+  ///   if the range is degenerate (both ends at the same infinity,
+  ///   e.g., log over [0, 0]: the solver finds such a model infeasible),
   ///   or if the margin is negative (the old behavior, no such bounds)
   template <class F>
   std::pair<double, double> MonotoneRange(F f, double lb, double ub) {
     const double tol = MPCD( FuncBoundTol() );
     const double r0 = f(lb), r1 = f(ub);
-    if (tol < 0.0 || std::isnan(r0) || std::isnan(r1))
-      return { MPD( MinusInfty() ), MPD( Infty() ) };
     const double rl = std::min(r0, r1), ru = std::max(r0, r1);
+    if (tol < 0.0 || std::isnan(r0) || std::isnan(r1)
+        || ru == -INFINITY || rl == INFINITY)
+      return { MPD( MinusInfty() ), MPD( Infty() ) };
     const auto widen = [tol](double r, double dir) {  // 0*inf is NaN
       return (0.0 == tol || std::isinf(r)) ? r : r + dir * tol * std::fabs(r);
     };
@@ -989,12 +992,16 @@ public:
     prepro.narrow_result_bounds(std::max(0.0, r.first), r.second);
   }
 
-  /// Bound the result of a^x, a>0: positive, and by the argument's bounds
+  /// Bound the result of a^x, a>0: positive, and by the argument's
+  /// bounds. Not for a<=0: a^x is then not monotone (e.g., (-2)^x
+  /// at integer x) and not always positive.
   template <class PreprocessInfo>
   void PreprocessConstraint(
       ExpAConstraint& c, PreprocessInfo& prepro) {
     const auto x = c.GetArguments()[0];
     const double a = c.GetParameters()[0];
+    if (!(a > 0.0))
+      return;
     const auto r = MonotoneRange(
         [a](double v) { return std::pow(a, v); }, MPD( lb(x) ), MPD( ub(x) ));
     prepro.narrow_result_bounds(std::max(0.0, r.first), r.second);
@@ -1027,7 +1034,10 @@ public:
     else
       MPD( NarrowVarBestBounds(x, 0.0, MPD( Infty() )) );
     const auto xb = LogArgBounds(x);
-    const double la = std::log(c.GetParameters()[0]);
+    const double a = c.GetParameters()[0];
+    if (!(a > 0.0) || 1.0 == a)          // no logarithm to such a base
+      return;
+    const double la = std::log(a);
     const auto r = MonotoneRange(
         [la](double v) { return std::log(v) / la; }, xb.first, xb.second);
     prepro.narrow_result_bounds(r.first, r.second);

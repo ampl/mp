@@ -1170,5 +1170,19 @@
     },
     "comment": "Piecewise-linear approximation of log over an integer argument: with exact result bounds the last breakpoint x = 5 was lost (x = 5 reported, 0.324 instead of 0.259)",
     "objective": 0.3062943611
+  },
+  {
+    "name" : "funcbnd_log_03_zero",
+    "solvers" : ["highs", "gurobi", "scip"],
+    "tags" : ["nonlinear", "continuous"],
+    "comment": "log of an argument fixed at 0: the degenerate result range is not used (HiGHS stopped in Highs_addRows)",
+    "values": { "solve_result": "infeasible" }
+  },
+  {
+    "name" : "funcbnd_expa_02_neg",
+    "solvers" : ["highs"],
+    "tags" : ["nonlinear", "integer"],
+    "comment": "(-2)^n: no bounds from the argument (they were contradictory and the model infeasible); the piecewise-linear approximation refuses a base <= 0 with a message",
+    "values": { "solve_result": "failure" }
   }
 ]

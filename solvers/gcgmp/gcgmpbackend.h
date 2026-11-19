@@ -179,7 +179,6 @@ private:
   void InputDecomposition();
 
   /// Index in GCG's decomposition data of variable i, or -1
-
   int findDecompVarIndex(size_t i);
 
   std::unordered_map<SCIP_VAR*, int> decomp_var_index_;

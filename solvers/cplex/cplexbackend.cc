@@ -1403,7 +1403,10 @@ std::string CplexBackend::DoCplexFixedModel() {
   CPLEX_CALL(CPXgetdblparam(env(), CPXPARAM_TimeLimit, &old_time_limit));
   CPLEX_CALL(CPXgetlongparam(env(), CPXPARAM_Simplex_Limits_Iterations, &old_iteration_limit));
   CPLEX_CALL(CPXgetintparam(env(), CPXPARAM_Barrier_Limits_Iteration, &old_barrier_limit));
+  int old_qcp_duals = 0;
+  CPLEX_CALL(CPXgetintparam(env(), CPXPARAM_Preprocessing_QCPDuals, &old_qcp_duals));
   auto restore_limits = [&](void*) {
+    CPXsetintparam(env(), CPXPARAM_Preprocessing_QCPDuals, old_qcp_duals);
     CPXsetintparam(env(), method_param, old_method);
     CPXsetdblparam(env(), CPXPARAM_TimeLimit, old_time_limit);
     CPXsetlongparam(env(), CPXPARAM_Simplex_Limits_Iterations, old_iteration_limit);
@@ -1418,6 +1421,9 @@ std::string CplexBackend::DoCplexFixedModel() {
       fixed_model_iter_limit() < 0 ? INT_MAX : fixed_model_iter_limit()));
   if (storedOptions_.fixedModelMethod_)
     SetSolverOption(method_param, storedOptions_.fixedModelMethod_);
+  if (CPXbaropt == Contopt)    // the duals of the fixed QCP are reported:
+    CPLEX_CALL(CPXsetintparam(env(),     // with QCPDuals=1 (the default)
+        CPXPARAM_Preprocessing_QCPDuals, 2));  // CPLEX may not compute them
   CPLEX_CALL(Contopt(env(), lp()));
 
   int optimstatus = CPXgetstat(env(), lp());

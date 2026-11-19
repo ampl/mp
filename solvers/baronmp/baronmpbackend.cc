@@ -148,9 +148,12 @@ ArrayRef<double> BaronmpBackend::DualSolution_LP() {
     std::vector<double> full;
     full.reserve(duals.size() + skipped.size());
     size_t next = 0;                // next BARON equation
+    size_t k = 0;                   // next skipped position (ascending)
     for (size_t pos = 0; next < duals.size() || pos <= (size_t)skipped.back(); ++pos) {
-      if (std::find(skipped.begin(), skipped.end(), (int)pos) != skipped.end())
+      if (k < skipped.size() && (int)pos == skipped[k]) {
         full.push_back(0.0);
+        ++k;
+      }
       else if (next < duals.size())
         full.push_back(duals[next++]);
       else
