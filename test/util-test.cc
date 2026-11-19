@@ -23,6 +23,7 @@
 #include "gtest/gtest.h"
 #include "mp/error.h"
 #include "mp/os.h"
+#include "mp/utils-string.h"
 #include "util.h"
 #include "gtest-extra.h"
 #include <string>
@@ -79,4 +80,23 @@ TEST(UtilTest, ExecuteShellThrowsOnNonzeroExitCode) {
     ExecuteShellCommand(GetExecutableDir() + "/test-helper > out"),
     mp::Error, "process exited with code 42");
 }
+}
+
+// Warnings and errors are wrapped at 60 characters
+TEST(UtilTest, WrapLines) {
+  using mp::WrapLines;
+  EXPECT_EQ("short line", WrapLines("short line"));
+  EXPECT_EQ("aaa bbb\nccc", WrapLines("aaa bbb ccc", 8));
+  // continuation lines keep the indentation
+  EXPECT_EQ("  aaa bbb\n  ccc ddd", WrapLines("  aaa bbb ccc ddd", 10));
+  // explicit line breaks are kept, each line wrapped by itself
+  EXPECT_EQ("aaa\nbbb ccc\nddd", WrapLines("aaa\nbbb ccc ddd", 8));
+  // a word longer than the width is not split
+  EXPECT_EQ("a\nverylongword\nb", WrapLines("a verylongword b", 5));
+  EXPECT_EQ("verylongword", WrapLines("verylongword", 5));
+  // tables (two spaces inside a line) are kept
+  const std::string table = "  Type          MaxAbs [Name]   MaxRel [Name]";
+  EXPECT_EQ(table, WrapLines(table, 20));
+  EXPECT_EQ("", WrapLines(""));
+  EXPECT_EQ("\n\n", WrapLines("\n\n"));
 }

@@ -25,6 +25,8 @@ Summary of recent updates to the AMPL MP Library
   max(*cvt:pre:roundintbnd*, 16 units in the last place of the bound)
   instead of a relative 1e-13: large bounds such as 1e9 + 5e-5 keep
   their fractional part.
+- Warnings and error messages are wrapped at 60 characters (tables and
+  explicit line breaks are kept).
 
 - Fixed wrong results of the conversion of logical constructs (all solvers):
   - a comparison shared by a disjunction and an if-then-else condition lost

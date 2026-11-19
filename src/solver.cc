@@ -985,13 +985,13 @@ void BasicSolver::PrintWarnings() {
 std::string BasicSolver::ToString(
     const WarningsMap::value_type& wrn) {
   assert(wrn.second.first);
-  if (wrn.second.first>1)      // several warnings if thsi kind
-    return fmt::format(
+  if (wrn.second.first>1)      // several warnings of this kind
+    return WrapLines(fmt::format(
           "WARNING.  {} case(s) of \"{}\". One of them:\n  {}",
-          wrn.second.first, wrn.first, wrn.second.second);
-  return fmt::format(
+          wrn.second.first, wrn.first, wrn.second.second));
+  return WrapLines(fmt::format(
         "WARNING:  \"{}\"\n  {}",
-        wrn.first, wrn.second.second);
+        wrn.first, wrn.second.second));
 }
 
 #ifdef MP_DATE
