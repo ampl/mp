@@ -12,6 +12,18 @@ Summary of recent updates to Gurobi for AMPL
   duals and the same basis status for every variable and constraint;
   Gurobi has no duals for such models, so the fixed-model solve is
   skipped, with a message.
+- Support for Gurobi 14:
+  - New option *alg:pdhgearlycrossover* controls how early PDHG starts
+    concurrent crossover; 0 runs crossover only after PDHG has finished.
+  - *iis:find* reports nonlinear constraints as IIS members and suffix
+    *.iisforce* applies to them.
+  - Suffixes *.funcpieces*, *.funcpieceerror*, *.funcpiecelength* and
+    *.funcpieceratio* apply only to function constraints: set
+    *acc:_expr=0* to pass nonlinear functions that way. For nonlinear
+    constraints the suffixes are ignored, with a warning.
+- *pre:sparsify* documents value 2 (all model types).
+  Documented ranges of *pre:funcpieceerror*, *pre:funcpiecelength*
+  and *pre:funcpieces* follow the Gurobi limits.
 
 
 ## 20261029
