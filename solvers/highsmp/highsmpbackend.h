@@ -125,6 +125,12 @@ public:
   **/
   ALLOW_STD_FEATURE(FEAS_RELAX, true)
   void DoHighsFeasRelax();
+  /// Least relaxation cost implied by contradictory column/row bounds
+  double MinFeasRelaxCost(const std::vector<double>& lbpen,
+                          const std::vector<double>& ubpen,
+                          const std::vector<double>& rhspen);
+  /// Fail if HiGHS reports a relaxation cheaper than \a min_cost
+  void CheckFeasRelaxCost(double min_cost);
 
   /**
   * Obtain inf/unbounded rays

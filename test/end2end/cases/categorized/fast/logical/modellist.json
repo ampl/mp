@@ -1111,7 +1111,8 @@
     "files" : ["bounds_contradict_complement_01.mod"],
     "tags" : ["logical", "integer"],
     "options": {
-      "presolve": 0
+      "presolve": 0,
+      "mp_options": "cvt:pre:infeasvarbnd=1"
     },
     "comment": "Contradictory bounds of an auxiliary variable: infeasible, not an error",
     "values": {
@@ -1123,7 +1124,8 @@
     "files" : ["int_fixed_fractional_01.mod"],
     "tags" : ["integer"],
     "options": {
-      "presolve": 0
+      "presolve": 0,
+      "mp_options": "cvt:pre:infeasvarbnd=1"
     },
     "comment": "An integer variable fixed at a fractional value: infeasible",
     "values": {
@@ -1163,7 +1165,8 @@
     "name" : "indicator_contradict_bounds_01",
     "files" : ["indicator_contradict_bounds_01.mod"],
     "tags" : ["logical", "integer"],
-    "comment": "Indicator flag with contradictory bounds: infeasible, not a solver error (cvt:pre:infeasvarbnd)",
+    "options": { "mp_options": "cvt:pre:infeasvarbnd=1" },
+    "comment": "Indicator flag with contradictory bounds: infeasible with cvt:pre:infeasvarbnd=1 (by default, 0, Xpress, SCIP and COPT stop with an error)",
     "values": {
       "solve_result": "infeasible"
     }
@@ -1172,7 +1175,8 @@
     "name" : "indicator_contradict_bounds_02",
     "files" : ["indicator_contradict_bounds_02.mod"],
     "tags" : ["logical", "integer"],
-    "comment": "Indicator flag with contradictory best-known bounds: infeasible, not a solver error (cvt:pre:infeasvarbnd)",
+    "options": { "mp_options": "cvt:pre:infeasvarbnd=1" },
+    "comment": "Indicator flag with contradictory best-known bounds: infeasible with cvt:pre:infeasvarbnd=1 (by default, 0, Xpress stops with an error)",
     "values": {
       "solve_result": "infeasible"
     }

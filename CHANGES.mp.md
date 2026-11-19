@@ -18,12 +18,12 @@ Summary of recent updates to the AMPL MP Library
   - a domain hole of a variable (from `not (x != 0 and x != 3)`) made the
     rewriting of `x == ub` and `x >= ub` recurse endlessly (stack overflow).
 
-- A flag (indicator binary) with contradictory bounds, also best-known
-  bounds deduced by the converter, made Xpress and SCIP stop with an error
-  ("not a binary variable"). Now the converter declares the model
-  infeasible: option `cvt:pre:infeasvarbnd` (default 1; 0 passes
-  the contradictory bounds on; an IIS or a relaxation then concerns
-  these deduced bounds rather than the constraints they come from).
+- Option `cvt:pre:infeasvarbnd`: with 1, the converter declares the model
+  infeasible when the bounds of a variable, also best-known bounds deduced
+  by the converter, become contradictory. Default 0 (as before): a warning
+  is given and the bounds are passed on to the solver; Xpress, SCIP and
+  COPT then stop with an error if such a variable is an indicator binary
+  ("not a binary variable").
 - The bounds of integer and implied-integer variables are rounded inwards; option `cvt:pre:roundintbnd` is the
   tolerance (default 1e-9, at least 1e-13 relative to the bound; negative:
   no rounding).

@@ -1426,7 +1426,7 @@ ArrayRef<int> MosekBackend::VarStatii() {
       case MSK_SK_FIX:
         s = (int)BasicStatus::equ;
         break;
-      case MSK_SK_INF:   // part of an infeasibility certificate: no basis
+      case MSK_SK_INF:   // not a basis status (certificates have no basis)
         s = (int)BasicStatus::none;
         break;
       default:
@@ -1463,7 +1463,7 @@ ArrayRef<int> MosekBackend::ConStatii() {
       case MSK_SK_FIX:
         s = (int)BasicStatus::equ;
         break;
-      case MSK_SK_INF:   // part of an infeasibility certificate: no basis
+      case MSK_SK_INF:   // not a basis status (certificates have no basis)
         s = (int)BasicStatus::none;
         break;
       default:
@@ -1576,8 +1576,20 @@ void MosekBackend::ConStatii(ArrayRef<int> cst) {
   MOSEK_CCALL(MSK_putskc(lp(), solToFetch_, (MSKstakeye *)skc.data()));
 }
 
+/// Whether the solution MOSEK returned is a certificate
+/// (of infeasibility or ill-posedness) rather than a solution
+bool MosekBackend::IfSolutionIsCertificate() const {
+  return MSK_SOL_STA_PRIM_INFEAS_CER == solSta_
+      || MSK_SOL_STA_DUAL_INFEAS_CER == solSta_
+      || MSK_SOL_STA_PRIM_ILLPOSED_CER == solSta_
+      || MSK_SOL_STA_DUAL_ILLPOSED_CER == solSta_;
+}
+
 SolutionBasis MosekBackend::GetBasis() {
   if (IsMIP()) return FixedLPBasis(CG_Algebraic);
+  // The status keys of a certificate (e.g., MSK_SK_INF)
+  // do not form a basis
+  if (IfSolutionIsCertificate()) return {};
   std::vector<int> varstt = VarStatii();
   std::vector<int> constt = ConStatii();
   if (varstt.size() && constt.size()) {

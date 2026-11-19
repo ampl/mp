@@ -1,8 +1,8 @@
 # -------------------------------------------------------------
 # infeasvarbnd_01.mod
 # Contradictory bounds from singleton constraints (x >= 3, x <= 2).
-# The converter declares the model infeasible (cvt:pre:infeasvarbnd),
-# but passes the bounds on when alg:feasrelax or iis:find is requested.
+# With cvt:pre:infeasvarbnd=1 the converter declares the model
+# infeasible; by default (0) it passes the bounds on to the solver.
 # AMPL presolve off: MP derives the bounds.
 # -------------------------------------------------------------
 var x >= 0 <= 10;

@@ -69,6 +69,9 @@ public:
   ALLOW_STD_FEATURE(BASIS, true)
   SolutionBasis GetBasis() override;
   void SetBasis(SolutionBasis) override;
+  /// Whether the solution is an infeasibility or ill-posedness
+  /// certificate (it has no basis)
+  bool IfSolutionIsCertificate() const;
 
   // LP hotstart
   // Set primal/dual initial guesses for continuous case

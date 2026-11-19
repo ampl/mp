@@ -1429,7 +1429,8 @@ public:
           std::string(kind) + (bestb ? " best-known" : "") + " bounds",
           fmt::format("Bounds [{:.17}, {:.17}]\nof {}[{}] "
                       "contradict pre:eps and pre:epsrel.\n"
-                      "Model can be infeasible",
+                      "Model can be infeasible "
+                      "(cvt:pre:infeasvarbnd=1 declares it so)",
                       lb, ub, kind, i+1).c_str());
       return true;
     }
@@ -1832,7 +1833,7 @@ private:
     int preprocessInequalityRhs_ = 1;
     int preprocessInequalityResultBounds_ = 1;
     int preprocessIneq2BndEq_ = 1;
-    int declareInfeasVarBnd_ = 1;
+    int declareInfeasVarBnd_ = 0;
     int preprocessIndFixedFlag_ = 1;
     int preprocessIneq2Related_ = 1;
     int preprocessVarBnd_ = 3;
@@ -2162,17 +2163,17 @@ private:
                        GetModel().if_make_fixed_vars_continuous(), 0, 1);
 
     GetEnv().AddOption("cvt:pre:infeasvarbnd infeasvarbnd",
-                       "0/1*: Declare the model infeasible in the converter "
-                       "when the bounds of a variable become contradictory "
-                       "(lower > upper), also best-known bounds deduced by "
-                       "the converter. With 0, the contradictory bounds "
-                       "are passed on to the solver. Note: they can be "
-                       "deduced from several constraints, so an IIS "
-                       "(iis:find) or a relaxation (alg:feasrelax) then "
-                       "concerns the deduced bounds rather than those "
-                       "constraints, and some solvers return a wrong "
-                       "relaxation (HiGHS); most solvers fail with an "
-                       "error if such a variable is an indicator binary.",
+                       "0*/1: Whether to declare the model infeasible in "
+                       "the converter when the bounds of a variable become "
+                       "contradictory (lower > upper), also best-known "
+                       "bounds deduced by the converter. With 0, a warning "
+                       "is given and the bounds are passed on to the "
+                       "solver. Note: they can be deduced from several "
+                       "constraints, so an IIS (iis:find) or a relaxation "
+                       "(alg:feasrelax) then concerns the deduced bounds "
+                       "rather than those constraints; some solvers (e.g., "
+                       "Xpress, SCIP, COPT) fail with an error if such a "
+                       "variable is an indicator binary.",
                        options_.declareInfeasVarBnd_, 0, 1);
 
     GetEnv().AddOption("cvt:pre:indfixedflag indfixedflag",

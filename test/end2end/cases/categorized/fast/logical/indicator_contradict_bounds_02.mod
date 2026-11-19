@@ -2,7 +2,7 @@
 # indicator_contradict_bounds_02.mod
 # The flag of an indicator constraint gets contradictory best-known
 # bounds [1, 0] during conversion: the model is infeasible
-# (cvt:pre:infeasvarbnd). Xpress stopped with an error instead.
+# (cvt:pre:infeasvarbnd=1). By default (0), Xpress stops with an error.
 # Generated example, checked by brute force.
 # -------------------------------------------------------------
 var x{1..4} integer >= 0 <= 3;

@@ -246,8 +246,8 @@
   {
     "name": "infeasvarbnd_01",
     "tags": [ "linear", "continuous" ],
-    "comment": "Contradictory bounds from singleton constraints: the converter declares infeasibility (cvt:pre:infeasvarbnd)",
-    "options": { "presolve": 0 },
+    "comment": "Contradictory bounds from singleton constraints: with cvt:pre:infeasvarbnd=1 the converter declares infeasibility",
+    "options": { "presolve": 0, "mp_options": "cvt:pre:infeasvarbnd=1" },
     "values": { "solve_result": "infeasible" }
   },
   {
@@ -255,7 +255,7 @@
     "files": ["infeasvarbnd_01.mod"],
     "tags": [ "linear" ],
     "solvers": ["gurobi", "highs", "cplex", "xpress", "scip", "copt", "mosek"],
-    "comment": "The bounds are passed on (cvt:pre:infeasvarbnd=0): the solver finds infeasibility; MOSEK's certificate has basis status MSK_SK_INF",
+    "comment": "The bounds are passed on (cvt:pre:infeasvarbnd=0, default): the solver finds infeasibility; MOSEK returns a certificate, which has no basis",
     "options": { "presolve": 0, "ANYSOLVER_options": "cvt:pre:infeasvarbnd=0" },
     "values": { "solve_result": "infeasible" }
   },
@@ -263,15 +263,43 @@
     "name": "infeasvarbnd_01 feasrelax=1",
     "files": ["infeasvarbnd_01.mod"],
     "tags": [ "linear", "feasrelax" ],
-    "comment": "Contradictory deduced bounds are declared infeasible also with alg:feasrelax (relaxing them would not relax the user's constraints)",
-    "options": { "presolve": 0, "ANYSOLVER_options": "feasrelax=1" },
+    "solvers": ["gurobi", "highs", "cplex", "copt"],
+    "comment": "With cvt:pre:infeasvarbnd=1, contradictory deduced bounds are declared infeasible also with alg:feasrelax",
+    "options": { "presolve": 0, "mp_options": "cvt:pre:infeasvarbnd=1", "ANYSOLVER_options": "feasrelax=1" },
     "values": { "solve_result": "infeasible" }
+  },
+  {
+    "name": "infeasvarbnd_01 feasrelax=1 infeasvarbnd=0",
+    "files": ["infeasvarbnd_01.mod"],
+    "tags": [ "linear", "feasrelax" ],
+    "solvers": ["gurobi", "cplex", "copt"],
+    "comment": "Default cvt:pre:infeasvarbnd=0: the solver relaxes the deduced bounds [3, 2] as well as the user's constraints (violation 2, while 1 suffices for the user's model)",
+    "options": { "presolve": 0, "ANYSOLVER_options": "feasrelax=1" },
+    "values": { "solve_result": "solved" }
+  },
+  {
+    "name": "infeasvarbnd_01 feasrelax=1 infeasvarbnd=0 HiGHS",
+    "files": ["infeasvarbnd_01.mod"],
+    "tags": [ "linear", "feasrelax" ],
+    "solvers": ["highs"],
+    "comment": "HiGHS does not relax a column with lower > upper (it returned an unrelaxed point as solved): the driver reports a failure",
+    "options": { "presolve": 0, "ANYSOLVER_options": "feasrelax=1" },
+    "values": { "solve_result": "failure" }
   },
   {
     "name": "infeasvarbnd_01 iisfind=1",
     "files": ["infeasvarbnd_01.mod"],
     "tags": [ "linear", "iis" ],
-    "comment": "Contradictory deduced bounds are declared infeasible also with iis:find (an IIS of the bounds would not show the user's constraints)",
+    "comment": "With cvt:pre:infeasvarbnd=1, contradictory deduced bounds are declared infeasible also with iis:find",
+    "options": { "presolve": 0, "mp_options": "cvt:pre:infeasvarbnd=1", "ANYSOLVER_options": "iisfind=1" },
+    "values": { "solve_result": "infeasible" }
+  },
+  {
+    "name": "infeasvarbnd_01 iisfind=1 infeasvarbnd=0",
+    "files": ["infeasvarbnd_01.mod"],
+    "tags": [ "linear", "iis" ],
+    "solvers": ["gurobi", "highs", "cplex", "xpress", "copt"],
+    "comment": "Default cvt:pre:infeasvarbnd=0: the IIS concerns the deduced bounds; Xpress identifies no IIS (warning IIS_NONE, no error 721)",
     "options": { "presolve": 0, "ANYSOLVER_options": "iisfind=1" },
     "values": { "solve_result": "infeasible" }
   }

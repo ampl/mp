@@ -313,6 +313,72 @@ void HighsBackend::DoPlateauCallback(
 }
 
 
+/// Penalty of element \a k: the local value if given, else the global
+/// one. Negative: the bound must not be violated.
+static double FeasRelaxPenalty(const std::vector<double>& local,
+                               double global, int k) {
+  return local.empty() ? global : local[k];
+}
+
+/// Least violation cost implied by bounds lower > upper of
+/// \a lb, \a ub alone: (lower - upper) * penalty (the smaller of the
+/// two penalties if given), infinity if no side may be violated.
+static double MinCostOfContradictoryBounds(
+    const std::vector<double>& lb, const std::vector<double>& ub,
+    const std::vector<double>& lpen, double glpen,
+    const std::vector<double>& upen, double gupen) {
+  double cost = 0.0;
+  for (size_t k = 0; k < lb.size(); ++k) {
+    if (lb[k] <= ub[k]) continue;
+    double pl = FeasRelaxPenalty(lpen, glpen, k);
+    double pu = FeasRelaxPenalty(upen, gupen, k);
+    if (pl < 0.0 && pu < 0.0) return INFINITY;
+    double p = pl < 0.0 ? pu : (pu < 0.0 ? pl : std::min(pl, pu));
+    cost += (lb[k] - ub[k]) * p;
+  }
+  return cost;
+}
+
+/// The least relaxation cost implied by columns and rows whose
+/// bounds are contradictory (0 if there are none).
+double HighsBackend::MinFeasRelaxCost(const std::vector<double>& lbpen,
+                                      const std::vector<double>& ubpen,
+                                      const std::vector<double>& rhspen) {
+  int n = NumVars(), m = NumLinCons(), num = 0, nnz = 0;
+  std::vector<double> lb(n), ub(n);
+  double cost = 0.0;
+  if (n && kHighsStatusError != loader().Highs_getColsByRange(lp(), 0, n-1,
+          &num, NULL, lb.data(), ub.data(), &nnz, NULL, NULL, NULL))
+    cost += MinCostOfContradictoryBounds(lb, ub, lbpen, this->lbpen(),
+                                         ubpen, this->ubpen());
+  lb.resize(m); ub.resize(m);
+  if (m && loader().Highs_getRowsByRange
+      && kHighsStatusError != loader().Highs_getRowsByRange(lp(), 0, m-1,
+          &num, lb.data(), ub.data(), &nnz, NULL, NULL, NULL))
+    cost += MinCostOfContradictoryBounds(lb, ub, rhspen, this->rhspen(),
+                                         rhspen, this->rhspen());
+  return cost;
+}
+
+/// HiGHS 1.15 does not relax a column or row with lower > upper:
+/// Highs_feasibilityRelaxation() returns Ok without solving and leaves
+/// a point with violation cost 0. Fail if the reported cost is below
+/// what such bounds imply; a HiGHS that relaxes them passes the check.
+void HighsBackend::CheckFeasRelaxCost(double min_cost) {
+  if (min_cost <= 0.0)
+    return;
+  int pst = kHighsSolutionStatusNone;
+  loader().Highs_getIntInfoValue(lp(), "primal_solution_status", &pst);
+  double cost = 0.0;
+  loader().Highs_getDoubleInfoValue(lp(), "objective_function_value", &cost);
+  if (kHighsSolutionStatusNone != pst
+      && cost < min_cost - 1e-9 * std::max(1.0, min_cost))
+    MP_RAISE(fmt::format("HiGHS feasibility relaxation ignored "
+                         "contradictory bounds (lower > upper): reported "
+                         "violation cost {}, at least {} required",
+                         cost, min_cost));
+}
+
 void HighsBackend::DoHighsFeasRelax() {
   if (!loader().Highs_feasibilityRelaxation)
     MP_RAISE("this HiGHS library lacks Highs_feasibilityRelaxation");
@@ -326,6 +392,7 @@ void HighsBackend::DoHighsFeasRelax() {
   if (lbpen.size() && lbpen.size() < (size_t)n) lbpen.resize(n, this->lbpen());
   if (ubpen.size() && ubpen.size() < (size_t)n) ubpen.resize(n, this->ubpen());
   if (rhspen.size() && rhspen.size() < (size_t)m) rhspen.resize(m, this->rhspen());
+  const double min_cost = MinFeasRelaxCost(lbpen, ubpen, rhspen);
   auto res = loader().Highs_feasibilityRelaxation(lp(),
       this->lbpen(), this->ubpen(), this->rhspen(),
       lbpen.empty() ? nullptr : lbpen.data(),
@@ -333,6 +400,7 @@ void HighsBackend::DoHighsFeasRelax() {
       rhspen.empty() ? nullptr : rhspen.data());
   if (kHighsStatusError == res)
     MP_RAISE("HiGHS feasibility relaxation failed");
+  CheckFeasRelaxCost(min_cost);
   feasrelaxDone_ = true;
   /// Original objective value at the relaxed solution
   int pst = kHighsSolutionStatusNone;

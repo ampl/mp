@@ -2,6 +2,13 @@ Summary of recent updates to HiGHS for AMPL
 ===========================================
 
 
+## Unreleased
+- Fix: with *alg:feasrelax*, a variable or constraint with lower bound >
+  upper bound (e.g., contradictory bounds passed on by
+  *cvt:pre:infeasvarbnd=0*) gave an unrelaxed point reported as a relaxed
+  solution, because HiGHS 1.15 does not relax such bounds. Such a result
+  is now reported as a failure.
+
 ## 20261029
 - Fix an assertion failure in Windows Debug builds during MIP basis
   recovery.
