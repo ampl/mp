@@ -705,6 +705,10 @@ pre::ValueMapInt GurobiBackend::ConsIIS() {
 #ifdef MP_GRB_NLCON_LIST      // Gurobi 14: separate NL constraints
   std::vector<int> iis_nlcon =
       GrbGetIntAttrArray(GRB_INT_ATTR_IIS_NLCONSTR, NumNLCons());
+  if (NumNLCons() && iis_nlcon.empty())     // the query failed
+    AddWarning("IIS_NLCONSTR",
+               "Gurobi did not report the IIS membership of the "
+               "nonlinear constraints; their .iis values are not set");
   ConvertIIS2AMPL(iis_nlcon);
   result(CG_Nonlinear) = std::move(iis_nlcon);
 #endif
@@ -966,7 +970,7 @@ void GurobiBackend::WarnFuncSuffixOnNLCons(
 #ifdef MP_GRB_NLCON_LIST
   for (auto v: nl_cons_values) {
     if (v != 0.0) {
-      AddWarning(std::string("FUNCPIECE_SUFFIX_NL_") + suffix,
+      AddWarning(std::string("FUNC_SUFFIX_NL_") + suffix,
         fmt::format("Suffix .{} is ignored for nonlinear constraints "
                     "(Gurobi 14); use acc:_expr=0 to pass them as "
                     "function constraints.", suffix));
@@ -1016,9 +1020,11 @@ void GurobiBackend::InputGurobiFuncApproxParams() {
   std::vector<int> suf_global;
   if (auto mv0 = ReadModelSuffixInt({ "funcnonlinear", suf_mask })) {
     auto mv = GetValuePresolver().PresolveGenericInt(mv0);
+    WarnFuncSuffixOnNLCons("funcnonlinear", mv.GetConValues()(CG_Nonlinear));
     suf_global = mv.GetConValues()(CG_General);
   } else if (auto mv0 = ReadModelSuffixInt({ "global", suf_mask })) {
     auto mv = GetValuePresolver().PresolveGenericInt(mv0);
+    WarnFuncSuffixOnNLCons("global", mv.GetConValues()(CG_Nonlinear));
     suf_global = mv.GetConValues()(CG_General);
   }
   if (suf_global.size()) {
