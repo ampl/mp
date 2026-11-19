@@ -253,19 +253,12 @@ void CoptBackend::DoCOPTFeasRelax() {
   if (feasrelax_copt_mode_ % 2)
     feasrelax().flag_orig_obj_available();
   SetSolverOption(COPT_INTPARAM_FEASRELAXMODE, feasrelax_copt_mode_);
-  /// only relax linear constraints
-  auto mv = GetValuePresolver().PresolveSolution({
-                                              {},
-                                              feasrelax().rhspen()
-    });
-  frx_rhspen_ = mv.GetConValues()(CG_Linear);
-  /// Account for new variables (TODO: proper presolve)
-  frx_lbpen_ = feasrelax().lbpen();
-  if (frx_lbpen_.size() && frx_lbpen_.size() < (size_t)NumVars())
-    frx_lbpen_.resize(NumVars());
-  frx_ubpen_ = feasrelax().ubpen();
-  if (frx_ubpen_.size() && frx_ubpen_.size() < (size_t)NumVars())
-    frx_ubpen_.resize(NumVars());
+  /// only relax linear constraints; COPT_INFINITY: not relaxable
+  auto pen = FeasrelaxPenaltiesInSolver(
+      NumVars(), CG_Linear, COPT_INFINITY, COPT_INFINITY);
+  frx_rhspen_ = std::move(pen.rhs);
+  frx_lbpen_ = std::move(pen.lb);
+  frx_ubpen_ = std::move(pen.ub);
 
   /// NULL penalties mean "no relaxation of these bounds",
   /// COPT_INFINITY entries block individual bounds, as in MP.

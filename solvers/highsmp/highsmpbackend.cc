@@ -383,15 +383,13 @@ void HighsBackend::DoHighsFeasRelax() {
   if (!loader().Highs_feasibilityRelaxation)
     MP_RAISE("this HiGHS library lacks Highs_feasibilityRelaxation");
   int n = NumVars(), m = NumLinCons();
-  /// Penalties: suffix-based vectors (in solver coordinates), or the
-  /// global values. Auxiliary variables get the global value.
-  auto mv = GetValuePresolver().PresolveSolution({ {}, feasrelax().rhspen() });
-  std::vector<double> rhspen = mv.GetConValues()(CG_Linear);
-  std::vector<double> lbpen = feasrelax().lbpen();
-  std::vector<double> ubpen = feasrelax().ubpen();
-  if (lbpen.size() && lbpen.size() < (size_t)n) lbpen.resize(n, this->lbpen());
-  if (ubpen.size() && ubpen.size() < (size_t)n) ubpen.resize(n, this->ubpen());
-  if (rhspen.size() && rhspen.size() < (size_t)m) rhspen.resize(m, this->rhspen());
+  /// Penalties in solver coordinates, or the global values if empty.
+  /// Negative: not relaxable (auxiliary variables and constraints).
+  auto pen = FeasrelaxPenaltiesInSolver(n, CG_Linear, Infinity(), -1.0);
+  std::vector<double>& rhspen = pen.rhs;
+  std::vector<double>& lbpen = pen.lb;
+  std::vector<double>& ubpen = pen.ub;
+  if (rhspen.size() && rhspen.size() < (size_t)m) rhspen.resize(m, -1.0);
   const double min_cost = MinFeasRelaxCost(lbpen, ubpen, rhspen);
   auto res = loader().Highs_feasibilityRelaxation(lp(),
       this->lbpen(), this->ubpen(), this->rhspen(),

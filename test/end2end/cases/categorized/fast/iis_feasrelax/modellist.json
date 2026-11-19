@@ -302,5 +302,32 @@
     "comment": "Default cvt:pre:infeasvarbnd=0: the IIS concerns the deduced bounds; Xpress identifies no IIS (warning IIS_NONE, no error 721)",
     "options": { "presolve": 0, "ANYSOLVER_options": "iisfind=1" },
     "values": { "solve_result": "infeasible" }
+  },
+  {
+    "name": "feasrelax_aux_01 feasrelax=1",
+    "files": ["feasrelax_aux_01.mod"],
+    "tags": [ "linear", "feasrelax" ],
+    "solvers": ["gurobi", "highs", "cplex", "copt"],
+    "comment": "Auxiliary constraints of abs() are not relaxable; c2 is relaxed instead",
+    "options": { "presolve": 0, "ANYSOLVER_options": "feasrelax=1" },
+    "values": { "solve_result": "solved", "x": 4, "abs(x-5)": 1 }
+  },
+  {
+    "name": "feasrelax_pen_01 feasrelax=1",
+    "files": ["feasrelax_pen_01.mod"],
+    "tags": [ "linear", "feasrelax" ],
+    "solvers": ["gurobi", "highs", "cplex", "copt"],
+    "comment": "Negative .rhspen: c1 is not relaxed (CPLEX took penalties as preferences before)",
+    "options": { "presolve": 0, "ANYSOLVER_options": "feasrelax=1" },
+    "values": { "solve_result": "solved", "x+y": 2 }
+  },
+  {
+    "name": "feasrelax_pen_02 feasrelax=1",
+    "files": ["feasrelax_pen_02.mod"],
+    "tags": [ "linear", "feasrelax" ],
+    "solvers": ["gurobi", "highs", "cplex", "copt"],
+    "comment": "Zero .rhspen: relaxing c1 is free",
+    "options": { "presolve": 0, "ANYSOLVER_options": "feasrelax=1" },
+    "values": { "solve_result": "solved", "x+y": 0 }
   }
 ]

@@ -4,6 +4,11 @@ Summary of recent updates to CPLEX for AMPL
 
 ## unreleased
 
+- Fix: *alg:feasrelax* penalties (*.lbpen*, *.ubpen*, *.rhspen*,
+  *alg:lbpen* etc.) acted inversely: a larger penalty made a violation
+  cheaper, a negative one (not relaxable) made it free, and 0 (free)
+  forbade relaxation. They now act as documented, as with the other
+  solvers.
 - Fix: *alg:feasoptobj* outside 1..3 crashed the driver; such values of
   *alg:feasopt* and *alg:feasoptobj* are now rejected.
 - Fix: *mip:bestnode* had a garbage value with *mip:basis=1*.

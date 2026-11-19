@@ -1428,20 +1428,27 @@ void CplexBackend::DoCplexFeasRelax() {
   }
 
   SetCPLEXParam(CPXPARAM_Feasopt_Mode, reltype);
-  auto mv = GetValuePresolver().PresolveSolution({
-                                              {},
-                                              feasrelax().rhspen()
-    });
-  const auto& rhspen = mv.GetConValues()(CG_Linear);
-  std::vector<double> lbpen = feasrelax().lbpen();
-  if (lbpen.size() && lbpen.size() < (size_t)NumVars())
-    lbpen.resize(NumVars());
-  std::vector<double> ubpen = feasrelax().ubpen();
-  if (ubpen.size() && ubpen.size() < (size_t)NumVars())
-    ubpen.resize(NumVars());
+  /// CPXfeasopt takes preferences: the cost of a violation is the
+  /// violation divided by the preference, and 0 means not relaxable
+  auto pen = FeasrelaxPenaltiesInSolver(
+      NumVars(), CG_Linear, Infinity(), Infinity());
+  for (auto* v: {&pen.lb, &pen.ub, &pen.rhs})
+    for (auto& p: *v)
+      p = FeasoptPreference(p);
   CPLEX_CALL(CPXfeasopt(env(), lp(),
-    (double*)data_or_null(rhspen), (double*)data_or_null(rhspen),
-    (double*)data_or_null(lbpen), (double*)data_or_null(ubpen)));
+    (double*)data_or_null(pen.rhs), (double*)data_or_null(pen.rhs),
+    (double*)data_or_null(pen.lb), (double*)data_or_null(pen.ub)));
+}
+
+/// MP penalty -> CPLEX FeasOpt preference: 1/penalty;
+/// an infinite penalty (not relaxable) gives 0, and a zero
+/// penalty (free violation) a huge preference
+double CplexBackend::FeasoptPreference(double penalty) {
+  if (penalty >= Infinity())
+    return 0.0;
+  if (penalty <= 1.0 / Infinity())
+    return Infinity();
+  return 1.0 / penalty;
 }
 
 

@@ -12,6 +12,11 @@ Summary of recent updates to the AMPL MP Library
     model stopped with "Part of expression redefinition could be lost".
 - Contradictory equalities of an integer variable (`x == 1 and x == -1`)
   stopped with the error "vector"; the model is now reported infeasible.
+- Fixed *alg:feasrelax* with Gurobi, CPLEX, COPT and HiGHS: constraints and
+  variables that the conversion adds (for example, for `abs()`, `max()` or
+  logical expressions) could be relaxed at no cost, so a reported "solved"
+  relaxation could violate the original constraints. They are no longer
+  relaxed; only the model's own constraints and bounds are.
 
 - Fixed wrong results of the conversion of logical constructs (all solvers):
   - a comparison shared by a disjunction and an if-then-else condition lost

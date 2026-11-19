@@ -1386,22 +1386,14 @@ void GurobiBackend::DoGurobiFeasRelax() {
     minrel = 1;
     feasrelax().flag_orig_obj_available();
   }
-  /// Gurobi 9.5 only relaxes linear constraints
-  auto mv = GetValuePresolver().PresolveSolution({
-                                              {},
-                                              feasrelax().rhspen()
-                                            });
-  const auto& rhspen = mv.GetConValues()(CG_Linear);
-  std::vector<double> lbpen = feasrelax().lbpen();
-  if (lbpen.size() && lbpen.size()<(size_t)NumVars())
-    lbpen.resize(NumVars());
-  std::vector<double> ubpen = feasrelax().ubpen();
-  if (ubpen.size() && ubpen.size()<(size_t)NumVars())
-    ubpen.resize(NumVars());
+  /// Gurobi 9.5 only relaxes linear constraints.
+  /// GRB_INFINITY: not relaxable
+  auto pen = FeasrelaxPenaltiesInSolver(
+      NumVars(), CG_Linear, GRB_INFINITY, GRB_INFINITY);
   GRB_CALL( GRBfeasrelax(model(), reltype, minrel,
-                         (double*)data_or_null( lbpen ),
-                         (double*)data_or_null( ubpen ),
-                         (double*)data_or_null( rhspen ),
+                         (double*)data_or_null( pen.lb ),
+                         (double*)data_or_null( pen.ub ),
+                         (double*)data_or_null( pen.rhs ),
                          &feasrelax().orig_obj_value()) );
 }
 
