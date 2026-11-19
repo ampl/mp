@@ -20,19 +20,17 @@ Summary of recent updates to the AMPL MP Library
   relaxation could violate the original constraints. They are no longer
   relaxed. Limitations: logical constraints are in general not relaxed
   (their linearization consists of added constraints, and solvers do not
-  relax native ones); and the converter's presolve can use the bounds
-  implied by a relaxable constraint to simplify other constraints, so a
-  relaxed solution can still violate a constraint that was simplified
-  away. Set *cvt:pre:all=0* to avoid such simplifications.
+  relax native ones); and the converter deduces variable bounds from the
+  constraints, which are not relaxed: they can simplify other constraints
+  away, and contradictory deduced bounds are passed to the solver
+  (*cvt:pre:infeasvarbnd=0*), so a relaxation can be costlier than needed
+  or still violate a constraint. AMPL's presolve also turns constraints of
+  one variable into bounds; use `option presolve 0;` to relax them as
+  constraints.
 - New warning when the domain of a divisor of `/`, `div` or `mod`
   contains 0: the divisor is treated as nonzero in the whole model, also
   where the division is not evaluated (for example, in an if-then-else
   branch not taken).
-- Bounds of integer variables are rounded inwards within
-  max(*cvt:pre:roundintbnd*, 16 units in the last place of the bound)
-  instead of max(*cvt:pre:roundintbnd*, 1e-13 times the bound): large
-  bounds such as 1e9 + 5e-5 keep their fractional part (before, it was
-  rounded away).
 - Warnings and error messages are wrapped at 60 characters (tables and
   explicit line breaks are kept). New option *tech:msgwidth* sets the
   width; 0 restores the previous, unwrapped output.
@@ -58,9 +56,9 @@ Summary of recent updates to the AMPL MP Library
   is given and the bounds are passed on to the solver; Xpress, SCIP and
   COPT then stop with an error if such a variable is an indicator binary
   ("not a binary variable").
-- The bounds of integer and implied-integer variables are rounded inwards; option `cvt:pre:roundintbnd` is the
-  tolerance (default 1e-9, at least 1e-13 relative to the bound; negative:
-  no rounding).
+- The bounds of integer and implied-integer variables are rounded inwards;
+  option `cvt:pre:roundintbnd` is the tolerance (default 1e-9, at least 16
+  units in the last place of the bound; negative: no rounding).
 - An indicator constraint whose flag became fixed only after the indicator
   was created (for example, `if x <= 1 then ...` with `x <= 1` implied by
   another constraint) made Xpress and SCIP stop with an error ("not a binary

@@ -67,7 +67,8 @@
     "name" : "div_warn_01",
     "tags" : ["integer", "int_ops"],
     "solvers" : ["gurobi", "highs", "cplex", "scip", "xpress", "copt"],
-    "comment": "Warning divisor_domain_0 for a divisor whose domain contains 0",
+    "comment": "Warning divisor_domain_0 for a divisor whose domain contains 0; y = 0 is excluded, optimum 4",
+    "objective" : 4,
     "values": { "if match(solve_message, 'divisor_domain_0') > 0 then 1": 1 }
   },
   {

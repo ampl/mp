@@ -364,8 +364,23 @@
     "files": ["infeas_int_01.mod"],
     "tags": [ "linear", "feasrelax" ],
     "solvers": ["cplex"],
-    "comment": "alg:feasopt outside 0..2 is rejected (crashed before)",
-    "options": { "cplex_options": "feasopt=3" },
-    "values": { "solve_result": "failure" }
+    "comment": "alg:feasopt outside 0..2 is rejected (before, 3 ran as feasopt=1)",
+    "options": { "cplex_options": "feasopt=3 msgwidth=0" },
+    "values": {
+      "solve_result": "failure",
+      "solve_message": { "contains": "Rejecting alg:feasopt=3" }
+    }
+  },
+  {
+    "name": "infeas_int_01 feasoptobj=4 rejected CPLEX",
+    "files": ["infeas_int_01.mod"],
+    "tags": [ "linear", "feasrelax" ],
+    "solvers": ["cplex"],
+    "comment": "alg:feasoptobj outside 1..3 is rejected (before, it was read out of the bounds of a table)",
+    "options": { "cplex_options": "feasopt=1 feasoptobj=4 msgwidth=0" },
+    "values": {
+      "solve_result": "failure",
+      "solve_message": { "contains": "Rejecting alg:feasoptobj=4" }
+    }
   }
 ]
