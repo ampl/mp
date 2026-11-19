@@ -2207,7 +2207,8 @@ private:
                        "down): a lower bound b becomes ceil(b - tol), "
                        "an upper bound floor(b + tol), so that, e.g., "
                        "[1, 0.17] becomes [1, 0]. The tolerance used is "
-                       "max(tol, 1e-13*|b|), at most 0.5. Negative: "
+                       "max(tol, 16 ulp(b)), where ulp(b) is the spacing of "
+                       "floating-point numbers at |b|, at most 0.5. Negative: "
                        "no rounding, which can give wrong results when "
                        "a computed bound is slightly below or above an "
                        "integer. Default 1e-9.",

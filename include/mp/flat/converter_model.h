@@ -270,19 +270,25 @@ public:
 
   /// A bound of an integer or implied-integer variable rounded inwards
   /// (lb up, ub down, within cvt:pre:roundintbnd, finite values only).
-  /// The tolerance is max(roundintbnd, 1e-13*|b|), at most 0.5:
+  /// The tolerance is max(roundintbnd, 16 ulp(b)), at most 0.5:
   /// a computed bound like 16800000.7/0.1 = 168000006.99999997
-  /// (relative error ~1e-16) must still round to 168000007, while
-  /// a fractional data bound like 599999999.5 must not be rounded
-  /// to the nearest integer (a relative 1e-9 would do that).
+  /// (1 ulp off) must still round to 168000007, while a bound
+  /// 1e9 + 5e-5 (420 ulp above 1e9) or a fractional data bound like
+  /// 599999999.5 must not be rounded to the nearest integer.
   double RoundIntBound(int v, double b, bool is_lb) const {
     if (round_int_bound_tol_ >= 0.0 && std::isfinite(b)
         && (var::INTEGER == var_type_[v] || is_var_implied_int(v))) {
       const double tol = std::min(
-          0.5, std::max(round_int_bound_tol_, 1e-13 * std::fabs(b)));
+          0.5, std::max(round_int_bound_tol_, 16.0 * Ulp(b)));
       return is_lb ? std::ceil(b - tol) : std::floor(b + tol);
     }
     return b;
+  }
+
+  /// The spacing of doubles at |b|: the size of a rounding error
+  static double Ulp(double b) {
+    const double a = std::fabs(b);
+    return std::nextafter(a, INFINITY) - a;
   }
 
   /// Improve lb, incl. best-known

@@ -21,6 +21,10 @@ Summary of recent updates to the AMPL MP Library
   contains 0: the divisor is treated as nonzero in the whole model, also
   where the division is not evaluated (for example, in an if-then-else
   branch not taken).
+- Bounds of integer variables are rounded inwards within
+  max(*cvt:pre:roundintbnd*, 16 units in the last place of the bound)
+  instead of a relative 1e-13: large bounds such as 1e9 + 5e-5 keep
+  their fractional part.
 
 - Fixed wrong results of the conversion of logical constructs (all solvers):
   - a comparison shared by a disjunction and an if-then-else condition lost
