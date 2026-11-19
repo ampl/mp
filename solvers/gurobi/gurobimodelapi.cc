@@ -31,11 +31,10 @@ void GurobiModelAPI::AddVariables(const VarArrayDef& v) {
 void ThrowForUnsupportedObjectives()
 {
   throw std::runtime_error(
-      format_error("When several objectives are handled natively, all of "
-                   "them must be linear. Use cvt:quadobj=0 and "
-                   "cvt:nlobj=0 to move quadratic and nonlinear objective "
-                   "terms into constraints, obj:multi=2 (MP emulation), "
-                   "or a single objective."));
+      "When several objectives are handled natively, all of them must be "
+      "linear. Use cvt:quadobj=0 and cvt:nlobj=0 to move quadratic and "
+      "nonlinear objective terms into constraints, obj:multi=2 (MP "
+      "emulation), or a single objective.");
 }
 
 void GurobiModelAPI::SetLinearObjective(
