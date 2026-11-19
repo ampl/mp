@@ -8,6 +8,11 @@
 #include <iterator>
 #include <stdexcept>
 #include <string>
+#include <vector>
+
+#ifndef _WIN32
+#include <unistd.h>    // geteuid
+#endif
 
 #include "gtest/gtest.h"
 #include "mp/nl-solver.h"
@@ -240,6 +245,80 @@ TEST(NLSolverTest, MissingTempDirGivesMessage) {
     EXPECT_NE(nullptr, std::strstr(e.what(), "temp dir")) << e.what();
   }
 }
+
+namespace {
+
+/// An error handler that returns, as a C API handler may:
+/// it records the messages.
+class ReturningUtils : public mp::NLUtils {
+public:
+  void myexit(const std::string& msg) override { msgs_.push_back(msg); }
+  const std::vector<std::string>& Messages() const { return msgs_; }
+
+private:
+  std::vector<std::string> msgs_;
+};
+
+/// Makes \a dir the current directory, restores it on exit.
+class CurrentDirOverride {
+public:
+  explicit CurrentDirOverride(const fs::path& dir)
+    : old_(fs::current_path()) { fs::current_path(dir); }
+  ~CurrentDirOverride() {
+    std::error_code ec;
+    fs::current_path(old_, ec);
+  }
+
+private:
+  fs::path old_;
+};
+
+/// With a returning myexit(), a failed temporary directory must not
+/// make NLSolver write the NL file elsewhere (before, a relative
+/// directory and file appeared in the current directory).
+void ExpectNothingWrittenWithTempDir(const fs::path& tmpdir,
+                                     const fs::path& cwd) {
+  TempDirOverride tmp(tmpdir);
+  CurrentDirOverride here(cwd);
+  ReturningUtils utils;
+  OneVarModel model;
+  {
+    mp::NLSolver nlsol(&utils);
+    EXPECT_FALSE(nlsol.LoadModel(model.Get()));
+    EXPECT_NE(nullptr, std::strstr(nlsol.GetErrorMessage(), "temporary"))
+        << nlsol.GetErrorMessage();
+    EXPECT_FALSE(nlsol.Solve(Solver(), ""));
+  }
+  ASSERT_EQ(1u, utils.Messages().size());
+  EXPECT_NE(std::string::npos, utils.Messages()[0].find("temp dir"))
+      << utils.Messages()[0];
+  EXPECT_TRUE(fs::is_empty(cwd)) << fs::directory_iterator(cwd)->path();
+}
+
+}  // namespace
+
+TEST(NLSolverTest, MissingTempDirWithReturningHandlerWritesNothing) {
+  ScratchDir parent("nlw2 test returning");
+  const auto cwd = parent.path() / "cwd";
+  fs::create_directories(cwd);
+  ExpectNothingWrittenWithTempDir(parent.path() / "missing", cwd);
+}
+
+#ifndef _WIN32
+// mkdtemp() fails in a read-only temporary directory
+// (not as root, who may write there anyway)
+TEST(NLSolverTest, UnwritableTempDirWithReturningHandlerWritesNothing) {
+  if (0 == geteuid())
+    GTEST_SKIP() << "root can write to a read-only directory";
+  ScratchDir parent("nlw2 test readonly");
+  const auto cwd = parent.path() / "cwd", ro = parent.path() / "ro";
+  fs::create_directories(cwd);
+  fs::create_directories(ro);
+  fs::permissions(ro, fs::perms::owner_read | fs::perms::owner_exec);
+  ExpectNothingWrittenWithTempDir(ro, cwd);
+  fs::permissions(ro, fs::perms::owner_all);   // so that it can be removed
+}
+#endif
 
 #ifdef _WIN32
 // Windows refuses to create a directory whose path exceeds 248

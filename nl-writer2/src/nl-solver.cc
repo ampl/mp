@@ -680,9 +680,11 @@ void NLSolver::InitAutoStub() {
   // exception.
   std::error_code ec;
   auto path = std::filesystem::temp_directory_path(ec);
-  if (ec)
+  if (ec) {        // a myexit() that returns: no stub, no directory
     Utils().myexit("Could not find the temp directory: "
                    + ec.message());
+    return;
+  }
   path /= "nlw2_"; // via '/'
   char rnds[64] = "rndhex";
   std::snprintf(rnds, sizeof(rnds)-1, "%lX", rand(prng));
@@ -693,14 +695,18 @@ void NLSolver::InitAutoStub() {
 
 #if defined(_WIN32) || defined(_WIN64)
   if (!_mktemp((char*)pathstr_.c_str())
-      || !std::filesystem::create_directory(pathstr_, ec))
+      || !std::filesystem::create_directory(pathstr_, ec)) {
     FailAutoStub("Could not create temp dir '" + pathstr_ + "'"
                    + (ec ? ": " + ec.message() : std::string())
                    + "\n(check the TMP/TEMP directory)");
+    return;
+  }
 #else
-  if (!mkdtemp((char*)pathstr_.c_str()))
+  if (!mkdtemp((char*)pathstr_.c_str())) {
     FailAutoStub("Could not create a temp dir\n"
                    "from pattern '" + pathstr_ + "'");
+    return;
+  }
 #endif
   path = pathstr_;
   // Plus filename
