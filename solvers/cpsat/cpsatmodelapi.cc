@@ -57,13 +57,13 @@ std::vector<CpsatModelAPI::IntVar> CpsatModelAPI::Vars(
 }
 
 CpsatModelAPI::Domain CpsatModelAPI::MakeDomain(double lb, double ub) {
-  const auto kMin = std::numeric_limits<int64_t>::min();
-  const auto kMax = std::numeric_limits<int64_t>::max();
-  const int64_t l = lb == MinusInfinity()
-      ? kMin : ToInt64(std::ceil(lb), "constraint lower bound");
-  const int64_t u = ub == Infinity()
-      ? kMax : ToInt64(std::floor(ub), "constraint upper bound");
-  return Domain(l, u);
+  if (std::isnan(lb) || std::isnan(ub))
+    throw std::runtime_error("CP-SAT: a constraint bound is not a number");
+  // The expression is integer-valued, so rounding a fractional bound
+  // inward keeps the row's solutions; a near-integer bound is that integer.
+  // Bounds beyond int64 are clamped: Domain(l, u) is empty when l > u.
+  return Domain(ClampToInt64(RoundBoundInward(lb, true)),
+                ClampToInt64(RoundBoundInward(ub, false)));
 }
 
 bool CpsatModelAPI::IsFixedTo(int var, int64_t value) const {
@@ -250,7 +250,7 @@ void CpsatModelAPI::AddConstraint(const PowConstExpConstraint& pc) {
   if (!IsIntegerValue(e) || e < 0.0)
     throw std::runtime_error(fmt::format(
         "CP-SAT: only powers with integer exponents >= 0 are "
-        "supported, got exponent {}", e));
+        "supported, got exponent {:.17g}", e));
   const auto r = Var(pc.GetResultVar());
   const auto x = Var(pc.GetArguments().at(0));
   const auto k = (size_t)std::llround(e);

@@ -18,14 +18,14 @@ int64_t CpsatCommon::LowerBoundToInt64(double lb) const {
   const double vb = data()->var_bound;
   if (lb <= -vb)
     return (int64_t)-vb;
-  return (int64_t)std::ceil(lb - 1e-9);
+  return ClampToInt64(RoundBoundInward(lb, true));
 }
 
 int64_t CpsatCommon::UpperBoundToInt64(double ub) const {
   const double vb = data()->var_bound;
   if (ub >= vb)
     return (int64_t)vb;
-  return (int64_t)std::floor(ub + 1e-9);
+  return ClampToInt64(RoundBoundInward(ub, false));
 }
 
 

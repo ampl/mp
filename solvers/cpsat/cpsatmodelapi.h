@@ -124,7 +124,8 @@ private:
     if (!std::isnan(data()->var_const.at(i)))
       throw std::runtime_error(fmt::format(
           "CP-SAT supports integer variables only; variable {} is "
-          "fixed at the non-integer value {}", i, data()->var_const[i]));
+          "fixed at the non-integer value {:.17g}",
+          i, data()->var_const[i]));
     return data()->vars.at(i);
   }
   /// Variable used as a literal; must be in [0,1]

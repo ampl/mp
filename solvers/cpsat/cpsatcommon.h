@@ -8,6 +8,7 @@
 #include <atomic>
 #include <cmath>
 #include <cstdint>
+#include <limits>
 #include <stdexcept>
 
 #include "mp/backend-to-model-api.h"
@@ -21,30 +22,66 @@
 
 namespace mp {
 
-/// Default absolute tolerance for callers that explicitly allow rounding.
+/// Absolute tolerance for taking a value as the nearest integer:
+/// coefficients, bounds, fixed values and exponents computed in floating
+/// point (0.1*3*10 is 3.0000000000000004) are meant to be integers.
 constexpr double kCpsatIntTol = 1e-9;
+
+/// The same for large magnitudes, where rounding errors exceed kCpsatIntTol:
+/// a few units of floating-point rounding, relative to the value. Kept
+/// that small so that a real fraction (1000000000.5) is not taken as noise.
+constexpr double kCpsatIntRelTol = 8 * std::numeric_limits<double>::epsilon();
 
 /// Is \a v within \a abs_tol of an integer?
 inline bool IsInteger(double v, double abs_tol = kCpsatIntTol) {
   return std::fabs(v - std::round(v)) <= abs_tol;
 }
 
-/// Is \a v exactly representable as an integer?
+/// Is \a v an integer value, up to the tolerance (kCpsatIntTol, or
+/// kCpsatIntRelTol relative to \a v when that is larger)? The one rule for
+/// coefficients, row and variable bounds, fixed values and exponents.
 inline bool IsIntegerValue(double v) {
-  return std::isfinite(v) && v == std::trunc(v);
+  return std::isfinite(v) && IsInteger(
+        v, std::max(kCpsatIntTol, kCpsatIntRelTol * std::fabs(v)));
 }
 
-/// Convert an integer value to int64_t.
+/// Convert an integer value to int64_t; a value within the tolerance
+/// of an integer is taken as that integer.
 /// @param what: description of the value, for the error message.
 /// @throw std::runtime_error if \a v is not an integer value
-/// (IsIntegerValue()) or is out of range.
+/// (IsIntegerValue()) or is out of range. The message shows all digits
+/// of \a v, so that a value such as 2.9999999 does not print as "3".
 inline int64_t ToInt64(double v, const char* what) {
   if (!IsIntegerValue(v))
     throw std::runtime_error(fmt::format(
-        "CP-SAT requires integer {}, got {}", what, v));
-  if (std::fabs(v) >= 4.0e18)
+        "CP-SAT requires integer {}, got {:.17g}", what, v));
+  const double r = std::round(v);
+  if (std::fabs(r) >= 4.0e18)
     throw std::runtime_error(fmt::format(
-        "CP-SAT: {} out of range: {}", what, v));
+        "CP-SAT: {} out of range: {:.17g}", what, v));
+  return static_cast<int64_t>(r);
+}
+
+/// Round a bound of an integer-valued quantity to an integer value:
+/// to the nearest one if within the tolerance, otherwise inward
+/// (a lower bound up, an upper bound down). Infinite bounds are kept.
+/// @param is_lower: whether \a b is a lower bound.
+inline double RoundBoundInward(double b, bool is_lower) {
+  if (IsIntegerValue(b))
+    return std::round(b);
+  return is_lower ? std::ceil(b) : std::floor(b);
+}
+
+/// Convert an integer-valued bound to int64_t, clamping to the int64 range.
+/// A bound at or beyond the range (also an infinite one) cannot bind,
+/// or cannot be satisfied, either way: CP-SAT expressions stay within int64.
+/// Not for NaN.
+inline int64_t ClampToInt64(double v) {
+  constexpr double kLimit = 9223372036854775808.0;   // 2^63, exact in double
+  if (v >= kLimit)
+    return std::numeric_limits<int64_t>::max();
+  if (v <= -kLimit)
+    return std::numeric_limits<int64_t>::min();
   return static_cast<int64_t>(v);
 }
 

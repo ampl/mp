@@ -99,5 +99,77 @@
       "if solve_result_num >= 500 and solve_result_num < 600 then 1 else 0": 1,
       "if match(solve_message, 'requires integer coefficients') > 0 then 1 else 0": 1
     }
+  },
+  {
+    "name": "cpsat_near_int_lb",
+    "solvers": ["cpsat"],
+    "tags": ["integer"],
+    "comment": "Row bound 0.1*3*10 = 3.0000000000000004 is taken as 3, not rounded up to 4",
+    "options": { "presolve": 0 },
+    "objective": 3,
+    "values": {
+      "solve_result_num": 0
+    }
+  },
+  {
+    "name": "cpsat_near_int_eq",
+    "solvers": ["cpsat"],
+    "tags": ["integer"],
+    "comment": "Equality with right-hand side 0.07*100 = 7.000000000000001 is feasible",
+    "options": { "presolve": 0 },
+    "objective": 3,
+    "values": {
+      "solve_result_num": 0,
+      "x": 2,
+      "y": 1
+    }
+  },
+  {
+    "name": "cpsat_near_int_ub",
+    "solvers": ["cpsat"],
+    "tags": ["integer"],
+    "comment": "Row bound 4.35*100 = 434.99999999999994 is taken as 435, not rounded down to 434",
+    "options": { "presolve": 0 },
+    "objective": 435,
+    "values": {
+      "solve_result_num": 0
+    }
+  },
+  {
+    "name": "cpsat_near_int_coef",
+    "solvers": ["cpsat"],
+    "tags": ["integer"],
+    "comment": "Coefficient 0.1*3*10 = 3.0000000000000004 is taken as 3, not rejected as fractional",
+    "options": { "presolve": 0 },
+    "objective": 8,
+    "values": {
+      "solve_result_num": 0,
+      "x": 4,
+      "y": 0
+    }
+  },
+  {
+    "name": "cpsat_near_int_fixed",
+    "solvers": ["cpsat"],
+    "tags": ["integer"],
+    "comment": "A continuous variable fixed at 2.3 - 0.3 = 1.9999999999999998 is taken as the integer 2",
+    "options": { "presolve": 0 },
+    "objective": 3,
+    "values": {
+      "solve_result_num": 0,
+      "x": 3
+    }
+  },
+  {
+    "name": "cpsat_huge_row_bound",
+    "solvers": ["cpsat"],
+    "tags": ["integer"],
+    "comment": "Redundant rows with bounds +-1e19, beyond the int64 range, are accepted",
+    "options": { "presolve": 0 },
+    "objective": 6,
+    "values": {
+      "solve_result_num": 0,
+      "y": 6
+    }
   }
 ]
