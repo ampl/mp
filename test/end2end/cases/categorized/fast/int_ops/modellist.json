@@ -78,5 +78,26 @@
     "comment": "A variable fixed at 2.5 is passed to CP-SAT as a constant",
     "objective" : 8.5,
     "values": { "x": 2.5, "y": 2 }
+  },
+  {
+    "name": "cpsat_finite_row_bound",
+    "solvers": ["cpsat"],
+    "tags": ["integer"],
+    "options": { "presolve": 0 },
+    "objective": 1,
+    "values": {
+      "solve_result_num": 0,
+      "max(0, 6e17*x + 6e17*y - 1e18)": 0
+    }
+  },
+  {
+    "name": "cpsat_fractional_coef",
+    "solvers": ["cpsat"],
+    "tags": ["integer"],
+    "options": { "presolve": 0 },
+    "values": {
+      "if solve_result_num >= 500 and solve_result_num < 600 then 1 else 0": 1,
+      "if match(solve_message, 'requires integer coefficients') > 0 then 1 else 0": 1
+    }
   }
 ]

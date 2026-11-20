@@ -2,6 +2,10 @@ Summary of recent updates to CP-SAT for AMPL
 ============================================
 
 ## unreleased
+- Fractional linear constraint coefficients are rejected explicitly, including
+  large ones that previously changed the model through rounding. Finite row
+  bounds at or above `1e18` in magnitude remain finite within the supported
+  integer range.
 - An objective with a non-integer constant (e.g., `x + y + 2.5`) is
   accepted; before, the solve failed with "variable N is continuous".
 - Fix: a solve after another solver's solve in the same AMPL session

@@ -21,8 +21,7 @@
 
 namespace mp {
 
-/// Tolerance for considering a coefficient or a value integer.
-/// Relative for large values, see IsIntegerValue().
+/// Default absolute tolerance for callers that explicitly allow rounding.
 constexpr double kCpsatIntTol = 1e-9;
 
 /// Is \a v within \a abs_tol of an integer?
@@ -30,10 +29,9 @@ inline bool IsInteger(double v, double abs_tol = kCpsatIntTol) {
   return std::fabs(v - std::round(v)) <= abs_tol;
 }
 
-/// Is \a v an integer value, with a tolerance relative to its magnitude
-/// (at least kCpsatIntTol)? Used for coefficients and bounds.
+/// Is \a v exactly representable as an integer?
 inline bool IsIntegerValue(double v) {
-  return IsInteger(v, kCpsatIntTol * std::max(1.0, std::fabs(v)));
+  return std::isfinite(v) && v == std::trunc(v);
 }
 
 /// Convert an integer value to int64_t.
@@ -44,11 +42,10 @@ inline int64_t ToInt64(double v, const char* what) {
   if (!IsIntegerValue(v))
     throw std::runtime_error(fmt::format(
         "CP-SAT requires integer {}, got {}", what, v));
-  const double r = std::round(v);
-  if (std::fabs(r) >= 4.0e18)
+  if (std::fabs(v) >= 4.0e18)
     throw std::runtime_error(fmt::format(
         "CP-SAT: {} out of range: {}", what, v));
-  return (int64_t)r;
+  return static_cast<int64_t>(v);
 }
 
 /// Default magnitude used for infinite variable bounds.

@@ -59,8 +59,10 @@ std::vector<CpsatModelAPI::IntVar> CpsatModelAPI::Vars(
 CpsatModelAPI::Domain CpsatModelAPI::MakeDomain(double lb, double ub) {
   const auto kMin = std::numeric_limits<int64_t>::min();
   const auto kMax = std::numeric_limits<int64_t>::max();
-  const int64_t l = (lb <= -1e18) ? kMin : (int64_t)std::ceil(lb - 1e-9);
-  const int64_t u = (ub >= 1e18) ? kMax : (int64_t)std::floor(ub + 1e-9);
+  const int64_t l = lb == MinusInfinity()
+      ? kMin : ToInt64(std::ceil(lb), "constraint lower bound");
+  const int64_t u = ub == Infinity()
+      ? kMax : ToInt64(std::floor(ub), "constraint upper bound");
   return Domain(l, u);
 }
 
