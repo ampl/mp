@@ -3,6 +3,9 @@ Summary of recent updates to Gurobi for AMPL
 
 
 ## unreleased
+- Fix: with *mip:basis*, when the solve of the fixed problem took exactly
+  one iteration, the solve message ended after that line; the MIP gap
+  line was missing.
 - Several objectives with *obj:multi=1* where one is quadratic or nonlinear:
   the message now says that natively handled objectives must all be linear
   and suggests *obj:multi=2* (MP emulation) or *cvt:quadobj=0* and

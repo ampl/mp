@@ -505,9 +505,12 @@ void XpressmpBackend::CopyFixedNonlinearModel() {
   model_fixed_ = copy;
   XPRESSMP_CCALL(XPRScopyprob(copy, lp(), "ampl-fixed"));
   XPRESSMP_CCALL(XPRScopycontrols(copy, lp()));
-  // The message callback is not copied with the problem: without it the
-  // fixed solve prints nothing, and neither do warnings about the copy.
-  XPRESSMP_CCALL(XPRScopycallbacks(copy, lp()));
+  // Callbacks are not copied with the problem. Give the copy the driver's
+  // message callback only, so that the fixed solve and warnings about the
+  // copy are printed. Callbacks an AMPLS user registered on the original
+  // problem are not called for this internal copy.
+  if (msgCallbackSet_)
+    XPRESSMP_CCALL(XPRSaddcbmessage(copy, xpdisplay, NULL, 0));
   // The native fixing routine needs an incumbent, which is not copied
   // along with the problem data.
   int status;
@@ -604,7 +607,7 @@ std::string XpressmpBackend::DoXpressFixedModel(bool nonlinear)
     if (f)
       AddToSolverMessage(fmt::format(
         "Fixed MIP for mip:basis: {} simplex iteration{}\n",
-        f, "s"[f == 1.]));
+        f, 1 == f ? "" : "s"));
   }
   return {};
 

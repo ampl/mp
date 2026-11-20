@@ -1452,7 +1452,7 @@ std::string GurobiBackend::DoGurobiFixedModel() {
     if (f)
       AddToSolverMessage( fmt::format(
             "Fixed MIP for mip:basis: {} simplex iteration{}\n",
-            f, "s"[f == 1.]) );
+            f, 1. == f ? "" : "s") );
   }
   return {};
 }
