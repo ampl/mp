@@ -1,0 +1,2280 @@
+[
+ {
+  "name": "glog_r3_m_0",
+  "files": [
+   "m_0.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 17
+ },
+ {
+  "name": "glog_r3_m_1",
+  "files": [
+   "m_1.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "values": {
+   "solve_result": "infeasible"
+  }
+ },
+ {
+  "name": "glog_r3_m_2",
+  "files": [
+   "m_2.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -27
+ },
+ {
+  "name": "glog_r3_m_3",
+  "files": [
+   "m_3.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 64
+ },
+ {
+  "name": "glog_r3_m_4",
+  "files": [
+   "m_4.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 8
+ },
+ {
+  "name": "glog_r3_m_5",
+  "files": [
+   "m_5.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -21
+ },
+ {
+  "name": "glog_r3_m_6",
+  "files": [
+   "m_6.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -6
+ },
+ {
+  "name": "glog_r3_m_7",
+  "files": [
+   "m_7.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -42
+ },
+ {
+  "name": "glog_r3_m_8",
+  "files": [
+   "m_8.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 6
+ },
+ {
+  "name": "glog_r3_m_9",
+  "files": [
+   "m_9.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -26
+ },
+ {
+  "name": "glog_r3_m_10",
+  "files": [
+   "m_10.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "values": {
+   "solve_result": "infeasible"
+  }
+ },
+ {
+  "name": "glog_r3_m_11",
+  "files": [
+   "m_11.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "values": {
+   "solve_result": "infeasible"
+  }
+ },
+ {
+  "name": "glog_r3_m_12",
+  "files": [
+   "m_12.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -14
+ },
+ {
+  "name": "glog_r3_m_13",
+  "files": [
+   "m_13.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 40
+ },
+ {
+  "name": "glog_r3_m_14",
+  "files": [
+   "m_14.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -7
+ },
+ {
+  "name": "glog_r3_m_15",
+  "files": [
+   "m_15.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "values": {
+   "solve_result": "infeasible"
+  }
+ },
+ {
+  "name": "glog_r3_m_16",
+  "files": [
+   "m_16.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -7
+ },
+ {
+  "name": "glog_r3_m_17",
+  "files": [
+   "m_17.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 30
+ },
+ {
+  "name": "glog_r3_m_18",
+  "files": [
+   "m_18.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 25
+ },
+ {
+  "name": "glog_r3_m_19",
+  "files": [
+   "m_19.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 8
+ },
+ {
+  "name": "glog_r3_m_20",
+  "files": [
+   "m_20.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 11
+ },
+ {
+  "name": "glog_r3_m_21",
+  "files": [
+   "m_21.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -8
+ },
+ {
+  "name": "glog_r3_m_22",
+  "files": [
+   "m_22.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "values": {
+   "solve_result": "infeasible"
+  }
+ },
+ {
+  "name": "glog_r3_m_23",
+  "files": [
+   "m_23.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "values": {
+   "solve_result": "infeasible"
+  }
+ },
+ {
+  "name": "glog_r3_m_24",
+  "files": [
+   "m_24.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "values": {
+   "solve_result": "infeasible"
+  }
+ },
+ {
+  "name": "glog_r3_m_25",
+  "files": [
+   "m_25.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -1
+ },
+ {
+  "name": "glog_r3_m_26",
+  "files": [
+   "m_26.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -28
+ },
+ {
+  "name": "glog_r3_m_27",
+  "files": [
+   "m_27.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -24
+ },
+ {
+  "name": "glog_r3_m_28",
+  "files": [
+   "m_28.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 52
+ },
+ {
+  "name": "glog_r3_m_29",
+  "files": [
+   "m_29.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "values": {
+   "solve_result": "infeasible"
+  }
+ },
+ {
+  "name": "glog_r3_m_30",
+  "files": [
+   "m_30.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -6
+ },
+ {
+  "name": "glog_r3_m_31",
+  "files": [
+   "m_31.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -20
+ },
+ {
+  "name": "glog_r3_m_32",
+  "files": [
+   "m_32.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 18
+ },
+ {
+  "name": "glog_r3_m_33",
+  "files": [
+   "m_33.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -44
+ },
+ {
+  "name": "glog_r3_m_34",
+  "files": [
+   "m_34.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 16
+ },
+ {
+  "name": "glog_r3_m_35",
+  "files": [
+   "m_35.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 8
+ },
+ {
+  "name": "glog_r3_m_36",
+  "files": [
+   "m_36.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -24
+ },
+ {
+  "name": "glog_r3_m_37",
+  "files": [
+   "m_37.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 16
+ },
+ {
+  "name": "glog_r3_m_38",
+  "files": [
+   "m_38.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 37
+ },
+ {
+  "name": "glog_r3_m_39",
+  "files": [
+   "m_39.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -28
+ },
+ {
+  "name": "glog_r3_m_40",
+  "files": [
+   "m_40.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -2
+ },
+ {
+  "name": "glog_r3_m_41",
+  "files": [
+   "m_41.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 26
+ },
+ {
+  "name": "glog_r3_m_42",
+  "files": [
+   "m_42.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 12
+ },
+ {
+  "name": "glog_r3_m_43",
+  "files": [
+   "m_43.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 13
+ },
+ {
+  "name": "glog_r3_m_44",
+  "files": [
+   "m_44.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -18
+ },
+ {
+  "name": "glog_r3_m_45",
+  "files": [
+   "m_45.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "values": {
+   "solve_result": "infeasible"
+  }
+ },
+ {
+  "name": "glog_r3_m_46",
+  "files": [
+   "m_46.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 4
+ },
+ {
+  "name": "glog_r3_m_47",
+  "files": [
+   "m_47.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "values": {
+   "solve_result": "infeasible"
+  }
+ },
+ {
+  "name": "glog_r3_m_48",
+  "files": [
+   "m_48.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 15
+ },
+ {
+  "name": "glog_r3_m_49",
+  "files": [
+   "m_49.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 14
+ },
+ {
+  "name": "glog_r3_m_50",
+  "files": [
+   "m_50.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 8
+ },
+ {
+  "name": "glog_r3_m_51",
+  "files": [
+   "m_51.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 14
+ },
+ {
+  "name": "glog_r3_m_52",
+  "files": [
+   "m_52.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -2
+ },
+ {
+  "name": "glog_r3_m_53",
+  "files": [
+   "m_53.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "values": {
+   "solve_result": "infeasible"
+  }
+ },
+ {
+  "name": "glog_r3_m_54",
+  "files": [
+   "m_54.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 7
+ },
+ {
+  "name": "glog_r3_m_55",
+  "files": [
+   "m_55.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "values": {
+   "solve_result": "infeasible"
+  }
+ },
+ {
+  "name": "glog_r3_m_56",
+  "files": [
+   "m_56.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -7
+ },
+ {
+  "name": "glog_r3_m_57",
+  "files": [
+   "m_57.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 38
+ },
+ {
+  "name": "glog_r3_m_58",
+  "files": [
+   "m_58.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "values": {
+   "solve_result": "infeasible"
+  }
+ },
+ {
+  "name": "glog_r3_m_59",
+  "files": [
+   "m_59.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -8
+ },
+ {
+  "name": "glog_r3_m_60",
+  "files": [
+   "m_60.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "values": {
+   "solve_result": "infeasible"
+  }
+ },
+ {
+  "name": "glog_r3_m_61",
+  "files": [
+   "m_61.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -6
+ },
+ {
+  "name": "glog_r3_m_62",
+  "files": [
+   "m_62.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "values": {
+   "solve_result": "infeasible"
+  }
+ },
+ {
+  "name": "glog_r3_m_63",
+  "files": [
+   "m_63.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -33
+ },
+ {
+  "name": "glog_r3_m_64",
+  "files": [
+   "m_64.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -13
+ },
+ {
+  "name": "glog_r3_m_65",
+  "files": [
+   "m_65.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 38
+ },
+ {
+  "name": "glog_r3_m_66",
+  "files": [
+   "m_66.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -18
+ },
+ {
+  "name": "glog_r3_m_67",
+  "files": [
+   "m_67.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 12
+ },
+ {
+  "name": "glog_r3_m_68",
+  "files": [
+   "m_68.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -8
+ },
+ {
+  "name": "glog_r3_m_69",
+  "files": [
+   "m_69.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 20
+ },
+ {
+  "name": "glog_r3_m_70",
+  "files": [
+   "m_70.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -15
+ },
+ {
+  "name": "glog_r3_m_71",
+  "files": [
+   "m_71.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -35
+ },
+ {
+  "name": "glog_r3_m_72",
+  "files": [
+   "m_72.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -6
+ },
+ {
+  "name": "glog_r3_m_73",
+  "files": [
+   "m_73.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 20
+ },
+ {
+  "name": "glog_r3_m_74",
+  "files": [
+   "m_74.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 8
+ },
+ {
+  "name": "glog_r3_m_75",
+  "files": [
+   "m_75.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 51
+ },
+ {
+  "name": "glog_r3_m_76",
+  "files": [
+   "m_76.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 8
+ },
+ {
+  "name": "glog_r3_m_77",
+  "files": [
+   "m_77.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 0
+ },
+ {
+  "name": "glog_r3_m_78",
+  "files": [
+   "m_78.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "values": {
+   "solve_result": "infeasible"
+  }
+ },
+ {
+  "name": "glog_r3_m_79",
+  "files": [
+   "m_79.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -22
+ },
+ {
+  "name": "glog_r3_m_80",
+  "files": [
+   "m_80.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 23
+ },
+ {
+  "name": "glog_r3_m_81",
+  "files": [
+   "m_81.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -24
+ },
+ {
+  "name": "glog_r3_m_82",
+  "files": [
+   "m_82.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -14
+ },
+ {
+  "name": "glog_r3_m_83",
+  "files": [
+   "m_83.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 13
+ },
+ {
+  "name": "glog_r3_m_84",
+  "files": [
+   "m_84.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -9
+ },
+ {
+  "name": "glog_r3_m_85",
+  "files": [
+   "m_85.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -1
+ },
+ {
+  "name": "glog_r3_m_86",
+  "files": [
+   "m_86.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 13
+ },
+ {
+  "name": "glog_r3_m_87",
+  "files": [
+   "m_87.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -14
+ },
+ {
+  "name": "glog_r3_m_88",
+  "files": [
+   "m_88.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 0
+ },
+ {
+  "name": "glog_r3_m_89",
+  "files": [
+   "m_89.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 18
+ },
+ {
+  "name": "glog_r3_m_90",
+  "files": [
+   "m_90.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 2
+ },
+ {
+  "name": "glog_r3_m_91",
+  "files": [
+   "m_91.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -6
+ },
+ {
+  "name": "glog_r3_m_92",
+  "files": [
+   "m_92.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 14
+ },
+ {
+  "name": "glog_r3_m_93",
+  "files": [
+   "m_93.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 18
+ },
+ {
+  "name": "glog_r3_m_94",
+  "files": [
+   "m_94.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -18
+ },
+ {
+  "name": "glog_r3_m_95",
+  "files": [
+   "m_95.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -22
+ },
+ {
+  "name": "glog_r3_m_96",
+  "files": [
+   "m_96.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -12
+ },
+ {
+  "name": "glog_r3_m_97",
+  "files": [
+   "m_97.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 16
+ },
+ {
+  "name": "glog_r3_m_98",
+  "files": [
+   "m_98.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -33
+ },
+ {
+  "name": "glog_r3_m_99",
+  "files": [
+   "m_99.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -36
+ },
+ {
+  "name": "glog_r3_m_100",
+  "files": [
+   "m_100.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 14
+ },
+ {
+  "name": "glog_r3_m_101",
+  "files": [
+   "m_101.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 39
+ },
+ {
+  "name": "glog_r3_m_102",
+  "files": [
+   "m_102.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -6
+ },
+ {
+  "name": "glog_r3_m_103",
+  "files": [
+   "m_103.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 30
+ },
+ {
+  "name": "glog_r3_m_104",
+  "files": [
+   "m_104.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 41
+ },
+ {
+  "name": "glog_r3_m_105",
+  "files": [
+   "m_105.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "values": {
+   "solve_result": "infeasible"
+  }
+ },
+ {
+  "name": "glog_r3_m_106",
+  "files": [
+   "m_106.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -15
+ },
+ {
+  "name": "glog_r3_m_107",
+  "files": [
+   "m_107.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -9
+ },
+ {
+  "name": "glog_r3_m_108",
+  "files": [
+   "m_108.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -26
+ },
+ {
+  "name": "glog_r3_m_109",
+  "files": [
+   "m_109.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 7
+ },
+ {
+  "name": "glog_r3_m_110",
+  "files": [
+   "m_110.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "values": {
+   "solve_result": "infeasible"
+  }
+ },
+ {
+  "name": "glog_r3_m_111",
+  "files": [
+   "m_111.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -28
+ },
+ {
+  "name": "glog_r3_m_112",
+  "files": [
+   "m_112.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 52
+ },
+ {
+  "name": "glog_r3_m_113",
+  "files": [
+   "m_113.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "values": {
+   "solve_result": "infeasible"
+  }
+ },
+ {
+  "name": "glog_r3_m_114",
+  "files": [
+   "m_114.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "values": {
+   "solve_result": "infeasible"
+  }
+ },
+ {
+  "name": "glog_r3_m_115",
+  "files": [
+   "m_115.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "values": {
+   "solve_result": "infeasible"
+  }
+ },
+ {
+  "name": "glog_r3_m_116",
+  "files": [
+   "m_116.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 17
+ },
+ {
+  "name": "glog_r3_m_117",
+  "files": [
+   "m_117.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 11
+ },
+ {
+  "name": "glog_r3_m_118",
+  "files": [
+   "m_118.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 31
+ },
+ {
+  "name": "glog_r3_m_119",
+  "files": [
+   "m_119.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 0
+ },
+ {
+  "name": "glog_r3_m_120",
+  "files": [
+   "m_120.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 16
+ },
+ {
+  "name": "glog_r3_m_121",
+  "files": [
+   "m_121.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -6
+ },
+ {
+  "name": "glog_r3_m_122",
+  "files": [
+   "m_122.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 16
+ },
+ {
+  "name": "glog_r3_m_123",
+  "files": [
+   "m_123.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 5
+ },
+ {
+  "name": "glog_r3_m_124",
+  "files": [
+   "m_124.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -15
+ },
+ {
+  "name": "glog_r3_m_125",
+  "files": [
+   "m_125.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -29
+ },
+ {
+  "name": "glog_r3_m_126",
+  "files": [
+   "m_126.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 6
+ },
+ {
+  "name": "glog_r3_m_127",
+  "files": [
+   "m_127.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 3
+ },
+ {
+  "name": "glog_r3_m_128",
+  "files": [
+   "m_128.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 16
+ },
+ {
+  "name": "glog_r3_m_129",
+  "files": [
+   "m_129.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 40
+ },
+ {
+  "name": "glog_r3_m_130",
+  "files": [
+   "m_130.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "values": {
+   "solve_result": "infeasible"
+  }
+ },
+ {
+  "name": "glog_r3_m_131",
+  "files": [
+   "m_131.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 49
+ },
+ {
+  "name": "glog_r3_m_132",
+  "files": [
+   "m_132.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 15
+ },
+ {
+  "name": "glog_r3_m_133",
+  "files": [
+   "m_133.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "values": {
+   "solve_result": "infeasible"
+  }
+ },
+ {
+  "name": "glog_r3_m_134",
+  "files": [
+   "m_134.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -22
+ },
+ {
+  "name": "glog_r3_m_135",
+  "files": [
+   "m_135.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -3
+ },
+ {
+  "name": "glog_r3_m_136",
+  "files": [
+   "m_136.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 3
+ },
+ {
+  "name": "glog_r3_m_137",
+  "files": [
+   "m_137.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -11
+ },
+ {
+  "name": "glog_r3_m_138",
+  "files": [
+   "m_138.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 1
+ },
+ {
+  "name": "glog_r3_m_139",
+  "files": [
+   "m_139.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "values": {
+   "solve_result": "infeasible"
+  }
+ },
+ {
+  "name": "glog_r3_m_140",
+  "files": [
+   "m_140.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -12
+ },
+ {
+  "name": "glog_r3_m_141",
+  "files": [
+   "m_141.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 21
+ },
+ {
+  "name": "glog_r3_m_142",
+  "files": [
+   "m_142.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -24
+ },
+ {
+  "name": "glog_r3_m_143",
+  "files": [
+   "m_143.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -42
+ },
+ {
+  "name": "glog_r3_m_144",
+  "files": [
+   "m_144.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -15
+ },
+ {
+  "name": "glog_r3_m_145",
+  "files": [
+   "m_145.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "values": {
+   "solve_result": "infeasible"
+  }
+ },
+ {
+  "name": "glog_r3_m_146",
+  "files": [
+   "m_146.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -14
+ },
+ {
+  "name": "glog_r3_m_147",
+  "files": [
+   "m_147.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "values": {
+   "solve_result": "infeasible"
+  }
+ },
+ {
+  "name": "glog_r3_m_148",
+  "files": [
+   "m_148.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -2
+ },
+ {
+  "name": "glog_r3_m_149",
+  "files": [
+   "m_149.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "values": {
+   "solve_result": "infeasible"
+  }
+ },
+ {
+  "name": "glog_r3_m_150",
+  "files": [
+   "m_150.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 0
+ },
+ {
+  "name": "glog_r3_m_151",
+  "files": [
+   "m_151.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "values": {
+   "solve_result": "infeasible"
+  }
+ },
+ {
+  "name": "glog_r3_m_152",
+  "files": [
+   "m_152.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 27
+ },
+ {
+  "name": "glog_r3_m_153",
+  "files": [
+   "m_153.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -11
+ },
+ {
+  "name": "glog_r3_m_154",
+  "files": [
+   "m_154.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -18
+ },
+ {
+  "name": "glog_r3_m_155",
+  "files": [
+   "m_155.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -6
+ },
+ {
+  "name": "glog_r3_m_156",
+  "files": [
+   "m_156.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 42
+ },
+ {
+  "name": "glog_r3_m_157",
+  "files": [
+   "m_157.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "values": {
+   "solve_result": "infeasible"
+  }
+ },
+ {
+  "name": "glog_r3_m_158",
+  "files": [
+   "m_158.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 18
+ },
+ {
+  "name": "glog_r3_m_159",
+  "files": [
+   "m_159.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "values": {
+   "solve_result": "infeasible"
+  }
+ },
+ {
+  "name": "glog_r3_m_160",
+  "files": [
+   "m_160.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "values": {
+   "solve_result": "infeasible"
+  }
+ },
+ {
+  "name": "glog_r3_m_161",
+  "files": [
+   "m_161.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -14
+ },
+ {
+  "name": "glog_r3_m_162",
+  "files": [
+   "m_162.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 10
+ },
+ {
+  "name": "glog_r3_m_163",
+  "files": [
+   "m_163.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "values": {
+   "solve_result": "infeasible"
+  }
+ },
+ {
+  "name": "glog_r3_m_164",
+  "files": [
+   "m_164.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -7
+ },
+ {
+  "name": "glog_r3_m_165",
+  "files": [
+   "m_165.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 18
+ },
+ {
+  "name": "glog_r3_m_166",
+  "files": [
+   "m_166.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -3
+ },
+ {
+  "name": "glog_r3_m_167",
+  "files": [
+   "m_167.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "values": {
+   "solve_result": "infeasible"
+  }
+ },
+ {
+  "name": "glog_r3_m_168",
+  "files": [
+   "m_168.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 0
+ },
+ {
+  "name": "glog_r3_m_169",
+  "files": [
+   "m_169.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "values": {
+   "solve_result": "infeasible"
+  }
+ },
+ {
+  "name": "glog_r3_m_170",
+  "files": [
+   "m_170.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -2
+ },
+ {
+  "name": "glog_r3_m_171",
+  "files": [
+   "m_171.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 11
+ },
+ {
+  "name": "glog_r3_m_172",
+  "files": [
+   "m_172.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -18
+ },
+ {
+  "name": "glog_r3_m_173",
+  "files": [
+   "m_173.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 22
+ },
+ {
+  "name": "glog_r3_m_174",
+  "files": [
+   "m_174.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -4
+ },
+ {
+  "name": "glog_r3_m_175",
+  "files": [
+   "m_175.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -36
+ },
+ {
+  "name": "glog_r3_m_176",
+  "files": [
+   "m_176.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -28
+ },
+ {
+  "name": "glog_r3_m_177",
+  "files": [
+   "m_177.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 26
+ },
+ {
+  "name": "glog_r3_m_178",
+  "files": [
+   "m_178.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 3
+ },
+ {
+  "name": "glog_r3_m_179",
+  "files": [
+   "m_179.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 60
+ },
+ {
+  "name": "glog_r3_m_180",
+  "files": [
+   "m_180.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "values": {
+   "solve_result": "infeasible"
+  }
+ },
+ {
+  "name": "glog_r3_m_181",
+  "files": [
+   "m_181.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 23
+ },
+ {
+  "name": "glog_r3_m_182",
+  "files": [
+   "m_182.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 38
+ },
+ {
+  "name": "glog_r3_m_183",
+  "files": [
+   "m_183.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "values": {
+   "solve_result": "infeasible"
+  }
+ },
+ {
+  "name": "glog_r3_m_184",
+  "files": [
+   "m_184.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 5
+ },
+ {
+  "name": "glog_r3_m_185",
+  "files": [
+   "m_185.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 30
+ },
+ {
+  "name": "glog_r3_m_186",
+  "files": [
+   "m_186.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -21
+ },
+ {
+  "name": "glog_r3_m_187",
+  "files": [
+   "m_187.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 38
+ },
+ {
+  "name": "glog_r3_m_188",
+  "files": [
+   "m_188.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -24
+ },
+ {
+  "name": "glog_r3_m_189",
+  "files": [
+   "m_189.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "values": {
+   "solve_result": "infeasible"
+  }
+ },
+ {
+  "name": "glog_r3_m_190",
+  "files": [
+   "m_190.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -18
+ },
+ {
+  "name": "glog_r3_m_191",
+  "files": [
+   "m_191.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -14
+ },
+ {
+  "name": "glog_r3_m_192",
+  "files": [
+   "m_192.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "values": {
+   "solve_result": "infeasible"
+  }
+ },
+ {
+  "name": "glog_r3_m_193",
+  "files": [
+   "m_193.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -33
+ },
+ {
+  "name": "glog_r3_m_194",
+  "files": [
+   "m_194.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 14
+ },
+ {
+  "name": "glog_r3_m_195",
+  "files": [
+   "m_195.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 24
+ },
+ {
+  "name": "glog_r3_m_196",
+  "files": [
+   "m_196.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": -31
+ },
+ {
+  "name": "glog_r3_m_197",
+  "files": [
+   "m_197.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 0
+ },
+ {
+  "name": "glog_r3_m_198",
+  "files": [
+   "m_198.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "objective": 9
+ },
+ {
+  "name": "glog_r3_m_199",
+  "files": [
+   "m_199.mod"
+  ],
+  "tags": [
+   "logical",
+   "integer"
+  ],
+  "values": {
+   "solve_result": "infeasible"
+  }
+ }
+]
