@@ -46,6 +46,7 @@ def check_fixed_solve_message(name, text):
     earlier report of the same model would hide a failure of this one.
     """
     require(b" failed in Do" not in text, "The fixed solve failed")
+    require(b"WARNING" not in text, "The report carries a warning")
     require(len(re.findall(FIXED_SOLVE_SUCCESS[name], text)) == 1,
             "The fixed solve did not report success exactly once")
     require(text.count(FIXED_SOLVE_PREFIX) == 1,
@@ -71,7 +72,8 @@ def xpress_checks(sdk, model, binary):
     column_type = bind(sdk, "XPRSgetcoltype", INT, PTR, STR, INT, INT)
     get_primal = bind(sdk, "XPRSgetsolution", INT, PTR, ct.POINTER(INT),
                       ct.POINTER(REAL), INT, INT)
-    set_sense = bind(sdk, "XPRSchgobjsense", INT, PTR, INT)
+    set_bounds = bind(sdk, "XPRSchgbounds", INT, PTR, INT, ct.POINTER(INT),
+                      STR, ct.POINTER(REAL))
     kind, value = ct.create_string_buffer(1), REAL()
 
     def state():
@@ -84,7 +86,17 @@ def xpress_checks(sdk, model, binary):
                 "Xpress did not return the binary variable value")
         return value.value
 
-    return state, incumbent, lambda: set_sense(model, -1)
+    def reverse():
+        """Force the other value of the binary: lower bound 1.
+
+        The objective stays as loaded: its exponential terms reach Xpress
+        as an inequality valid for minimization only, and the solution
+        check uses the objective of the NL file.
+        """
+        return set_bounds(model, 1, ct.byref(INT(binary)), b"L",
+                          ct.byref(REAL(1.0)))
+
+    return state, incumbent, reverse
 
 
 def check_repeated_solve(name, driver, sdk, nl, binary):
@@ -95,7 +107,8 @@ def check_repeated_solve(name, driver, sdk, nl, binary):
     extras = bind(driver, "AMPLSReadExtras", None, PTR)
     solve = bind(driver, "AMPLSSolve", None, PTR)
     report = bind(driver, "AMPLSReportResults", INT, PTR, STR)
-    solver = open_solver(1, (STR * 2)(name.encode(), None))
+    argv = (STR * 2)(name.encode(), None)   # a driver may keep the pointer:
+    solver = open_solver(1, argv)           # it must outlive the solver
     require(solver, "AMPLS could not open the solver")
     try:
         options = (STR * 3)(b"mip:basis=1", b"threads=1", None)
@@ -123,6 +136,9 @@ def check_repeated_solve(name, driver, sdk, nl, binary):
                     "Reporting changed the original incumbent")
 
         check_report(sol, first_binary)
+        # A repeated report of the same solve carries the same notes:
+        # the fixed solve is not repeated, its message is not lost.
+        check_report(sol.with_name("repeat.sol"), first_binary)
         require(reverse() == 0, "Could not reverse the objective sense")
         solve(solver)
         second_binary = 1 - first_binary

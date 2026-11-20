@@ -334,6 +334,8 @@ protected:
       return GetSolution();
     };
     i_solve_=0;
+    solver_msg_reported_.clear();      // A new solve: forget the notes
+    solver_msg_written_ = false;       // written for the previous one
     GetMM().StartSolveIterations();    // e.g., a repeated AMPLSSolve()
     StartRecordingMOPassStats();
     while ((SetupPlateau(),            // Save plateau options before MO options
@@ -768,6 +770,16 @@ protected:
     ReportSolutionViaSolver();
   }
 
+  /// Report an error instead of results. This ends the solve cycle: its
+  /// notes are not written with the error and must not reach the report
+  /// of a later solve (AMPLS).
+  void ReportError(int solve_result, fmt::CStringRef msg) override {
+    solver_msg_extra_.clear();
+    solver_msg_reported_.clear();
+    solver_msg_written_ = false;
+    BackendWithModelManager::ReportError(solve_result, msg);
+  }
+
   /// to AMPL via SOL file
   virtual void ReportSolution2AMPL() {
     double obj_value = std::numeric_limits<double>::quiet_NaN();
@@ -813,13 +825,19 @@ protected:
     } catch (const std::exception& exc) {
       AddWarning("KAPPA", exc.what());
     }
-    if (solver_msg_extra_.size()) {
+    // The notes of this solve cycle (options, input, solve, report) are
+    // those of its first report. A repeated report of the same solve
+    // (AMPLS) writes the same notes: a note made once per solve, such as
+    // that of a supplementary fixed-model solve, is not made again, and
+    // report notes made again are dropped. The next solve starts anew.
+    if (!solver_msg_written_) {
+      solver_msg_reported_ = std::move(solver_msg_extra_);
+      solver_msg_written_ = true;
+    }
+    solver_msg_extra_.clear();
+    if (solver_msg_reported_.size()) {
       writer.write("\n");
-      writer.write(solver_msg_extra_);
-      // The messages of this solve cycle (options, input, solve, report)
-      // are delivered here. Forget them, so that the report of a repeated
-      // solve of the same model (AMPLS) does not repeat them.
-      solver_msg_extra_.clear();
+      writer.write(solver_msg_reported_);
     }
     /// Summary on alternative solutions
     if (kIntermSol_) {
@@ -985,7 +1003,9 @@ private:
 
   ///////////////////////// STORING SOLVER MESSAGES //////////////////////
 private:
-  std::string solver_msg_extra_;
+  std::string solver_msg_extra_;      ///< notes not yet written
+  std::string solver_msg_reported_;   ///< notes written for this solve
+  bool solver_msg_written_ = false;   ///< this solve has been reported
 
 protected:
   /// Add '\n' in the end if needed,
