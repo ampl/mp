@@ -3,10 +3,6 @@ Summary of recent updates to HiGHS for AMPL
 
 
 ## Unreleased
-- Fix for HiGHS 1.16: when HiGHS has no valid basis (for example, for an
-  LP that presolve proves infeasible), no basis statuses are reported and
-  the other results are, such as the IIS of *iis:find*; before, they
-  were lost with a warning.
 - Fix: *alg:feasrelax* reported "solved" when the model could not be
   repaired by relaxing the allowed elements (infinite relaxation cost);
   now "infeasible".
@@ -15,7 +11,7 @@ Summary of recent updates to HiGHS for AMPL
 - Fix: with *alg:feasrelax*, a variable or constraint with lower bound >
   upper bound (e.g., contradictory bounds passed on by
   *cvt:pre:infeasvarbnd=0*) gave an unrelaxed point reported as a relaxed
-  solution, because HiGHS 1.15 does not relax such bounds. Such a result
+  solution, because HiGHS does not relax such bounds. Such a result
   is now reported as a failure.
 
 ## 20261029
