@@ -1093,5 +1093,21 @@
     "values": {
       "solve_result_num": 0
     }
+  },
+  {
+    "name" : "int_ne_05_ctx_redef mp2nl sub counters",
+    "files" : ["int_ne_05_ctx_redef.mod"],
+    "solvers": ["mp2nl"],
+    "tags" : ["logical"],
+    "comment": "With debug=1 for both: 'values' check the subsolver's model (reported with prefix sub_), values_per_solver_category MP2NL check MP2NL's own model",
+    "options": { "mp2nl_options": "debug=1 solver_options='debug=1'" },
+    "objective": -19,
+    "values_per_solver_category": {
+      "MP2NL": { "Initial.flat1__lineq": 2, "Initial.flat1__indle": 0 }
+    },
+    "values": {
+      "Initial.flat1__lineq": 5,
+      "Initial.flat1__indle": 2
+    }
   }
 ]

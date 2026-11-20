@@ -35,11 +35,19 @@ mp::BasicBackend* AMPLSGetBackend(AMPLS_MP_Solver* slv);
 
 /// Wrapper for try/catch.
 /// Can be used from C++ functions returning \a int for C API.
-/// @return 0 if success
+/// @return 0 if success; the exit code of an mp::Error
+///   if it is a solve result code (200..599, e.g., 200 when
+///   the converter proved the model infeasible), so that the caller
+///   can report it as the solve result; otherwise -1
+///   (an mp::Error built with format arguments has exit code 1)
 template <class Fn> inline
 int AMPLS__internal__TryCatchWrapper(AMPLS_MP_Solver* slv, Fn fn) {
   try {
     fn();
+  } catch (const mp::Error& err) {
+    AMPLSAddMessage(slv, err.what());
+    const int code = err.exit_code();
+    return (code >= 200 && code <= 599) ? code : -1;
   } catch (const std::exception& exc) {
     AMPLSAddMessage(slv, exc.what());
     return -1;

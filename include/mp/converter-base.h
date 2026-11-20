@@ -38,6 +38,9 @@ public:
       std::function<sol::Status(void)> get_stt, std::function<Solution(void)> get_sol)
       = 0;
 
+  /// Start a run of solve iterations (each solve of the model)
+  virtual void StartSolveIterations() { }
+
   /// Is/was MultiObj Emulator used?
   virtual bool IsMOEmulationOn() const = 0;
 

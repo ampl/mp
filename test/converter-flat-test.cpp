@@ -29,6 +29,22 @@ TEST_F(InterfaceTester_MaxConstraint, MaximumConstraintIsPassedToBackend) {
   ASSERT_HAS_CONSTRAINT( GetBackend(), mp::MaxConstraint(3, args) );
 }
 
+/// A repeated solve (e.g., a second AMPLSSolve()) starts the solve
+/// iterations again; before, the second run did not solve at all.
+TEST_F(InterfaceTester_MaxConstraint, RepeatedSolveRunsAgain) {
+  GetInterface().AddVars(1, 0.0, 1.0);
+  GetInterface().ConvertModel();
+  auto stt = []() { return mp::sol::SOLVED; };
+  auto sol = []() { return mp::Solution{}; };
+  auto& itf = GetInterface();
+  itf.StartSolveIterations();
+  EXPECT_TRUE(itf.PrepareSolveIteration(stt, sol));
+  EXPECT_FALSE(itf.PrepareSolveIteration(stt, sol));
+  itf.StartSolveIterations();                  // the second solve
+  EXPECT_TRUE(itf.PrepareSolveIteration(stt, sol));
+  EXPECT_FALSE(itf.PrepareSolveIteration(stt, sol));
+}
+
 
 /////////////////////////////// Quadratics //////////////////////////////////
 ///

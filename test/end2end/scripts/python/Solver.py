@@ -190,6 +190,17 @@ class Solver(object):
     def getCategory(self):
         return self.CATEGORY
 
+    def mapExpectedValueName(self, name: str) -> str:
+        """Entity name to check for a case's 'values' entry \a name.
+        Identity; see MP2NLSolver."""
+        return name
+
+    @staticmethod
+    def toSubsolverStats(name: str) -> str:
+        """Debug statistics of the model (Initial.flat0_*, flat1_*,
+        option___*) as reported by MP2NL for its subsolver (prefix sub_)"""
+        return re.sub(r"\bInitial\.(flat[01]_|option___)", r"Initial.sub_\1", name)
+
     def checkCategory(self):
         """Warning if the constraints the driver accepts natively
         imply a category other than the declared one"""
@@ -1461,6 +1472,12 @@ class CbcMPSolver(MPDirectSolver):
 
 class MP2NLSolver(MPDirectSolver):
             CATEGORY = SolverCategory.MP2NL
+
+            def mapExpectedValueName(self, name: str) -> str:
+                """The subsolver is an MP driver: a case's 'values'
+                describe its model (values_per_solver_category MP2NL:
+                MP2NL's own)"""
+                return self.toSubsolverStats(name)
 
             def _getAMPLOptionsName(self):
                 return "mp2nl"

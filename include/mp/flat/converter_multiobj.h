@@ -75,6 +75,10 @@ public:
            || MOManagerStatus::FINISHED==status_;
   }
 
+  /// Have all emulated multiobjective passes been run?
+  bool IsMOFinished() const
+  { return MOManagerStatus::FINISHED==status_; }
+
   /// Prepare next multiobj iteration?
   /// @note Call this before a MO iteration.
   /// @return true iff the model is ready for the next iteration.
