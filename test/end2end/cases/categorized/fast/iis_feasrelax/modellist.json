@@ -375,6 +375,30 @@
     "values": { "solve_result": "infeasible" }
   },
   {
+    "name": "feasrelax_contra_bnd_01 feasrelax=1 bounds not relaxable",
+    "files": ["feasrelax_contra_bnd_01.mod"],
+    "tags": [ "linear", "feasrelax" ],
+    "solvers": ["highs"],
+    "comment": "Variable bounds [5, 3] that may not be relaxed: infeasible, not an error",
+    "options": { "presolve": 0, "ANYSOLVER_options": "feasrelax=1 lbpen=-1 ubpen=-1" },
+    "values": {
+      "solve_result": "infeasible",
+      "solve_message": { "contains": "not repairable" }
+    }
+  },
+  {
+    "name": "feasrelax_contra_bnd_02 feasrelax=1 auxiliary bounds",
+    "files": ["feasrelax_contra_bnd_02.mod"],
+    "tags": [ "linear", "feasrelax" ],
+    "solvers": ["highs"],
+    "comment": "Bounds [0, -1] of the auxiliary variable of abs(x), never relaxable: infeasible, not an error",
+    "options": { "presolve": 0, "ANYSOLVER_options": "feasrelax=1" },
+    "values": {
+      "solve_result": "infeasible",
+      "solve_message": { "contains": "not repairable" }
+    }
+  },
+  {
     "name": "feasrelax_ubpen_01 feasrelax=1",
     "files": ["feasrelax_ubpen_01.mod"],
     "tags": [ "linear", "feasrelax" ],

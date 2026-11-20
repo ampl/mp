@@ -411,6 +411,12 @@ bool HighsBackend::ViolatesNonRelaxable(const std::vector<double>& lbpen,
 void HighsBackend::CheckFeasRelaxCost(double min_cost) {
   if (min_cost <= 0.0)
     return;
+  // Infinite: some contradictory bounds may not be relaxed on either side,
+  // so there is no finite cost to compare with (the bound below would be
+  // inf - inf). This is not an error of HiGHS: ViolatesNonRelaxable() finds
+  // the violated element and the result is "infeasible, not repairable".
+  if (!std::isfinite(min_cost))
+    return;
   int pst = kHighsSolutionStatusNone;
   loader().Highs_getIntInfoValue(lp(), "primal_solution_status", &pst);
   double cost = 0.0;
@@ -579,8 +585,20 @@ void HighsBackend::ReportHIGHSResults() {
   AddHIGHSMessages();
 }
 
+/// Whether HiGHS holds a valid basis of the model. It has none, e.g.,
+/// when presolve proves an LP infeasible; Highs_getBasis() then returns
+/// an error (HiGHS 1.16) or statuses that are not a basis (HiGHS 1.15).
+bool HighsBackend::HasValidBasis() {
+  HighsInt validity = kHighsBasisValidityInvalid;
+  return kHighsStatusOk == loader().Highs_getIntInfoValue(
+        lp(), "basis_validity", &validity)
+      && kHighsBasisValidityValid == validity;
+}
+
 SolutionBasis HighsBackend::GetBasis() {
   if (IsMIP()) return FixedLPBasis(CG_Linear);
+  if (!HasValidBasis())       // no basis to report; other suffixes go on
+    return {};
   std::vector<int> varstt = VarStatii();
   std::vector<int> constt = ConStatii();
   if (varstt.size() && constt.size()) {
