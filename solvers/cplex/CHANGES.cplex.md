@@ -4,10 +4,11 @@ Summary of recent updates to CPLEX for AMPL
 
 ## unreleased
 
-- With `mip:basis` on an MIQCP, reporting duals of the fixed problem
-  preserves the original problem for subsequent AMPLS solves. A MIP
-  without quadratic constraints is still left as its fixed problem after
-  the report, as before.
+- With `mip:basis`, reporting duals of the fixed problem preserves the
+  original problem for subsequent AMPLS solves and reports. Before, a
+  MIP without quadratic constraints was left as its fixed problem: a
+  repeated report returned the solution of the continuous relaxation,
+  and changes of the native problem before the next solve failed.
 - Fix: *alg:feasrelax* penalties (*.lbpen*, *.ubpen*, *.rhspen*,
   *alg:lbpen* etc.) acted inversely: a larger penalty made a violation
   cheaper, a negative one (not relaxable) made it free, and 0 (free)

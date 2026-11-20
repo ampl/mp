@@ -34,7 +34,8 @@ def require(condition, message):
 FIXED_SOLVE_PREFIX = b"Fixed MIP for mip:basis"
 # The line reporting success, complete with its line end.
 FIXED_SOLVE_SUCCESS = {
-    "cplex": FIXED_SOLVE_PREFIX + rb": [0-9]+ barrier iterations?[\r\n]",
+    "cplex": FIXED_SOLVE_PREFIX
+             + rb": [0-9]+ (barrier|simplex) iterations?[\r\n]",
     "xpress": FIXED_SOLVE_PREFIX + rb": nonlinear solve[^\r\n]*[\r\n]",
 }
 
@@ -156,20 +157,30 @@ def main():
     parser.add_argument("sdk", type=Path)
     parser.add_argument("--ampl", default="ampl")
     args = parser.parse_args()
-    source = ("mip_basis/fixed_miqcp_cplex.mod" if args.solver == "cplex"
-              else "suf_std/nl_dual_01.mod")
+    # CPLEX: an MIQCP (fixed on a copy) and a linear MIP (fixed in the
+    # native problem, which must be restored after each report)
+    sources = (("mip_basis/fixed_miqcp_cplex.mod",
+                "mip_basis/fixed_milp_cplex.mod") if args.solver == "cplex"
+               else ("suf_std/nl_dual_01.mod",))
     with (os.add_dll_directory(str(args.driver.resolve().parent)),
-          os.add_dll_directory(str(args.sdk.resolve().parent)),
-          tempfile.TemporaryDirectory() as temp):
-        directory = Path(temp)
-        (directory / "case.mod").write_bytes((MODEL_DIR / source).read_bytes())
-        (directory / "write.run").write_text(
-            "option presolve 0; option auxfiles rc; model case.mod; write gcase;\n")
-        subprocess.run([args.ampl, "write.run"], cwd=directory, check=True)
-        binary = (directory / "case.col").read_text().splitlines().index("b")
-        check_repeated_solve(args.solver, ct.CDLL(str(args.driver.resolve())),
-                             ct.CDLL(str(args.sdk.resolve())),
-                             directory / "case.nl", binary)
+          os.add_dll_directory(str(args.sdk.resolve().parent))):
+        driver = ct.CDLL(str(args.driver.resolve()))
+        sdk = ct.CDLL(str(args.sdk.resolve()))
+        for source in sources:
+            with tempfile.TemporaryDirectory() as temp:
+                directory = Path(temp)
+                (directory / "case.mod").write_bytes(
+                    (MODEL_DIR / source).read_bytes())
+                (directory / "write.run").write_text(
+                    "option presolve 0; option auxfiles rc; "
+                    "model case.mod; write gcase;\n")
+                subprocess.run([args.ampl, "write.run"], cwd=directory,
+                               check=True)
+                binary = (directory / "case.col").read_text().splitlines(
+                    ).index("b")
+                check_repeated_solve(args.solver, driver, sdk,
+                                     directory / "case.nl", binary)
+            print(f"{source}: passed")
 
 
 if __name__ == "__main__":

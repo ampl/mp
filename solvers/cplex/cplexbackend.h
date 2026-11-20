@@ -113,6 +113,10 @@ public:
   ALLOW_STD_FEATURE(FIX_MODEL, true)
   bool FixedModelReady() const override { return !fixed_model_failed_; }
   void ConsiderCplexFixedModel();
+  /// Whether lp() is a MILP / MIQP fixed in place by ConsiderCplexFixedModel()
+  bool IsFixedInPlace() const;
+  /// Return such an lp() to its MILP / MIQP type, before a new solve
+  void RestoreFixedInPlace();
   std::string DoCplexFixedModel(CPXLPptr model);
   /**
   * Report sensitivity analysis suffixes (postsolved)

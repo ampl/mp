@@ -520,6 +520,7 @@ void CplexBackend::Solve() {
   fixed_model_failed_ = false;
   if (fixed_qcp_model_)
     CPXfreeprob(env(), &fixed_qcp_model_);
+  RestoreFixedInPlace();
     if (!storedOptions_.tunefileprm.empty())
         DoCPLEXTune();
 
@@ -874,6 +875,7 @@ void CplexBackend::WindupCPLEXSolve() {
 void CplexBackend::ReportResults() {
   ReportCPLEXResults();
   BaseBackend::ReportResults();
+  RestoreFixedInPlace();      // AMPLS: the native problem is the user's again
 }
 
 void CplexBackend::ReportCPLEXResults() {
@@ -1299,11 +1301,28 @@ void CplexBackend::InputCPLEXExtras() {
                                                    storedOptions_.poolIntensity_);
 }
 
+bool CplexBackend::IsFixedInPlace() const {
+  const int type = CPXgetprobtype(env(), lp());
+  return CPXPROB_FIXEDMILP == type || CPXPROB_FIXEDMIQP == type;
+}
+
+void CplexBackend::RestoreFixedInPlace() {
+  // A report with mip:basis fixed the MILP / MIQP in lp() (AMPLS: the
+  // native problem is solved again). Return to the user's problem type.
+  const int type = CPXgetprobtype(env(), lp());
+  if (CPXPROB_FIXEDMILP == type)
+    CPLEX_CALL(CPXchgprobtype(env(), lp(), CPXPROB_MILP));
+  else if (CPXPROB_FIXEDMIQP == type)
+    CPLEX_CALL(CPXchgprobtype(env(), lp(), CPXPROB_MIQP));
+}
+
 void CplexBackend::ConsiderCplexFixedModel() {
   if (!IsMIP())
     return;
   if (fixed_qcp_model_)
     return;                            // already reported for this solve
+  if (IsFixedInPlace())                // the same, MILP / MIQP fixed in lp()
+    return;
   MIPResultBeforeFixed result;
   result.primal = PrimalSolution();
   if (result.primal.empty()) {

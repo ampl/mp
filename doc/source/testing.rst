@@ -98,8 +98,9 @@ changes the native problem (CPLEX: the objective sense; Xpress: a bound of
 the binary variable), then solves and reports again. It checks that each
 report carries the success message of its fixed solve exactly once and no
 warning, the unchanged native problem, and the change in the integer
-solution. It uses the CPLEX MIQCP case in
-``fast/mip_basis`` and the Xpress ``nl_dual_01`` case in ``fast/suf_std``.
+solution. It uses the CPLEX MIQCP and linear MIP cases
+(``fixed_miqcp_cplex``, ``fixed_milp_cplex``) in ``fast/mip_basis`` and
+the Xpress ``nl_dual_01`` case in ``fast/suf_std``.
 
 Run this test manually from the MP source root. It requires Windows
 Python, a licensed AMPL, and the selected shared driver and matching
