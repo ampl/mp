@@ -24,10 +24,11 @@
     "tags" : ["quadratic", "qcpdual"],
     "options": {
       "ANYSOLVER_options": "qcpdual=1",
+      "gurobi_options": "qcpdual=1 barqcptol=1e-9",
       "mp2nl_options": "solver_options='qcpdual=1'"
     },
     "values": {
-      "_con[1]": -1.581437391665411
+      "_con[1]": [-1.581437391665411, -1.5811388]
     }
   },
   {
@@ -36,10 +37,11 @@
     "tags" : ["quadratic", "qcpdual"],
     "options": {
       "ANYSOLVER_options": "qcpdual=1",
+      "gurobi_options": "qcpdual=1 barqcptol=1e-9",
       "mp2nl_options": "solver_options='qcpdual=1'"
     },
     "values": {
-      "_con[1]": -2.04401
+      "_con[1]": [-2.04401, -2.045458]
     }
   },
   {
@@ -61,10 +63,11 @@
     "tags" : ["quadratic", "qcpdual"],
     "options": {
       "ANYSOLVER_options": "qcpdual=1",
+      "gurobi_options": "qcpdual=1 barqcptol=1e-11",
       "mp2nl_options": "solver_options='qcpdual=1'"
     },
     "values": {
-      "_con[3]": 1.000125448001466
+      "_con[3]": [1.000125448001466, 1.0]
     }
   },
   {
