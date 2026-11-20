@@ -182,6 +182,23 @@ TEST(NLSolverTest, SolutionOfPreviousSolveIsNotReused) {
   EXPECT_FALSE(fs::exists(f.stub + ".sol"));
 }
 
+TEST(NLSolverTest, CannotRemovePreviousSolution) {
+  StubFixture f;
+  const fs::path sol(f.stub + ".sol");
+  // A nonempty directory cannot be removed as a file, even by an
+  // administrator or by a test run with write access to the parent.
+  fs::create_directory(sol);
+  std::ofstream(sol / "entry") << "keep\n";
+  ThrowingUtils utils;
+  mp::NLSolver nlsol(&utils);
+  nlsol.SetFileStub(f.stub);
+  EXPECT_FALSE(nlsol.Solve(Solver(), "nosol_exit7"));
+  EXPECT_NE(std::string::npos,
+            std::string(nlsol.GetErrorMessage()).find("remove"));
+  EXPECT_FALSE(fs::exists(f.stub + ".ok"));
+  EXPECT_TRUE(fs::exists(sol / "entry"));
+}
+
 TEST(NLSolverTest, FailedCallReportsExitCode) {
   StubFixture f;
   ThrowingUtils utils;

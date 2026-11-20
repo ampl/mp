@@ -220,7 +220,7 @@ public:
   bool Solve(const std::string& solver,
              const std::string& solver_opts);
 
-  /// Read solution after Solve()
+  /// Read solution after a successful Solve().
   /// when the NL file was written from NLModel.
   ///
   /// @return NLSolution object

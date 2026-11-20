@@ -11,7 +11,8 @@ Summary of recent updates to MP2NL for AMPL
 - Fix: a solution file left by an earlier solve (a reused `nl:stub`, or the
   previous pass of a multi-objective emulation) was read as the result of a
   solve in which the subsolver wrote no solution. Such a solve now fails with
-  a message.
+  a message. If the old file cannot be removed, the driver reports an error
+  before launching the subsolver.
 - Fix: a solution written by the subsolver before it exited with a nonzero
   code was discarded; it is kept now, and the exit code is reported in a
   warning.

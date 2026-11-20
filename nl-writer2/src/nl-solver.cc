@@ -777,7 +777,13 @@ bool NLSolver::Solve(const std::string& solver,
   // A result left by a previous solve (the stub can be reused) must
   // never be taken for the result of this one.
   const auto solfile = GetFileStub() + ".sol";
-  std::remove(solfile.c_str());
+  std::error_code remove_error;
+  std::filesystem::remove(solfile, remove_error);
+  if (remove_error) {
+    err_msg_ = "NLSolver: could not remove previous solution file \""
+        + solfile + "\": " + remove_error.message();
+    return false;
+  }
   auto status = std::system(call.c_str());
   bool have_sol = std::filesystem::exists(solfile);
   if (status && !have_sol)
