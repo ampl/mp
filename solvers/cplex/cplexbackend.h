@@ -113,7 +113,7 @@ public:
   ALLOW_STD_FEATURE(FIX_MODEL, true)
   bool FixedModelReady() const override { return !fixed_model_failed_; }
   void ConsiderCplexFixedModel();
-  std::string DoCplexFixedModel();
+  std::string DoCplexFixedModel(CPXLPptr model);
   /**
   * Report sensitivity analysis suffixes (postsolved)
   **/
@@ -298,7 +298,7 @@ private:
   MIPResultBeforeFixed mip_result_before_fixed_;
   bool have_mip_result_before_fixed_ = false;
   bool fixed_model_failed_ = false;
-  bool fixed_qcp_ = false;  // duals come from the fixed QCP, primal from the MIP
+  CPXLPptr fixed_qcp_model_ = nullptr; // duals from the QCP, primal from the MIP
   
   typedef struct
     CutInfo {

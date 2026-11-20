@@ -238,6 +238,8 @@ protected:
   void DoXPRESSTune();
 
   void ConsiderXpressFixedModel();
+  void CopyFixedNonlinearModel();
+  void ClearFixedModel();
   std::string DoXpressFixedModel(bool nonlinear);
   /// Fixed model of a nonlinear MIP: XPRSoptimize; "" on success.
   std::string SolveFixedNonlinear();

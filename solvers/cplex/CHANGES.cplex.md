@@ -4,6 +4,8 @@ Summary of recent updates to CPLEX for AMPL
 
 ## unreleased
 
+- With `mip:basis` on an MIQCP, reporting duals of the fixed problem
+  preserves the original problem for subsequent AMPLS solves.
 - Fix: *alg:feasrelax* penalties (*.lbpen*, *.ubpen*, *.rhspen*,
   *alg:lbpen* etc.) acted inversely: a larger penalty made a violation
   cheaper, a negative one (not relaxable) made it free, and 0 (free)

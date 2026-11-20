@@ -101,6 +101,8 @@ namespace mp {
 
   void CplexBackend::CloseSolver() {
 
+    if (fixed_qcp_model_)
+      CPXfreeprob(env(), &fixed_qcp_model_);
     if (lp() != nullptr) {
       CPLEX_CALL(CPXfreeprob(env(), &lp_ref()));
     }
@@ -320,7 +322,7 @@ namespace mp {
 
 
   SolutionBasis CplexBackend::GetBasis() {
-    if (fixed_model_failed_) return {};
+    if (fixed_model_failed_ || fixed_qcp_model_) return {};
     bool outputStatus = silenceOutput_;
     setSilenceOutput(!debug_mode());
     std::vector<int> varstt = VarStatii();
@@ -382,7 +384,7 @@ namespace mp {
   }
 
 ArrayRef<double> CplexBackend::PrimalSolution() {
-  if (fixed_model_failed_ || fixed_qcp_) return mip_result_before_fixed_.primal;
+  if (fixed_model_failed_ || fixed_qcp_model_) return mip_result_before_fixed_.primal;
   // if (!HasSolution())
   //   return std::vector<double>();
   int num_vars = NumVars();
@@ -405,7 +407,8 @@ ArrayRef<double> CplexBackend::DualSolution_LP() {
     std::vector<double> pi(num_cons);
     /* Avoid most error messages on screen */
     CPLEX_CALL(CPXsetintparam(env(), CPXPARAM_ScreenOutput, CPX_OFF));
-    int error = CPXgetpi(env(), lp(), pi.data(), 0, num_cons - 1);
+    auto model = fixed_qcp_model_ ? fixed_qcp_model_ : lp();
+    int error = CPXgetpi(env(), model, pi.data(), 0, num_cons - 1);
     if (error)
       pi.clear();
     return pi;
@@ -415,7 +418,7 @@ ArrayRef<double> CplexBackend::DualSolution_LP() {
 }
 
 double CplexBackend::ObjectiveValue() const {
-  if (fixed_model_failed_ || fixed_qcp_) return mip_result_before_fixed_.objective;
+  if (fixed_model_failed_ || fixed_qcp_model_) return mip_result_before_fixed_.objective;
   double objval = -Infinity();
   if(hasSolution_)
     CPLEX_CALL(CPXgetobjval(env(), lp(), &objval));
@@ -515,7 +518,8 @@ void CplexBackend::RedirectOutput() {
 void CplexBackend::Solve() {
   have_mip_result_before_fixed_ = false;
   fixed_model_failed_ = false;
-  fixed_qcp_ = false;
+  if (fixed_qcp_model_)
+    CPXfreeprob(env(), &fixed_qcp_model_);
     if (!storedOptions_.tunefileprm.empty())
         DoCPLEXTune();
 
@@ -1298,6 +1302,8 @@ void CplexBackend::InputCPLEXExtras() {
 void CplexBackend::ConsiderCplexFixedModel() {
   if (!IsMIP())
     return;
+  if (fixed_qcp_model_)
+    return;                            // already reported for this solve
   MIPResultBeforeFixed result;
   result.primal = PrimalSolution();
   if (result.primal.empty()) {
@@ -1326,39 +1332,43 @@ void CplexBackend::ConsiderCplexFixedModel() {
   result.barrier_iterations = BarrierIterations();
   mip_result_before_fixed_ = std::move(result);
   have_mip_result_before_fixed_ = true;
-  // CPXcloneprob copies problem data, not solution data. Save both to
-  // retain the MIP result when the supplementary solve reaches a limit.
+  // An MIQCP can be fixed on the copy using the saved incumbent.
+  // The native fixed MILP/MIQP operation still uses the live incumbent.
+  const bool is_miqcp = CPXPROB_MIQCP == CPXgetprobtype(env(), lp());
+  auto free_copy = [this](CPXLPptr copy) { CPXfreeprob(env(), &copy); };
   int error = 0;
-  CPXLPptr original = CPXcloneprob(env(), lp(), &error);
-  if (!original) {
+  std::unique_ptr<cpxlp, decltype(free_copy)> copy(
+      CPXcloneprob(env(), lp(), &error), free_copy);
+  if (!copy) {
     fixed_model_failed_ = true;
     AddToSolverMessage(fmt::format("Cannot save MIP before fixed solve (CPLEX error {}).", error));
     return;
   }
   std::string msg;
   try {
-    msg = DoCplexFixedModel();
+    msg = DoCplexFixedModel(is_miqcp ? copy.get() : lp());
   } catch (const std::exception& e) {
     msg = e.what();
   }
   if (!msg.empty()) {
     fixed_model_failed_ = true;
     AddToSolverMessage(msg + " failed in DoCplexFixedModel().");
-    CPXfreeprob(env(), &lp_ref());
-    lp_ref() = original;
-    copy_common_info_to_other();
-  } else {
-    CPXfreeprob(env(), &original);
-  }
+    if (!is_miqcp) {
+      CPXfreeprob(env(), &lp_ref());
+      lp_ref() = copy.release();
+      copy_common_info_to_other();
+    }
+  } else if (is_miqcp)
+    fixed_qcp_model_ = copy.release();
 }
 
 
-std::string CplexBackend::DoCplexFixedModel() {
+std::string CplexBackend::DoCplexFixedModel(CPXLPptr model) {
   typedef int (CPXPUBLIC* Optalg)(CPXCENVptr, cpxlp*);
   int status;
   Optalg Contopt;
 
-  original_model_type_ = CPXgetprobtype(env(), lp());
+  original_model_type_ = CPXgetprobtype(env(), model);
   int new_model_type = CPXPROB_FIXEDMILP;
   Contopt = CPXlpopt;
   switch (original_model_type_) {
@@ -1375,10 +1385,10 @@ std::string CplexBackend::DoCplexFixedModel() {
   if (new_model_type == original_model_type_) // notably MIQCP
   {
     // fix variables manually:
-    auto sol = PrimalSolution();
+    const auto& sol = mip_result_before_fixed_.primal;
     std::vector<char> types(NumVars());
-    CPLEX_CALL(CPXgetctype(env(), lp(), types.data(), 0, NumVars() - 1)); // end inclusive
-    int nint = CPXgetnumbin(env(), lp()) + CPXgetnumint(env(), lp());
+    CPLEX_CALL(CPXgetctype(env(), model, types.data(), 0, NumVars() - 1)); // end inclusive
+    int nint = CPXgetnumbin(env(), model) + CPXgetnumint(env(), model);
     std::vector<int> indices(nint);
     std::vector<double> bound(nint);
     std::vector<char> type(nint, 'B');
@@ -1390,15 +1400,14 @@ std::string CplexBackend::DoCplexFixedModel() {
         indices[j++] = i;
       }
     }
-    CPLEX_CALL(CPXchgbds(env(), lp(), nint, indices.data(), type.data(), bound.data()));
+    CPLEX_CALL(CPXchgbds(env(), model, nint, indices.data(), type.data(), bound.data()));
     // With the integers fixed, solve the continuous QCP: CPXlpopt is not
     // available for MIQCP nor QCP; the barrier gives duals (no basis)
-    CPLEX_CALL(CPXchgprobtype(env(), lp(), CPXPROB_QCP));
+    CPLEX_CALL(CPXchgprobtype(env(), model, CPXPROB_QCP));
     Contopt = CPXbaropt;
-    fixed_qcp_ = true;   // keep reporting the MIP point and objective
   }
   else
-    CPLEX_CALL(CPXchgprobtype(env(), lp(), new_model_type));
+    CPLEX_CALL(CPXchgprobtype(env(), model, new_model_type));
   double old_time_limit;
   CPXLONG old_iteration_limit;
   int old_barrier_limit;
@@ -1430,18 +1439,18 @@ std::string CplexBackend::DoCplexFixedModel() {
   if (CPXbaropt == Contopt)    // the duals of the fixed QCP are reported:
     CPLEX_CALL(CPXsetintparam(env(),     // with QCPDuals=1 (the default)
         CPXPARAM_Preprocessing_QCPDuals, 2));  // CPLEX may not compute them
-  CPLEX_CALL(Contopt(env(), lp()));
+  CPLEX_CALL(Contopt(env(), model));
 
-  int optimstatus = CPXgetstat(env(), lp());
+  int optimstatus = CPXgetstat(env(), model);
   if (optimstatus != CPX_STAT_OPTIMAL)
     return fmt::format("Fixed model status {}", optimstatus);
   if (CPXbaropt == Contopt) {          // the fixed QCP of an MIQCP
-    int cnt = CPXgetbaritcnt(env(), lp());
+    int cnt = CPXgetbaritcnt(env(), model);
     AddToSolverMessage(fmt::format("Fixed MIP for mip:basis: {} barrier iteration{}",
       cnt, "s"[cnt == 1.]));
     return {};
   }
-  int cnt = CPXgetitcnt(env(), lp());
+  int cnt = CPXgetitcnt(env(), model);
   AddToSolverMessage(fmt::format("Fixed MIP for mip:basis: {} simplex iteration{}",
     cnt, "s"[cnt == 1.]));
   return {};

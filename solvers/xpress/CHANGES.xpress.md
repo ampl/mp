@@ -3,6 +3,8 @@ Summary of recent updates to Xpress for AMPL
 
 
 ## unreleased
+- With `mip:basis` on a MINLP, solving the fixed nonlinear problem
+  preserves the original problem for subsequent AMPLS solves.
 - Several objectives with *obj:multi=1* (native multi-objective optimization)
   where one is quadratic: the driver now stops with a message to use
   *obj:multi=2* (MP emulation) or to move quadratic and nonlinear objective

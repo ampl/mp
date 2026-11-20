@@ -629,5 +629,19 @@
       "if solve_result = 'solved' then 1 else 0": 1,
       "if match(solve_message, 'violated SOS') > 0 then 1 else 0": 1
     }
+  },
+  {
+    "name": "fixed_miqcp_cplex",
+    "tags": ["integer", "continuous", "quadratic", "fixmodel"],
+    "solvers": ["cplex"],
+    "options": { "presolve": 0, "mp_options": "mip:basis=1" },
+    "objective": 2.414213562373095,
+    "values": {
+      "solve_result": "solved",
+      "b": 1,
+      "x": 1.414213562373095,
+      "if match(solve_message, 'Fixed MIP for mip:basis:') > 0 then 1 else 0": 1,
+      "max(0, x*x-1-b)": { "max": 1e-6 }
+    }
   }
 ]
