@@ -382,8 +382,53 @@ void CpsatBackend::ReportResults() {
   BaseBackend::ReportResults();
 }
 
+std::string CpsatBackend::VarBoundExamples(bool at_bound, int& count) const {
+  const auto* d = data();
+  const bool has_sol = at_bound && HasSolution();
+  std::string ex;
+  count = 0;
+  for (const auto& s: d->varbound_set) {
+    const auto x = has_sol
+        ? sat::SolutionIntegerValue(d->response, d->vars[s.var]) : 0;
+    const std::string name = s.name.empty()
+        ? fmt::format("_svar[{}]", s.var + 1) : s.name;   // as MP names
+    for (int up = 0; up < 2; ++up) {
+      const bool set = up ? s.ub : s.lb;
+      const int64_t b = up ? d->var_ub[s.var] : d->var_lb[s.var];
+      if (!set || (at_bound && (!has_sol || x != b)))
+        continue;
+      if (++count <= 3)
+        ex += fmt::format("{}{} {} {}", count > 1 ? ", " : "", name,
+                          at_bound ? "=" : (up ? "<=" : ">="), b);
+    }
+  }
+  if (count > 3)
+    ex += ", ...";
+  return ex;
+}
+
+void CpsatBackend::WarnVarBounds() {
+  int n = 0;
+  const auto set = VarBoundExamples(false, n);
+  if (!n)
+    return;
+  AddWarning("VARBOUND", fmt::format(
+      "CP-SAT needs finite variable bounds: tech:varbound={} replaced "
+      "{} infinite bound(s): {}. An infinite bound opposite a finite one "
+      "beyond tech:varbound is set tech:varbound beyond it. Recommended: "
+      "give every variable finite bounds in the model.",
+      data()->var_bound, n, set));
+  const auto at = VarBoundExamples(true, n);
+  if (n)
+    AddWarning("VARBOUND_ACTIVE", fmt::format(
+        "{} variable value(s) at a bound set by tech:varbound: {}. The "
+        "result may depend on tech:varbound (the model may be unbounded); "
+        "give finite bounds or increase tech:varbound.", n, at));
+}
+
 void CpsatBackend::ReportCpsatResults() {
   SetStatus( GetSolveResult() );
+  WarnVarBounds();
   AddCpsatMessages();
   if (need_multiple_solutions())
     ReportCpsatPool();
@@ -509,7 +554,9 @@ void CpsatBackend::InitCustomOptions() {
       "Magnitude used for infinite variable bounds, which CP-SAT cannot "
       "handle (default 1e12): -varbound for an infinite lower bound, "
       "+varbound for an infinite upper bound (or varbound beyond the other "
-      "bound, when that bound lies beyond varbound). Finite bounds are "
+      "bound, when that bound lies beyond varbound), with a warning; "
+      "another warning lists solution values at such bounds. Give every "
+      "variable finite bounds in the model. Finite bounds are "
       "passed as given. CP-SAT rejects a model where a constraint or the "
       "objective could overflow 64-bit integers for values within the "
       "bounds; a smaller varbound may avoid that.",

@@ -89,6 +89,16 @@ void CpsatModelAPI::AddAnd(int r, const std::vector<BoolVar>& lits) {
 
 //////////////////////////// variables, objective ////////////////////////////
 
+void CpsatModelAPI::RecordVarBoundSet(const VarArrayDef& v, int i) {
+  const bool lb_inf = !std::isfinite(v.plb()[i]);
+  const bool ub_inf = !std::isfinite(v.pub()[i]);
+  if (!lb_inf && !ub_inf)
+    return;
+  const char* name = v.pnames() ? v.pnames()[i] : nullptr;
+  data()->varbound_set.push_back({ (int)data()->vars.size(),
+                                   name ? name : "", lb_inf, ub_inf });
+}
+
 void CpsatModelAPI::AddVariables(const VarArrayDef& v) {
   auto* d = data();
   d->vars.reserve(d->vars.size() + v.size());
@@ -115,8 +125,10 @@ void CpsatModelAPI::AddVariables(const VarArrayDef& v) {
     int64_t lb, ub;
     if (fixed_int)       // a constant is data: keep it, do not cap it
       lb = ub = ToInt64(v.plb()[i], "fixed values");
-    else
+    else {
       std::tie(lb, ub) = VarDomainToInt64(v.plb()[i], v.pub()[i]);
+      RecordVarBoundSet(v, i);
+    }
     if (lb > ub) {
       // An empty domain (also: an integer variable fixed at a fractional
       // value) is rejected by CP-SAT as an invalid model, not reported

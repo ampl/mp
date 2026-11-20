@@ -50,6 +50,8 @@ public:
   void FinishProblemModificationPhase();
 
   void AddVariables(const VarArrayDef& );
+  /// Record variable i of \a v if tech:varbound replaces a bound of it
+  void RecordVarBoundSet(const VarArrayDef& v, int i);
   void SetLinearObjective( int iobj, const LinearObjective& lo );
   void SetQuadraticObjective(int iobj, const QuadraticObjective& qo);
 

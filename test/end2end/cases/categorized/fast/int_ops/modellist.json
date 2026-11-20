@@ -220,5 +220,18 @@
       "x": 200000000000000,
       "y": 2000000000000
     }
+  },
+  {
+    "name": "cpsat_varbound_warn",
+    "solvers": ["cpsat"],
+    "tags": ["integer"],
+    "comment": "Infinite bound replaced by tech:varbound and active: both warnings",
+    "options": { "presolve": 0 },
+    "objective": 1000000000010,
+    "values": {
+      "x": 1000000000000,
+      "if match(solve_message, 'replaced 1 infinite bound') > 0 then 1 else 0": 1,
+      "if match(solve_message, 'at a bound set by tech:varbound') > 0 then 1 else 0": 1
+    }
   }
 ]

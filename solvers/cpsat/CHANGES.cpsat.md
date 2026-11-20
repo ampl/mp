@@ -25,6 +25,10 @@ Summary of recent updates to CP-SAT for AMPL
   model infeasible, and an upper bound such as `x <= 2e14` was silently
   lowered to `1e12`. An infinite bound opposite a finite one beyond
   *tech:varbound* is set *tech:varbound* beyond it.
+- Warnings: "VARBOUND" lists the infinite bounds replaced by
+  *tech:varbound* and recommends finite bounds for all variables;
+  "VARBOUND_ACTIVE" lists solution values at such a bound, where the
+  result may depend on *tech:varbound* (e.g., an unbounded model).
 - An objective with a non-integer constant (e.g., `x + y + 2.5`) is
   accepted; before, the solve failed with "variable N is continuous".
 - Fix: a solve after another solver's solve in the same AMPL session

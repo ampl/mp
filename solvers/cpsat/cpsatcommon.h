@@ -123,6 +123,14 @@ struct CpsatData {
   operations_research::sat::SatParameters params;
   /// Replaces infinite variable bounds (tech:varbound)
   double var_bound = kCpsatDefaultVarBound;
+  /// A variable with an infinite bound replaced by tech:varbound
+  struct VarBoundSet {
+    int var;               ///< index of the variable
+    std::string name;      ///< its name, if known
+    bool lb, ub;           ///< which bounds were set
+  };
+  /// The variables whose bounds tech:varbound set, in order
+  std::vector<VarBoundSet> varbound_set;
   /// Result of the last solve
   operations_research::sat::CpSolverResponse response;
   /// Set only by the interrupt (signal) handler. An atomic store is
