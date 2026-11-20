@@ -507,8 +507,12 @@ void CpsatBackend::InitCustomOptions() {
 
   AddStoredOption("tech:varbound varbound",
       "Magnitude used for infinite variable bounds, which CP-SAT cannot "
-      "handle (default 1e12). Larger values may cause integer overflow "
-      "in the CP-SAT model.",
+      "handle (default 1e12): -varbound for an infinite lower bound, "
+      "+varbound for an infinite upper bound (or varbound beyond the other "
+      "bound, when that bound lies beyond varbound). Finite bounds are "
+      "passed as given. CP-SAT rejects a model where a constraint or the "
+      "objective could overflow 64-bit integers for values within the "
+      "bounds; a smaller varbound may avoid that.",
       storedOptions_.varbound_, 1.0, 1e18);
 
   AddSolverOption("tech:threads threads",

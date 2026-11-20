@@ -1,6 +1,7 @@
 #include <cmath>
 #include <limits>
 #include <stdexcept>
+#include <tuple>
 
 #include "cpsatmodelapi.h"
 
@@ -111,8 +112,11 @@ void CpsatModelAPI::AddVariables(const VarArrayDef& v) {
       throw std::runtime_error(fmt::format(
           "CP-SAT supports integer variables only; "
           "variable {} is continuous", d->vars.size()));
-    auto lb = LowerBoundToInt64(v.plb()[i]);
-    auto ub = UpperBoundToInt64(v.pub()[i]);
+    int64_t lb, ub;
+    if (fixed_int)       // a constant is data: keep it, do not cap it
+      lb = ub = ToInt64(v.plb()[i], "fixed values");
+    else
+      std::tie(lb, ub) = VarDomainToInt64(v.plb()[i], v.pub()[i]);
     if (lb > ub) {
       // An empty domain (also: an integer variable fixed at a fractional
       // value) is rejected by CP-SAT as an invalid model, not reported

@@ -171,5 +171,54 @@
       "solve_result_num": 0,
       "y": 6
     }
+    },
+  {
+    "name": "cpsat_big_frac_ub",
+    "solvers": ["cpsat"],
+    "tags": ["integer"],
+    "comment": "Row bound 3e14 + 0.5 is a real fraction: rounded inward to 3e14",
+    "options": { "presolve": 0 },
+    "objective": 3e14,
+    "values": {
+      "solve_result_num": 0,
+      "x": 0,
+      "y": 1
+    }
+  },
+  {
+    "name": "cpsat_big_frac_coef",
+    "solvers": ["cpsat"],
+    "tags": ["integer"],
+    "comment": "Coefficient 1e13 + 1/64 is a real fraction: an error",
+    "options": { "presolve": 0 },
+    "values": {
+      "if solve_result_num >= 500 and solve_result_num < 600 then 1 else 0": 1,
+      "if match(solve_message, 'requires integer coefficients') > 0 then 1 else 0": 1
+    }
+  },
+  {
+    "name": "cpsat_big_obj_const",
+    "solvers": ["cpsat"],
+    "tags": ["integer"],
+    "comment": "Objective constant 2e12 above the default tech:varbound is kept",
+    "options": { "presolve": 0 },
+    "objective": 2000000000010,
+    "values": {
+      "solve_result_num": 0,
+      "x + y": 10
+    }
+  },
+  {
+    "name": "cpsat_big_var_bounds",
+    "solvers": ["cpsat"],
+    "tags": ["integer"],
+    "comment": "Finite bounds 2e14 and 2e12 above tech:varbound are kept: x = 2e14, y = 2e12",
+    "options": { "presolve": 0 },
+    "objective": 198000000000000,
+    "values": {
+      "solve_result_num": 0,
+      "x": 200000000000000,
+      "y": 2000000000000
+    }
   }
 ]

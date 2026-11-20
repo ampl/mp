@@ -23,26 +23,39 @@
 namespace mp {
 
 /// Absolute tolerance for taking a value as the nearest integer:
-/// coefficients, bounds, fixed values and exponents computed in floating
-/// point (0.1*3*10 is 3.0000000000000004) are meant to be integers.
+/// coefficients, bounds and fixed values computed in floating point
+/// (0.1*3*10 is 3.0000000000000004) are meant to be integers.
 constexpr double kCpsatIntTol = 1e-9;
 
-/// The same for large magnitudes, where rounding errors exceed kCpsatIntTol:
-/// a few units of floating-point rounding, relative to the value. Kept
-/// that small so that a real fraction (1000000000.5) is not taken as noise.
-constexpr double kCpsatIntRelTol = 8 * std::numeric_limits<double>::epsilon();
+/// For large magnitudes, the rounding error of a few operations, in units
+/// in the last place (ulp) of the value. 4 ulp keeps 0.07*1e15 and rejects
+/// real fractions such as 1e12 + 0.001, 1e13 + 1/64 or 2^48 + 0.5 (8 ulp).
+constexpr double kCpsatIntUlps = 4.0;
+
+/// Upper limit of the tolerance: a value ending in .5 is never taken as an
+/// integer, and a bound is never moved outward by 0.25 or more. From 2^51
+/// (spacing 0.5) only exact integers pass; from 2^52 every double is one.
+constexpr double kCpsatIntMaxTol = 0.25;
 
 /// Is \a v within \a abs_tol of an integer?
 inline bool IsInteger(double v, double abs_tol = kCpsatIntTol) {
   return std::fabs(v - std::round(v)) <= abs_tol;
 }
 
-/// Is \a v an integer value, up to the tolerance (kCpsatIntTol, or
-/// kCpsatIntRelTol relative to \a v when that is larger)? The one rule for
-/// coefficients, row and variable bounds, fixed values and exponents.
+/// Integrality tolerance for a finite \a v:
+/// max(1e-9, min(4 ulp(v), 0.25)).
+inline double IntegerTolerance(double v) {
+  const double a = std::fabs(v);
+  const double ulp =
+      std::nextafter(a, std::numeric_limits<double>::infinity()) - a;
+  return std::max(kCpsatIntTol,
+                  std::min(kCpsatIntUlps * ulp, kCpsatIntMaxTol));
+}
+
+/// Is \a v an integer value, up to IntegerTolerance()? The one rule for
+/// coefficients, row and variable bounds and fixed values.
 inline bool IsIntegerValue(double v) {
-  return std::isfinite(v) && IsInteger(
-        v, std::max(kCpsatIntTol, kCpsatIntRelTol * std::fabs(v)));
+  return std::isfinite(v) && IsInteger(v, IntegerTolerance(v));
 }
 
 /// Convert an integer value to int64_t; a value within the tolerance
@@ -89,6 +102,11 @@ inline int64_t ClampToInt64(double v) {
 /// CP-SAT needs finite int64 domains for its overflow checks to succeed.
 constexpr double kCpsatDefaultVarBound = 1e12;
 
+/// Largest magnitude of a variable bound given to CP-SAT. Its model
+/// checker requires domains within [-kint64max/2, kint64max/2] (about
+/// 4.6e18); 4e18 is below that and exact in double.
+constexpr double kCpsatMaxVarBound = 4e18;
+
 /// Data shared by the Backend and the ModelAPI
 struct CpsatData {
   /// The model under construction
@@ -103,7 +121,7 @@ struct CpsatData {
   std::vector<double> var_const;
   /// Solver parameters
   operations_research::sat::SatParameters params;
-  /// Magnitude for infinite bounds
+  /// Replaces infinite variable bounds (tech:varbound)
   double var_bound = kCpsatDefaultVarBound;
   /// Result of the last solve
   operations_research::sat::CpSolverResponse response;
@@ -145,10 +163,14 @@ protected:
   int NumVars() const;
   int NumObjs() const { return 1; }
 
-  /// Convert a lower / upper bound to an int64, rounding inwards
-  /// and clamping to +-var_bound
-  int64_t LowerBoundToInt64(double lb) const;
-  int64_t UpperBoundToInt64(double ub) const;
+  /// The CP-SAT domain [lb, ub] of a variable with bounds \a lb, \a ub.
+  /// Finite bounds are kept, rounded inward (lb up, ub down); an infinite
+  /// bound becomes -+var_bound, or var_bound beyond the other bound when
+  /// that bound lies beyond var_bound itself. The result is clamped to
+  /// +-kCpsatMaxVarBound, the domain limit of CP-SAT.
+  /// @throw std::runtime_error if a finite bound excludes every
+  /// value within that limit (lb above it, or ub below its negative).
+  std::pair<int64_t, int64_t> VarDomainToInt64(double lb, double ub) const;
 };
 
 } // namespace mp
