@@ -2,6 +2,22 @@ Summary of recent updates to SCIP for AMPL
 ==========================================
 
 
+## unreleased
+- Native second-order cones (`acc:quadcone=2`): the cone coefficients were
+  passed to SCIP as square roots although SCIP squares them itself, so the
+  constraint was wrong (off by about 1e-2 in the objective on a test model).
+  Default settings pass quadratic constraints and were not affected.
+- Fix: with *sol:poolmode* 1 or 2 and a small *sol:poollimit*, the
+  reported solutions could miss the optimal one (the enumeration stops
+  after *sol:poollimit* solutions in no particular order). The best
+  solution of the solve is now always reported. The option's help text
+  showed default 0; the default is 2.
+- *sol:poolgap* help: with the best objective near 0, use
+  *sol:poolgapabs*.
+- Fix: a model exported with *tech:writemodel* (for example, CIP) that
+  had indicator constraints could not be read back correctly, as they
+  all had the same name; unnamed indicators now get unique names.
+
 ## 20261029
 - 64-bit SCIP parameters (e.g., *lim:nodes*, *lim:totalnodes*,
   *lim:stallnodes*) accept values above 2^31.

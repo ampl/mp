@@ -1067,7 +1067,26 @@ void GcgBackend::InitCustomOptions() {
     "\n.. value-table::\n", "relaxing/gcg/mode", mode, 0);
 }
 
+/// The index of the model's variable i in GCG's decomposition data, or -1
+/// if it is not there (fixed to 0, or presolved away): the GCG lookup
+/// DETPROBDATA::getIndexForVar() inserts and returns 0 for an unknown variable.
+int GcgBackend::findDecompVarIndex(size_t i) {
+  gcg::DETPROBDATA* dpd = getPROBDATA()->decomp->getDetprobdata();
+  if (!decomp_var_index_built_) {           // built once, for all lookups
+    for (int k = 0; k < dpd->getNVars(); ++k)
+      decomp_var_index_[dpd->getVar(k)] = k;
+    decomp_var_index_built_ = true;
+  }
+  SCIP_VAR* var = getPROBDATA()->vars[i];
+  auto it = decomp_var_index_.find(var);
+  if (it == decomp_var_index_.end() && SCIPvarGetProbvar(var) != var)
+    it = decomp_var_index_.find(SCIPvarGetProbvar(var));
+  return it == decomp_var_index_.end() ? -1 : it->second;
+}
+
 void GcgBackend::InputDecomposition() {
+  decomp_var_index_.clear();
+  decomp_var_index_built_ = false;
   bool is_presolved = SCIPgetStage(getSCIP()) >= SCIP_STAGE_PRESOLVED;
   GCG_CCALL( SCIPallocClearMemory(scip, &getPROBDATA()->decomp) );
   gcg::PARTIALDECOMP* decomp = new gcg::PARTIALDECOMP(getGCG(), !is_presolved);
@@ -1084,9 +1103,17 @@ void GcgBackend::InputDecomposition() {
 
     ArrayRef<int> blockvars = block.GetVarValues()();
     for (size_t i = 0; i < blockvars.size(); i++) {
-      if (blockvars[i] != 0) {
-        int varindex = getPROBDATA()->decomp->getDetprobdata()->getIndexForVar(getPROBDATA()->vars[i]);
-        getPROBDATA()->decomp->fixVarToBlock(varindex, blockvars[i]);
+      if (blockvars[i] > 0) {           // 1-based, as for constraints
+        int varindex = findDecompVarIndex(i);
+        if (varindex < 0 ||             // not in the (presolved) problem
+            !getPROBDATA()->decomp->isVarOpenvar(varindex))
+          continue;                     // or already assigned: fixing twice
+                                        // corrupts GCG's open-variable list
+        int blockid = blockvars[i] - 1;
+        // fixVarToBlock() does not add blocks (fixConsToBlock() does)
+        if (blockid >= getPROBDATA()->decomp->getNBlocks())
+          getPROBDATA()->decomp->setNBlocks(blockid + 1);
+        getPROBDATA()->decomp->fixVarToBlock(varindex, blockid);
       }
     }
   }
@@ -1103,8 +1130,9 @@ void GcgBackend::InputDecomposition() {
     ArrayRef<int> mastervars = master.GetVarValues()();
     for (size_t i = 0; i < mastervars.size(); i++) {
       if (mastervars[i] == 1) {
-        int varindex = getPROBDATA()->decomp->getDetprobdata()->getIndexForVar(getPROBDATA()->vars[i]);
-        getPROBDATA()->decomp->fixVarToMaster(varindex);
+        int varindex = findDecompVarIndex(i);
+        if (varindex >= 0 && getPROBDATA()->decomp->isVarOpenvar(varindex))
+          getPROBDATA()->decomp->fixVarToMaster(varindex);
       }
     }
   }
@@ -1112,11 +1140,12 @@ void GcgBackend::InputDecomposition() {
   if (auto linking0 = ReadModelSuffixInt({"linking", suf::Kind::VAR_BIT})) {
     auto linking = GetValuePresolver().PresolveGenericInt( linking0 );
 
-    ArrayRef<int> linkingvars = linking.GetConValues()(CG_Linear);
+    ArrayRef<int> linkingvars = linking.GetVarValues()();   // a VAR suffix
     for (size_t i = 0; i < linkingvars.size(); i++) {
       if (linkingvars[i] == 1) {
-        int varindex = getPROBDATA()->decomp->getDetprobdata()->getIndexForVar(getPROBDATA()->vars[i]);
-        getPROBDATA()->decomp->fixVarToLinking(varindex);
+        int varindex = findDecompVarIndex(i);
+        if (varindex >= 0 && getPROBDATA()->decomp->isVarOpenvar(varindex))
+          getPROBDATA()->decomp->fixVarToLinking(varindex);
       }
     }
   }

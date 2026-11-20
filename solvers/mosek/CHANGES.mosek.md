@@ -2,7 +2,14 @@ Summary of recent updates to MOSEK for AMPL
 ===========================================
 
 
-## Unreleased
+## unreleased
+- Fix: *writeprob* used generic names (x0, con0) instead of the AMPL
+  names when name files were available.
+- Fix: after an interrupted solve (Ctrl-C), a later solve in the same
+  process (AMPLS API) stopped at once.
+- Fix: with an infeasibility certificate, the driver took its status
+  keys for a basis and stopped with "Unknown Mosek VBasis value: 6".
+  A certificate has no basis: no *.sstatus* is returned for it.
 - Support MOSEK 12.0 BETA alongside MOSEK 11. With MOSEK 12:
   - Free simplex runs dual and primal simplex concurrently and is
     deterministic with several threads. *alg:method* values 6 and 7

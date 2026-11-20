@@ -172,6 +172,9 @@ public:
   /// IsQCP()
   bool IsQCP() const override;
 
+  /// Whether the model has nonlinear-expression general constraints
+  bool HasNLGenCons();
+
 
   /////////////////////////////////////////////////////////////////////////////
   //////////////////////////// OPTION ACCESSORS ///////////////////////////////
@@ -211,6 +214,8 @@ protected:
   void OpenGurobi();
   void OpenGurobiModel();
   void CloseGurobi();
+  /// Free the fixed model of mip:basis, if any: model_fixed_ = model()
+  void FreeFixedModel();
 
   void OpenGurobiComputeServer();
   void OpenGurobiCloud();
@@ -220,7 +225,8 @@ protected:
   /// .funcpieces etc.
   /// Override the corresponding Gurobi options.
   void InputGurobiFuncApproxParams();
-  /// Warn if a .funcpiece... suffix is set on nonlinear constraints
+  /// Warn if a function-constraint suffix (.funcpiece*, .funcnonlinear,
+  /// .global) is set on nonlinear constraints, which ignore it
   template <class Values>
   void WarnFuncSuffixOnNLCons(const char* suffix, const Values& values);
   /// .iisforce

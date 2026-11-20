@@ -271,14 +271,17 @@ MSKsoltypee MosekBackend::GetSolutionTypeToFetch() {
 }
 
 void MosekBackend::Solve() {
+  // A Ctrl-C of an earlier solve in this process (e.g., a repeated
+  // AMPLSSolve()) must not stop this one at the first callback
+  interrupt_requested = false;
   auto res = MSK_optimizetrm(lp(), &termCode_);
   if (MSK_RES_ERR_CON_Q_NOT_PSD == res) {
     AddWarning("Nonconvex QC",
-               "Mosek reported the problem as nonconvex QCP.\n"
-               "If the constraints are in fact Second-Order Cones,\n"
-               "make sure they have standard SOCP forms, and\n"
-               "the objective is linear by moving the\n"
-               "quadratic terms into auxiliary SOC constraints.\n"
+               "Mosek reported the problem as nonconvex QCP. "
+               "If the constraints are in fact Second-Order Cones, "
+               "make sure they have standard SOCP forms, and "
+               "the objective is linear by moving the "
+               "quadratic terms into auxiliary SOC constraints. "
                "See mp.ampl.com/modeling-expressions.html#conic-optimization.");
 
   }
@@ -1426,6 +1429,9 @@ ArrayRef<int> MosekBackend::VarStatii() {
       case MSK_SK_FIX:
         s = (int)BasicStatus::equ;
         break;
+      case MSK_SK_INF:   // not a basis status (certificates have no basis)
+        s = (int)BasicStatus::none;
+        break;
       default:
         MP_RAISE(fmt::format("Unknown Mosek VBasis value: {}", s));
     }
@@ -1459,6 +1465,9 @@ ArrayRef<int> MosekBackend::ConStatii() {
         break;
       case MSK_SK_FIX:
         s = (int)BasicStatus::equ;
+        break;
+      case MSK_SK_INF:   // not a basis status (certificates have no basis)
+        s = (int)BasicStatus::none;
         break;
       default:
         MP_RAISE(fmt::format("Unknown Mosek VBasis value: {}", s));
@@ -1570,8 +1579,20 @@ void MosekBackend::ConStatii(ArrayRef<int> cst) {
   MOSEK_CCALL(MSK_putskc(lp(), solToFetch_, (MSKstakeye *)skc.data()));
 }
 
+/// Whether the solution MOSEK returned is a certificate
+/// (of infeasibility or ill-posedness) rather than a solution
+bool MosekBackend::IfSolutionIsCertificate() const {
+  return MSK_SOL_STA_PRIM_INFEAS_CER == solSta_
+      || MSK_SOL_STA_DUAL_INFEAS_CER == solSta_
+      || MSK_SOL_STA_PRIM_ILLPOSED_CER == solSta_
+      || MSK_SOL_STA_DUAL_ILLPOSED_CER == solSta_;
+}
+
 SolutionBasis MosekBackend::GetBasis() {
   if (IsMIP()) return FixedLPBasis(CG_Algebraic);
+  // The status keys of a certificate (e.g., MSK_SK_INF)
+  // do not form a basis
+  if (IfSolutionIsCertificate()) return {};
   std::vector<int> varstt = VarStatii();
   std::vector<int> constt = ConStatii();
   if (varstt.size() && constt.size()) {

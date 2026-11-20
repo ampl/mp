@@ -700,6 +700,9 @@ GecodeSolver::GecodeSolver()
   AddDblOption("lim:time timelim timelimit", "Time limit in seconds.",
       &GecodeSolver::GetOption<double, double>,
       &GecodeSolver::SetNonnegativeOption<double, double>, &time_limit_);
+  // Accepted for a common interface with other MP drivers
+  // (e.g., test options); integer variables are integral here.
+  AddStoredOption("mip:round round", "HIDDEN", mip_round_);
   AddIntOption("lim:nodes nodelim nodelimit", "Node limit.",
       &GecodeSolver::GetOption<int, unsigned long>,
       &GecodeSolver::SetNonnegativeOption<int, unsigned long>, &node_limit_);

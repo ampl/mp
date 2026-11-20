@@ -220,9 +220,11 @@ public:
       prepro.set_result_var(argvar);
       return;
     } else if (ub<=0.0 && !MPCD( IfPreproBoundsOnly() )) {
-      auto res = MPD( AssignResult2Args(   // create newvar = -argvar
+      // The result can be a constant (argvar fixed at a negative value):
+      // then it needs a fixed variable, get_var() of a constant is garbage
+      auto res = MPD( AssignResultVar2Args(  // create newvar = -argvar
             LinearFunctionalConstraint({ {{-1.0}, {argvar}}, 0.0 })) );
-      prepro.set_result_var(res.get_var());
+      prepro.set_result_var(res);
       return;
     }
     prepro.narrow_result_bounds(0.0, std::max(-lb, ub));
@@ -374,7 +376,10 @@ public:
   bool IfPreprocessHole(
       const Body& body, double rhs, PreprocessInfo& prepro) {
     if constexpr (std::is_same_v<Body, LinTerms>) {
-      if (1 != body.size() || !MPCD( IfPreproHoles() )
+      // Equality at a bound is left to the other rewrites: the result
+      // x >= b is rewritten back to x == ub by IfPreprocess2BndEq(),
+      // which would recurse endlessly.
+      if (0 == kind || 1 != body.size() || !MPCD( IfPreproHoles() )
           || MPCD( IfPreproBoundsOnly() ))
         return false;
       const int x = body.var(0);
@@ -602,7 +607,7 @@ public:
     if (cc.GetConstraint().empty()) {
 #ifndef NDEBUG
       MPD(AddWarning("empty_cmp",
-                     "Empty comparison in a logical constraint\n  of type '"
+                     "Empty comparison in a logical constraint of type '"
                      + std::string(cc.GetTypeName()) + "'"));
 #endif
       auto res = ComputeValue(cc, std::vector<double>{});
@@ -776,6 +781,20 @@ public:
     }
   }
 
+  /// Warn if the domain [\a ly, \a uy] of a divisor in \a op
+  /// contains 0: the divisor is then treated as nonzero in the whole
+  /// model, also where the division is not evaluated.
+  void WarnDivisorDomainContains0(double ly, double uy, const char* op) {
+    if (ly <= 0.0 && uy >= 0.0 && ly < uy)
+      MPD( AddWarning("divisor_domain_0", fmt::format(
+        "The domain [{}, {}] of a divisor in '{}' contains 0. "
+        "The divisor is treated as nonzero in the whole model, also "
+        "where the division is not evaluated (for example, in an "
+        "if-then-else branch not taken), which can cut off solutions. "
+        "Bound the divisor away from 0 if this is not intended.",
+        ly, uy, op)) );
+  }
+
   /// Preprocess Div
   template <class PreprocessInfo>
   void PreprocessConstraint(
@@ -783,6 +802,7 @@ public:
     auto& m = MPD( GetModel() );
     auto v1 = c.GetArguments()[0], v2 = c.GetArguments()[1];
     const auto l1=m.lb(v1), u1=m.ub(v1), l2=m.lb(v2), u2=m.ub(v2);
+    WarnDivisorDomainContains0(l2, u2, "/");
 		if (l1 > MPD( PracticallyMinusInf() ) &&
 				u1 < MPD( PracticallyInf() ) &&
 				l2 > MPD( PracticallyMinusInf() ) &&
@@ -874,6 +894,7 @@ public:
         ly=MPCD( lb(y) ), uy=MPCD( ub(y) );
     if (0.0==ly && 0.0==uy)
       MP_RAISE("Division by 0 in 'div'");
+    WarnDivisorDomainContains0(ly, uy, "div");
     if (1.0==ly && 1.0==uy && MPCD( is_var_integer(x) )) {
       prepro.set_result_var(x);
       return;
@@ -907,6 +928,7 @@ public:
         ly=MPCD( lb(y) ), uy=MPCD( ub(y) );
     if (0.0==ly && 0.0==uy)
       MP_RAISE("Division by 0 in 'mod'");
+    WarnDivisorDomainContains0(ly, uy, "mod");
     const bool f_int = IsIntegerValued(x) && IsIntegerValued(y);
     auto b = std::max(std::fabs(lx), std::fabs(ux));
     if (IsFiniteRange(ly, uy))
@@ -955,38 +977,92 @@ public:
   }
 
   ////////////////////// NONLINEAR FUNCTIONS //////////////////////
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      ExpConstraint& , PreprocessInfo& prepro) {
-    prepro.narrow_result_bounds(0.0, MPD( Infty() ));
+  /// Result range of a monotone function f over the argument bounds
+  /// [lb, ub], widened by the relative margin cvt:pre:funcbndtol.
+  /// Infinite ends stay infinite.
+  /// @return {lb, ub}, or {-Infty, Infty} if f is undefined (NaN),
+  ///   if the range is degenerate (both ends at the same infinity,
+  ///   e.g., log over [0, 0]: the solver finds such a model infeasible),
+  ///   or if the margin is negative (the old behavior, no such bounds)
+  template <class F>
+  std::pair<double, double> MonotoneRange(F f, double lb, double ub) {
+    const double tol = MPCD( FuncBoundTol() );
+    const double r0 = f(lb), r1 = f(ub);
+    const double rl = std::min(r0, r1), ru = std::max(r0, r1);
+    if (tol < 0.0 || std::isnan(r0) || std::isnan(r1)
+        || ru == -INFINITY || rl == INFINITY)
+      return { MPD( MinusInfty() ), MPD( Infty() ) };
+    const auto widen = [tol](double r, double dir) {  // 0*inf is NaN
+      return (0.0 == tol || std::isinf(r)) ? r : r + dir * tol * std::fabs(r);
+    };
+    return { widen(rl, -1.0), widen(ru, 1.0) };
   }
 
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      ExpAConstraint& , PreprocessInfo& prepro) {
-    prepro.narrow_result_bounds(0.0, MPD( Infty() ));
+  /// Bounds of the argument; the lower bound of a logarithm's argument
+  /// is at least 0
+  std::pair<double, double> LogArgBounds(int x) {
+    return { std::max(0.0, MPD( lb(x) )), MPD( ub(x) ) };
   }
 
+  /// Bound the result of exp(x): positive, and by the argument's bounds
   template <class PreprocessInfo>
   void PreprocessConstraint(
-      LogConstraint& c, PreprocessInfo& ) {
-    auto x = c.GetArguments()[0];  // if no positive lb,
+      ExpConstraint& c, PreprocessInfo& prepro) {
+    const auto x = c.GetArguments()[0];
+    const auto r = MonotoneRange(
+        [](double v) { return std::exp(v); }, MPD( lb(x) ), MPD( ub(x) ));
+    prepro.narrow_result_bounds(std::max(0.0, r.first), r.second);
+  }
+
+  /// Bound the result of a^x, a>0: positive, and by the argument's
+  /// bounds. Not for a<=0: a^x is then not monotone (e.g., (-2)^x
+  /// at integer x) and not always positive.
+  template <class PreprocessInfo>
+  void PreprocessConstraint(
+      ExpAConstraint& c, PreprocessInfo& prepro) {
+    const auto x = c.GetArguments()[0];
+    const double a = c.GetParameters()[0];
+    if (!(a > 0.0))
+      return;
+    const auto r = MonotoneRange(
+        [a](double v) { return std::pow(a, v); }, MPD( lb(x) ), MPD( ub(x) ));
+    prepro.narrow_result_bounds(std::max(0.0, r.first), r.second);
+  }
+
+  /// Narrow the argument of a logarithm to nonnegative (see
+  /// cvt:pre:boundlogarg), and bound the result by the argument's bounds
+  template <class PreprocessInfo>
+  void PreprocessConstraint(
+      LogConstraint& c, PreprocessInfo& prepro) {
+    const auto x = c.GetArguments()[0];  // if no positive lb,
     if (MPCD( IfBoundLogArg() )) {
       MPD( NarrowVarBounds(x, 0.0, MPD( Infty() )) );
     } else {
       MPD( NarrowVarBestBounds(x, 0.0, MPD( Infty() )) );
     }
+    const auto xb = LogArgBounds(x);
+    const auto r = MonotoneRange(
+        [](double v) { return std::log(v); }, xb.first, xb.second);
+    prepro.narrow_result_bounds(r.first, r.second);
   }
 
+  /// As for Log, with base a>0
   template <class PreprocessInfo>
   void PreprocessConstraint(
-      LogAConstraint& c, PreprocessInfo& ) {
+      LogAConstraint& c, PreprocessInfo& prepro) {
+    const auto x = c.GetArguments()[0];
     if (MPCD( IfBoundLogArg() ))
-      MPD( NarrowVarBounds(
-          c.GetArguments()[0], 0.0, MPD( Infty() )) );
+      MPD( NarrowVarBounds(x, 0.0, MPD( Infty() )) );
     else
-      MPD( NarrowVarBestBounds(
-          c.GetArguments()[0], 0.0, MPD( Infty() )) );
+      MPD( NarrowVarBestBounds(x, 0.0, MPD( Infty() )) );
+    const auto xb = LogArgBounds(x);
+    const double a = c.GetParameters()[0];
+    if (!(a > 0.0) || 1.0 == a)          // no logarithm to such a base
+      return;
+    const double la = std::log(a);
+    const auto r = MonotoneRange(
+        [la](double v) { return std::log(v) / la; }, xb.first, xb.second);
+    prepro.narrow_result_bounds(r.first, r.second);
   }
 
   template <class PreprocessInfo>

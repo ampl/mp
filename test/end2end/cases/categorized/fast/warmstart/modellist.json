@@ -112,5 +112,12 @@
     "solvers": [ "cpsat" ],
     "options": { "cpsat_options": "alg:start=0 params='fix_variables_to_their_hinted_value:true'" },
     "objective": 62
+  },
+  {
+    "name": "warmstart_ind_01 primal-dual start with indicators",
+    "tags": [ "logical", "warmstart" ],
+    "comment": "Primal and dual initial values, no statuses: drivers that keep indicators as solver rows must still pass one dual per solver row",
+    "options": { "mp_options": "warmstart=1" },
+    "objective": 1500
   }
 ]

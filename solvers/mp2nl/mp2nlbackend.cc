@@ -1,5 +1,6 @@
 #include <vector>
 #include <climits>
+#include <cstring>
 #include <cfloat>
 #include <filesystem>
 
@@ -465,9 +466,9 @@ std::string MP2NLBackend::ForwardedLimits() {
       result += fmt::format("{}={}", kw->*kw_mbr, val);
     } else
       AddWarning(std::string("MP2NL_") + optname,
-                 fmt::format("Option {} is not forwarded to solver '{}':\n"
-                             "  keyword unknown for configuration '{}'.\n"
-                             "  Use the solver's own options.",
+                 fmt::format("Option {} is not forwarded to solver '{}':"
+                             " keyword unknown for configuration '{}'."
+                             " Use the solver's own options.",
                              optname, storedOptions_.solver_,
                              storedOptions_.config_));
   };
@@ -531,9 +532,24 @@ void MP2NLBackend::ReportModelSuffix(
                  2 | modelsuf.flags_, suf_post.GetObjValues()(),
                  modelsuf.table_);
   if (modelsuf.values_[3].size())
-    ReportSuffix(modelsuf.name_,
+    ReportSuffix(ProblemSuffixName(modelsuf.name_),
                  3 | modelsuf.flags_, modelsuf.values_[3],
                  modelsuf.table_);
+}
+
+/// Name for a subsolver's problem suffix: the debug statistics
+/// (debug=1: counters flat0_*, flat1_* and option values option___*)
+/// get prefix sub_, so that they do not overwrite MP2NL's own
+/// with the same names. Applies to an MP2NL subsolver
+/// too (sub_sub_flat1_*).
+std::string MP2NLBackend::ProblemSuffixName(const std::string& name) {
+  auto starts = [&name](const char* pre) {
+    return 0 == name.compare(0, std::strlen(pre), pre);
+  };
+  if (starts("flat0_") || starts("flat1_") || starts("option___")
+      || starts("sub_"))
+    return "sub_" + name;
+  return name;
 }
 
 void MP2NLBackend::ReportMP2NLResults() {
@@ -581,9 +597,9 @@ void MP2NLBackend::FinishOptionParsing() {
 	if (storedOptions_.config_attempted_.size()
 			&& !storedOptions_.config_.size())
 		AddWarning("SolverConfig",
-							 fmt::format("MP2NL: configuration '{}', \n"
-													 "assumed for solver '{}',\n"
-													 "is unknown. Defaults applied\n"
+							 fmt::format("MP2NL: configuration '{}', "
+													 "assumed for solver '{}', "
+													 "is unknown. Defaults applied "
 													 "(use nl:printconfigs and/or nl:config)",
 													 storedOptions_.config_attempted_,
 													 storedOptions_.solver_) );
@@ -940,16 +956,16 @@ void MP2NLBackend::DoWriteProblem(const std::string& name) {
 
 
 // AMPLs
-AMPLS_MP_Solver* Open_MP2NL(CCallbacks cb = {}) {
+AMPLS_MP_Solver* Open_mp2nl(CCallbacks cb = {}) {
   return AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend>{new mp::MP2NLBackend()},
     cb);
 }
 
-void AMPLSClose_MP2NL(AMPLS_MP_Solver* slv) {
+void AMPLSClose_mp2nl(AMPLS_MP_Solver* slv) {
   AMPLS__internal__Close(slv);
 }
 
-void* AMPLSGetModel_MP2NL(AMPLS_MP_Solver* slv) {
+void* AMPLSGetModel_mp2nl(AMPLS_MP_Solver* slv) {
   return
     dynamic_cast<mp::MP2NLBackend*>(AMPLSGetBackend(slv));
 }

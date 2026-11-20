@@ -123,9 +123,9 @@ protected:
   /// Warn that the argument's domain is limited by cvt:pl:domain
   void WarnDomainLimited() {
     GetMC().AddWarning("PLDomain", fmt::format(
-        "The domain of a piecewise-linear expression's argument\n"
-        "has been limited to +-{} (cvt:pl:domain).\n"
-        "The MIP reformulation can violate the expression\n"
+        "The domain of a piecewise-linear expression's argument "
+        "has been limited to +-{} (cvt:pl:domain). "
+        "The MIP reformulation can violate the expression "
         "by up to this value times the feasibility tolerance.",
         GetMC().PLDomain()));
   }

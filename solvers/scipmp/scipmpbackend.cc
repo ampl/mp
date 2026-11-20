@@ -287,11 +287,37 @@ void ScipBackend::EnumerateSolutions() {
       countedSols_.push_back(std::move(counted));
     } while (!limit_reached() && SCIPsparseSolGetNextSol(sols[k], values.data(), nvars));
   }
+  SortCountedSolutions();
+  AddBestSolutionToCounted();
+}
+
+void ScipBackend::SortCountedSolutions() {
   bool minimize = SCIP_OBJSENSE_MINIMIZE == SCIPgetObjsense(getSCIP());
-  std::sort(countedSols_.begin(), countedSols_.end(),
+  std::stable_sort(countedSols_.begin(), countedSols_.end(),
             [minimize](const CountedSolution& a, const CountedSolution& b) {
               return minimize ? a.obj < b.obj : a.obj > b.obj;
             });
+}
+
+/// The counting stops after sol:poollimit solutions, in no particular
+/// order, so it can miss the best solution of the solve: add it,
+/// unless counted, in place of the worst one if the limit is reached.
+void ScipBackend::AddBestSolutionToCounted() {
+  if (countedSols_.empty() || !SCIPgetBestSol(getSCIP()))
+    return;
+  CountedSolution best { getPoolObjective(0), getPoolSolution(0) };
+  for (const auto& c: countedSols_) {
+    bool same = true;
+    for (size_t j = 0; same && j < c.x.size(); ++j)
+      same = std::fabs(c.x[j] - best.x[j]) <= 1e-6 * (1.0 + std::fabs(c.x[j]));
+    if (same)
+      return;
+  }
+  if (storedOptions_.poolLimit_ >= 0
+      && (int)countedSols_.size() >= storedOptions_.poolLimit_)
+    countedSols_.pop_back();
+  countedSols_.insert(countedSols_.begin(), std::move(best));
+  SortCountedSolutions();
 }
 
 ScipBackend::FixedLPResult ScipBackend::SolveFixedLP(ArrayRef<double> x) {
@@ -1198,10 +1224,11 @@ void ScipBackend::InitCustomOptions() {
     "Search mode for alternative solutions when sol:stub/sol:count "
     "are specified:\n"
     "\n"
-    "  | 0 - Report the solutions found during the search (default)\n"
+    "  | 0 - Report the solutions found during the search\n"
     "  | 1, 2 - Enumerate the feasible solutions with SCIP's solution "
     "counting (models with integer variables only; counting stops "
-    "after sol:poollimit solutions), report the best of them "
+    "after sol:poollimit solutions), report the best of them, "
+    "always including the best solution of the solve "
     "(default 2).\n"
     "\n"
     "The enumeration runs on a copy of the model after the solve; "
@@ -1212,7 +1239,9 @@ void ScipBackend::InitCustomOptions() {
 
   AddStoredOption("sol:poolgap poolgap ams_eps",
     "Relative tolerance for reporting alternative solutions "
-    "(default: no limit).",
+    "(default: no limit): a solution is reported if its objective "
+    "is within poolgap * |best objective| of the best one. "
+    "With the best objective near 0, use sol:poolgapabs.",
     storedOptions_.poolGap_, -1.0, SCIP_REAL_MAX);
 
   AddStoredOption("sol:poolgapabs poolgapabs ams_epsabs",

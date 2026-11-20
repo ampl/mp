@@ -339,8 +339,13 @@ template <class FuncCon>
 void BasicPLApproximator<FuncCon>::ConsiderIntegrality() {
   /// Simple case when N breakpoints >= N integer points
   if (laPrm_.is_x_int && !laPrm_.fUsePeriod) {
-    auto x0=std::ceil(laPrm_.grDomOut.lbx);
-    auto xN=std::floor(laPrm_.grDomOut.ubx);
+    // The domain may come from clipping by function values, e.g.,
+    // exp(log(5)) = 4.999...: round with a tolerance, so that an
+    // integer bound is not lost (the solver would extrapolate there)
+    const auto tol = [](double v) { return 1e-9 * std::max(1.0, std::fabs(v)); };
+    const auto lbx = laPrm_.grDomOut.lbx, ubx = laPrm_.grDomOut.ubx;
+    auto x0=std::ceil(lbx - tol(lbx));
+    auto xN=std::floor(ubx + tol(ubx));
     auto N = int(xN - x0 + 1);
     if (N <= laPrm_.plPoints.size()) {
       laPrm_.plPoints.clear();
@@ -572,7 +577,12 @@ class PLApproximator<ExpAConstraint> :
 public:
   PLApproximator(const ExpAConstraint& con, PLApproxParams& p) :
     BasicPLApproximator<ExpAConstraint>(con, p),
-    A_(GetConParams()[0]), logA_(std::log(A_)) { }
+    A_(GetConParams()[0]), logA_(std::log(A_)) {
+    MP_ASSERT_ALWAYS(A_ > 0.0, fmt::format(
+        "a^x with base a = {} <= 0 cannot be approximated\n"
+        "piecewise-linearly (it is not monotone or not real);\n"
+        "use a solver that accepts it natively", A_));
+  }
   FuncGraphDomain GetFuncGraphDomain() const override
   { return { -1e100, 1e100, 1e-100, 1e100 }; }
   bool IsMonotone() const override { return true; }
@@ -601,7 +611,11 @@ class PLApproximator<LogAConstraint> :
 public:
   PLApproximator(const LogAConstraint& con, PLApproxParams& p) :
     BasicPLApproximator<LogAConstraint>(con, p),
-    A_(GetConParams()[0]), logA_(std::log(A_)) { }
+    A_(GetConParams()[0]), logA_(std::log(A_)) {
+    MP_ASSERT_ALWAYS(A_ > 0.0 && A_ != 1.0, fmt::format(
+        "log with base a = {} (a <= 0 or a = 1) cannot be\n"
+        "approximated piecewise-linearly", A_));
+  }
   FuncGraphDomain GetFuncGraphDomain() const override
   { return { 1e-6, 1e100, -1e100, 1e100 }; }
   bool IsMonotone() const override { return true; }

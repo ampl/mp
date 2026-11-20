@@ -388,6 +388,10 @@ struct BaronmpCommonInfo {
     std::vector<std::string> conNames;
     std::map<std::string, int> varMap;
     std::vector<int> baronToAMPLIndices;
+    /// Positions (in the order constraints reach the model API, i.e. in
+    /// CG_Algebraic) of constraints without terms: not written to BARON,
+    /// so BARON's constraint vectors lack them
+    std::vector<int> skippedConsPositions;
     int nVarsInteger = 0, nVarsBinary = 0, nVarsContinuous = 0;
     int obj_sense;
   };
@@ -405,6 +409,10 @@ struct BaronmpCommonInfo {
   
   // Directory where to write baron files
   std::string baronDir;
+  // Whether baronDir was created by us (removed entirely at the end), or is
+  // an existing user directory (scratch=<dir> overwrite): then only the
+  // files BARON and this driver wrote there are removed
+  bool baronDirOwned = true;
   // NL file path - shouldn't really need it but let's see TODO
   std::string nlFilePath;
   // Directory where the execution has initiated
@@ -486,6 +494,8 @@ public:
   void initBaronFile();
   void deinitBaronFile(bool changedir=true);
   int recrmdir(const std::string& dname);
+  /// Remove what this run created in baronDir (see baronDirOwned)
+  void removeBaronDir();
   void changeDirectory(const std::string& path);
   
 };

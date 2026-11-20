@@ -3,6 +3,26 @@ Summary of recent updates to Xpress for AMPL
 
 
 ## unreleased
+- With `mip:basis` on a MINLP, solving the fixed nonlinear problem
+  preserves the original problem for subsequent AMPLS solves. A MIP
+  solved without the nonlinear solvers is still left with its integer
+  variables fixed after the report, as before.
+- Several objectives with *obj:multi=1* (native multi-objective optimization)
+  where one is quadratic: the driver now stops with a message to use
+  *obj:multi=2* (MP emulation) or to move quadratic and nonlinear objective
+  terms into constraints with *cvt:quadobj=0* and *cvt:nlobj=0*, instead
+  of the Optimizer's error ?1138.
+- Xpress 10 supported.
+- The solve message of a MINLP no longer says "no duals" or "with
+  duals": its duals come only from the fixed model (*mip:basis*), whose
+  line reports them.
+- Fix: with the legacy solution pool (*sol:poolapi=0*, also all
+  Xpress 9 versions), a best objective value of 0 reported only the
+  solutions with that value, as if *sol:poolgap* were 0.
+- Fix: *iis:find* on a model for which Xpress identifies no IIS (e.g.,
+  a variable with contradictory bounds) failed with "?721 No IIS has been
+  identified yet"; now all *.iis* values are *non* and warning IIS_NONE
+  is given.
 - Xpress 10.0 (Optimizer 48.01.01) and 9.9.1 (47.01.02) supported, as
   well as 9.8.
 - Xpress 10: solution pool (*sol:stub*, *sol:count*) with the built-in
@@ -25,6 +45,20 @@ Summary of recent updates to Xpress for AMPL
   failed without Xpress presolve ("?942 ... non-binary variable");
   such arguments are now passed as binary variables. Option
   *alg:logfixedbin=0* restores the previous (continuous) type.
+- Fix: duals, basis statuses (*sstatus*, in and out) and IIS membership
+  of the algebraic constraints were assigned to the wrong constraints
+  on models with indicator constraints, and also with function or
+  nonlinear constraints; a primal-dual warm start (initial primal and
+  dual values without statuses) could crash the driver on models with
+  indicator constraints. IIS membership of piecewise-linear constraints
+  is now reported.
+- Fix: after a nonlinear (local or global) solve, basis statuses were
+  reported as *low* for every variable and constraint; no basis is
+  reported now. *mip:basis* on a nonlinear MIP failed (the fixed model
+  was solved as an LP); the fixed model is now solved as a nonlinear
+  problem, by default with a local solver, which gives duals but no
+  basis. New options *mip:basis:nlpsolver* (local, global, or as in the
+  main solve) and *mip:basis:localsolver* select how.
 
 
 ## 20261029

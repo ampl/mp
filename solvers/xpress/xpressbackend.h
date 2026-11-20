@@ -238,7 +238,13 @@ protected:
   void DoXPRESSTune();
 
   void ConsiderXpressFixedModel();
-  std::string DoXpressFixedModel();
+  void CopyFixedNonlinearModel();
+  /// Whether the integer columns have equal bounds in the copy
+  bool IntegersAreFixedInCopy();
+  void ClearFixedModel();
+  std::string DoXpressFixedModel(bool nonlinear);
+  /// Fixed model of a nonlinear MIP: XPRSoptimize; "" on success.
+  std::string SolveFixedNonlinear();
 
   std::vector<double> getPoolSolution(int i);
   double getPoolObjective(int i);
@@ -266,6 +272,23 @@ protected:
   std::vector<int> VarStatii(ArrayRef<int>);
   std::vector<int> ConStatii(ArrayRef<int>);
 
+  /// Whether a CG_Algebraic vector of size n matches the Xpress rows.
+  /// The model API puts every row-creating constraint in CG_Algebraic;
+  /// a mismatch (a constraint type creating no or several rows) would
+  /// misplace row values: warn, and the caller does not pass them.
+  bool RowVectorMatches(size_t n, const char* what) {
+    if ((int)n == NumLinCons())
+      return true;
+    AddWarning("XpressRowMap", fmt::format(
+                 "{} not passed: {} algebraic constraints but {} "
+                 "Xpress rows", what, n, NumLinCons()));
+    return false;
+  }
+  /// Whether Xpress identified an IIS
+  bool IfIISAvailable();
+  /// XPRSiisfirst() failed (its error is reported)
+  bool iis_search_failed_ = false;
+
   ArrayRef<int> VarsIIS();
   pre::ValueMapInt ConsIIS();
 
@@ -287,7 +310,11 @@ private:
   int global_flag_ {1};
   XPRSprob model_fixed_ = nullptr;
   bool fixed_model_failed_ = false;
+  /// A nonlinear MIP's fixed model was solved as an NLP (mip:basis): only its
+  /// duals are reported, the MIP's solution and objective stay
+  bool fixed_nlp_used_ = false, fixed_nlp_has_duals_ = false;
   std::vector<double> mip_primal_before_fixed_, mip_objectives_before_fixed_;
+  double mip_bound_before_fixed_ = 0;
   /// Pool's best solution after enumeration (sol:poolmode)
   std::vector<double> pool_best_x_;
   double pool_best_obj_ = 0.0;
@@ -314,6 +341,8 @@ private:
     std::string logFile_;
     std::string readBasis_;
     std::list<std::string> nativeOptions_;   // "NAME=value" entries
+    int fixedNlpSolver_ = XPRS_NLPSOLVER_LOCAL;        // mip:basis:nlpsolver
+    int fixedLocalSolver_ = -2;     // mip:basis:localsolver, -2: as alg:localsolver
   };
   
   bool msgCallbackSet_ = false;

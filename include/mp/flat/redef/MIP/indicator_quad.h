@@ -5,7 +5,7 @@
   * Convert quadratic indicators for MIP
   */
 
-#include "mp/flat/redef/redef_base.h"
+#include "mp/flat/redef/MIP/indicator_fixed_flag.h"
 #include "mp/flat/constr_std.h"
 
 namespace mp {
@@ -16,10 +16,10 @@ namespace mp {
 /// thus producing a linear indicator of the respective type.
 template <class ModelConverter, int sens>
 class IndicatorQuadConverter_MIP :
-    public BasicItemConverter<ModelConverter> {
+    public BasicIndicatorConverter_MIP<ModelConverter> {
 public:
   /// Base class
-  using Base = BasicItemConverter<ModelConverter>;
+  using Base = BasicIndicatorConverter_MIP<ModelConverter>;
   /// Constructor
   IndicatorQuadConverter_MIP(ModelConverter& mc) : Base(mc) { }
   /// Underlying algebraic constraint
@@ -34,6 +34,8 @@ public:
   /// Conversion.
   /// Substitute constraint body by a new variable.
   Context Convert(const ItemType& indc, int ) {
+    if (FoldIfFlagFixed(indc))
+      return Context::CTX_ROOT;
     auto binvar=indc.get_binary_var();
     const auto& body = indc.get_constraint().GetBody();
     assert(body.is_quadratic());
@@ -47,6 +49,7 @@ public:
 
 protected:
   using Base::GetMC;
+  using Base::FoldIfFlagFixed;
 
 };
 

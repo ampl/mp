@@ -72,15 +72,49 @@ public:
       GetMC().AddConstraint(LinConGE(LinTerms(rem), {-b}));
       return;
     }
-    const int w = AssignResultVarMixedCtx(GetMC(),  // w = |y|
-          AbsConstraint{ {y} } );
-    LinTerms rem_minus_w = rem, rem_plus_w = rem;
-    rem_minus_w.add_term(-1.0, w);
-    rem_plus_w.add_term(1.0, w);
-    GetMC().AddConstraint(LinConLE(std::move(rem_minus_w), {-eps}));
-    GetMC().AddConstraint(LinConGE(std::move(rem_plus_w), {eps}));
-    GetMC().AddConstraint(LinConGE({{1.0}, {w}},       // y != 0
-                                   {GetMC().ComparisonEps(y)}));
+    // By the sign of y, without an abs(y): an existing abs(y) of the
+    // model can be converted for one side only and cannot be reused.
+    const double eps_y = GetMC().ComparisonEps(y);
+    if (GetMC().lb(y) >= eps_y)
+      BoundRemainderBySignedDivisor(y, rem, eps, eps_y, 1.0, -1);
+    else if (GetMC().ub(y) <= -eps_y)
+      BoundRemainderBySignedDivisor(y, rem, eps, eps_y, -1.0, -1);
+    else {                             // s = 1: y > 0, s = 0: y < 0
+      const int s = (int)GetMC().AddVar(0.0, 1.0, var::INTEGER);
+      BoundRemainderBySignedDivisor(y, rem, eps, eps_y, 1.0, s);
+      BoundRemainderBySignedDivisor(y, rem, eps, eps_y, -1.0, s);
+    }
+  }
+
+  /// For y of sign \a sgn (y >= eps_y or y <= -eps_y):
+  /// sgn*y >= eps_y and -(sgn*y - eps) <= rem <= sgn*y - eps;
+  /// if \a s >= 0, conditional on s = 1 (sgn > 0) or s = 0 (sgn < 0).
+  void BoundRemainderBySignedDivisor(int y, const LinTerms& rem,
+      double eps, double eps_y, double sgn, int s) {
+    LinTerms rem_minus = rem, rem_plus = rem;
+    rem_minus.add_term(-sgn, y);        // rem - sgn*y <= -eps
+    rem_plus.add_term(sgn, y);          // rem + sgn*y >= eps
+    AddCondGE(s, sgn, LinTerms({sgn}, {y}), eps_y);
+    AddCondLE(s, sgn, std::move(rem_minus), -eps);
+    AddCondGE(s, sgn, std::move(rem_plus), eps);
+  }
+
+  /// lt <= rhs, conditional on s = (sgn > 0) if s >= 0
+  void AddCondLE(int s, double sgn, LinTerms&& lt, double rhs) {
+    if (s < 0)
+      GetMC().AddConstraint(LinConLE(std::move(lt), {rhs}));
+    else
+      GetMC().AddConstraint(IndicatorConstraintLinLE(
+          s, sgn > 0.0 ? 1 : 0, {std::move(lt), rhs}));
+  }
+
+  /// lt >= rhs, conditional on s = (sgn > 0) if s >= 0
+  void AddCondGE(int s, double sgn, LinTerms&& lt, double rhs) {
+    if (s < 0)
+      GetMC().AddConstraint(LinConGE(std::move(lt), {rhs}));
+    else
+      GetMC().AddConstraint(IndicatorConstraintLinGE(
+          s, sgn > 0.0 ? 1 : 0, {std::move(lt), rhs}));
   }
 
   /// rem has the sign of x: x >= 0 ==> rem >= 0, x <= 0 ==> rem <= 0

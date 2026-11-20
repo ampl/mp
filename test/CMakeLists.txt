@@ -117,3 +117,14 @@ add_mp_test(safeint-test safeint-test.cc)
 add_mp_test(converter-flat-test converter-flat-test.cpp)
 add_mp_test(converter-mip-test  converter-mip-test.cpp)
 
+# NLSolver (nl-writer2): temporary files and the solver command line,
+# with a stand-in solver
+if (TARGET nlw2)
+  add_executable(nlsol-fake-solver nlsol-fake-solver.cc)
+  add_to_folder(${MP_FOLDER_PREFIX}test nlsol-fake-solver)
+  add_mp_test(nl-solver-test nl-solver-test.cc LIBS nlw2)
+  add_dependencies(nl-solver-test nlsol-fake-solver)
+  target_compile_definitions(nl-solver-test PRIVATE
+    NLSOL_FAKE_SOLVER="$<TARGET_FILE:nlsol-fake-solver>")
+endif ()
+

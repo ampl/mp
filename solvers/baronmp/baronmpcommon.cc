@@ -302,6 +302,7 @@ void BaronmpCommon::initDirectories(const std::string& stub,
               break;
         }
         baronDir = scratch_path.string();
+        baronDirOwned = false;    // the user's directory: keep unrelated files
       }
     }
     if (!fs::exists(scratch_path)) {
@@ -339,6 +340,20 @@ void BaronmpCommon::initDirectories(const std::string& stub,
 
   changeDirectory(baronDir);
 }
+void BaronmpCommon::removeBaronDir() {
+  if (baronDirOwned) {
+    recrmdir(baronDir);
+    return;
+  }
+  for (const auto& f : { BARON_TIM, BARON_RES, std::string("sum.lst"),
+                         FILENAME_BAR + ".bar", FILENAME_AMPL + ".bar",
+                         FILENAME_DIC + ".txt" })
+    deleteFilesIfExists(baronDir, f);
+  for (int i = 1; deleteFilesIfExists(baronDir,
+         fmt::format("{}_{}.bar", FILENAME_BAR, i)); ++i)
+    ;
+}
+
 int BaronmpCommon::recrmdir(const std::string& dname) {
   if (fs::is_directory(dname)) {
     std::error_code ec;
@@ -852,7 +867,13 @@ bool ResFileData::readSolution(std::ifstream& barRes) {
   case 1:
     return true;
   case 2:
-    getline(barRes, line); // Constraint no.  Price
+    // The dual section is "Corresponding dual solution vector is:",
+    // "Variable no.  Marginal" + the variable marginals, then
+    // "Constraint no.  Price" + the constraint prices (the duals):
+    getline(barRes, line); // Corresponding dual solution vector is:
+    getline(barRes, line); // Variable no.  Marginal
+    readVector(barRes);    // variable marginals; also consumes the header
+                           // line "Constraint no.  Price" that ends them
     dual_solutions.push_back(readVector(barRes));
     // Or, if we read the duals, try to find the next header
     res = waitFor(barRes, baron_objective, "", true);

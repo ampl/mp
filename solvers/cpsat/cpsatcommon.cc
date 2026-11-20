@@ -14,18 +14,26 @@ int CpsatCommon::NumVars() const {
   return (int)data()->vars.size();
 }
 
-int64_t CpsatCommon::LowerBoundToInt64(double lb) const {
+std::pair<int64_t, int64_t>
+CpsatCommon::VarDomainToInt64(double lb, double ub) const {
+  constexpr double kMax = kCpsatMaxVarBound;
+  if (lb > ub)                  // contradictory: an empty domain
+    return { 1, 0 };
+  if (lb > kMax || ub < -kMax)
+    throw std::runtime_error(fmt::format(
+        "CP-SAT: variable {} has bounds [{:.17g}, {:.17g}] beyond the "
+        "range CP-SAT can represent (+-{:g})", NumVars(), lb, ub, kMax));
   const double vb = data()->var_bound;
-  if (lb <= -vb)
-    return (int64_t)-vb;
-  return (int64_t)std::ceil(lb - 1e-9);
-}
-
-int64_t CpsatCommon::UpperBoundToInt64(double ub) const {
-  const double vb = data()->var_bound;
-  if (ub >= vb)
-    return (int64_t)vb;
-  return (int64_t)std::floor(ub + 1e-9);
+  const bool lb_inf = !std::isfinite(lb), ub_inf = !std::isfinite(ub);
+  double l = lb_inf ? -vb : RoundBoundInward(lb, true);
+  double u = ub_inf ? vb : RoundBoundInward(ub, false);
+  if (lb_inf && !ub_inf && u <= -vb)   // keep the width var_bound
+    l = u - vb;
+  if (ub_inf && !lb_inf && l >= vb)
+    u = l + vb;
+  l = std::max(l, -kMax);
+  u = std::min(u, kMax);
+  return { static_cast<int64_t>(l), static_cast<int64_t>(u) };
 }
 
 

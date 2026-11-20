@@ -9,6 +9,7 @@
 #include <cctype>
 
 #include "mp/backend-base.h"
+#include "mp/utils-string.h"
 #include "mp/model-mgr-base.h"
 
 
@@ -29,7 +30,9 @@ public:
 
   void ReportError(int solve_result, fmt::CStringRef msg) override {
     HandleSolution(solve_result,   // prints if no -AMPL flag
-                   GetWarnings() + msg.c_str(),
+                   GetWarnings() + (msg_width() > 0
+                       ? WrapLines(msg.c_str(), msg_width())
+                       : std::string(msg.c_str())),
                    0, 0, 0.0);
     std::fflush(stdout);
     std::fflush(stderr);

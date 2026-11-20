@@ -8,6 +8,7 @@ import Solver
 import SolverCollection
 import AmplExecutable
 import multiprocessing
+import pathlib
 
 
 class Tester:
@@ -35,6 +36,7 @@ class Tester:
         args = self.parseOptions()
         args= vars(args)
         args["ampl"] = AmplExecutable.resolve(args["ampl"], args["ampl_fallback"])
+        args["timeout"] = self.resolveTimeout(args["timeout"], args["dir"])
         if args["export_ampl"]:
             MPS = args["export_ampl"]=="mps"
             print("export_ampl option specified, will only export the models")
@@ -63,6 +65,19 @@ class Tester:
                          args["keep_logs"],
                          args["verbose"])
         
+    FAST_TIMEOUT = 5          # seconds per instance for the 'fast' test set
+    DEFAULT_TIMEOUT = 2400    # seconds per instance otherwise
+
+    @classmethod
+    def resolveTimeout(cls, timeout, dir):
+        """The per-instance time limit: the explicit --timeout if given,
+        else 5 s when running a 'fast' test folder (a path component named
+        'fast'), else 2400 s."""
+        if timeout is not None:
+            return timeout
+        parts = pathlib.Path(dir).resolve().parts if dir else ()
+        return cls.FAST_TIMEOUT if "fast" in parts else cls.DEFAULT_TIMEOUT
+
     def parseOptions(self):
         parser = argparse.ArgumentParser(description='AMPL solver testing script.')
         parser.add_argument("solvers", metavar="solver", type=str, nargs="+",
@@ -89,8 +104,9 @@ class Tester:
                             help="stub for CSV test report filename, e.g., /tmp/report, default: report")
         parser.add_argument("--printsolvers", action="store_true",
                             help="print available solvers and exit")
-        parser.add_argument("--timeout", type=float, metavar="T", default=2400,
-                        help="timeout per instance, seconds")
+        parser.add_argument("--timeout", type=float, metavar="T", default=None,
+                        help="timeout per instance, seconds (default: 5 for "
+                             "a folder under 'fast', otherwise 2400)")
         parser.add_argument("--nthreads", type=int, metavar="N", default=8,
                         help="number of threads in a solver")
         parser.add_argument("--dir", type=str, metavar="path", default="",

@@ -29,6 +29,53 @@ TEST_F(InterfaceTester_MaxConstraint, MaximumConstraintIsPassedToBackend) {
   ASSERT_HAS_CONSTRAINT( GetBackend(), mp::MaxConstraint(3, args) );
 }
 
+/// A repeated solve (e.g., a second AMPLSSolve()) starts the solve
+/// iterations again; before, the second run did not solve at all.
+TEST_F(InterfaceTester_MaxConstraint, RepeatedSolveRunsAgain) {
+  GetInterface().AddVars(1, 0.0, 1.0);
+  GetInterface().ConvertModel();
+  auto stt = []() { return mp::sol::SOLVED; };
+  auto sol = []() { return mp::Solution{}; };
+  auto& itf = GetInterface();
+  itf.StartSolveIterations();
+  EXPECT_TRUE(itf.PrepareSolveIteration(stt, sol));
+  EXPECT_FALSE(itf.PrepareSolveIteration(stt, sol));
+  itf.StartSolveIterations();                  // the second solve
+  EXPECT_TRUE(itf.PrepareSolveIteration(stt, sol));
+  EXPECT_FALSE(itf.PrepareSolveIteration(stt, sol));
+}
+
+
+/// Bounds of integer variables are rounded inwards within
+/// max(cvt:pre:roundintbnd, 16 ulp(b)): rounding errors of computed
+/// bounds are removed, real fractional parts are kept.
+TEST_F(InterfaceTester_MaxConstraint, RoundIntBoundUsesUlpTolerance) {
+  auto& m = GetInterface().GetFlatCvt().GetModel();
+  const int v = m.AddVar__basic(-1e10, 1e10, mp::var::INTEGER);
+  const double b = 16800000.7 / 0.1;           // 168000006.99999997
+  EXPECT_EQ(168000007.0, m.RoundIntBound(v, b, true));
+  EXPECT_EQ(168000007.0, m.RoundIntBound(v, -(-b), false));
+  EXPECT_EQ(-168000007.0, m.RoundIntBound(v, -b, false));
+  // 1e9 + 5e-5 is far above rounding error: lb 1e9+1, ub 1e9
+  EXPECT_EQ(1e9 + 1.0, m.RoundIntBound(v, 1e9 + 5e-5, true));
+  EXPECT_EQ(1e9, m.RoundIntBound(v, 1e9 + 5e-5, false));
+  EXPECT_EQ(600000000.0, m.RoundIntBound(v, 599999999.5, true));
+  EXPECT_EQ(599999999.0, m.RoundIntBound(v, 599999999.5, false));
+  // Small values: the absolute tolerance (default 1e-9)
+  EXPECT_EQ(3.0, m.RoundIntBound(v, 3.0 + 1e-10, false));
+  EXPECT_EQ(3.0, m.RoundIntBound(v, 3.0 - 1e-10, true));
+  EXPECT_EQ(4.0, m.RoundIntBound(v, 3.0 + 1e-8, true));
+  EXPECT_EQ(2.0, m.RoundIntBound(v, 3.0 - 1e-8, false));
+  // An exact integer is returned as is, also where the tolerance (0.5)
+  // is below the spacing of doubles: 2^52 + 1 -/+ 0.5 is not
+  // representable and would be rounded to the even neighbour
+  const double big = 4503599627370497.0;       // 2^52 + 1
+  EXPECT_EQ(big, m.RoundIntBound(v, big, true));
+  EXPECT_EQ(big, m.RoundIntBound(v, big, false));
+  EXPECT_EQ(-big, m.RoundIntBound(v, -big, true));
+  EXPECT_EQ(-big, m.RoundIntBound(v, -big, false));
+}
+
 
 /////////////////////////////// Quadratics //////////////////////////////////
 ///

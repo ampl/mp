@@ -227,6 +227,15 @@ public:
     objno_ = value;
   }
 
+  int GetMsgWidth(const SolverOption&) const { return msg_width_; }
+  void SetMsgWidth(const SolverOption& opt, int value)  {
+    if (value < 0)
+      throw InvalidOptionValue(opt, value);
+    msg_width_ = value;
+  }
+  /// Width at which warnings and error messages are wrapped, 0: none
+  int msg_width() const { return msg_width_; }
+
   int GetTiming(const SolverOption&) const { return timing_; }
   void SetTiming(const SolverOption& opt, int value)  {
     if ((value < 0)||(value>2))
@@ -522,8 +531,9 @@ public:
   /// Get warnings map
   WarningsMap& GetWarningsMap() const { return warnings_; }
 
-  /// Stringify a WarningsMap entry
-  static std::string ToString(const WarningsMap::value_type& wrn);
+  /// Stringify a WarningsMap entry, wrapped at \a width (0: no wrapping)
+  static std::string ToString(const WarningsMap::value_type& wrn,
+                              int width = 60);
 
   /// Set constraint list header (printed at the start of -c)
   void SetConstraintListHeader(std::string clh)
@@ -642,6 +652,7 @@ private:
   bool report_uncertain_sol_ {true};
 
   int timing_ {0};
+  int msg_width_ {60};
   int solution_stats_{0};
   Stats stats_;
 

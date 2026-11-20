@@ -146,6 +146,7 @@ class MockProblemBuilder {
   MOCK_METHOD1(suffixes, SuffixSet &(int));
 
   MOCK_METHOD0(num_vars, int ());
+  MOCK_METHOD0(num_objs, int ());
   MOCK_METHOD0(num_algebraic_cons, int ());
   MOCK_METHOD0(num_logical_cons, int ());
 

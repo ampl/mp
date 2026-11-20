@@ -46,8 +46,10 @@ int FactorToExpand(MC& mc, int x, int y) {
         || mc.lb(v) <= mc.PracticallyMinusInf()
         || mc.ub(v) >= mc.PracticallyInf())
       continue;
-    const double range = mc.ub(v) - mc.lb(v);
-    if (range < best && NumBinaryDigits(range) <= mc.IntProdBits()) {
+    // Original NL variable bounds need not be integral.
+    const double range = std::floor(mc.ub(v)) - std::ceil(mc.lb(v));
+    if (range >= 0.0 && range < best
+        && NumBinaryDigits(range) <= mc.IntProdBits()) {
       best = range;
       result = v;
     }
@@ -61,7 +63,7 @@ int FactorToExpand(MC& mc, int x, int y) {
 /// See Gupte, Ahmed, Cheon, Dey (2013), SIAM J. Optim. 23(2).
 template <class MC>
 LinTerms ProductByBinaryExpansion(MC& mc, double c, int x, int y) {
-  const double ly = mc.lb(y), range = mc.ub(y) - ly;
+  const double ly = std::ceil(mc.lb(y)), range = std::floor(mc.ub(y)) - ly;
   assert(mc.is_var_integer(y));                 // see FactorToExpand()
   assert(ly > mc.PracticallyMinusInf() && mc.ub(y) < mc.PracticallyInf());
   assert(mc.lb(x) > mc.PracticallyMinusInf()    // big-Ms of the IfThens

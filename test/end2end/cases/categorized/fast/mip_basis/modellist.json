@@ -597,5 +597,71 @@
       "if (y.sstatus != 'bas') then 1 else 0": 1,
       "solve_result_num": 0
     }
+  },
+  {
+    "name": "fixed_sos2_pl",
+    "files": ["fixed_sos2_pl.mod"],
+    "tags": ["linear", "integer", "logical", "sos", "fixmodel"],
+    "comment": "SOS2 from AMPL's PL linearization; the fixed model must not return the relaxation's point (-3.3 at x = 2, obj = 2.7)",
+    "objective": 0,
+    "options": {
+      "pl_linearize": 1,
+      "mp_options": "mip:basis=1"
+    },
+    "values": {
+      "obj": 0,
+      "solve_result_num": 0
+    }
+  },
+  {
+    "name": "fixed_sos2_pl cplexasl",
+    "files": ["fixed_sos2_pl.mod"],
+    "tags": ["linear", "integer", "sos"],
+    "comment": "cplexasl (indicator constraints only): the fixed LP for duals (mipbasis) drops the SOS; the MIP solution is returned without duals",
+    "solvers": ["cplexasl"],
+    "objective": 0,
+    "options": {
+      "pl_linearize": 1,
+      "cplex_options": "mipbasis=1"
+    },
+    "values": {
+      "obj": 0,
+      "if solve_result = 'solved' then 1 else 0": 1,
+      "if match(solve_message, 'violated SOS') > 0 then 1 else 0": 1
+    }
+  },
+  {
+    "name": "fixed_miqcp_cplex",
+    "tags": ["integer", "continuous", "quadratic", "fixmodel"],
+    "solvers": ["cplex"],
+    "comment": "MIQCP with mip:basis=1: the dual of the linear row is that of the fixed continuous problem (1; 0 if no duals are returned)",
+    "options": { "presolve": 0, "mp_options": "mip:basis=1" },
+    "objective": 5.414213562373095,
+    "values": {
+      "solve_result": "solved",
+      "b": 1,
+      "x": 1.414213562373095,
+      "y": 1.585786437626905,
+      "Lin.dual": { "min": 0.999, "max": 1.001 },
+      "if match(solve_message, 'Fixed MIP for mip:basis:') > 0 then 1 else 0": 1,
+      "if match(solve_message, 'failed') > 0 then 1 else 0": 0,
+      "max(0, x*x-1-b)": { "max": 1e-6 }
+    }
+  },
+  {
+    "name": "fixed_milp_cplex",
+    "tags": ["integer", "continuous", "linear", "fixmodel"],
+    "solvers": ["cplex"],
+    "comment": "Linear MIP with mip:basis=1 (also used by the AMPLS repeated-solve test): the dual of Lin is that of the fixed LP, 1",
+    "options": { "presolve": 0, "mp_options": "mip:basis=1" },
+    "objective": 6,
+    "values": {
+      "solve_result": "solved",
+      "b": 1,
+      "x": 2,
+      "y": 1,
+      "Lin.dual": { "min": 0.999, "max": 1.001 },
+      "if match(solve_message, 'Fixed MIP for mip:basis:') > 0 then 1 else 0": 1
+    }
   }
 ]

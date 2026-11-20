@@ -1,0 +1,5 @@
+var x{1..7} integer >= 0 <= 1;
+
+minimize o: 0*x[1] - 5*x[2] + 0*x[3] + 3*x[4] + x[5] + 2*x[6] - 5*x[7];
+
+s.t. c1: numberof 0 in (x[1], x[2], x[3], x[4], x[5], x[6], x[7]) > 1;

@@ -369,6 +369,10 @@ protected:
       override
   { return GetCvt().PrepareSolveIteration(get_stt, get_sol); }
 
+  /// Start a run of solve iterations
+  void StartSolveIterations() override
+  { GetCvt().StartSolveIterations(); }
+
   /// Is/was MultiObj Emulator used?
   bool IsMOEmulationOn() const override
   { return GetCvt().IsMOEmulationOn(); }

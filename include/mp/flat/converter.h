@@ -364,6 +364,16 @@ public:
     return !(n_solve_iter_++);
   }
 
+  /// Start a run of solve iterations: a repeated run (e.g., a
+  /// second AMPLSSolve()) solves the model again. Not with emulated
+  /// multiple objectives: their passes have changed the model.
+  void StartSolveIterations() {
+    if (MPCD( IsMOActive() ) && MPCD( IsMOFinished() ))
+      MP_RAISE("A repeated solve is not supported with emulated "
+               "multiple objectives");
+    n_solve_iter_ = 0;
+  }
+
   /// Objective weights, adapted according to obj:multi:weight
   ArrayRef<double> GetObjWeightsAdapted() { return MPD( GetMOWeightsLegacy() ); }
 
@@ -466,8 +476,33 @@ protected:
   /// From here on, no delays are accepted.
   void ConvertDelayedItems() {
     if_final_cvt_phase_ = true;
-    while (GetModel().ConvertDelayedItems(*this))
+    while (GetModel().ConvertDelayedItems(*this)
+           || MPD( ReassessFixedFlagIndicators() )
+           || MPD( ReconsiderInliningAlgExpr(MPCD( IfPreproUnnest() )) ))
       MP_DISPATCH( ConvertAllConstraints() );
+  }
+
+  /// Fold the indicators passed in the main loop
+  /// whose binary has been fixed since then
+  /// (see BasicIndicatorConverter_MIP).
+  /// @return whether any
+  bool ReassessFixedFlagIndicators() {
+    if (!MPCD( IfPreproIndFixedFlag() ))
+      return false;
+    return ConvertNeededBehindCursor<
+        IndicatorConstraintLinLE, IndicatorConstraintLinEQ,
+        IndicatorConstraintLinGE, IndicatorConstraintQuadLE,
+        IndicatorConstraintQuadEQ, IndicatorConstraintQuadGE>();
+  }
+
+  /// ConvertNeededBehindCursor() for each type in \a Cons.
+  /// @return whether any converted
+  template <class... Cons>
+  bool ConvertNeededBehindCursor() {
+    bool any = false;
+    ((any = GET_CONSTRAINT_KEEPER(Cons).ConvertNeededBehindCursor()
+            || any), ...);
+    return any;
   }
 
 public:
@@ -1213,6 +1248,21 @@ public:
   /// Shortcut ub_hard(var)
   double ub_hard(int var) const { return this->GetModel().ub_hard(var); }
 
+  /// Whether the result of a functional constraint of type \a Con
+  /// gets its preprocessed bounds as hard bounds (as logical results
+  /// do): integer rounding and division (floor, ceil, round, trunc,
+  /// div, mod). Their conversions use big-M constraints, which need
+  /// the bounds also in a solver behind MP2NL, which receives only
+  /// the hard bounds by default.
+  template <class Con>
+  static constexpr bool IfHardResultBounds() {
+    return std::is_same_v<Con, FloorConstraint>
+        || std::is_same_v<Con, CeilConstraint>
+        || std::is_same_v<Con, RoundConstraint>
+        || std::is_same_v<Con, IntDivConstraint>
+        || std::is_same_v<Con, ModConstraint>;
+  }
+
   /// Lower bound of \a var as the solver will see it:
   /// best-known if submitted (cvt:pre:boundsbest, or fixed), else hard
   double lb_subm(int var) const {
@@ -1393,11 +1443,19 @@ public:
         && lb-ub
                > std::max(std::abs(lb), std::abs(ub))
                      * MPCD( model_feas_tol_rel() )) {
+      // Best-known bounds are implied by the model as well:
+      // contradictory ones also prove infeasibility
+      if (options_.declareInfeasVarBnd_)
+        MP_INFEAS(fmt::format(
+            "{}bounds [{:.17}, {:.17}] of {}[{}] are contradictory "
+            "(cvt:pre:infeasvarbnd)", bestb ? "best-known " : "",
+            lb, ub, kind, i+1));
       GetEnv().AddWarning(
           std::string(kind) + (bestb ? " best-known" : "") + " bounds",
-          fmt::format("Bounds [{:.17}, {:.17}]\nof {}[{}] "
-                      "contradict pre:eps and pre:epsrel.\n"
-                      "Model can be infeasible",
+          fmt::format("Bounds [{:.17}, {:.17}] of {}[{}] "
+                      "contradict pre:eps and pre:epsrel. "
+                      "Model can be infeasible "
+                      "(cvt:pre:infeasvarbnd=1 declares it so)",
                       lb, ub, kind, i+1).c_str());
       return true;
     }
@@ -1415,8 +1473,11 @@ public:
   /// MakeComplementVar()
   int MakeComplementVar(int bvar) {
     if ( !(lb(bvar)==0.0 && ub(bvar)==1.0) ) {
-      // Should be (hard-?)fixed at 0 or 1
-      MP_ASSERT_ALWAYS( ((!lb(bvar) && !ub(bvar))
+      // Should be (hard-?)fixed at 0 or 1. Contradictory bounds
+      // (lb>ub) mean the model is infeasible (already warned about):
+      // keep going, the solver will report it, instead of failing
+      MP_ASSERT_ALWAYS( lb(bvar) > ub(bvar)
+                        || ((!lb(bvar) && !ub(bvar))
                         || (1.0==lb(bvar) && 1.0==ub(bvar))),
                 "Asked to complement variable with best-known bounds "
                     + std::to_string(lb(bvar))
@@ -1797,12 +1858,17 @@ private:
     int preprocessInequalityRhs_ = 1;
     int preprocessInequalityResultBounds_ = 1;
     int preprocessIneq2BndEq_ = 1;
+    int declareInfeasVarBnd_ = 0;
+    int preprocessIndFixedFlag_ = 1;
     int preprocessIneq2Related_ = 1;
     int preprocessVarBnd_ = 3;
 
-    int preproUnnest_ = 31;
+    int preproUnnest_ = 63;
+    int linFill_ = 10;
+    int quadFill_ = -1;
     int preproSortUnify_  = 1;
     int boundLogArg_ = 0;
+    double funcBndTol_ = 1e-12;
 
     int propCtxIneq_ = 1;
     int propCtxBndEq_ = 1;
@@ -1868,6 +1934,8 @@ public:             // public for CRTP
   int IfPropCtxCountNumberof() const { return options_.propCtxCountNumberof_; }
   /// Bound argument of logarithm?
   bool IfBoundLogArg() const { return options_.boundLogArg_; }
+  /// Relative margin for result bounds of exp/log functions
+  double FuncBoundTol() const { return options_.funcBndTol_; }
 
   /// Model checking options
   double model_feas_tol() const { return options_.modelfeastol_; }
@@ -2004,11 +2072,40 @@ private:
                        "|  2 - Linear subexpressions in algebraic constraints\n"
                        "|  4 - Linear and quadratic subexpressions in algebraic constraints\n"
                        "|  8 - MIN/MAX\n"
-                       "| 16 - Algebraic subexpressions in indicator constraints.\n"
+                       "| 16 - Algebraic subexpressions in indicator constraints\n"
+                       "| 32 - Algebraic subexpressions in expressions "
+                       "defining other variables, e.g., NOT in an "
+                       "equivalence (avoids linear terms in NL output)\n"
                        "\n"
-                       "See also option cvt:dvelim concerning only the input model. "
-                       "Default 31.",
-        options_.preproUnnest_, 0, 31);
+                       "16 and 32 need 2 or 4. Not inlined: results with "
+                       "stronger bounds (cvt:pre:boundsbest), "
+                       "cvt:dvelim=0. "
+                       "Default 63; 31 together with cvt:pre:linfill=-1 "
+                       "gives the behavior before bit 32. "
+                       "See also cvt:pre:linfill, cvt:pre:quadfill, "
+                       "cvt:dvelim, cvt:expr:nlassign.",
+        options_.preproUnnest_, 0, 63);
+    GetEnv().AddOption("cvt:pre:linfill linfill",
+                       "Limit on the fill from inlining a shared linear "
+                       "subexpression (cvt:pre:unnest): an upper bound "
+                       "(u-1)(k-1)-2 for k terms and u uses. Negative: "
+                       "no limit. A subexpression not inlined stays a "
+                       "variable defined by a linear equality, with the "
+                       "bounds implied by it. Applies to all bits of "
+                       "cvt:pre:unnest; with bit 32, also to the "
+                       "expressions written for solvers accepting them "
+                       "(acc:_expr=1, MP2NL). No effect with "
+                       "cvt:pre:all=0. Default 10. "
+                       "See also cvt:pre:unnest, cvt:pre:quadfill, "
+                       "cvt:dvelim, cvt:expr:nlassign.",
+                       options_.linFill_, -1, INT_MAX);
+    GetEnv().AddOption("cvt:pre:quadfill quadfill",
+                       "Similar limit for quadratic subexpressions, "
+                       "with k the number of their quadratic terms. "
+                       "Default -1 (no limit). "
+                       "See also cvt:pre:unnest, cvt:pre:linfill, "
+                       "cvt:dvelim, cvt:expr:nlassign.",
+                       options_.quadFill_, -1, INT_MAX);
     GetEnv().AddOption("cvt:pre:sort cvt:sort",
                        "0/1*: Sort and eliminate duplicates in arguments "
                        "of AND, OR, MIN, MAX. Sort arguments of "
@@ -2083,14 +2180,68 @@ private:
                        "constraint, e.g., indicator binaries, are not affected.",
                        GetModel().if_submit_aux_int(), 0, 1);
 
+    GetModel().if_make_fixed_vars_continuous()
+        = ModelAPI::FixedVarsContinuousDefault();
     GetEnv().AddOption("cvt:pre:continuous_fixed_vars continuous_fixed_vars ctg_fixed",
+                       ModelAPI::FixedVarsContinuousDefault() ?
                        "0/1*: Make fixed variables continuous, "
-                       "to avoid fake MIPs.",
+                       "to avoid fake MIPs." :
+                       "0*/1: Make fixed variables continuous, "
+                       "to avoid fake MIPs. Off by default for solvers "
+                       "without continuous variables.",
                        GetModel().if_make_fixed_vars_continuous(), 0, 1);
+
+    GetEnv().AddOption("cvt:pre:infeasvarbnd infeasvarbnd",
+                       "0*/1: Whether to declare the model infeasible in "
+                       "the converter when the bounds of a variable become "
+                       "contradictory (lower > upper), also best-known "
+                       "bounds deduced by the converter. With 0, a warning "
+                       "is given and the bounds are passed on to the "
+                       "solver. Note: they can be deduced from several "
+                       "constraints, so an IIS (iis:find) or a relaxation "
+                       "(alg:feasrelax) then concerns the deduced bounds "
+                       "rather than those constraints; some solvers (e.g., "
+                       "Xpress, SCIP, COPT) fail with an error if such a "
+                       "variable is an indicator binary.",
+                       options_.declareInfeasVarBnd_, 0, 1);
+
+    GetEnv().AddOption("cvt:pre:indfixedflag indfixedflag",
+                       "0/1*: Fold an indicator constraint whose binary "
+                       "variable becomes fixed after the indicator "
+                       "was created: keep only the implied constraint "
+                       "(binary at the indicator's value) or drop it. "
+                       "With 0, only indicators whose binary is fixed "
+                       "already when they are created are folded.",
+                       options_.preprocessIndFixedFlag_, 0, 1);
+
+    GetEnv().AddOption("cvt:pre:roundintbnd roundintbnd",
+                       "Tolerance for rounding the bounds of integer "
+                       "variables inwards (lower bound up, upper bound "
+                       "down): a lower bound b becomes ceil(b - tol), "
+                       "an upper bound floor(b + tol), so that, e.g., "
+                       "[1, 0.17] becomes [1, 0]. The tolerance used is "
+                       "max(tol, 16 ulp(b)), where ulp(b) is the spacing of "
+                       "floating-point numbers at |b|, at most 0.5. Negative: "
+                       "no rounding, which can give wrong results when "
+                       "a computed bound is slightly below or above an "
+                       "integer. Default 1e-9.",
+                       GetModel().round_int_bound_tol(), -1.0, 1.0);
 
     GetEnv().AddOption("cvt:pre:boundlogarg boundlogarg",
                        "0*/1: Bound logarithm arguments to nonnegative.",
                        options_.boundLogArg_, 0, 1);
+
+    GetEnv().AddOption("cvt:pre:funcbndtol funcbndtol",
+                       "Relative margin by which the result bounds of "
+                       "exp, expA, log and logA, computed from the "
+                       "bounds of their argument, are widened, "
+                       "to absorb rounding. 0: no margin (a computed "
+                       "bound can then be tighter than the true one "
+                       "by a rounding error). "
+                       "Negative: do not bound the results this way "
+                       "(old behavior: exp, expA >= 0, no bounds for log). "
+                       "Default 1e-12.",
+                       options_.funcBndTol_, -1.0, 1.0);
 
     GetEnv().AddOption("cvt:quadobj passquadobj",
                        ModelAPIAcceptsQuadObj() ?
@@ -2283,7 +2434,9 @@ private:
                        fmt::format("Above which reference count, "
                                    "an algebraic formula node should be assigned to a variable "
                                    "(see acc: options). 0 means all nodes assigned. "
-                                   "Default {}.", options_.nlassign_lev_).c_str(),
+                                   "Default {}. See also cvt:pre:unnest, "
+                                   "cvt:pre:linfill, cvt:pre:quadfill, cvt:dvelim.",
+                                   options_.nlassign_lev_).c_str(),
                        options_.nlassign_lev_, 0, INT_MAX);
 
     GetEnv().AddOption("cvt:expr:nlreif expr:nlreif expr:nlreify",
@@ -2335,6 +2488,20 @@ public:
   /// Whether preprocess inequality into ==LB/UB
   bool IfPreproIneq2BndEq() const
   { return MPCD( CanPreprocess(options_.preprocessIneq2BndEq_) ); }
+
+  /// Whether to fold indicators whose binary is fixed
+  /// after their creation
+  bool IfPreproIndFixedFlag() const
+  { return MPCD( CanPreprocess(options_.preprocessIndFixedFlag_) ); }
+
+  /// Can an indicator with binary \a b be folded
+  /// (IfPreproIndFixedFlag()): \a b is fixed at 0 or 1?
+  bool IfIndicatorFlagFoldable(int b) const {
+    if (!MPCD( IfPreproIndFixedFlag() ) || !MPCD( is_fixed(b) ))
+      return false;
+    const auto v = MPCD( fixed_value(b) );
+    return 0.0 == v || 1.0 == v;
+  }
 
   /// Whether to unify related inequalities
   bool IfPreproIneq2Related() const
@@ -2388,6 +2555,11 @@ public:
 
   /// Implications of variable-bound constraints
   const VarBinaryBounds& GetVarBinaryBounds() const { return var_bin_bnds_; }
+
+  /// cvt:pre:linfill
+  int LinFillLimit() const { return options_.linFill_; }
+  /// cvt:pre:quadfill
+  int QuadFillLimit() const { return options_.quadFill_; }
 
   /// Whether inline nested forall, exists, lin/quad expr
   int IfPreproUnnest() const
@@ -2475,8 +2647,8 @@ protected:
       if (xx.size() < MPCD( num_vars() )) {
         MPCD( GetEnv() ).AddWarning(
             "FewerVariables",
-            fmt::format("Solver reported {} variables,\n"
-                        "less than {} received.\n"
+            fmt::format("Solver reported {} variables, "
+                        "less than {} received. "
                         "Solution might be incorrect.",
                         xx.size(), MPCD( num_vars() )));
         xx.resize( MPCD( num_vars() ) );

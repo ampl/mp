@@ -2,6 +2,7 @@
 #define SCIPMODELAPI_H
 
 #include <climits>
+#include <string>
 
 #include "mp/env.h"
 #include "scipmpcommon.h"
@@ -18,6 +19,11 @@ class ScipModelAPI
 protected:
   void linearHelper(const int* pvars, const double* pcoefs, const size_t size, const char* name, const double lb, const double ub);
   void helpIndicatorLin(const int* pvars, const double* pcoefs, const size_t size, const char* name, const double rhs, const int binary_var, const int binary_value, SCIP_Bool lessthanineq);
+  /// A unique name for an indicator constraint: SCIP names its slack
+  /// variable and linear row after it, and a model export with
+  /// repeated names cannot be read back.
+  std::string IndicatorName(const char* name);
+  int n_indicators_ = 0;
   void helpQuad(const char* name, const int* lt_pvars, const double* lt_pcoefs, const size_t lt_size, const int* qt_pvars1, const int* qt_pvars2, const double* qt_pcoefs, const size_t qt_size, const double lb, const double ub);
 
 public:

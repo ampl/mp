@@ -189,6 +189,10 @@ public:
       override
   { return GetFlatCvt().PrepareNextSolveIteration(get_stt, get_sol); }
 
+  /// Start a run of solve iterations
+  void StartSolveIterations() override
+  { GetFlatCvt().StartSolveIterations(); }
+
   /// Is/was MultiObj Emulator used?
   bool IsMOEmulationOn() const override
   { return GetFlatCvt().IsMOActive(); }
@@ -1852,7 +1856,8 @@ private:
                              "by substitution into linear, quadratic, and polynomial "
                              "expressions:\n"
                              "\n.. value-table::\n"
-                             "\nSee also cvt:pre:unnest, as well as AMPL options linelim and substout.",
+                             "\nSee also cvt:pre:unnest, cvt:pre:linfill, cvt:pre:quadfill, "
+                             "cvt:expr:nlassign, as well as AMPL options linelim and substout.",
                              dvelim_, values_dvelim);
     GetEnv().AddStoredOption("cvt:pow2_as_qp pow2_as_qp pow2asqp",
                              "0/1*: whenever both quadratics and ^2 are accepted, "

@@ -4,8 +4,7 @@
 # Test that AMPL can receive suffixes when all cons logical ...
 # AND there is no objective but a linear constraint.
 # Test also that AMPL sends suffixes then.
-# Modified example from solvers-private/#63.
-# Addresses escrow/#141.
+# Modified from an existing example.
 # -------------------------------------------------------------
 
 set TYPE;

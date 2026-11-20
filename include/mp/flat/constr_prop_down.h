@@ -298,8 +298,10 @@ public:
 
   void PropagateResult(LogAConstraint& con, double , double , Context ctx) {
     con.AddContext(ctx);           // merge context
-    auto ctx_new = (con.GetParameters()[0]>=1.0) ? +ctx : -ctx;
-    PropagateResult2Args(con.GetArguments(),     // monotone
+    const double a = con.GetParameters()[0];
+    Context ctx_new = a >= 1.0 ? +ctx               // monotone
+        : a > 0.0 ? -ctx : Context(Context::CTX_MIX);  // a <= 0: not
+    PropagateResult2Args(con.GetArguments(),
                          MPD( MinusInfty() ), MPD( Infty() ), ctx_new);
   }
 
@@ -311,8 +313,10 @@ public:
 
   void PropagateResult(ExpAConstraint& con, double , double , Context ctx) {
     con.AddContext(ctx);           // merge context
-    auto ctx_new = (con.GetParameters()[0]>=1.0) ? +ctx : -ctx;
-    PropagateResult2Args(con.GetArguments(),     // monotone
+    const double a = con.GetParameters()[0];
+    Context ctx_new = a >= 1.0 ? +ctx               // monotone
+        : a > 0.0 ? -ctx : Context(Context::CTX_MIX);  // a <= 0: not
+    PropagateResult2Args(con.GetArguments(),
                          MPD( MinusInfty() ), MPD( Infty() ), ctx_new);
   }
 
@@ -345,6 +349,13 @@ public:
              // #248: not MarkAsBridged()
              // see test_ineq_unify_01.mod
         MPD( DecrementVarUsage(con.GetResultVar()) );
+      } else {
+        // Strict < or > cannot be a static constraint here, it is
+        // converted later (with the offset). Its argument expressions
+        // still need their contexts: otherwise, e.g., the condition
+        // of an if-then-else used here and in another place gets
+        // only the other place's half of the reification.
+        MPD( PropagateResult(con.GetConstraint(), ctx) );
       }
     } else {
       MPD( PropagateResult(con.GetConstraint(), ctx) );

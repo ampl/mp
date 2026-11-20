@@ -157,6 +157,8 @@ protected:
 	/// PrimalSolution() for flat backends.
 	/// @return empty vector if no primal solution.
 	ArrayRef<double> PrimalSolution() override;
+	/// A primal vector in BARON's variable order -> AMPL's order.
+	std::vector<double> ToAMPLOrder(const std::vector<double>& vec) const;
 	/// DualSolution() for flat backends.
 	/// @return empty map if no dual solution.
 	pre::ValueMapDbl DualSolution() override;

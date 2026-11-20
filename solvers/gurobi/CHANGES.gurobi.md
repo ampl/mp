@@ -2,6 +2,37 @@ Summary of recent updates to Gurobi for AMPL
 ============================================
 
 
+## unreleased
+- Fix (AMPLS): with *mip:basis*, after the native model was changed to a
+  continuous one between solves, the report gave the duals and basis of
+  the previous solve's fixed model; and each repeated report kept a copy
+  of the fixed model until the solver was closed.
+- Fix: with *mip:basis*, when the solve of the fixed problem took exactly
+  one iteration, the solve message ended after that line; the MIP gap
+  line was missing.
+- Several objectives with *obj:multi=1* where one is quadratic or nonlinear:
+  the message now says that natively handled objectives must all be linear
+  and suggests *obj:multi=2* (MP emulation) or *cvt:quadobj=0* and
+  *cvt:nlobj=0*, which move quadratic and nonlinear objective terms into
+  constraints.
+- Fix: *mip:basis* on a model with nonlinear constraints reported zero
+  duals and the same basis status for every variable and constraint;
+  Gurobi has no duals for such models, so the fixed-model solve is
+  skipped, with a message.
+- Fix: *kappa_exact=2* wrote the exact condition number to the *.kappa*
+  suffix instead of *.kappa_exact*.
+- Fix: wrong "optimal" solutions of some MIPs with general (e.g.,
+  if-then-else) constraints: parameter InfUnbdInfo=1, set by default for
+  unbounded rays (option *alg:rays*), is now set for continuous models
+  only, where rays are returned.
+- Suffix *.funcnonlinear* on nonlinear constraints is ignored with a
+  warning, as the *.funcpiece...* suffixes are (they apply only to
+  function constraints, *acc:_expr=0*). The same holds for *.global*,
+  which is read only when *.funcnonlinear* is not declared.
+- *iis:find*: a warning when Gurobi does not report the IIS membership of
+  the nonlinear constraints; their *.iis* values are then not set.
+
+
 ## 20261119
 - Support for Gurobi 14:
   - New option *alg:pdhgearlycrossover* controls how early PDHG starts
@@ -15,7 +46,6 @@ Summary of recent updates to Gurobi for AMPL
 - *pre:sparsify* documents value 2 (all model types).
   Documented ranges of *pre:funcpieceerror*, *pre:funcpiecelength*
   and *pre:funcpieces* follow the Gurobi limits.
-
 
 ## 20261029
 - Add options requiring Gurobi 14:

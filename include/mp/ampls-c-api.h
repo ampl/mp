@@ -34,7 +34,9 @@ typedef struct AMPLS_MP_Solver_T {
   /// Load model incl. suffixes.
   /// The method assumes that slv has been initialized by
   /// a solver-specific API using functions of ampls-cpp-api.h.
-  /// @return 0 on success
+  /// @return 0 on success; on failure, a solve result code (200..599)
+  ///   if the failure has one (e.g., 200: the converter proved
+  ///   the model infeasible), otherwise -1
   AMPLS_C_EXPORT int AMPLSLoadNLModel(AMPLS_MP_Solver* slv,
     const char* nl_filename, char** options);
 

@@ -1,7 +1,9 @@
 #ifndef CPSATMODELAPI_H
 #define CPSATMODELAPI_H
 
+#include <cmath>
 #include <memory>
+#include <stdexcept>
 #include <vector>
 
 #include "mp/env.h"
@@ -34,6 +36,10 @@ public:
   /// keep implied-integer auxiliaries integer (cvt:pre:auxint)
   static int AuxIntDefault() { return 1; }
 
+  /// ... and keeps fixed integer variables integer, instead of
+  /// making them continuous (cvt:pre:continuous_fixed_vars)
+  static int FixedVarsContinuousDefault() { return 0; }
+
   /// Products are native: keep a product of sums as one product
   /// of two auxiliary variables (cvt:multoutcard)
   static double MultOutCardDefault() { return 1.0; }
@@ -44,6 +50,8 @@ public:
   void FinishProblemModificationPhase();
 
   void AddVariables(const VarArrayDef& );
+  /// Record variable i of \a v if tech:varbound replaces a bound of it
+  void RecordVarBoundSet(const VarArrayDef& v, int i);
   void SetLinearObjective( int iobj, const LinearObjective& lo );
   void SetQuadraticObjective(int iobj, const QuadraticObjective& qo);
 
@@ -112,7 +120,16 @@ private:
   using LinearExpr = operations_research::sat::LinearExpr;
   using Domain = operations_research::Domain;
 
-  IntVar Var(int i) const { return data()->vars.at(i); }
+  /// The CP-SAT variable of MP variable \a i. Not for a variable fixed
+  /// at a non-integer value: such a constant can enter the objective only.
+  IntVar Var(int i) const {
+    if (!std::isnan(data()->var_const.at(i)))
+      throw std::runtime_error(fmt::format(
+          "CP-SAT supports integer variables only; variable {} is "
+          "fixed at the non-integer value {:.17g}",
+          i, data()->var_const[i]));
+    return data()->vars.at(i);
+  }
   /// Variable used as a literal; must be in [0,1]
   BoolVar Lit(int i) const;
   std::vector<IntVar> Vars(const std::vector<int>& idx) const;

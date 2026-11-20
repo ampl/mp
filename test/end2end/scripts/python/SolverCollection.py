@@ -93,6 +93,15 @@ def addStdSolvers(solvers: SolverCollection, binPath=""):
     solvers.addSolver(Solver.CPLEXODHSolver(path.join(binPath, "cplexodh")))
     solvers.addSolver(Solver.GUROBIODHSolver(path.join(binPath, "gurobiodh")))
 
+    ### MP drivers run through MP2NL as the subsolver ("<name>_mp2nl")
+    mp2nl = path.join(binPath, "mp2nl")
+    for sub, base in (("gurobi", "gurobi"), ("xpress", "xpress"), ("cplex", "cplex"),
+                      ("copt", "copt"), ("mosek", "mosek"), ("highs", "highs"),
+                      ("scip", "scip"), ("gcg", "gcg"), ("cpsat", "cpsat"),
+                      ("baronmp", "baronmp")):
+        solvers.addSolver(Solver.MP2NLOverMPSolver(
+            mp2nl, solvers.getSolver(base), sub).named(f"{sub}_mp2nl"))
+
 
 # if __name__ == "__main__":
 #     pass

@@ -209,6 +209,13 @@ public:
   /// variables.
   static int AuxIntDefault() { return 0; }
 
+  /// Default of option *cvt:pre:continuous_fixed_vars*: whether
+  /// fixed variables (and constants, represented as fixed variables)
+  /// are submitted as continuous, to avoid fake MIPs. 0 for solvers
+  /// without continuous variables, e.g., CP solvers: all variables
+  /// that were integer stay integer.
+  static int FixedVarsContinuousDefault() { return 1; }
+
   /// Default of option *cvt:multoutcard*: up to which (estimated)
   /// number of quadratic terms a product of two sums is multiplied
   /// out. 1 for solvers taking products of variables natively

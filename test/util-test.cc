@@ -23,6 +23,8 @@
 #include "gtest/gtest.h"
 #include "mp/error.h"
 #include "mp/os.h"
+#include "mp/solver-base.h"
+#include "mp/utils-string.h"
 #include "util.h"
 #include "gtest-extra.h"
 #include <string>
@@ -79,4 +81,42 @@ TEST(UtilTest, ExecuteShellThrowsOnNonzeroExitCode) {
     ExecuteShellCommand(GetExecutableDir() + "/test-helper > out"),
     mp::Error, "process exited with code 42");
 }
+}
+
+// Warnings and errors are wrapped at 60 characters
+TEST(UtilTest, WrapLines) {
+  using mp::WrapLines;
+  EXPECT_EQ("short line", WrapLines("short line"));
+  EXPECT_EQ("aaa bbb\nccc", WrapLines("aaa bbb ccc", 8));
+  // continuation lines keep the indentation
+  EXPECT_EQ("  aaa bbb\n  ccc ddd", WrapLines("  aaa bbb ccc ddd", 10));
+  // explicit line breaks are kept, each line wrapped by itself
+  EXPECT_EQ("aaa\nbbb ccc\nddd", WrapLines("aaa\nbbb ccc ddd", 8));
+  // a word longer than the width is not split
+  EXPECT_EQ("a\nverylongword\nb", WrapLines("a verylongword b", 5));
+  EXPECT_EQ("verylongword", WrapLines("verylongword", 5));
+  // tables (two spaces inside a line) are kept
+  const std::string table = "  Type          MaxAbs [Name]   MaxRel [Name]";
+  EXPECT_EQ(table, WrapLines(table, 20));
+  // no trailing spaces or empty continuation lines
+  EXPECT_EQ("aaa\nbbb", WrapLines("aaa bbb   ", 5));
+  // the end of the text is kept as given
+  EXPECT_EQ("  aaa\n  bbb  ", WrapLines("  aaa bbb  ", 7));
+  EXPECT_EQ("", WrapLines(""));
+  EXPECT_EQ("\n\n", WrapLines("\n\n"));
+}
+
+// The header of a warning is kept, its text wrapped with indentation
+TEST(UtilTest, WarningToStringWrapsText) {
+  const mp::BasicSolver::WarningsMap::value_type one{
+    "key", {1, "aaa bbb ccc ddd"}};
+  EXPECT_EQ("WARNING:  \"key\"\n  aaa bbb\n  ccc ddd",
+            mp::BasicSolver::ToString(one, 10));
+  EXPECT_EQ("WARNING:  \"key\"\n  aaa bbb ccc ddd",
+            mp::BasicSolver::ToString(one, 0));
+  const mp::BasicSolver::WarningsMap::value_type several{
+    "a_long_warning_key", {3, "aaa bbb"}};
+  EXPECT_EQ("WARNING.  3 case(s) of \"a_long_warning_key\". One of them:"
+            "\n  aaa\n  bbb",
+            mp::BasicSolver::ToString(several, 6));
 }

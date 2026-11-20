@@ -1,7 +1,7 @@
 #ifndef INDICATOR_GE_H
 #define INDICATOR_GE_H
 
-#include "mp/flat/redef/redef_base.h"
+#include "mp/flat/redef/MIP/indicator_fixed_flag.h"
 #include "mp/flat/constr_std.h"
 
 namespace mp {
@@ -10,10 +10,10 @@ namespace mp {
 /// b==val ==> c'x>=d
 template <class ModelConverter>
 class IndicatorLinGEConverter_MIP :
-    public BasicItemConverter<ModelConverter> {
+    public BasicIndicatorConverter_MIP<ModelConverter> {
 public:
   /// Base class
-  using Base = BasicItemConverter<ModelConverter>;
+  using Base = BasicIndicatorConverter_MIP<ModelConverter>;
   /// Constructor
   IndicatorLinGEConverter_MIP(ModelConverter& mc) : Base(mc) { }
   /// Converted item type
@@ -21,6 +21,8 @@ public:
 
   /// Conversion
   Context Convert(const ItemType& indc, int ) {
+    if (FoldIfFlagFixed(indc))
+      return Context::CTX_ROOT;
     auto binvar=indc.get_binary_var();
     auto bnds = GetMC().ComputeBoundsAndType(
           indc.get_constraint().GetBody());
@@ -31,6 +33,7 @@ public:
 
 protected:
   using Base::GetMC;
+  using Base::FoldIfFlagFixed;
 
   /// Linearize (b==val ==> c'x>=d) via big-M
   void ConvertImplicationGE(int b, int val,
