@@ -31,5 +31,14 @@
     "solvers_exclude" : ["knitro", "knitromp", "gecode", "ilogcp"],
     "options": { "mp_options": "cvt:quadobj=0 cvt:quadcon=0" },
     "objective" : 70
+  },
+  {
+    "name": "prod_int_fractional_bounds",
+    "files": ["prod_int_fractional_bounds.nl"],
+    "tags": ["integer"],
+    "comment": "Maximize x+y with x*y <= 4, x in [1,2], integer y in [0.5,2.5]. Raw NL preserves the fractional bounds.",
+    "solvers": ["highs", "gurobi", "scip"],
+    "options": { "mp_options": "cvt:quadcon=0" },
+    "objective": 4
   }
 ]

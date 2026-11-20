@@ -277,6 +277,7 @@ public:
   /// 599999999.5 must not be rounded to the nearest integer.
   double RoundIntBound(int v, double b, bool is_lb) const {
     if (round_int_bound_tol_ >= 0.0 && std::isfinite(b)
+        && std::trunc(b) != b
         && (var::INTEGER == var_type_[v] || is_var_implied_int(v))) {
       const double tol = std::min(
           0.5, std::max(round_int_bound_tol_, 16.0 * Ulp(b)));

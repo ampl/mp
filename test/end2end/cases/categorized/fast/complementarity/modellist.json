@@ -208,5 +208,13 @@
       "max{i in 1 .. _nccons} abs(_ccon[i])": { "max": 1e-5 },
       "min{i in 1 .. _ncons} _con[i].slack": { "min": -1e-5 }
     }
+  },
+  {
+    "name": "compl_exact_integer_bound",
+    "tags": ["integer", "complementarity"],
+    "solvers": ["gurobi"],
+    "options": { "presolve": 0, "mp_options": "cvt:compl=0" },
+    "objective": 0,
+    "values": { "solve_result_num": 0, "x - B": 0, "max(0, B-x)": 0 }
   }
 ]

@@ -3,6 +3,10 @@ Summary of recent updates to the AMPL MP Library
 
 ## Unreleased
 
+- Fixed false infeasibility when linearizing a product with a bounded integer
+  factor whose original NL bounds are fractional.
+- Preserve exact integer bounds during rounding, including large bounds that
+  enforce one side of a complementarity constraint.
 - Fixed `div`, `mod`, `floor`, `ceil`, `round` and `trunc`:
   - the bounds of their results that follow from the bounds of the
     arguments are now passed to the solver also when *cvt:pre:boundsbest*
