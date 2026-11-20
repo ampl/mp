@@ -214,6 +214,8 @@ protected:
   void OpenGurobi();
   void OpenGurobiModel();
   void CloseGurobi();
+  /// Free the fixed model of mip:basis, if any: model_fixed_ = model()
+  void FreeFixedModel();
 
   void OpenGurobiComputeServer();
   void OpenGurobiCloud();

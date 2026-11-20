@@ -94,19 +94,23 @@ The ordinary end-to-end runner starts a fresh driver invocation for each
 solve. The Windows integration test
 :file:`test/solvers/ampls-fixed-model-test.py` exercises a different path:
 it loads a model once, solves it with ``mip:basis=1`` and reports twice,
-changes the native problem (CPLEX: the objective sense; Xpress: a bound of
-the binary variable), then solves and reports again. It checks that each
-report carries the success message of its fixed solve exactly once and no
+changes the native problem (CPLEX, Gurobi: the objective sense; Xpress: a
+bound of the binary variable), then solves and reports again. It checks
+that each report carries the success message of its fixed solve exactly
+once (Gurobi: at most once, it is omitted after zero iterations) and no
 warning, the unchanged native problem, and the change in the integer
-solution. It uses the CPLEX MIQCP and linear MIP cases
-(``fixed_miqcp_cplex``, ``fixed_milp_cplex``) in ``fast/mip_basis`` and
-the Xpress ``nl_dual_01`` case in ``fast/suf_std``.
+solution. For Gurobi it then makes the model continuous natively, solves
+and checks that the reported duals are not those of the earlier fixed
+model. It uses the MIQCP and linear MIP cases (``fixed_miqcp_cplex``,
+``fixed_milp_cplex``) in ``fast/mip_basis`` and the Xpress ``nl_dual_01``
+case in ``fast/suf_std``.
 
 Run this test manually from the MP source root. It requires Windows
 Python, a licensed AMPL, and the selected shared driver and matching
-solver SDK DLLs. The examples use CPLEX 22.2 and Xpress::
+solver SDK DLLs. The examples use CPLEX 22.2, Gurobi 13.0 and Xpress::
 
     python test/solvers/ampls-fixed-model-test.py cplex C:/path/to/bin/cplex-lib.dll C:/path/to/bin/cplex2220.dll --ampl C:/path/to/ampl.exe
+    python test/solvers/ampls-fixed-model-test.py gurobi C:/path/to/bin/gurobi-lib.dll C:/path/to/bin/gurobi130.dll --ampl C:/path/to/ampl.exe
     python test/solvers/ampls-fixed-model-test.py xpress C:/path/to/bin/xpress-lib.dll C:/path/to/bin/xprs.dll --ampl C:/path/to/ampl.exe
 
 Use the matching DLL filename for your SDK version and quote paths with

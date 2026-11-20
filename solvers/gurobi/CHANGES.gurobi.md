@@ -3,6 +3,10 @@ Summary of recent updates to Gurobi for AMPL
 
 
 ## unreleased
+- Fix (AMPLS): with *mip:basis*, after the native model was changed to a
+  continuous one between solves, the report gave the duals and basis of
+  the previous solve's fixed model; and each repeated report kept a copy
+  of the fixed model until the solver was closed.
 - Fix: with *mip:basis*, when the solve of the fixed problem took exactly
   one iteration, the solve message ended after that line; the MIP gap
   line was missing.

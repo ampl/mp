@@ -1,7 +1,8 @@
 """Windows AMPLS regression for reporting and re-solving the same model.
 
 Usage: python ampls-fixed-model-test.py SOLVER DRIVER_DLL SDK_DLL [--ampl AMPL]
-SOLVER is cplex or xpress. The DLL paths refer to the build under test.
+SOLVER is cplex, gurobi or xpress. The DLL paths refer to the build under
+test.
 """
 
 import argparse
@@ -37,6 +38,8 @@ FIXED_SOLVE_SUCCESS = {
     "cplex": FIXED_SOLVE_PREFIX
              + rb": [0-9]+ (barrier|simplex) iterations?[\r\n]",
     "xpress": FIXED_SOLVE_PREFIX + rb": nonlinear solve[^\r\n]*[\r\n]",
+    # Gurobi reports the fixed solve only when it took iterations
+    "gurobi": None,
 }
 
 
@@ -48,7 +51,12 @@ def check_fixed_solve_message(name, text):
     """
     require(b" failed in Do" not in text, "The fixed solve failed")
     require(b"WARNING" not in text, "The report carries a warning")
-    require(len(re.findall(FIXED_SOLVE_SUCCESS[name], text)) == 1,
+    success = FIXED_SOLVE_SUCCESS[name]
+    if success is None:
+        require(text.count(FIXED_SOLVE_PREFIX) <= 1,
+                "The report repeats the message of an earlier fixed solve")
+        return
+    require(len(re.findall(success, text)) == 1,
             "The fixed solve did not report success exactly once")
     require(text.count(FIXED_SOLVE_PREFIX) == 1,
             "The report repeats the message of an earlier fixed solve")
@@ -67,6 +75,54 @@ def cplex_checks(driver, sdk, solver, model, binary):
         return value.value
 
     return lambda: problem_type(env, model), incumbent, lambda: set_sense(env, model, 1)
+
+
+def gurobi_checks(sdk, model, binary):
+    get_int = bind(sdk, "GRBgetintattr", INT, PTR, STR, ct.POINTER(INT))
+    get_value = bind(sdk, "GRBgetdblattrelement", INT, PTR, STR, INT,
+                     ct.POINTER(REAL))
+    set_int = bind(sdk, "GRBsetintattr", INT, PTR, STR, INT)
+    is_mip, value = INT(), REAL()
+
+    def state():
+        require(get_int(model, b"IsMIP", ct.byref(is_mip)) == 0,
+                "Gurobi did not return IsMIP")
+        return is_mip.value
+
+    def incumbent():
+        require(get_value(model, b"X", binary, ct.byref(value)) == 0,
+                "Gurobi did not return the binary variable value")
+        return value.value
+
+    return state, incumbent, lambda: set_int(model, b"ModelSense", 1)
+
+
+def sol_duals(path):
+    """The dual values in the SOL file at path (text format)."""
+    lines = path.read_bytes().decode("latin-1").splitlines()
+    i = lines.index("Options") + 1
+    i += int(lines[i]) + 1                  # the option values
+    ncon, nduals = int(lines[i]), int(lines[i + 1])
+    return [float(v) for v in lines[i + 4:i + 4 + nduals]] if ncon else []
+
+
+def check_continuous_resolve(sdk, solver, model, binary, report, solve, path):
+    """Gurobi: make the model continuous natively, solve and report.
+
+    The duals must be those of the LP relaxation (dual of Lin 1), not those
+    of the fixed model of the previous solve (minimization, all 0).
+    """
+    set_char = bind(sdk, "GRBsetcharattrelement", INT, PTR, STR, INT,
+                    ct.c_char)
+    set_int = bind(sdk, "GRBsetintattr", INT, PTR, STR, INT)
+    require(set_char(model, b"VType", binary, b"C") == 0
+            and set_int(model, b"ModelSense", -1) == 0,
+            "Could not make the model continuous")
+    solve(solver)
+    require(report(solver, os.fsencode(path)) == 0, "AMPLS reporting failed")
+    duals = sol_duals(path)
+    require(duals and max(abs(d) for d in duals) > 0.5,
+            f"The duals are those of an earlier fixed model: {duals}")
 
 
 def xpress_checks(sdk, model, binary):
@@ -119,11 +175,13 @@ def check_repeated_solve(name, driver, sdk, nl, binary):
         model = native(solver)
         if name == "cplex":
             state, incumbent, reverse = cplex_checks(driver, sdk, solver, model, binary)
+        elif name == "gurobi":
+            state, incumbent, reverse = gurobi_checks(sdk, model, binary)
         else:
             state, incumbent, reverse = xpress_checks(sdk, model, binary)
         solve(solver)
         original_type = state()
-        first_binary = 1 if name == "cplex" else 0
+        first_binary = 0 if name == "xpress" else 1
         require(abs(incumbent() - first_binary) < 1e-5,
                 "The first solve returned an unexpected incumbent")
         sol = nl.with_suffix(".sol")
@@ -146,22 +204,26 @@ def check_repeated_solve(name, driver, sdk, nl, binary):
         require(abs(incumbent() - second_binary) < 1e-5,
                 "The second solve did not find the new incumbent")
         check_report(sol.with_name("second.sol"), second_binary)
+        if name == "gurobi":
+            check_continuous_resolve(sdk, solver, model, binary, report,
+                                     solve, sol.with_name("third.sol"))
     finally:
         close(solver)
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("solver", choices=("cplex", "xpress"))
+    parser.add_argument("solver", choices=("cplex", "gurobi", "xpress"))
     parser.add_argument("driver", type=Path)
     parser.add_argument("sdk", type=Path)
     parser.add_argument("--ampl", default="ampl")
     args = parser.parse_args()
     # CPLEX: an MIQCP (fixed on a copy) and a linear MIP (fixed in the
     # native problem, which must be restored after each report)
-    sources = (("mip_basis/fixed_miqcp_cplex.mod",
-                "mip_basis/fixed_milp_cplex.mod") if args.solver == "cplex"
-               else ("suf_std/nl_dual_01.mod",))
+    sources = {"cplex": ("mip_basis/fixed_miqcp_cplex.mod",
+                         "mip_basis/fixed_milp_cplex.mod"),
+               "gurobi": ("mip_basis/fixed_milp_cplex.mod",),
+               "xpress": ("suf_std/nl_dual_01.mod",)}[args.solver]
     with (os.add_dll_directory(str(args.driver.resolve().parent)),
           os.add_dll_directory(str(args.sdk.resolve().parent))):
         driver = ct.CDLL(str(args.driver.resolve()))

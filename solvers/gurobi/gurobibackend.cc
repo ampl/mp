@@ -54,12 +54,16 @@ std::string GurobiBackend::GetSolverVersion() {
   return fmt::format("{}.{}.{}", a, b, c);
 }
 
+void GurobiBackend::FreeFixedModel() {
+  if (model_fixed_ && model_fixed_ != model())
+    GRBfreemodel(model_fixed_);
+  model_fixed_ = model();
+}
+
 void GurobiBackend::CloseGurobi() {
   /* Free the fixed model */
-  if (has_model() && model() != model_fixed_) {
-    assert(model_fixed_);
-    GRBfreemodel(model_fixed_);
-  }
+  if (has_model())
+    FreeFixedModel();
   model_fixed_ = nullptr;
 
   /* Free model */
@@ -1213,6 +1217,7 @@ int __stdcall GurobiBackend::DoPlateauCallback(
 
 ///////////////////////////////////// SOLVE /////////////////////////////////////////
 void GurobiBackend::Solve() {
+  FreeFixedModel();          // that of a previous solve (AMPLS)
   PrepareGurobiSolve();
   int status = GRBoptimize(model());
   if (GRB_ERROR_Q_NOT_PSD == status) {
@@ -1362,6 +1367,7 @@ bool GurobiBackend::HasNLGenCons() {
 }
 
 void GurobiBackend::ConsiderGurobiFixedModel() {
+  FreeFixedModel();          // that of an earlier report of this solve
   if (!IsMIP())
     return;
   if (IsQCP()) {
