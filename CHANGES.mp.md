@@ -3,6 +3,8 @@ Summary of recent updates to the AMPL MP Library
 
 ## Unreleased
 
+- Fix: when a model was solved repeatedly through the AMPLS API, the solve
+  message of each report repeated the notes of the earlier solves.
 - Fixed false infeasibility when linearizing a product with a bounded integer
   factor whose original NL bounds are fractional.
 - Preserve exact integer bounds during rounding, including large bounds that

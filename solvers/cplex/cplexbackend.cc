@@ -138,9 +138,9 @@ namespace mp {
 
 
   bool CplexBackend::IsMIP() const {
-    // The fixed model of an MIQCP is typed QCP, but the result stays a MIP's
-    if (CPXPROB_MIQCP == original_model_type_)
-      return true;
+    // By the native problem type alone. The fixed solve of an MIQCP runs
+    // on a copy, so the type of lp() is that of the user's model also after
+    // a report and when the model is retyped between solves (AMPLS).
     auto type = CPXgetprobtype(env(), lp());
     return !((type == CPXPROB_LP) || (type == CPXPROB_QP)
       || (type == CPXPROB_QCP));
@@ -1307,7 +1307,7 @@ void CplexBackend::ConsiderCplexFixedModel() {
   MIPResultBeforeFixed result;
   result.primal = PrimalSolution();
   if (result.primal.empty()) {
-    AddToSolverMessage("Fixed MIP for mip:basis skipped: no integer-feasible incumbent.");
+    AddToSolverMessage("Fixed MIP for mip:basis skipped: no integer-feasible incumbent.\n");
     mip_result_before_fixed_ = {};
     mip_result_before_fixed_.objective = ObjectiveValue();
     fixed_model_failed_ = true;
@@ -1319,7 +1319,7 @@ void CplexBackend::ConsiderCplexFixedModel() {
     // CPLEX's continuous QCP solver ignores these constraints, the fixed
     // model would not be the model of the MIP
     AddToSolverMessage("Fixed MIP for mip:basis skipped: indicator, SOS "
-                       "or piecewise-linear constraints in an MIQCP.");
+                       "or piecewise-linear constraints in an MIQCP.\n");
     mip_result_before_fixed_ = std::move(result);
     fixed_model_failed_ = true;
     return;
@@ -1341,7 +1341,7 @@ void CplexBackend::ConsiderCplexFixedModel() {
       CPXcloneprob(env(), lp(), &error), free_copy);
   if (!copy) {
     fixed_model_failed_ = true;
-    AddToSolverMessage(fmt::format("Cannot save MIP before fixed solve (CPLEX error {}).", error));
+    AddToSolverMessage(fmt::format("Cannot save MIP before fixed solve (CPLEX error {}).\n", error));
     return;
   }
   std::string msg;
@@ -1352,7 +1352,7 @@ void CplexBackend::ConsiderCplexFixedModel() {
   }
   if (!msg.empty()) {
     fixed_model_failed_ = true;
-    AddToSolverMessage(msg + " failed in DoCplexFixedModel().");
+    AddToSolverMessage(msg + " failed in DoCplexFixedModel().\n");
     if (!is_miqcp) {
       CPXfreeprob(env(), &lp_ref());
       lp_ref() = copy.release();
@@ -1368,10 +1368,10 @@ std::string CplexBackend::DoCplexFixedModel(CPXLPptr model) {
   int status;
   Optalg Contopt;
 
-  original_model_type_ = CPXgetprobtype(env(), model);
+  const int original_model_type = CPXgetprobtype(env(), model);
   int new_model_type = CPXPROB_FIXEDMILP;
   Contopt = CPXlpopt;
-  switch (original_model_type_) {
+  switch (original_model_type) {
   case CPXPROB_MIQP:
     new_model_type = CPXPROB_FIXEDMIQP;
     Contopt = CPXqpopt;
@@ -1382,7 +1382,7 @@ std::string CplexBackend::DoCplexFixedModel(CPXLPptr model) {
   default:
     new_model_type = CPXPROB_FIXEDMILP;
   }
-  if (new_model_type == original_model_type_) // notably MIQCP
+  if (new_model_type == original_model_type) // notably MIQCP
   {
     // fix variables manually:
     const auto& sol = mip_result_before_fixed_.primal;
@@ -1411,7 +1411,7 @@ std::string CplexBackend::DoCplexFixedModel(CPXLPptr model) {
   double old_time_limit;
   CPXLONG old_iteration_limit;
   int old_barrier_limit;
-  const int method_param = (CPXPROB_MIQP == original_model_type_)
+  const int method_param = (CPXPROB_MIQP == original_model_type)
       ? CPXPARAM_QPMethod : CPXPARAM_LPMethod;
   int old_method = 0;
   CPLEX_CALL(CPXgetintparam(env(), method_param, &old_method));
@@ -1446,13 +1446,15 @@ std::string CplexBackend::DoCplexFixedModel(CPXLPptr model) {
     return fmt::format("Fixed model status {}", optimstatus);
   if (CPXbaropt == Contopt) {          // the fixed QCP of an MIQCP
     int cnt = CPXgetbaritcnt(env(), model);
-    AddToSolverMessage(fmt::format("Fixed MIP for mip:basis: {} barrier iteration{}",
-      cnt, "s"[cnt == 1.]));
+    AddToSolverMessage(fmt::format(
+        "Fixed MIP for mip:basis: {} barrier iteration{}\n",
+        cnt, 1 == cnt ? "" : "s"));
     return {};
   }
   int cnt = CPXgetitcnt(env(), model);
-  AddToSolverMessage(fmt::format("Fixed MIP for mip:basis: {} simplex iteration{}",
-    cnt, "s"[cnt == 1.]));
+  AddToSolverMessage(fmt::format(
+      "Fixed MIP for mip:basis: {} simplex iteration{}\n",
+      cnt, 1 == cnt ? "" : "s"));
   return {};
 }
 

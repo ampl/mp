@@ -8,6 +8,7 @@ import argparse
 import ctypes as ct
 import os
 from pathlib import Path
+import re
 import subprocess
 import tempfile
 
@@ -27,6 +28,28 @@ def bind(library, name, result, *arguments):
 def require(condition, message):
     if not condition:
         raise AssertionError(message)
+
+
+# Every message of the fixed solve (success, skipped) starts with this text.
+FIXED_SOLVE_PREFIX = b"Fixed MIP for mip:basis"
+# The line reporting success, complete with its line end.
+FIXED_SOLVE_SUCCESS = {
+    "cplex": FIXED_SOLVE_PREFIX + rb": [0-9]+ barrier iterations?[\r\n]",
+    "xpress": FIXED_SOLVE_PREFIX + rb": nonlinear solve[^\r\n]*[\r\n]",
+}
+
+
+def check_fixed_solve_message(name, text):
+    """Check that the report text describes one successful fixed solve.
+
+    The text must be that of this report alone: a message kept from an
+    earlier report of the same model would hide a failure of this one.
+    """
+    require(b" failed in Do" not in text, "The fixed solve failed")
+    require(len(re.findall(FIXED_SOLVE_SUCCESS[name], text)) == 1,
+            "The fixed solve did not report success exactly once")
+    require(text.count(FIXED_SOLVE_PREFIX) == 1,
+            "The report repeats the message of an earlier fixed solve")
 
 
 def cplex_checks(driver, sdk, solver, model, binary):
@@ -90,11 +113,10 @@ def check_repeated_solve(name, driver, sdk, nl, binary):
         require(abs(incumbent() - first_binary) < 1e-5,
                 "The first solve returned an unexpected incumbent")
         sol = nl.with_suffix(".sol")
-        expected = (b"barrier iteration" if name == "cplex" else b"nonlinear solve")
 
         def check_report(path, binary_value):
             require(report(solver, os.fsencode(path)) == 0, "AMPLS reporting failed")
-            require(expected in path.read_bytes(), "The fixed solve did not report success")
+            check_fixed_solve_message(name, path.read_bytes())
             require(native(solver) == model, "Reporting replaced the native model")
             require(state() == original_type, "Reporting changed the native problem type")
             require(abs(incumbent() - binary_value) < 1e-5,

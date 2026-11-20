@@ -634,13 +634,17 @@
     "name": "fixed_miqcp_cplex",
     "tags": ["integer", "continuous", "quadratic", "fixmodel"],
     "solvers": ["cplex"],
+    "comment": "MIQCP with mip:basis=1: the dual of the linear row is that of the fixed continuous problem (1; 0 if no duals are returned)",
     "options": { "presolve": 0, "mp_options": "mip:basis=1" },
-    "objective": 2.414213562373095,
+    "objective": 5.414213562373095,
     "values": {
       "solve_result": "solved",
       "b": 1,
       "x": 1.414213562373095,
+      "y": 1.585786437626905,
+      "Lin.dual": { "min": 0.999, "max": 1.001 },
       "if match(solve_message, 'Fixed MIP for mip:basis:') > 0 then 1 else 0": 1,
+      "if match(solve_message, 'failed') > 0 then 1 else 0": 0,
       "max(0, x*x-1-b)": { "max": 1e-6 }
     }
   }

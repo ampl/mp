@@ -289,7 +289,6 @@ private:
   bool HasSolution();
   void ReadBendersSuffix();
   void setSolutionMethod();
-  int original_model_type_ = -1;
   struct MIPResultBeforeFixed {
     std::vector<double> primal;
     double objective = 0, gap = 0, absolute_gap = 0, bound = 0;

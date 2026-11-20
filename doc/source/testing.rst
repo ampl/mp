@@ -95,7 +95,8 @@ solve. The Windows integration test
 :file:`test/solvers/ampls-fixed-model-test.py` exercises a different path:
 it loads a model once, solves and reports it with ``mip:basis=1``, reverses
 the objective sense on the same native problem, then solves and reports
-again. It checks both fixed solves, the unchanged native problem, and the
+again. It checks that each of the two reports carries the success message of
+its own fixed solve exactly once, the unchanged native problem, and the
 change in the integer solution. It uses the CPLEX MIQCP case in
 ``fast/mip_basis`` and the Xpress ``nl_dual_01`` case in ``fast/suf_std``.
 

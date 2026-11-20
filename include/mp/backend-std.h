@@ -816,6 +816,10 @@ protected:
     if (solver_msg_extra_.size()) {
       writer.write("\n");
       writer.write(solver_msg_extra_);
+      // The messages of this solve cycle (options, input, solve, report)
+      // are delivered here. Forget them, so that the report of a repeated
+      // solve of the same model (AMPLS) does not repeat them.
+      solver_msg_extra_.clear();
     }
     /// Summary on alternative solutions
     if (kIntermSol_) {
