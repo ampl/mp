@@ -1,5 +1,7 @@
 var x{1..6} integer >= -2 <= 2;
-maximize o: (0)*x[1] + (-2)*x[2] + (2)*x[3] + (1)*x[4] + (3)*x[5] + (4)*x[6];
+
+maximize o: 0*x[1] - 2*x[2] + 2*x[3] + x[4] + 3*x[5] + 4*x[6];
+
 s.t. c1: alldiff(x[1], x[2]);
 s.t. c2: (x[5] < -2) ==> (x[5] > 1) else (x[2] < 0);
 s.t. c3: forall {i in 1..5} x[i] != x[i+1];

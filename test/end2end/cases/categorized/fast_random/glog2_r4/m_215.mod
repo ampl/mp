@@ -1,5 +1,7 @@
 var x{1..4} integer >= -2 <= 0;
-maximize o: (1)*x[1] + (-4)*x[2] + (6)*x[3] + (6)*x[4];
+
+maximize o: x[1] - 4*x[2] + 6*x[3] + 6*x[4];
+
 s.t. c1: numberof 0 in (x[1], x[2], x[3], x[4]) >= 3;
 s.t. c2: not ((x[4] != -2) and (x[1] <= -1));
 s.t. c3: numberof -2 in (x[1], x[2], x[3], x[4]) <= 2;

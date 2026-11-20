@@ -1,5 +1,7 @@
 var x{1..6} integer >= 0 <= 2;
-maximize o: (5)*x[1] + (3)*x[2] + (-5)*x[3] + (2)*x[4] + (5)*x[5] + (3)*x[6];
+
+maximize o: 5*x[1] + 3*x[2] - 5*x[3] + 2*x[4] + 5*x[5] + 3*x[6];
+
 s.t. c1: (x[5] == 0) or (x[4] == 0) or (x[2] > 2);
 s.t. c2: alldiff(x[1], x[4], x[6]);
 s.t. c3: exists {i in 1..6} x[i] == 1;
