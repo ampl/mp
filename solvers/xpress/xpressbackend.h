@@ -239,6 +239,8 @@ protected:
 
   void ConsiderXpressFixedModel();
   void CopyFixedNonlinearModel();
+  /// Whether the integer columns have equal bounds in the copy
+  bool IntegersAreFixedInCopy();
   void ClearFixedModel();
   std::string DoXpressFixedModel(bool nonlinear);
   /// Fixed model of a nonlinear MIP: XPRSoptimize; "" on success.

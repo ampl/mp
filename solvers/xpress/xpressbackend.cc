@@ -475,6 +475,8 @@ void XpressmpBackend::ConsiderXpressFixedModel() {
       }
     } else if (XPRSfixmipentities(model_fixed_, 1))
       msg = "XPRSfixmipentities()";
+    else if (nonlinear && !IntegersAreFixedInCopy())
+      msg = "Fixing integer columns in the copy of the model";
     else {
       if (outlev_)
         Print("\n\n     ======= Solving the fixed MIP =======\n\n");
@@ -503,12 +505,36 @@ void XpressmpBackend::CopyFixedNonlinearModel() {
   model_fixed_ = copy;
   XPRESSMP_CCALL(XPRScopyprob(copy, lp(), "ampl-fixed"));
   XPRESSMP_CCALL(XPRScopycontrols(copy, lp()));
+  // The message callback is not copied with the problem: without it the
+  // fixed solve prints nothing, and neither do warnings about the copy.
+  XPRESSMP_CCALL(XPRScopycallbacks(copy, lp()));
   // The native fixing routine needs an incumbent, which is not copied
   // along with the problem data.
   int status;
   XPRESSMP_CCALL(XPRSloadmipsol(copy, mip_primal_before_fixed_.data(), &status));
   if (status)
     throw std::runtime_error("Xpress rejected the incumbent in the fixed model");
+}
+
+/// Whether every binary and integer column of the problem has equal
+/// bounds in its copy model_fixed_. XPRSfixmipentities() returns success
+/// also when it fixed nothing (it only warns), and solving such a copy
+/// would report a relaxation as the fixed model.
+/// The types are read from lp(): the fixing makes the copy's continuous.
+bool XpressmpBackend::IntegersAreFixedInCopy() {
+  const int n = NumVars();
+  if (!n)
+    return true;
+  std::vector<char> types(n);
+  std::vector<double> lb(n), ub(n);
+  if (XPRSgetcoltype(lp(), types.data(), 0, n-1)
+      || XPRSgetlb(model_fixed_, lb.data(), 0, n-1)
+      || XPRSgetub(model_fixed_, ub.data(), 0, n-1))
+    return false;
+  for (int j=0; j<n; ++j)
+    if (('B' == types[j] || 'I' == types[j]) && lb[j] != ub[j])
+      return false;
+  return true;
 }
 
 bool XpressmpBackend::FixIntegersToPoolBest() {
