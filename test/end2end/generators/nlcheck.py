@@ -3,8 +3,20 @@
 
 For every .mod file in the given folders, writes the NL file of the original
 and of the formatted model with AMPL (option presolve 0 and the default
-presolve) and compares them byte for byte. With --apply, rewrites the files
-whose NL files are all equal, after the whole folder is checked.
+presolve) and compares them byte for byte. Only what reaches the NL file is
+compared: a change in an unused declaration or a comment is not seen.
+
+With --apply, the reformatted files of a folder are rewritten after the whole
+folder is checked, and only if no model of it has a problem. A problem is:
+AMPL fails or writes no NL file for the original or the formatted model
+(also for a valid model without variables, or one that presolve finds
+infeasible), the NL files differ, or the source changed during the check.
+One such model leaves the whole folder as it is.
+
+The rewriting itself is done file by file. If a source changes between the
+check and its rewriting, that file is kept and reported, the files rewritten
+before it stay rewritten, the summary line lacks "(applied)" and the exit
+code is 1.
 
 Usage: nlcheck.py [--apply] [--careful] [--ampl PATH] DIR...
 

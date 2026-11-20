@@ -38,10 +38,14 @@ AT_SPACE_ONLY = False      # careful mode: no '(' / ',' breaks; fill only at spa
 
 def clean_coefficients(s):
     """Only a coefficient that starts a term: after the start, ':', '(',
-    ',' or a binary + or - (never after '^', '*' or '/')."""
-    start = r"(^|[:(,]\s*|[^-+*/^(,:\s]\s*[+\-]\s*)"
-    s = re.sub(r"\+\s*\(-(%s)\)\s*\*" % NUM, r"- \1*", s)
-    s = re.sub(start + r"\((-?%s)\)\s*\*" % NUM, r"\1\2*", s)
+    ',' or a binary + or - (never after '^', '*' or '/').
+
+    The sign of an exponent (1e-1) is not a binary operator, and '**' is
+    a power, not a product: (-2)**y must keep its parentheses."""
+    start = r"(^|[:(,]\s*|[^-+*/^(,:\s]\s*(?<![\d.][eEdD])[+\-]\s*)"
+    times = r"\*(?!\*)"
+    s = re.sub(r"\+\s*\(-(%s)\)\s*%s" % (NUM, times), r"- \1*", s)
+    s = re.sub(start + r"\((-?%s)\)\s*%s" % (NUM, times), r"\1\2*", s)
     s = re.sub(start + r"(-?)1\*(?=[A-Za-z(])", r"\1\2", s)
     return s
 
