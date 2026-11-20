@@ -22,6 +22,8 @@ case expects either the optimal objective value or `solve_result` `infeasible`. 
 means that the driver, the conversion or the solver returned something else; a solver's
 own tolerances can matter for large coefficients.
 
-The models were first committed as generated, one statement per line, and then laid out
-to be read (at most 80 characters per line, blank lines between declarations, objectives
-and constraints). The layout change leaves the NL file of every model unchanged.
+`../../../generators/logical_models.py` generates the rounds (and new ones); see the
+README there. The models were first committed as generated, one statement per line, and
+then laid out to be read (at most 80 characters per line, blank lines between
+declarations, objectives and constraints). The layout change leaves the NL file of every
+model unchanged.
