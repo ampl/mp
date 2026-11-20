@@ -2556,12 +2556,12 @@ public:
   /// Implications of variable-bound constraints
   const VarBinaryBounds& GetVarBinaryBounds() const { return var_bin_bnds_; }
 
-  /// Whether inline nested forall, exists, lin/quad expr
   /// cvt:pre:linfill
   int LinFillLimit() const { return options_.linFill_; }
   /// cvt:pre:quadfill
   int QuadFillLimit() const { return options_.quadFill_; }
 
+  /// Whether inline nested forall, exists, lin/quad expr
   int IfPreproUnnest() const
   { return MPCD( CanPreprocess(options_.preproUnnest_) ); }
 

@@ -66,6 +66,14 @@ TEST_F(InterfaceTester_MaxConstraint, RoundIntBoundUsesUlpTolerance) {
   EXPECT_EQ(3.0, m.RoundIntBound(v, 3.0 - 1e-10, true));
   EXPECT_EQ(4.0, m.RoundIntBound(v, 3.0 + 1e-8, true));
   EXPECT_EQ(2.0, m.RoundIntBound(v, 3.0 - 1e-8, false));
+  // An exact integer is returned as is, also where the tolerance (0.5)
+  // is below the spacing of doubles: 2^52 + 1 -/+ 0.5 is not
+  // representable and would be rounded to the even neighbour
+  const double big = 4503599627370497.0;       // 2^52 + 1
+  EXPECT_EQ(big, m.RoundIntBound(v, big, true));
+  EXPECT_EQ(big, m.RoundIntBound(v, big, false));
+  EXPECT_EQ(-big, m.RoundIntBound(v, -big, true));
+  EXPECT_EQ(-big, m.RoundIntBound(v, -big, false));
 }
 
 

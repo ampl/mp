@@ -18,9 +18,10 @@ Summary of recent updates to Gurobi for AMPL
   if-then-else) constraints: parameter InfUnbdInfo=1, set by default for
   unbounded rays (option *alg:rays*), is now set for continuous models
   only, where rays are returned.
-- Suffixes *.funcnonlinear* and *.global* on nonlinear constraints are
-  ignored with a warning, as the *.funcpiece...* suffixes are (they apply
-  only to function constraints, *acc:_expr=0*).
+- Suffix *.funcnonlinear* on nonlinear constraints is ignored with a
+  warning, as the *.funcpiece...* suffixes are (they apply only to
+  function constraints, *acc:_expr=0*). The same holds for *.global*,
+  which is read only when *.funcnonlinear* is not declared.
 - *iis:find*: a warning when Gurobi does not report the IIS membership of
   the nonlinear constraints; their *.iis* values are then not set.
 
