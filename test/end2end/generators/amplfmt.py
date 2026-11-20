@@ -30,6 +30,9 @@ TOKEN = re.compile(r"'[^']*'|\"[^\"]*\"|<==>|==>|:=|\*\*|<=|>=|!=|==|<>|&&|\|\||
                    r"[A-Za-z_][A-Za-z_0-9]*|(?:\d+(?:\.\d*)?|\.\d+)(?:[eEdD][-+]?\d+)?|\S")
 NUM = r"\d+(?:\.\d+)?(?:[eE][-+]?\d+)?"
 OPEN, CLOSE = "([{", ")]}"
+STATEMENT_PART = re.compile(
+    r"""'(?:''|\\.|[^'\\])*'|"(?:\"\"|\\.|[^"\\])*"|/\*.*?(?:\*/|\Z)"""
+    r"""|\#[^\r\n]*|[][(){};'""]""", re.DOTALL)
 AT_SPACE_ONLY = False      # careful mode: no '(' / ',' breaks; fill only at space
 
 
@@ -198,6 +201,10 @@ def kind(stmt):
 
 
 def format_statement(stmt):
+    # The layout and coefficient rules below operate on ordinary expressions.
+    # Keep statements with literals or embedded comments verbatim.
+    if any(mark in stmt for mark in ("'", '"', "#", "/*")):
+        return [stmt]
     stmt = " ".join(stmt.split())
     head, sep, body = stmt.partition(":")
     if not sep or kind(stmt) not in ("obj", "con"):
@@ -212,20 +219,26 @@ def format_statement(stmt):
 
 def statements(text):
     """Comment lines and statements (to ';' outside brackets) in order."""
-    cur, depth = "", 0
-    for line in text.splitlines():
-        if not cur.strip() and line.lstrip().startswith("#"):
-            yield line.rstrip()
-            continue
-        for ch in line:
-            cur += ch
-            depth += (ch in OPEN) - (ch in CLOSE)
-            if ch == ";" and depth == 0:
-                yield cur.strip()
-                cur = ""
-        cur += " "
-    if cur.strip():
-        yield cur.strip()
+    start, depth = 0, 0
+    for part in STATEMENT_PART.finditer(text):
+        token = part.group()
+        if token in ("'", '"'):
+            # An unmatched delimiter makes the rest ambiguous.
+            yield text[start:].strip()
+            return
+        if token.startswith(("#", "/*")):
+            if not text[start:part.start()].strip():
+                yield token
+                start = part.end()
+        elif token in OPEN:
+            depth += 1
+        elif token in CLOSE:
+            depth -= 1
+        elif token == ";" and depth == 0:
+            yield text[start:part.end()].strip()
+            start = part.end()
+    if text[start:].strip():
+        yield text[start:].strip()
 
 
 def wrap_comment(line):
@@ -247,6 +260,9 @@ def format_model(text):
             continue                             # blank lines are re-made
         if st.lstrip().startswith("#"):
             out += wrap_comment(st)
+            continue
+        if st.startswith("/*"):
+            out.append(st)
             continue
         k = kind(st)
         if prev is not None and k != prev and out and out[-1] != "" \
@@ -276,7 +292,8 @@ def wrap_line(line):
     comment line, is left as it is."""
     global WIDTH
     code, comment = code_and_comment(line)
-    if len(line.rstrip().expandtabs(8)) <= WIDTH or comment or not code.strip():
+    if (len(line.rstrip().expandtabs(8)) <= WIDTH or comment
+            or not code.strip() or "'" in code or '"' in code):
         return [line]
     lead = code[:len(code) - len(code.lstrip())]
     col = len(lead.expandtabs(8))
@@ -299,6 +316,8 @@ def wrap_lines(text):
     """Careful mode for third-party and converted models: only long code
     lines are broken, before operators or where they have whitespace;
     nothing but whitespace changes."""
+    if "/*" in text:
+        return text
     global AT_SPACE_ONLY
     AT_SPACE_ONLY, old = True, AT_SPACE_ONLY
     try:

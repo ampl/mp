@@ -18,6 +18,7 @@ import subprocess
 import sys
 import tempfile
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from amplfmt import format_model, wrap_lines         # noqa: E402
@@ -27,9 +28,10 @@ AMPL = os.environ.get("AMPL", "ampl")   # AMPL executable (or --ampl)
 
 def write_nl(ampl, mod, stub, pre):
     run = stub + ".run"
-    open(run, "w").write(f'option nl_comments 0; option presolve {pre};\n'
+    Path(run).write_text(f'option nl_comments 0; option presolve {pre};\n'
                          f'model "{mod}";\nwrite "g{stub}";\n')
-    subprocess.run([ampl, run], capture_output=True, timeout=600)
+    return subprocess.run([ampl, run], capture_output=True, text=True,
+                          errors="replace", timeout=600)
 
 
 def write_nls(ampl, mods, outdir, tag):
@@ -38,62 +40,85 @@ def write_nls(ampl, mods, outdir, tag):
     jobs = [(m, f"{outdir}/{tag}_{i}_{pre}", pre)
             for i, m in enumerate(mods) for pre in (0, 10)]
     with ThreadPoolExecutor(3) as ex:
-        list(ex.map(lambda j: write_nl(ampl, *j), jobs))
-    return ""
+        return list(ex.map(lambda j: write_nl(ampl, *j), jobs))
 
 
 def read(path):
     """The NL file without its first line (it names the problem)."""
     try:
-        return open(path, "rb").read().split(b"\n", 1)[1]
+        with open(path, "rb") as source:
+            _, _, body = source.read().partition(b"\n")
+        return body or None
     except OSError:
         return None
+
+
+def apply_model(model, original, formatted):
+    """Replace an unchanged source without truncating it in place."""
+    path = Path(model).resolve()
+    with tempfile.TemporaryDirectory(prefix=".nlcheck-", dir=path.parent) as tmp:
+        candidate = Path(tmp) / path.name
+        candidate.write_text(formatted)
+        shutil.copymode(path, candidate)
+        if path.read_text() != original:
+            return False
+        candidate.replace(path)
+    return True
 
 
 def check_dir(ampl, d, apply, careful=False):
     mods = sorted(os.path.join(d, f) for f in os.listdir(d) if f.endswith(".mod"))
     tmp = tempfile.mkdtemp(prefix="nlcheck_")
     try:
-        new = []
+        inputs, new = [], []
+        long_lines = 0
         for i, m in enumerate(mods):
-            text = open(m).read()
+            text = Path(m).read_text()
+            inputs.append(text)
             nm = os.path.join(tmp, f"new_{i}.mod")
             out = wrap_lines(text) if careful else format_model(text)
             if careful and "".join(out.split()) != "".join(text.split()):
                 raise SystemExit(f"{m}: not only whitespace changed")
-            open(nm, "w").write(out)
+            Path(nm).write_text(out)
+            long_lines += sum(len(ln.rstrip().expandtabs(8)) > 80
+                              for ln in out.splitlines())
             new.append(nm)
-        log_o = write_nls(ampl, mods, tmp, "o")
-        log_n = write_nls(ampl, new, tmp, "n")
-        bad, nonl, changed = [], [], 0
+        original_runs = write_nls(ampl, mods, tmp, "o")
+        formatted_runs = write_nls(ampl, new, tmp, "n")
+        bad, changed = [], []
         for i, m in enumerate(mods):
-            same = all(read(f"{tmp}/o_{i}_{p}.nl") == read(f"{tmp}/n_{i}_{p}.nl")
-                       for p in (0, 10))
-            unchanged = open(new[i]).read() == open(m).read()
+            pairs = [(read(f"{tmp}/o_{i}_{p}.nl"), read(f"{tmp}/n_{i}_{p}.nl"))
+                     for p in (0, 10)]
+            runs = original_runs[2*i:2*i+2] + formatted_runs[2*i:2*i+2]
+            if any(run.returncode for run in runs) or any(
+                    a is None or b is None for a, b in pairs):
+                messages = "\n".join((run.stderr or run.stdout).strip()
+                                     for run in runs if run.stderr or run.stdout)
+                bad.append((m, "AMPL failed or did not produce NL", messages))
+                continue
+            same = all(a == b for a, b in pairs)
+            formatted = Path(new[i]).read_text()
+            unchanged = formatted == inputs[i]
+            if Path(m).read_text() != inputs[i]:
+                bad.append((m, "Source changed during validation", ""))
+                continue
             if not same and unchanged:
                 print("    NL differs between AMPL runs (random data), file unchanged:", m)
             elif not same:
-                bad.append((m, "NL differs"))
-            elif read(f"{tmp}/o_{i}_0.nl") is None:
-                nonl.append(m)                   # e.g. no variables
-            elif open(new[i]).read() != open(m).read():
-                changed += 1
+                bad.append((m, "NL differs", ""))
+            elif not unchanged:
+                changed.append((m, inputs[i], formatted))
         if apply and not bad:
-            for i, m in enumerate(mods):
-                text = open(new[i]).read()
-                if text != open(m).read():
-                    open(m, "w").write(text)
-        long_lines = sum(1 for nm in new for ln in open(nm)
-                         if len(ln.rstrip().expandtabs(8)) > 80)
-        print(f"{d}: {len(mods)} models, {changed} reformatted, {len(bad)} problems, "
+            for m, original, formatted in changed:
+                if not apply_model(m, original, formatted):
+                    bad.append((m, "Source changed before applying", ""))
+        print(f"{d}: {len(mods)} models, {len(changed)} reformatted, {len(bad)} problems, "
               f"{long_lines} lines > 80 after formatting"
               + (" (applied)" if apply and not bad else ""))
-        for m in nonl:
-            print("    no NL from either (checked by AMPL's messages only):", m)
-        for m, why in bad[:20]:
+        for m, why, messages in bad[:20]:
             print("   ", why, m)
-        if bad:
-            sys.stdout.write(("   AMPL (original): " + log_o[-800:]) if log_o.strip() else "")
+            if messages:
+                print(messages[-800:])
         return not bad
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
