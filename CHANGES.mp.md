@@ -3,6 +3,23 @@ Summary of recent updates to the AMPL MP Library
 
 ## Unreleased
 
+- Fixed wrong results of the multi-objective emulator with nonlinear
+  objectives (for example `exp(x)`) when the first objective has a negative
+  `.objweight`: the pass objective's nonlinear part was relaxed in the wrong
+  direction, so a solver could report an unbounded or a wrong optimal
+  solution. Solvers that take nonlinear objectives natively were affected
+  with `cvt:nlobj=0` or when the objective was reformulated.
+- Fixed a wrong objective in models with a convex quadratic objective whose
+  squared terms have a coefficient other than 1 (for example `maximize
+  3*x - 0.8*x^2`) when the model also has quadratic constraints recognized
+  as second-order cones: the objective's cone used the coefficient instead of
+  its square root, so the objective term was off (0.8 became 0.64).
+  Observed with BARON through MP.
+- Fixed second-order cones whose first variable is fixed by its bounds,
+  for solvers that receive the cone as a quadratic constraint (for example
+  Gurobi, Xpress, CPLEX, BARON): `sqrt(x^2 + y^2) <= t` with `t` fixed at 3
+  became `x^2 + y^2 <= 3` instead of `<= 9`. A negative fixed value keeps
+  the constraint infeasible.
 - Fixed a regression in 20261029: with variable names passed to the solver
   (for example `option highs_auxfiles rc;`), HiGHS failed some logical
   models with "Error -1 for call ... Highs_passColName". Columns that MP
@@ -11,6 +28,16 @@ Summary of recent updates to the AMPL MP Library
   (AMPLS C API) returned without solving. It now solves again; with
   emulated multiple objectives it reports that a repeated solve is not
   supported.
+- Result bounds of `exp`, `a^x`, `log` and `log10`/`log_a` now follow
+  from the bounds of their argument (they were only `>= 0` for the
+  exponentials and unbounded for the logarithms). Logical and indicator
+  constraints that contain such a function with a bounded argument, for
+  example `b == 0 ==> exp(x) <= 2` with `x <= 5`, no longer stop with
+  "Set bounds on variables participating in logical expressions" when the
+  solver needs big-M (`acc:ind...=0`, or no native indicators). New option
+  *cvt:pre:funcbndtol* (default 1e-12) is the relative margin added to the
+  computed bounds against rounding; a negative value restores the previous
+  behavior.
 
 ## 20261029
 

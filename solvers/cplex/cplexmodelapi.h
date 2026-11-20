@@ -70,18 +70,19 @@ public:
 
   /// Enabling built-in indicator for infinite bounds.
   /// May be slow as of CPLEX 12.10 - consider setting to AcceptedButNotRecommended
-  ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, Recommended, CG_General)
+  ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, Recommended, CG_Indicator)
   void AddConstraint(const IndicatorConstraintLinLE& mc);
-  ACCEPT_CONSTRAINT(IndicatorConstraintLinEQ, Recommended, CG_General)
+  ACCEPT_CONSTRAINT(IndicatorConstraintLinEQ, Recommended, CG_Indicator)
   void AddConstraint(const IndicatorConstraintLinEQ& mc);
-  ACCEPT_CONSTRAINT(IndicatorConstraintLinGE, Recommended, CG_General)
+  ACCEPT_CONSTRAINT(IndicatorConstraintLinGE, Recommended, CG_Indicator)
   void AddConstraint(const IndicatorConstraintLinGE& mc);
 
-  ACCEPT_CONSTRAINT(PLConstraint, Recommended, CG_General)
+  ACCEPT_CONSTRAINT(PLConstraint, Recommended, CG_Piecewiselinear)
   void AddConstraint(const PLConstraint& cc);
 
 private:
   obj::Type main_obj_sense_;
+  int num_obj_total_ {0};                           // all objectives, any type
   std::vector<int> obj_ind_save_;                   // to zero out last objective
   std::vector<int> qmatbeg_, qmatcnt_;
   std::vector<int> qmatind_;

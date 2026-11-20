@@ -1,6 +1,13 @@
 Summary of recent updates to BARONMP for AMPL
 =============================================
 
+## unreleased
+- Fix: solution pool solutions (*numsol*) were reported with the
+  variables in BARON's order instead of AMPL's.
+- Fix: with *alg:wantdual=1*, the dual values were always zero: the
+  constraint prices were not read from BARON's result file.
+
+
 ## 20261029
 - New options for documented BARON settings: *alg:feastol*
   (AbsConFeasTol), *mip:intfeastol* (AbsIntFeasTol), *alg:boxtol*,

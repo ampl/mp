@@ -25,6 +25,10 @@ int CplexCommon::NumIndicatorCons() const {
   return CPXgetnumindconstrs(env(), lp());
 }
 
+int CplexCommon::NumPWLCons() const {
+  return CPXgetnumpwl(env(), lp());
+}
+
 int CplexCommon::NumSOSCons() const {
   return CPXgetnumsos(env(), lp());
 }

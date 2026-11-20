@@ -27,6 +27,7 @@ struct CoptCommonInfo {
 
 
 
+  int num_obj_total_ {0};        // all objectives, any type
   int num_lin_obj_ {0};          // @note this is not accessible in Backend
                                  // unless via get_other()
   int obj_sense0_ampl_ {-1};     // 0: min, 1: max

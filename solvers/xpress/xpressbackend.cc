@@ -234,7 +234,7 @@ bool XpressmpBackend::IsQCP() const {
 }
 
 ArrayRef<double> XpressmpBackend::PrimalSolution() {
-  if (fixed_model_failed_) return mip_primal_before_fixed_;
+  if (fixed_model_failed_ || fixed_nlp_used_) return mip_primal_before_fixed_;
   if (pool_best_x_.size()) return pool_best_x_;
   int num_vars = NumVars();
   int error;
@@ -257,6 +257,7 @@ pre::ValueMapDbl XpressmpBackend::DualSolution() {
 
 ArrayRef<double> XpressmpBackend::DualSolution_LP() {
   if (fixed_model_failed_) return {};
+  if (fixed_nlp_used_ && !fixed_nlp_has_duals_) return {};
   std::vector<double> pi(NumLinCons());
   int solst;
   int opttype;
@@ -271,7 +272,8 @@ ArrayRef<double> XpressmpBackend::DualSolution_LP() {
 }
 
 double XpressmpBackend::ObjectiveValue() const {
-  if (fixed_model_failed_ && !mip_objectives_before_fixed_.empty())
+  if ((fixed_model_failed_ || fixed_nlp_used_)
+      && !mip_objectives_before_fixed_.empty())
     return mip_objectives_before_fixed_.front();
   if (pool_best_x_.size())
     return pool_best_obj_;
@@ -381,6 +383,7 @@ void XpressmpBackend::SetSolverOption(MseControl key, double value) {
 
 void XpressmpBackend::Solve() {
   fixed_model_failed_ = false;
+  fixed_nlp_used_ = false;
   int nsols = 10;
   if (tunebase().size())
     DoXPRESSTune();
@@ -451,10 +454,17 @@ void XpressmpBackend::ReportXPRESSMPResults() {
 void XpressmpBackend::ConsiderXpressFixedModel() {
   if (!IsMIP())
     return;
+  // After a nonlinear (local or global) solve, the fixed model is
+  // nonlinear too: solve it with XPRSoptimize (duals, no basis)
+  int opttype = XPRS_OPTIMIZETYPE_NONE;
+  XPRSgetintattrib(model_fixed_, XPRS_OPTIMIZETYPEUSED, &opttype);
+  const bool nonlinear = XPRS_OPTIMIZETYPE_LOCAL == opttype
+      || XPRS_OPTIMIZETYPE_GLOBAL == opttype;
   // The native operation modifies the main model. Retain the incumbent for
   // reporting if the supplementary solve reaches a limit.
   mip_primal_before_fixed_ = PrimalSolution();
   mip_objectives_before_fixed_ = GetObjectiveValues();
+  mip_bound_before_fixed_ = BestDualBound();
   std::string msg;
   try {
     if (pool_best_x_.size()) {   // the problem holds the enumerator's last
@@ -463,14 +473,14 @@ void XpressmpBackend::ConsiderXpressFixedModel() {
       else {
         if (outlev_)
           Print("\n\n     ======= Solving the fixed MIP =======\n\n");
-        msg = DoXpressFixedModel();
+        msg = DoXpressFixedModel(nonlinear);
       }
     } else if (XPRSfixmipentities(model_fixed_, 1))
       msg = "XPRSfixmipentities()";
     else {
       if (outlev_)
         Print("\n\n     ======= Solving the fixed MIP =======\n\n");
-      msg = DoXpressFixedModel();
+      msg = DoXpressFixedModel(nonlinear);
     }
   } catch (const std::exception& e) {
     msg = e.what();
@@ -499,7 +509,7 @@ bool XpressmpBackend::FixIntegersToPoolBest() {
                         cols.data(), bndtypes.data(), vals.data());
 }
 
-std::string XpressmpBackend::DoXpressFixedModel()
+std::string XpressmpBackend::DoXpressFixedModel(bool nonlinear)
 {
   double old_time_limit;
   int old_iteration_limit, old_barrier_limit;
@@ -518,6 +528,8 @@ std::string XpressmpBackend::DoXpressFixedModel()
       fixed_model_iter_limit() < 0 ? INT_MAX : fixed_model_iter_limit()));
   XPRESSMP_CCALL(XPRSsetintcontrol(model_fixed_, XPRS_BARITERLIMIT,
       fixed_model_iter_limit() < 0 ? INT_MAX : fixed_model_iter_limit()));
+  if (nonlinear)
+    return SolveFixedNonlinear();
   if (XPRSlpoptimize(model_fixed_, ""))
     return "optimize()";
   int status;
@@ -550,6 +562,58 @@ std::string XpressmpBackend::DoXpressFixedModel()
   return {};
 
 }
+std::string XpressmpBackend::SolveFixedNonlinear() {
+  // The integers are fixed by bounds: make the columns continuous, so that
+  // XPRSoptimize does not branch on them (MISLP/global B&B)
+  {
+    int n = NumVars();
+    std::vector<char> types(n);
+    if (n && !XPRSgetcoltype(model_fixed_, types.data(), 0, n - 1)) {
+      std::vector<int> cols;
+      for (int j = 0; j < n; ++j)
+        if ('C' != types[j])
+          cols.push_back(j);
+      std::vector<char> cont(cols.size(), 'C');
+      if (!cols.empty()
+          && XPRSchgcoltype(model_fixed_, (int)cols.size(), cols.data(), cont.data()))
+        return "XPRSchgcoltype()";
+    }
+  }
+  // A local solver gives duals, a global solve does not
+  // (mip:basis:nlpsolver, mip:basis:localsolver; restored afterwards)
+  int old_nlpsolver = XPRS_NLPSOLVER_AUTOMATIC, old_localsolver = -1;
+  int old_nlppresolve = 1;
+  XPRSgetintcontrol(model_fixed_, XPRS_NLPSOLVER, &old_nlpsolver);
+  XPRSgetintcontrol(model_fixed_, XPRS_LOCALSOLVER, &old_localsolver);
+  // With the NLP presolve the duals come back in the presolved row order
+  // (observed: duals of a slack and a tight row swapped)
+  XPRSgetintcontrol(model_fixed_, XPRS_NLPPRESOLVE, &old_nlppresolve);
+  XPRSsetintcontrol(model_fixed_, XPRS_NLPPRESOLVE, 0);
+  if (storedOptions_.fixedNlpSolver_ != -1)
+    XPRSsetintcontrol(model_fixed_, XPRS_NLPSOLVER, storedOptions_.fixedNlpSolver_);
+  if (storedOptions_.fixedLocalSolver_ != -2)
+    XPRSsetintcontrol(model_fixed_, XPRS_LOCALSOLVER, storedOptions_.fixedLocalSolver_);
+  int solvest = 0, solst = 0;
+  int err = XPRSoptimize(model_fixed_, "", &solvest, &solst);
+  XPRSsetintcontrol(model_fixed_, XPRS_NLPSOLVER, old_nlpsolver);
+  XPRSsetintcontrol(model_fixed_, XPRS_LOCALSOLVER, old_localsolver);
+  XPRSsetintcontrol(model_fixed_, XPRS_NLPPRESOLVE, old_nlppresolve);
+  if (err)
+    return "XPRSoptimize()";
+  if (XPRS_SOLSTATUS_OPTIMAL != solst && XPRS_SOLSTATUS_FEASIBLE != solst)
+    return fmt::format("Fixed nonlinear model: solution status {}. XPRSoptimize", solst);
+  int nlpsolst = XPRS_NLPSOLSTATUS_NONE;
+  XPRSgetintattrib(model_fixed_, XPRS_NLPSOLSTATUS, &nlpsolst);
+  bool duals = XPRS_NLPSOLSTATUS_SOLUTION_NODUALS != nlpsolst
+      && XPRS_NLPSOLSTATUS_GLOBALLYOPTIMAL_NODUALS != nlpsolst;
+  fixed_nlp_used_ = true;           // report the MIP's solution, with these duals
+  fixed_nlp_has_duals_ = duals;
+  AddToSolverMessage(fmt::format("Fixed MIP for mip:basis: nonlinear "
+                                 "solve, {} (no basis)\n",
+                                 duals ? "with duals" : "no duals"));
+  return {};
+}
+
   std::vector<double> XpressmpBackend::getPoolSolution(int id)
   {
     std::vector<double> vars(NumVars());
@@ -950,7 +1014,7 @@ std::string XpressmpBackend::DoXpressFixedModel()
 
   ArrayRef<double> XpressmpBackend::GetObjectiveValues()
   {
-    if (fixed_model_failed_) return mip_objectives_before_fixed_;
+    if (fixed_model_failed_ || fixed_nlp_used_) return mip_objectives_before_fixed_;
     int n = NumObjs();
     if (n==0)
       return { };
@@ -1354,6 +1418,28 @@ void XpressmpBackend::InitCustomOptions() {
     "Limit on the number of alternative MIP solutions kept in the "
     "solution pool (see sol:stub, sol:count). Default 10.",
     storedOptions_.nbest_);
+
+  AddStoredOption("mip:basis:nlpsolver",
+    "How the fixed model of a nonlinear MIP is solved for mip:basis "
+    "(after a local or global nonlinear solve):\n"
+    "\n"
+    "| -1 - As in the main solve (alg:nlpsolver)\n"
+    "| 1 - Local solver (default): gives duals\n"
+    "| 2 - FICO Xpress Global: no duals.\n"
+    "\n"
+    "No basis is reported after a nonlinear solve.",
+    storedOptions_.fixedNlpSolver_);
+
+  AddStoredOption("mip:basis:localsolver",
+    "Local solver for the fixed model of a nonlinear MIP "
+    "(mip:basis:nlpsolver=1):\n"
+    "\n"
+    "| -2 - As alg:localsolver (default)\n"
+    "| -1 - Automatic selection\n"
+    "| 0 - Xpress-SLP\n"
+    "| 1 - Knitro, if available\n"
+    "| 2 - Xpress-Optimizer (convex quadratic problems only).",
+    storedOptions_.fixedLocalSolver_);
 
 #if XPRESSMP_HAS_BUILTIN_POOL
   AddStoredOption("sol:poolapi poolapi",
@@ -2380,6 +2466,8 @@ double XpressmpBackend::MIPGapObjValue() const {
   return ObjectiveValue();
 }
 double XpressmpBackend::BestDualBound() {
+  if (fixed_nlp_used_)          // the fixed NLP solve has its own bound
+    return mip_bound_before_fixed_;
   auto bnd = getDblAttr(XPRS_BESTBOUND);
   if (pool_best_x_.size())    // enumeration: bound for the n-th best solution
     bnd = getDblAttr(XPRS_OBJSENSE) >= 0
@@ -2520,6 +2608,13 @@ std::vector<int> XpressmpBackend::ConStatii(ArrayRef<int> cst) {
 
 SolutionBasis XpressmpBackend::GetBasis() {
   if (fixed_model_failed_) return {};
+  // A local or global nonlinear solve has no simplex basis:
+  // XPRSgetbasis() then returns zeros, which would read as 'low'
+  int opttype = XPRS_OPTIMIZETYPE_NONE;
+  XPRSgetintattrib(model_fixed_, XPRS_OPTIMIZETYPEUSED, &opttype);
+  if (XPRS_OPTIMIZETYPE_LOCAL == opttype || XPRS_OPTIMIZETYPE_GLOBAL == opttype)
+    return {};
+
   int old_outlev = outlev_;
   outlev_ = 0;
     std::vector<int> varstt = VarStatii();
@@ -2547,7 +2642,8 @@ void XpressmpBackend::SetBasis(SolutionBasis basis) {
   auto& cconstt = mv.GetConValues()(CG_General);
   constt.insert(constt.end(), cconstt.begin(), cconstt.end());
 #endif  // XPRESS__ROW_STATS_GENCONS
-  if (varstt.size() && constt.size()) {
+  if (varstt.size() && constt.size()
+      && RowVectorMatches(constt.size(), "Basis")) {
     auto convertedVarBasis = VarStatii(varstt);
     auto convertedConBasis = ConStatii(constt);
     // Xpress needs to have all constraints, append them as basic
@@ -2620,7 +2716,6 @@ pre::ValueMapInt XpressmpBackend::ConsIIS() {
   std::vector<int> iis_sos(NumSOSCons(), (int)IISStatus::non);
   std::vector<int> iis_pl(NumPWLs(), (int)IISStatus::non);
   std::vector<int> iis_gencon(NumGenCons(), (int)IISStatus::non);
-  std::vector<int> iis_indcon(NumIndicatorCons(), (int)IISStatus::non);
   for (int i = 0; i < nconsiis; i++)
   {
     switch (contype[i]) {
@@ -2643,8 +2738,8 @@ pre::ValueMapInt XpressmpBackend::ConsIIS() {
     case 'X':
       iis_gencon[cons[i]] = (int)IISStatus::mem;
       break;
-    case 'I':
-      iis_indcon[cons[i]] = (int)IISStatus::mem;
+    case 'I':                     // an indicator row: in CG_Algebraic
+      iis_algcon[cons[i]] = (int)IISStatus::mem;
       break;
     default:
       AddWarning("IISVarStatus",
@@ -2655,15 +2750,19 @@ pre::ValueMapInt XpressmpBackend::ConsIIS() {
   return {{{ CG_Algebraic, iis_algcon },
            { CG_SOS, iis_sos },
            { CG_Piecewiselinear, iis_pl },
-           { CG_General, iis_gencon },
-           { CG_Indicator, iis_indcon }}};
+           { CG_General, iis_gencon }}};
 }
 
 void XpressmpBackend::AddPrimalDualStart(Solution sol0_unpres) {
   auto mv = GetValuePresolver().PresolveSolution(
     { sol0_unpres.primal, sol0_unpres.dual });
-  auto& x0 = mv.GetVarValues()();
-  auto& pi0 = mv.GetConValues()(CG_Algebraic);
+  auto x0 = mv.GetVarValues()();
+  auto pi0 = mv.GetConValues()(CG_Algebraic);
+  // XPRSloadlpsol reads one value per Xpress column and row; the rows
+  // are exactly the CG_Algebraic group (see XpressmpModelAPI)
+  if (!RowVectorMatches(pi0.size(), "Primal-dual start"))
+    return;
+  x0.resize(NumVars());
 
   int status;
   XPRESSMP_CCALL(XPRSloadlpsol(lp(), x0.data(), NULL,

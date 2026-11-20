@@ -2,6 +2,20 @@ Summary of recent updates to CPLEX for AMPL
 ==============================================
 
 
+## unreleased
+- Several objectives with *obj:multi=1* (native multi-objective optimization)
+  where one is quadratic: the solve ended with "unknown solution status";
+  the driver now stops with a message to use *obj:multi=2* (MP emulation).
+- Fix: *.iis* of indicator constraints was assigned to piecewise-linear
+  constraints when both were present (with *option pl_linearize 0*);
+  piecewise-linear constraints now take part in the conflict search.
+- Fix: *mip:basis* on a quadratically constrained MIP reported no duals
+  (the fixed model failed); it now solves the fixed QCP with the
+  barrier and reports duals (no basis). With indicator, SOS or
+  piecewise-linear constraints in such a model the fixed solve is
+  skipped with a message (CPLEX's QCP solver would ignore them).
+
+
 ## 20261029
 - Correct *.iis* values for models mixing linear, quadratic,
   indicator, and SOS constraints.

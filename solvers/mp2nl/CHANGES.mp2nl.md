@@ -36,6 +36,9 @@ Summary of recent updates to MP2NL for AMPL
 - Library API: the close and model functions are now *AMPLSClose_mp2nl*
   and *AMPLSGetModel_mp2nl*, lower case like *AMPLSOpen_mp2nl* and the
   other MP libraries (were *AMPLSClose_MP2NL*, *AMPLSGetModel_MP2NL*).
+- Fix: a subsolver solution with fewer duals than algebraic
+  constraints could corrupt memory.
+
 
 ## 20261029
 - Version 0.2.

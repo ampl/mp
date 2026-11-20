@@ -128,5 +128,62 @@
     "name" : "expcones_06__kelly__affexp_lhs",
     "objective" : 0.1116637435,
     "tags" : ["expcones"]
+  },
+  {
+    "name" : "socp_14_qpobj_coef_max",
+    "objective" : 2.8125,
+    "tags" : ["quadratic"]
+  },
+  {
+    "name" : "socp_15_qpobj_coef_min",
+    "objective" : -2.8125,
+    "tags" : ["quadratic"]
+  },
+  {
+    "name" : "socp_16_fixed_x0",
+    "objective" : 4.242640687,
+    "options": {
+      "presolve": 0
+    },
+    "tags" : ["socp"]
+  },
+  {
+    "name" : "socp_19_fixed_x0_negative",
+    "options": {
+      "presolve": 0
+    },
+    "values": {
+      "solve_result": "infeasible"
+    },
+    "comment" : "The first cone variable fixed at a negative value: infeasible. The quadratic constraint used the squared value and found a solution",
+    "tags" : ["socp"]
+  },
+  {
+    "name" : "expcones_08__rhs_extra_term",
+    "objective" : 1.1092731703,
+    "solvers" : ["gurobi", "cplex", "xpress", "copt", "scip", "baronmp"],
+    "comment" : "The denominator of the exponent has several terms: not an exponential cone. A driver that recognized one dropped the extra term and returned a wrong optimum (COPT: 1.3); MOSEK, which has no other way to take it, now stops with an error",
+    "tags" : ["expcones"]
+  },
+  {
+    "name" : "socp_17_qpobj_several_coefs",
+    "objective" : 3.0,
+    "tags" : ["quadratic"]
+  },
+  {
+    "name" : "socp_18_qpobj_sqrt_cone",
+    "objective" : 1.2,
+    "tags" : ["socp"]
+  },
+  {
+    "name" : "expcones_08__rhs_extra_term refused by an exponential-cone-only solver",
+    "files" : ["expcones_08__rhs_extra_term.mod"],
+    "solvers" : ["mosek"],
+    "comment" : "No exponential cone fits, MOSEK cannot take the product of the exponential: it must stop with an error, not return the optimum of the model without the extra term (1.3)",
+    "options": { "mosek_options": "outlev=0" },
+    "values": {
+      "if solve_result_num >= 500 and solve_result_num < 600 then 1": 1
+    },
+    "tags" : ["expcones"]
   }
 ]

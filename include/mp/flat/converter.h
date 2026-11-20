@@ -1813,6 +1813,7 @@ private:
     int preproUnnest_ = 31;
     int preproSortUnify_  = 1;
     int boundLogArg_ = 0;
+    double funcBndTol_ = 1e-12;
 
     int propCtxIneq_ = 1;
     int propCtxBndEq_ = 1;
@@ -1878,6 +1879,8 @@ public:             // public for CRTP
   int IfPropCtxCountNumberof() const { return options_.propCtxCountNumberof_; }
   /// Bound argument of logarithm?
   bool IfBoundLogArg() const { return options_.boundLogArg_; }
+  /// Relative margin for result bounds of exp/log functions
+  double FuncBoundTol() const { return options_.funcBndTol_; }
 
   /// Model checking options
   double model_feas_tol() const { return options_.modelfeastol_; }
@@ -2101,6 +2104,18 @@ private:
     GetEnv().AddOption("cvt:pre:boundlogarg boundlogarg",
                        "0*/1: Bound logarithm arguments to nonnegative.",
                        options_.boundLogArg_, 0, 1);
+
+    GetEnv().AddOption("cvt:pre:funcbndtol funcbndtol",
+                       "Relative margin by which the result bounds of "
+                       "exp, expA, log and logA, computed from the "
+                       "bounds of their argument, are widened, "
+                       "to absorb rounding. 0: no margin (a computed "
+                       "bound can then be tighter than the true one "
+                       "by a rounding error). "
+                       "Negative: do not bound the results this way "
+                       "(old behavior: exp, expA >= 0, no bounds for log). "
+                       "Default 1e-12.",
+                       options_.funcBndTol_, -1.0, 1.0);
 
     GetEnv().AddOption("cvt:quadobj passquadobj",
                        ModelAPIAcceptsQuadObj() ?

@@ -232,13 +232,15 @@ public:
     /// NLLogical, NLEquivalence, NLImpl, NLRimpl, and NLObjective.
     ACCEPT_EXPRESSION_INTERFACE(Recommended);
 
-  ACCEPT_CONSTRAINT(LinConRange, Recommended, CG_Linear)
+  /// Every constraint is one BARON equation, in the order of addition:
+  /// one group, CG_Algebraic, matching the equation vector of the results
+  ACCEPT_CONSTRAINT(LinConRange, Recommended, CG_Algebraic)
   void AddConstraint(const LinConRange& lc);
-  ACCEPT_CONSTRAINT(LinConLE, Recommended, CG_Linear)
+  ACCEPT_CONSTRAINT(LinConLE, Recommended, CG_Algebraic)
   void AddConstraint(const LinConLE& lc);
-  ACCEPT_CONSTRAINT(LinConEQ, Recommended, CG_Linear)
+  ACCEPT_CONSTRAINT(LinConEQ, Recommended, CG_Algebraic)
   void AddConstraint(const LinConEQ& lc);
-  ACCEPT_CONSTRAINT(LinConGE, Recommended, CG_Linear)
+  ACCEPT_CONSTRAINT(LinConGE, Recommended, CG_Algebraic)
   void AddConstraint(const LinConGE& lc);
 
   /// Ask if the solver accepts non-convex quadratic constraints
@@ -251,17 +253,17 @@ public:
   { return !AcceptsNonconvexQC(); }
 
   /// QuadConRange is optional.
-  ACCEPT_CONSTRAINT(QuadConRange, Recommended, CG_Quadratic)
+  ACCEPT_CONSTRAINT(QuadConRange, Recommended, CG_Algebraic)
   void AddConstraint(const QuadConRange& qc);
 
   /// If using quadratics,
   /// QuadCon(LE/EQ/GE) should have 'Recommended'
   /// and have an implementation.
-  ACCEPT_CONSTRAINT(QuadConLE, Recommended, CG_Quadratic)
+  ACCEPT_CONSTRAINT(QuadConLE, Recommended, CG_Algebraic)
   void AddConstraint(const QuadConLE& qc);
-  ACCEPT_CONSTRAINT(QuadConEQ, Recommended, CG_Quadratic)
+  ACCEPT_CONSTRAINT(QuadConEQ, Recommended, CG_Algebraic)
   void AddConstraint(const QuadConEQ& qc);
-  ACCEPT_CONSTRAINT(QuadConGE, Recommended, CG_Quadratic)
+  ACCEPT_CONSTRAINT(QuadConGE, Recommended, CG_Algebraic)
   void AddConstraint(const QuadConGE& qc);
 
   /// SOCP flags
@@ -278,17 +280,17 @@ public:
 
   /// Some non linear constraints.
   /// See constr_std.h for more.
-  //ACCEPT_CONSTRAINT(AbsConstraint, Recommended, CG_General)
+  //ACCEPT_CONSTRAINT(AbsConstraint, Recommended, CG_Algebraic)
  //   void AddConstraint(const AbsConstraint& absc);
-  ACCEPT_CONSTRAINT(ExpConstraint, Recommended, CG_General)
+  ACCEPT_CONSTRAINT(ExpConstraint, Recommended, CG_Algebraic)
     void AddConstraint(const ExpConstraint& cc);
-  ACCEPT_CONSTRAINT(ExpAConstraint, Recommended, CG_General)
+  ACCEPT_CONSTRAINT(ExpAConstraint, Recommended, CG_Algebraic)
     void AddConstraint(const ExpAConstraint& cc);
-  ACCEPT_CONSTRAINT(LogConstraint, Recommended, CG_General)
+  ACCEPT_CONSTRAINT(LogConstraint, Recommended, CG_Algebraic)
     void AddConstraint(const LogConstraint& cc);
-  ACCEPT_CONSTRAINT(LogAConstraint, Recommended, CG_General)
+  ACCEPT_CONSTRAINT(LogAConstraint, Recommended, CG_Algebraic)
     void AddConstraint(const LogAConstraint& cc);
-  ACCEPT_CONSTRAINT(PowConstExpConstraint, Recommended, CG_General)
+  ACCEPT_CONSTRAINT(PowConstExpConstraint, Recommended, CG_Algebraic)
     void AddConstraint(const PowConstExpConstraint& cc);
 
   /// GetVarExpression(\a i): expression representing variable 0<=i<n_var.
@@ -303,17 +305,17 @@ public:
   /// NLAssignEQ: algebraic expression expicifier.
   /// Meaning: var == expr.
   /// @note Accessors: GetName(), GetExpression(nle), GetVariable(nle).
-  ACCEPT_CONSTRAINT(NLAssignEQ, Recommended, CG_General)
+  ACCEPT_CONSTRAINT(NLAssignEQ, Recommended, CG_Algebraic)
     void AddConstraint(const NLAssignEQ& nle);
   /// NLAssignLE: algebraic expression expicifier in positive context.
   /// Meaning: var <= expr.
   /// @note Accessors: GetName(), GetExpression(nle), GetVariable(nle).
-  ACCEPT_CONSTRAINT(NLAssignLE, Recommended, CG_General)
+  ACCEPT_CONSTRAINT(NLAssignLE, Recommended, CG_Algebraic)
     void AddConstraint(const NLAssignLE& nle);
   /// NLAssignGE: algebraic expression expicifier in negative context.
   /// Meaning: var >= expr.
   /// @note Accessors: GetName(), GetExpression(nle), GetVariable(nle).
-  ACCEPT_CONSTRAINT(NLAssignGE, Recommended, CG_General)
+  ACCEPT_CONSTRAINT(NLAssignGE, Recommended, CG_Algebraic)
     void AddConstraint(const NLAssignGE& nle);
 
   /// @brief Accept NLAffineExpr.
