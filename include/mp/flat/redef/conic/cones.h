@@ -177,13 +177,13 @@ protected:
           ) {
         MC().AddWarning("Mix QC+cones",
                         "Not all quadratic constraints could "
-                        "be recognized\nas quadratic cones; "
-                        "or, the objective\nis quadratic and cones are present;\n"
-                        "additionally, further conversion back to QC\n"
-                        "not desired (option cvt:socp2qc) or other cone types present;\n"
-                        "solver might not accept the model.\n"
-                        "Try to express all cones in standard forms,\n"
-                        "not in the objective.\n"
+                        "be recognized as quadratic cones; "
+                        "or, the objective is quadratic and cones are present; "
+                        "additionally, further conversion back to QC "
+                        "not desired (option cvt:socp2qc) or other cone types present; "
+                        "solver might not accept the model. "
+                        "Try to express all cones in standard forms, "
+                        "not in the objective. "
                         "See mp.ampl.com/modeling-expressions.html#conic-optimization.");
       }
     }

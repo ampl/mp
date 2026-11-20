@@ -100,7 +100,10 @@ public:
     if (GetConstraint().IsLogical())
       GetConverter().NarrowVarBounds(r, lb(), ub());  // for logical, hard bounds
     else {
-      GetConverter().NarrowVarBestBounds(r, lb(), ub());  // unless boundsbest=1
+      if (GetConverter().template IfHardResultBounds<Constraint>())
+        GetConverter().NarrowVarBounds(r, lb(), ub());      // big-M needs them
+      else
+        GetConverter().NarrowVarBestBounds(r, lb(), ub());  // unless boundsbest=1
       if (var::INTEGER == type())      // integrality implied by the args,
         GetConverter().MarkVarImpliedInt(r);   // see cvt:pre:auxint
     }

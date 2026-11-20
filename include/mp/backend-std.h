@@ -162,9 +162,9 @@ protected:
   /// Fill native multi-objective pass information
   virtual MultiobjPassStats GetMultiobjPassStats() {
     AddWarning("MOPassStats",
-               "Multiobjective pass statistics\n"
-               "not implemented for this solver.\n"
-               "Use multi-objective emulator\n"
+               "Multiobjective pass statistics "
+               "not implemented for this solver. "
+               "Use multi-objective emulator "
                "(obj:multi=2).");
     return {};
   }
@@ -712,8 +712,8 @@ protected:
     {
       try {
         double value = KappaExact();
-        ReportSingleSuffix(suf_objkappa, value);
-        ReportSingleSuffix(suf_probkappa, value);
+        ReportSingleSuffix(suf_objkappa_exact, value);
+        ReportSingleSuffix(suf_probkappa_exact, value);
       } catch (const std::exception& exc) {
         AddWarning("KAPPA_EXACT", exc.what());
       }

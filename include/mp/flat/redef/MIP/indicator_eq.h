@@ -20,6 +20,8 @@ public:
 
   /// Conversion
   Context Convert(const ItemType& indc, int ) {
+    if (FoldIfFlagFixed(indc))
+      return Context::CTX_ROOT;
     auto binvar=indc.get_binary_var();
     auto bnds = GetMC().ComputeBoundsAndType(
           indc.get_constraint().GetBody());
@@ -40,6 +42,7 @@ public:
 protected:
   using Base::GetMC;
   using Base::ConvertImplicationLE;
+  using Base::FoldIfFlagFixed;
 };
 
 } // namespace mp

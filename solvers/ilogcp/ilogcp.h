@@ -97,6 +97,7 @@ class IlogCPSolver : public SolverImpl<Problem> {
   Optimizer optimizer_;
   Optimizer optimizer;
   int options_[NUM_OPTIONS];
+  int mip_round_ = 0;     // hidden mip:round: CP variables are integral
 
   unsigned converter_flags_ = 0;
   std::unique_ptr<MPToConcertConverter> converter_;

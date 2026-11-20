@@ -64,16 +64,58 @@ public:
       assert(                  // Check: the result var has \a con as the init expr
           MPD( template GetInitExpressionOfType<Con>(con.GetResultVar()) )
           == &con);
-      if ( MPCD(CanBeEliminated(con.GetResultVar())) ) {
+      if ( MPCD(CanBeEliminated(con.GetResultVar()))
+           && IfInlinableAsExpr(con) ) {
         auto refcountmax = con.IsLogical() ?    // Ok to leave as expression:
                                MPD(NLReifLevel()) :
                                MPD(NLAssignLevel());
         if (MPCD( VarUsage(con.GetResultVar()) ) <= refcountmax ) {
           MPD( MarkAsExpression(con.GetResultVar()) ); // can be changed later?
         } // ModelAPI handles them as expressions
-      }
+      } else if ( MPCD(CanBeEliminated(con.GetResultVar())) )
+        SubmitExprBounds(con);  // kept by cvt:pre:linfill/quadfill
       // Else: if submitted bounds stronger, e.g., result fixed,
       // or defined variable marked by dvelim=0, leave as variable
+    }
+  }
+
+  /// Can \a con's result be used as an expression?
+  /// With bit 32 of cvt:pre:unnest, a linear (quadratic) expression
+  /// whose inlining exceeds cvt:pre:linfill (cvt:pre:quadfill)
+  /// stays a variable with its defining equality, so that
+  /// linear terms are not written as nonlinear expressions.
+  /// Without that bit (e.g., cvt:pre:all=0), the previous
+  /// marking is kept.
+  template <class Con>
+  bool IfInlinableAsExpr(const Con& con) const {
+    if constexpr (std::is_same_v<Con, LinearFunctionalConstraint>) {
+      if ((MPCD( IfPreproUnnest() ) & 32)        // 32 with 2 or 4
+          && (MPCD( IfPreproUnnest() ) & 6))
+        return MPCD( CanInline(con.GetResultVar(), con) );
+    } else if constexpr (
+        std::is_same_v<Con, QuadraticFunctionalConstraint>) {
+      if ((MPCD( IfPreproUnnest() ) & 32)        // quadratic: 32 with 4
+          && (MPCD( IfPreproUnnest() ) & 4))
+        return MPCD( CanInline(con.GetResultVar(), con) );
+    }
+    return true;
+  }
+
+  /// A linear or quadratic expression kept as a variable by
+  /// cvt:pre:linfill/quadfill: its bounds, implied by the expression,
+  /// become hard bounds. Otherwise they would be lost where
+  /// the expression would have been inlined, e.g., a solver
+  /// behind MP2NL needs them for big-M constraints of logical
+  /// expressions.
+  template <class Con>
+  void SubmitExprBounds(const Con& con) {
+    if constexpr (std::is_same_v<Con, LinearFunctionalConstraint>) {
+      auto bnd = MPD( ComputeBoundsAndType(con.GetAffineExpr()) );
+      MPD( NarrowVarBounds(con.GetResultVar(), bnd.lb(), bnd.ub()) );
+    } else if constexpr (
+        std::is_same_v<Con, QuadraticFunctionalConstraint>) {
+      auto bnd = MPD( ComputeBoundsAndType(con.GetQuadExpr()) );
+      MPD( NarrowVarBounds(con.GetResultVar(), bnd.lb(), bnd.ub()) );
     }
   }
 
@@ -670,7 +712,7 @@ protected:
       if (ExpressionAcceptanceLevel::Recommended
           != ie.GetCK()->GetChosenAcceptanceLevelEXPR())
         MPD(GetEnv()).AddWarning("NLP_interface_linfn_quadfn",
-                                 "For (MI)NLP native interface (acc:_expr=1),\n"
+                                 "For (MI)NLP native interface (acc:_expr=1), "
                                  "acc:linfn=4 acc:quadfn=4 are required.");
     }
   }
@@ -793,10 +835,19 @@ protected:
     assert( MPCD(IsProperVar(resvar)) );
     if (con.GetContext().IsMixed())
       MPD( AddConstraint(NLAssignEQ(resvar)) );
-    else if (con.GetContext().HasPositive())
-      MPD( AddConstraint(NLAssignLE(resvar)) );
-    else
-      MPD( AddConstraint(NLAssignGE(resvar)) );
+    else {
+      // One-sided: the side of the result's best-known bounds that
+      // the inequality drops (lower for v <= f(x), upper for
+      // v >= f(x)) no longer follows from the model, but contexts
+      // may rely on it (e.g., v >= 0 in v^2): submit that side
+      if (con.GetContext().HasPositive()) {
+        MPD( NarrowVarBounds(resvar, MPCD( lb(resvar) ), MPD( Infty() )) );
+        MPD( AddConstraint(NLAssignLE(resvar)) );
+      } else {
+        MPD( NarrowVarBounds(resvar, MPD( MinusInfty() ), MPCD( ub(resvar) )) );
+        MPD( AddConstraint(NLAssignGE(resvar)) );
+      }
+    }
   }
 
   /// Add expr = var assignment (NLReifEquiv, NLReifImpl, NLRImpl)

@@ -189,7 +189,7 @@ void CplexModelAPI::AddConstraint(const IndicatorConstraintLinLE &ic)  {
   addindic(ic, 'L');
 }
 void CplexModelAPI::AddConstraint(const IndicatorConstraintLinEQ &ic)  {
-  addindic(ic, 'F');
+  addindic(ic, 'E');   // CPLEX senses are 'L', 'E', 'G'
 }
 void CplexModelAPI::AddConstraint(const IndicatorConstraintLinGE &ic)  {
   addindic(ic, 'G');

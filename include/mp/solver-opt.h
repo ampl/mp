@@ -105,8 +105,12 @@ inline OptionError OptionTypeError(fmt::StringRef name, fmt::StringRef type) {
 }  // namespace internal
 
 
-/// Formats and return the string (possibly containing RST markup).
-/// Useful for formatting error messages to fit a predetermined terminal width
+/// Formats and return the string (possibly containing RST markup),
+/// wrapped at 78 characters.
+/// Not for messages of exceptions reported via ReportError() and for
+/// warnings: those are wrapped once at tech:msgwidth (WrapLines());
+/// pre-formatted lines would be wrapped again, unevenly.
+/// Kept for compatibility; MP drivers no longer use it.
 /// Placed here to avoid polluting utils-string with unnecessary includes.
 template <class Str> std::string format_error(const Str& str) {
   fmt::MemoryWriter writer;

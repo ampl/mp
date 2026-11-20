@@ -63,6 +63,10 @@ struct CpsatData {
   std::vector<operations_research::sat::IntVar> vars;
   /// Bounds of the variables, as given to CP-SAT
   std::vector<int64_t> var_lb, var_ub;
+  /// Value of a variable fixed at a non-integer value (MP's constants,
+  /// e.g., a fractional objective constant), else NaN. Such a variable
+  /// enters only the objective's offset; CP-SAT has a placeholder.
+  std::vector<double> var_const;
   /// Solver parameters
   operations_research::sat::SatParameters params;
   /// Magnitude for infinite bounds

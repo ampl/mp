@@ -467,7 +467,7 @@ void CplexBackend::DoWriteSolution(const std::string& file) {
     return;
   }
   AddWarning("UnknownResultExt",
-             fmt::format("Unknown or non-supported result extension: '{}'.\n"
+             fmt::format("Unknown or non-supported result extension: '{}'. "
                          "Trying to write the file as solution", file));
   CPLEX_CALL(CPXsolwrite(env(), lp(), file.c_str()));
 }
@@ -534,22 +534,22 @@ void CplexBackend::Solve() {
   }
   if (NumObjs() > 1
       || multiobj()==1)                  // User set multiobj=1
-    CPLEX_CALL(CPXmultiobjopt(env(), lp(), NULL));
+    CPLEX_CALL_THROW(CPXmultiobjopt(env(), lp(), NULL));
   else {
     auto type = CPXgetprobtype(env(), lp());
     if ((type == CPXPROB_MIQCP) || (type == CPXPROB_MIQP) || (type == CPXPROB_MILP))
     {
       if (storedOptions_.cpxMethod_ == CPX_ALG_BENDERS)
-        CPLEX_CALL(CPXbendersopt(env(), lp()));
+        CPLEX_CALL_THROW(CPXbendersopt(env(), lp()));
       else if (2 == storedOptions_.populate_)
-        CPLEX_CALL(CPXpopulate(env(), lp()));
+        CPLEX_CALL_THROW(CPXpopulate(env(), lp()));
       else
-        CPLEX_CALL(CPXmipopt(env(), lp()));
+        CPLEX_CALL_THROW(CPXmipopt(env(), lp()));
     }
     else if ((type == CPXPROB_QP) || (type == CPXPROB_QCP))
-      CPLEX_CALL(CPXqpopt(env(), lp()));
+      CPLEX_CALL_THROW(CPXqpopt(env(), lp()));
     else
-      CPLEX_CALL(CPXlpopt(env(), lp()));
+      CPLEX_CALL_THROW(CPXlpopt(env(), lp()));
   }
   if (feasrelax())
   {
@@ -883,9 +883,9 @@ void CplexBackend::ReportCPLEXResults() {
     CPLEX_CALL(CPXmbasewrite(env(), lp(), storedOptions_.endBasis_.c_str()));
  
   if (storedOptions_.bestnode_) {
-    double obj;
-    CPLEX_CALL(CPXgetbestobjval(env(), lp(), &obj));
-    std::vector<double> dbl(1, obj);
+    // The MIP's bound, also after a fixed-model solve (mip:basis), whose
+    // continuous model has none (CPXgetbestobjval failed, obj unset)
+    std::vector<double> dbl(1, BestDualBound());
     ReportSuffix(sufBestNodeObj, dbl);
     ReportSuffix(sufBestNodeProb, dbl);
   }
@@ -990,14 +990,20 @@ std::pair<int, std::string> CplexBackend::GetSolveResult(int optimstatus) {
           "unbounded problem, no feasible solution returned" };
   case CPX_STAT_OPTIMAL_FACE_UNBOUNDED:
     return { sol::UNBOUNDED_NO_FEAS, "model has an unbounded optimal face" };
-  case CPX_STAT_FEASIBLE:
-  case CPXMIP_FEASIBLE:
   case CPX_STAT_FEASIBLE_RELAXED_INF:
   case CPX_STAT_FEASIBLE_RELAXED_QUAD:
   case CPX_STAT_FEASIBLE_RELAXED_SUM:
   case CPXMIP_FEASIBLE_RELAXED_INF:
   case CPXMIP_FEASIBLE_RELAXED_QUAD:
   case CPXMIP_FEASIBLE_RELAXED_SUM:
+    // FeasOpt modes MIN_* (alg:feasrelax 1-3) only minimize the
+    // relaxation: CPLEX ends with these statuses when the minimal
+    // relaxation is found (modes OPT_* end with *_OPTIMAL_RELAXED_*).
+    if (feasrelax() >= 1 && feasrelax() <= 3)
+      return { sol::SOLVED, "minimal relaxation found" };
+    return { sol::LIMIT_FEAS, "limit, feasible solution" };
+  case CPX_STAT_FEASIBLE:
+  case CPXMIP_FEASIBLE:
     return { sol::LIMIT_FEAS, "limit, feasible solution" };
   case CPX_STAT_CONFLICT_ABORT_DETTIME_LIM:
   case CPX_STAT_CONFLICT_ABORT_TIME_LIM:
@@ -1467,20 +1473,27 @@ void CplexBackend::DoCplexFeasRelax() {
   }
 
   SetCPLEXParam(CPXPARAM_Feasopt_Mode, reltype);
-  auto mv = GetValuePresolver().PresolveSolution({
-                                              {},
-                                              feasrelax().rhspen()
-    });
-  const auto& rhspen = mv.GetConValues()(CG_Linear);
-  std::vector<double> lbpen = feasrelax().lbpen();
-  if (lbpen.size() && lbpen.size() < (size_t)NumVars())
-    lbpen.resize(NumVars());
-  std::vector<double> ubpen = feasrelax().ubpen();
-  if (ubpen.size() && ubpen.size() < (size_t)NumVars())
-    ubpen.resize(NumVars());
+  /// CPXfeasopt takes preferences: the cost of a violation is the
+  /// violation divided by the preference, and 0 means not relaxable
+  auto pen = FeasrelaxPenaltiesInSolver(
+      NumVars(), CG_Linear, Infinity(), Infinity());
+  for (auto* v: {&pen.lb, &pen.ub, &pen.rhs})
+    for (auto& p: *v)
+      p = FeasoptPreference(p);
   CPLEX_CALL(CPXfeasopt(env(), lp(),
-    (double*)data_or_null(rhspen), (double*)data_or_null(rhspen),
-    (double*)data_or_null(lbpen), (double*)data_or_null(ubpen)));
+    (double*)data_or_null(pen.rhs), (double*)data_or_null(pen.rhs),
+    (double*)data_or_null(pen.lb), (double*)data_or_null(pen.ub)));
+}
+
+/// MP penalty -> CPLEX FeasOpt preference: 1/penalty;
+/// an infinite penalty (not relaxable) gives 0, and a zero
+/// penalty (free violation) a huge preference
+double CplexBackend::FeasoptPreference(double penalty) {
+  if (penalty >= Infinity())
+    return 0.0;
+  if (penalty <= 1.0 / Infinity())
+    return Infinity();
+  return 1.0 / penalty;
 }
 
 
@@ -2064,6 +2077,12 @@ void CplexBackend::setSolutionMethod() {
 void CplexBackend::FinishOptionParsing() {
   // cplexasl-compatible feasopt/feasoptobj -> alg:feasrelax
   if (storedOptions_.feasopt_) {
+    if (storedOptions_.feasopt_ < 0 || storedOptions_.feasopt_ > 2)
+      MP_RAISE(fmt::format("Rejecting alg:feasopt={}: must be 0, 1 or 2",
+                           storedOptions_.feasopt_));
+    if (storedOptions_.feasoptobj_ < 1 || storedOptions_.feasoptobj_ > 3)
+      MP_RAISE(fmt::format("Rejecting alg:feasoptobj={}: must be 1, 2 or 3",
+                           storedOptions_.feasoptobj_));
     static const int mode_by_obj[] = { 0, 1, 3, 2 };  // sum, count, squares
     int mode = mode_by_obj[storedOptions_.feasoptobj_];
     if (2 == storedOptions_.feasopt_)
@@ -2740,7 +2759,9 @@ void CplexBackend::InitCustomOptions() {
   // Solution pool controls
   AddCplexParamOption("sol:poolgap ams_eps poolgap",
     "Relative tolerance for reporting alternate MIP solutions "
-    "(default: 1e75).", CPX_PARAM_SOLNPOOLGAP, 0.0, DBL_MAX);
+    "(default: 1e75). "
+    "With the best objective near 0, use sol:poolgapabs.",
+    CPX_PARAM_SOLNPOOLGAP, 0.0, DBL_MAX);
   AddCplexParamOption("sol:poolgapabs ams_epsabs poolagap poolgapabs",
     "Absolute tolerance for reporting alternate MIP solutions "
     "(default: 1e75).",CPX_PARAM_SOLNPOOLAGAP, 0.0, DBL_MAX);

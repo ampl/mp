@@ -680,6 +680,9 @@ IlogCPSolver::IlogCPSolver() :
       "The default value is ``auto``.",
       cp_, IloCP::SearchType, IloCP::DepthFirst, SEARCH_TYPES, true)));
 
+  // Accepted for a common interface with other MP drivers
+  // (e.g., test options); integer variables are integral here.
+  AddStoredOption("mip:round round", "HIDDEN", mip_round_);
   AddIntOption("lim:sol solutionlimit sollimit",
       "Limit on the number of feasible solutions found before terminating "
       "a search. Leaving the solution limit unspecified will make the "

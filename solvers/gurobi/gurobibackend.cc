@@ -952,7 +952,11 @@ void GurobiBackend::InputExtras() {
 void GurobiBackend::InputGurobiExtras() {
   if (need_multiple_solutions())
     GrbSetIntParam(GRB_INT_PAR_POOLSEARCHMODE, storedOptions_.nPoolMode_);
-  if (need_ray_primal() || need_ray_dual())
+  // Rays are returned for continuous models only. On a MIP
+  // (integer variables, SOS or general constraints) InfUnbdInfo=1
+  // is useless, and Gurobi 13-14 can then return a wrong
+  // "optimal" solution (root relaxation unbounded)
+  if ((need_ray_primal() || need_ray_dual()) && !IsMIP())
     GrbSetIntParam(GRB_INT_PAR_INFUNBDINFO, 1);
   InputGurobiFuncApproxParams();
   InputGurobiIISForceParams();
@@ -1461,22 +1465,14 @@ void GurobiBackend::DoGurobiFeasRelax() {
     minrel = 1;
     feasrelax().flag_orig_obj_available();
   }
-  /// Gurobi 9.5 only relaxes linear constraints
-  auto mv = GetValuePresolver().PresolveSolution({
-                                              {},
-                                              feasrelax().rhspen()
-                                            });
-  const auto& rhspen = mv.GetConValues()(CG_Linear);
-  std::vector<double> lbpen = feasrelax().lbpen();
-  if (lbpen.size() && lbpen.size()<(size_t)NumVars())
-    lbpen.resize(NumVars());
-  std::vector<double> ubpen = feasrelax().ubpen();
-  if (ubpen.size() && ubpen.size()<(size_t)NumVars())
-    ubpen.resize(NumVars());
+  /// Gurobi 9.5 only relaxes linear constraints.
+  /// GRB_INFINITY: not relaxable
+  auto pen = FeasrelaxPenaltiesInSolver(
+      NumVars(), CG_Linear, GRB_INFINITY, GRB_INFINITY);
   GRB_CALL( GRBfeasrelax(model(), reltype, minrel,
-                         (double*)data_or_null( lbpen ),
-                         (double*)data_or_null( ubpen ),
-                         (double*)data_or_null( rhspen ),
+                         (double*)data_or_null( pen.lb ),
+                         (double*)data_or_null( pen.ub ),
+                         (double*)data_or_null( pen.rhs ),
                          &feasrelax().orig_obj_value()) );
 }
 
@@ -2933,7 +2929,8 @@ void GurobiBackend::InitCustomOptions() {
   /// Rely on MP's built-in options solutionstub or countsolutions
   AddSolverOption("sol:poolgap ams_eps poolgap",
       "Relative tolerance for reporting alternate MIP solutions "
-      "		(default: Infinity, no limit).",
+      "		(default: Infinity, no limit). "
+      "With the best objective near 0, use sol:poolgapabs.",
       GRB_DBL_PAR_POOLGAP, 0.0, DBL_MAX);
   AddSolverOption("sol:poolgapabs ams_epsabs poolgapabs",
       "Absolute tolerance for reporting alternate MIP solutions "

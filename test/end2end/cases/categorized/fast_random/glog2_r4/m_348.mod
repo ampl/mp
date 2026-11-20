@@ -1,0 +1,8 @@
+var x{1..7} integer >= 0 <= 1;
+
+maximize o: -2*x[1] - 5*x[2] - x[3] - 4*x[4] - x[5] - 2*x[6] + x[7];
+
+s.t. c1: (x[1] == 1) ==> (x[2] > 1);
+s.t. c2: (if x[7] < 0 then x[3] else x[5]) < 1;
+s.t. c3: (x[3] == 1) and (x[7] < 1) ==> (x[3] >= 1);
+s.t. c4: exists {i in 1..7} x[i] == 0;

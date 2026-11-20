@@ -275,5 +275,145 @@
       "Ind[2].iis": "mem",
       "Pair[1].iis": "non"
     }
+  },
+  {
+    "name": "infeasvarbnd_01",
+    "tags": [ "linear", "continuous" ],
+    "solvers_exclude": ["gecode", "ilogcp"],
+    "comment": "Contradictory bounds from singleton constraints: with cvt:pre:infeasvarbnd=1 the converter declares infeasibility",
+    "options": { "presolve": 0, "mp_options": "cvt:pre:infeasvarbnd=1" },
+    "values": { "solve_result": "infeasible" }
+  },
+  {
+    "name": "infeasvarbnd_01 infeasvarbnd=0",
+    "files": ["infeasvarbnd_01.mod"],
+    "tags": [ "linear" ],
+    "solvers": ["gurobi", "highs", "cplex", "xpress", "scip", "copt", "mosek"],
+    "comment": "The bounds are passed on (cvt:pre:infeasvarbnd=0, default): the solver finds infeasibility; MOSEK returns a certificate, which has no basis",
+    "options": { "presolve": 0, "ANYSOLVER_options": "cvt:pre:infeasvarbnd=0" },
+    "values": { "solve_result": "infeasible" }
+  },
+  {
+    "name": "infeasvarbnd_01 feasrelax=1",
+    "files": ["infeasvarbnd_01.mod"],
+    "tags": [ "linear", "feasrelax" ],
+    "solvers": ["gurobi", "highs", "cplex", "copt"],
+    "comment": "With cvt:pre:infeasvarbnd=1, contradictory deduced bounds are declared infeasible also with alg:feasrelax",
+    "options": { "presolve": 0, "mp_options": "cvt:pre:infeasvarbnd=1", "ANYSOLVER_options": "feasrelax=1" },
+    "values": { "solve_result": "infeasible" }
+  },
+  {
+    "name": "infeasvarbnd_01 feasrelax=1 infeasvarbnd=0",
+    "files": ["infeasvarbnd_01.mod"],
+    "tags": [ "linear", "feasrelax" ],
+    "solvers": ["gurobi", "cplex", "copt"],
+    "comment": "Default cvt:pre:infeasvarbnd=0: the solver relaxes the deduced bounds [3, 2] as well as the user's constraints (violation 2, while 1 suffices for the user's model)",
+    "options": { "presolve": 0, "ANYSOLVER_options": "feasrelax=1" },
+    "values": { "solve_result": "solved" }
+  },
+  {
+    "name": "infeasvarbnd_01 feasrelax=1 infeasvarbnd=0 HiGHS",
+    "files": ["infeasvarbnd_01.mod"],
+    "tags": [ "linear", "feasrelax" ],
+    "solvers": ["highs"],
+    "comment": "HiGHS does not relax a column with lower > upper (it returned an unrelaxed point as solved): the driver reports a failure",
+    "options": { "presolve": 0, "ANYSOLVER_options": "feasrelax=1" },
+    "values": { "solve_result": "failure" }
+  },
+  {
+    "name": "infeasvarbnd_01 iisfind=1",
+    "files": ["infeasvarbnd_01.mod"],
+    "tags": [ "linear", "iis" ],
+    "solvers_exclude": ["gecode", "ilogcp"],
+    "comment": "With cvt:pre:infeasvarbnd=1, contradictory deduced bounds are declared infeasible also with iis:find",
+    "options": { "presolve": 0, "mp_options": "cvt:pre:infeasvarbnd=1", "ANYSOLVER_options": "iisfind=1" },
+    "values": { "solve_result": "infeasible" }
+  },
+  {
+    "name": "infeasvarbnd_01 iisfind=1 infeasvarbnd=0",
+    "files": ["infeasvarbnd_01.mod"],
+    "tags": [ "linear", "iis" ],
+    "solvers": ["gurobi", "highs", "cplex", "xpress", "copt"],
+    "comment": "Default cvt:pre:infeasvarbnd=0: the IIS concerns the deduced bounds; Xpress identifies no IIS (warning IIS_NONE, no error 721)",
+    "options": { "presolve": 0, "ANYSOLVER_options": "iisfind=1" },
+    "values": { "solve_result": "infeasible" }
+  },
+  {
+    "name": "feasrelax_aux_01 feasrelax=1",
+    "files": ["feasrelax_aux_01.mod"],
+    "tags": [ "linear", "feasrelax" ],
+    "solvers": ["gurobi", "highs", "cplex", "copt"],
+    "comment": "Auxiliary constraints of abs() are not relaxable; c2 is relaxed instead",
+    "options": { "presolve": 0, "ANYSOLVER_options": "feasrelax=1" },
+    "values": { "solve_result": "solved", "x": 4, "abs(x-5)": 1 }
+  },
+  {
+    "name": "feasrelax_pen_01 feasrelax=1",
+    "files": ["feasrelax_pen_01.mod"],
+    "tags": [ "linear", "feasrelax" ],
+    "solvers": ["gurobi", "highs", "cplex", "copt"],
+    "comment": "Negative .rhspen: c1 is not relaxed (CPLEX took penalties as preferences before)",
+    "options": { "presolve": 0, "ANYSOLVER_options": "feasrelax=1" },
+    "values": { "solve_result": "solved", "x+y": 2 }
+  },
+  {
+    "name": "feasrelax_pen_02 feasrelax=1",
+    "files": ["feasrelax_pen_02.mod"],
+    "tags": [ "linear", "feasrelax" ],
+    "solvers": ["gurobi", "highs", "cplex", "copt"],
+    "comment": "Zero .rhspen: relaxing c1 is free, so c2 holds (any x+y in [0, 1] costs 0)",
+    "options": { "presolve": 0, "ANYSOLVER_options": "feasrelax=1" },
+    "values": { "solve_result": "solved", "if x+y <= 1 + 1e-6 then 1": 1 }
+  },
+  {
+    "name": "feasrelax_pen_03 feasrelax=1 nothing relaxable",
+    "files": ["feasrelax_pen_03.mod"],
+    "tags": [ "linear", "feasrelax" ],
+    "solvers": ["gurobi", "highs", "cplex"],
+    "comment": "No element may be relaxed: infeasible (HiGHS reported a violating point as solved)",
+    "options": { "presolve": 0, "ANYSOLVER_options": "feasrelax=1 lbpen=-1 ubpen=-1" },
+    "values": { "solve_result": "infeasible" }
+  },
+  {
+    "name": "feasrelax_ubpen_01 feasrelax=1",
+    "files": ["feasrelax_ubpen_01.mod"],
+    "tags": [ "linear", "feasrelax" ],
+    "solvers": ["gurobi", "highs", "cplex", "copt"],
+    "comment": "x.ubpen 0.5 < c.rhspen 1: the bound of x is relaxed",
+    "options": { "presolve": 0, "ANYSOLVER_options": "feasrelax=1" },
+    "values": { "solve_result": "solved", "x": 2, "y": 1 }
+  },
+  {
+    "name": "feasrelax_ubpen_02 feasrelax=1",
+    "files": ["feasrelax_ubpen_02.mod"],
+    "tags": [ "linear", "feasrelax" ],
+    "solvers": ["gurobi", "highs", "cplex", "copt"],
+    "comment": "x.ubpen 100 > c.rhspen 1: c is relaxed, x keeps its bound",
+    "options": { "presolve": 0, "ANYSOLVER_options": "feasrelax=1" },
+    "values": { "solve_result": "solved", "x": 1, "y": 1 }
+  },
+  {
+    "name": "infeas_int_01 feasopt=3 rejected CPLEX",
+    "files": ["infeas_int_01.mod"],
+    "tags": [ "linear", "feasrelax" ],
+    "solvers": ["cplex"],
+    "comment": "alg:feasopt outside 0..2 is rejected (before, 3 ran as feasopt=1)",
+    "options": { "cplex_options": "feasopt=3 msgwidth=0" },
+    "values": {
+      "solve_result": "failure",
+      "solve_message": { "contains": "Rejecting alg:feasopt=3" }
+    }
+  },
+  {
+    "name": "infeas_int_01 feasoptobj=4 rejected CPLEX",
+    "files": ["infeas_int_01.mod"],
+    "tags": [ "linear", "feasrelax" ],
+    "solvers": ["cplex"],
+    "comment": "alg:feasoptobj outside 1..3 is rejected (before, it was read out of the bounds of a table)",
+    "options": { "cplex_options": "feasopt=1 feasoptobj=4 msgwidth=0" },
+    "values": {
+      "solve_result": "failure",
+      "solve_message": { "contains": "Rejecting alg:feasoptobj=4" }
+    }
   }
 ]

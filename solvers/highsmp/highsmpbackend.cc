@@ -313,19 +313,128 @@ void HighsBackend::DoPlateauCallback(
 }
 
 
+/// Penalty of element \a k: the local value if given, else the global
+/// one. Negative: the bound must not be violated.
+static double FeasRelaxPenalty(const std::vector<double>& local,
+                               double global, int k) {
+  return local.empty() ? global : local[k];
+}
+
+/// Least violation cost implied by bounds lower > upper of
+/// \a lb, \a ub alone: (lower - upper) * penalty (the smaller of the
+/// two penalties if given), infinity if no side may be violated.
+static double MinCostOfContradictoryBounds(
+    const std::vector<double>& lb, const std::vector<double>& ub,
+    const std::vector<double>& lpen, double glpen,
+    const std::vector<double>& upen, double gupen) {
+  double cost = 0.0;
+  for (size_t k = 0; k < lb.size(); ++k) {
+    if (lb[k] <= ub[k]) continue;
+    double pl = FeasRelaxPenalty(lpen, glpen, k);
+    double pu = FeasRelaxPenalty(upen, gupen, k);
+    if (pl < 0.0 && pu < 0.0) return INFINITY;
+    double p = pl < 0.0 ? pu : (pu < 0.0 ? pl : std::min(pl, pu));
+    cost += (lb[k] - ub[k]) * p;
+  }
+  return cost;
+}
+
+/// The least relaxation cost implied by columns and rows whose
+/// bounds are contradictory (0 if there are none).
+double HighsBackend::MinFeasRelaxCost(const std::vector<double>& lbpen,
+                                      const std::vector<double>& ubpen,
+                                      const std::vector<double>& rhspen) {
+  int n = NumVars(), m = NumLinCons(), num = 0, nnz = 0;
+  std::vector<double> lb(n), ub(n);
+  double cost = 0.0;
+  if (n && kHighsStatusError != loader().Highs_getColsByRange(lp(), 0, n-1,
+          &num, NULL, lb.data(), ub.data(), &nnz, NULL, NULL, NULL))
+    cost += MinCostOfContradictoryBounds(lb, ub, lbpen, this->lbpen(),
+                                         ubpen, this->ubpen());
+  lb.resize(m); ub.resize(m);
+  if (m && loader().Highs_getRowsByRange
+      && kHighsStatusError != loader().Highs_getRowsByRange(lp(), 0, m-1,
+          &num, lb.data(), ub.data(), &nnz, NULL, NULL, NULL))
+    cost += MinCostOfContradictoryBounds(lb, ub, rhspen, this->rhspen(),
+                                         rhspen, this->rhspen());
+  return cost;
+}
+
+/// Penalty \a k of \a local, or \a global if empty; negative: fixed
+static bool IsRelaxable(const std::vector<double>& local, double global,
+                        size_t k) {
+  return FeasRelaxPenalty(local, global, (int)k) >= 0.0;
+}
+
+/// Whether value \a v violates [lb, ub] on a side that may not be relaxed
+static bool ViolatesFixedSide(double v, double lb, double ub,
+                              bool lb_relax, bool ub_relax) {
+  const double tol = 1e-6;
+  return (!lb_relax && v < lb - tol * (1.0 + std::fabs(lb)))
+      || (!ub_relax && v > ub + tol * (1.0 + std::fabs(ub)));
+}
+
+/// HiGHS can return a point that violates elements which may not be
+/// relaxed (negative penalty), reporting it as a relaxed solution:
+/// check the point against them.
+bool HighsBackend::ViolatesNonRelaxable(const std::vector<double>& lbpen,
+                                        const std::vector<double>& ubpen,
+                                        const std::vector<double>& rhspen) {
+  const int n = NumVars(), m = NumLinCons();
+  std::vector<double> x(n), r(m), lb(std::max(n, m)), ub(std::max(n, m));
+  int num = 0, nnz = 0;
+  if (kHighsStatusError == loader().Highs_getSolution(
+          lp(), x.data(), NULL, r.data(), NULL))
+    return false;
+  if (n && kHighsStatusError != loader().Highs_getColsByRange(lp(), 0, n-1,
+          &num, NULL, lb.data(), ub.data(), &nnz, NULL, NULL, NULL))
+    for (int j = 0; j < n; ++j)
+      if (ViolatesFixedSide(x[j], lb[j], ub[j],
+                            IsRelaxable(lbpen, this->lbpen(), j),
+                            IsRelaxable(ubpen, this->ubpen(), j)))
+        return true;
+  if (m && loader().Highs_getRowsByRange
+      && kHighsStatusError != loader().Highs_getRowsByRange(lp(), 0, m-1,
+          &num, lb.data(), ub.data(), &nnz, NULL, NULL, NULL))
+    for (int i = 0; i < m; ++i) {
+      const bool rel = IsRelaxable(rhspen, this->rhspen(), i);
+      if (ViolatesFixedSide(r[i], lb[i], ub[i], rel, rel))
+        return true;
+    }
+  return false;
+}
+
+/// HiGHS 1.15 does not relax a column or row with lower > upper:
+/// Highs_feasibilityRelaxation() returns Ok without solving and leaves
+/// a point with violation cost 0. Fail if the reported cost is below
+/// what such bounds imply; a HiGHS that relaxes them passes the check.
+void HighsBackend::CheckFeasRelaxCost(double min_cost) {
+  if (min_cost <= 0.0)
+    return;
+  int pst = kHighsSolutionStatusNone;
+  loader().Highs_getIntInfoValue(lp(), "primal_solution_status", &pst);
+  double cost = 0.0;
+  loader().Highs_getDoubleInfoValue(lp(), "objective_function_value", &cost);
+  if (kHighsSolutionStatusNone != pst
+      && cost < min_cost - 1e-9 * std::max(1.0, min_cost))
+    MP_RAISE(fmt::format("HiGHS feasibility relaxation ignored "
+                         "contradictory bounds (lower > upper): reported "
+                         "violation cost {}, at least {} required",
+                         cost, min_cost));
+}
+
 void HighsBackend::DoHighsFeasRelax() {
   if (!loader().Highs_feasibilityRelaxation)
     MP_RAISE("this HiGHS library lacks Highs_feasibilityRelaxation");
   int n = NumVars(), m = NumLinCons();
-  /// Penalties: suffix-based vectors (in solver coordinates), or the
-  /// global values. Auxiliary variables get the global value.
-  auto mv = GetValuePresolver().PresolveSolution({ {}, feasrelax().rhspen() });
-  std::vector<double> rhspen = mv.GetConValues()(CG_Linear);
-  std::vector<double> lbpen = feasrelax().lbpen();
-  std::vector<double> ubpen = feasrelax().ubpen();
-  if (lbpen.size() && lbpen.size() < (size_t)n) lbpen.resize(n, this->lbpen());
-  if (ubpen.size() && ubpen.size() < (size_t)n) ubpen.resize(n, this->ubpen());
-  if (rhspen.size() && rhspen.size() < (size_t)m) rhspen.resize(m, this->rhspen());
+  /// Penalties in solver coordinates, or the global values if empty.
+  /// Negative: not relaxable (auxiliary variables and constraints).
+  auto pen = FeasrelaxPenaltiesInSolver(n, CG_Linear, Infinity(), -1.0);
+  std::vector<double>& rhspen = pen.rhs;
+  std::vector<double>& lbpen = pen.lb;
+  std::vector<double>& ubpen = pen.ub;
+  if (rhspen.size() && rhspen.size() < (size_t)m) rhspen.resize(m, -1.0);
+  const double min_cost = MinFeasRelaxCost(lbpen, ubpen, rhspen);
   auto res = loader().Highs_feasibilityRelaxation(lp(),
       this->lbpen(), this->ubpen(), this->rhspen(),
       lbpen.empty() ? nullptr : lbpen.data(),
@@ -333,7 +442,9 @@ void HighsBackend::DoHighsFeasRelax() {
       rhspen.empty() ? nullptr : rhspen.data());
   if (kHighsStatusError == res)
     MP_RAISE("HiGHS feasibility relaxation failed");
+  CheckFeasRelaxCost(min_cost);
   feasrelaxDone_ = true;
+  feasrelaxViolatesFixed_ = ViolatesNonRelaxable(lbpen, ubpen, rhspen);
   /// Original objective value at the relaxed solution
   int pst = kHighsSolutionStatusNone;
   loader().Highs_getIntInfoValue(lp(), "primal_solution_status", &pst);
@@ -356,6 +467,8 @@ void HighsBackend::DoHighsFeasRelax() {
 }
 
 void HighsBackend::Solve() {
+  feasrelaxDone_ = false;         // per solve (e.g., a repeated AMPLSSolve)
+  feasrelaxViolatesFixed_ = false;
   if (feasrelax()) {
     DoHighsFeasRelax();
     WindupHIGHSSolve();
@@ -927,6 +1040,9 @@ std::pair<int, std::string> HighsBackend::GetSolveResult() {
     // judge by the solution it left.
     int pst = kHighsSolutionStatusNone;
     loader().Highs_getIntInfoValue(lp(), "primal_solution_status", &pst);
+    if (kHighsSolutionStatusNone != pst && feasrelaxViolatesFixed_)
+      return { sol::INFEASIBLE,       // a non-relaxable element is violated
+               "infeasible, not repairable by the feasibility relaxation" };
     if (kHighsSolutionStatusNone != pst)   // the point violates the original model
       return { sol::SOLVED, "feasibility relaxation solved" };
     return { sol::FAILURE, "feasibility relaxation found no solution" };
@@ -1553,19 +1669,24 @@ ipm_optimality_tolera
 	  "iis_time_limit", 0.0, DBL_MAX);
 }
 
+/// After alg:feasrelax, HiGHS's MIP gap and bound are those of the
+/// solve before the relaxation: report the relaxation as solved
+/// (gap 0, bound = its objective), as for other solvers
 double HighsBackend::MIPGap() {
-  if (!IsMIP())
+  if (!IsMIP() || feasrelaxDone_)
     return 0;
   return getDblAttr("mip_gap");
 }
 double HighsBackend::BestDualBound() {
   if (!IsMIP())
     return 0;
+  if (feasrelaxDone_)
+    return ObjectiveValue();
   return getDblAttr("mip_dual_bound");
 }
 
 double HighsBackend::MIPGapAbs() {
-  if (!IsMIP())
+  if (!IsMIP() || feasrelaxDone_)
     return 0;
   return std::fabs(
     ObjectiveValue() - BestDualBound());

@@ -819,6 +819,11 @@ void BasicSolver::InitMetaInfoAndOptions(
       &Solver::GetSolutionStats, &Solver::SetSolutionStats, values_techstats_);
 
 
+  AddIntOption("tech:msgwidth msgwidth",
+    "Width at which warnings and error messages are wrapped "
+    "(default 60); 0: no wrapping.",
+    &Solver::GetMsgWidth, &Solver::SetMsgWidth);
+
   AddIntOption("tech:timing timing tech:report_times report_times",
     "0*/1/2: Whether to print and return timings for the run, all times are wall "
     "times. If set to 1, return the solution times in the problem suffixes "
@@ -970,7 +975,7 @@ std::string BasicSolver::GetWarnings() const {
   if (GetWarningsMap().size()) {
     std::string wrn = "------------ WARNINGS ------------\n";
     for (const auto& e: GetWarningsMap())
-      wrn += ToString(e) + '\n';
+      wrn += ToString(e, msg_width()) + '\n';
     return wrn;
   }
   return "";
@@ -983,15 +988,17 @@ void BasicSolver::PrintWarnings() {
 }
 
 std::string BasicSolver::ToString(
-    const WarningsMap::value_type& wrn) {
+    const WarningsMap::value_type& wrn, int width) {
   assert(wrn.second.first);
-  if (wrn.second.first>1)      // several warnings if thsi kind
-    return fmt::format(
-          "WARNING.  {} case(s) of \"{}\". One of them:\n  {}",
-          wrn.second.first, wrn.first, wrn.second.second);
-  return fmt::format(
-        "WARNING:  \"{}\"\n  {}",
-        wrn.first, wrn.second.second);
+  const auto header = wrn.second.first>1   // several warnings of this kind
+      ? fmt::format(
+          "WARNING.  {} case(s) of \"{}\". One of them:",
+          wrn.second.first, wrn.first)
+      : fmt::format("WARNING:  \"{}\"", wrn.first);
+  // Only the text is wrapped: the header's double space would make
+  // WrapLines() keep it as a laid-out line anyway.
+  const auto text = "  " + wrn.second.second;
+  return header + '\n' + (width > 0 ? WrapLines(text, width) : text);
 }
 
 #ifdef MP_DATE
@@ -1532,7 +1539,7 @@ const char* const * AMPLSGetMessages(AMPLS_MP_Solver* slv) {
 
   /// Add Backend warnings
   for (const auto& wrn: be->GetWarningsMap())
-    msg_wrn.push_back(mp::BasicSolver::ToString(wrn) + '\n');
+    msg_wrn.push_back(mp::BasicSolver::ToString(wrn, be->msg_width()) + '\n');
 
   /// Add Backend warnings
   for (const auto& wrn: msg_wrn)

@@ -409,8 +409,25 @@ protected:
       MP_RAISE("Equality-comparing variables with domain out of integer range not implemented");
     const int lb = (int)std::round(lb_dbl);
     const int ub = (int)std::round(ub_dbl);
+    if (lb > ub)        // empty domain (contradictory bounds passed on
+      MP_INFEAS(fmt::format(  // by cvt:pre:infeasvarbnd=0): no encoding
+          "Unary encoding: the domain [{}, {}] of a variable is empty",
+          lb_dbl, ub_dbl));
     std::vector<int> unaryEncVars(ub-lb+1);
     int nTaken=0;
+    // Compared constants outside the (possibly later narrowed) domain,
+    // or fractional: x==c is false. Their flags have no place in the
+    // encoding below and must be fixed here, or they stay free.
+    int nOutside=0;
+    for (const auto& veq: map) {
+      const double c = veq.first;
+      if (c<lb || c>ub || c!=std::round(c)) {
+        ++nOutside;
+        this->NarrowVarBounds(
+              GET_CONSTRAINT_KEEPER(CondLinConEQ).GetResultVar(veq.second),
+              0.0, 0.0);
+      }
+    }
     for (int v=lb; v!=ub+1; ++v) {  // Running thru the map faster?
       auto itV = map.find(v);
       if (map.end() != itV) {
@@ -421,7 +438,7 @@ protected:
         unaryEncVars[v-lb] = int( this->AddVar(0.0, 1.0, var::INTEGER) );
       }
     }
-    assert(map.size()==(size_t)nTaken);
+    assert(map.size()==(size_t)(nTaken+nOutside));
     std::vector<double> coefs(ub-lb+1, 1.0);
     this->AddConstraint(LinConEQ({coefs, unaryEncVars}, 1.0));
     unaryEncVars.push_back(var);

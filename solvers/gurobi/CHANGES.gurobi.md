@@ -12,6 +12,17 @@ Summary of recent updates to Gurobi for AMPL
   duals and the same basis status for every variable and constraint;
   Gurobi has no duals for such models, so the fixed-model solve is
   skipped, with a message.
+- Fix: *kappa_exact=2* wrote the exact condition number to the *.kappa*
+  suffix instead of *.kappa_exact*.
+- Fix: wrong "optimal" solutions of some MIPs with general (e.g.,
+  if-then-else) constraints: parameter InfUnbdInfo=1, set by default for
+  unbounded rays (option *alg:rays*), is now set for continuous models
+  only, where rays are returned.
+- Suffixes *.funcnonlinear* and *.global* on nonlinear constraints are
+  ignored with a warning, as the *.funcpiece...* suffixes are (they apply
+  only to function constraints, *acc:_expr=0*).
+- *iis:find*: a warning when Gurobi does not report the IIS membership of
+  the nonlinear constraints; their *.iis* values are then not set.
 
 
 ## 20261119
@@ -20,9 +31,8 @@ Summary of recent updates to Gurobi for AMPL
     concurrent crossover; 0 runs crossover only after PDHG has finished.
   - *iis:find* reports nonlinear constraints as IIS members and suffix
     *.iisforce* applies to them.
-  - Suffixes *.funcpieces*, *.funcpieceerror*, *.funcpiecelength*,
-    *.funcpieceratio*, *.funcnonlinear* and *.global* apply only to
-    function constraints: set
+  - Suffixes *.funcpieces*, *.funcpieceerror*, *.funcpiecelength* and
+    *.funcpieceratio* apply only to function constraints: set
     *acc:_expr=0* to pass nonlinear functions that way. For nonlinear
     constraints the suffixes are ignored, with a warning.
 - *pre:sparsify* documents value 2 (all model types).

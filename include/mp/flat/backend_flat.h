@@ -166,7 +166,61 @@ protected:
     return rounded;
   }
 
+  /// Feasibility relaxation penalties in solver coordinates:
+  /// bounds of the variables and right-hand sides of the constraints
+  /// of group \a con_group (e.g., CG_Linear). An empty vector means
+  /// that no element may be relaxed.
+  struct FeasrelaxPenalties {
+    std::vector<double> lb, ub, rhs;
+  };
+
+  /// The penalties from the suffixes and options (alg:lbpen etc.).
+  /// Entries >= \a inf, and all variables and constraints that the
+  /// model conversion added, get \a not_relaxable (the solver's
+  /// marker): relaxing an auxiliary element at no cost would violate
+  /// the original constraint it represents.
+  FeasrelaxPenalties FeasrelaxPenaltiesInSolver(
+      int n_vars, int con_group, double inf, double not_relaxable) {
+    const auto& frx = this->feasrelax();
+    return { PadPenalties(frx.lbpen(), n_vars, inf, not_relaxable),
+             PadPenalties(frx.ubpen(), n_vars, inf, not_relaxable),
+             PresolveRhsPenalties(frx.rhspen(), con_group,
+                                  inf, not_relaxable) };
+  }
+
 private:
+  /// Penalties of the original variables, padded for the
+  /// auxiliary ones (which follow them)
+  static std::vector<double> PadPenalties(ArrayRef<double> pen, int n,
+      double inf, double not_relaxable) {
+    std::vector<double> result(pen.begin(), pen.end());
+    if (result.empty())
+      return result;
+    result.resize(std::max<size_t>(result.size(), n), not_relaxable);
+    for (auto& p: result)
+      if (p >= inf)
+        p = not_relaxable;
+    return result;
+  }
+
+  /// Constraint penalties mapped through the value presolver.
+  /// A constraint without an original one (it receives 0
+  /// from the presolver for a vector of ones) is not relaxable.
+  std::vector<double> PresolveRhsPenalties(ArrayRef<double> pen,
+      int con_group, double inf, double not_relaxable) {
+    if (pen.empty())
+      return {};
+    auto mv = GetValuePresolver().PresolveSolution({ {}, pen });
+    std::vector<double> ones(pen.size(), 1.0);
+    auto mv1 = GetValuePresolver().PresolveSolution({ {}, ones });
+    std::vector<double> result = mv.GetConValues()(con_group);
+    const auto& orig = mv1.GetConValues()(con_group);
+    for (size_t i = 0; i < result.size(); ++i)
+      if (i >= orig.size() || 0.0 == orig[i] || result[i] >= inf)
+        result[i] = not_relaxable;
+    return result;
+  }
+
   FixedLPResult fixed_lp_;
   bool fixed_ready_ = false;
 

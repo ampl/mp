@@ -645,8 +645,12 @@ std::string XpressmpBackend::SolveFixedNonlinear() {
 
   bool XpressmpBackend::IsWithinPoolGap(double obj, double best) const {
     double worsening = (obj - best) * (getDblAttr(XPRS_OBJSENSE) >= 0 ? 1 : -1);
-    return worsening <= storedOptions_.poolGapAbs_
-        && worsening <= storedOptions_.poolGap_ * std::fabs(best);
+    // The default gaps (1e100) mean no limit; the relative one
+    // must not become 0 when the best objective is 0
+    return (storedOptions_.poolGapAbs_ >= 1e100
+            || worsening <= storedOptions_.poolGapAbs_)
+        && (storedOptions_.poolGap_ >= 1e100
+            || worsening <= storedOptions_.poolGap_ * std::fabs(best));
   }
 
   /// Report the pool solutions, best first, within the pool gaps
@@ -795,6 +799,10 @@ std::string XpressmpBackend::SolveFixedNonlinear() {
           (XPRS_NLPSOLSTATUS_SOLUTION_NODUALS==solstatus ||
                         XPRS_NLPSOLSTATUS_GLOBALLYOPTIMAL_NODUALS==solstatus)
                                   ? ", no duals" : ", with duals";
+      // A MINLP's duals come only from the fixed model (mip:basis),
+      // reported on its own line
+      if (IsMIP())
+        msg_duals.clear();
 
       // A global (spatial B&B) solve stopped by a limit reports
       // NLPSTATUS_LOCALLY_OPTIMAL for its incumbent: report the limit.
@@ -1463,7 +1471,8 @@ void XpressmpBackend::InitCustomOptions() {
   AddStoredOption("sol:poolgap ams_eps poolgap poolrelgap",
     "Relative tolerance for reporting alternate MIP solutions "
     "(default: no limit): a solution is reported if its objective "
-    "is within poolgap * |best objective| of the best one.",
+    "is within poolgap * |best objective| of the best one. "
+    "With the best objective near 0, use sol:poolgapabs.",
     storedOptions_.poolGap_);
 
   AddStoredOption("sol:poolgapabs ams_epsabs poolgapabs poolabsgap",
@@ -2656,13 +2665,24 @@ void XpressmpBackend::SetBasis(SolutionBasis basis) {
 
 void XpressmpBackend::ComputeIIS() {
   int status;
+  iis_search_failed_ = true;           // until XPRSiisfirst() returns
   XPRESSMP_CCALL(XPRSiisfirst(lp(), 1, &status));
+  iis_search_failed_ = false;
 //  switch (status) {
 //  case XPRS_IIS_COMPLETED:
   SetStatus( GetSolveResult() );
 }
 
+/// Xpress may not identify an IIS (e.g., when infeasibility is
+/// detected before the IIS search); XPRSgetiisdata() then fails
+/// with error 721. Report no IIS members and warn instead.
+bool XpressmpBackend::IfIISAvailable() {
+  return getIntAttr(XPRS_NUMIIS) > 0;
+}
+
 IIS XpressmpBackend::GetIIS() {
+  if (!IfIISAvailable() && !iis_search_failed_)  // a failure is reported
+    AddWarning("IIS_NONE", "Xpress identified no IIS");
   auto variis = VarsIIS();
   auto coniis = ConsIIS();
   auto mv = GetValuePresolver().PostsolveIIS(
@@ -2693,25 +2713,30 @@ IISStatus XpressmpBackend::IIS_VarToAMPL(char c) {
 }
 
 ArrayRef<int> XpressmpBackend::VarsIIS() {
+  std::vector<int> iis(NumVars(), (int)IISStatus::non);
+  if (!IfIISAvailable())
+    return iis;
   int nconsiis, nvarsiis;
   XPRESSMP_CCALL(XPRSgetiisdata(lp(), 1, &nconsiis, &nvarsiis, 0, 0, 0, 0, 0, 0, 0, 0));
   std::vector<int> vars(nvarsiis);
   std::vector<char> bounds(nvarsiis);
   XPRESSMP_CCALL(XPRSgetiisdata(lp(), 1, &nconsiis, &nvarsiis, 0,
     vars.data(), 0, bounds.data(), 0, 0, 0, 0));
-  std::vector<int> iis(NumVars(), (int)IISStatus::non);
   for (int i = 0; i < nvarsiis; i++)
     iis[vars[i]] = (int)IIS_VarToAMPL(bounds[i]);
   return iis;
 }
 
 pre::ValueMapInt XpressmpBackend::ConsIIS() {
-  int nconsiis, nvarsiis;
-  XPRESSMP_CCALL(XPRSgetiisdata(lp(), 1, &nconsiis, &nvarsiis, 0, 0, 0, 0, 0, 0, 0, 0));
+  int nconsiis = 0, nvarsiis = 0;
+  if (IfIISAvailable())
+    XPRESSMP_CCALL(XPRSgetiisdata(lp(), 1, &nconsiis, &nvarsiis,
+                                  0, 0, 0, 0, 0, 0, 0, 0));
   std::vector<int> cons(nconsiis);
   std::vector<char> contype(nconsiis);
-  XPRESSMP_CCALL(XPRSgetiisdata(lp(), 1, &nconsiis, &nvarsiis, cons.data(),
-    0, contype.data(), 0, 0, 0, 0, 0));
+  if (nconsiis)
+    XPRESSMP_CCALL(XPRSgetiisdata(lp(), 1, &nconsiis, &nvarsiis, cons.data(),
+      0, contype.data(), 0, 0, 0, 0, 0));
   std::vector<int> iis_algcon(NumLinCons(), (int)IISStatus::non);
   std::vector<int> iis_sos(NumSOSCons(), (int)IISStatus::non);
   std::vector<int> iis_pl(NumPWLs(), (int)IISStatus::non);

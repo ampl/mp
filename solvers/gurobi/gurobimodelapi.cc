@@ -30,6 +30,7 @@ void GurobiModelAPI::AddVariables(const VarArrayDef& v) {
 }
 void ThrowForUnsupportedObjectives()
 {
+  // Not pre-formatted: ReportError() wraps error messages (tech:msgwidth)
   throw std::runtime_error(
       "When several objectives are handled natively, all of them must be "
       "linear. Use cvt:quadobj=0 and cvt:nlobj=0 to move quadratic and "

@@ -9,6 +9,18 @@ Summary of recent updates to Xpress for AMPL
   terms into constraints with *cvt:quadobj=0* and *cvt:nlobj=0*, instead
   of the Optimizer's error ?1138.
 - Xpress 10 supported.
+- The solve message of a MINLP no longer says "no duals" or "with
+  duals": its duals come only from the fixed model (*mip:basis*), whose
+  line reports them.
+- Fix: with the legacy solution pool (*sol:poolapi=0*, also all
+  Xpress 9 versions), a best objective value of 0 reported only the
+  solutions with that value, as if *sol:poolgap* were 0.
+- Fix: *iis:find* on a model for which Xpress identifies no IIS (e.g.,
+  a variable with contradictory bounds) failed with "?721 No IIS has been
+  identified yet"; now all *.iis* values are *non* and warning IIS_NONE
+  is given.
+- Xpress 10.0 (Optimizer 48.01.01) and 9.9.1 (47.01.02) supported, as
+  well as 9.8.
 - Xpress 10: solution pool (*sol:stub*, *sol:count*) with the built-in
   pool of the Optimizer (*sol:poolapi=1*, default): *sol:poollimit*,
   *sol:poolgap*, *sol:poolgapabs* and *sol:poolmode* set POOLLIMIT,

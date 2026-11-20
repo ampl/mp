@@ -135,6 +135,8 @@ public:
 
   ALLOW_STD_FEATURE(FEAS_RELAX, true);
   void DoCplexFeasRelax();
+  /// MP feasrelax penalty -> CPLEX FeasOpt preference
+  static double FeasoptPreference(double penalty);
 
   /////////////////////////// Model attributes /////////////////////////
   bool IsMIP() const override;

@@ -597,5 +597,37 @@
       "if (y.sstatus != 'bas') then 1 else 0": 1,
       "solve_result_num": 0
     }
+  },
+  {
+    "name": "fixed_sos2_pl",
+    "files": ["fixed_sos2_pl.mod"],
+    "tags": ["linear", "integer", "logical", "sos", "fixmodel"],
+    "comment": "SOS2 from AMPL's PL linearization; the fixed model must not return the relaxation's point (-3.3 at x = 2, obj = 2.7)",
+    "objective": 0,
+    "options": {
+      "pl_linearize": 1,
+      "mp_options": "mip:basis=1"
+    },
+    "values": {
+      "obj": 0,
+      "solve_result_num": 0
+    }
+  },
+  {
+    "name": "fixed_sos2_pl cplexasl",
+    "files": ["fixed_sos2_pl.mod"],
+    "tags": ["linear", "integer", "sos"],
+    "comment": "cplexasl (indicator constraints only): the fixed LP for duals (mipbasis) drops the SOS; the MIP solution is returned without duals",
+    "solvers": ["cplexasl"],
+    "objective": 0,
+    "options": {
+      "pl_linearize": 1,
+      "cplex_options": "mipbasis=1"
+    },
+    "values": {
+      "obj": 0,
+      "if solve_result = 'solved' then 1 else 0": 1,
+      "if match(solve_message, 'violated SOS') > 0 then 1 else 0": 1
+    }
   }
 ]

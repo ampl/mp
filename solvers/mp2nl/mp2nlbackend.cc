@@ -466,9 +466,9 @@ std::string MP2NLBackend::ForwardedLimits() {
       result += fmt::format("{}={}", kw->*kw_mbr, val);
     } else
       AddWarning(std::string("MP2NL_") + optname,
-                 fmt::format("Option {} is not forwarded to solver '{}':\n"
-                             "  keyword unknown for configuration '{}'.\n"
-                             "  Use the solver's own options.",
+                 fmt::format("Option {} is not forwarded to solver '{}':"
+                             " keyword unknown for configuration '{}'."
+                             " Use the solver's own options.",
                              optname, storedOptions_.solver_,
                              storedOptions_.config_));
   };
@@ -597,9 +597,9 @@ void MP2NLBackend::FinishOptionParsing() {
 	if (storedOptions_.config_attempted_.size()
 			&& !storedOptions_.config_.size())
 		AddWarning("SolverConfig",
-							 fmt::format("MP2NL: configuration '{}', \n"
-													 "assumed for solver '{}',\n"
-													 "is unknown. Defaults applied\n"
+							 fmt::format("MP2NL: configuration '{}', "
+													 "assumed for solver '{}', "
+													 "is unknown. Defaults applied "
 													 "(use nl:printconfigs and/or nl:config)",
 													 storedOptions_.config_attempted_,
 													 storedOptions_.solver_) );

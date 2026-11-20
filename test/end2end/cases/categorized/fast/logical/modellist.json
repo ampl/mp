@@ -200,6 +200,11 @@
   },
   {
     "name" : "int_ne_05_ctx_redef",
+    "comment": "mip:round=1: a solver may return x = 5 + 1e-15, then AMPL evaluates x<=5 false",
+    "options": {
+      "mp_options": "mip:round=1",
+      "mp2nl_options": "mip:round=1"
+    },
     "objective" : -19,
     "tags" : ["logical"],
     "values": {
@@ -1095,22 +1100,6 @@
     }
   },
   {
-    "name" : "int_ne_05_ctx_redef mp2nl sub counters",
-    "files" : ["int_ne_05_ctx_redef.mod"],
-    "solvers": ["mp2nl"],
-    "tags" : ["logical"],
-    "comment": "With debug=1 for both: 'values' check the subsolver's model (reported with prefix sub_), values_per_solver_category MP2NL check MP2NL's own model",
-    "options": { "mp2nl_options": "debug=1 solver_options='debug=1'" },
-    "objective": -19,
-    "values_per_solver_category": {
-      "MP2NL": { "Initial.flat1__lineq": 2, "Initial.flat1__indle": 0 }
-    },
-    "values": {
-      "Initial.flat1__lineq": 5,
-      "Initial.flat1__indle": 2
-    }
-  },
-  {
     "name" : "funcbnd_exp_01",
     "solvers" : ["gurobi", "scip", "baronmp"],
     "tags" : ["logical", "nonlinear", "continuous"],
@@ -1186,6 +1175,378 @@
     },
     "comment": "Piecewise-linear approximation of log over an integer argument: with exact result bounds the last breakpoint x = 5 was lost (x = 5 reported, 0.324 instead of 0.259)",
     "objective": 0.3062943611
+  },
+  {
+    "name" : "ctx_ite_or_shared_cmp_01",
+    "files" : ["ctx_ite_or_shared_cmp_01.mod"],
+    "tags" : ["logical", "integer"],
+    "comment": "A comparison shared by a root disjunction and an if-then-else condition: both implications are needed",
+    "objective": -6
+  },
+  {
+    "name" : "bounds_contradict_complement_01 presolve 0",
+    "files" : ["bounds_contradict_complement_01.mod"],
+    "tags" : ["logical", "integer"],
+    "solvers_exclude" : ["gecode", "ilogcp"],
+    "options": {
+      "presolve": 0,
+      "mp_options": "cvt:pre:infeasvarbnd=1"
+    },
+    "comment": "Contradictory bounds of an auxiliary variable: infeasible, not an error",
+    "values": {
+      "solve_result": "infeasible"
+    }
+  },
+  {
+    "name" : "int_fixed_fractional_01 presolve 0",
+    "files" : ["int_fixed_fractional_01.mod"],
+    "tags" : ["integer"],
+    "solvers_exclude" : ["gecode", "ilogcp"],
+    "options": {
+      "presolve": 0,
+      "mp_options": "cvt:pre:infeasvarbnd=1"
+    },
+    "comment": "An integer variable fixed at a fractional value: infeasible",
+    "values": {
+      "solve_result": "infeasible"
+    }
+  },
+  {
+    "name" : "abs_fixed_negative_01 presolve 0",
+    "files" : ["abs_fixed_negative_01.mod"],
+    "tags" : ["integer"],
+    "options": {
+      "presolve": 0
+    },
+    "comment": "abs() of a variable fixed at a negative value",
+    "objective": -2
+  },
+  {
+    "name" : "uenc_fixed_var_01 presolve 0",
+    "files" : ["uenc_fixed_var_01.mod"],
+    "tags" : ["logical", "integer"],
+    "options": {
+      "presolve": 0
+    },
+    "comment": "Comparisons of a variable fixed later with constants outside its domain: their flags must be fixed to 0",
+    "values": {
+      "solve_result": "infeasible"
+    }
+  },
+  {
+    "name" : "holes_eq_bound_loop_01",
+    "files" : ["holes_eq_bound_loop_01.mod"],
+    "tags" : ["logical", "integer"],
+    "comment": "Domain hole of a variable: x==ub and x>=ub were rewritten into each other endlessly (stack overflow)",
+    "objective": -37
+  },
+  {
+    "name" : "indicator_contradict_bounds_01",
+    "files" : ["indicator_contradict_bounds_01.mod"],
+    "tags" : ["logical", "integer"],
+    "solvers_exclude" : ["gecode", "ilogcp"],
+    "options": { "mp_options": "cvt:pre:infeasvarbnd=1" },
+    "comment": "Indicator flag with contradictory bounds: infeasible with cvt:pre:infeasvarbnd=1 (by default, 0, Xpress, SCIP and COPT stop with an error)",
+    "values": {
+      "solve_result": "infeasible"
+    }
+  },
+  {
+    "name" : "indicator_contradict_bounds_02",
+    "files" : ["indicator_contradict_bounds_02.mod"],
+    "tags" : ["logical", "integer"],
+    "solvers_exclude" : ["gecode", "ilogcp"],
+    "options": { "mp_options": "cvt:pre:infeasvarbnd=1" },
+    "comment": "Indicator flag with contradictory best-known bounds: infeasible with cvt:pre:infeasvarbnd=1 (by default, 0, Xpress stops with an error)",
+    "values": {
+      "solve_result": "infeasible"
+    }
+  },
+  {
+    "name" : "fixed_indicator_flag_01",
+    "files" : ["fixed_indicator_flag_01.mod"],
+    "tags" : ["logical", "integer"],
+    "comment": "Indicator flag fixed after the indicator was created: folded (cvt:pre:indfixedflag)",
+    "objective": -6
+  },
+  {
+    "name" : "fixed_indicator_flag_01_struct",
+    "files" : ["fixed_indicator_flag_01.mod"],
+    "tags" : ["logical", "integer"],
+    "solvers": ["gurobi"],
+    "comment": "Indicators accepted: the one with the flag's value becomes its equality, the other is dropped",
+    "options": {
+      "mp_options": "debug=1"
+    },
+    "objective": -6,
+    "values": {
+      "Initial.flat1__indeq": 0,
+      "Initial.flat1__lineq": 1,
+      "Initial.flat1__linle": 2
+    }
+  },
+  {
+    "name" : "fixed_indicator_flag_01_linearized",
+    "files" : ["fixed_indicator_flag_01.mod"],
+    "tags" : ["logical", "integer"],
+    "solvers": ["gurobi"],
+    "comment": "Indicators linearized (acc:indeq=0): folded as well, no big-M rows on the constant flag",
+    "options": {
+      "mp_options": "debug=1 acc:indeq=0"
+    },
+    "objective": -6,
+    "values": {
+      "Initial.flat1__indeq": 0,
+      "Initial.flat1__lineq": 1,
+      "Initial.flat1__linle": 2
+    }
+  },
+  {
+    "name" : "fixed_indicator_flag_01_nofold",
+    "files" : ["fixed_indicator_flag_01.mod"],
+    "tags" : ["logical", "integer"],
+    "solvers": ["gurobi"],
+    "comment": "Old behavior (cvt:pre:indfixedflag=0): indicators with a constant flag reach the solver",
+    "options": {
+      "mp_options": "debug=1 cvt:pre:indfixedflag=0"
+    },
+    "objective": -6,
+    "values": {
+      "Initial.flat1__indeq": 2,
+      "Initial.flat1__lineq": 0
+    }
+  },
+  {
+    "name" : "fixed_indicator_flag_01_nofold_linearized",
+    "files" : ["fixed_indicator_flag_01.mod"],
+    "tags" : ["logical", "integer"],
+    "solvers": ["gurobi"],
+    "comment": "Old behavior, linearized: big-M rows on the constant flag",
+    "options": {
+      "mp_options": "debug=1 acc:indeq=0 cvt:pre:indfixedflag=0"
+    },
+    "objective": -6,
+    "values": {
+      "Initial.flat1__indeq": 0,
+      "Initial.flat1__lineq": 0,
+      "Initial.flat1__linle": 4
+    }
+  },
+  {
+    "name" : "fixed_indicator_flag_01_preall0",
+    "files" : ["fixed_indicator_flag_01.mod"],
+    "tags" : ["logical", "integer"],
+    "solvers": ["gurobi"],
+    "comment": "cvt:pre:all=0 switches the folding off together with the other presolve",
+    "options": {
+      "mp_options": "debug=1 cvt:pre:all=0"
+    },
+    "objective": -6,
+    "values": {
+      "Initial.flat1__indeq": 3,
+      "Initial.flat1__lineq": 4
+    }
+  },
+  {
+    "name" : "fixed_indicator_flag_02",
+    "files" : ["fixed_indicator_flag_02.mod"],
+    "tags" : ["logical", "integer"],
+    "comment": "Indicator flag fixed after the indicator was created: folded (cvt:pre:indfixedflag)",
+    "objective": 36
+  },
+  {
+    "name" : "fixed_indicator_flag_03",
+    "files" : ["fixed_indicator_flag_03.mod"],
+    "tags" : ["logical", "integer"],
+    "comment": "Indicator flags fixed after the indicators were created: folded (cvt:pre:indfixedflag)",
+    "objective": -7
+  },
+  {
+    "name" : "inline_lin_nested_not_01",
+    "tags" : ["logical", "integer"],
+    "comment": "Linear functional constraints of equivalences contain those of NOTs: inlined (cvt:pre:unnest bit 32); CPLEX and Xpress through MP2NL failed",
+    "objective": -2
+  },
+  {
+    "name" : "inline_lin_nested_not_01 struct",
+    "files" : ["inline_lin_nested_not_01.mod"],
+    "tags" : ["logical", "integer"],
+    "solvers": ["gurobi", "xpress", "scip"],
+    "comment": "No linear expressions or NL assignments left in the final model",
+    "options": { "mp_options": "debug=1" },
+    "objective": -2,
+    "values": {
+      "Initial.flat1__linfn": 0,
+      "Initial.flat1__nlassigneq": 0
+    }
+  },
+  {
+    "name" : "inline_lin_nested_not_01 unnest=31",
+    "files" : ["inline_lin_nested_not_01.mod"],
+    "tags" : ["logical", "integer"],
+    "solvers": ["gurobi", "xpress", "scip"],
+    "comment": "Old behavior (cvt:pre:unnest=31): nested linear expressions as NL assignments",
+    "options": { "mp_options": "debug=1 cvt:pre:unnest=31" },
+    "objective": -2,
+    "values": {
+      "Initial.flat1__linfn": 4,
+      "Initial.flat1__nlassigneq": 2
+    }
+  },
+  {
+    "name" : "inline_lin_rand_01",
+    "tags" : ["logical", "integer"],
+    "comment": "Generated; equivalences with NOT (cvt:pre:unnest bit 32)",
+    "objective": -11
+  },
+  {
+    "name" : "inline_lin_rand_01 struct",
+    "files" : ["inline_lin_rand_01.mod"],
+    "tags" : ["logical", "integer"],
+    "solvers": ["gurobi", "xpress", "scip"],
+    "options": { "mp_options": "debug=1" },
+    "objective": -11,
+    "values": {
+      "Initial.flat1__linfn": 0,
+      "Initial.flat1__nlassigneq": 0
+    }
+  },
+  {
+    "name" : "inline_lin_rand_02",
+    "tags" : ["logical", "integer", "nonlinear", "trigonometric"],
+    "comment": "Generated; nested NOT in equivalences, sqrt(1 + sin(.)^2) (cvt:pre:unnest bit 32)",
+    "objective": -11.899009165927
+  },
+  {
+    "name" : "inline_lin_cancel_01",
+    "tags" : ["logical", "integer"],
+    "comment": "Inlined nested linear expressions whose terms cancel (cvt:pre:unnest bit 32)",
+    "objective": -2
+  },
+  {
+    "name" : "inline_quad_ind_01",
+    "solvers": ["gurobi", "scip", "xpress"],
+    "tags" : ["continuous", "integer", "binary", "logical", "quadraticnonconvex"],
+    "comment": "Quadratic subexpression in an indicator body next to a linearized NOT (cvt:pre:unnest)",
+    "objective": -3.3333333
+  },
+  {
+    "name" : "inline_quad_ind_01 noindquad",
+    "files" : ["inline_quad_ind_01.mod"],
+    "solvers": ["gurobi"],
+    "tags" : ["continuous", "integer", "binary", "logical", "quadraticnonconvex"],
+    "comment": "Quadratic indicators not accepted: inlining must not cycle with their conversion",
+    "options": { "mp_options": "acc:indquadle=0 acc:indquadeq=0 acc:indquadge=0" },
+    "objective": -3.3333333
+  },
+  {
+    "name" : "inline_quad_ind_01 noquad",
+    "files" : ["inline_quad_ind_01.mod"],
+    "solvers": ["gurobi"],
+    "tags" : ["continuous", "integer", "binary", "logical", "quadraticnonconvex"],
+    "comment": "Quadratic constraints and indicators not accepted: no cycles",
+    "options": { "mp_options": "acc:quadle=0 acc:quadeq=0 acc:quadge=0 acc:indquadle=0 acc:indquadeq=0 acc:indquadge=0" },
+    "objective": -3.3333333
+  },
+  {
+    "name" : "inline_quad_bin_01",
+    "tags" : ["binary", "logical", "prod_with_bin_var"],
+    "comment": "Products of binaries in nested linear expressions and indicators",
+    "objective": -3
+  },
+  {
+    "name" : "inline_quad_bin_01 noquad",
+    "files" : ["inline_quad_bin_01.mod"],
+    "solvers": ["gurobi"],
+    "tags" : ["binary", "logical", "prod_with_bin_var"],
+    "comment": "Quadratic constraints and indicators not accepted: no cycles",
+    "options": { "mp_options": "acc:quadle=0 acc:quadeq=0 acc:quadge=0 acc:indquadle=0 acc:indquadeq=0 acc:indquadge=0" },
+    "objective": -3
+  },
+  {
+    "name" : "int_ne_05_ctx_redef mp2nl sub counters",
+    "files" : ["int_ne_05_ctx_redef.mod"],
+    "solvers": ["mp2nl"],
+    "tags" : ["logical"],
+    "comment": "With debug=1 for both: 'values' check the subsolver's model (reported with prefix sub_), values_per_solver_category MP2NL check MP2NL's own model",
+    "options": { "mp2nl_options": "debug=1 solver_options='debug=1'" },
+    "objective": -19,
+    "values_per_solver_category": {
+      "MP2NL": { "Initial.flat1__lineq": 2, "Initial.flat1__indle": 0 }
+    },
+    "values": {
+      "Initial.flat1__lineq": 5,
+      "Initial.flat1__indle": 2
+    }
+  },
+  {
+    "name" : "roundint_bnd_02",
+    "tags" : ["logical", "integer"],
+    "solvers": ["gurobi", "xpress", "cplex", "highs", "scip", "copt", "mosek", "mp2nl", "gurobi_mp2nl", "xpress_mp2nl", "cplex_mp2nl", "highs_mp2nl", "scip_mp2nl", "copt_mp2nl", "mosek_mp2nl"],
+    "comment": "Rounded large integer bound used as big-M of an implication (cvt:pre:roundintbnd)",
+    "options": { "presolve": 0 },
+    "objective" : 168000007,
+    "values": { "x - 168000000": 7 }
+  },
+  {
+    "name" : "roundint_bnd_02 roundintbnd=-1",
+    "files" : ["roundint_bnd_02.mod"],
+    "tags" : ["logical", "integer"],
+    "solvers": ["gurobi", "xpress", "cplex", "highs", "scip", "copt", "mp2nl", "gurobi_mp2nl", "xpress_mp2nl", "cplex_mp2nl", "highs_mp2nl", "scip_mp2nl", "copt_mp2nl"],
+    "comment": "No rounding of integer bounds (cvt:pre:roundintbnd=-1)",
+    "options": { "presolve": 0, "mp_options": "cvt:pre:roundintbnd=-1" },
+    "objective" : 168000007,
+    "values": { "x - 168000000": 7 }
+  },
+  {
+    "name" : "inline_lin_nested_not_01 unnest=31 linfill=-1",
+    "files" : ["inline_lin_nested_not_01.mod"],
+    "tags" : ["logical", "integer"],
+    "solvers": ["gurobi", "xpress", "scip"],
+    "comment": "Old behavior (cvt:pre:unnest=31 cvt:pre:linfill=-1): nested linear expressions as NL assignments",
+    "options": { "mp_options": "debug=1 cvt:pre:unnest=31 cvt:pre:linfill=-1" },
+    "objective": -2,
+    "values": {
+      "Initial.flat1__linfn": 4,
+      "Initial.flat1__nlassigneq": 2
+    }
+  },
+  {
+    "name" : "inline_lin_nested_not_01 preall0",
+    "files" : ["inline_lin_nested_not_01.mod"],
+    "tags" : ["logical", "integer"],
+    "solvers": ["gurobi", "xpress", "scip"],
+    "comment": "cvt:pre:all=0: no inlining into expressions, cvt:pre:linfill without effect",
+    "options": { "mp_options": "debug=1 cvt:pre:all=0" },
+    "objective": -2,
+    "values": {
+      "Initial.flat1__linfn": 4,
+      "Initial.flat1__nlassigneq": 2
+    }
+  },
+  {
+    "name" : "roundint_bnd_03",
+    "tags" : ["logical", "integer"],
+    "solvers": ["gurobi", "xpress", "cplex", "highs", "scip", "copt", "mp2nl", "gurobi_mp2nl", "xpress_mp2nl", "cplex_mp2nl", "highs_mp2nl", "scip_mp2nl", "copt_mp2nl"],
+    "comment": "A fractional data bound of a large integer variable is not rounded to the nearest integer (cvt:pre:roundintbnd): infeasible",
+    "options": { "presolve": 0 },
+    "values": { "solve_result": "infeasible" }
+  },
+  {
+    "name" : "roundint_bnd_04",
+    "tags" : ["logical", "integer"],
+    "solvers": ["gurobi", "xpress", "cplex", "highs", "copt", "mp2nl", "gurobi_mp2nl", "xpress_mp2nl", "cplex_mp2nl", "highs_mp2nl", "copt_mp2nl"],
+    "comment": "A computed bound 2000000000.0000002 of an integer variable rounds to 2000000000 (cvt:pre:roundintbnd); SCIP accepts x = 2e9-50 within its relative feasibility tolerance",
+    "options": { "presolve": 0 },
+    "objective" : 0,
+    "values": { "x - 2000000000": 0, "y": 0 }
+  },
+  {
+    "name" : "eq_contradict_01",
+    "tags" : ["logical", "integer"],
+    "comment": "x == 1 and x == -1: infeasible, not the exception 'vector' from an empty unary encoding",
+    "options": { "presolve": 0 },
+    "values": { "solve_result": "infeasible" }
   },
   {
     "name" : "funcbnd_log_03_zero",

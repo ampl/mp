@@ -280,6 +280,10 @@ protected:
                  "Xpress rows", what, n, NumLinCons()));
     return false;
   }
+  /// Whether Xpress identified an IIS
+  bool IfIISAvailable();
+  /// XPRSiisfirst() failed (its error is reported)
+  bool iis_search_failed_ = false;
 
   ArrayRef<int> VarsIIS();
   pre::ValueMapInt ConsIIS();

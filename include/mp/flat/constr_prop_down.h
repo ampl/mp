@@ -349,6 +349,13 @@ public:
              // #248: not MarkAsBridged()
              // see test_ineq_unify_01.mod
         MPD( DecrementVarUsage(con.GetResultVar()) );
+      } else {
+        // Strict < or > cannot be a static constraint here, it is
+        // converted later (with the offset). Its argument expressions
+        // still need their contexts: otherwise, e.g., the condition
+        // of an if-then-else used here and in another place gets
+        // only the other place's half of the reification.
+        MPD( PropagateResult(con.GetConstraint(), ctx) );
       }
     } else {
       MPD( PropagateResult(con.GetConstraint(), ctx) );

@@ -3,6 +3,26 @@ Summary of recent updates to CPLEX for AMPL
 
 
 ## unreleased
+
+- Fix: *alg:feasrelax* penalties (*.lbpen*, *.ubpen*, *.rhspen*,
+  *alg:lbpen* etc.) acted inversely: a larger penalty made a violation
+  cheaper, a negative one (not relaxable) made it free, and 0 (free)
+  forbade relaxation. They now act as documented, as with the other
+  solvers. Models tuned to the previous behavior need their penalties
+  revised: a larger value now makes a violation more expensive.
+- Fix: *alg:feasoptobj* outside 1..3 crashed the driver; such values of
+  *alg:feasopt* and *alg:feasoptobj* are now rejected.
+- Fix: *mip:bestnode* had a garbage value with *mip:basis=1*.
+- Fix: a failure of CPLEX's optimizer (e.g., error 5002 for a nonconvex
+  quadratic constraint) gave an unknown result (-1); it is now reported
+  as a failure (500) with CPLEX's message.
+- Fix: *alg:feasrelax* 1-3 (minimize the relaxation only) reported
+  "limit, feasible solution" (solve result 400) when the minimal
+  relaxation was found; now "minimal relaxation found" (solved).
+- Fix: indicator constraints with an equality were passed to CPLEX with an
+  invalid sense, which CPLEX 22.2 mishandled (wrong results or violated
+  indicators). Note: CPLEX 22.2 can still return a suboptimal solution with
+  native equality indicators; *acc:indeq=0* avoids them.
 - Several objectives with *obj:multi=1* (native multi-objective optimization)
   where one is quadratic: the solve ended with "unknown solution status";
   the driver now stops with a message to use *obj:multi=2* (MP emulation).
