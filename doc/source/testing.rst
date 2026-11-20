@@ -4,10 +4,39 @@
 Testing
 =======
 
-Ensure the major functionality of your driver is tested by :ref:`running
-end-to-end tests <run_end2end_tests>`. :ref:`Add your own test cases
-<add_new_test_cases>` for essential functions.
-:ref:`Unit tests <unit_tests>` should be used as well.
+Choose the check that exercises the behavior you changed.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 17 33 29 21
+
+   * - Check
+     - What it exercises
+     - What it needs
+     - How it is run
+   * - :ref:`CTest <unit_tests>`
+     - MP library code, converters and NL Writer behavior.
+     - A build with ``BUILD_TESTS=ON``. Optional tests may need their
+       component or solver SDK.
+     - Locally or in jobs that build and run the registered CTest targets.
+   * - :ref:`CLI end-to-end <run_end2end_tests>`
+     - The model, driver and solver together, including status, objective,
+       suffixes and residuals when specified by the case.
+     - A driver executable, its runtime and license, Python dependencies
+       and AMPL for cases written as AMPL models.
+     - Run ``test/end2end/run.py`` locally or in a solver test job.
+   * - :ref:`Windows AMPLS <ampls_repeat_test>`
+     - Reporting and solving again on the same native model.
+     - Windows Python, AMPL, a shared driver and its matching solver DLLs.
+     - Manual. The default CI workflow does not invoke it.
+
+Check the selected CI job to see which suites it invokes and whether
+their failures fail the job. Publishing results alone does not establish
+that test failures are enforced. The standalone MP wheel-building
+workflow does not run the driver suites above.
+
+:ref:`Add a regression case <add_new_test_cases>` when changing an
+essential driver behavior.
 
 
 End-to-end tests
@@ -39,6 +68,48 @@ Run end-to-end tests
   subfolder of ``test/end2end/cases``, or use the ``--dir`` or
   ``--nonrecursive`` options.
 
+  For example, run the ``fast`` folder with one solver thread and a
+  five-second per-instance limit::
+
+      python3 test/end2end/run.py highs --bin_path path/to/bin --dir test/end2end/cases/categorized/fast --timeout 5 --nthreads 1 --reportstub fast-highs
+
+  Check the final summary for solver failures, aborted runs, AMPL/Python
+  failures and skips. The runner can exit successfully and still report
+  failed comparisons. Skipped cases did not exercise the driver.
+
+  For a regression comparison, run the baseline and candidate with the
+  same AMPL and solver SDK versions, case set, options, thread count and
+  timeout. Use distinct report stubs and compare by folder and case name.
+  Record added and cleared failures separately from timeouts and skips.
+  If a case unexpectedly skips, check its feature tags and solver
+  restrictions before drawing a coverage conclusion.
+
+
+.. _ampls_repeat_test:
+
+Repeated solves through AMPLS on Windows
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ordinary end-to-end runner starts a fresh driver invocation for each
+solve. The Windows integration test
+:file:`test/solvers/ampls-fixed-model-test.py` exercises a different path:
+it loads a model once, solves and reports it with ``mip:basis=1``, reverses
+the objective sense on the same native problem, then solves and reports
+again. It checks both fixed solves, the unchanged native problem, and the
+change in the integer solution. It uses the CPLEX MIQCP case in
+``fast/mip_basis`` and the Xpress ``nl_dual_01`` case in ``fast/suf_std``.
+
+Run this test manually from the MP source root. It requires Windows
+Python, a licensed AMPL, and the selected shared driver and matching
+solver SDK DLLs. The examples use CPLEX 22.2 and Xpress::
+
+    python test/solvers/ampls-fixed-model-test.py cplex C:/path/to/bin/cplex-lib.dll C:/path/to/bin/cplex2220.dll --ampl C:/path/to/ampl.exe
+    python test/solvers/ampls-fixed-model-test.py xpress C:/path/to/bin/xpress-lib.dll C:/path/to/bin/xprs.dll --ampl C:/path/to/ampl.exe
+
+Use the matching DLL filename for your SDK version and quote paths with
+spaces. Other runtime DLLs must be available to the loader. This test runs
+outside CTest and the standard end-to-end runner. The default CI
+configuration does not run it.
 
 Compulsory configurations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -221,6 +292,10 @@ Unit tests
 
 Unit tests are in the folder :file:`test`.
 Compulsory are tests `converter-flat-test` and `converter-mip-test`.
+Configure MP with ``BUILD_TESTS=ON``. Use ``NLW2_LIB=ON`` to include the
+NL Writer library and its solver-call tests when examples are disabled.
+For a multi-configuration build, run ``ctest --test-dir path/to/build -C
+Release --output-on-failure`` after building the test targets.
 
 With the end-to-end Python dependencies installed, run the script-timeout
 regression checks with ``python3 -m unittest discover -s
