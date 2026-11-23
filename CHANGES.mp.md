@@ -124,6 +124,14 @@ Summary of recent updates to the AMPL MP Library
   (AMPLS C API) returned without solving. It now solves again; with
   emulated multiple objectives it reports that a repeated solve is not
   supported.
+- AMPLS C API: `AMPLSSolve()` now returns 0 on success; on failure, a
+  solve result code (200..599) or -1, as `AMPLSLoadNLModel()` does. An
+  error during the solve (for example, a failing solver call or the
+  repeated solve above) no longer escapes from `AMPLSSolve()` as a C++
+  exception, which could terminate the calling program. Its message is
+  among `AMPLSGetMessages()`. After a failed solve, report the error with
+  `AMPLSReportError()` if needed, not with `AMPLSReportResults()`, which
+  would report the previous solve. Existing callers keep working.
 
 ## 20261029
 

@@ -1475,9 +1475,13 @@ void AMPLSReadExtras(AMPLS_MP_Solver* slv) {
   be->InputExtras();
 }
 
-void AMPLSSolve(AMPLS_MP_Solver* slv) {
-  auto be = AMPLSGetBackend(slv);
-  be->RunSolveIterations();      // as RunFromNLFile(), e.g., MO emulation
+int AMPLSSolve(AMPLS_MP_Solver* slv) {
+  // No exception may leave this C function (e.g., a solver call failing,
+  // or a repeated solve with emulated multiple objectives)
+  return AMPLS__internal__TryCatchWrapper( slv, [=]() {
+    auto be = AMPLSGetBackend(slv);
+    be->RunSolveIterations();    // as RunFromNLFile(), e.g., MO emulation
+  } );
 }
 mp::BasicBackend* AMPLSGetBackend(AMPLS_MP_Solver* slv) {
   assert(slv->internal_info_);

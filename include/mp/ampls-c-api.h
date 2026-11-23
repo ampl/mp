@@ -43,9 +43,15 @@ typedef struct AMPLS_MP_Solver_T {
   /// Load suffixes and other option-dependent info
   AMPLS_C_EXPORT void AMPLSReadExtras(AMPLS_MP_Solver* slv);
 
-  // Expose the driver's solve routine, as currently it might
-  // involve some other steps
-  AMPLS_C_EXPORT void AMPLSSolve(AMPLS_MP_Solver* slv);
+  /// Solve the model, as the driver does (e.g., with emulated
+  /// multiple objectives). Can be called again, e.g., after changing
+  /// the model through the solver's own API.
+  /// @return 0 on success; on failure, a solve result code (200..599)
+  ///   if the failure has one, otherwise -1. The error message is
+  ///   among AMPLSGetMessages(). After a failure, do not call
+  ///   AMPLSReportResults(), which would report the previous solve;
+  ///   report the error with AMPLSReportError() if needed.
+  AMPLS_C_EXPORT int AMPLSSolve(AMPLS_MP_Solver* slv);
 
   /// Report results.
   /// The kind of results reported is influenced by solver option 

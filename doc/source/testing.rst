@@ -118,6 +118,23 @@ spaces. Other runtime DLLs must be available to the loader. This test runs
 outside CTest and the standard end-to-end runner. The default CI
 configuration does not run it.
 
+:file:`test/solvers/ampls-solve-error-test.py` checks a failing
+``AMPLSSolve()``. On a model with two objectives and ``obj:multi=1``, it
+solves once, then again, which the multi-objective emulator does not
+support: the second call must return nonzero without an exception
+escaping it and add its message to ``AMPLSGetMessages()``. The test then
+reports the failure with ``AMPLSReportError()``, as a caller does, and
+checks the solve result and message in the .sol file. It also checks
+that two solves of a single-objective model both succeed. It needs
+Python, AMPL, and a shared
+driver whose solver takes multiple objectives through the emulator. HiGHS
+needs no license (``--libdir`` adds the folder of ``highs-ampl.dll``)::
+
+    python test/solvers/ampls-solve-error-test.py C:/path/to/bin/highsmp-lib.dll --libdir C:/path/to/highs/lib --ampl C:/path/to/ampl.exe
+
+Build the shared driver with ``-DBUILD=highsmp -DMP_LINK_WITH_SHARED_LIB=ON``.
+This test is also manual; the default CI configuration does not run it.
+
 Compulsory configurations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
