@@ -663,5 +663,20 @@
       "Lin.dual": { "min": 0.999, "max": 1.001 },
       "if match(solve_message, 'Fixed MIP for mip:basis:') > 0 then 1 else 0": 1
     }
+  },
+  {
+    "name": "fixed_mip_consistent",
+    "files": ["fixed_mip_consistent.mod"],
+    "tags": ["linear", "integer", "fixmodel"],
+    "comment": "Primal values, basis and duals all of the fixed problem. Not for SCIP: its emulated fixed LP reports u = 10 with status low (open)",
+    "solvers_exclude": ["scip"],
+    "objective": 3,
+    "options": { "mp_options": "mip:basis=1" },
+    "values": {
+      "card {i in I: u[i].sstatus = 'none'}": 0,
+      "card {i in I: (u[i].sstatus = 'upp' and u[i] < u[i].ub - 1e-6) or (u[i].sstatus = 'low' and u[i] > u[i].lb + 1e-6)}": 0,
+      "card {i in I: abs(link[i].dual) > 1e-6 and abs(link[i].slack) > 1e-6}": 0,
+      "card {i in I: abs(cap[i].dual) > 1e-6 and abs(cap[i].slack) > 1e-6}": 0
+    }
   }
 ]

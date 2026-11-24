@@ -316,6 +316,12 @@ private:
   /// A nonlinear MIP's fixed model was solved as an NLP (mip:basis): only its
   /// duals are reported, the MIP's solution and objective stay
   bool fixed_nlp_used_ = false, fixed_nlp_has_duals_ = false;
+  /// The fixed LP (mip:basis, linear MIP) was solved on the copy
+  /// model_fixed_: the reported solution, objective, basis and duals,
+  /// and the solution files, come from the copy
+  bool fixed_lp_used_ = false;
+  /// lp(), or the solved fixed copy (fixed_lp_used_)
+  XPRSprob ResultProb() const { return fixed_lp_used_ ? model_fixed_ : lp(); }
   std::vector<double> mip_primal_before_fixed_, mip_objectives_before_fixed_;
   double mip_bound_before_fixed_ = 0;
   /// Pool's best solution after enumeration (sol:poolmode)

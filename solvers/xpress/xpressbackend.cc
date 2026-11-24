@@ -231,13 +231,15 @@ bool XpressmpBackend::IsQCP() const {
 
 ArrayRef<double> XpressmpBackend::PrimalSolution() {
   if (fixed_model_failed_ || fixed_nlp_used_) return mip_primal_before_fixed_;
-  if (pool_best_x_.size()) return pool_best_x_;
+  // The fixed LP's point agrees with its basis and duals; its integer
+  // columns are those of the incumbent (or of the pool's best)
+  if (pool_best_x_.size() && !fixed_lp_used_) return pool_best_x_;
   int num_vars = NumVars();
   int error;
   std::vector<double> x(num_vars);
     int solst;
     // After XPRSoptimize():
-  error = XPRSgetsolution(lp(), &solst, x.data(), 0, num_vars-1);
+  error = XPRSgetsolution(ResultProb(), &solst, x.data(), 0, num_vars-1);
   if (error
       || XPRS_SOLAVAILABLE_NOTFOUND==solst
           //   Infeasible - should return:
@@ -271,6 +273,11 @@ double XpressmpBackend::ObjectiveValue() const {
   if ((fixed_model_failed_ || fixed_nlp_used_)
       && !mip_objectives_before_fixed_.empty())
     return mip_objectives_before_fixed_.front();
+  if (fixed_lp_used_) {
+    double obj;
+    if (!XPRSgetdblattrib(model_fixed_, XPRS_LPOBJVAL, &obj))
+      return obj;
+  }
   if (pool_best_x_.size())
     return pool_best_obj_;
   return getDblAttr(XPRS_OBJVAL);
@@ -326,12 +333,13 @@ void XpressmpBackend::DoWriteSolution(const std::string& name) {
   auto CheckEnds = [&](std::string e) {
     return ends_with(name, e);
   };
+  // Solution and basis of the fixed LP when it was solved (mip:basis)
   if (CheckEnds("sol") || CheckEnds("prt"))
-    XPRESSMP_CCALL(XPRSwriteprtsol(lp(), name.c_str(), wpflags));
+    XPRESSMP_CCALL(XPRSwriteprtsol(ResultProb(), name.c_str(), wpflags));
   else if (CheckEnds("iis"))
     XPRESSMP_CCALL(XPRSiiswrite(lp(), 1, name.c_str(), 0, "lv"));
   else if (CheckEnds("bas") || CheckEnds("bss"))
-    XPRESSMP_CCALL(XPRSwritebasis(lp(), name.c_str(), wpflags));
+    XPRESSMP_CCALL(XPRSwritebasis(ResultProb(), name.c_str(), wpflags));
 }
 
 
@@ -381,6 +389,7 @@ void XpressmpBackend::Solve() {
   ClearFixedModel();
   fixed_model_failed_ = false;
   fixed_nlp_used_ = false;
+  fixed_lp_used_ = false;
   int nsols = 10;
   if (tunebase().size())
     DoXPRESSTune();
@@ -496,6 +505,7 @@ void XpressmpBackend::ClearFixedModel() {
   if (model_fixed_ && model_fixed_ != lp())
     XPRSdestroyprob(model_fixed_);
   model_fixed_ = lp();
+  fixed_lp_used_ = false;
 }
 
 void XpressmpBackend::CopyFixedModel(bool load_incumbent) {
@@ -512,6 +522,9 @@ void XpressmpBackend::CopyFixedModel(bool load_incumbent) {
   // problem are not called for this internal copy.
   if (msgCallbackSet_)
     XPRESSMP_CCALL(XPRSaddcbmessage(copy, xpdisplay, NULL, 0));
+  // The fixed solve goes to the log file too (not copied with the problem)
+  if (storedOptions_.logFile_.size())
+    XPRESSMP_CCALL(XPRSsetlogfile(copy, storedOptions_.logFile_.c_str()));
   // The native fixing routine needs an incumbent, which is not copied
   // along with the problem data.
   if (!load_incumbent)
@@ -605,6 +618,7 @@ std::string XpressmpBackend::DoXpressFixedModel(bool nonlinear)
       return fmt::format(
         "Surprise status {} after XPRSlpoptimize", status);
   }
+  fixed_lp_used_ = true;
   int f;
   if (!XPRSgetintattrib(model_fixed_, XPRS_SIMPLEXITER, &f)) {
     if (f)
