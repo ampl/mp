@@ -64,7 +64,7 @@ int AMPLS__internal__TryCatchWrapper(
     result = -1;
   }
   if (record)
-    AMPLS__internal__SetCallResult(slv, result < 0 ? 500 : result);
+    AMPLS__internal__SetCallResult(slv, result < 0 ? mp::sol::FAILURE : result);
   return result;
 }
 

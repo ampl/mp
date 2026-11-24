@@ -16,7 +16,7 @@ Checks, on one model with two objectives:
   then reports the failure as a caller does, with AMPLSReportError(),
   and checks the .sol file (solve result and message);
 - with one objective, two AMPLSSolve() calls both succeed;
-- AMPLSGetSolveResult(): -200 after loading, the reported result after a
+- AMPLSGetSolveResult(): NOT_SET after loading, the reported result after a
   solve, the error's code (or 500) after a failed call; a corrupt NL file
   fails to load with -1 and gives 500.
 """
@@ -38,6 +38,8 @@ maximize f1: x;
 maximize f2: y;
 """
 REPEAT_MESSAGE = b"A repeated solve is not supported"
+# sol::NOT_SET (mp/common.h): no solve result yet
+NOT_SET = -200
 
 
 def bind(library, name, result, *arguments):
@@ -92,9 +94,9 @@ class Ampls:
             loaded = self.load(solver, os.fsencode(nl), opts)
             if load_ok:
                 require(loaded == 0, "AMPLS could not load the NL file")
-                require(self.solve_result(solver) == -200,
+                require(self.solve_result(solver) == NOT_SET,
                         f"Solve result before solving: "
-                        f"{self.solve_result(solver)}, expected -200")
+                        f"{self.solve_result(solver)}, expected {NOT_SET}")
             check(solver) if load_ok else check(solver, loaded)
         finally:
             self.close(solver)

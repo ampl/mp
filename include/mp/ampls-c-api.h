@@ -96,7 +96,8 @@ typedef struct AMPLS_MP_Solver_T {
   /// if the last call of AMPLSLoadNLModel(), AMPLSSolve() or
   /// AMPLSReportResults() failed, that error's code, or 500 (failure)
   /// if it has none; otherwise the result of the last solve
-  /// (e.g., 0 solved, 200 infeasible, 400 limit), or -200 before
+  /// (e.g., 0 solved, 200 infeasible, 400 limit), or NOT_SET
+  /// (sol::NOT_SET in mp/common.h) before
   /// any solve.
   AMPLS_C_EXPORT int AMPLSGetSolveResult(AMPLS_MP_Solver* slv);
 

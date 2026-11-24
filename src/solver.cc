@@ -1456,10 +1456,10 @@ void AMPLS__internal__SetCallResult(AMPLS_MP_Solver* slv, int code) {
 int AMPLSGetSolveResult(AMPLS_MP_Solver* slv) {
   auto ii = (AMPLS_MP__internal*)(slv->internal_info_);
   if (!ii)
-    return 500;                    // the instance was not opened
+    return mp::sol::FAILURE;       // the instance was not opened
   if (ii->call_result_)
     return ii->call_result_;
-  return ii->p_be_ ? ii->p_be_->GetSolveResultNum() : 500;
+  return ii->p_be_ ? ii->p_be_->GetSolveResultNum() : mp::sol::FAILURE;
 }
 
 

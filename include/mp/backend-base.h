@@ -109,7 +109,7 @@ public:
 
   /// The solve result code of the last solve
   /// (sol::NOT_SET before a solve or for a backend without one)
-  virtual int GetSolveResultNum() const { return -200; }
+  virtual int GetSolveResultNum() const { return sol::NOT_SET; }
 
 
 protected:
