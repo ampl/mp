@@ -1,6 +1,7 @@
 #ifndef INDICATOR_FIXED_FLAG_H
 #define INDICATOR_FIXED_FLAG_H
 
+#include "mp/error.h"
 #include "mp/flat/redef/redef_base.h"
 
 namespace mp {
@@ -47,9 +48,12 @@ protected:
   bool FoldIfFlagFixed(const Indicator& indc) {
     if (!GetMC().IfIndicatorFlagFoldable(indc.get_binary_var()))
       return false;
-    const bool folded = GetMC().PreprocessStaticConstraint(indc);
-    assert(folded);
-    return folded;
+    // The binary is fixed at 0 or 1, so the indicator folds. Check it
+    // in every build: if it did not, the indicator would get a big-M
+    // linearization although the solver may accept it natively.
+    MP_ASSERT_ALWAYS(GetMC().PreprocessStaticConstraint(indc),
+        "Internal error: an indicator with a fixed binary was not folded");
+    return true;
   }
 };
 
