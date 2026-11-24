@@ -101,9 +101,9 @@ MIP: a bound of the binary variable), then solves and reports again. It
 checks that each report carries the success message of its fixed solve
 exactly once (Gurobi, and Xpress on a linear MIP: at most once, it is
 omitted after zero iterations) and no warning, the unchanged native
-problem, and the change in the integer solution. For Gurobi it then makes the model continuous natively, solves
-and checks that the reported duals are not those of the earlier fixed
-model. It uses the MIQCP and linear MIP cases (``fixed_miqcp_cplex``,
+problem, and the change in the integer solution. For Gurobi it then
+makes the model continuous natively, solves and checks that the reported
+duals are not those of the earlier fixed model. It uses the MIQCP and linear MIP cases (``fixed_miqcp_cplex``,
 ``fixed_milp_cplex``) in ``fast/mip_basis``, and for Xpress also the
 nonlinear MIP ``nl_dual_01`` in ``fast/suf_std``.
 
