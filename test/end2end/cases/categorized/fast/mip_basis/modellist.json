@@ -702,7 +702,8 @@
       "o2": 10,
       "if match(solve_message, 'Tolerance violations') > 0 then 1 else 0": 0,
       "if match(solve_message, 'no fixed-model solve with several') > 0 then 1 else 0": 1,
-      "sum {i in 1..3} if x[i].sstatus = 'upp' and x[i] < 10 - 1e-6 then 1 else 0": 0
+      "sum {i in 1..3} if x[i].sstatus = 'upp' and x[i] < 10 - 1e-6 then 1 else 0": 0,
+      "sum {i in 1..3} if x[i].sstatus = 'none' then 1 else 0": 3
     }
   },
   {
@@ -715,6 +716,7 @@
     "values": {
       "o2": 3,
       "if o1 >= 5.9 then 1 else 0": 1,
+      "sum {i in 1..2} if x[i].sstatus = 'none' then 1 else 0": 2,
       "if match(solve_message, 'Tolerance violations') > 0 then 1 else 0": 0,
       "if match(solve_message, 'no fixed-model solve with several') > 0 then 1 else 0": 1
     }
