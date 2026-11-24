@@ -297,9 +297,8 @@ mp::ArrayRef<double> GurobiBackend::PrimalSolution() {
 }
 
 bool GurobiBackend::FixedModelReported() const {
-  // With several objectives the fixed model's point would not match
-  // the reported objective values of the passes: keep the MIP's point
-  return model_fixed_ && model_fixed_ != model() && 1 == NumObjs();
+  // No fixed model is solved with several objectives
+  return model_fixed_ && model_fixed_ != model();
 }
 
 double GurobiBackend::FixedModelObjValue(bool* fOk) const {
@@ -1410,6 +1409,13 @@ void GurobiBackend::ConsiderGurobiFixedModel() {
                          "duals for them).\n");
       return;
     }
+  }
+  if (NumObjs() > 1) {
+    // The reported point is the MIP's (it keeps the values of all
+    // objectives); the fixed model's basis and duals would not match it
+    AddToSolverMessage("mip:basis: no fixed-model solve with several "
+                       "objectives (obj:multi=1).\n");
+    return;
   }
   if (GRBmodel* mdl = GRBfixedmodel(model()))
     model_fixed_ = mdl;

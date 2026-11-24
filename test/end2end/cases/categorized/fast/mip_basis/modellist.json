@@ -694,13 +694,15 @@
     "name": "fixed_mip_multiobj gurobi",
     "files": ["fixed_mip_multiobj.mod"],
     "tags": ["linear", "integer", "fixmodel", "multiobj"],
-    "comment": "With two objectives the reported point keeps the second objective's optimum",
+    "comment": "With two objectives no fixed model is solved (its basis would not match); the point keeps the second objective's optimum",
     "solvers": ["gurobi"],
     "objective": 3,
     "options": { "gurobi_options": "mip:basis=1 obj:multi=1" },
     "values": {
       "o2": 10,
-      "if match(solve_message, 'Tolerance violations') > 0 then 1 else 0": 0
+      "if match(solve_message, 'Tolerance violations') > 0 then 1 else 0": 0,
+      "if match(solve_message, 'no fixed-model solve with several') > 0 then 1 else 0": 1,
+      "sum {i in 1..3} if x[i].sstatus = 'upp' and x[i] < 10 - 1e-6 then 1 else 0": 0
     }
   }
 ]
