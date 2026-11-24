@@ -3,6 +3,9 @@ Summary of recent updates to SCIP for AMPL
 
 
 ## unreleased
+- Fix: *mip:basis* could report a basis that did not belong to the
+  reported solution of the fixed problem (variables at their upper bound
+  with status *low*).
 - Native second-order cones (`acc:quadcone=2`): the cone coefficients were
   passed to SCIP as square roots although SCIP squares them itself, so the
   constraint was wrong (off by about 1e-2 in the objective on a test model).

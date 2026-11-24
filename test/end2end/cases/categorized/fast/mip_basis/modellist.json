@@ -668,8 +668,7 @@
     "name": "fixed_mip_consistent",
     "files": ["fixed_mip_consistent.mod"],
     "tags": ["linear", "integer", "fixmodel"],
-    "comment": "Primal values, basis and duals all of the fixed problem. Not for SCIP: its emulated fixed LP reports u = 10 with status low (open)",
-    "solvers_exclude": ["scip"],
+    "comment": "Primal values, basis and duals all of the fixed problem",
     "objective": 3,
     "options": { "mp_options": "mip:basis=1" },
     "values": {

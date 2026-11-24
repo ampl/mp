@@ -363,6 +363,10 @@ ScipBackend::FixedLPResult ScipBackend::SolveFixedLP(ArrayRef<double> x) {
     SCIP_CCALL(SCIPlpiSetRealpar(model, SCIP_LPPAR_LPTILIM, fixed_model_time_limit()));
   if (fixed_model_iter_limit() >= 0)
     SCIP_CCALL(SCIPlpiSetIntpar(model, SCIP_LPPAR_LPITLIM, fixed_model_iter_limit()));
+  // With presolving, SoPlex may solve the LP without a simplex basis
+  // of the solution: SCIPlpiGetBase() then gave the slack basis (all
+  // columns at their lower bounds, also those at the upper bound)
+  SCIP_CCALL(SCIPlpiSetIntpar(model, SCIP_LPPAR_PRESOLVING, FALSE));
   SCIP_CCALL(SCIPlpiSolveDual(model));
   if (!SCIPlpiIsOptimal(model)) MP_RAISE("fixed LP not optimal (limit or numerical failure)");
   FixedLPResult result;
