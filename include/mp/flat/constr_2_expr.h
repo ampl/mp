@@ -73,7 +73,7 @@ public:
           MPD( MarkAsExpression(con.GetResultVar()) ); // can be changed later?
         } // ModelAPI handles them as expressions
       } else if ( MPCD(CanBeEliminated(con.GetResultVar())) )
-        SubmitExprBounds(con);  // kept by cvt:pre:linfill/quadfill
+        SubmitExprBounds(con);  // kept by cvt:pre:agglinfill/aggquadfill
       // Else: if submitted bounds stronger, e.g., result fixed,
       // or defined variable marked by dvelim=0, leave as variable
     }
@@ -81,7 +81,7 @@ public:
 
   /// Can \a con's result be used as an expression?
   /// With bit 32 of cvt:pre:unnest, a linear (quadratic) expression
-  /// whose inlining exceeds cvt:pre:linfill (cvt:pre:quadfill)
+  /// whose inlining exceeds cvt:pre:agglinfill (cvt:pre:aggquadfill)
   /// stays a variable with its defining equality, so that
   /// linear terms are not written as nonlinear expressions.
   /// Without that bit (e.g., cvt:pre:all=0), the previous
@@ -102,7 +102,7 @@ public:
   }
 
   /// A linear or quadratic expression kept as a variable by
-  /// cvt:pre:linfill/quadfill: its bounds, implied by the expression,
+  /// cvt:pre:agglinfill/aggquadfill: its bounds, implied by the expression,
   /// become hard bounds. Otherwise they would be lost where
   /// the expression would have been inlined, e.g., a solver
   /// behind MP2NL needs them for big-M constraints of logical

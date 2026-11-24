@@ -1,7 +1,7 @@
 # -------------------------------------------------------------
 # quadfill_nl_01.mod
 # Shared quadratic subexpression (3 terms) used in 4 nonlinear
-# functions: with cvt:pre:quadfill=0 it stays a variable defined by
+# functions: with cvt:pre:aggquadfill=0 it stays a variable defined by
 # a quadratic equality; by default (no limit) it is inlined.
 # -------------------------------------------------------------
 var x{1..3} >= 0 <= 1;

@@ -1,5 +1,5 @@
-# x has no upper bound: tech:varbound (default 1e12) sets it, and the
-# maximum lies at that bound. Both tech:varbound warnings are expected:
+# x has no upper bound: cvt:mip_max_bound (default 1e12) sets it, and the
+# maximum lies at that bound. Both cvt:mip_max_bound warnings are expected:
 # the bound was replaced, and the solution is at it.
 
 var x integer >= 0;

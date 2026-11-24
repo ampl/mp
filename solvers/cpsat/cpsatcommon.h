@@ -121,15 +121,15 @@ struct CpsatData {
   std::vector<double> var_const;
   /// Solver parameters
   operations_research::sat::SatParameters params;
-  /// Replaces infinite variable bounds (tech:varbound)
+  /// Replaces infinite variable bounds (cvt:mip_max_bound)
   double var_bound = kCpsatDefaultVarBound;
-  /// A variable with an infinite bound replaced by tech:varbound
+  /// A variable with an infinite bound replaced by cvt:mip_max_bound
   struct VarBoundSet {
     int var;               ///< index of the variable
     std::string name;      ///< its name, if known
     bool lb, ub;           ///< which bounds were set
   };
-  /// The variables whose bounds tech:varbound set, in order
+  /// The variables whose bounds cvt:mip_max_bound set, in order
   std::vector<VarBoundSet> varbound_set;
   /// Result of the last solve
   operations_research::sat::CpSolverResponse response;

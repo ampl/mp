@@ -495,7 +495,7 @@ protected:
 
   /// Convert an algebraic constraint
   /// Pass two-term linear constraints to the FlatConverter,
-  /// which records variable-bound implications (cvt:pre:vbnd).
+  /// which records variable-bound implications (cvt:pre:domsync).
   /// Done before flattening, as comparisons can be flattened
   /// earlier than such rows (e.g., in objectives).
   void ScanVarBoundRows() {
@@ -511,7 +511,7 @@ protected:
   }
 
   /// Pass root disjunctions  x <= a || x >= b  on one variable
-  /// to the FlatConverter as domain holes (cvt:pre:vbnd bit 2)
+  /// to the FlatConverter as domain holes (cvt:pre:domsync bit 2)
   void ScanDomainHoles() {
     for (int i = 0; i < GetModel().num_logical_cons(); ++i) {
       auto e = GetModel().logical_con(i).expr();
@@ -1866,7 +1866,7 @@ private:
                              "by substitution into linear, quadratic, and polynomial "
                              "expressions:\n"
                              "\n.. value-table::\n"
-                             "\nSee also cvt:pre:unnest, cvt:pre:linfill, cvt:pre:quadfill, "
+                             "\nSee also cvt:pre:unnest, cvt:pre:agglinfill, cvt:pre:aggquadfill, "
                              "cvt:expr:nlassign, as well as AMPL options linelim and substout.",
                              dvelim_, values_dvelim);
     GetEnv().AddStoredOption("cvt:pow2_as_qp pow2_as_qp pow2asqp",

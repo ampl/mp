@@ -15,6 +15,8 @@ Summary of recent updates to the AMPL MP Library
   success, whatever the solve result.
 - Fix: when a model was solved repeatedly through the AMPLS API, the solve
   message of each report repeated the notes of the earlier solves.
+- Option `cvt:pre:vbnd` is now called `cvt:pre:domsync` (synonym
+  `domsync`); `cvt:pre:vbnd` and `vbnd` remain accepted.
 - `1^x` in an NL file not written by AMPL (AMPL simplifies it) is taken as
   the constant 1, instead of an exponential with base 1, which the
   piecewise-linear approximation could not handle.
@@ -93,10 +95,10 @@ Summary of recent updates to the AMPL MP Library
   option `cvt:pre:unnest` (default now 63).
 - The inlining of shared subexpressions is limited by the fill it can cause
   (upper bound (u-1)(k-1)-2 for k terms and u uses): options
-  `cvt:pre:linfill` (default 10) and `cvt:pre:quadfill` (quadratic terms
+  `cvt:pre:agglinfill` (default 10) and `cvt:pre:aggquadfill` (quadratic terms
   only, default -1: no limit). A linear subexpression not inlined stays a
   variable with its linear definition and the bounds implied by it.
-  `cvt:pre:unnest=31 cvt:pre:linfill=-1` restores the old behavior.
+  `cvt:pre:unnest=31 cvt:pre:agglinfill=-1` restores the old behavior.
 - Fixed a wrong result with expressions passed to the solver (e.g., Gurobi 14,
   `acc:_expr=1`): a function result relaxed to one inequality by context
   (e.g., `v <= exp(.)` inside `log(1 + v^2)`) lost its implied bounds

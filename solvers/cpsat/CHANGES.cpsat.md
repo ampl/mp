@@ -2,6 +2,8 @@ Summary of recent updates to CP-SAT for AMPL
 ============================================
 
 ## unreleased
+- Option *tech:varbound* is now called *cvt:mip_max_bound*;
+  *tech:varbound* and *varbound* remain accepted.
 - Linear constraint coefficients must be integer: a fractional coefficient
   is an error, including a large one such as `1000000000.5`, which was
   rounded before. A value that differs from an integer only by
@@ -18,17 +20,17 @@ Summary of recent updates to CP-SAT for AMPL
   A bound beyond the 64-bit integer range is no longer an error: an upper
   bound above the range (a lower bound below it) never binds; a lower bound
   above the range (an upper bound below it) makes the model infeasible.
-- Fix: *tech:varbound* (default `1e12`) now replaces infinite variable
+- Fix: *cvt:mip_max_bound* (default `1e12`) now replaces infinite variable
   bounds only; finite bounds are passed as given. Before, a finite bound
   of that magnitude or more was replaced too: an objective constant such
   as in `x + y + 2e12`, or a lower bound such as `x >= 2e12`, made the
   model infeasible, and an upper bound such as `x <= 2e14` was silently
   lowered to `1e12`. An infinite bound opposite a finite one beyond
-  *tech:varbound* is set *tech:varbound* beyond it.
+  *cvt:mip_max_bound* is set *cvt:mip_max_bound* beyond it.
 - Warnings: "VARBOUND" lists the infinite bounds replaced by
-  *tech:varbound* and recommends finite bounds for all variables;
+  *cvt:mip_max_bound* and recommends finite bounds for all variables;
   "VARBOUND_ACTIVE" lists solution values at such a bound, where the
-  result may depend on *tech:varbound* (e.g., an unbounded model).
+  result may depend on *cvt:mip_max_bound* (e.g., an unbounded model).
 - An objective with a non-integer constant (e.g., `x + y + 2.5`) is
   accepted; before, the solve failed with "variable N is continuous".
 - Fix: a solve after another solver's solve in the same AMPL session

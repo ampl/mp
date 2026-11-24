@@ -200,7 +200,7 @@
     "name": "cpsat_big_obj_const",
     "solvers": ["cpsat"],
     "tags": ["integer"],
-    "comment": "Objective constant 2e12 above the default tech:varbound is kept",
+    "comment": "Objective constant 2e12 above the default cvt:mip_max_bound is kept",
     "options": { "presolve": 0 },
     "objective": 2000000000010,
     "values": {
@@ -212,7 +212,7 @@
     "name": "cpsat_big_var_bounds",
     "solvers": ["cpsat"],
     "tags": ["integer"],
-    "comment": "Finite bounds 2e14 and 2e12 above tech:varbound are kept: x = 2e14, y = 2e12",
+    "comment": "Finite bounds 2e14 and 2e12 above cvt:mip_max_bound are kept: x = 2e14, y = 2e12",
     "options": { "presolve": 0 },
     "objective": 198000000000000,
     "values": {
@@ -225,13 +225,13 @@
     "name": "cpsat_varbound_warn",
     "solvers": ["cpsat"],
     "tags": ["integer"],
-    "comment": "Infinite bound replaced by tech:varbound and active: both warnings",
+    "comment": "Infinite bound replaced by cvt:mip_max_bound and active: both warnings",
     "options": { "presolve": 0 },
     "objective": 1000000000010,
     "values": {
       "x": 1000000000000,
       "if match(solve_message, 'replaced 1 infinite bound') > 0 then 1 else 0": 1,
-      "if match(solve_message, 'at a bound set by tech:varbound') > 0 then 1 else 0": 1
+      "if match(solve_message, 'at a bound set by cvt:mip_max_bound') > 0 then 1 else 0": 1
     }
   }
 ]

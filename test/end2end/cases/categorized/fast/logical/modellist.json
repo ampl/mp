@@ -1499,12 +1499,12 @@
     "values": { "x - 168000000": 7 }
   },
   {
-    "name" : "inline_lin_nested_not_01 unnest=31 linfill=-1",
+    "name" : "inline_lin_nested_not_01 unnest=31 agglinfill=-1",
     "files" : ["inline_lin_nested_not_01.mod"],
     "tags" : ["logical", "integer"],
     "solvers": ["gurobi", "xpress", "scip"],
-    "comment": "Old behavior (cvt:pre:unnest=31 cvt:pre:linfill=-1): nested linear expressions as NL assignments",
-    "options": { "mp_options": "debug=1 cvt:pre:unnest=31 cvt:pre:linfill=-1" },
+    "comment": "Old behavior (cvt:pre:unnest=31 cvt:pre:agglinfill=-1): nested linear expressions as NL assignments",
+    "options": { "mp_options": "debug=1 cvt:pre:unnest=31 cvt:pre:agglinfill=-1" },
     "objective": -2,
     "values": {
       "Initial.flat1__linfn": 4,
@@ -1516,7 +1516,7 @@
     "files" : ["inline_lin_nested_not_01.mod"],
     "tags" : ["logical", "integer"],
     "solvers": ["gurobi", "xpress", "scip"],
-    "comment": "cvt:pre:all=0: no inlining into expressions, cvt:pre:linfill without effect",
+    "comment": "cvt:pre:all=0: no inlining into expressions, cvt:pre:agglinfill without effect",
     "options": { "mp_options": "debug=1 cvt:pre:all=0" },
     "objective": -2,
     "values": {

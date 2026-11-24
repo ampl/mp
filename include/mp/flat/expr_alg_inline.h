@@ -87,7 +87,7 @@ public:
   }
 
   /// Can the result variable \a v of LFC \a lfc be inlined:
-  /// CanBeEliminated() and the fill within cvt:pre:linfill.
+  /// CanBeEliminated() and the fill within cvt:pre:agglinfill.
   bool CanInline(int v, const LinearFunctionalConstraint& lfc) const {
     return CanBeEliminated(v)
         && IfFillWithin(v, lfc.GetAffineExpr().GetBody().size(),
@@ -96,7 +96,7 @@ public:
 
   /// Can the result variable \a v of QFC \a qfc be inlined:
   /// CanBeEliminated() and the fill of its quadratic part
-  /// within cvt:pre:quadfill.
+  /// within cvt:pre:aggquadfill.
   bool CanInline(int v, const QuadraticFunctionalConstraint& qfc) const {
     return CanBeEliminated(v)
         && IfFillWithin(v, qfc.GetQuadExpr().GetBody().GetQPTerms().size(),

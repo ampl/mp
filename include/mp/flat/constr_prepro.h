@@ -369,7 +369,7 @@ public:
   }
 
   /// Comparison  a*x (kind) rhs  inside a domain hole of x
-  /// (cvt:pre:vbnd bit 2, see var_bnd_impl.h):
+  /// (cvt:pre:domsync bit 2, see var_bnd_impl.h):
   /// reuse the comparison x >= b or its negation.
   /// @return true if rewritten
   template <int kind, class Body, class PreprocessInfo>
@@ -396,7 +396,7 @@ public:
   }
 
   /// Comparison  a*x (kind) rhs  decided by variable-bound
-  /// constraints on x (cvt:pre:vbnd, see var_bnd_impl.h):
+  /// constraints on x (cvt:pre:domsync, see var_bnd_impl.h):
   /// reuse the binary or its negation.
   /// @return true if decided
   template <int kind, class Body, class PreprocessInfo>

@@ -416,7 +416,7 @@ TEST(VarBndTest, DomainHole__comparisonsShareOneBinary) {
 
 TEST(VarBndTest, DomainHole__optionBitOff__separateComparisons) {
   mp::Env e;
-  Disj2IndTester t(e, kAccInd, "cvt:pre:vbnd=1 cvt:pre:disj2ind=0");
+  Disj2IndTester t(e, kAccInd, "cvt:pre:domsync=1 cvt:pre:disj2ind=0");
   int x = t.Var(0, 10), a = t.Var(0, 1, INTEGER);
   AddHoleCase(t, x, a);
   t.ConvertModel();

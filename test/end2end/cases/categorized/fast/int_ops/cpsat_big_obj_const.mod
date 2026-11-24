@@ -1,4 +1,4 @@
-# An objective constant above the default tech:varbound (1e12) is data,
+# An objective constant above the default cvt:mip_max_bound (1e12) is data,
 # not a bound to cap: the model is feasible with optimum 2e12 + 10.
 
 var x integer >= 0, <= 100;

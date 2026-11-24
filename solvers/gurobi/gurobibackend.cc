@@ -2730,8 +2730,11 @@ void GurobiBackend::InitCustomOptions() {
             &GurobiBackend::GrbSetObjDblParam);
 
 
-  AddSolverOption("pre:aggfill aggfill", "Amount of fill allowed during aggregation in presolve"
-    "(default -1).", GRB_INT_PAR_AGGFILL, -1, GRB_MAXINT);
+  AddSolverOption("pre:aggfill aggfill",
+    "Amount of fill allowed during aggregation in Gurobi's presolve "
+    "(default -1: automatic). For MP's own limits on inlining shared "
+    "subexpressions see cvt:pre:agglinfill and cvt:pre:aggquadfill.",
+    GRB_INT_PAR_AGGFILL, -1, GRB_MAXINT);
 
 
   AddSolverOption("pre:aggregate aggregate",

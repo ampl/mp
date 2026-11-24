@@ -418,17 +418,17 @@ void CpsatBackend::WarnVarBounds() {
   if (!n)
     return;
   AddWarning("VARBOUND", fmt::format(
-      "CP-SAT needs finite variable bounds: tech:varbound={} replaced "
+      "CP-SAT needs finite variable bounds: cvt:mip_max_bound={} replaced "
       "{} infinite bound(s): {}. An infinite bound opposite a finite one "
-      "beyond tech:varbound is set tech:varbound beyond it. Recommended: "
+      "beyond cvt:mip_max_bound is set cvt:mip_max_bound beyond it. Recommended: "
       "give every variable finite bounds in the model.",
       data()->var_bound, n, set));
   const auto at = VarBoundExamples(true, n);
   if (n)
     AddWarning("VARBOUND_ACTIVE", fmt::format(
-        "{} variable value(s) at a bound set by tech:varbound: {}. The "
-        "result may depend on tech:varbound (the model may be unbounded); "
-        "give finite bounds or increase tech:varbound.", n, at));
+        "{} variable value(s) at a bound set by cvt:mip_max_bound: {}. The "
+        "result may depend on cvt:mip_max_bound (the model may be unbounded); "
+        "give finite bounds or increase cvt:mip_max_bound.", n, at));
 }
 
 void CpsatBackend::ReportCpsatResults() {
@@ -555,16 +555,16 @@ void CpsatBackend::InitCustomOptions() {
       "``params='linearization_level: 2 symmetry_level: 3'``.",
       storedOptions_.params_);
 
-  AddStoredOption("tech:varbound varbound",
-      "Magnitude used for infinite variable bounds, which CP-SAT cannot "
-      "handle (default 1e12): -varbound for an infinite lower bound, "
-      "+varbound for an infinite upper bound (or varbound beyond the other "
-      "bound, when that bound lies beyond varbound), with a warning; "
+  AddStoredOption("cvt:mip_max_bound tech:varbound varbound",
+      "Magnitude M used for infinite variable bounds, which CP-SAT cannot "
+      "handle (default 1e12): -M for an infinite lower bound, "
+      "+M for an infinite upper bound (or M beyond the other "
+      "bound, when that bound lies beyond M), with a warning; "
       "another warning lists solution values at such bounds. Give every "
       "variable finite bounds in the model. Finite bounds are "
       "passed as given. CP-SAT rejects a model where a constraint or the "
       "objective could overflow 64-bit integers for values within the "
-      "bounds; a smaller varbound may avoid that.",
+      "bounds; a smaller M may avoid that.",
       storedOptions_.varbound_, 1.0, 1e18);
 
   AddSolverOption("tech:threads threads",

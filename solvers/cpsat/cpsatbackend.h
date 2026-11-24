@@ -129,11 +129,11 @@ protected:
 
   std::pair<int, std::string> GetSolveResult() override;
   void AddCpsatMessages();
-  /// Warn about infinite bounds replaced by tech:varbound, and about
+  /// Warn about infinite bounds replaced by cvt:mip_max_bound, and about
   /// solution values at such bounds
   void WarnVarBounds();
   /// "x <= 1e12, y >= -1e12, ..." for the first few bounds that
-  /// tech:varbound set; at_bound: only those the solution attains
+  /// cvt:mip_max_bound set; at_bound: only those the solution attains
   std::string VarBoundExamples(bool at_bound, int& count) const;
 
   /// Statistics for option tech:stats

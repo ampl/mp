@@ -2049,7 +2049,7 @@ private:
                        "<=c, <c+cvt:mip:eps, >c, >=c+cvt:mip:eps.",
                        options_.preprocessIneq2Related_, 0, 1);
 
-    GetEnv().AddOption("cvt:pre:vbnd vbnd",
+    GetEnv().AddOption("cvt:pre:domsync domsync cvt:pre:vbnd vbnd",
                        "Comparisons x (cmp) c decided by the domain of x "
                        "reuse an existing binary instead of a new reified "
                        "comparison. Bitwise OR of the following values:\n"
@@ -2080,12 +2080,12 @@ private:
                        "16 and 32 need 2 or 4. Not inlined: results with "
                        "stronger bounds (cvt:pre:boundsbest), "
                        "cvt:dvelim=0. "
-                       "Default 63; 31 together with cvt:pre:linfill=-1 "
+                       "Default 63; 31 together with cvt:pre:agglinfill=-1 "
                        "gives the behavior before bit 32. "
-                       "See also cvt:pre:linfill, cvt:pre:quadfill, "
+                       "See also cvt:pre:agglinfill, cvt:pre:aggquadfill, "
                        "cvt:dvelim, cvt:expr:nlassign.",
         options_.preproUnnest_, 0, 63);
-    GetEnv().AddOption("cvt:pre:linfill linfill",
+    GetEnv().AddOption("cvt:pre:agglinfill",
                        "Limit on the fill from inlining a shared linear "
                        "subexpression (cvt:pre:unnest): an upper bound "
                        "(u-1)(k-1)-2 for k terms and u uses. Negative: "
@@ -2096,14 +2096,14 @@ private:
                        "expressions written for solvers accepting them "
                        "(acc:_expr=1, MP2NL). No effect with "
                        "cvt:pre:all=0. Default 10. "
-                       "See also cvt:pre:unnest, cvt:pre:quadfill, "
+                       "See also cvt:pre:unnest, cvt:pre:aggquadfill, "
                        "cvt:dvelim, cvt:expr:nlassign.",
                        options_.linFill_, -1, INT_MAX);
-    GetEnv().AddOption("cvt:pre:quadfill quadfill",
+    GetEnv().AddOption("cvt:pre:aggquadfill",
                        "Similar limit for quadratic subexpressions, "
                        "with k the number of their quadratic terms. "
                        "Default -1 (no limit). "
-                       "See also cvt:pre:unnest, cvt:pre:linfill, "
+                       "See also cvt:pre:unnest, cvt:pre:agglinfill, "
                        "cvt:dvelim, cvt:expr:nlassign.",
                        options_.quadFill_, -1, INT_MAX);
     GetEnv().AddOption("cvt:pre:sort cvt:sort",
@@ -2435,7 +2435,7 @@ private:
                                    "an algebraic formula node should be assigned to a variable "
                                    "(see acc: options). 0 means all nodes assigned. "
                                    "Default {}. See also cvt:pre:unnest, "
-                                   "cvt:pre:linfill, cvt:pre:quadfill, cvt:dvelim.",
+                                   "cvt:pre:agglinfill, cvt:pre:aggquadfill, cvt:dvelim.",
                                    options_.nlassign_lev_).c_str(),
                        options_.nlassign_lev_, 0, INT_MAX);
 
@@ -2556,9 +2556,9 @@ public:
   /// Implications of variable-bound constraints
   const VarBinaryBounds& GetVarBinaryBounds() const { return var_bin_bnds_; }
 
-  /// cvt:pre:linfill
+  /// cvt:pre:agglinfill
   int LinFillLimit() const { return options_.linFill_; }
-  /// cvt:pre:quadfill
+  /// cvt:pre:aggquadfill
   int QuadFillLimit() const { return options_.quadFill_; }
 
   /// Whether inline nested forall, exists, lin/quad expr

@@ -944,7 +944,7 @@
     "name" : "inline_fill_chain_01",
     "solvers": ["gurobi", "scip"],
     "tags" : ["continuous", "nonlinear", "logical"],
-    "comment": "Shared chain links kept as variables by cvt:pre:linfill (default 10)",
+    "comment": "Shared chain links kept as variables by cvt:pre:agglinfill (default 10)",
     "options": { "mp_options": "debug=1" },
     "objective": 19.94313443,
     "values": {
@@ -953,12 +953,12 @@
     }
   },
   {
-    "name" : "inline_fill_chain_01 linfill=-1",
+    "name" : "inline_fill_chain_01 agglinfill=-1",
     "files" : ["inline_fill_chain_01.mod"],
     "solvers": ["gurobi", "scip"],
     "tags" : ["continuous", "nonlinear", "logical"],
     "comment": "No fill limit: all links inlined",
-    "options": { "mp_options": "debug=1 cvt:pre:linfill=-1" },
+    "options": { "mp_options": "debug=1 cvt:pre:agglinfill=-1" },
     "objective": 19.94313443,
     "values": {
       "Initial.flat1__lineq": 0,
@@ -983,18 +983,18 @@
     "name" : "quadfill_nl_01",
     "solvers": ["scip"],
     "tags" : ["continuous", "nonlinear"],
-    "comment": "Shared quadratic subexpression inlined into 4 nonlinear functions (no cvt:pre:quadfill limit)",
+    "comment": "Shared quadratic subexpression inlined into 4 nonlinear functions (no cvt:pre:aggquadfill limit)",
     "options": { "mp_options": "debug=1" },
     "objective": 2,
     "values": { "Initial.flat1__quadeq": 0 }
   },
   {
-    "name" : "quadfill_nl_01 quadfill=0",
+    "name" : "quadfill_nl_01 aggquadfill=0",
     "files" : ["quadfill_nl_01.mod"],
     "solvers": ["scip"],
     "tags" : ["continuous", "nonlinear"],
-    "comment": "cvt:pre:quadfill=0: the subexpression stays a variable defined by a quadratic equality",
-    "options": { "mp_options": "debug=1 cvt:pre:quadfill=0" },
+    "comment": "cvt:pre:aggquadfill=0: the subexpression stays a variable defined by a quadratic equality",
+    "options": { "mp_options": "debug=1 cvt:pre:aggquadfill=0" },
     "objective": 2,
     "values": { "Initial.flat1__quadeq": 1 }
   },
@@ -1002,7 +1002,7 @@
     "name" : "linfill_gate_01",
     "solvers": ["scip"],
     "tags" : ["continuous", "nonlinear"],
-    "comment": "Shared linear subexpression above cvt:pre:linfill stays a variable with a linear equality",
+    "comment": "Shared linear subexpression above cvt:pre:agglinfill stays a variable with a linear equality",
     "options": { "mp_options": "debug=1" },
     "objective": 4.88545,
     "values": { "Initial.flat1__linfn": 1, "Initial.flat1__lineq": 3 }
@@ -1012,7 +1012,7 @@
     "files" : ["linfill_gate_01.mod"],
     "solvers": ["scip"],
     "tags" : ["continuous", "nonlinear"],
-    "comment": "cvt:pre:all=0: cvt:pre:linfill has no effect, the expression is written as before",
+    "comment": "cvt:pre:all=0: cvt:pre:agglinfill has no effect, the expression is written as before",
     "options": { "mp_options": "debug=1 cvt:pre:all=0" },
     "objective": 4.88545,
     "values": { "Initial.flat1__linfn": 4, "Initial.flat1__lineq": 1 }

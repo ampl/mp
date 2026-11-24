@@ -1,7 +1,7 @@
 # -------------------------------------------------------------
 # linfill_gate_01.mod
 # Shared linear subexpression (6 terms) used in 4 nonlinear
-# functions: its fill exceeds cvt:pre:linfill, so by default it stays
+# functions: its fill exceeds cvt:pre:agglinfill, so by default it stays
 # a variable with a linear equality. With cvt:pre:all=0 the limit
 # has no effect: the expression is written as before.
 # -------------------------------------------------------------

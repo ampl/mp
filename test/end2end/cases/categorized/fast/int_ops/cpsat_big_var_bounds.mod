@@ -1,4 +1,4 @@
-# Finite variable bounds beyond the default tech:varbound (1e12) are
+# Finite variable bounds beyond the default cvt:mip_max_bound (1e12) are
 # passed as given: the optimum needs x = 2e14 and y = 2e12. An infinite
 # bound opposite such a bound must not make the domain empty.
 

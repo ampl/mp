@@ -2,7 +2,7 @@
 # inline_fill_chain_01.mod
 # Chain y[k] = y[k-1] + count(...): each COUNT is linearized during
 # conversion; inlining the shared chain links into each other would grow
-# quadratically. cvt:pre:linfill (default 10) keeps the links as variables
+# quadratically. cvt:pre:agglinfill (default 10) keeps the links as variables
 # once the fill bound exceeds the limit.
 # -------------------------------------------------------------
 param N := 20; param M := 3;
