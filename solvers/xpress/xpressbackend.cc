@@ -485,6 +485,12 @@ void XpressmpBackend::ConsiderXpressFixedModel() {
   mip_primal_before_fixed_ = PrimalSolution();
   mip_objectives_before_fixed_ = GetObjectiveValues();
   mip_bound_before_fixed_ = BestDualBound();
+  if (pool_best_x_.empty() && mip_primal_before_fixed_.empty()) {
+    AddToSolverMessage("Fixed MIP for mip:basis skipped: "
+                       "no integer-feasible incumbent.\n");
+    fixed_model_failed_ = true;      // report the MIP's (absent) results
+    return;
+  }
   std::string msg;
   // A Ctrl-C during the fixed solve stops it too
   struct InterruptCopy {

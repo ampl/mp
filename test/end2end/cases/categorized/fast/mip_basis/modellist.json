@@ -718,5 +718,18 @@
       "if match(solve_message, 'Tolerance violations') > 0 then 1 else 0": 0,
       "if match(solve_message, 'no fixed-model solve with several') > 0 then 1 else 0": 1
     }
+  },
+  {
+    "name": "fixed_mip_infeasible",
+    "files": ["fixed_mip_infeasible.mod"],
+    "tags": ["linear", "integer", "fixmodel"],
+    "comment": "No incumbent: the fixed solve is skipped with a message, not reported as failed",
+    "solvers": ["xpress", "cplex"],
+    "options": { "presolve": "0", "ANYSOLVER_options": "mip:basis=1" },
+    "values": {
+      "solve_result": "infeasible",
+      "if match(solve_message, 'skipped: no integer-feasible incumbent') > 0 then 1 else 0": 1,
+      "if match(solve_message, 'failed') > 0 then 1 else 0": 0
+    }
   }
 ]

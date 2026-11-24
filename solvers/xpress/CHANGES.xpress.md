@@ -12,7 +12,8 @@ Summary of recent updates to Xpress for AMPL
   reported point came from the fixed problem of a single objective and
   could lose the values of the others (with the objective values of the
   MIP's point); the fixed problem is no longer solved then, with a
-  message.
+  message. On a MIP without an incumbent, the message now says that
+  the fixed solve was skipped, instead of reporting it as failed.
 - Several objectives with *obj:multi=1* (native multi-objective optimization)
   where one is quadratic: the driver now stops with a message to use
   *obj:multi=2* (MP emulation) or to move quadratic and nonlinear objective
