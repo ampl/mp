@@ -141,6 +141,7 @@ def check_repeat_one_objective(ampls, nl):
     def check(solver):
         for i in (1, 2):
             require(ampls.solve(solver) == 0, f"Solve {i} failed")
+            before_report = ampls.solve_result(solver)
             sol = nl.with_name(f"single{i}.sol")
             require(ampls.report(solver, os.fsencode(sol)) == 0,
                     f"Reporting solve {i} failed")
@@ -148,6 +149,9 @@ def check_repeat_one_objective(ampls, nl):
                     f"Solve {i} is not reported solved: {solve_result(sol)}")
             require(ampls.solve_result(solver) == solve_result(sol),
                     "AMPLSGetSolveResult() differs from the reported result")
+            require(before_report == solve_result(sol),
+                    f"AMPLSGetSolveResult() before the report of solve {i}: "
+                    f"{before_report}, expected {solve_result(sol)}")
     ampls.run(nl, [], check)
 
 

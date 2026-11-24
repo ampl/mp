@@ -348,6 +348,7 @@ protected:
       Solve();
       RecordMOPassStats();
     }
+    SetStatus( GetSolveResult() );     // current before the report (AMPLS)
   }
 
   /// Start recording MO pass stats
