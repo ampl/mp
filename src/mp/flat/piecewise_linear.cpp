@@ -579,8 +579,8 @@ public:
     BasicPLApproximator<ExpAConstraint>(con, p),
     A_(GetConParams()[0]), logA_(std::log(A_)) {
     MP_ASSERT_ALWAYS(A_ > 0.0, fmt::format(
-        "a^x with base a = {} <= 0 cannot be approximated\n"
-        "piecewise-linearly (it is not monotone or not real);\n"
+        "a^x with base a = {} <= 0 cannot be approximated "
+        "piecewise-linearly (it is not monotone or not real); "
         "use a solver that accepts it natively", A_));
   }
   FuncGraphDomain GetFuncGraphDomain() const override
@@ -613,7 +613,7 @@ public:
     BasicPLApproximator<LogAConstraint>(con, p),
     A_(GetConParams()[0]), logA_(std::log(A_)) {
     MP_ASSERT_ALWAYS(A_ > 0.0 && A_ != 1.0, fmt::format(
-        "log with base a = {} (a <= 0 or a = 1) cannot be\n"
+        "log with base a = {} (a <= 0 or a = 1) cannot be "
         "approximated piecewise-linearly", A_));
   }
   FuncGraphDomain GetFuncGraphDomain() const override
