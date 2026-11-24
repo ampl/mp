@@ -608,10 +608,11 @@ int ExitCode(int status) {
   return status;
 }
 
-/// Split \a opts at white space, keeping text within single or double
-/// quotes together (quotes removed).
-std::vector<std::string> SplitOptions(const std::string& opts) {
-  std::vector<std::string> tokens;
+/// Split \a opts into \a tokens at white space, keeping text within
+/// single or double quotes together (quotes removed).
+/// False if a quote is not closed: the rest of the string would
+/// silently become one option.
+bool SplitOptions(const std::string& opts, std::vector<std::string>& tokens) {
   std::string cur;
   bool in_token = false;
   char quote = 0;
@@ -636,20 +637,25 @@ std::vector<std::string> SplitOptions(const std::string& opts) {
   }
   if (in_token)
     tokens.push_back(std::move(cur));
-  return tokens;
+  return !quote;
 }
 
 /// Append the solver options to \a call, each one quoted for the shell,
-/// so that nothing in them is interpreted. False if one cannot be quoted.
-bool AppendQuotedOptions(std::string& call, const std::string& opts) {
-  for (const auto& tok: SplitOptions(opts)) {
+/// so that nothing in them is interpreted.
+/// @return an error message, empty on success.
+std::string AppendQuotedOptions(std::string& call, const std::string& opts) {
+  std::vector<std::string> tokens;
+  if (!SplitOptions(opts, tokens))
+    return "NLSolver: unclosed quote in solver options: " + opts;
+  for (const auto& tok: tokens) {
     auto q = QuoteCommandArg(tok);
     if (q.empty())
-      return false;
+      return "NLSolver: solver options cannot be passed "
+             "on a command line: " + opts;
     call += ' ';
     call += q;
   }
-  return true;
+  return {};
 }
 
 #ifdef _WIN32
@@ -766,9 +772,9 @@ bool NLSolver::Solve(const std::string& solver,
   call += ' ';
   call += stub;
   call += " -AMPL";
-  if (!AppendQuotedOptions(call, solver_opts))
-    return (err_msg_="NLSolver: solver options cannot be passed "
-            "on a command line: " + solver_opts, false);
+  auto opts_error = AppendQuotedOptions(call, solver_opts);
+  if (!opts_error.empty())
+    return (err_msg_=std::move(opts_error), false);
 #ifdef _WIN32
   // cmd.exe /c removes the first and the last double quote when
   // the command has more than two; let it remove this outer pair.

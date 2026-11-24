@@ -249,6 +249,20 @@ TEST(NLSolverTest, SolverOptionsAreNotInterpretedByShell) {
             ReadFile(f.stub + ".args"));
 }
 
+TEST(NLSolverTest, UnclosedQuoteInSolverOptionsIsAnError) {
+  StubFixture f;
+  ThrowingUtils utils;
+  mp::NLSolver nlsol(&utils);
+  nlsol.SetFileStub(f.stub);
+  // Everything after the quote would become one argument, and timelim
+  // would be lost without a message
+  EXPECT_FALSE(nlsol.Solve(Solver(), "logfile=\"run.log timelim=10"));
+  EXPECT_NE(std::string::npos,
+            std::string(nlsol.GetErrorMessage()).find("unclosed quote"))
+      << nlsol.GetErrorMessage();
+  EXPECT_FALSE(fs::exists(f.stub + ".args"));   // the solver was not run
+}
+
 TEST(NLSolverTest, MissingTempDirGivesMessage) {
   ScratchDir parent("nlw2 test parent");
   TempDirOverride tmp(parent.path() / "missing");

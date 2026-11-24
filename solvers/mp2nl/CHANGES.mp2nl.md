@@ -19,6 +19,7 @@ Summary of recent updates to MP2NL for AMPL
 - Fix: subsolver options (`solver_options`) were interpreted by the shell:
   characters such as `;` or `$` acted as commands and quoted values were
   split. Each option is now passed as one argument; quotes group words.
+  An unclosed quote is an error.
 - Fix: the solution values, duals and suffixes of a previous pass were
   reported after a pass that failed or returned no such data.
 - Fix: logical constraints were counted as nonlinear objectives in the NL
