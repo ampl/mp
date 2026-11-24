@@ -1332,6 +1332,13 @@ void CplexBackend::ConsiderCplexFixedModel() {
     return;                            // already reported for this solve
   if (IsFixedInPlace())                // the same, MILP / MIQP fixed in lp()
     return;
+  if (NumObjs() > 1) {
+    // The reported point keeps the values of all objectives; the fixed
+    // problem of a single objective would move it and lose them
+    AddToSolverMessage("mip:basis: no fixed-model solve with several "
+                       "objectives (obj:multi=1).\n");
+    return;
+  }
   MIPResultBeforeFixed result;
   result.primal = PrimalSolution();
   if (result.primal.empty()) {

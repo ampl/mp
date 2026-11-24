@@ -691,18 +691,32 @@
     }
   },
   {
-    "name": "fixed_mip_multiobj gurobi",
+    "name": "fixed_mip_multiobj",
     "files": ["fixed_mip_multiobj.mod"],
     "tags": ["linear", "integer", "fixmodel", "multiobj"],
     "comment": "With two objectives no fixed model is solved (its basis would not match); the point keeps the second objective's optimum",
-    "solvers": ["gurobi"],
+    "solvers": ["gurobi", "xpress", "cplex"],
     "objective": 3,
-    "options": { "gurobi_options": "mip:basis=1 obj:multi=1" },
+    "options": { "ANYSOLVER_options": "mip:basis=1 obj:multi=1" },
     "values": {
       "o2": 10,
       "if match(solve_message, 'Tolerance violations') > 0 then 1 else 0": 0,
       "if match(solve_message, 'no fixed-model solve with several') > 0 then 1 else 0": 1,
       "sum {i in 1..3} if x[i].sstatus = 'upp' and x[i] < 10 - 1e-6 then 1 else 0": 0
+    }
+  },
+  {
+    "name": "fixed_mip_multiobj_tol",
+    "files": ["fixed_mip_multiobj_tol.mod"],
+    "tags": ["linear", "integer", "fixmodel", "multiobj"],
+    "comment": "o1 may lose up to 5 for o2: the reported point keeps both objective values (no fixed solve)",
+    "solvers": ["gurobi", "xpress", "cplex"],
+    "options": { "ANYSOLVER_options": "mip:basis=1 obj:multi=1" },
+    "values": {
+      "o2": 3,
+      "if o1 >= 5.9 then 1 else 0": 1,
+      "if match(solve_message, 'Tolerance violations') > 0 then 1 else 0": 0,
+      "if match(solve_message, 'no fixed-model solve with several') > 0 then 1 else 0": 1
     }
   }
 ]

@@ -467,6 +467,14 @@ void XpressmpBackend::ConsiderXpressFixedModel() {
   if (!IsMIP() || fixed_done_)        // once per solve
     return;
   fixed_done_ = true;
+  if (NumObjs() > 1) {
+    // The reported point and objective values are the MIP's (they keep
+    // the values of all objectives); the fixed LP of the last objective
+    // alone would move the point and lose them
+    AddToSolverMessage("mip:basis: no fixed-model solve with several "
+                       "objectives (obj:multi=1).\n");
+    return;
+  }
   // After a nonlinear (local or global) solve, the fixed model is
   // nonlinear too: solve it with XPRSoptimize (duals, no basis)
   int opttype = XPRS_OPTIMIZETYPE_NONE;

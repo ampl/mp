@@ -9,6 +9,10 @@ Summary of recent updates to CPLEX for AMPL
   MIP without quadratic constraints was left as its fixed problem: a
   repeated report returned the solution of the continuous relaxation,
   and changes of the native problem before the next solve failed.
+- Fix: with `mip:basis` and several objectives (*obj:multi=1*), the
+  reported point came from the fixed problem of a single objective and
+  could lose the values of the others; the fixed problem is no longer
+  solved then, with a message.
 - Fix: *alg:feasrelax* penalties (*.lbpen*, *.ubpen*, *.rhspen*,
   *alg:lbpen* etc.) acted inversely: a larger penalty made a violation
   cheaper, a negative one (not relaxable) made it free, and 0 (free)
