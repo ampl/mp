@@ -229,4 +229,21 @@ TEST_F(InterfaceTester_ExpAConstraint, PowOfBase1IsConstant) {
   EXPECT_EQ(2.0, expa[0].GetParameters()[0]);
 }
 
+/// The same through VisitPow(): a base that is a constant only after
+/// conversion (x0 - x0 + 1).
+TEST_F(InterfaceTester_ExpAConstraint, PowOfConvertedBase1IsConstant) {
+  auto modeler = mp::MakeEasyModeler(GetModel());
+  auto x = modeler.AddVars(2, -2.0, 3.0);
+  modeler.AddAlgCon(-INFINITY,
+                    x[0] + ((x[0] - x[0] + 1.0) ^ (x[1]*x[1])), 5.0);
+  modeler.AddAlgCon(-INFINITY,
+                    x[0] + ((x[0] - x[0] + 2.0) ^ (x[1]*x[1])), 9.0);
+  GetInterface().ConvertModel();
+  const auto& expa = GetBackend().GetCons(
+      mp::ExpAConstraint(mp::ExpAConstraint::Arguments{ 0 },
+                         mp::ExpAConstraint::Parameters{ 2.0 }));
+  ASSERT_EQ(1u, expa.size());
+  EXPECT_EQ(2.0, expa[0].GetParameters()[0]);
+}
+
 } // namespace

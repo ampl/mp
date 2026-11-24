@@ -1356,7 +1356,7 @@ public:          // need to be public due to CRTP
               PowConstExpConstraint::Parameters{ er.constant_term() } ) );
     }
     else if (el.is_constant())
-      return VisitPowConstBase(el.constant_term(), e.rhs());
+      return VisitPowConstBase(el.constant_term(), std::move(er));
     else
       return AssignResult2Args(
           PowConstraint(
@@ -1378,17 +1378,20 @@ public:          // need to be public due to CRTP
 
   /// Kind POW_CONST_BASE: a numeric constant to the power of an expression
   EExpr VisitPowConstBase(BinaryExpr e) {
-    return VisitPowConstBase(Cast<NumericConstant>(e.lhs()).value(), e.rhs());
+    return VisitPowConstBase(Cast<NumericConstant>(e.lhs()).value(),
+                             Convert2EExpr(e.rhs()));
   }
 
   /// a^x with constant base \a a (also from VisitPow(), where the left
   /// operand need not be a numeric constant node). 1^x is 1: as a^x it would
   /// divide by log(a) = 0 in the PL approximation.
-  EExpr VisitPowConstBase(double a, Expr x) {
+  /// \a x is the converted exponent (VisitPow() has converted it
+  /// already; converting it again was redundant work).
+  EExpr VisitPowConstBase(double a, EExpr x) {
     if (1.0 == a)
       return EExpr::Constant{ 1.0 };
     return AssignResult2Args( ExpAConstraint(
-      ExpAConstraint::Arguments{ Convert2Var(x) },
+      ExpAConstraint::Arguments{ Convert2Var(std::move(x)) },
       ExpAConstraint::Parameters{ a } ) );
   }
 
