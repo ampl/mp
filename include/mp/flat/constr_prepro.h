@@ -690,10 +690,12 @@ public:
   std::pair<int, int> count_fixed_01(const Vec& vec) const {
     std::pair<int, int> result {0, 0};
     for (auto x: vec) {
-      assert(MPCD( is_binary_var(x) ));
+      // Contradictory bounds (lb > ub) are passed on with a warning
+      // when cvt:pre:infeasvarbnd=0; such an argument counts once
+      assert(MPCD( is_binary_var(x) ) || MPCD( lb(x) ) > MPCD( ub(x) ));
       if (MPCD( ub(x) ) <= 0.0)
         ++ result.first;
-      if (MPCD( lb(x) ) >= 1.0)
+      else if (MPCD( lb(x) ) >= 1.0)
         ++ result.second;
     }
     assert(result.first + result.second <= (int)vec.size());

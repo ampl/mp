@@ -337,7 +337,9 @@ protected:
       return false;
     int nNegCtx = 0;
     for (const auto& el: map) {
-      if (el.first!=lb && el.first!=ub) {  // except lb/ub
+      // Except lb/ub, and conditionals no longer used (e.g., in an
+      // implication whose consequent is always true): they have no context
+      if (el.first!=lb && el.first!=ub && !ck.IsRedundant(el.second)) {
         const auto& con = ck.GetConstraint(el.second);
         assert(con.GetContext().HasPositive()
                || con.GetContext().HasNegative());
@@ -454,8 +456,8 @@ protected:
       const SingleVarEqConstMap& map) {
     auto& ck = GET_CONSTRAINT_KEEPER(CondLinConEQ);
     for (const auto& el: map) {
-      assert(!ck.IsRedundant(el.second));
-      ck.MarkAsBridged(el.second);
+      if (!ck.IsRedundant(el.second))   // unused ones need nothing
+        ck.MarkAsBridged(el.second);
     }
   }
 
