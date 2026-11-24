@@ -184,7 +184,7 @@ void RSTFormatter::HandleText(const char *text, std::size_t size) {
 
 void RSTFormatter::HandleDirective(const char *type) {
   if (std::strcmp(type, "value-table") != 0)
-    throw mp::Error("unknown directive {}", type);
+    throw mp::Error(fmt::format("unknown directive {}", type));
   if (values_.size() == 0)
     throw mp::Error("no values to format");
   std::size_t max_len = 0;

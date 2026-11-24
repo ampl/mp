@@ -145,7 +145,7 @@ class ASLBuilder {
   template <typename ExprType>
   static void CheckKind(expr::Kind kind, const char *expr_name) {
     if (!mp::internal::Is<ExprType>(kind))
-      throw Error("invalid {} expression kind {}", expr_name, kind);
+      throw Error(fmt::format("invalid {} expression kind {}", expr_name, kind));
   }
 
   template <typename T>

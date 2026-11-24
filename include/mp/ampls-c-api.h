@@ -34,8 +34,8 @@ typedef struct AMPLS_MP_Solver_T {
   /// Load model incl. suffixes.
   /// The method assumes that slv has been initialized by
   /// a solver-specific API using functions of ampls-cpp-api.h.
-  /// @return 0 on success; on failure, a solve result code (200..599)
-  ///   if the failure has one (e.g., 200: the converter proved
+  /// @return 0 on success; on failure, the error's solve result
+  ///   code if it is nonzero (e.g., 200: the converter proved
   ///   the model infeasible), otherwise -1
   AMPLS_C_EXPORT int AMPLSLoadNLModel(AMPLS_MP_Solver* slv,
     const char* nl_filename, char** options);
@@ -46,8 +46,8 @@ typedef struct AMPLS_MP_Solver_T {
   /// Solve the model, as the driver does (e.g., with emulated
   /// multiple objectives). Can be called again, e.g., after changing
   /// the model through the solver's own API.
-  /// @return 0 on success; on failure, a solve result code (200..599)
-  ///   if the failure has one, otherwise -1. The error message is
+  /// @return 0 on success; on failure, the error's solve result
+  ///   code if it is nonzero, otherwise -1. The error message is
   ///   among AMPLSGetMessages(). After a failure, do not call
   ///   AMPLSReportResults(), which would report the previous solve;
   ///   report the error with AMPLSReportError() if needed.

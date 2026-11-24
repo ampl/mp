@@ -106,6 +106,14 @@ class Solver(object):
             self._stats["eval_done"] = True
             self._assertAndRecord(expsol, self._stats["objective"],
                                   "objective")
+        # Run on an NL file: of the expected values, only the solve
+        # result code can be read here (the .sol file's 'objno' line)
+        expsrn = model.getExpectedValues(self.getCategory()).get(
+            "solve_result_num") if model.hasExpectedValues() else None
+        if expsrn is not None:
+            self._stats["eval_done"] = True
+            self._assertAndRecord(expsrn, self._getSolveResultNum(model),
+                                  "solve_result_num")
         if model.hasExpectedOutput():
             self._getSolution(model)
             output += self._stats["outmsg"]
@@ -116,6 +124,19 @@ class Solver(object):
                    self._stats.setdefault("eval_fail_msg", []).append( \
                     "string  '" + str(oitem) + \
                     "'  is not found in the output")
+
+    @staticmethod
+    def _getSolveResultNum(model: Model):
+        """Solve result code of the .sol file ('objno <i> <code>'),
+        or None without a file or such a line"""
+        sol = model.getSolFilePath()
+        if not sol.exists():
+            return None
+        for line in reversed(sol.read_text().splitlines()):
+            words = line.split()
+            if len(words) == 3 and words[0] == "objno":
+                return int(words[2])
+        return None
 
     @staticmethod
     def _getSolMessage(model: Model) -> str:

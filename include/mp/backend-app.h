@@ -161,7 +161,8 @@ int RunBackendApp(char** argv,
     return s.Run(argv);
   } catch (const mp::Error &e) {   // Why does MSVC 2019 or 2022 go to std::exception and not here?
     fmt::print(stderr, "Error: {}\n", e.what());
-    return e.exit_code();                // can deliver exit code
+    // A solve result code is the exit code; without one (-1), failure
+    return e.exit_code() > 0 ? e.exit_code() : EXIT_FAILURE;
   } catch (const std::exception &e) {
     fmt::print(stderr, "Error: {}\n", e.what());
     return EXIT_FAILURE;

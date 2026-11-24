@@ -342,5 +342,16 @@
     "values": {
       "solve_result_num": 0
     }
+  },
+  {
+    "name" : "nl_read_error_01",
+    "tags" : ["linear"],
+    "files" : ["nl_read_error_01.nl"],
+    "comment": "NL file with an unknown opcode (o999): the driver writes a .sol file with solve result 500 (failure), not 1 (solved)",
+    "solvers": ["gurobi", "highs", "xpress", "cplex", "copt", "mosek", "scip", "gcg", "cbc", "cpsat", "baronmp", "knitro",
+                "gurobi_mp2nl", "highs_mp2nl"],
+    "values": {
+      "solve_result_num": 500
+    }
   }
 ]

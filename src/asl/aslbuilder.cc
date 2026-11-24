@@ -292,7 +292,7 @@ ASLBuilder::CallExprBuilder ASLBuilder::DoBeginCall(Function f, int num_args) {
   int num_func_args = f.num_args();
   if ((num_func_args >= 0 && num_args != num_func_args) ||
       (num_func_args < 0 && num_args < -(num_func_args + 1))) {
-    throw Error("function {}: invalid number of arguments", f.name());
+    throw Error(fmt::format("function {}: invalid number of arguments", f.name()));
   }
   expr_f *result = Allocate<expr_f>(
         sizeof(expr_f) + SafeInt<int>(num_args - 1) * sizeof(::expr*));
@@ -722,7 +722,7 @@ CallExpr ASLBuilder::EndCall(CallExprBuilder b) {
   int num_symbolic_args = b.num_symbolic_args_ + b.num_ifsyms_;
   const func_info *info = b.expr_->fi;
   if (num_symbolic_args != 0 && (info->ftype & func::SYMBOLIC) == 0)
-    throw Error("function {}: symbolic arguments not allowed", info->name);
+    throw Error(fmt::format("function {}: symbolic arguments not allowed", info->name));
   int num_numeric_args = b.num_args_ - num_symbolic_args;
   int kd = 0;
   double *ra = Allocate<double>(

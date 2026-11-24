@@ -3,6 +3,12 @@ Summary of recent updates to the AMPL MP Library
 
 ## Unreleased
 
+- Fix: some errors, for example reading a corrupt NL file, were reported
+  with solve result 1 (`solved`), so that AMPL kept the previous values of
+  the variables as if they were a solution. Such errors are now reported as
+  `failure` (500). The AMPLS C API functions now return an error's solve
+  result code whenever it is nonzero (for example, 150 for a failed
+  solution check with *chk:fail*), not only codes 200..599.
 - Fix: when a model was solved repeatedly through the AMPLS API, the solve
   message of each report repeated the notes of the earlier solves.
 - Fixed false infeasibility when linearizing a product with a bounded integer
@@ -125,7 +131,7 @@ Summary of recent updates to the AMPL MP Library
   emulated multiple objectives it reports that a repeated solve is not
   supported.
 - AMPLS C API: `AMPLSSolve()` now returns 0 on success; on failure, a
-  solve result code (200..599) or -1, as `AMPLSLoadNLModel()` does. An
+  nonzero solve result code or -1, as `AMPLSLoadNLModel()` does. An
   error during the solve (for example, a failing solver call or the
   repeated solve above) no longer escapes from `AMPLSSolve()` as a C++
   exception, which could terminate the calling program. Its message is
