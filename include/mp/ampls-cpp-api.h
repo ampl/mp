@@ -19,8 +19,9 @@ extern "C" {
 /// This function is not for the user.
 ///
 /// @param p_be: GurobiBackend etc.
-/// @return slv on success, otherwise NULL and use AMPLSGetMessages()
-/// (well they can contain warnings in any case).
+/// @return slv, also on failure: the error message is then among
+///   AMPLSGetMessages() (callers such as ampls-api read it there).
+///   The instance should then not be used further, only closed.
 AMPLS_MP_Solver* AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend> p_be,
   CCallbacks cb);
 
@@ -33,29 +34,38 @@ void AMPLS__internal__Close(AMPLS_MP_Solver* slv);
 /// Retrieve the Backend
 mp::BasicBackend* AMPLSGetBackend(AMPLS_MP_Solver* slv);
 
+/// Record the outcome of the last AMPLS call for AMPLSGetSolveResult():
+/// 0 on success, otherwise the solve result code to report (> 0)
+void AMPLS__internal__SetCallResult(AMPLS_MP_Solver* slv, int code);
+
 /// Wrapper for try/catch.
 /// Can be used from C++ functions returning \a int for C API.
+/// With \a record, the outcome is kept for AMPLSGetSolveResult().
 /// @return 0 if success; on failure, the solve result code of an
 ///   mp::Error if it has a nonzero one (e.g., 200 when the converter
 ///   proved the model infeasible), so that the caller can report it
 ///   as the solve result; otherwise -1 (an error without a code,
 ///   another exception, or code 0, which would mean success)
 template <class Fn> inline
-int AMPLS__internal__TryCatchWrapper(AMPLS_MP_Solver* slv, Fn fn) {
+int AMPLS__internal__TryCatchWrapper(
+    AMPLS_MP_Solver* slv, Fn fn, bool record=true) {
+  int result = 0;
   try {
     fn();
   } catch (const mp::Error& err) {
     AMPLSAddMessage(slv, err.what());
     const int code = err.exit_code();
-    return code > 0 ? code : -1;
+    result = code > 0 ? code : -1;
   } catch (const std::exception& exc) {
     AMPLSAddMessage(slv, exc.what());
-    return -1;
+    result = -1;
   } catch (...) {
     AMPLSAddMessage(slv, "Unknown exception");
-    return -1;
+    result = -1;
   }
-  return 0;
+  if (record)
+    AMPLS__internal__SetCallResult(slv, result < 0 ? 500 : result);
+  return result;
 }
 
 #endif // AMPLSCPPAPI_H

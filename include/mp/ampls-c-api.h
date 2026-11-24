@@ -30,13 +30,32 @@ typedef struct AMPLS_MP_Solver_T {
   void *user_info_;
 } AMPLS_MP_Solver;
 
+  /*
+   * Return values of the calls that can fail (AMPLSLoadNLModel(),
+   * AMPLSSolve(), AMPLSReportResults(), AMPLSReportError()).
+   *
+   * They tell only whether the call succeeded, not how the model
+   * was solved:
+   * - 0: success. This is not a solve result: a solve that ended,
+   *   e.g., infeasible (200) or at a limit (400) also returns 0.
+   *   The solve result is in the .sol file that AMPLSReportResults()
+   *   writes, and AMPLSGetSolveResult() gives it.
+   * - > 0: failure, and the error carries a solve result code
+   *   (AMPL's solve_result_num), which the caller can report with
+   *   AMPLSReportError(); e.g., 200 when the model conversion proved
+   *   the model infeasible, 150 for a solution check failed with
+   *   chk:fail. Such a code describes the failed call; no solution
+   *   comes with it.
+   * - -1: failure without a solve result code (report it as 500).
+   * The error message is among AMPLSGetMessages().
+   */
 
   /// Load model incl. suffixes.
   /// The method assumes that slv has been initialized by
   /// a solver-specific API using functions of ampls-cpp-api.h.
   /// @return 0 on success; on failure, the error's solve result
-  ///   code if it is nonzero (e.g., 200: the converter proved
-  ///   the model infeasible), otherwise -1
+  ///   code if it has one (e.g., 200: the converter proved the model
+  ///   infeasible), otherwise -1. See "Return values" above.
   AMPLS_C_EXPORT int AMPLSLoadNLModel(AMPLS_MP_Solver* slv,
     const char* nl_filename, char** options);
 
@@ -46,9 +65,10 @@ typedef struct AMPLS_MP_Solver_T {
   /// Solve the model, as the driver does (e.g., with emulated
   /// multiple objectives). Can be called again, e.g., after changing
   /// the model through the solver's own API.
-  /// @return 0 on success; on failure, the error's solve result
-  ///   code if it is nonzero, otherwise -1. The error message is
-  ///   among AMPLSGetMessages(). After a failure, do not call
+  /// @return 0 if the solve ran, whatever its result (see
+  ///   AMPLSGetSolveResult()); on failure, the error's solve result
+  ///   code if it has one, otherwise -1. See "Return values" above.
+  ///   After a failure, do not call
   ///   AMPLSReportResults(), which would report the previous solve;
   ///   report the error with AMPLSReportError() if needed.
   AMPLS_C_EXPORT int AMPLSSolve(AMPLS_MP_Solver* slv);
@@ -56,16 +76,29 @@ typedef struct AMPLS_MP_Solver_T {
   /// Report results.
   /// The kind of results reported is influenced by solver option 
   /// `wantsol`.
-  /// @return 0 on success
+  /// @return 0 on success (not the solve result, which is in the
+  ///   .sol file); on failure, the error's solve result code if it has
+  ///   one (e.g., 150: a solution check failed with chk:fail),
+  ///   otherwise -1. See "Return values" above.
   AMPLS_C_EXPORT int AMPLSReportResults(AMPLS_MP_Solver* slv, const char* solFileName);
 
   /// Report an error as a driver does: write the .sol file
   /// with \a solve_result (e.g., 500) and \a msg, without exiting.
   /// Needs the model's file name, i.e., a call of AMPLSLoadNLModel()
   /// that got past reading the NL header (e.g., failed on an option).
-  /// @return 0 on success
+  /// @return 0 on success; -1 or a code on failure, as above.
+  ///   Does not change AMPLSGetSolveResult().
   AMPLS_C_EXPORT int AMPLSReportError(AMPLS_MP_Solver* slv,
                                       int solve_result, const char* msg);
+
+  /// Solve result code (AMPL's solve_result_num) of the current
+  /// state, unlike the return values above also after a success:
+  /// if the last call of AMPLSLoadNLModel(), AMPLSSolve() or
+  /// AMPLSReportResults() failed, that error's code, or 500 (failure)
+  /// if it has none; otherwise the result of the last solve
+  /// (e.g., 0 solved, 200 infeasible, 400 limit), or -200 before
+  /// any solve.
+  AMPLS_C_EXPORT int AMPLSGetSolveResult(AMPLS_MP_Solver* slv);
 
   /// Add message
   AMPLS_C_EXPORT void AMPLSAddMessage(AMPLS_MP_Solver* slv, const char* msg);

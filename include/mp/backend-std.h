@@ -929,6 +929,8 @@ protected:
   const char* SolveStatus() const { return status_.second.c_str(); }
   /// Set solve result
   void SetStatus(std::pair<int, std::string> stt) { status_=stt; }
+  /// Solve result number, sol::NOT_SET if none yet
+  int GetSolveResultNum() const override { return status_.first; }
 
   //////////////////////// SOLUTION STATUS ADAPTERS ///////////////////////////////
   /// Problem status unknown

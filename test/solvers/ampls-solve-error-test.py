@@ -15,7 +15,10 @@ Checks, on one model with two objectives:
   returns nonzero and its message is among AMPLSGetMessages(). The test
   then reports the failure as a caller does, with AMPLSReportError(),
   and checks the .sol file (solve result and message);
-- with one objective, two AMPLSSolve() calls both succeed.
+- with one objective, two AMPLSSolve() calls both succeed;
+- AMPLSGetSolveResult(): -200 after loading, the reported result after a
+  solve, the error's code (or 500) after a failed call; a corrupt NL file
+  fails to load with -1 and gives 500.
 """
 
 import argparse
@@ -71,6 +74,7 @@ class Ampls:
                                  STR)
         self.messages = bind(driver, "AMPLSGetMessages", ct.POINTER(STR),
                              PTR)
+        self.solve_result = bind(driver, "AMPLSGetSolveResult", INT, PTR)
 
     def all_messages(self, solver):
         array, text, i = self.messages(solver), b"", 0
@@ -79,15 +83,19 @@ class Ampls:
             i += 1
         return text
 
-    def run(self, nl, options, check):
+    def run(self, nl, options, check, load_ok=True):
         argv = (STR * 2)(self.name.encode(), None)  # must outlive the solver
         solver = self.open(1, argv)
         require(solver, "AMPLS could not open the solver")
         try:
             opts = (STR * (len(options) + 1))(*options, None)
-            require(self.load(solver, os.fsencode(nl), opts) == 0,
-                    "AMPLS could not load the NL file")
-            check(solver)
+            loaded = self.load(solver, os.fsencode(nl), opts)
+            if load_ok:
+                require(loaded == 0, "AMPLS could not load the NL file")
+                require(self.solve_result(solver) == -200,
+                        f"Solve result before solving: "
+                        f"{self.solve_result(solver)}, expected -200")
+            check(solver) if load_ok else check(solver, loaded)
         finally:
             self.close(solver)
 
@@ -100,9 +108,11 @@ def check_failed_repeat(ampls, nl):
                 "Reporting the first solve failed")
         require(solve_result(first) < 200,
                 f"The first solve is not reported solved: {solve_result(first)}")
+        require(ampls.solve_result(solver) == solve_result(first),
+                "AMPLSGetSolveResult() differs from the reported result")
         code = ampls.solve(solver)
         require(code != 0, "The repeated multiobjective solve did not fail")
-        require(code == -1 or 200 <= code <= 599,
+        require(code == -1 or code > 0,
                 f"Unexpected return code of the failed solve: {code}")
         messages = ampls.all_messages(solver)
         require(REPEAT_MESSAGE in messages,
@@ -110,8 +120,13 @@ def check_failed_repeat(ampls, nl):
         # Report the failure as a caller does (e.g., the MP2NL wrapper):
         # AMPLSReportError() writes the .sol file of the last report
         result = code if code > 0 else 500
+        require(ampls.solve_result(solver) == result,
+                f"AMPLSGetSolveResult() after the failed solve: "
+                f"{ampls.solve_result(solver)}, expected {result}")
         require(ampls.report_error(solver, result, messages) == 0,
                 "AMPLSReportError failed")
+        require(ampls.solve_result(solver) == result,
+                "AMPLSReportError() changed AMPLSGetSolveResult()")
         require(solve_result(first) == result,
                 f"The failure is reported with solve result "
                 f"{solve_result(first)}, expected {result}")
@@ -129,7 +144,23 @@ def check_repeat_one_objective(ampls, nl):
                     f"Reporting solve {i} failed")
             require(solve_result(sol) < 200,
                     f"Solve {i} is not reported solved: {solve_result(sol)}")
+            require(ampls.solve_result(solver) == solve_result(sol),
+                    "AMPLSGetSolveResult() differs from the reported result")
     ampls.run(nl, [], check)
+
+
+def check_corrupt_nl(ampls, nl):
+    """An NL file that cannot be read: the load returns -1 (no solve
+    result code: formatted read errors once carried 1, i.e., 'solved'),
+    and AMPLSGetSolveResult() gives 500"""
+    bad = nl.with_name("corrupt.nl")
+    bad.write_bytes(b"g3 1 1 0\n not an NL header\n")
+    def check(solver, loaded):
+        require(loaded == -1, f"Loading a corrupt NL file returned {loaded}")
+        require(ampls.solve_result(solver) == 500,
+                f"AMPLSGetSolveResult() after the failed load: "
+                f"{ampls.solve_result(solver)}, expected 500")
+    ampls.run(bad, [], check, load_ok=False)
 
 
 def main():
@@ -159,6 +190,8 @@ def main():
             print("failed repeated solve: passed")
             check_repeat_one_objective(ampls, nl)
             print("repeated solve, one objective: passed")
+            check_corrupt_nl(ampls, nl)
+            print("corrupt NL file: passed")
     finally:
         for handle in handles:
             handle.close()

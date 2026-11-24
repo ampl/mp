@@ -9,6 +9,10 @@ Summary of recent updates to the AMPL MP Library
   `failure` (500). The AMPLS C API functions now return an error's solve
   result code whenever it is nonzero (for example, 150 for a failed
   solution check with *chk:fail*), not only codes 200..599.
+- AMPLS C API: new `AMPLSGetSolveResult()` gives the solve result code
+  (AMPL's `solve_result_num`) of the last solve, or of the last failed
+  call. The return value of `AMPLSSolve()` and the other calls is 0 on
+  success, whatever the solve result.
 - Fix: when a model was solved repeatedly through the AMPLS API, the solve
   message of each report repeated the notes of the earlier solves.
 - Fixed false infeasibility when linearizing a product with a bounded integer

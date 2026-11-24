@@ -1443,7 +1443,24 @@ typedef struct AMPLS_MP__internal_T {
   std::vector<AMPLSOption> options_;
   std::vector<AMPLS_C_Option> options_c_;
   std::string optionvalue_;
+  /// Outcome of the last AMPLS call (see AMPLSGetSolveResult()):
+  /// 0 on success, otherwise the solve result code of its error
+  int call_result_ = 0;
 } AMPLS_MP__internal;
+
+void AMPLS__internal__SetCallResult(AMPLS_MP_Solver* slv, int code) {
+  if (slv && slv->internal_info_)
+    ((AMPLS_MP__internal*)(slv->internal_info_))->call_result_ = code;
+}
+
+int AMPLSGetSolveResult(AMPLS_MP_Solver* slv) {
+  auto ii = (AMPLS_MP__internal*)(slv->internal_info_);
+  if (!ii)
+    return 500;                    // the instance was not opened
+  if (ii->call_result_)
+    return ii->call_result_;
+  return ii->p_be_ ? ii->p_be_->GetSolveResultNum() : 500;
+}
 
 
 AMPLS_MP_Solver* AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend> p_be,
@@ -1460,7 +1477,7 @@ AMPLS_MP_Solver* AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend> p_be,
     be->Init(argv);
     be->set_wantsol(1);       // user can still modify by 'wantsol=...'
     return 0;
-  } );
+  }, false );
   return slv;
 }
 
@@ -1522,7 +1539,7 @@ int AMPLSReportError(AMPLS_MP_Solver* slv, int solve_result, const char* msg) {
     be->set_ampl_flag();         // write the .sol file; otherwise exits
     be->ReportError(solve_result,
                     std::string(be->long_name()) + ": " + msg);
-  } );
+  }, false );
 }
 
 void AMPLSAddMessage(AMPLS_MP_Solver* slv, const char* msg) {

@@ -125,7 +125,10 @@ support: the second call must return nonzero without an exception
 escaping it and add its message to ``AMPLSGetMessages()``. The test then
 reports the failure with ``AMPLSReportError()``, as a caller does, and
 checks the solve result and message in the .sol file. It also checks
-that two solves of a single-objective model both succeed. It needs
+that two solves of a single-objective model both succeed, that
+``AMPLSGetSolveResult()`` gives the reported result after a solve and the
+error's code (500 without one) after a failed call, and that a corrupt NL
+file fails to load with -1 (no solve result code). It needs
 Python, AMPL, and a shared
 driver whose solver takes multiple objectives through the emulator. HiGHS
 needs no license (``--libdir`` adds the folder of ``highs-ampl.dll``)::
