@@ -3,11 +3,13 @@ Summary of recent updates to Gurobi for AMPL
 
 
 ## unreleased
-- Fix: with *mip:basis*, the reported variable values are those of the
-  solved fixed problem, as its basis and duals are. Before, the MIP's
-  values were reported with the fixed problem's basis: on a MIP with
-  several optimal points, a variable could lie inside its bounds while
-  its status said it was at a bound.
+- Fix: with *mip:basis*, the reported variable values and objective
+  value are those of the solved fixed problem, as its basis and duals
+  are; the fixed problem can improve the continuous variables of a MIP
+  stopped early. Before, the MIP's values were reported with the fixed
+  problem's basis: on a MIP with several optimal points, a variable
+  could lie inside its bounds while its status said it was at a bound.
+  With several objectives (*obj:multi*), the MIP's values are reported.
 - Fix (AMPLS): with *mip:basis*, after the native model was changed to a
   continuous one between solves, the report gave the duals and basis of
   the previous solve's fixed model; and each repeated report kept a copy

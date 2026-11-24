@@ -669,13 +669,38 @@
     "files": ["fixed_mip_consistent.mod"],
     "tags": ["linear", "integer", "fixmodel"],
     "comment": "Primal values, basis and duals all of the fixed problem",
-    "objective": 3,
+    "objective": 3.25,
     "options": { "mp_options": "mip:basis=1" },
     "values": {
       "card {i in I: u[i].sstatus = 'none'}": 0,
+      "if abs(dem.dual - 0.01) <= 1e-6 then 1 else 0": 1,
       "card {i in I: (u[i].sstatus = 'upp' and u[i] < u[i].ub - 1e-6) or (u[i].sstatus = 'low' and u[i] > u[i].lb + 1e-6)}": 0,
       "card {i in I: abs(link[i].dual) > 1e-6 and abs(link[i].slack) > 1e-6}": 0,
       "card {i in I: abs(cap[i].dual) > 1e-6 and abs(cap[i].slack) > 1e-6}": 0
+    }
+  },
+  {
+    "name": "fixed_mip_early_stop gurobi",
+    "files": ["fixed_mip_early_stop.mod"],
+    "tags": ["linear", "integer", "fixmodel"],
+    "comment": "Reported objective value is that of the reported (fixed LP) point: no solution-check warning",
+    "solvers": ["gurobi"],
+    "options": { "gurobi_options": "mip:basis=1 lim:sol=1 presolve=0" },
+    "values": {
+      "if match(solve_message, 'Tolerance violations') > 0 then 1 else 0": 0
+    }
+  },
+  {
+    "name": "fixed_mip_multiobj gurobi",
+    "files": ["fixed_mip_multiobj.mod"],
+    "tags": ["linear", "integer", "fixmodel", "multiobj"],
+    "comment": "With two objectives the reported point keeps the second objective's optimum",
+    "solvers": ["gurobi"],
+    "objective": 3,
+    "options": { "gurobi_options": "mip:basis=1 obj:multi=1" },
+    "values": {
+      "o2": 10,
+      "if match(solve_message, 'Tolerance violations') > 0 then 1 else 0": 0
     }
   }
 ]

@@ -290,10 +290,24 @@ bool GurobiBackend::IsQCP() const {
 
 mp::ArrayRef<double> GurobiBackend::PrimalSolution() {
   // After a successful fixed-model solve (mip:basis), its point, which
-  // agrees with the basis and duals read from it. model_fixed_ is model()
-  // otherwise.
+  // agrees with the basis and duals read from it, and its objective value
   return
-    GrbGetDblAttrArray(model_fixed_, GRB_DBL_ATTR_X, NumVars());
+    GrbGetDblAttrArray(FixedModelReported() ? model_fixed_ : model(),
+                       GRB_DBL_ATTR_X, NumVars());
+}
+
+bool GurobiBackend::FixedModelReported() const {
+  // With several objectives the fixed model's point would not match
+  // the reported objective values of the passes: keep the MIP's point
+  return model_fixed_ && model_fixed_ != model() && 1 == NumObjs();
+}
+
+double GurobiBackend::FixedModelObjValue(bool* fOk) const {
+  double v = 0.0;
+  const int e = GRBgetdblattr(model_fixed_, GRB_DBL_ATTR_OBJVAL, &v);
+  if (fOk)
+    *fOk = !e;
+  return v;
 }
 
 pre::ValueMapDbl GurobiBackend::DualSolution() {
@@ -313,6 +327,8 @@ std::vector<double> GurobiBackend::GurobiDualSolution_QCP() {
 }
 
 double GurobiBackend::ObjectiveValue() const {
+  if (FixedModelReported())     // that of the reported point
+    return FixedModelObjValue();
   return GrbGetDblAttr(GRB_DBL_ATTR_OBJVAL);
 }
 
@@ -324,7 +340,9 @@ ArrayRef<double> GurobiBackend::GetObjectiveValues() {
                            std::numeric_limits<double>::quiet_NaN());
   bool fOk = true;
   if (NumObjs() == 1)
-    objs[0] = GrbGetDblAttr(GRB_DBL_ATTR_OBJVAL, &fOk); // failsafe
+    objs[0] = FixedModelReported()        // that of the reported point
+        ? FixedModelObjValue(&fOk)
+        : GrbGetDblAttr(GRB_DBL_ATTR_OBJVAL, &fOk); // failsafe
   else {
     GRBenv* mdlenv = GRBgetenv(model());
     int objnumber = GrbGetIntParam(GRB_INT_PAR_OBJNUMBER);
@@ -945,7 +963,8 @@ void GurobiBackend::DoWriteProblem(const std::string& name) {
   ExportFile(model(), name);
 }
 void GurobiBackend::DoWriteSolution(const std::string& name) {
-  ExportFile(model(), name);
+  // The reported point: that of the fixed model (mip:basis), if used
+  ExportFile(FixedModelReported() ? model_fixed_ : model(), name);
 }
 void GurobiBackend::ExportFile(GRBmodel* lp, const std::string &file) {
   GRB_CALL( GRBwrite(lp, file.c_str()) );

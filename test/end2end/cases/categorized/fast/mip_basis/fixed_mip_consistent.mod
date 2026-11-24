@@ -5,7 +5,7 @@
 # row.  (Reporting the MIP incumbent with the fixed LP's basis gave, e.g.,
 # u = 5 with status upp and upper bound 10.)
 #
-# Minimum: 3 open facilities, objective 3.
+# Minimum: 3 open facilities, objective 3.25.
 
 param n := 6;
 set I := 1..n;
@@ -13,7 +13,9 @@ set I := 1..n;
 var b {I} binary;
 var u {I} >= 0, <= 10;
 
-minimize o: sum {i in I} b[i];
+# A small, equal cost on the u keeps their split open and gives the
+# demand row a nonzero dual in the fixed LP
+minimize o: sum {i in I} b[i] + 0.01*sum {i in I} u[i];
 
 subject to link {i in I}: u[i] <= 10*b[i];
 subject to dem: sum {i in I} u[i] >= 25;

@@ -276,6 +276,11 @@ protected:
 
   double ObjectiveValue() const;
   mp::ArrayRef<double> PrimalSolution() override;
+  /// Whether the solved fixed model (mip:basis) gives the reported
+  /// point and objective value: single objective only
+  bool FixedModelReported() const;
+  /// Objective value of the fixed model
+  double FixedModelObjValue(bool* fOk = nullptr) const;
   pre::ValueMapDbl DualSolution() override;
 
   std::vector<double> GurobiDualSolution_LP();
