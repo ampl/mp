@@ -241,16 +241,24 @@ bool CpsatBackend::HasSolution() const {
          st == sat::CpSolverStatus::FEASIBLE;
 }
 
+/// Primal values of the CP-SAT solution \a r: the integer values, except
+/// for variables fixed at a non-integer value (MP's constants), whose
+/// placeholder in the CP-SAT model is 0: their constant. For the final
+/// solution and for each solution of the pool.
+static std::vector<double> PrimalValues(
+    const CpsatData& d, const sat::CpSolverResponse& r) {
+  std::vector<double> x(d.vars.size());
+  for (size_t i = 0; i < x.size(); ++i)
+    x[i] = std::isnan(d.var_const[i])
+        ? (double)sat::SolutionIntegerValue(r, d.vars[i])
+        : d.var_const[i];                 // a non-integer constant
+  return x;
+}
+
 ArrayRef<double> CpsatBackend::PrimalSolution() {
   std::vector<double> x;
-  if (!HasSolution())
-    return x;
-  const auto* d = data();
-  x.resize(d->vars.size());
-  for (size_t i = 0; i < x.size(); ++i)
-    x[i] = std::isnan(d->var_const[i])
-        ? (double)sat::SolutionIntegerValue(d->response, d->vars[i])
-        : d->var_const[i];                // a non-integer constant
+  if (HasSolution())
+    x = PrimalValues(*data(), data()->response);
   return x;
 }
 
@@ -345,10 +353,7 @@ void CpsatBackend::Solve() {
   if (need_multiple_solutions()) {
     model.Add(sat::NewFeasibleSolutionObserver(
         [this, d](const sat::CpSolverResponse& r) {
-      std::vector<double> x(d->vars.size());
-      for (size_t i = 0; i < x.size(); ++i)
-        x[i] = (double)sat::SolutionIntegerValue(r, d->vars[i]);
-      pool_.emplace_back(std::move(x), r.objective_value());
+      pool_.emplace_back(PrimalValues(*d, r), r.objective_value());
     }));
   }
 

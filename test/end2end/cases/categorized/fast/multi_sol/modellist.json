@@ -179,6 +179,15 @@
     }
   },
   {
+    "name": "multi_sol_05_const.run pool keeps a fractional fixed variable CP-SAT",
+    "files": ["multi_sol_05_const.run"],
+    "tags": ["linear", "multisol", "script"],
+    "comment": "c is fixed at 2.5: a constant in the CP-SAT model; its pool solutions used to have c = 0",
+    "solvers": ["cpsat"],
+    "options": { "cpsat_options": "solutionstub=constpool countsolutions=1" },
+    "values": { "c": 2.5, "x + y": { "min": 1 } }
+  },
+  {
     "name": "multi_sol_04 no objective, solutionstub=stub",
     "tags": [ "logical" ],
     "solvers_exclude": ["cbc"],
