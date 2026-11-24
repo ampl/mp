@@ -210,4 +210,23 @@ TEST_F(InterfaceTester_QuadraticConstraint, QP2Pass1) {
 }
 
 
+/// Backend accepting a^x natively
+using InterfaceTester_ExpAConstraint =
+             InterfaceTesterWithBackendAcceptingConstraints<mp::ExpAConstraint>;
+
+/// 1^x is the constant 1. As a^x with a = 1, its piecewise-linear
+/// approximation would divide by log(a) = 0. 2^x stays a^x.
+TEST_F(InterfaceTester_ExpAConstraint, PowOfBase1IsConstant) {
+  auto modeler = mp::MakeEasyModeler(GetModel());
+  auto x = modeler.AddVars(2, -2.0, 3.0);
+  modeler.AddAlgCon(-INFINITY, x[0] + (1.0 ^ x[1]), 5.0);
+  modeler.AddAlgCon(-INFINITY, x[0] + (2.0 ^ x[1]), 9.0);
+  GetInterface().ConvertModel();
+  const auto& expa = GetBackend().GetCons(
+      mp::ExpAConstraint(mp::ExpAConstraint::Arguments{ 0 },
+                         mp::ExpAConstraint::Parameters{ 2.0 }));
+  ASSERT_EQ(1u, expa.size());
+  EXPECT_EQ(2.0, expa[0].GetParameters()[0]);
+}
+
 } // namespace

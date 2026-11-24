@@ -480,13 +480,15 @@ double BasicPLApproximator<FuncCon>::maxErrorRelAbove1(
       points.push_back( { eval(xMidDn), y0 + (xMidDn-x0) * slope } );
     }
   }
-  if (f0<1.0 && f1>1.0) {
+  // Where f crosses 1 or -1 (increasing or decreasing, e.g. a^x, a < 1),
+  // the error switches between absolute and relative
+  if ((f0<1.0 && f1>1.0) || (f0>1.0 && f1<1.0)) {
     auto x_preim_1 = inverse_with_check(1.0);
     MP_ASSERT_ALWAYS(x0<x_preim_1 && x1>x_preim_1,
                      "PLApprox maxErrRel(): preim(1.0) outside");
     points.push_back( { 1.0, y0 + (x_preim_1-x0) * slope } );
   }
-  if (f0<-1.0 && f1>-1.0) {
+  if ((f0<-1.0 && f1>-1.0) || (f0>-1.0 && f1<-1.0)) {
     auto x_preim_1 = inverse_with_check(-1.0);
     MP_ASSERT_ALWAYS(x0<x_preim_1 && x1>x_preim_1,
                      "PLApprox maxErrRel(): preim(-1.0) outside");
@@ -578,9 +580,12 @@ public:
   PLApproximator(const ExpAConstraint& con, PLApproxParams& p) :
     BasicPLApproximator<ExpAConstraint>(con, p),
     A_(GetConParams()[0]), logA_(std::log(A_)) {
-    MP_ASSERT_ALWAYS(A_ > 0.0, fmt::format(
-        "a^x with base a = {} <= 0 cannot be approximated "
-        "piecewise-linearly (it is not monotone or not real); "
+    // a = 1 is constant (the flattener replaces 1^x by 1): log(a) = 0
+    // would be divided by. 0 < a < 1 is decreasing: the slopes and
+    // log(a) are negative, inverse_1st() is defined.
+    MP_ASSERT_ALWAYS(A_ > 0.0 && A_ != 1.0, fmt::format(
+        "a^x with base a = {} (a <= 0 or a = 1) cannot be approximated "
+        "piecewise-linearly (a <= 0: it is not monotone or not real); "
         "use a solver that accepts it natively", A_));
   }
   FuncGraphDomain GetFuncGraphDomain() const override

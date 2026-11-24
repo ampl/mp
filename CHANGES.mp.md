@@ -15,6 +15,9 @@ Summary of recent updates to the AMPL MP Library
   success, whatever the solve result.
 - Fix: when a model was solved repeatedly through the AMPLS API, the solve
   message of each report repeated the notes of the earlier solves.
+- `1^x` in an NL file not written by AMPL (AMPL simplifies it) is taken as
+  the constant 1, instead of an exponential with base 1, which the
+  piecewise-linear approximation could not handle.
 - Fixed false infeasibility when linearizing a product with a bounded integer
   factor whose original NL bounds are fractional.
 - Preserve exact integer bounds during rounding, including large bounds that

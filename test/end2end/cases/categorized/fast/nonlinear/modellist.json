@@ -1045,5 +1045,12 @@
     "solvers" : ["knitroasl"],
     "comment": "x*y + min(1, floor(z)) is not quadratic: degree_ASL called it quadratic and the Knitro ASL driver stopped. Not HiGHS (nonconvex x*y), not CONOPT (z enters only through floor)",
     "objective": 0
+  },
+  {
+    "name" : "expA_base1",
+    "tags" : ["nonlinear"],
+    "files" : ["expA_base1.nl"],
+    "comment": "1^x (AMPL folds it; this NL is that of 'var x >= -2, <= 3; var y; minimize o: y + 0.1*x; s.t. c: y >= 2^x;' with presolve 0 and the base edited to 1): the constant 1, not a^x, whose PL approximation divided by log(1) = 0. Optimum x = -2, y = 1",
+    "objective": 0.8
   }
 ]
