@@ -1,0 +1,24 @@
+
+# -------------------------------------------------------------
+# multi_sol_05_const.run
+# A variable fixed at a non-integer value (kept by presolve 0)
+# is a constant in the CP-SAT model. The pool solutions used
+# to report it as 0; the final solution was right.
+# -------------------------------------------------------------
+
+option presolve 0;
+
+var x binary;
+var y binary;
+var c >= 2.5, <= 2.5;
+
+minimize TotalSum:
+    x + y + c;
+
+subj to C1:
+       x + y >= 1;
+
+solve;
+
+# The first pool solution (solutionstub=constpool)
+solution constpool1.sol;
