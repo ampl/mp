@@ -61,9 +61,13 @@ public:
     MP_UNUSED(eal);
     assert(ExpressionAcceptanceLevel::NotAccepted!=eal);
     if (con.HasResultVar()) {  // A functional constraint
-      assert(                  // Check: the result var has \a con as the init expr
-          MPD( template GetInitExpressionOfType<Con>(con.GetResultVar()) )
-          == &con);
+      // All constraints are visited, also redundant ones. One that was
+      // redefined (e.g., a comparison redefined after all its contexts
+      // are known, #248) keeps its result variable, whose init
+      // expression is now another constraint: that one decides.
+      if (MPD( template GetInitExpressionOfType<Con>(con.GetResultVar()) )
+          != &con)
+        return;
       if ( MPCD(CanBeEliminated(con.GetResultVar()))
            && IfInlinableAsExpr(con) ) {
         auto refcountmax = con.IsLogical() ?    // Ok to leave as expression:
