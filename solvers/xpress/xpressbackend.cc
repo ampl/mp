@@ -16,8 +16,8 @@ extern "C" {
 namespace {
 
 
-bool InterruptXpressmp(void* prob) {
-  XPRSinterrupt((XPRSprob)prob, XPRS_STOP_CTRLC);
+bool InterruptXpressmp(void* backend) {
+  ((mp::XpressmpBackend*)backend)->InterruptAll();
   return true;
 }
 
@@ -234,12 +234,13 @@ ArrayRef<double> XpressmpBackend::PrimalSolution() {
   // The fixed LP's point agrees with its basis and duals; its integer
   // columns are those of the incumbent (or of the pool's best)
   if (pool_best_x_.size() && !fixed_lp_used_) return pool_best_x_;
+  if (fixed_lp_used_ && fixed_result_.x.size()) return fixed_result_.x;
   int num_vars = NumVars();
   int error;
   std::vector<double> x(num_vars);
     int solst;
     // After XPRSoptimize():
-  error = XPRSgetsolution(ResultProb(), &solst, x.data(), 0, num_vars-1);
+  error = XPRSgetsolution(lp(), &solst, x.data(), 0, num_vars-1);
   if (error
       || XPRS_SOLAVAILABLE_NOTFOUND==solst
           //   Infeasible - should return:
@@ -256,13 +257,13 @@ pre::ValueMapDbl XpressmpBackend::DualSolution() {
 ArrayRef<double> XpressmpBackend::DualSolution_LP() {
   if (fixed_model_failed_) return {};
   if (fixed_nlp_used_ && !fixed_nlp_has_duals_) return {};
+  if (fixed_result_.valid)               // of the fixed model (mip:basis)
+    return fixed_result_.pi;
   std::vector<double> pi(NumLinCons());
   int solst;
-  int opttype;
-  XPRSgetintattrib(model_fixed_, XPRS_OPTIMIZETYPEUSED, &opttype);
   // LP only? Use XPRSgetduals() after XPRSoptimize()
   int error
-      = XPRSgetduals(model_fixed_,
+      = XPRSgetduals(lp(),
                      &solst, pi.data(), 0, NumLinCons()-1);
   if (error)
     pi.clear();
@@ -273,11 +274,8 @@ double XpressmpBackend::ObjectiveValue() const {
   if ((fixed_model_failed_ || fixed_nlp_used_)
       && !mip_objectives_before_fixed_.empty())
     return mip_objectives_before_fixed_.front();
-  if (fixed_lp_used_) {
-    double obj;
-    if (!XPRSgetdblattrib(model_fixed_, XPRS_LPOBJVAL, &obj))
-      return obj;
-  }
+  if (fixed_lp_used_ && fixed_result_.has_obj)
+    return fixed_result_.obj;
   if (pool_best_x_.size())
     return pool_best_obj_;
   return getDblAttr(XPRS_OBJVAL);
@@ -333,18 +331,24 @@ void XpressmpBackend::DoWriteSolution(const std::string& name) {
   auto CheckEnds = [&](std::string e) {
     return ends_with(name, e);
   };
-  // Solution and basis of the fixed LP when it was solved (mip:basis)
+  // Solution and basis of the fixed LP when it was solved (mip:basis).
+  // The copy is freed after the first report of a solve.
+  const bool fixed_sol = fixed_lp_used_ && !CheckEnds("iis");
+  if (fixed_sol && !FixedCopyAlive())
+    MP_RAISE("the fixed problem of mip:basis was freed after the "
+             "first report of this solve");
+  XPRSprob prob = fixed_sol ? model_fixed_ : lp();
   if (CheckEnds("sol") || CheckEnds("prt"))
-    XPRESSMP_CCALL(XPRSwriteprtsol(ResultProb(), name.c_str(), wpflags));
+    XPRESSMP_CCALL(XPRSwriteprtsol(prob, name.c_str(), wpflags));
   else if (CheckEnds("iis"))
     XPRESSMP_CCALL(XPRSiiswrite(lp(), 1, name.c_str(), 0, "lv"));
   else if (CheckEnds("bas") || CheckEnds("bss"))
-    XPRESSMP_CCALL(XPRSwritebasis(ResultProb(), name.c_str(), wpflags));
+    XPRESSMP_CCALL(XPRSwritebasis(prob, name.c_str(), wpflags));
 }
 
 
 void XpressmpBackend::SetInterrupter(mp::Interrupter *inter) {
-  inter->SetHandler(InterruptXpressmp, lp());
+  inter->SetHandler(InterruptXpressmp, this);
 }
 
 void XpressmpBackend::DoXPRESSTune() {
@@ -444,7 +448,8 @@ void XpressmpBackend::WindupXPRESSMPSolve() { }
 
 void XpressmpBackend::ReportResults() {
   ReportXPRESSMPResults();
-  BaseBackend::ReportResults();
+  BaseBackend::ReportResults();      // reads fixed_result_, writes files
+  FreeFixedCopy();
 }
 
 
@@ -458,12 +463,13 @@ void XpressmpBackend::ReportXPRESSMPResults() {
 }
 
 void XpressmpBackend::ConsiderXpressFixedModel() {
-  if (!IsMIP() || model_fixed_ != lp())
+  if (!IsMIP() || fixed_done_)        // once per solve
     return;
+  fixed_done_ = true;
   // After a nonlinear (local or global) solve, the fixed model is
   // nonlinear too: solve it with XPRSoptimize (duals, no basis)
   int opttype = XPRS_OPTIMIZETYPE_NONE;
-  XPRSgetintattrib(model_fixed_, XPRS_OPTIMIZETYPEUSED, &opttype);
+  XPRSgetintattrib(lp(), XPRS_OPTIMIZETYPEUSED, &opttype);
   const bool nonlinear = XPRS_OPTIMIZETYPE_LOCAL == opttype
       || XPRS_OPTIMIZETYPE_GLOBAL == opttype;
   // Keep the incumbent for the supplementary solve and for reporting.
@@ -471,10 +477,16 @@ void XpressmpBackend::ConsiderXpressFixedModel() {
   mip_objectives_before_fixed_ = GetObjectiveValues();
   mip_bound_before_fixed_ = BestDualBound();
   std::string msg;
+  // A Ctrl-C during the fixed solve stops it too
+  struct InterruptCopy {
+    std::atomic<XPRSprob>& p;
+    ~InterruptCopy() { p = nullptr; }
+  } interrupt_copy{interrupt_also_};
   try {
     // Always on a copy: lp() keeps the user's problem (integer columns,
     // bounds) for a later solve or edit through AMPLS.
     CopyFixedModel(pool_best_x_.empty());
+    interrupt_also_ = model_fixed_;
     if (pool_best_x_.size()) {   // the problem holds the enumerator's last
       if (!FixIntegersToPoolBest())
         msg = "Fixing integer columns to the pool's best";
@@ -492,6 +504,8 @@ void XpressmpBackend::ConsiderXpressFixedModel() {
         Print("\n\n     ======= Solving the fixed MIP =======\n\n");
       msg = DoXpressFixedModel(nonlinear);
     }
+    if (msg.empty())
+      TakeFixedResult();
   } catch (const std::exception& e) {
     msg = e.what();
   }
@@ -501,11 +515,46 @@ void XpressmpBackend::ConsiderXpressFixedModel() {
   }
 }
 
-void XpressmpBackend::ClearFixedModel() {
-  if (model_fixed_ && model_fixed_ != lp())
+void XpressmpBackend::TakeFixedResult() {
+  auto& r = fixed_result_;
+  r = {};
+  XPRSgetintattrib(model_fixed_, XPRS_OPTIMIZETYPEUSED, &r.opttype);
+  const int n = NumVars(), m = NumLinCons();
+  int solst;
+  if (fixed_lp_used_) {
+    r.x.resize(n);
+    if (XPRSgetsolution(model_fixed_, &solst, r.x.data(), 0, n-1)
+        || XPRS_SOLAVAILABLE_NOTFOUND == solst)
+      r.x.clear();
+    r.has_obj = !XPRSgetdblattrib(model_fixed_, XPRS_LPOBJVAL, &r.obj);
+  }
+  r.pi.resize(m);
+  if (XPRSgetduals(model_fixed_, &solst, r.pi.data(), 0, m-1))
+    r.pi.clear();
+  r.colstat.resize(NumVarsOrig());
+  r.rowstat.resize(NumLinConsOrig());
+  if (XPRSgetbasis(model_fixed_, r.rowstat.data(), r.colstat.data()))
+    r.colstat.clear(), r.rowstat.clear();
+  r.valid = true;
+}
+
+void XpressmpBackend::FreeFixedCopy() {
+  if (FixedCopyAlive())
     XPRSdestroyprob(model_fixed_);
   model_fixed_ = lp();
+}
+
+void XpressmpBackend::InterruptAll() {
+  XPRSinterrupt(lp(), XPRS_STOP_CTRLC);
+  if (XPRSprob p = interrupt_also_.load())
+    XPRSinterrupt(p, XPRS_STOP_CTRLC);
+}
+
+void XpressmpBackend::ClearFixedModel() {
+  FreeFixedCopy();
   fixed_lp_used_ = false;
+  fixed_done_ = false;
+  fixed_result_ = {};
 }
 
 void XpressmpBackend::CopyFixedModel(bool load_incumbent) {
@@ -2560,7 +2609,11 @@ double XpressmpBackend::MIPGapAbs() {
 ArrayRef<int> XpressmpBackend::VarStatii() {
 
   std::vector<int> vars(NumVarsOrig());
-  int status = XPRSgetbasis(model_fixed_, NULL, vars.data());
+  int status = 0;
+  if (fixed_result_.valid)               // of the fixed model (mip:basis)
+    vars = fixed_result_.colstat, status = vars.empty();
+  else
+    status = XPRSgetbasis(lp(), NULL, vars.data());
   if (status)
     vars.clear();
   else 
@@ -2587,7 +2640,11 @@ ArrayRef<int> XpressmpBackend::VarStatii() {
 
 ArrayRef<int> XpressmpBackend::ConStatii() {
   std::vector<int> cons(NumLinConsOrig());
-  int status = XPRSgetbasis(model_fixed_, cons.data(), NULL);
+  int status = 0;
+  if (fixed_result_.valid)               // of the fixed model (mip:basis)
+    cons = fixed_result_.rowstat, status = cons.empty();
+  else
+    status = XPRSgetbasis(lp(), cons.data(), NULL);
   if (status)
     cons.clear();
   else
@@ -2687,7 +2744,10 @@ SolutionBasis XpressmpBackend::GetBasis() {
   // A local or global nonlinear solve has no simplex basis:
   // XPRSgetbasis() then returns zeros, which would read as 'low'
   int opttype = XPRS_OPTIMIZETYPE_NONE;
-  XPRSgetintattrib(model_fixed_, XPRS_OPTIMIZETYPEUSED, &opttype);
+  if (fixed_result_.valid)
+    opttype = fixed_result_.opttype;
+  else
+    XPRSgetintattrib(lp(), XPRS_OPTIMIZETYPEUSED, &opttype);
   if (XPRS_OPTIMIZETYPE_LOCAL == opttype || XPRS_OPTIMIZETYPE_GLOBAL == opttype)
     return {};
 

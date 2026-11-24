@@ -16,6 +16,7 @@
 # pragma warning(pop)
 #endif
 
+#include <atomic>
 #include <string>
 #include <list>
 #include <variant>
@@ -245,6 +246,10 @@ protected:
   /// Whether the integer columns have equal bounds in the copy
   bool IntegersAreFixedInCopy();
   void ClearFixedModel();
+  /// Keep what the reports need of the solved fixed copy (FixedResult)
+  void TakeFixedResult();
+  /// Free the copy after the report: the results stay in fixed_result_
+  void FreeFixedCopy();
   std::string DoXpressFixedModel(bool nonlinear);
   /// Fixed model of a nonlinear MIP: XPRSoptimize; "" on success.
   std::string SolveFixedNonlinear();
@@ -320,8 +325,28 @@ private:
   /// model_fixed_: the reported solution, objective, basis and duals,
   /// and the solution files, come from the copy
   bool fixed_lp_used_ = false;
-  /// lp(), or the solved fixed copy (fixed_lp_used_)
-  XPRSprob ResultProb() const { return fixed_lp_used_ ? model_fixed_ : lp(); }
+  /// The fixed model was tried for this solve (a repeated report of the
+  /// same solve does not solve it again)
+  bool fixed_done_ = false;
+  /// What the reports read of the solved fixed copy, kept when the copy
+  /// is freed after the first report: values, duals, raw basis
+  struct FixedResult {
+    bool valid = false;
+    int opttype = XPRS_OPTIMIZETYPE_NONE;
+    std::vector<double> x, pi;
+    double obj = 0.0;
+    bool has_obj = false;
+    std::vector<int> colstat, rowstat;
+  } fixed_result_;
+  /// The fixed copy, while it exists (not lp())
+  bool FixedCopyAlive() const { return model_fixed_ && model_fixed_ != lp(); }
+  /// The problem a Ctrl-C interrupts besides lp(): the copy during the
+  /// fixed solve
+  std::atomic<XPRSprob> interrupt_also_ {nullptr};
+public:
+  /// Interrupt lp() and the fixed solve, if running
+  void InterruptAll();
+private:
   std::vector<double> mip_primal_before_fixed_, mip_objectives_before_fixed_;
   double mip_bound_before_fixed_ = 0;
   /// Pool's best solution after enumeration (sol:poolmode)
