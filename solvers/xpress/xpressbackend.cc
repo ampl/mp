@@ -233,8 +233,8 @@ ArrayRef<double> XpressmpBackend::PrimalSolution() {
   if (fixed_model_failed_ || fixed_nlp_used_) return mip_primal_before_fixed_;
   // The fixed LP's point agrees with its basis and duals; its integer
   // columns are those of the incumbent (or of the pool's best)
-  if (pool_best_x_.size() && !fixed_lp_used_) return pool_best_x_;
   if (fixed_lp_used_ && fixed_result_.x.size()) return fixed_result_.x;
+  if (pool_best_x_.size()) return pool_best_x_;
   int num_vars = NumVars();
   int error;
   std::vector<double> x(num_vars);
@@ -333,7 +333,8 @@ void XpressmpBackend::DoWriteSolution(const std::string& name) {
   };
   // Solution and basis of the fixed LP when it was solved (mip:basis).
   // The copy is freed after the first report of a solve.
-  const bool fixed_sol = fixed_lp_used_ && !CheckEnds("iis");
+  const bool fixed_sol = fixed_lp_used_ && !fixed_model_failed_
+      && !CheckEnds("iis");
   if (fixed_sol && !FixedCopyAlive())
     MP_RAISE("the fixed problem of mip:basis was freed after the "
              "first report of this solve");
