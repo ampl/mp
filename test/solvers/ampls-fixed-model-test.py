@@ -1,11 +1,12 @@
-"""Windows AMPLS regression for reporting and re-solving the same model.
+"""AMPLS regression for reporting and re-solving the same model.
 
 Usage: python ampls-fixed-model-test.py SOLVER DRIVER_DLL SDK_DLL [--ampl AMPL]
-SOLVER is cplex, gurobi or xpress. The DLL paths refer to the build under
-test.
+SOLVER is cplex, gurobi or xpress. The library paths (DLL on Windows,
+dylib or so elsewhere) refer to the build under test.
 """
 
 import argparse
+import contextlib
 import ctypes as ct
 import os
 from pathlib import Path
@@ -38,17 +39,14 @@ FIXED_SOLVE_SUCCESS = {
     "cplex": FIXED_SOLVE_PREFIX
              + rb": [0-9]+ (barrier|simplex) iterations?[\r\n]",
     "xpress": FIXED_SOLVE_PREFIX + rb": nonlinear solve[^\r\n]*[\r\n]",
-    # Gurobi reports the fixed solve only when it took iterations
+    # Gurobi, and Xpress for a linear MIP, report the fixed solve only
+    # when it took iterations
     "gurobi": None,
+    "xpress-linear": None,
 }
-# Xpress solves the MINLP fixture's fixed model as an NLP (message above);
-# the linear MIP's fixed LP is reported only when it took iterations.
-XPRESS_NONLINEAR_SOURCE = "suf_std/nl_dual_01.mod"
-# Value of the binary b after the first solve: 0 for the MINLP fixture
-FIRST_BINARY = {XPRESS_NONLINEAR_SOURCE: 0}
 
 
-def check_fixed_solve_message(name, source, text):
+def check_fixed_solve_message(name, text):
     """Check that the report text describes one successful fixed solve.
 
     The text must be that of this report alone: a message kept from an
@@ -57,8 +55,6 @@ def check_fixed_solve_message(name, source, text):
     require(b" failed in Do" not in text, "The fixed solve failed")
     require(b"WARNING" not in text, "The report carries a warning")
     success = FIXED_SOLVE_SUCCESS[name]
-    if name == "xpress" and source != XPRESS_NONLINEAR_SOURCE:
-        success = None
     if success is None:
         require(text.count(FIXED_SOLVE_PREFIX) <= 1,
                 "The report repeats the message of an earlier fixed solve")
@@ -138,6 +134,7 @@ def xpress_checks(sdk, model, binary, first_binary):
                       ct.POINTER(REAL), INT, INT)
     set_bounds = bind(sdk, "XPRSchgbounds", INT, PTR, INT, ct.POINTER(INT),
                       STR, ct.POINTER(REAL))
+    set_sense = bind(sdk, "XPRSchgobjsense", INT, PTR, INT)
     kind, value = ct.create_string_buffer(1), REAL()
 
     def state():
@@ -151,22 +148,23 @@ def xpress_checks(sdk, model, binary, first_binary):
         return value.value
 
     def reverse():
-        """Force the other value of the binary by a bound: lower bound 1
-        after 0, upper bound 0 after 1. If a report left the binary fixed
-        in the native problem, the bounds become contradictory.
+        """Force the other value of the binary.
 
-        The objective stays as loaded: the MINLP's exponential terms reach
-        Xpress as an inequality valid for minimization only, and the
-        solution check uses the objective of the NL file.
+        Nonlinear case (first value 0): lower bound 1. The objective stays
+        as loaded: its exponential terms reach Xpress as an inequality
+        valid for minimization only, and the solution check uses the
+        objective of the NL file. Linear case (first value 1): minimize.
         """
-        kind, bound = (b"L", 1.0) if first_binary == 0 else (b"U", 0.0)
-        return set_bounds(model, 1, ct.byref(INT(binary)), kind,
-                          ct.byref(REAL(bound)))
+        if first_binary == 1:
+            return set_sense(model, 1)      # XPRS_OBJ_MINIMIZE
+        return set_bounds(model, 1, ct.byref(INT(binary)), b"L",
+                          ct.byref(REAL(1.0)))
 
     return state, incumbent, reverse
 
 
-def check_repeated_solve(name, source, driver, sdk, nl, binary):
+def check_repeated_solve(name, driver, sdk, nl, binary, first_binary,
+                         message):
     open_solver = bind(driver, f"AMPLSOpen_{name}", PTR, INT, ct.POINTER(STR))
     close = bind(driver, f"AMPLSClose_{name}", None, PTR)
     native = bind(driver, f"AMPLSGetModel_{name}", PTR, PTR)
@@ -183,7 +181,6 @@ def check_repeated_solve(name, source, driver, sdk, nl, binary):
                 "AMPLS could not load the NL fixture")
         extras(solver)
         model = native(solver)
-        first_binary = FIRST_BINARY.get(source, 1)
         if name == "cplex":
             state, incumbent, reverse = cplex_checks(driver, sdk, solver, model, binary)
         elif name == "gurobi":
@@ -199,7 +196,7 @@ def check_repeated_solve(name, source, driver, sdk, nl, binary):
 
         def check_report(path, binary_value):
             require(report(solver, os.fsencode(path)) == 0, "AMPLS reporting failed")
-            check_fixed_solve_message(name, source, path.read_bytes())
+            check_fixed_solve_message(message, path.read_bytes())
             require(native(solver) == model, "Reporting replaced the native model")
             require(state() == original_type, "Reporting changed the native problem type")
             require(abs(incumbent() - binary_value) < 1e-5,
@@ -231,17 +228,24 @@ def main():
     args = parser.parse_args()
     # CPLEX: an MIQCP (fixed on a copy) and a linear MIP (fixed in the
     # native problem, which must be restored after each report).
-    # Xpress: a MINLP and a linear MIP, both fixed on a copy.
-    sources = {"cplex": ("mip_basis/fixed_miqcp_cplex.mod",
-                         "mip_basis/fixed_milp_cplex.mod"),
-               "gurobi": ("mip_basis/fixed_milp_cplex.mod",),
-               "xpress": (XPRESS_NONLINEAR_SOURCE,
-                          "mip_basis/fixed_milp_cplex.mod")}[args.solver]
-    with (os.add_dll_directory(str(args.driver.resolve().parent)),
-          os.add_dll_directory(str(args.sdk.resolve().parent))):
+    # Xpress: a nonlinear and a linear MIP (both fixed on a copy).
+    # Each source with the binary's value in the first solve and the key
+    # of the expected fixed-solve message.
+    sources = {"cplex": (("mip_basis/fixed_miqcp_cplex.mod", 1, "cplex"),
+                         ("mip_basis/fixed_milp_cplex.mod", 1, "cplex")),
+               "gurobi": (("mip_basis/fixed_milp_cplex.mod", 1, "gurobi"),),
+               "xpress": (("suf_std/nl_dual_01.mod", 0, "xpress"),
+                          ("mip_basis/fixed_milp_cplex.mod", 1,
+                           "xpress-linear"))}[args.solver]
+    dll_dirs = contextlib.ExitStack()
+    if hasattr(os, "add_dll_directory"):    # Windows
+        for library in (args.driver, args.sdk):
+            dll_dirs.enter_context(
+                os.add_dll_directory(str(library.resolve().parent)))
+    with dll_dirs:
         driver = ct.CDLL(str(args.driver.resolve()))
         sdk = ct.CDLL(str(args.sdk.resolve()))
-        for source in sources:
+        for source, first_binary, message in sources:
             with tempfile.TemporaryDirectory() as temp:
                 directory = Path(temp)
                 (directory / "case.mod").write_bytes(
@@ -253,8 +257,9 @@ def main():
                                check=True)
                 binary = (directory / "case.col").read_text().splitlines(
                     ).index("b")
-                check_repeated_solve(args.solver, source, driver, sdk,
-                                     directory / "case.nl", binary)
+                check_repeated_solve(args.solver, driver, sdk,
+                                     directory / "case.nl", binary,
+                                     first_binary, message)
             print(f"{source}: passed")
 
 

@@ -238,7 +238,10 @@ protected:
   void DoXPRESSTune();
 
   void ConsiderXpressFixedModel();
-  void CopyFixedModel();
+  /// Copy of the problem for the fixed solve: fixing the integer
+  /// columns of lp() itself would change the user's problem
+  /// load_incumbent: for XPRSfixmipentities(), which needs one
+  void CopyFixedModel(bool load_incumbent);
   /// Whether the integer columns have equal bounds in the copy
   bool IntegersAreFixedInCopy();
   void ClearFixedModel();
