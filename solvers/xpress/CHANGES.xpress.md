@@ -3,10 +3,12 @@ Summary of recent updates to Xpress for AMPL
 
 
 ## unreleased
-- With `mip:basis` on a MINLP, solving the fixed nonlinear problem
-  preserves the original problem for subsequent AMPLS solves. A MIP
-  solved without the nonlinear solvers is still left with its integer
-  variables fixed after the report, as before.
+- Fix: with `mip:basis`, the fixed problem (LP, or nonlinear for a
+  MINLP) is now solved on a copy, so the original problem is preserved
+  for subsequent AMPLS solves. Before, a MIP was left with its integer
+  variables fixed after the report, so a later solve on the same model
+  (for example after changing its objective or bounds) returned the old
+  integer values.
 - Several objectives with *obj:multi=1* (native multi-objective optimization)
   where one is quadratic: the driver now stops with a message to use
   *obj:multi=2* (MP emulation) or to move quadratic and nonlinear objective

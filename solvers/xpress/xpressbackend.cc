@@ -236,8 +236,9 @@ ArrayRef<double> XpressmpBackend::PrimalSolution() {
   int error;
   std::vector<double> x(num_vars);
     int solst;
-    // After XPRSoptimize():
-  error = XPRSgetsolution(lp(), &solst, x.data(), 0, num_vars-1);
+  // After XPRSoptimize(); after a fixed LP (mip:basis), the copy's
+  // solution, consistent with its duals (model_fixed_ is lp() otherwise)
+  error = XPRSgetsolution(model_fixed_, &solst, x.data(), 0, num_vars-1);
   if (error
       || XPRS_SOLAVAILABLE_NOTFOUND==solst
           //   Infeasible - should return:
@@ -273,6 +274,11 @@ double XpressmpBackend::ObjectiveValue() const {
     return mip_objectives_before_fixed_.front();
   if (pool_best_x_.size())
     return pool_best_obj_;
+  if (model_fixed_ && model_fixed_ != lp()) {   // the fixed LP's (mip:basis)
+    double obj = 0;
+    XPRESSMP_CCALL(XPRSgetdblattrib(model_fixed_, XPRS_OBJVAL, &obj));
+    return obj;
+  }
   return getDblAttr(XPRS_OBJVAL);
 }
 
@@ -463,8 +469,9 @@ void XpressmpBackend::ConsiderXpressFixedModel() {
   mip_bound_before_fixed_ = BestDualBound();
   std::string msg;
   try {
-    if (nonlinear)
-      CopyFixedNonlinearModel();
+    // Fix and solve a copy: fixing lp() itself would leave the user's
+    // problem with its integer columns fixed (AMPLS: a later solve).
+    CopyFixedModel();
     if (pool_best_x_.size()) {   // the problem holds the enumerator's last
       if (!FixIntegersToPoolBest())
         msg = "Fixing integer columns to the pool's best";
@@ -475,7 +482,7 @@ void XpressmpBackend::ConsiderXpressFixedModel() {
       }
     } else if (XPRSfixmipentities(model_fixed_, 1))
       msg = "XPRSfixmipentities()";
-    else if (nonlinear && !IntegersAreFixedInCopy())
+    else if (!IntegersAreFixedInCopy())
       msg = "Fixing integer columns in the copy of the model";
     else {
       if (outlev_)
@@ -497,9 +504,9 @@ void XpressmpBackend::ClearFixedModel() {
   model_fixed_ = lp();
 }
 
-void XpressmpBackend::CopyFixedNonlinearModel() {
+void XpressmpBackend::CopyFixedModel() {
   if (mip_primal_before_fixed_.empty())
-    throw std::runtime_error("No integer incumbent for the fixed nonlinear model");
+    throw std::runtime_error("No integer incumbent for the fixed model");
   XPRSprob copy = nullptr;
   XPRESSMP_CCALL(XPRScreateprob(&copy));
   model_fixed_ = copy;

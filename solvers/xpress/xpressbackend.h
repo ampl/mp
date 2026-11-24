@@ -238,7 +238,7 @@ protected:
   void DoXPRESSTune();
 
   void ConsiderXpressFixedModel();
-  void CopyFixedNonlinearModel();
+  void CopyFixedModel();
   /// Whether the integer columns have equal bounds in the copy
   bool IntegersAreFixedInCopy();
   void ClearFixedModel();
