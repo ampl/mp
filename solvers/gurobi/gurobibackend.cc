@@ -289,8 +289,11 @@ bool GurobiBackend::IsQCP() const {
 
 
 mp::ArrayRef<double> GurobiBackend::PrimalSolution() {
+  // After a successful fixed-model solve (mip:basis), its point, which
+  // agrees with the basis and duals read from it. model_fixed_ is model()
+  // otherwise.
   return
-    GrbGetDblAttrArray(GRB_DBL_ATTR_X, NumVars());
+    GrbGetDblAttrArray(model_fixed_, GRB_DBL_ATTR_X, NumVars());
 }
 
 pre::ValueMapDbl GurobiBackend::DualSolution() {
