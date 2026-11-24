@@ -202,6 +202,13 @@ def check_repeated_solve(name, driver, sdk, nl, binary, first_binary,
             require(abs(incumbent() - binary_value) < 1e-5,
                     "Reporting changed the original incumbent")
 
+        # A report that fails (the solution file cannot be written) must
+        # still leave the user's problem, not the fixed one
+        bad = sol.with_name("no such directory") / "bad.sol"
+        require(report(solver, os.fsencode(bad)) != 0,
+                "Reporting to an unwritable file did not fail")
+        require(state() == original_type,
+                "A failed report left the native problem fixed")
         check_report(sol, first_binary)
         # A repeated report of the same solve carries the same notes:
         # the fixed solve is not repeated, its message is not lost.

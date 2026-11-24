@@ -93,7 +93,9 @@ Repeated solves through AMPLS
 The ordinary end-to-end runner starts a fresh driver invocation for each
 solve. The integration test
 :file:`test/solvers/ampls-fixed-model-test.py` exercises a different path:
-it loads a model once, solves it with ``mip:basis=1`` and reports twice,
+it loads a model once, solves it with ``mip:basis=1``, reports once to a
+file that cannot be written (the report must fail and leave the native
+problem unchanged) and then twice,
 changes the native problem (the objective sense; Xpress on the nonlinear
 MIP: a bound of the binary variable), then solves and reports again. It
 checks that each report carries the success message of its fixed solve

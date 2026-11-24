@@ -873,9 +873,18 @@ void CplexBackend::WindupCPLEXSolve() {
 }
 
 void CplexBackend::ReportResults() {
-  ReportCPLEXResults();
-  BaseBackend::ReportResults();
-  RestoreFixedInPlace();      // AMPLS: the native problem is the user's again
+  // AMPLS: the native problem is the user's again after the report,
+  // also when reporting fails (e.g., the solution file cannot be written)
+  try {
+    ReportCPLEXResults();
+    BaseBackend::ReportResults();
+  } catch (...) {
+    try {
+      RestoreFixedInPlace();
+    } catch (...) { }         // keep the report's exception
+    throw;
+  }
+  RestoreFixedInPlace();
 }
 
 void CplexBackend::ReportCPLEXResults() {
