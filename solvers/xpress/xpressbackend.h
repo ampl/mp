@@ -349,6 +349,9 @@ private:
   std::atomic<int> interrupts_running_ {0};
   /// A Ctrl-C came during this solve: no fixed solve is started then
   std::atomic<bool> interrupted_ {false};
+  static_assert(ATOMIC_BOOL_LOCK_FREE == 2 && ATOMIC_INT_LOCK_FREE == 2
+                && ATOMIC_POINTER_LOCK_FREE == 2,
+                "InterruptAll() runs in a signal handler: lock-free atomics");
   /// Stop forwarding Ctrl-C to the copy; wait for a running forward
   void StopInterruptingCopy();
   /// No fixed solve after a Ctrl-C: report the MIP's results

@@ -517,26 +517,31 @@ void XpressmpBackend::ConsiderXpressFixedModel() {
     // bounds) for a later solve or edit through AMPLS.
     CopyFixedModel(pool_best_x_.empty());
     interrupt_also_ = model_fixed_;
-    if (interrupted_) {   // Ctrl-C while copying: not forwarded to the copy
-      SkipInterruptedFixedSolve();
-      return;
-    }
+    // Solve the copy unless a Ctrl-C came while it was copied and fixed
+    // (not forwarded to it then): checked just before the solve, as
+    // Xpress may reset an interrupt when an optimization starts
+    bool interrupted = false;
+    auto solve_fixed = [&]() -> std::string {
+      if ((interrupted = interrupted_))
+        return "";
+      if (outlev_)
+        Print("\n\n     ======= Solving the fixed MIP =======\n\n");
+      return DoXpressFixedModel(nonlinear);
+    };
     if (pool_best_x_.size()) {   // the problem holds the enumerator's last
       if (!FixIntegersToPoolBest())
         msg = "Fixing integer columns to the pool's best";
-      else {
-        if (outlev_)
-          Print("\n\n     ======= Solving the fixed MIP =======\n\n");
-        msg = DoXpressFixedModel(nonlinear);
-      }
+      else
+        msg = solve_fixed();
     } else if (XPRSfixmipentities(model_fixed_, 1))
       msg = "XPRSfixmipentities()";
     else if (!IntegersAreFixedInCopy())
       msg = "Fixing integer columns in the copy of the model";
-    else {
-      if (outlev_)
-        Print("\n\n     ======= Solving the fixed MIP =======\n\n");
-      msg = DoXpressFixedModel(nonlinear);
+    else
+      msg = solve_fixed();
+    if (interrupted) {
+      SkipInterruptedFixedSolve();
+      return;
     }
     if (msg.empty())
       TakeFixedResult();
