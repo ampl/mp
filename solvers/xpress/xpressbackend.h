@@ -343,6 +343,16 @@ private:
   /// The problem a Ctrl-C interrupts besides lp(): the copy during the
   /// fixed solve
   std::atomic<XPRSprob> interrupt_also_ {nullptr};
+  /// Calls of InterruptAll() under way: the copy is destroyed only when
+  /// none is (Windows: the handler runs in another thread). Lock-free,
+  /// as InterruptAll() runs in a signal handler on POSIX.
+  std::atomic<int> interrupts_running_ {0};
+  /// A Ctrl-C came during this solve: no fixed solve is started then
+  std::atomic<bool> interrupted_ {false};
+  /// Stop forwarding Ctrl-C to the copy; wait for a running forward
+  void StopInterruptingCopy();
+  /// No fixed solve after a Ctrl-C: report the MIP's results
+  void SkipInterruptedFixedSolve();
 public:
   /// Interrupt lp() and the fixed solve, if running
   void InterruptAll();

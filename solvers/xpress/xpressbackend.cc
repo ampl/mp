@@ -13,6 +13,8 @@ extern "C" {
 }
 #include "mp/ampls-cpp-api.h"
 
+#include <thread>
+
 namespace {
 
 
@@ -392,6 +394,7 @@ void XpressmpBackend::SetSolverOption(MseControl key, double value) {
 
 void XpressmpBackend::Solve() {
   ClearFixedModel();
+  interrupted_ = false;
   fixed_model_failed_ = false;
   fixed_nlp_used_ = false;
   fixed_lp_used_ = false;
@@ -448,9 +451,14 @@ std::string XpressmpBackend::XPRESSSolveFlags() {
 void XpressmpBackend::WindupXPRESSMPSolve() { }
 
 void XpressmpBackend::ReportResults() {
+  // The copy is freed after the report, also when the report throws
+  // (e.g., a solution file cannot be written)
+  struct FreeCopyAtEnd {
+    XpressmpBackend& b;
+    ~FreeCopyAtEnd() { b.FreeFixedCopy(); }
+  } free_copy{*this};
   ReportXPRESSMPResults();
   BaseBackend::ReportResults();      // reads fixed_result_, writes files
-  FreeFixedCopy();
 }
 
 
@@ -494,17 +502,25 @@ void XpressmpBackend::ConsiderXpressFixedModel() {
     fixed_model_failed_ = true;      // report the MIP's (absent) results
     return;
   }
+  if (interrupted_) {                // Ctrl-C during the MIP solve
+    SkipInterruptedFixedSolve();
+    return;
+  }
   std::string msg;
   // A Ctrl-C during the fixed solve stops it too
   struct InterruptCopy {
-    std::atomic<XPRSprob>& p;
-    ~InterruptCopy() { p = nullptr; }
-  } interrupt_copy{interrupt_also_};
+    XpressmpBackend& b;
+    ~InterruptCopy() { b.StopInterruptingCopy(); }
+  } interrupt_copy{*this};
   try {
     // Always on a copy: lp() keeps the user's problem (integer columns,
     // bounds) for a later solve or edit through AMPLS.
     CopyFixedModel(pool_best_x_.empty());
     interrupt_also_ = model_fixed_;
+    if (interrupted_) {   // Ctrl-C while copying: not forwarded to the copy
+      SkipInterruptedFixedSolve();
+      return;
+    }
     if (pool_best_x_.size()) {   // the problem holds the enumerator's last
       if (!FixIntegersToPoolBest())
         msg = "Fixing integer columns to the pool's best";
@@ -563,9 +579,26 @@ void XpressmpBackend::FreeFixedCopy() {
 }
 
 void XpressmpBackend::InterruptAll() {
+  interrupted_ = true;
+  ++interrupts_running_;     // before reading the copy: see StopInterruptingCopy()
   XPRSinterrupt(lp(), XPRS_STOP_CTRLC);
   if (XPRSprob p = interrupt_also_.load())
     XPRSinterrupt(p, XPRS_STOP_CTRLC);
+  --interrupts_running_;
+}
+
+void XpressmpBackend::StopInterruptingCopy() {
+  interrupt_also_ = nullptr;
+  // A forward that read the copy before has finished when this returns,
+  // so the copy can be destroyed afterwards
+  while (interrupts_running_.load())
+    std::this_thread::yield();
+}
+
+void XpressmpBackend::SkipInterruptedFixedSolve() {
+  AddToSolverMessage("Fixed MIP for mip:basis skipped: "
+                     "the solve was interrupted.\n");
+  fixed_model_failed_ = true;          // report the MIP's results
 }
 
 void XpressmpBackend::ClearFixedModel() {

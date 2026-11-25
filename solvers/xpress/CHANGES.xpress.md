@@ -8,6 +8,13 @@ Summary of recent updates to Xpress for AMPL
   variables and bounds, so a subsequent AMPLS solve or model change works
   on the user's problem. Before, a linear MIP was left with its integer
   variables fixed, and a repeated solve returned the old point.
+  The results of the fixed problem are kept and the copy is freed after
+  the first report of a solve, also when that report fails: a repeated
+  report (AMPLS) gives the same values, but cannot write the solution
+  and basis files of the fixed problem (*tech:writesolution*) and says
+  so. A Ctrl-C stops the fixed solve too; after a Ctrl-C during
+  the MIP solve or while the copy is made, the fixed problem is not
+  solved, with a message.
 - Fix: with `mip:basis` and several objectives (*obj:multi=1*), the
   reported point came from the fixed problem of a single objective and
   could lose the values of the others (with the objective values of the
