@@ -45,7 +45,8 @@ NOT_SET = -200
 # Drivers whose obj:multi=1 is the solver's own multi-objective
 # optimization: their repeated solve does not fail, so the test does not
 # apply to them
-NATIVE_MULTIOBJ = ("cplex", "gurobi", "xpress")
+NATIVE_MULTIOBJ = ("copt", "cplex", "gurobi", "xpress")
+
 
 def bind(library, name, result, *arguments):
     function = getattr(library, name)
@@ -181,7 +182,7 @@ def main():
     parser.add_argument("--libdir", type=Path, action="append", default=[])
     parser.add_argument("--ampl", default="ampl")
     args = parser.parse_args()
-    if args.solver in NATIVE_MULTIOBJ:
+    if args.solver.startswith(NATIVE_MULTIOBJ):   # also e.g. gurobi-14
         parser.error(f"{args.solver} optimizes several objectives natively "
                      "with obj:multi=1, so the repeated solve does not fail; "
                      "use a driver with the MP emulation, e.g. highs")
