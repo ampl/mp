@@ -42,6 +42,11 @@ REPEAT_MESSAGE = b"A repeated solve is not supported"
 NOT_SET = -200
 
 
+# Drivers whose obj:multi=1 is the solver's own multi-objective
+# optimization: their repeated solve does not fail, so the test does not
+# apply to them
+NATIVE_MULTIOBJ = ("cplex", "gurobi", "xpress")
+
 def bind(library, name, result, *arguments):
     function = getattr(library, name)
     function.restype = result
@@ -176,6 +181,10 @@ def main():
     parser.add_argument("--libdir", type=Path, action="append", default=[])
     parser.add_argument("--ampl", default="ampl")
     args = parser.parse_args()
+    if args.solver in NATIVE_MULTIOBJ:
+        parser.error(f"{args.solver} optimizes several objectives natively "
+                     "with obj:multi=1, so the repeated solve does not fail; "
+                     "use a driver with the MP emulation, e.g. highs")
     dirs = [args.driver.resolve().parent] + [d.resolve() for d in args.libdir]
     # Solver libraries loaded at run time (e.g., HiGHS) use the PATH
     os.environ["PATH"] = os.pathsep.join(

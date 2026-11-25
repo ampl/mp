@@ -163,6 +163,14 @@ def xpress_checks(sdk, model, binary, first_binary):
     return state, incumbent, reverse
 
 
+def solution_values(path):
+    """The values of a .sol file: the part after the solve message."""
+    text = path.read_bytes()
+    start = text.find(b"\nOptions\n")
+    require(start >= 0, f"No values in {path.name}")
+    return text[start:]
+
+
 def check_repeated_solve(name, driver, sdk, nl, binary, first_binary,
                          message):
     open_solver = bind(driver, f"AMPLSOpen_{name}", PTR, INT, ct.POINTER(STR))
@@ -213,6 +221,9 @@ def check_repeated_solve(name, driver, sdk, nl, binary, first_binary,
         # A repeated report of the same solve carries the same notes:
         # the fixed solve is not repeated, its message is not lost.
         check_report(sol.with_name("repeat.sol"), first_binary)
+        require(solution_values(sol.with_name("repeat.sol"))
+                == solution_values(sol),
+                "A repeated report gave other values than the first")
         require(reverse() == 0, "Could not reverse the objective sense")
         solve(solver)
         second_binary = 1 - first_binary

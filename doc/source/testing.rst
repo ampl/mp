@@ -100,8 +100,9 @@ changes the native problem (the objective sense; Xpress on the nonlinear
 MIP: a bound of the binary variable), then solves and reports again. It
 checks that each report carries the success message of its fixed solve
 exactly once (Gurobi, and Xpress on a linear MIP: at most once, it is
-omitted after zero iterations) and no warning, the unchanged native
-problem, and the change in the integer solution. For Gurobi it then
+omitted after zero iterations) and no warning, the same values in the
+repeated report as in the first, the unchanged native problem, and the
+change in the integer solution. For Gurobi it then
 makes the model continuous natively, solves and checks that the reported
 duals are not those of the earlier fixed model. It uses the MIQCP and
 linear MIP cases (``fixed_miqcp_cplex``,
@@ -138,8 +139,9 @@ that two solves of a single-objective model both succeed, that
 error's code (500 without one) after a failed call, and that a corrupt NL
 file fails to load with -1 (no solve result code). It needs
 Python, AMPL, and a shared
-driver whose solver takes multiple objectives through the emulator. HiGHS
-needs no license (``--libdir`` adds the folder of ``highs-ampl.dll``)::
+driver whose solver takes multiple objectives through the emulator; it
+refuses CPLEX, Gurobi and Xpress, which optimize several objectives
+natively. HiGHS needs no license (``--libdir`` adds the folder of ``highs-ampl.dll``)::
 
     python test/solvers/ampls-solve-error-test.py C:/path/to/bin/highsmp-lib.dll --libdir C:/path/to/highs/lib --ampl C:/path/to/ampl.exe
 
