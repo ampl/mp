@@ -115,7 +115,8 @@ add_custom_command(OUTPUT ${SPHINX_INDEX_FILE}
                   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                   DEPENDS ${mp_docs} ${doc_deps}
                   MAIN_DEPENDENCY ${DOC_BASEDIR}/conf.py
-                  COMMENT "Generating documentation with Sphinx")
+                  COMMENT "Generating documentation with Sphinx"
+                  VERBATIM)
 
 # Named target so we can run the job easily
 add_custom_target(mp-doc ALL DEPENDS ${SPHINX_INDEX_FILE}

@@ -241,8 +241,14 @@ def write_table(data):
             lines.append("      " + ",".join(
                 '"' + c.replace('"', '""') + '"' for c in row))
         lines.append("")
+    text = "\n".join(lines)
+    old = None
+    if os.path.exists(TABLE):
+        with open(TABLE) as f:
+            old = f.read()
     with open(TABLE, "w") as f:
-        f.write("\n".join(lines))
+        f.write(text)
+    return text != old
 
 
 def main():
@@ -322,16 +328,19 @@ def main():
         missing = sorted(set(data[s]["cons"]) - known)
         if missing:
             print(f"{s}: not in GROUPS, not shown: {', '.join(missing)}")
-    if data:
-        write_table(data)
+    table_changed = bool(data) and write_table(data)
     if args.summary:
-        write_summary(args.summary, updated)
+        write_summary(args.summary, updated, table_changed)
 
 
-def write_summary(path, updated):
+def write_summary(path, updated, table_changed):
     """Which drivers updated the tables: shown at the end of a doc build."""
     tables = os.path.normpath(os.path.join(TABLES, "acceptance.*"))
-    if updated:
+    if not updated and table_changed:
+        text = (f"Acceptance table {os.path.normpath(TABLE)} REWRITTEN "
+                "(its layout in acceptanceTable.py changed); driver data "
+                "unchanged.\n")
+    elif updated:
         text = (f"Acceptance tables {tables} UPDATED with the drivers found "
                 "on PATH (not necessarily those of this build):\n"
                 + "".join(f"  {u}\n" for u in updated))
