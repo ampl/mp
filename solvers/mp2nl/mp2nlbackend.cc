@@ -1,5 +1,6 @@
 #include <vector>
 #include <climits>
+#include <cstdio>
 #include <cstring>
 #include <cfloat>
 #include <filesystem>
@@ -446,9 +447,40 @@ void MP2NLBackend::Solve() {
   }
   if (verbose_mode() && lims.size())
     Print("MP2NL: subsolver options '{}'\n", lims);
+  PrintBannerBeforeSubsolver();
   GetNLSolver().Solve(
       storedOptions_.solver_.c_str(), opts.c_str());
+  NoteSubsolverOutput();
   WindupMP2NLSolve();
+}
+
+/// The subsolver, run by AMPL's rules, prints its banner ("Gurobi
+/// 14.0.0: ") first.  If we printed anything after our banner (as the
+/// options), print our banner again: the line then reads
+/// "MP2NL 0.2: Gurobi 14.0.0: " and our solve message, which starts
+/// with both banners, can ask AMPL to skip them.
+void MP2NLBackend::PrintBannerBeforeSubsolver() {
+  subsolver_banner_.clear();
+  if (!ampl_flag() || !output_handler()->has_output)
+    return;
+  auto banner = fmt::format("{}: ", long_name());
+  std::fputs(banner.c_str(), stdout);
+  std::fflush(stdout);
+  output_handler()->has_output = false;
+}
+
+/// The subsolver's solve message started with backspaces (as many as
+/// its banner's characters) if nothing followed its banner in the
+/// output; otherwise our banner is no longer alone on the line.
+void MP2NLBackend::NoteSubsolverOutput() {
+  if (!ampl_flag())
+    return;
+  int nbs = GetNLSolver().GetSolveMessageNbs();
+  std::string msg = GetNLSolver().GetSolveMessage();
+  if (nbs > 0 && nbs <= (int)msg.size())
+    subsolver_banner_ = msg.substr(0, nbs);
+  else
+    output_handler()->has_output = true;
 }
 
 std::string MP2NLBackend::ForwardedLimits() {

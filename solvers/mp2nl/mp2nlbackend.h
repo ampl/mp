@@ -176,6 +176,14 @@ protected:
   std::pair<int, std::string> GetSolveResult() override;
   void AddMP2NLMessages();
 
+  /// The subsolver's banner, if it is still alone after ours
+  std::string PendingOutputInSolveMessage() const override
+  { return subsolver_banner_; }
+  /// Before the subsolver prints its banner
+  void PrintBannerBeforeSubsolver();
+  /// After the subsolver: what it left on the output line
+  void NoteSubsolverOutput();
+
   ArrayRef<int> VarStatii();
   ArrayRef<int> ConStatii();
   void VarStatii(ArrayRef<int>);
@@ -217,6 +225,8 @@ private:
     double mipgapabs_ = -1.0;
   };
   Options storedOptions_;
+  /// The subsolver's banner while nothing follows it in the output
+  std::string subsolver_banner_;
 	static ConfigMap config_map_;
 	static LimitKeywordMap limit_kw_map_;
 

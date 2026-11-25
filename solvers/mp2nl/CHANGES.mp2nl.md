@@ -4,6 +4,12 @@ Summary of recent updates to MP2NL for AMPL
 
 ## unreleased
 
+- The result line now starts with MP2NL's name and then the subsolver's,
+  for example "MP2NL 0.2: Gurobi 14.0.0: optimal solution", each once.
+  Before, the subsolver's name was printed before MP2NL's, so that the line
+  read "Gurobi 14.0.0: MP2NL 0.2: Gurobi 14.0.0: optimal solution" (with
+  ASL-based subsolvers; with MP-based ones, wherever the output is not a
+  terminal).
 - The debug statistics returned by the subsolver (problem suffixes
   `flat0_*`, `flat1_*` and `option___*` with `debug=1`) are now reported
   with prefix `sub_`, for example `sub_flat1__lineq`. Before, they
