@@ -255,8 +255,21 @@ def main():
         "--solvers",
         help="comma-separated driver names to update (default: all in DRIVERS); "
              "the others keep their saved data. Example: --solvers gurobi,cpsat")
+    parser.add_argument(
+        "--summary", metavar="FILE",
+        help="write which drivers updated the tables to FILE "
+             "(the documentation build shows it with --show-summary at the end)")
+    parser.add_argument(
+        "--show-summary", metavar="FILE",
+        help="only print FILE written by --summary")
     args = parser.parse_args()
+    if args.show_summary:
+        show_summary(args.show_summary)
+        return
+    if args.summary and os.path.exists(args.summary):
+        os.remove(args.summary)   # no stale summary if this run fails
     selected = args.solvers.split(",") if args.solvers else list(DRIVERS)
+    updated = []                  # "<driver>: <where from> (<date>)"
 
     data = {}
     if os.path.exists(DATA):
@@ -279,6 +292,7 @@ def main():
                 data[s] = entry
                 changed = True
                 print(f"{s}: updated from source ({date})")
+                updated.append(f"{s}: source code ({date})")
             continue
         if not exe:
             print(f"{s}: not on PATH, kept")
@@ -298,6 +312,7 @@ def main():
             data[s] = {"date": date, "banner": banner, "cons": cons}
             changed = True
             print(f"{s}: updated from {exe} ({date})")
+            updated.append(f"{s}: {exe} ({date})")
     if changed:
         with open(DATA, "w") as f:
             json.dump({s: data[s] for s in DRIVERS if s in data}, f, indent=1,
@@ -309,6 +324,28 @@ def main():
             print(f"{s}: not in GROUPS, not shown: {', '.join(missing)}")
     if data:
         write_table(data)
+    if args.summary:
+        write_summary(args.summary, updated)
+
+
+def write_summary(path, updated):
+    """Which drivers updated the tables: shown at the end of a doc build."""
+    tables = os.path.normpath(os.path.join(TABLES, "acceptance.*"))
+    if updated:
+        text = (f"Acceptance tables {tables} UPDATED with the drivers found "
+                "on PATH (not necessarily those of this build):\n"
+                + "".join(f"  {u}\n" for u in updated))
+    else:
+        text = (f"Acceptance tables {tables} unchanged: no driver on PATH "
+                "gave newer or different data.\n")
+    with open(path, "w") as f:
+        f.write(text)
+
+
+def show_summary(path):
+    if os.path.exists(path):
+        with open(path) as f:
+            print(f.read(), end="")
 
 
 if __name__ == "__main__":
