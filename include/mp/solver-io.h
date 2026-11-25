@@ -5,6 +5,7 @@
  * Support for .nl/.sol/console I/O requiring a (Basic)Solver
  */
 
+#include <cstring>
 #include <functional>
 
 #include "mp/arrayref.h"
@@ -290,6 +291,23 @@ class AppSolutionHandlerImpl :
   /// Specialize HandleSolution()
   void HandleSolution(int status, fmt::CStringRef message, const double *values,
                       const double *dual_values, double obj_value);
+
+ private:
+  /// The solve message with the banner ("Name x.y: ") erased, or ""
+  /// if the message does not start with the banner.
+  /// The banner is still alone on the output line.  As ASL's write_sol
+  /// does, the message gets one backspace per banner character: AMPL
+  /// then does not print the message's copy of the banner, and its
+  /// solve_message has no backspaces.  Backspaces printed to the output
+  /// itself erased the banner only on a terminal; in a notebook, an IDE
+  /// or a log the banner appeared twice.
+  std::string EraseBanner(fmt::CStringRef message) {
+    std::string banner = fmt::format("{}: ", this->solver().long_name());
+    if (banner.size() != banner_size_
+        || std::strncmp(message.c_str(), banner.c_str(), banner.size()))
+      return {};
+    return std::string(banner_size_, '\b') + message.c_str();
+  }
 };
 
 
@@ -308,16 +326,13 @@ void AppSolutionHandlerImpl<Solver, PB, Writer>::HandleSolution(
   Solver &solver = this->solver();
   int wantsol = solver.wantsol();
   if (solver.ampl_flag() || (wantsol & Solver::WRITE_SOL_FILE) != 0) {
-    // "Erase" the banner so that it is not duplicated when printing
-    // the solver message.
+    std::string msg_bs;
     if (solver.ampl_flag() && banner_size_ != 0
-        && !solver.output_handler()->has_output) {   // #233
-      fmt::MemoryWriter w;
-      w << fmt::pad("", banner_size_, '\b');
-      solver.Print("{}", w.c_str());
-    }
+        && !solver.output_handler()->has_output)   // #233
+      msg_bs = EraseBanner(message);
     SolutionWriterImpl<Solver, PB, Writer>::HandleSolution(
-          status, message, values, dual_values, obj_value);
+          status, msg_bs.empty() ? message : msg_bs.c_str(),
+          values, dual_values, obj_value);
   }
   if (solver.ampl_flag())
     return;
