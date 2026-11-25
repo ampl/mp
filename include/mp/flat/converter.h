@@ -1219,10 +1219,13 @@ public:
   pre::ValueNode& GetVarValueNode()
   { return GetValuePresolver().GetTargetNodes().GetVarValues().MakeSingleKey(); }
 
-  /// Constraint type's Value Node
+  /// Constraint type's Value Node.
+  /// The keepers are members of this class: no cast to Impl, which item
+  /// converters call during the construction of this class, before Impl
+  /// exists (a downcast to the unconstructed Impl is undefined behavior).
   template <class Constraint>
   pre::ValueNode& GetValueNode(Constraint*)
-  { return GET_CONSTRAINT_KEEPER(Constraint).GetValueNode(); }
+  { return GetConstraintKeeper((Constraint*)nullptr).GetValueNode(); }
 
   /// Reuse ValuePresolver's source nodes for all objectives
   pre::ValueNode& GetObjValueSourceNode()
