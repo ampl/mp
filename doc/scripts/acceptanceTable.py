@@ -248,7 +248,7 @@ def write_table(data):
             old = f.read()
     with open(TABLE, "w") as f:
         f.write(text)
-    return text != old
+    return None if old is None else text != old   # None: a new file
 
 
 def main():
@@ -328,7 +328,7 @@ def main():
         missing = sorted(set(data[s]["cons"]) - known)
         if missing:
             print(f"{s}: not in GROUPS, not shown: {', '.join(missing)}")
-    table_changed = bool(data) and write_table(data)
+    table_changed = write_table(data) if data else False
     if args.summary:
         write_summary(args.summary, updated, table_changed)
 
@@ -336,7 +336,9 @@ def main():
 def write_summary(path, updated, table_changed):
     """Which drivers updated the tables: shown at the end of a doc build."""
     tables = os.path.normpath(os.path.join(TABLES, "acceptance.*"))
-    if not updated and table_changed:
+    if not updated and table_changed is None:
+        text = f"Acceptance table {os.path.normpath(TABLE)} written.\n"
+    elif not updated and table_changed:
         text = (f"Acceptance table {os.path.normpath(TABLE)} REWRITTEN "
                 "(its layout in acceptanceTable.py changed); driver data "
                 "unchanged.\n")
@@ -357,8 +359,22 @@ def show_summary(path):
             print(f.read(), end="")
 
 
+def summary_path(argv):
+    """The --summary FILE of the command line, if any (for errors)."""
+    for i, a in enumerate(argv):
+        if a == "--summary" and i + 1 < len(argv):
+            return argv[i + 1]
+        if a.startswith("--summary="):
+            return a.split("=", 1)[1]
+    return None
+
+
 if __name__ == "__main__":
     try:
         main()
     except Exception as e:  # never fail a documentation build
         print(f"acceptanceTable.py: {e}", file=sys.stderr)
+        path = summary_path(sys.argv[1:])
+        if path:          # say so at the end of the build too
+            with open(path, "w") as f:
+                f.write(f"Acceptance tables NOT refreshed: {e}\n")
