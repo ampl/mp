@@ -259,6 +259,11 @@ public:
   /// This name is used in startup "banner".
   const char *long_name() const { return long_name_.c_str(); }
 
+  /// Text that a subprocess printed after this solver's banner and that
+  /// is still alone at the end of the output line; the solve message
+  /// repeats it after the banner.  MP2NL: the subsolver's banner.
+  virtual std::string PendingOutputInSolveMessage() const { return {}; }
+
   /// Returns the executable path.
   const char *exe_path() const { return exe_path_.c_str(); }
   void set_exe_path(const char* p) { exe_path_ = p; }

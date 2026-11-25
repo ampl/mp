@@ -5,9 +5,12 @@ Summary of recent updates to the AMPL MP Library
 
 - Fix: the solver's name and version, for example "COPT 9.0.0: ", appeared
   twice at the start of the solve message wherever the output is not a
-  terminal (notebooks, IDEs, logs, captured output). Drivers now ask AMPL to
-  skip the repeated name in the solve message, as the ASL-based drivers do;
-  the output in a terminal and AMPL's `solve_message` are unchanged.
+  terminal (notebooks, IDEs, logs, captured output). When AMPL runs the
+  solver, drivers now ask AMPL to skip the repeated name in the solve
+  message, as the ASL-based drivers do; the output in a terminal and AMPL's
+  `solve_message` are unchanged. Run by another program with `-AMPL` (for
+  example, Pyomo), drivers no longer print backspaces, and the message in
+  the solution file has none.
 - Fix: some errors, for example reading a corrupt NL file, were reported
   with solve result 1 (`solved`), so that AMPL kept the previous values of
   the variables as if they were a solution. Such errors are now reported as

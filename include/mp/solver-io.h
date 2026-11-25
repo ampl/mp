@@ -5,6 +5,7 @@
  * Support for .nl/.sol/console I/O requiring a (Basic)Solver
  */
 
+#include <cstdlib>
 #include <cstring>
 #include <functional>
 
@@ -280,33 +281,53 @@ class AppSolutionHandlerImpl :
     public SolutionWriterImpl<Solver, ProblemBuilder, Writer> {
  private:
   unsigned banner_size_;
+  long ampl_version_;   // 0 if not known
 
  public:
   AppSolutionHandlerImpl(fmt::StringRef stub, Solver &s,
                     ProblemBuilder &b,
                     ArrayRef<long> options, unsigned banner_size)
   : SolutionWriterImpl<Solver, ProblemBuilder, Writer>
-      (stub, s, b, options),  banner_size_(banner_size) {}
+      (stub, s, b, options),  banner_size_(banner_size),
+      ampl_version_(AMPLVersion(options)) {}
 
   /// Specialize HandleSolution()
   void HandleSolution(int status, fmt::CStringRef message, const double *values,
                       const double *dual_values, double obj_value);
 
  private:
-  /// The solve message with the banner ("Name x.y: ") erased, or ""
-  /// if the message does not start with the banner.
-  /// The banner is still alone on the output line.  As ASL's write_sol
-  /// does, the message gets one backspace per banner character: AMPL
-  /// then does not print the message's copy of the banner, and its
-  /// solve_message has no backspaces.  Backspaces printed to the output
-  /// itself erased the banner only on a terminal; in a notebook, an IDE
-  /// or a log the banner appeared twice.
+  /// The banner ("Name x.y: ") and, possibly, text a subprocess printed
+  /// after it (MP2NL: the subsolver's banner) are still alone on the
+  /// output line, and the solve message repeats them.  As ASL's
+  /// write_sol does when AMPL (version 20020401 or later) runs the
+  /// solver: return the message with one backspace per repeated
+  /// character.  AMPL then skips that many characters when printing the
+  /// message, and its solve_message has no backspaces.  Return "" when
+  /// AMPL does not run the solver (another program reads the .sol file,
+  /// as Pyomo does) or the message does not start with that text; the
+  /// message then follows the banner as it is.
   std::string EraseBanner(fmt::CStringRef message) {
-    std::string banner = fmt::format("{}: ", this->solver().long_name());
-    if (banner.size() != banner_size_
-        || std::strncmp(message.c_str(), banner.c_str(), banner.size()))
+    Solver &solver = this->solver();
+    if (ampl_version_ < 20020401 || solver.output_handler()->has_output)
       return {};
-    return std::string(banner_size_, '\b') + message.c_str();
+    std::string printed = fmt::format("{}: ", solver.long_name())
+        + solver.PendingOutputInSolveMessage();
+    if (std::strncmp(message.c_str(), printed.c_str(), printed.size()))
+      return {};
+    return std::string(printed.size(), '\b') + message.c_str();
+  }
+
+  /// The version of AMPL that wrote the NL file (its 5th option) or
+  /// runs the solver (environment variable "version", as
+  /// "AMPL Version 20261117 ..."); 0 if not known.  As ASL's
+  /// AMPL_version_ASL.
+  static long AMPLVersion(ArrayRef<long> options) {
+    if (options.size() >= 5)
+      return options[4];
+    const char* s = std::getenv("version");
+    if (!s || !(s = std::strstr(s, "Version ")))
+      return 0;
+    return std::strtol(s + 8, nullptr, 10);
   }
 };
 
@@ -327,8 +348,7 @@ void AppSolutionHandlerImpl<Solver, PB, Writer>::HandleSolution(
   int wantsol = solver.wantsol();
   if (solver.ampl_flag() || (wantsol & Solver::WRITE_SOL_FILE) != 0) {
     std::string msg_bs;
-    if (solver.ampl_flag() && banner_size_ != 0
-        && !solver.output_handler()->has_output)   // #233
+    if (solver.ampl_flag())   // #233
       msg_bs = EraseBanner(message);
     SolutionWriterImpl<Solver, PB, Writer>::HandleSolution(
           status, msg_bs.empty() ? message : msg_bs.c_str(),
