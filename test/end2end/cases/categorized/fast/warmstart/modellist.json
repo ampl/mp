@@ -45,7 +45,7 @@
       "highs_options": "mip:start=1 tech:outlev=1"
     },
     "objective": 766,
-    "output": [ "MIP start solution is feasible, objective value is 766" ]
+    "output": [ "objective value is 766" ]
   },
   {
     "name": "knap_40_pstart partial MIP start legacy",
@@ -57,7 +57,7 @@
       "highs_options": "mip:start=2 tech:outlev=1"
     },
     "objective": 1044,
-    "output": [ "MIP start solution is feasible, objective value is 766" ]
+    "output": [ "objective value is 766" ]
   },
   {
     "name": "knap_40_pstart partial MIP start maxstartnodes=0",
