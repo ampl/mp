@@ -4,45 +4,6 @@ Summary of recent updates to HiGHS for AMPL
 
 ## 20261126
 - Updated to HiGHS 1.16.0.
-
-## 20261029
-- Fix an assertion failure in Windows Debug builds during MIP basis
-  recovery.
-- A quadratic objective with integer variables (MIQP, which HiGHS
-  cannot solve) is reported as such, suggesting *cvt:quadobj=0*;
-  before, the message was "argument index out of range".
-- Emulate *mip:basis* for linear algebraic MIPs, with separate
-  *mip:basis:timelimit* and *mip:basis:iterlimit* options.
-- Options aligned with HiGHS 1.15.1: corrected value tables and
-  defaults of *alg:simplex* (2 = SIP, 3 = PAMI, default 1),
-  *alg:simplexscale* (0..4, default 2), *pre:pdlpscaling_mode*
-  (default 5), *iis:strategy* (4 = irreducible IIS, 8 = column
-  priority), *bar:crossover* (default on), *mip:ipmsolver*
-  (values choose/ipx/hipo); corrected ranges and descriptions
-  (*alg:kkt_tolerance* semantics, *tech:threads*, *mip:lpagelimit*,
-  scaling exponents, infinite-value thresholds).
-- A value rejected by HiGHS now aborts with a message naming the AMPL
-  option, the value and the HiGHS diagnostic (valid range);
-  *alg:method=hipo* reports clearly when the library lacks HiPO.
-- MP-style option names: *alg:kkttol*, *pdlp:scaling*, *pdlp:restart*,
-  *pdlp:restartmethod*, *pdlp:stepsize*, *pdlp:opttol*, *pdlp:ruiziter*,
-  *lim:pdlpiter*, *lim:qpiter*, *qp:nullspacelim*, *qp:regularization*,
-  *bar:hiposystem*, *bar:hipoparallel*, *bar:hipoordering*, *lim:iistime*,
-  *bar:centring*, *bar:maxcentringsteps*, *bar:centringratiotol*,
-  *mip:symmetry*; standard synonyms *lim:iter*, *bar:iterlim*, *lim:sol*.
-  All previous spellings remain accepted.
-- New options from HiGHS 1.15.1: *alg:primalrestol*, *alg:opttol*,
-  *alg:simplexupdatelim*, *alg:simplexminconcurrency*,
-  *alg:simplexmaxconcurrency*, *mip:restart*, *mip:maxstartnodes*,
-  *mip:poolagelimit*, *mip:nodecuts*, *mip:rootpresolveonly*,
-  *mip:heur:feasjump*, *mip:heur:rins*, *mip:heur:rens*,
-  *mip:heur:rootredcost*, *mip:heur:ziround*, *mip:heur:shifting*,
-  *tech:miplogfreq*, *tech:logtoconsole*, *tech:timelesslog*,
-  *bar:hipoblocksize*, *qp:hotstart*.
-- Partial MIP starts are passed to HiGHS natively, which completes
-  them by a limited MIP search (*mip:maxstartnodes*); *mip:start=2*
-  selects the previous driver-side completion by fixing and solving.
-  A start rejected by HiGHS gives a warning instead of aborting.
 - *mip:basis* emulation: the fixed LP respects user options (tolerances,
   presolve, seed, ...), except the algorithm, limits and file output.
 - IIS computation (*iis:find=1*, suffix .iis) via HiGHS's IIS finder;
@@ -55,8 +16,6 @@ Summary of recent updates to HiGHS for AMPL
   penalties from *alg:lbpen/ubpen/rhspen* or suffixes .lbpen/.ubpen/.rhspen,
   negative = no violation allowed);
   the other modes are not available in HiGHS and are rejected.
-- Option *obj:blend* removed: it had no effect because HiGHS's native
-  multi-objective handling is not used (MP emulates multiple objectives).
 
 
 ## 20260813
