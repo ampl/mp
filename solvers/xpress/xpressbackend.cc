@@ -620,6 +620,9 @@ void XpressmpBackend::CopyFixedModel(bool load_incumbent) {
   XPRESSMP_CCALL(XPRScreateprob(&copy));
   model_fixed_ = copy;
   XPRESSMP_CCALL(XPRScopyprob(copy, lp(), "ampl-fixed"));
+  // After a MIP stopped at a limit the copy is still presolved, where
+  // XPRSloadmipsol() fails (?902)
+  XPRSpostsolve(copy);
   XPRESSMP_CCALL(XPRScopycontrols(copy, lp()));
   // Callbacks are not copied with the problem. Give the copy the driver's
   // message callback only, so that the fixed solve and warnings about the

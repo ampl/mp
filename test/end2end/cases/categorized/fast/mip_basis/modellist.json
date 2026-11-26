@@ -691,6 +691,18 @@
     }
   },
   {
+    "name": "fixed_mip_limit xpress",
+    "files": ["fixed_mip_limit.mod"],
+    "tags": ["linear", "integer", "fixmodel"],
+    "comment": "MIP stopped at its first solution: the fixed LP still runs and gives a basis (its copy refused the incumbent, ?902)",
+    "solvers": ["xpress"],
+    "options": { "xpress_options": "mip:basis=1 lim:mipsol=1" },
+    "values": {
+      "if match(solve_message, 'failed') > 0 then 1 else 0": 0,
+      "card({j in 1..n: x[j].sstatus == 'none'})": 0
+    }
+  },
+  {
     "name": "fixed_mip_multiobj",
     "files": ["fixed_mip_multiobj.mod"],
     "tags": ["linear", "integer", "fixmodel", "multiobj"],
