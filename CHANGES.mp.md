@@ -118,7 +118,8 @@ Summary of recent updates to the AMPL MP Library
   by the converter, become contradictory. Default 0 (as before): a warning
   is given and the bounds are passed on to the solver; Xpress, SCIP and
   COPT then stop with an error if such a variable is an indicator binary
-  ("not a binary variable").
+  ("not a binary variable"). MP2NL uses default 1, because several NL
+  subsolvers stop with an error on such bounds.
 - The bounds of integer and implied-integer variables are rounded inwards;
   option `cvt:pre:roundintbnd` is the tolerance (default 1e-9, at least 16
   units in the last place of the bound; negative: no rounding).

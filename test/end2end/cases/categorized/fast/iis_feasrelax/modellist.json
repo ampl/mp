@@ -339,6 +339,24 @@
     "values": { "solve_result": "infeasible" }
   },
   {
+    "name": "infeasvarbnd_01 MP2NL default",
+    "files": ["infeasvarbnd_01.mod"],
+    "tags": [ "linear" ],
+    "solvers": ["conopt", "lindoglobal", "xpressaslmp2nl", "knitro", "baron"],
+    "comment": "MP2NL's default cvt:pre:infeasvarbnd=1 (no mp_options): MP2NL declares infeasibility; with 0, CONOPT, LINDO Global and Xpress ASL fail on the bounds [3, 2]",
+    "options": { "presolve": 0 },
+    "values": { "solve_result": "infeasible" }
+  },
+  {
+    "name": "infeasvarbnd_01 MP2NL infeasvarbnd=0",
+    "files": ["infeasvarbnd_01.mod"],
+    "tags": [ "linear" ],
+    "solvers": ["knitro", "baron"],
+    "comment": "cvt:pre:infeasvarbnd=0 through MP2NL: the bounds [3, 2] are passed on; Knitro and BARON report infeasibility themselves",
+    "options": { "presolve": 0, "mp_options": "cvt:pre:infeasvarbnd=0" },
+    "values": { "solve_result": "infeasible" }
+  },
+  {
     "name": "feasrelax_aux_01 feasrelax=1",
     "files": ["feasrelax_aux_01.mod"],
     "tags": [ "linear", "feasrelax" ],

@@ -203,6 +203,12 @@ public:
   /// @note Option *cvt:expr:nlreif*.
   static int NLReifLevelDefault() { return 1; }
 
+  /// Default of option *cvt:pre:infeasvarbnd*: whether the
+  /// converter declares the model infeasible when the bounds
+  /// of a variable become contradictory (lower > upper).
+  /// 0: contradictory bounds are passed on to the solver.
+  static int DeclareInfeasVarBndDefault() { return 0; }
+
   /// Default of option *cvt:pre:auxint*: whether auxiliary
   /// variables with implied integrality (if-then-else, count, ...)
   /// are submitted as integer. 1 for solvers without continuous

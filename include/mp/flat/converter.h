@@ -1889,7 +1889,7 @@ private:
     int preprocessInequalityRhs_ = 1;
     int preprocessInequalityResultBounds_ = 1;
     int preprocessIneq2BndEq_ = 1;
-    int declareInfeasVarBnd_ = 0;
+    int declareInfeasVarBnd_ = ModelAPI::DeclareInfeasVarBndDefault();
     int preprocessIndFixedFlag_ = 1;
     int preprocessIneq2Related_ = 1;
     int preprocessVarBnd_ = 3;
@@ -2225,7 +2225,8 @@ private:
                        GetModel().if_make_fixed_vars_continuous(), 0, 1);
 
     GetEnv().AddOption("cvt:pre:infeasvarbnd infeasvarbnd",
-                       "0*/1: Whether to declare the model infeasible in "
+                       fmt::format(
+                       "0/1: Whether to declare the model infeasible in "
                        "the converter when the bounds of a variable become "
                        "contradictory (lower > upper), also best-known "
                        "bounds deduced by the converter. With 0, a warning "
@@ -2235,7 +2236,11 @@ private:
                        "(alg:feasrelax) then concerns the deduced bounds "
                        "rather than those constraints; some solvers (e.g., "
                        "Xpress, SCIP, COPT) fail with an error if such a "
-                       "variable is an indicator binary.",
+                       "variable is an indicator binary. MP2NL: default 1, "
+                       "because several NL subsolvers fail with an error on "
+                       "such bounds; set 0 to have the subsolver relax the "
+                       "model or compute an IIS. Default {}.",
+                       options_.declareInfeasVarBnd_).c_str(),
                        options_.declareInfeasVarBnd_, 0, 1);
 
     GetEnv().AddOption("cvt:pre:indfixedflag indfixedflag",

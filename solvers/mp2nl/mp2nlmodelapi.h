@@ -125,6 +125,14 @@ public:
   /// does not support logical defined variables.
   static int NLReifLevelDefault() { return 1; }
 
+  /// Contradictory variable bounds: declare the model
+  /// infeasible in MP2NL (cvt:pre:infeasvarbnd=1).
+  /// Several NL subsolvers (CONOPT, LINDO Global, Xpress ASL)
+  /// fail with an error on lower > upper instead of
+  /// reporting infeasibility. Users who want the subsolver's
+  /// relaxation or IIS set cvt:pre:infeasvarbnd=0.
+  static int DeclareInfeasVarBndDefault() { return 1; }
+
 
   //////////////////////////// GENERAL CONSTRAINTS ////////////////////////////
   /// Handle flat constraints: inherit basic API
