@@ -352,6 +352,7 @@ void XpressmpBackend::DoWriteSolution(const std::string& name) {
 
 void XpressmpBackend::SetInterrupter(mp::Interrupter *inter) {
   interrupted_ = false;
+  solve_started_ = false;
   inter->SetHandler(InterruptXpressmp, this);
   if (inter->Stop())                 // a Ctrl-C during the model input
     interrupted_ = true;
@@ -401,9 +402,12 @@ void XpressmpBackend::Solve() {
   fixed_nlp_used_ = false;
   fixed_lp_used_ = false;
   // Xpress ignores an interrupt before the optimization starts, so a
-  // Ctrl-C during the model input would be lost
-  if ((solve_skipped_ = interrupted_))
+  // Ctrl-C during the model input would be lost.  Later passes of the
+  // multi-objective emulation run, as the emulator continues after an
+  // interrupted pass with a feasible point.
+  if ((solve_skipped_ = interrupted_ && !solve_started_))
     return;
+  solve_started_ = true;
   int nsols = 10;
   if (tunebase().size())
     DoXPRESSTune();
