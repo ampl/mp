@@ -84,8 +84,11 @@ public:
   void AddMIPStart(ArrayRef<double> x0, ArrayRef<int> sparsity) override;
   ALLOW_STD_FEATURE(WARMSTART, true)
   /// Called when dual initial values come too: they are ignored
-  void AddPrimalDualStart(Solution sol) override
-  { AddMIPStart(sol.primal, sol.spars_primal); }
+  /// Primal values become hints in AddMIPStart(), which
+  /// InputStartValues() calls too (CanBeMIP(), MIPSTART);
+  /// adding them here would duplicate them
+  int AddPrimalDualStart(Solution sol) override
+  { return sol.primal.size() ? 1 : 0; }
 
   /// Model export (adds options tech:writeprob, tech:writeprobindex):
   /// the CP-SAT model in protobuf text format

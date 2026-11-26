@@ -899,12 +899,16 @@ void MP2NLBackend::SetBasis(SolutionBasis basis) {
   ConStatii(constt);
 }
 
-void MP2NLBackend::AddPrimalDualStart(Solution sol)
+int MP2NLBackend::AddPrimalDualStart(Solution sol)
 {
   auto mv = GetValuePresolver().PresolveSolution(
         { sol.primal, sol.dual } );
   auto& x0 = mv.GetVarValues()();
-  y0_ = mv.GetConValues()(CG_Algebraic);
+  // Presolve fills a missing vector with zeros: pass only incoming ones.
+  // Missing primal values have zero sparsity flags and are skipped below.
+  y0_.clear();
+  if (sol.dual.size())
+    y0_ = mv.GetConValues()(CG_Algebraic);
   auto ms = GetValuePresolver().PresolveGenericInt(
       { sol.spars_primal } );
   auto& s0 = ms.GetVarValues()();
@@ -915,6 +919,7 @@ void MP2NLBackend::AddPrimalDualStart(Solution sol)
       x0_.push_back( {i, x0[i]} );
     }
   }
+  return (x0_.size() ? 1 : 0) | (y0_.size() ? 2 : 0);
 }
 
 void MP2NLBackend::AddMIPStart(

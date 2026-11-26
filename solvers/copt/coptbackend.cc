@@ -1793,9 +1793,19 @@ ArrayRef<double> CoptBackend::DRay() {
 }
 
 
-void CoptBackend::AddPrimalDualStart(Solution sol0_unpres) {
-  if (IsMIP())
-    return;
+int CoptBackend::AddPrimalDualStart(Solution sol0_unpres) {
+  // Primal values for a model COPT solves as MIP, or for its nonlinear
+  // solver, are passed by AddMIPStart() (COPT_AddMipStart(),
+  // COPT_SetNLPrimalStart())
+  const int viaMIPStart =
+      sol0_unpres.primal.size() && (HasMIPItems() || HasNLExpressions())
+      ? 1 : 0;
+  if (HasMIPItems())
+    return viaMIPStart;
+  // COPT_SetLpSolution() rejects missing vectors, and presolve would
+  // fill a missing one with zeros
+  if (sol0_unpres.primal.empty() || sol0_unpres.dual.empty())
+    return viaMIPStart;
   auto mv = GetValuePresolver().PresolveSolution(
     { sol0_unpres.primal, sol0_unpres.dual });
   int nvars = NumVars();
@@ -1810,6 +1820,23 @@ void CoptBackend::AddPrimalDualStart(Solution sol0_unpres) {
                                 ne.data(),
                                 pi0.data(),
                                 nv.data()));
+  return 3;
+}
+
+bool CoptBackend::HasMIPItems() const {
+  return getIntAttr(COPT_INTATTR_INTS) > 0
+      || getIntAttr(COPT_INTATTR_BINS) > 0
+      || getIntAttr(COPT_INTATTR_SOSS) > 0
+      || getIntAttr(COPT_INTATTR_INDICATORS) > 0;
+}
+
+bool CoptBackend::HasNLExpressions() const {
+#ifdef COPT_INTATTR_NLELEMS
+  return getIntAttr(COPT_INTATTR_NLELEMS) > 0
+      || getIntAttr(COPT_INTATTR_NLCONSTRS) > 0;
+#else
+  return false;
+#endif
 }
 
 void CoptBackend::AddMIPStart(

@@ -362,7 +362,9 @@ void KnitrompBackend::FinishOptionParsing() {
 
 
 
-void KnitrompBackend::AddPrimalDualStart(Solution sol0_unpres) {
+int KnitrompBackend::AddPrimalDualStart(Solution sol0_unpres) {
+    if (sol0_unpres.primal.empty())   // only primal values are passed;
+        return 0;                     // presolve would fill them with zeros
     auto mv = GetValuePresolver().PresolveSolution(
         { sol0_unpres.primal, sol0_unpres.dual });
     auto& x0 = mv.GetVarValues()();
@@ -373,9 +375,12 @@ void KnitrompBackend::AddPrimalDualStart(Solution sol0_unpres) {
     status = KN_set_var_primal_init_values_all(lp(),
         x0.data());
 
-    if (status)
+    if (status) {
         Print("warmstart: solution is not loaded "
             "because the problem is in presolved status.\n");
+        return 0;
+    }
+    return 1;
 }
 
 

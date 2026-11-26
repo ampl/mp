@@ -531,13 +531,21 @@ void GurobiBackend::ConStatii(ArrayRef<int> cst) {
   GrbSetIntAttrArray(GRB_INT_ATTR_CBASIS, stt);
 }
 
-void GurobiBackend::AddPrimalDualStart(Solution sol0_unpres) {
+int GurobiBackend::AddPrimalDualStart(Solution sol0_unpres) {
   auto mv = GetValuePresolver().PresolveSolution(
         { sol0_unpres.primal, sol0_unpres.dual } );
-  auto& x0 = mv.GetVarValues()();
-  auto& pi0 = mv.GetConValues()(CG_Linear);
-  GrbSetDblAttrArray(GRB_DBL_ATTR_PSTART, x0);
-  GrbSetDblAttrArray(GRB_DBL_ATTR_DSTART, pi0);
+  // Presolve fills a missing vector with zeros: pass only incoming ones.
+  // Gurobi would treat zero DStart as part of a complete start.
+  int passed = 0;
+  if (sol0_unpres.primal.size()) {
+    GrbSetDblAttrArray(GRB_DBL_ATTR_PSTART, mv.GetVarValues()());
+    passed |= 1;
+  }
+  if (sol0_unpres.dual.size()) {
+    GrbSetDblAttrArray(GRB_DBL_ATTR_DSTART, mv.GetConValues()(CG_Linear));
+    passed |= 2;
+  }
+  return passed;
 }
 
 void GurobiBackend::AddMIPStart(

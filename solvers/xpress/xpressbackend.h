@@ -94,7 +94,7 @@ public:
   void SetBasis(SolutionBasis) override;
 
   ALLOW_STD_FEATURE(WARMSTART, true)
-  void AddPrimalDualStart(Solution sol0) override;
+  int AddPrimalDualStart(Solution sol0) override;
   /**
   * MIP warm start
   **/

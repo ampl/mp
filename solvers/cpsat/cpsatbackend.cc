@@ -318,8 +318,8 @@ void CpsatBackend::AddMIPStart(ArrayRef<double> x0_unpres,
   const auto x0 = mv.GetVarValues()();
   const auto s0 = ms.GetVarValues()();
   auto* d = data();
-  // MP can pass a start twice (AddPrimalDualStart() forwards here, and
-  // AddMIPStart() follows): CP-SAT rejects duplicate hints
+  // Do not add hints twice if AddMIPStart() is called again:
+  // CP-SAT rejects duplicate hints
   d->builder.ClearHints();
   const auto n = std::min( { x0.size(), s0.size(), d->vars.size() } );
   for (size_t i = 0; i < n; ++i) {

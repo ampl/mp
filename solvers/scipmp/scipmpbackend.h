@@ -83,7 +83,7 @@ public:
   * set primal/dual initial guesses for continuous case
   **/
   ALLOW_STD_FEATURE( WARMSTART, true )
-  void AddPrimalDualStart(Solution sol) override;
+  int AddPrimalDualStart(Solution sol) override;
   /**
   * MIP warm start
   **/

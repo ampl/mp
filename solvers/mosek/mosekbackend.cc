@@ -1618,16 +1618,25 @@ void MosekBackend::SetBasis(SolutionBasis basis) {
   ConStatii(constt);
 }
 
-void MosekBackend::AddPrimalDualStart(Solution sol)
+int MosekBackend::AddPrimalDualStart(Solution sol)
 {
   solToFetch_ = GetSolutionTypeForStart();
   auto mv = GetValuePresolver().PresolveSolution(
         { sol.primal, sol.dual } );
   auto x0 = mv.GetVarValues()();
 	auto pi0 = mv.GetConValues()(CG_Algebraic);
-  MOSEK_CCALL(MSK_putxx(lp(), solToFetch_, (MSKrealt *)x0.data()));
-  if (MSK_SOL_ITG != solToFetch_)        // the integer solution has no duals
+  // Presolve fills a missing vector with zeros: pass only incoming ones
+  int passed = 0;
+  if (sol.primal.size()) {
+    MOSEK_CCALL(MSK_putxx(lp(), solToFetch_, (MSKrealt *)x0.data()));
+    passed |= 1;
+  }
+  if (sol.dual.size()
+      && MSK_SOL_ITG != solToFetch_) {   // the integer solution has no duals
     MOSEK_CCALL(MSK_puty(lp(), solToFetch_, (MSKrealt *)pi0.data()));
+    passed |= 2;
+  }
+  return passed;
 }
 
 void MosekBackend::AddMIPStart(

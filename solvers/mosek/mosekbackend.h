@@ -76,7 +76,7 @@ public:
   // LP hotstart
   // Set primal/dual initial guesses for continuous case
   ALLOW_STD_FEATURE(WARMSTART, true)
-  void AddPrimalDualStart(Solution) override;
+  int AddPrimalDualStart(Solution) override;
 
   // MIP hotstart
   ALLOW_STD_FEATURE( MIPSTART, true )

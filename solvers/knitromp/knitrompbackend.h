@@ -60,7 +60,7 @@ public:
   USING_STD_FEATURES;
 
   ALLOW_STD_FEATURE(WARMSTART, true)
-  void AddPrimalDualStart(Solution sol0) override;
+  int AddPrimalDualStart(Solution sol0) override;
 
 
   ALLOW_STD_FEATURE(WRITE_PROBLEM, true)

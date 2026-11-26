@@ -632,7 +632,7 @@ void HighsBackend::AddMIPStart(ArrayRef<double> primal, ArrayRef<int> sparsity) 
   AddPrimalDualStart(std::move(start));
 }
 
-void HighsBackend::AddPrimalDualStart(Solution sol0_unpres) {
+int HighsBackend::AddPrimalDualStart(Solution sol0_unpres) {
   auto mv = GetValuePresolver().PresolveSolution(
     { sol0_unpres.primal, sol0_unpres.dual });
   auto ms = GetValuePresolver().PresolveGenericInt(
@@ -640,6 +640,10 @@ void HighsBackend::AddPrimalDualStart(Solution sol0_unpres) {
   auto x0 = mv.GetVarValues()();
   auto s0 = ms.GetVarValues()();
   auto pi0 = mv.GetConValues()(CG_Linear);
+  // Presolve fills a missing vector with zeros: pass only incoming ones
+  const double* row_dual = sol0_unpres.dual.size() ? pi0.data() : NULL;
+  if (sol0_unpres.primal.empty())             // dual values alone
+    return PassStart(NULL, row_dual) ? 2 : 0;
   if (s0.size() < (size_t)NumVars())
     s0.resize(NumVars());
   if (x0.size() < (size_t)NumVars())
@@ -664,7 +668,7 @@ void HighsBackend::AddPrimalDualStart(Solution sol0_unpres) {
     if (!fAllMissingAreRealVars) {
       if (2 == storedOptions_.mipstart_ || !loader().Highs_setSparseSolution) {
         if (!CompleteStartByFixing(x0, s0))
-          return;
+          return 0;
       } else {
         std::vector<int> idx;
         std::vector<double> val;
@@ -675,20 +679,30 @@ void HighsBackend::AddPrimalDualStart(Solution sol0_unpres) {
           }
         auto res = loader().Highs_setSparseSolution(
               lp(), (int)idx.size(), idx.data(), val.data());
-        if (kHighsStatusError == res)
+        if (kHighsStatusError == res) {
           AddWarning("MIPSTART",
                      "HiGHS rejected the partial MIP start "
                      "(a value may be outside the variable bounds)");
-        return;
+          return 0;
+        }
+        return 1;
       }
     }
   }
-  auto res = loader().Highs_setSolution(lp(), x0.data(), NULL, NULL,
-                                        pi0.empty() ? NULL : pi0.data());
-  if (kHighsStatusError == res)
+  if (!PassStart(x0.data(), row_dual))
+    return 0;
+  return row_dual ? 3 : 1;
+}
+
+bool HighsBackend::PassStart(const double* col_value, const double* row_dual) {
+  auto res = loader().Highs_setSolution(lp(), col_value, NULL, NULL, row_dual);
+  if (kHighsStatusError == res) {
     AddWarning("WARMSTART",
                "HiGHS rejected the starting point "
                "(a value may be outside the variable bounds)");
+    return false;
+  }
+  return true;
 }
 
 bool HighsBackend::CompleteStartByFixing(std::vector<double>& x0,

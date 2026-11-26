@@ -434,9 +434,11 @@ void BaronmpBackend::InitCustomOptions() {
                    } );     
 }
 
-void BaronmpBackend::AddPrimalDualStart(Solution sol0_unpres) {
-  if (IsMIP())
-    return;
+int BaronmpBackend::AddPrimalDualStart(Solution sol0_unpres) {
+  if (sol0_unpres.primal.empty())       // BARON takes primal values only
+    return 0;
+  if (HasUnfixedIntVars())              // AddMIPStart() writes them
+    return 1;
   auto mv = GetValuePresolver().PresolveSolution(
         { sol0_unpres.primal } );
   auto x0 = mv.GetVarValues()();
@@ -445,12 +447,16 @@ void BaronmpBackend::AddPrimalDualStart(Solution sol0_unpres) {
     for(int i=0; i<x0.size(); i++)
     writeBaron("{}: {};\n", lp()->varNames[i], x0[i]);
     writeBaron("}\n");
+    return 1;
   }
+  return 0;
 }
 
 void BaronmpBackend::AddMIPStart(
     ArrayRef<double> x0_unpres, ArrayRef<int> s0_unpres) {
-    if (!IsMIP())
+    // For models with integer variables only (IsMIP() is always false);
+    // AddPrimalDualStart() writes the starting point of continuous models
+    if (!HasUnfixedIntVars())
       return;
     auto mv = GetValuePresolver().PresolveSolution( { x0_unpres } );
     auto ms = GetValuePresolver().PresolveGenericInt( { s0_unpres } );

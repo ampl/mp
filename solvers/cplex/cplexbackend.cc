@@ -349,13 +349,19 @@ namespace mp {
     VarConStatii(varstt, constt);
   }
 
-  void CplexBackend::AddPrimalDualStart(Solution sol0_unpres) {
+  int CplexBackend::AddPrimalDualStart(Solution sol0_unpres) {
     auto mv = GetValuePresolver().PresolveSolution(
       { sol0_unpres.primal, sol0_unpres.dual });
     auto& x0 = mv.GetVarValues()();
     auto& pi0 = mv.GetConValues()(CG_Linear);
-    CPXcopystart(env(), lp(), nullptr, nullptr, x0.data(), nullptr,
-      nullptr, pi0.data());
+    // Presolve fills a missing vector with zeros: pass only incoming ones
+    const int passed = (sol0_unpres.primal.size() ? 1 : 0)
+        | (sol0_unpres.dual.size() ? 2 : 0);
+    if (CPXcopystart(env(), lp(), nullptr, nullptr,
+          (1 & passed) ? x0.data() : nullptr, nullptr,
+          nullptr, (2 & passed) ? pi0.data() : nullptr))
+      return 0;                            // e.g., not applicable
+    return passed;
   }
 
   void CplexBackend::AddMIPStart(

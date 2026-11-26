@@ -95,7 +95,13 @@ public:
   * set primal/dual initial guesses for continuous case
   **/
   ALLOW_STD_FEATURE(WARMSTART, true)
-  void AddPrimalDualStart(Solution sol0) override;
+  int AddPrimalDualStart(Solution sol0) override;
+  /// Whether COPT solves the model as MIP: integer variables
+  /// as passed to COPT, SOS or indicator constraints.
+  /// (IsMIP() reflects the MIP status, unknown before solve.)
+  bool HasMIPItems() const;
+  /// Whether the model has nonlinear expressions
+  bool HasNLExpressions() const;
 
   /**
   * MIP warm start

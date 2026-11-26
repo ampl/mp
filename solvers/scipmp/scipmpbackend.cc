@@ -1437,8 +1437,12 @@ void ScipBackend::SetBasis(SolutionBasis basis) {
   ConStatii(constt);
 }
 
-void ScipBackend::AddPrimalDualStart(Solution sol)
+int ScipBackend::AddPrimalDualStart(Solution sol)
 {
+  if (sol.primal.empty())   // only primal values are passed; presolve
+    return 0;               // would fill them with zeros
+  if (sol.dual.empty())     // AddMIPStart() passes them as a partial
+    return 1;               // solution; here they would get zeros
   auto mv = GetValuePresolver().PresolveSolution(
         { sol.primal, sol.dual } );
   auto x0 = mv.GetVarValues()();
@@ -1450,6 +1454,7 @@ void ScipBackend::AddPrimalDualStart(Solution sol)
   SCIP_CCALL( SCIPsetSolVals(getSCIP(), solution, getPROBDATA()->nvars, getPROBDATA()->vars, x0.data()) );
 
   SCIP_CCALL( SCIPaddSolFree(getSCIP(), &solution, &keep) );
+  return 1;        // passed; SCIP may still discard it (keep==FALSE)
 }
 
 void ScipBackend::AddMIPStart(ArrayRef<double> x0, ArrayRef<int> sparsity) {

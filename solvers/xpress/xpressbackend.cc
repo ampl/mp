@@ -2980,23 +2980,32 @@ pre::ValueMapInt XpressmpBackend::ConsIIS() {
            { CG_General, iis_gencon }}};
 }
 
-void XpressmpBackend::AddPrimalDualStart(Solution sol0_unpres) {
+int XpressmpBackend::AddPrimalDualStart(Solution sol0_unpres) {
   auto mv = GetValuePresolver().PresolveSolution(
     { sol0_unpres.primal, sol0_unpres.dual });
   auto x0 = mv.GetVarValues()();
   auto pi0 = mv.GetConValues()(CG_Algebraic);
+  // Presolve fills a missing vector with zeros: pass only incoming ones
+  int passed = (sol0_unpres.primal.size() ? 1 : 0)
+      | (sol0_unpres.dual.size() ? 2 : 0);
   // XPRSloadlpsol reads one value per Xpress column and row; the rows
   // are exactly the CG_Algebraic group (see XpressmpModelAPI)
-  if (!RowVectorMatches(pi0.size(), "Primal-dual start"))
-    return;
+  if ((2 & passed) && !RowVectorMatches(pi0.size(), "Dual start"))
+    passed &= ~2;
+  if (!passed)
+    return 0;
   x0.resize(NumVars());
 
   int status;
-  XPRESSMP_CCALL(XPRSloadlpsol(lp(), x0.data(), NULL,
-    pi0.data(), NULL, &status));
-  if (status)
+  XPRESSMP_CCALL(XPRSloadlpsol(lp(),
+    (1 & passed) ? x0.data() : NULL, NULL,
+    (2 & passed) ? pi0.data() : NULL, NULL, &status));
+  if (status) {
     Print("warmstart: solution is not loaded "
           "because the problem is in presolved status.\n");
+    return 0;
+  }
+  return passed;
 }
 
 void XpressmpBackend::AddMIPStart(

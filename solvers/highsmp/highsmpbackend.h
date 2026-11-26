@@ -88,7 +88,7 @@ public:
   ALLOW_STD_FEATURE(MIPSTART, true)
   void AddMIPStart(ArrayRef<double>, ArrayRef<int>) override;
   ALLOW_STD_FEATURE(WARMSTART, true)
-    void AddPrimalDualStart(Solution sol0) override;
+    int AddPrimalDualStart(Solution sol0) override;
   /**
   * Get/Set AMPL var/con statii
   **/
@@ -223,6 +223,9 @@ protected:
   /// integer values, solve, unfix. Returns false if no solution resulted.
   bool CompleteStartByFixing(std::vector<double>& x0,
                              const std::vector<int>& s0);
+  /// Pass a starting point; NULL for a vector not provided.
+  /// @return false (with a warning) if HiGHS rejects it.
+  bool PassStart(const double* col_value, const double* row_dual);
 
   /// Whether the solver has a valid basis of the model
   bool HasValidBasis();
