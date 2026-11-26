@@ -3,6 +3,24 @@ Summary of recent updates to the AMPL MP Library
 
 ## Unreleased
 
+- Starting points for continuous models (no unfixed integer variables,
+  also after reformulation), and for solvers without MIP starts: incoming
+  primal values (for example, from `let x := ...` or `var x := ...`)
+  are now passed to the solver without dual values, and dual values
+  without primal values. Previously a starting point was passed only
+  when AMPL sent both, so some drivers ignored a primal start alone,
+  for example for nonlinear barrier algorithms. Primal or dual values are passed only
+  if AMPL sent them; a variable without an initial value gets 0, moved
+  into its bounds. A warning reports incoming primal values that the
+  driver does not pass for the model (for example, COPT takes an LP
+  start only with both primal and dual values), and incoming dual values
+  when no primal values are passed either. New option
+  *alg:startpartial* (default 3); *alg:startpartial=0* restores the
+  previous behavior. A solver or algorithm may still ignore an
+  incomplete start. With *alg:start=2*, the incoming basis is not used
+  also with an incomplete start.
+- Clarified: *alg:start=0* does not disable an incoming LP basis; use
+  *alg:basis=0* for that.
 - Fix: the solver's name and version, for example "COPT 9.0.0: ", appeared
   twice at the start of the solve message wherever the output is not a
   terminal (notebooks, IDEs, logs, captured output). When AMPL runs the

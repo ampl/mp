@@ -3,6 +3,13 @@ Summary of recent updates to Gurobi for AMPL
 
 
 ## unreleased
+- A primal starting point alone (without dual values) is now passed
+  to Gurobi (attribute PStart) for continuous models. It is used by the
+  NL barrier algorithm (*alg:optimalitytarget=1*) and by primal simplex;
+  dual values alone (DStart) are used by dual simplex. To stay near
+  the starting point, a small initial barrier parameter may be needed
+  (Gurobi 14: *nlbar:initmu*). New option *alg:startpartial=0*
+  restores the previous behavior.
 - Fix: with *mip:basis*, the reported variable values and objective
   value are those of the solved fixed problem, as its basis and duals
   are; the fixed problem can improve the continuous variables of a MIP
