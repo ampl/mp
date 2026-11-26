@@ -458,12 +458,14 @@ void MP2NLBackend::Solve() {
 /// 14.0.0: ") first.  If we printed anything after our banner (as the
 /// options), print our banner again: the line then reads
 /// "MP2NL 0.2: Gurobi 14.0.0: " and our solve message, which starts
-/// with both banners, can ask AMPL to skip them.
+/// with both banners, can ask AMPL to skip them.  A previous pass
+/// (multi-objective emulation) left the line with both banners: end it.
 void MP2NLBackend::PrintBannerBeforeSubsolver() {
+  bool prev_pass = !subsolver_banner_.empty();
   subsolver_banner_.clear();
-  if (!ampl_flag() || !output_handler()->has_output)
+  if (!ampl_flag() || !(prev_pass || output_handler()->has_output))
     return;
-  auto banner = fmt::format("{}: ", long_name());
+  auto banner = fmt::format("{}{}: ", prev_pass ? "\n" : "", long_name());
   std::fputs(banner.c_str(), stdout);
   std::fflush(stdout);
   output_handler()->has_output = false;
