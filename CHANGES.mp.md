@@ -39,6 +39,14 @@ Summary of recent updates to the AMPL MP Library
   (AMPL's `solve_result_num`) of the last solve, or of the last failed
   call. The return value of `AMPLSSolve()` and the other calls is 0 on
   success, whatever the solve result.
+- Fix: the solution check missed fractional values of integer variables
+  unless they were below 0.5 in absolute value (for example, 10.5 passed).
+  Now such values are reported ("variable integrality", or "aux var
+  integrality" for variables added by reformulations). The default of
+  *sol:chk:inttol* is raised from 1e-5 to 1e-4; the new *sol:chk:inttolrel*
+  (default 0, off) adds a relative tolerance for very large values. If the
+  solver runs with a larger integrality tolerance, raise *sol:chk:inttol*;
+  *sol:chk:inttol=0.5* turns the integrality check off.
 - Fix: when a model was solved repeatedly through the AMPLS API, the solve
   message of each report repeated the notes of the earlier solves.
 - Option `cvt:pre:vbnd` is now called `cvt:pre:domsync` (synonym

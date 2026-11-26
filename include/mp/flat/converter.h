@@ -1904,7 +1904,8 @@ private:
     bool solcheckfail_ = false;
     double solfeastol_ = 1e-6;
     double solfeastolrel_ = 1e-6;
-    double solinttol_ = 1e-5;
+    double solinttol_ = 1e-4;
+    double solinttolrel_ = 0.0;
     int sol_round_ = 100;
     int sol_prec_ = 100;
     int solchkoutlev_ = 0;
@@ -1954,6 +1955,7 @@ public:             // public for CRTP
   double sol_feas_tol() const { return options_.solfeastol_; }
   double sol_feas_tol_rel() const { return options_.solfeastolrel_; }
   double sol_int_tol() const { return options_.solinttol_; }
+  double sol_int_tol_rel() const { return options_.solinttolrel_; }
   int sol_round() const { return options_.sol_round_; }
   int sol_prec() const { return options_.sol_prec_; }
   int sol_check_outlev() const { return options_.solchkoutlev_; }
@@ -2413,9 +2415,20 @@ private:
                        "Default 1e-6.",
         options_.solfeastolrel_, 0.0, 1e100);
     GetEnv().AddOption("sol:chk:inttol sol:chk:inteps sol:inteps chk:inttol",
-        "Solution checking tolerance for variables' integrality. "
-        "Default 1e-5.",
+        "Absolute solution checking tolerance for variables' "
+        "integrality: a value is reported if its distance from "
+        "the nearest integer exceeds this and also "
+        "sol:chk:inttolrel times the integer's absolute value. "
+        "Value 0.5 turns the integrality check off. "
+        "Default 1e-4.",
         options_.solinttol_, 0.0, 1e100);
+    GetEnv().AddOption("sol:chk:inttolrel sol:chk:intepsrel chk:inttolrel",
+        "Relative solution checking tolerance for variables' "
+        "integrality, see sol:chk:inttol. A positive value, for "
+        "example 1e-14, excuses floating-point errors of very large "
+        "values (above sol:chk:inttol / sol:chk:inttolrel). "
+        "Default 0 (absolute tolerance only).",
+        options_.solinttolrel_, 0.0, 1e100);
     GetEnv().AddOption("sol:chk:infeas chk:infeas checkinfeas",
                        "Check even infeasible solution condidates, "
                        "whenever solver reports them.",

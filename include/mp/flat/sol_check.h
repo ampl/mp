@@ -188,11 +188,15 @@ protected:
               {x - MPCD( ub(i) ), MPCD( ub(i) )},
               MPCD( sol_feas_tol() ), MPCD( sol_feas_tol_rel() ),
               MPCD( GetModel() ).var_name(i));
+        // Integrality: |x - round(x)| is a violation if it exceeds
+        // both the absolute tolerance (solvers use absolute
+        // integrality tolerances) and the relative one times
+        // |round(x)|. The relative one (default 0: absolute test only)
+        // can excuse floating-point noise of very large values.
         if (var::INTEGER == MPCD( GetModel() ).var_type_subm(i))
           chk.VarViolIntty().at(aux).CheckViol(
-                { std::fabs(x - std::round(x)),
-                  std::round(x) },
-                MPCD( sol_int_tol() ), INFINITY,
+                { std::fabs(x - std::round(x)), std::round(x) },
+                MPCD( sol_int_tol() ), MPCD( sol_int_tol_rel() ),
                 MPCD( GetModel() ).var_name(i));
       }
     }

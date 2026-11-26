@@ -562,6 +562,114 @@ TEST(BigMTest, ImpliedByBestBoundsOnly__rowKept) {
 }
 
 
+/// Solution check of integrality: absolute tolerance sol:chk:inttol
+/// and relative tolerance sol:chk:inttolrel.
+/// Returns the solution check's verdict on value \a xval
+/// of a single integer variable; with chk:fail, \a report gets
+/// the check's report.
+bool CheckIntVal(double xval, std::string* report=nullptr,
+                 const char* opts="") {
+  mp::Env e;
+  Disj2IndTester t(e, kAccLinear,
+                   (std::string(report ? "chk:fail " : "") + opts).c_str());
+  int x = t.Var(-1e15, 1e15, INTEGER);
+  t.Minimize( t.GetModel().MakeVariable(x) );
+  t.ConvertModel();
+  std::vector<double> sol(t.Backend().NumVars(), 0.0);
+  sol.at(x) = xval;
+  try {
+    return t.GetFlatCvt().CheckSolution(sol, {}, {}, nullptr);
+  } catch (const std::exception& exc) {
+    if (report)
+      *report = exc.what();
+    return false;
+  }
+}
+
+/// Whether CheckIntVal(xval, opts) reports a variable integrality violation
+bool IntViolReported(double xval, const char* opts="") {
+  std::string report;
+  bool ok = CheckIntVal(xval, &report, opts);
+  return !ok && std::string::npos != report.find("variable integrality");
+}
+
+TEST(SolCheckTest, Integrality__fractionalAwayFromZero__reported) {
+  for (double v: {10.5, 40.8163, -6.142857, 999.5})
+    EXPECT_TRUE(IntViolReported(v)) << v;
+}
+
+TEST(SolCheckTest, Integrality__belowOne__reported) {
+  for (double v: {0.3, -0.3, 0.5, -0.5})    // +-0.5 were missed before
+    EXPECT_TRUE(IntViolReported(v)) << v;
+}
+
+TEST(SolCheckTest, Integrality__withinAbsTol__accepted) {
+  for (double v: {0.0, 10.0, 1.0 + 1e-7, -25.0 - 9e-6, 7.0 + 9e-5,
+                  999.0 + 1e-12})
+    EXPECT_TRUE(CheckIntVal(v)) << v;
+}
+
+TEST(SolCheckTest, Integrality__inttolOption__absolute) {
+  EXPECT_TRUE(IntViolReported(100.001));
+  EXPECT_TRUE(CheckIntVal(100.001, nullptr, "chk:inttol=0.01"));
+  EXPECT_TRUE(IntViolReported(100.02, "chk:inttol=0.01"));
+}
+
+TEST(SolCheckTest, Integrality__inttolHalf__checkOff) {
+  for (double v: {0.5, -0.5, 10.5, 0.3, 1e15 + 0.5})
+    EXPECT_TRUE(CheckIntVal(v, nullptr, "chk:inttol=0.5")) << v;
+}
+
+TEST(SolCheckTest, Integrality__relaxed__notChecked) {
+  EXPECT_TRUE(IntViolReported(10.5));                    // control
+  EXPECT_TRUE(CheckIntVal(10.5, nullptr, "alg:relax=1"));
+}
+
+/// Floating-point noise of large values: reported by default
+/// (absolute tolerance only), excused by a relative tolerance
+TEST(SolCheckTest, Integrality__largeValues__relativeTol) {
+  double v = 1e12;                     // spacing of doubles: 1.2e-4
+  for (int k=3; k--; )
+    v = std::nextafter(v, 2e12);       // 1e12 + 3.7e-4
+  const char* rel = "chk:inttolrel=1e-14";
+  EXPECT_TRUE(IntViolReported(v));               // default: relative off
+  EXPECT_TRUE(CheckIntVal(v, nullptr, rel));     // tolerance 0.01
+  EXPECT_TRUE(IntViolReported(1e10 + 0.005, rel));  // tolerance 1e-4
+  EXPECT_TRUE(CheckIntVal(1e11 + 5e-4, nullptr, rel));  // tolerance 1e-3
+  EXPECT_TRUE(IntViolReported(1e11 + 2e-3, rel));
+  EXPECT_TRUE(IntViolReported(1e13 + 0.5, rel));    // tolerance 0.1
+  EXPECT_TRUE(IntViolReported(1e6 + 0.001, rel));   // tolerance 1e-4
+}
+
+/// An auxiliary integer variable (comparison result of a disjunction)
+/// at a fractional value is reported as "aux var integrality".
+TEST(SolCheckTest, Integrality__auxVar__reported) {
+  mp::Env e;
+  Disj2IndTester t(e, kAccLinear, "cvt:pre:disj2ind=0 chk:fail");
+  int x = t.Var(-10, 10);
+  t.Add( t.Bin(OR, t.Cmp(GE, x, 1), t.Cmp(LE, x, -1)) );   // big-M
+  t.ConvertModel();
+  const auto& m = t.GetFlatCvt().GetModel();
+  std::vector<double> sol(t.Backend().NumVars(), 0.0);
+  sol.at(x) = 5.0;                       // satisfies x >= 1
+  int naux = 0;
+  for (int v=m.num_vars(); v--; )
+    if (!m.is_var_original(v) && INTEGER == t.Backend().type(v)
+        && t.Backend().lb(v) < t.Backend().ub(v)) {
+      sol[v] = 0.5;
+      ++naux;
+    }
+  ASSERT_LE(1, naux);
+  std::string report;
+  try {                                 // chk:fail: throws the report
+    t.GetFlatCvt().CheckSolution(sol, {}, {}, nullptr);
+  } catch (const std::exception& exc) {
+    report = exc.what();
+  }
+  EXPECT_NE(std::string::npos, report.find("aux var integrality")) << report;
+}
+
+
 /// cvt:pre:boundsbest 2/3: best-known bounds split between the variables
 /// of smooth nonlinear expressions and the others.
 /// y1 = if b then x else 0 (linear part), y2 = exp(z) (smooth nonlinear).
