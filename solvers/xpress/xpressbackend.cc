@@ -351,7 +351,10 @@ void XpressmpBackend::DoWriteSolution(const std::string& name) {
 
 
 void XpressmpBackend::SetInterrupter(mp::Interrupter *inter) {
+  interrupted_ = false;
   inter->SetHandler(InterruptXpressmp, this);
+  if (inter->Stop())                 // a Ctrl-C during the model input
+    interrupted_ = true;
 }
 
 void XpressmpBackend::DoXPRESSTune() {
@@ -394,10 +397,13 @@ void XpressmpBackend::SetSolverOption(MseControl key, double value) {
 
 void XpressmpBackend::Solve() {
   ClearFixedModel();
-  interrupted_ = false;
   fixed_model_failed_ = false;
   fixed_nlp_used_ = false;
   fixed_lp_used_ = false;
+  // Xpress ignores an interrupt before the optimization starts, so a
+  // Ctrl-C during the model input would be lost
+  if ((solve_skipped_ = interrupted_))
+    return;
   int nsols = 10;
   if (tunebase().size())
     DoXPRESSTune();
@@ -496,14 +502,14 @@ void XpressmpBackend::ConsiderXpressFixedModel() {
     fixed_model_failed_ = true;
     return;
   }
+  if (interrupted_) {                // Ctrl-C before or during the MIP solve
+    SkipInterruptedFixedSolve();
+    return;
+  }
   if (pool_best_x_.empty() && mip_primal_before_fixed_.empty()) {
     AddToSolverMessage("Fixed MIP for mip:basis skipped: "
                        "no integer-feasible incumbent.\n");
     fixed_model_failed_ = true;      // report the MIP's (absent) results
-    return;
-  }
-  if (interrupted_) {                // Ctrl-C during the MIP solve
-    SkipInterruptedFixedSolve();
     return;
   }
   std::string msg;
@@ -526,7 +532,10 @@ void XpressmpBackend::ConsiderXpressFixedModel() {
         return "";
       if (outlev_)
         Print("\n\n     ======= Solving the fixed MIP =======\n\n");
-      return DoXpressFixedModel(nonlinear);
+      auto res = DoXpressFixedModel(nonlinear);
+      if (!res.empty() && interrupted_)   // stopped by a Ctrl-C
+        interrupted = true;
+      return res;
     };
     if (pool_best_x_.size()) {   // the problem holds the enumerator's last
       if (!FixIntegersToPoolBest())
@@ -704,7 +713,8 @@ std::string XpressmpBackend::DoXpressFixedModel(bool nonlinear)
       fixed_model_iter_limit() < 0 ? INT_MAX : fixed_model_iter_limit()));
   if (nonlinear)
     return SolveFixedNonlinear();
-  if (XPRSlpoptimize(model_fixed_, ""))
+  // Xpress ignores an interrupt before the optimization starts
+  if (interrupted_ || XPRSlpoptimize(model_fixed_, ""))
     return "optimize()";
   int status;
   if (XPRSgetintattrib(model_fixed_, XPRS_LPSTATUS, &status))
@@ -769,7 +779,7 @@ std::string XpressmpBackend::SolveFixedNonlinear() {
   if (storedOptions_.fixedLocalSolver_ != -2)
     XPRSsetintcontrol(model_fixed_, XPRS_LOCALSOLVER, storedOptions_.fixedLocalSolver_);
   int solvest = 0, solst = 0;
-  int err = XPRSoptimize(model_fixed_, "", &solvest, &solst);
+  int err = interrupted_ ? 1 : XPRSoptimize(model_fixed_, "", &solvest, &solst);
   XPRSsetintcontrol(model_fixed_, XPRS_NLPSOLVER, old_nlpsolver);
   XPRSsetintcontrol(model_fixed_, XPRS_LOCALSOLVER, old_localsolver);
   XPRSsetintcontrol(model_fixed_, XPRS_NLPPRESOLVE, old_nlppresolve);
@@ -872,6 +882,8 @@ std::string XpressmpBackend::SolveFixedNonlinear() {
   }
 
   std::pair<int, std::string> XpressmpBackend::GetSolveResult() {
+    if (solve_skipped_)
+      return { sol::LIMIT_NO_FEAS_INTERRUPT, "interrupted before the solve" };
     auto opttype = getIntAttr(XPRS_OPTIMIZETYPEUSED);
 
     // Catch some specific codes

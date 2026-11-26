@@ -347,8 +347,10 @@ private:
   /// none is (Windows: the handler runs in another thread). Lock-free,
   /// as InterruptAll() runs in a signal handler on POSIX.
   std::atomic<int> interrupts_running_ {0};
-  /// A Ctrl-C came during this solve: no fixed solve is started then
+  /// A Ctrl-C came since the handler was set: no later solve is started
   std::atomic<bool> interrupted_ {false};
+  /// The last Solve() did not start Xpress: a Ctrl-C came before it
+  bool solve_skipped_ = false;
   static_assert(ATOMIC_BOOL_LOCK_FREE == 2 && ATOMIC_INT_LOCK_FREE == 2
                 && ATOMIC_POINTER_LOCK_FREE == 2,
                 "InterruptAll() runs in a signal handler: lock-free atomics");

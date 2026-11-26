@@ -13,8 +13,13 @@ Summary of recent updates to Xpress for AMPL
   report (AMPLS) gives the same values, but cannot write the solution
   and basis files of the fixed problem (*tech:writesolution*) and says
   so. A Ctrl-C stops the fixed solve too; after a Ctrl-C during
-  the MIP solve or while the copy is made, the fixed problem is not
-  solved, with a message.
+  the MIP solve, while the copy is made or during the fixed solve, the
+  MIP's results are reported with the message "Fixed MIP for mip:basis
+  skipped: the solve was interrupted."
+- Fix: a Ctrl-C while the model was read and converted, before the
+  solve started, was lost: the solve ran to the end. Now no solve is
+  started, and the result is "interrupted before the solve" (solve
+  result 471).
 - Fix: with `mip:basis` and several objectives (*obj:multi=1*), the
   reported point came from the fixed problem of a single objective and
   could lose the values of the others (with the objective values of the
