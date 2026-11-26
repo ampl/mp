@@ -6,6 +6,7 @@
 #include <cmath>
 #include <utility>
 #include <cstdio>
+#include <cstring>
 #include <cassert>
 
 #include "mp/env.h"
@@ -1438,6 +1439,30 @@ public:
       CheckVarConDomain(m.lb(var), m.ub(var), "_svar", var);
   }
 
+  /// Original variables' AMPL names, for messages issued
+  /// before name presolve (which sets the model's names)
+  void SetOrigVarNamesForMessages(const std::vector<std::string>& names)
+  { orig_var_names_msg_ = names; }
+
+  /// "kind[i+1]" for messages; for a variable ("_svar"),
+  /// also its AMPL name if AMPL passed names.
+  std::string ItemRefForMessage(const char* kind, int i) const {
+    auto ref = fmt::format("{}[{}]", kind, i+1);
+    if (!GetEnv().ampl_names_read() || 0!=std::strcmp(kind, "_svar"))
+      return ref;
+    const char* nm = i < (int)orig_var_names_msg_.size()
+        ? orig_var_names_msg_[i].c_str() : GetModel().var_name(i);
+    if (nm && *nm)
+      ref += fmt::format(" ({})", nm);
+    return ref;
+  }
+
+  /// "\n" + AuxfilesHint(), or "" if AMPL passed names
+  std::string NamesHintLine() const {
+    auto hint = GetEnv().AuxfilesHint();
+    return hint.empty() ? hint : '\n' + hint;
+  }
+
   /// Check var/con domain
   bool CheckVarConDomain(
       double lb, double ub, const char* kind, int i, bool bestb=false) {
@@ -1448,18 +1473,21 @@ public:
                      * MPCD( model_feas_tol_rel() )) {
       // Best-known bounds are implied by the model as well:
       // contradictory ones also prove infeasibility
+      auto item = ItemRefForMessage(kind, i);
       if (options_.declareInfeasVarBnd_)
         MP_INFEAS(fmt::format(
-            "{}bounds [{:.17}, {:.17}] of {}[{}] are contradictory "
-            "(cvt:pre:infeasvarbnd)", bestb ? "best-known " : "",
-            lb, ub, kind, i+1));
+            "{}bounds [{:.17}, {:.17}] of {} are contradictory "
+            "(cvt:pre:infeasvarbnd){}", bestb ? "deduced " : "",
+            lb, ub, item, NamesHintLine()));
       GetEnv().AddWarning(
-          std::string(kind) + (bestb ? " best-known" : "") + " bounds",
-          fmt::format("Bounds [{:.17}, {:.17}] of {}[{}] "
+          bestb ? "Contradictory deduced bounds"
+                : "Contradictory variable bounds",
+          fmt::format("{}ounds [{:.17}, {:.17}] of {} "
                       "contradict pre:eps and pre:epsrel. "
                       "Model can be infeasible "
-                      "(cvt:pre:infeasvarbnd=1 declares it so)",
-                      lb, ub, kind, i+1).c_str());
+                      "(cvt:pre:infeasvarbnd=1 declares it so){}",
+                      bestb ? "Deduced b" : "B",
+                      lb, ub, item, NamesHintLine()).c_str());
       return true;
     }
     return true;
@@ -2715,6 +2743,8 @@ private:
         MPD( ProcessMOIterationUnpostsolvedSolution(sol) );
       }
   };
+  /// Original variables' AMPL names for messages
+  std::vector<std::string> orig_var_names_msg_;
   pre::CopyLink copy_link_ { GetValuePresolver() }; // the copy links
   pre::One2ManyLink one2many_link_ { GetValuePresolver() }; // the 1-to-many links
   pre::NodeRange auto_link_src_item_;   // the source item for autolinking

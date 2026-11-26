@@ -411,6 +411,8 @@ protected:
     auto emptylinker = GetFlatCvt().MakeEmptyLinker(src_rng);
     auto vnr = GetFlatCvt().AddVars(lbs, ubs, types);
     GetCopyLink().AddEntry({ src_rng, vnr });
+    if (GetEnv().ampl_names_read())     // for messages before name presolve
+      GetFlatCvt().SetOrigVarNamesForMessages(GetModel().var_names());
     // Append "_flatvNN" for any other variables,
     // in particular the new variables during flattening
     GetFlatCvt().GetVarValueNode().SetNameChunk("flatv");
@@ -567,13 +569,28 @@ protected:
     } catch (const Error& err) {
       MP_RAISE_WITH_CODE(
           err.exit_code(), fmt::format(
-              "Algebraic constraint _scon[{}]:\n  {}",
-              i+1, err.what()));
+              "Algebraic constraint {}:\n  {}{}",
+              AlgConRefForMessage(i), err.what(), NamesHintLine()));
     } catch (const std::exception& exc) {
       MP_RAISE(fmt::format(
-          "Error flattening algebraic constraint _scon[{}]:\n  {}",
-          i+1, exc.what()));
+          "Error flattening algebraic constraint {}:\n  {}{}",
+          AlgConRefForMessage(i), exc.what(), NamesHintLine()));
     }
+  }
+
+  /// "_scon[i+1]" for messages, with the AMPL name
+  /// if AMPL passed names
+  std::string AlgConRefForMessage(int i) {
+    auto ref = fmt::format("_scon[{}]", i+1);
+    if (GetEnv().ampl_names_read())
+      ref += fmt::format(" ({})", GetModel().con_name(i));
+    return ref;
+  }
+
+  /// "\n  " + AuxfilesHint(), or "" if AMPL passed names
+  std::string NamesHintLine() const {
+    auto hint = GetEnv().AuxfilesHint();
+    return hint.empty() ? hint : "\n  " + hint;
   }
 
   /// Algebraic constraint flattening preparation info

@@ -159,6 +159,8 @@ protected:
                       GetModel().num_cons()
                       + GetModel().num_objs());
       }
+      GetEnv().set_ampl_names_read(
+            npv.number_read()+npc.number_read() > 0);
       if (WantNames()>=2
           || npv.number_read()+npc.number_read()) {
 				bool var_names_empty = false;

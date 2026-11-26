@@ -259,6 +259,19 @@ public:
   /// This name is used in startup "banner".
   const char *long_name() const { return long_name_.c_str(); }
 
+  /// Whether AMPL passed variable or constraint names
+  /// (.col / .row files, AMPL option auxfiles).
+  bool ampl_names_read() const { return ampl_names_read_; }
+  void set_ampl_names_read(bool f) { ampl_names_read_ = f; }
+
+  /// For messages showing variable or constraint names:
+  /// how to get AMPL names, if AMPL did not pass them; else "".
+  std::string AuxfilesHint() const {
+    return ampl_names_read_ ? std::string()
+        : std::string("For AMPL names in messages, use option ")
+          + name() + "_auxfiles rc;";
+  }
+
   /// Text that a subprocess printed after this solver's banner and that
   /// is still alone at the end of the output line; the solve message
   /// repeats it after the banner.  MP2NL: the subsolver's banner.
@@ -623,6 +636,7 @@ protected:
 private:
   std::string name_;
   std::string long_name_;
+  bool ampl_names_read_ {false};
   std::string exe_path_;
   std::string version_;
   std::string stub_;

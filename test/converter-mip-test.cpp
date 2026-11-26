@@ -641,6 +641,29 @@ TEST(SolCheckTest, Integrality__largeValues__relativeTol) {
   EXPECT_TRUE(IntViolReported(1e6 + 0.001, rel));   // tolerance 1e-4
 }
 
+/// Solution check report: hint how to get AMPL names, unless AMPL passed them
+TEST(SolCheckTest, Report__auxfilesHint__onlyWithoutNames) {
+  std::string report;
+  EXPECT_FALSE(CheckIntVal(10.5, &report));
+  EXPECT_NE(std::string::npos, report.find("_auxfiles rc;")) << report;
+  mp::Env e;                            // with AMPL names: no hint
+  e.set_ampl_names_read(true);
+  Disj2IndTester t(e, kAccLinear, "chk:fail");
+  int x = t.Var(-1000, 1000, INTEGER);
+  t.Minimize( t.GetModel().MakeVariable(x) );
+  t.ConvertModel();
+  std::vector<double> sol(t.Backend().NumVars(), 0.0);
+  sol.at(x) = 10.5;
+  report.clear();
+  try {
+    t.GetFlatCvt().CheckSolution(sol, {}, {}, nullptr);
+  } catch (const std::exception& exc) {
+    report = exc.what();
+  }
+  EXPECT_NE(std::string::npos, report.find("variable integrality")) << report;
+  EXPECT_EQ(std::string::npos, report.find("_auxfiles")) << report;
+}
+
 /// An auxiliary integer variable (comparison result of a disjunction)
 /// at a fractional value is reported as "aux var integrality".
 TEST(SolCheckTest, Integrality__auxVar__reported) {

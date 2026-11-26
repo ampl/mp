@@ -52,6 +52,8 @@ public:
           warn += msgreal;
           warn += "*: Using the solver's aux variable values.\n";
         }
+        if (auto hint = MPCD( GetEnv() ).AuxfilesHint(); hint.size())
+          warn += hint + '\n';
         warn += "Documentation: mp.ampl.com/modeling-tools.html#automatic-solution-check.";
         // Should messages for realistic and idealistic
         // modes be more coordinated?

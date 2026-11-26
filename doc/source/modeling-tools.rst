@@ -633,7 +633,8 @@ The line shows the largest absolute deviation (0.5, for ``q[3]``)
 and the largest deviation relative to the integer the value
 rounds to (0.4/8, for ``q[4]``); the two can name different
 variables. Names are shown only if AMPL passes them to the solver
-(``option <solver>_auxfiles rc;``). With ``sol:chk:fail``, the
+(``option <solver>_auxfiles rc;``); otherwise the warning suggests
+that option. With ``sol:chk:fail``, the
 solve is reported as failed (``solve_result_num`` 150, "solved?").
 
 The line "aux var integrality" refers to an integer variable added

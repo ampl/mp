@@ -47,6 +47,14 @@ Summary of recent updates to the AMPL MP Library
   (default 0, off) adds a relative tolerance for very large values. If the
   solver runs with a larger integrality tolerance, raise *sol:chk:inttol*;
   *sol:chk:inttol=0.5* turns the integrality check off.
+- Messages that refer to variables or constraints (solution check
+  warnings, contradictory bounds, errors in constraints, SDP matrix
+  errors) suggest `option <solver>_auxfiles rc;` when AMPL did not pass
+  names; when it did, the AMPL name is shown next to `_svar[i]` or
+  `_scon[i]`. Warnings about contradictory bounds of a variable are now
+  titled "Contradictory variable bounds" and, for bounds deduced by the
+  conversion, "Contradictory deduced bounds" (were "_svar bounds" and
+  "_svar best-known bounds").
 - Fix: when a model was solved repeatedly through the AMPLS API, the solve
   message of each report repeated the notes of the earlier solves.
 - Option `cvt:pre:vbnd` is now called `cvt:pre:domsync` (synonym
