@@ -1486,6 +1486,7 @@ class CbcMPSolver(MPDirectSolver):
         stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
                  ModelTags.sos,
 
+                 ModelTags.warmstart,
                  ModelTags.writelp,
 
                  }
@@ -1855,6 +1856,7 @@ class KnitroMPSolver(MPDirectSolver):
                  ModelTags.socp,      ## MP transforms cones to quadratics
                  ModelTags.socp_hard_to_recognize,
 
+                 ModelTags.warmstart,
                  ModelTags.writelp,
 
                  }

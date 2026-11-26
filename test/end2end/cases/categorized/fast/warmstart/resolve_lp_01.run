@@ -1,0 +1,13 @@
+# A continuous LP solved twice: the second solve gets the primal and
+# dual values of the first one. No warning about unused start values,
+# also for drivers that pass primal values only.
+var x {1..4} >= 0 <= 10;
+
+minimize cost: 3*x[1] + 2*x[2] + 4*x[3] + x[4];
+
+s.t. demand: sum {j in 1..4} x[j] >= 12;
+s.t. mix:    x[1] + x[2] >= 5;
+s.t. cap:    x[3] + x[4] <= 9;
+
+solve;
+solve;
