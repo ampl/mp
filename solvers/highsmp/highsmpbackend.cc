@@ -466,8 +466,20 @@ void HighsBackend::ReportHIGHSResults() {
   AddHIGHSMessages();
 }
 
+/// Whether HiGHS holds a valid basis of the model. It has none, e.g.,
+/// when presolve proves an LP infeasible; Highs_getBasis() then returns
+/// an error (HiGHS 1.16) or statuses that are not a basis (HiGHS 1.15).
+bool HighsBackend::HasValidBasis() {
+  HighsInt validity = kHighsBasisValidityInvalid;
+  return kHighsStatusOk == loader().Highs_getIntInfoValue(
+        lp(), "basis_validity", &validity)
+      && kHighsBasisValidityValid == validity;
+}
+
 SolutionBasis HighsBackend::GetBasis() {
   if (IsMIP()) return FixedLPBasis(CG_Linear);
+  if (!HasValidBasis())       // no basis to report; other suffixes go on
+    return {};
   std::vector<int> varstt = VarStatii();
   std::vector<int> constt = ConStatii();
   if (varstt.size() && constt.size()) {

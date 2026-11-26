@@ -211,6 +211,8 @@ protected:
   bool CompleteStartByFixing(std::vector<double>& x0,
                              const std::vector<int>& s0);
 
+  /// Whether the solver has a valid basis of the model
+  bool HasValidBasis();
   ArrayRef<int> VarStatii();
   ArrayRef<int> ConStatii();
   void VarConStatii(ArrayRef<int>, ArrayRef<int>);

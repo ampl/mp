@@ -2,6 +2,9 @@ Summary of recent updates to HiGHS for AMPL
 ===========================================
 
 
+## Unreleased
+- Updated to HiGHS 1.16.0.
+
 ## 20261029
 - Fix an assertion failure in Windows Debug builds during MIP basis
   recovery.
