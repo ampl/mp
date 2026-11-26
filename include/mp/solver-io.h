@@ -304,11 +304,13 @@ class AppSolutionHandlerImpl :
   /// character.  AMPL then skips that many characters when printing the
   /// message, and its solve_message has no backspaces.  Return "" when
   /// AMPL does not run the solver (another program reads the .sol file,
-  /// as Pyomo does) or the message does not start with that text; the
-  /// message then follows the banner as it is.
+  /// as Pyomo does), no banner was printed (AMPLS) or the message does
+  /// not start with that text; the message then follows the banner as
+  /// it is.
   std::string EraseBanner(fmt::CStringRef message) {
     Solver &solver = this->solver();
-    if (ampl_version_ < 20020401 || solver.output_handler()->has_output)
+    if (!banner_size_ || ampl_version_ < 20020401
+        || solver.output_handler()->has_output)
       return {};
     std::string printed = fmt::format("{}: ", solver.long_name())
         + solver.PendingOutputInSolveMessage();

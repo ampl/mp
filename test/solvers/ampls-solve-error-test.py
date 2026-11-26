@@ -18,7 +18,10 @@ Checks, on one model with two objectives:
 - with one objective, two AMPLSSolve() calls both succeed;
 - AMPLSGetSolveResult(): NOT_SET after loading, the reported result after a
   solve, the error's code (or 500) after a failed call; a corrupt NL file
-  fails to load with -1 and gives 500.
+  fails to load with -1 and gives 500;
+- with the AMPL version known (environment variable "version"), the
+  message of AMPLSReportError() has no backspaces: AMPLS prints no banner
+  to erase.
 """
 
 import argparse
@@ -161,6 +164,15 @@ def check_repeat_one_objective(ampls, nl):
     ampls.run(nl, [], check)
 
 
+def check_error_message_no_backspaces(ampls, nl):
+    def check(solver):
+        require(ampls.report_error(solver, 500, b"failure") == 0,
+                "AMPLSReportError failed")
+        require(b"\b" not in nl.with_suffix(".sol").read_bytes(),
+                "Backspaces in the .sol file for a banner never printed")
+    ampls.run(nl, [], check)
+
+
 def check_corrupt_nl(ampls, nl):
     """An NL file that cannot be read: the load returns -1 (no solve
     result code: formatted read errors once carried 1, i.e., 'solved'),
@@ -206,6 +218,10 @@ def main():
             print("failed repeated solve: passed")
             check_repeat_one_objective(ampls, nl)
             print("repeated solve, one objective: passed")
+            # As when AMPL runs the caller: the AMPL version is known
+            os.environ["version"] = "AMPL Version 20261117"
+            check_error_message_no_backspaces(ampls, nl)
+            print("error message without backspaces: passed")
             check_corrupt_nl(ampls, nl)
             print("corrupt NL file: passed")
     finally:
