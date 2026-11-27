@@ -156,6 +156,12 @@ public:
   /// Retrieve FlatModelInfo*
   const FlatModelInfo* GetFlatModelInfo() const { return pfmi_; }
 
+  /// Integrality tolerance of the converter (cvt:pre:inteps,
+  /// negative: exact), passed before the model.
+  /// For APIs that round bounds of integer-valued rows themselves
+  /// (CP-SAT); others ignore it.
+  void SetIntegralityTolerance(double ) { }
+
   /// Chance to prepare problem update,
   /// e.g., allocate storage
   void InitProblemModificationPhase(const FlatModelInfo*) {  }

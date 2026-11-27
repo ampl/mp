@@ -1008,6 +1008,25 @@ public:
   /// Handle start of model input
   void StartModelInput() {
     MPD( OpenGraphExporter() );
+    MPD( SetNumericTolerances() );
+  }
+
+  /// Set cvt:pre:inteps, rejecting values from 0.5: an integrality
+  /// tolerance of 0.5 would take a value ending in .5 as an integer
+  void SetIntEps(double v) {
+    if (!(v < 0.5))
+      throw InvalidOptionValue("cvt:pre:inteps", v,
+                               "must be below 0.5");
+    options_.inteps_ = v;
+  }
+
+  /// Pass the tolerances of numeric decisions, known after option
+  /// parsing, to the model and to the ModelAPI (CP-SAT rounds
+  /// the bounds of integer-valued rows with cvt:pre:inteps)
+  void SetNumericTolerances() {
+    GetModel().tolerances().Set(
+          model_inteps(), model_ulps(), model_cmp_tol());
+    GetModelAPI().SetIntegralityTolerance(model_inteps());
   }
 
   /// Handle end of model input
@@ -1922,8 +1941,10 @@ private:
 
     int relax_ = 0;
 
-    double modelfeastol_ = 1e-6;
+    double modelfeastol_ = NumericTolerances::DefaultCmpTol();
     double modelfeastolrel_ = 1e-6;
+    double inteps_ = NumericTolerances::DefaultIntEps();
+    int ulps_ = NumericTolerances::DefaultUlps();
 
     int mo_options_ {1};
 
@@ -1972,6 +1993,21 @@ public:             // public for CRTP
   /// Model checking options
   double model_feas_tol() const { return options_.modelfeastol_; }
   double model_feas_tol_rel() const { return options_.modelfeastolrel_; }
+
+  /// Integrality tolerance (cvt:pre:inteps), negative: exact.
+  /// cvt:pre:all=0: exact.
+  double model_inteps() const
+  { return options_.preprocessAnything_ ? options_.inteps_ : -1.0; }
+  /// Floating-point margin in ulp (cvt:pre:ulps). cvt:pre:all=0: none.
+  int model_ulps() const
+  { return options_.preprocessAnything_ ? options_.ulps_ : 0; }
+  /// Absolute tolerance of the converter's decisions about comparisons
+  /// (cvt:pre:feastol). cvt:pre:all=0: exact.
+  double model_cmp_tol() const
+  { return options_.preprocessAnything_ ? options_.modelfeastol_ : 0.0; }
+  /// Tolerances of numeric decisions, as used
+  const NumericTolerances& tolerances() const
+  { return GetModel().tolerances(); }
 
   /// Use multiobjective options?
   int multiobj_options() const { return options_.mo_options_; }
@@ -2057,7 +2093,10 @@ private:
         "File to export conversion graph. Format: JSON Lines.",
         options_.file_graph_export_);
     GetEnv().AddOption("cvt:pre:all",
-        "0/1*: Set to 0 to disable most presolve in the flat converter.",
+        "0/1*: Set to 0 to disable most presolve in the flat converter, "
+        "and all rounding and tolerances of its numeric decisions "
+        "(cvt:pre:inteps, cvt:pre:ulps, cvt:pre:feastol for "
+        "comparisons).",
         options_.preprocessAnything_, 0, 1);
     GetEnv().AddOption("cvt:pre:eqresult",
         "0/1*: Preprocess reified equality comparison's decidable cases.",
@@ -2252,18 +2291,36 @@ private:
                        "already when they are created are folded.",
                        options_.preprocessIndFixedFlag_, 0, 1);
 
-    GetEnv().AddOption("cvt:pre:roundintbnd roundintbnd",
-                       "Tolerance for rounding the bounds of integer "
-                       "variables inwards (lower bound up, upper bound "
-                       "down): a lower bound b becomes ceil(b - tol), "
-                       "an upper bound floor(b + tol), so that, e.g., "
-                       "[1, 0.17] becomes [1, 0]. The tolerance used is "
-                       "max(tol, 16 ulp(b)), where ulp(b) is the spacing of "
-                       "floating-point numbers at |b|, at most 0.5. Negative: "
-                       "no rounding, which can give wrong results when "
-                       "a computed bound is slightly below or above an "
-                       "integer. Default 1e-9.",
-                       GetModel().round_int_bound_tol(), -1.0, 1.0);
+    GetEnv().template AddOption<double>(
+          "cvt:pre:inteps pre:inteps cvt:pre:roundintbnd roundintbnd",
+          fmt::format(
+          "Integrality tolerance. Similar to AMPL's presolve_inteps, "
+          "which applies to bounds inferred by AMPL's presolve, but "
+          "used more widely: a value within this amount of an integer "
+          "is taken as that integer where an integer is required: "
+          "bounds of integer variables, right-hand sides of comparisons "
+          "of integer-valued expressions (x <= 2.9999999 becomes "
+          "x <= 3; otherwise the side the comparison allows, x <= 2.5 "
+          "becomes x <= 2), compared constants (x == 3.0000001 is "
+          "x == 3, numberof), and the integer row bounds of CP-SAT. "
+          "The tolerance used is max(inteps, cvt:pre:ulps ulp). "
+          "Values from 0.5 are rejected. Negative: exact, except for "
+          "rounding errors of computed values (cvt:pre:ulps). "
+          "Default {}.", NumericTolerances::DefaultIntEps()).c_str(),
+          [this]() { return options_.inteps_; },
+          [this](double v) { SetIntEps(v); });
+    GetEnv().AddOption("cvt:pre:ulps pre:ulps",
+          fmt::format(
+          "Margin for rounding errors of values computed by the "
+          "converter, such as bounds of expressions, in units in the "
+          "last place (ulp) of the compared constant (or of the bound "
+          "rounded): a computed bound of (x+1)/3 at x <= 5 can be "
+          "1.9999999999999998, and (x+1)/3 >= 2 must not be decided "
+          "false. Where this margin exceeds cvt:pre:feastol, "
+          "comparisons of continuous expressions are not decided by "
+          "the converter. 0: no margin. Default {}.",
+          NumericTolerances::DefaultUlps()).c_str(),
+          options_.ulps_, 0, 1000000);
 
     GetEnv().AddOption("cvt:pre:boundlogarg boundlogarg",
                        "0*/1: Bound logarithm arguments to nonnegative.",
@@ -2396,17 +2453,22 @@ private:
                        options_.mo_options_, 0, 1);
 
     GetEnv().AddOption("cvt:pre:feastol pre:feastol pre:eps pre:feastolabs pre:epsabs",
-                       "Absolute tolerance to check variable "
-                       "and constraint bound contraditions. "
-                       "Only warns if also pre:feastolrel is violated. "
-                       "See also sol:chk:feastol. "
-                       "Default 1e-6.",
+                       fmt::format(
+                       "Absolute feasibility tolerance of the converter. "
+                       "Alone: comparisons in logical expressions "
+                       "decided by the converter from the bounds of "
+                       "their expressions, in the units of the "
+                       "expression as written (x >= 4 is not decided "
+                       "false at x <= 3.9999995). Together with "
+                       "pre:feastolrel: contradictory variable bounds "
+                       "(reported if both are exceeded). "
+                       "See also cvt:pre:ulps, sol:chk:feastol. "
+                       "Default {}.", NumericTolerances::DefaultCmpTol())
+                         .c_str(),
                        options_.modelfeastol_, 0.0, 1e100);
     GetEnv().AddOption("cvt:pre:feastolrel pre:feastolrel pre:epsrel",
-                       "Relative tolerance to check variable "
-                       "and constraint bound contradictions. "
-                       "Only warns if also pre:feastol is violated. "
-                       "See also sol:chk:feastol. "
+                       "Relative tolerance for contradictory variable "
+                       "bounds, see pre:feastol. "
                        "Default 1e-6.",
                        options_.modelfeastolrel_, 0.0, 1e100);
 

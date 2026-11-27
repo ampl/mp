@@ -1169,3 +1169,29 @@ TEST(NLOutputTest, QuadCon__passquadcon0__linearized) {
   EXPECT_EQ(0, t.Backend().NumNLCons());
   EXPECT_EQ(1, t.NumUsed<mp::MulConstraint>());       // y expanded
 }
+
+
+//////// Tolerances of comparisons (cvt:pre:inteps, cvt:pre:ulps) ////////
+
+/// cvt:pre:all=0: exact tolerances, no rounding (V1O-08)
+TEST(CmpTolTest, PreAll0__exactTolerances) {
+  mp::Env e;
+  Disj2IndTester t(e, kAccInd, "cvt:pre:all=0");
+  int b = t.Var(0, 1, INTEGER), y = t.Var(0, 6, INTEGER);
+  AddImplLE(t, b, y, 3 - 1e-7);
+  t.ConvertModel();
+  const auto& tol = t.GetFlatCvt().tolerances();
+  EXPECT_LT(tol.inteps(), 0.0);
+  EXPECT_EQ(0, tol.ulps());
+  EXPECT_EQ(0.0, tol.cmp_tol());
+  EXPECT_FALSE(tol.CanRoundToInteger());
+}
+
+/// cvt:pre:inteps from 0.5 is rejected
+TEST(CmpTolTest, IntEpsHalf__rejected) {
+  mp::Env e;
+  EXPECT_THROW(Disj2IndTester(e, kAccInd, "cvt:pre:inteps=0.5"),
+               mp::OptionError);
+  mp::Env e2;
+  EXPECT_NO_THROW(Disj2IndTester(e2, kAccInd, "cvt:pre:inteps=0.4"));
+}

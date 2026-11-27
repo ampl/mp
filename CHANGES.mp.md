@@ -3,6 +3,13 @@ Summary of recent updates to the AMPL MP Library
 
 ## Unreleased
 
+- New option *cvt:pre:inteps* (synonyms *pre:inteps*, *roundintbnd*):
+  integrality tolerance, default 1e-6. A bound of an integer variable
+  within it of an integer is taken as that integer (otherwise it is
+  rounded inwards). The tolerance used is at least the margin for
+  rounding errors, new option *cvt:pre:ulps* (default 16 units in the
+  last place of the bound). Negative: exact up to that margin. Values
+  from 0.5 are rejected. *cvt:pre:all=0* disables all rounding.
 - Fix: `numberof x in (...)` with a variable `x` could give a wrong
   optimum when `x` came after the compared expressions in the NL file
   (for example, with `abs()` elsewhere in the model): preprocessing
@@ -129,8 +136,8 @@ Summary of recent updates to the AMPL MP Library
   ("not a binary variable"). MP2NL uses default 1, because several NL
   subsolvers stop with an error on such bounds.
 - The bounds of integer and implied-integer variables are rounded inwards;
-  option `cvt:pre:roundintbnd` is the tolerance (default 1e-9, at least 16
-  units in the last place of the bound; negative: no rounding).
+  a bound within the integrality tolerance *cvt:pre:inteps* (see above)
+  of an integer is that integer.
 - An indicator constraint whose flag became fixed only after the indicator
   was created (for example, `if x <= 1 then ...` with `x <= 1` implied by
   another constraint) made Xpress and SCIP stop with an error ("not a binary

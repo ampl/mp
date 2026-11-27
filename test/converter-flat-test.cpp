@@ -47,7 +47,7 @@ TEST_F(InterfaceTester_MaxConstraint, RepeatedSolveRunsAgain) {
 
 
 /// Bounds of integer variables are rounded inwards within
-/// max(cvt:pre:roundintbnd, 16 ulp(b)): rounding errors of computed
+/// max(cvt:pre:inteps, cvt:pre:ulps ulp(b)): rounding errors of computed
 /// bounds are removed, real fractional parts are kept.
 TEST_F(InterfaceTester_MaxConstraint, RoundIntBoundUsesUlpTolerance) {
   auto& m = GetInterface().GetFlatCvt().GetModel();
@@ -61,11 +61,13 @@ TEST_F(InterfaceTester_MaxConstraint, RoundIntBoundUsesUlpTolerance) {
   EXPECT_EQ(1e9, m.RoundIntBound(v, 1e9 + 5e-5, false));
   EXPECT_EQ(600000000.0, m.RoundIntBound(v, 599999999.5, true));
   EXPECT_EQ(599999999.0, m.RoundIntBound(v, 599999999.5, false));
-  // Small values: the absolute tolerance (default 1e-9)
+  // Small values: the absolute tolerance (cvt:pre:inteps, default 1e-6)
   EXPECT_EQ(3.0, m.RoundIntBound(v, 3.0 + 1e-10, false));
   EXPECT_EQ(3.0, m.RoundIntBound(v, 3.0 - 1e-10, true));
-  EXPECT_EQ(4.0, m.RoundIntBound(v, 3.0 + 1e-8, true));
-  EXPECT_EQ(2.0, m.RoundIntBound(v, 3.0 - 1e-8, false));
+  EXPECT_EQ(3.0, m.RoundIntBound(v, 3.0 + 5e-7, true));
+  EXPECT_EQ(3.0, m.RoundIntBound(v, 3.0 - 5e-7, false));
+  EXPECT_EQ(4.0, m.RoundIntBound(v, 3.0 + 1e-5, true));
+  EXPECT_EQ(2.0, m.RoundIntBound(v, 3.0 - 1e-5, false));
   // An exact integer is returned as is, also where the tolerance (0.5)
   // is below the spacing of doubles: 2^52 + 1 -/+ 0.5 is not
   // representable and would be rounded to the even neighbour
@@ -76,6 +78,52 @@ TEST_F(InterfaceTester_MaxConstraint, RoundIntBoundUsesUlpTolerance) {
   EXPECT_EQ(-big, m.RoundIntBound(v, -big, false));
 }
 
+
+/// The floating-point margin comes from the compared constant only
+/// (V1F-01); a margin above a positive cvt:pre:feastol means
+/// "do not decide"
+TEST_F(InterfaceTester_MaxConstraint, DecisionMarginFromConstant) {
+  mp::NumericTolerances t;                       // 1e-6, 16 ulp
+  EXPECT_EQ(1e-6, t.DecisionMargin(0.001));
+  EXPECT_EQ(1e-6, t.DecisionMargin(5.0));
+  EXPECT_LT(t.DecisionMargin(1e12), 0.0);        // 16 ulp = 2e-3
+  t.Set(-1.0, 16, 0.0);                          // feastol=0: exact
+  EXPECT_GT(t.DecisionMargin(1e12), 0.0);        // ... up to the ulps
+  EXPECT_LT(t.DecisionMargin(1e12), 3e-3);
+}
+
+/// Integrality with cvt:pre:inteps, and exact with inteps < 0 and
+/// cvt:pre:ulps = 0 (cvt:pre:all=0)
+TEST_F(InterfaceTester_MaxConstraint, NumericTolerancesIntegrality) {
+  mp::NumericTolerances t;                       // defaults 1e-6, 16
+  EXPECT_EQ(3.0, t.SnapToInteger(0.3/0.1));      // 2.9999999999999996
+  EXPECT_EQ(3.0, t.SnapToInteger(3.0000005));
+  EXPECT_EQ(3.00001, t.SnapToInteger(3.00001));
+  EXPECT_FALSE(t.IsNearInteger(2.5));
+  t.Set(0.7, 16, 1e-6);                          // capped below 0.5
+  EXPECT_FALSE(t.IsNearInteger(2.5));
+  t.Set(-1.0, 16, 0.0);                          // exact up to 16 ulp
+  EXPECT_EQ(3.0, t.SnapToInteger(0.3/0.1));
+  EXPECT_EQ(3.0000005, t.SnapToInteger(3.0000005));
+  t.Set(-1.0, 0, 0.0);                           // exact
+  EXPECT_EQ(0.3/0.1, t.SnapToInteger(0.3/0.1));
+  EXPECT_FALSE(t.CanRoundToInteger());
+}
+
+/// Shared constants (MakeFixedVar()) are continuous: never rounded,
+/// also when equal to a fractional value near an integer
+TEST_F(InterfaceTester_MaxConstraint, SharedConstantsNeverRounded) {
+  auto& cvt = GetInterface().GetFlatCvt();
+  const int c = int( cvt.MakeFixedVar(2.9999995) );
+  auto& m = cvt.GetModel();
+  EXPECT_EQ(mp::var::CONTINUOUS, m.var_type(c));
+  EXPECT_FALSE(m.is_var_implied_int(c));
+  EXPECT_EQ(2.9999995, m.RoundIntBound(c, 2.9999995, true));
+  m.set_lb(c, 2.9999995);
+  m.set_ub(c, 2.9999995);
+  EXPECT_EQ(2.9999995, m.lb(c));
+  EXPECT_EQ(2.9999995, m.ub(c));
+}
 
 /////////////////////////////// Quadratics //////////////////////////////////
 ///

@@ -393,6 +393,7 @@ add_prefix(MP_FLAT_HEADERS include/mp/flat/
   item_keeper.h item_namer.h
   model_api_base.h model_api_connect.h
   model_info.h model_info.hpp
+  num_tolerances.h
   obj_std.h preprocess.h prepro_prod.h
   problem_flattener_base.h problem_flattener.h
   qp2passes.h qp2passes.hpp
