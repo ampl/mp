@@ -160,22 +160,39 @@ TEST_F(InterfaceTester_MaxConstraint, DecideByBoundsSymmetric) {
     }
   // x > 6 at x <= 6: false (C1F-08)
   EXPECT_EQ(-1, Cvt::DecideByBounds<2>(0.0, 6.0, 6.0, d, m));
-  // negative margin: never decided
-  EXPECT_EQ(0, Cvt::DecideByBounds<1>(5.0, 6.0, 2.0, -1.0, m));
-  EXPECT_EQ(0, Cvt::DecideEqualityByBounds(5.0, 6.0, 2.0, -1.0));
 }
 
 /// The floating-point margin comes from the compared constant only
-/// (V1F-01); a margin above a positive cvt:pre:feastol means
-/// "do not decide"
+/// (V1F-01); where it exceeds cvt:pre:feastol, it is the decision
+/// margin, as with cvt:pre:feastol=0 (W1F-01, W1F-07)
 TEST_F(InterfaceTester_MaxConstraint, DecisionMarginFromConstant) {
   mp::NumericTolerances t;                       // 1e-6, 16 ulp
   EXPECT_EQ(1e-6, t.DecisionMargin(0.001));
   EXPECT_EQ(1e-6, t.DecisionMargin(5.0));
-  EXPECT_LT(t.DecisionMargin(1e12), 0.0);        // 16 ulp = 2e-3
+  EXPECT_EQ(t.FPMargin(1e12), t.DecisionMargin(1e12));  // 16 ulp, 2e-3
+  EXPECT_GT(t.DecisionMargin(1e12), 1e-6);
   t.Set(-1.0, 16, 0.0);                          // feastol=0: exact
-  EXPECT_GT(t.DecisionMargin(1e12), 0.0);        // ... up to the ulps
+  EXPECT_EQ(t.FPMargin(1e12), t.DecisionMargin(1e12));  // ... up to m
   EXPECT_LT(t.DecisionMargin(1e12), 3e-3);
+}
+
+/// A margin m above cvt:pre:feastol decides with d = m: x >= 1000 at
+/// x <= 10 with cvt:pre:feastol=1e-12 (m = 1.8e-12) is false, and
+/// x <= U at x <= U = 1e13 is true (W1F-01, W1F-07)
+TEST_F(InterfaceTester_MaxConstraint, DecisionMarginAboveFeastol) {
+  using Cvt = std::decay_t<decltype(GetInterface().GetFlatCvt())>;
+  mp::NumericTolerances t;
+  t.Set(1e-6, 16, 1e-12);                        // cvt:pre:feastol=1e-12
+  const double m = t.FPMargin(1000.0);
+  ASSERT_GT(m, 1e-12);
+  EXPECT_EQ(m, t.DecisionMargin(1000.0));
+  EXPECT_EQ(-1, Cvt::DecideByBounds<1>(
+              0.0, 10.0, 1000.0, t.DecisionMargin(1000.0), m));
+  mp::NumericTolerances t0;                      // defaults
+  const double U = 1e13, d = t0.DecisionMargin(U), mU = t0.FPMargin(U);
+  EXPECT_EQ(mU, d);
+  EXPECT_EQ(1, Cvt::DecideByBounds<-1>(0.0, U, U, d, mU));    // x <= U
+  EXPECT_EQ(-1, Cvt::DecideByBounds<2>(0.0, U, U, d, mU));    // x > U
 }
 
 /// Integrality with cvt:pre:inteps, and exact with inteps < 0 and

@@ -1955,5 +1955,55 @@
                  "mp2nl_options": "solver_options='sol:chk:mode=4 chk:fail'" },
     "objective" : -6,
     "values": { "solve_result": "solved" }
+  },
+  {
+    "name" : "cmp_tol_big_rhs_le_01",
+    "tags" : ["logical", "continuous"],
+    "comment": "x <= U at x <= U = 1e13 is decided true with the floating-point margin of U, which exceeds cvt:pre:feastol (before: left to the solver, b = 0)",
+    "options": { "presolve": 0 },
+    "objective" : 1
+  },
+  {
+    "name" : "cmp_tol_big_rhs_gt_01",
+    "tags" : ["logical", "continuous"],
+    "comment": "x > U at x <= U = 1e13 is decided false (before: left to the solver, b = 1)",
+    "options": { "presolve": 0 },
+    "objective" : 0
+  },
+  {
+    "name" : "cmp_tol_big_rhs_impl_01",
+    "tags" : ["logical", "continuous"],
+    "comment": "y = 0 ==> x > U at x <= U = 1e13: y = 0 is not allowed (before: y = 0)",
+    "options": { "presolve": 0 },
+    "objective" : 1
+  },
+  {
+    "name" : "cmp_tol_far_01",
+    "tags" : ["logical", "continuous"],
+    "comment": "x >= 1000 at x <= 10 is decided false: no conditional comparison is passed",
+    "options": { "presolve": 0,
+                 "mp_options": "debug=1",
+                 "mp2nl_options": "solver_options='debug=1'" },
+    "objective" : 10,
+    "values": { "Initial.flat0__condlinge": 0 }
+  },
+  {
+    "name" : "cmp_tol_far_01 feastol=1e-12",
+    "files" : ["cmp_tol_far_01.mod"],
+    "tags" : ["logical", "continuous"],
+    "comment": "As cmp_tol_far_01 with cvt:pre:feastol below the floating-point margin of 1000: also decided (before: passed to the solver)",
+    "options": { "presolve": 0,
+                 "mp_options": "debug=1 cvt:pre:feastol=1e-12",
+                 "mp2nl_options": "solver_options='debug=1 cvt:pre:feastol=1e-12'" },
+    "objective" : 10,
+    "values": { "Initial.flat0__condlinge": 0 }
+  },
+  {
+    "name" : "cmp_tol_big_coef_01",
+    "solvers" : ["highs", "gurobi", "scip", "cplex", "copt", "xpress", "mosek"],
+    "tags" : ["logical", "integer"],
+    "comment": "An equality with large fractional coefficients missing its right-hand side by far is decided false (before: passed on, Gurobi reported infeasible); CP-SAT rejects the fractional coefficients",
+    "options": { "presolve": 0 },
+    "objective" : -3
   }
 ]

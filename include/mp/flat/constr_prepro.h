@@ -287,7 +287,7 @@ public:
   /// without one, the equality is false.
   /// Otherwise, the equality is decided only if the body's bounds
   /// lie within, or miss the rhs by more than, the decision margin
-  /// (DecisionMargin(); not decided if that is negative).
+  /// (DecisionMargin()).
   /// @return true if success
   template <class PreprocessInfo, class CondAlgCon>
   bool FixEqualityResult(
@@ -314,11 +314,9 @@ public:
   /// Decide  body == rhs  from body bounds [L, U] with decision
   /// margin \a d: FALSE if they miss the rhs by more than d,
   /// TRUE if both lie within d of it.
-  /// @return 1: true, -1: false, 0: undecided (also if d < 0)
+  /// @return 1: true, -1: false, 0: undecided
   static int DecideEqualityByBounds(
       double L, double U, double rhs, double d) {
-    if (d < 0.0)
-      return 0;
     if (L > rhs + d || U < rhs - d)
       return -1;
     return (L >= rhs - d && U <= rhs + d) ? 1 : 0;
@@ -556,13 +554,11 @@ public:
   /// the floating-point margin \a m (body > c: TRUE if L > c+m):
   /// an undecided strict comparison gets the gap cvt:mip:eps.
   /// FALSE is tested first.
-  /// @return 1: true, -1: false, 0: undecided (also if d < 0)
+  /// @return 1: true, -1: false, 0: undecided
   template <int kind>
   static int DecideByBounds(
       double L, double U, double rhs, double d, double m) {
     static_assert(kind && kind*kind <= 4, "inequality kind expected");
-    if (d < 0.0)
-      return 0;
     bool is_true {}, is_false {};
     if constexpr (1==kind) {          // >=
       is_true = L >= rhs - d;
@@ -601,8 +597,7 @@ public:
   /// Margin d = max(cvt:pre:feastol, cvt:pre:ulps ulp(rhs)) by which
   /// computed body bounds may cross the rhs of a comparison without
   /// deciding it. Bounds are computed in floating point: (5+1)/3 can
-  /// give 1.9999999999999998 < 2. Negative: do not decide
-  /// (NumericTolerances::DecisionMargin()).
+  /// give 1.9999999999999998 < 2 (NumericTolerances::DecisionMargin()).
   /// Undecided comparisons are left to the solver's tolerances.
   double DecisionMargin(double rhs) const {
     return MPCD( tolerances() ).DecisionMargin(rhs);
@@ -611,9 +606,9 @@ public:
   /// Decision margin for  body (cmp) rhs  with body bounds \a bnt.
   /// An integer-valued body with an integral rhs has integral bounds
   /// and no rounding error to absorb: d = cvt:pre:feastol, also at
-  /// magnitudes where the floating-point margin exceeds it
-  /// (x >= 600000000 at x >= 600000000 is TRUE). Otherwise
-  /// DecisionMargin(rhs).
+  /// magnitudes where the floating-point margin exceeds it. A margin
+  /// of 1 or more (|rhs| from about 2.8e14 at 16 ulp) would decide
+  /// x >= c TRUE at x >= c-1. Otherwise DecisionMargin(rhs).
   template <class BndNType>
   double DecisionMargin(double rhs, const BndNType& bnt) const {
     if (var::INTEGER == bnt.get_result_type() && is_integer(rhs))
@@ -659,8 +654,6 @@ public:
       // of a bound are decided by IfPreprocessDecidable() already.
       // Integer bodies: the step 1 (exact).
       const bool f_cont = var::INTEGER != bnt.get_result_type();
-      if (f_cont && d < 0.0)              // not to be decided
-        return false;
       const auto cmpEps = f_cont ? d : MPCD( ComparisonEps( bnt ) );
       if (1==kind && rhs>bnt.ub()-cmpEps)  // expr >= rhs > ub-eps
         return convert(bnt.ub());               // replace as expr==ub

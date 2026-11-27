@@ -2319,8 +2319,8 @@ private:
           "rounded): a computed bound of (x+1)/3 at x <= 5 can be "
           "1.9999999999999998, and (x+1)/3 >= 2 must not be decided "
           "false. Where this margin exceeds cvt:pre:feastol, "
-          "comparisons of continuous expressions are not decided by "
-          "the converter. 0: no margin. Default {}.",
+          "comparisons are decided with this margin instead, as with "
+          "cvt:pre:feastol=0. 0: no margin. Default {}.",
           NumericTolerances::DefaultUlps()).c_str(),
           options_.ulps_, 0, 1000000);
 

@@ -17,7 +17,9 @@ Summary of recent updates to the AMPL MP Library
   from the bounds of their expressions with option *cvt:pre:feastol*
   (absolute, in the units of the expression) and a margin for rounding
   errors of the compared constant (new option *cvt:pre:ulps*, default
-  16 units in the last place; 0: none). A non-strict comparison holds
+  16 units in the last place; 0: none), which replaces the tolerance
+  where it is larger (large constants; from about 1e14 it exceeds 1
+  for continuous expressions). A non-strict comparison holds
   within the tolerance: `x >= 4` with `x <= 3.9999995` is no longer
   decided false, and `(x + 1)/3 >= 2 ==> y >= 3` at `x <= 5` is no
   longer decided false by a rounding error (which made the returned

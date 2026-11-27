@@ -92,15 +92,11 @@ public:
   /// tolerance in the units of the body; FPMargin(c), from the compared
   /// constant only, absorbs rounding errors of computed bounds near c,
   /// e.g., 1.9999999999999998 for 2.
-  /// @return d, or a negative value if the comparison must not be
-  ///   decided: FPMargin(c) exceeds a positive cmp_tol(), so that
-  ///   rounding errors at the magnitude of c exceed the tolerance
-  ///   (left to the solver)
+  /// Where FPMargin(c) exceeds cmp_tol() (large |c|), d is that
+  /// margin, as with cmp_tol() = 0: a body bound equal to c, or
+  /// missing it by more than d, is decided at any magnitude.
   double DecisionMargin(double c) const {
-    const double m = FPMargin(c);
-    if (cmptol_ > 0.0 && m > cmptol_)
-      return -1.0;
-    return std::max(cmptol_, m);
+    return std::max(cmptol_, FPMargin(c));
   }
 
 private:

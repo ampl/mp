@@ -1375,3 +1375,48 @@ TEST(CmpTolTest, LargeIntegerExact__decided) {
   EXPECT_EQ(0.0, t.Backend().ub(b));
   EXPECT_EQ(0, t.Backend().NumIndicators());
 }
+
+
+/// b==1 ==> x > 1e13 for x in [0, 1e13]: decided false with the
+/// floating-point margin of 1e13, which exceeds cvt:pre:feastol
+/// (W1F-01; before: left to the solver, whose gap cvt:mip:eps is
+/// below the spacing of doubles there)
+TEST(CmpTolTest, BigRhs__decidedWithFPMargin) {
+  mp::Env e;
+  Disj2IndTester t(e, kAccInd);
+  int b = t.Var(0, 1, INTEGER), x = t.Var(0, 1e13);
+  t.Add( t.Bin(OR, t.Cmp(NE, b, 1), t.Cmp(mp::expr::GT, x, 1e13)) );
+  t.ConvertModel();
+  EXPECT_EQ(0.0, t.Backend().ub(b));
+  EXPECT_EQ(0, t.Backend().NumIndicators());
+}
+
+/// b==1 ==> x >= 1000 at x <= 10 is decided false also with
+/// cvt:pre:feastol=1e-12, below the floating-point margin of 1000
+/// (W1F-07; before: passed to the solver)
+TEST(CmpTolTest, FarFromRhs__decidedAtSmallFeastol) {
+  for (auto opt: {"", "cvt:pre:feastol=1e-12"}) {
+    mp::Env e;
+    Disj2IndTester t(e, kAccInd, opt);
+    int b = t.Var(0, 1, INTEGER), x = t.Var(0, 10);
+    t.Add( t.Bin(OR, t.Cmp(NE, b, 1), t.Cmp(GE, x, 1000)) );
+    t.ConvertModel();
+    EXPECT_EQ(0.0, t.Backend().ub(b)) << opt;
+    EXPECT_EQ(0, t.Backend().NumIndicators()) << opt;
+  }
+}
+
+/// b==1 ==> y >= 1e15 for integer y in [1e15-2, 1e15-1]: decided
+/// false. The floating-point margin of 1e15 is 2, so d = m would
+/// decide it TRUE; integer bodies with an integral rhs keep
+/// d = cvt:pre:feastol
+TEST(CmpTolTest, HugeIntegerRhs__notDecidedByFPMargin) {
+  mp::Env e;
+  Disj2IndTester t(e, kAccInd);
+  int b = t.Var(0, 1, INTEGER);
+  int y = t.Var(1e15 - 2, 1e15 - 1, INTEGER);
+  t.Add( t.Bin(OR, t.Cmp(NE, b, 1), t.Cmp(GE, y, 1e15)) );
+  t.ConvertModel();
+  EXPECT_EQ(0.0, t.Backend().ub(b));
+  EXPECT_EQ(0, t.Backend().NumIndicators());
+}
