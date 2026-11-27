@@ -307,7 +307,8 @@ public:
       prepro.narrow_result_bounds(val, val);
       return true;
     }
-    SnapEqualityRhsToBound(con, bndsNType);
+    if (var::INTEGER!=bndsNType.type_)
+      SnapEqualityRhsToBound(con, bndsNType);
     return false;
   }
 

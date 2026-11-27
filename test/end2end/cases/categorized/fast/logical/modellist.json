@@ -2007,5 +2007,14 @@
     "comment": "An equality with large fractional coefficients missing its right-hand side by far is decided false (before: passed on, Gurobi reported infeasible); CP-SAT rejects the fractional coefficients",
     "options": { "presolve": 0 },
     "objective" : -3
+  },
+  {
+    "name" : "cmp_tol_int_equality_bound_01",
+    "solvers" : ["highs", "gurobi"],
+    "tags" : ["logical", "integer"],
+    "comment" : "An exact integer equality keeps its RHS near a body bound",
+    "options" : { "presolve": 0 },
+    "objective" : 1,
+    "values" : { "solve_result_num": 0, "x-k": 0 }
   }
 ]
