@@ -79,6 +79,34 @@ TEST_F(InterfaceTester_MaxConstraint, RoundIntBoundUsesUlpTolerance) {
 }
 
 
+/// Result bounds of floor/ceil/round/trunc: a fractional argument
+/// bound is moved outward by the floating-point margin
+/// (cvt:pre:ulps ulp), so that a rounding error in it does not
+/// cut off a solution; never by a feasibility tolerance.
+TEST_F(InterfaceTester_MaxConstraint, RoundBoundOutwardToleratesRoundingError) {
+  const auto& cvt = GetInterface().GetFlatCvt();
+  auto floor = [](double v) { return std::floor(v); };
+  auto ceil = [](double v) { return std::ceil(v); };
+  auto round = [](double v) { return std::nearbyint(v); };
+  const double ub4 = (2.0/3.0)*5 + (1.0/3.0)*2;   // 3.9999999999999996
+  ASSERT_LT(ub4, 4.0);
+  EXPECT_EQ(4.0, cvt.RoundBoundOutward(ub4, 1, floor));
+  const double lbm2 = std::nextafter(-2.0, 0.0);  // -1.9999999999999998
+  ASSERT_GT(lbm2, -2.0);
+  EXPECT_EQ(-2.0, cvt.RoundBoundOutward(lbm2, -1, ceil));
+  EXPECT_EQ(4.0, cvt.RoundBoundOutward(3.4999999999999996, 1, round));
+  // Exact integers are kept; real fractional parts still round
+  EXPECT_EQ(3.0, cvt.RoundBoundOutward(3.0, -1, floor));
+  EXPECT_EQ(3.0, cvt.RoundBoundOutward(3.0, 1, ceil));
+  EXPECT_EQ(2.0, cvt.RoundBoundOutward(2.5, -1, floor));
+  EXPECT_EQ(2.0, cvt.RoundBoundOutward(2.5, 1, floor));
+  EXPECT_EQ(3.0, cvt.RoundBoundOutward(2.5, -1, ceil));
+  // Data within cvt:pre:feastol of an integer: floor(x) at
+  // x <= 3.9999995 is at most 3
+  EXPECT_EQ(3.0, cvt.RoundBoundOutward(3.9999995, 1, floor));
+  EXPECT_EQ(1.0, cvt.RoundBoundOutward(0.0000005, -1, ceil));
+}
+
 /// Decision margin d = max(cvt:pre:feastol, cvt:pre:ulps ulp):
 /// a comparison is decided false from body bounds only if they miss
 /// the right-hand side by more than d (one ulp is not enough)

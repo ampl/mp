@@ -1037,8 +1037,24 @@ public:
       prepro.set_result_var(x);
       return;
     }
-    prepro.narrow_result_bounds( rnd(MPCD( lb(x) )), rnd(MPCD( ub(x) )) );
+    prepro.narrow_result_bounds( RoundBoundOutward(MPCD( lb(x) ), -1, rnd),
+                                 RoundBoundOutward(MPCD( ub(x) ), 1, rnd) );
     prepro.set_result_type( var::INTEGER );
+  }
+
+  /// Bound rnd(b) of a monotone rounding function's result,
+  /// where b is a bound of its argument (dir=-1: lower, +1: upper).
+  /// A computed bound can miss the exact one by a rounding error,
+  /// e.g., (2/3)*5 + (1/3)*2 = 3.9999999999999996, so a fractional b
+  /// is first moved outward by cvt:pre:ulps ulp(b), never by a
+  /// feasibility tolerance: floor(x) at x <= 3.9999995 is at most 3.
+  /// The result bound can be weaker, but never cuts off a solution.
+  /// An integral b is taken as exact.
+  template <class RoundFn>
+  double RoundBoundOutward(double b, int dir, RoundFn rnd) const {
+    if (!std::isfinite(b) || b == std::floor(b))
+      return rnd(b);
+    return rnd(b + dir * MPCD( tolerances() ).FPMargin(b));
   }
 
   /// Preprocess x div y = trunc(x/y)
@@ -1067,7 +1083,9 @@ public:
           l0 = std::min(l0, x1 / y1);
           u0 = std::max(u0, x1 / y1);
         }
-      prepro.narrow_result_bounds( std::trunc(l0), std::trunc(u0) );
+      auto trunc = [](double v) { return std::trunc(v); };
+      prepro.narrow_result_bounds( RoundBoundOutward(l0, -1, trunc),
+                                   RoundBoundOutward(u0, 1, trunc) );
     } else if (IsIntegerValued(y)) {          // |y| >= 1
       const auto m = std::max(std::fabs(lx), std::fabs(ux));
       prepro.narrow_result_bounds( -m, m );

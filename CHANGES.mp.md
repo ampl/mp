@@ -39,6 +39,11 @@ Summary of recent updates to the AMPL MP Library
   optimum when `x` came after the compared expressions in the NL file
   (for example, with `abs()` elsewhere in the model): preprocessing
   (*cvt:pre:sort*) reordered `x` with the compared values.
+- Fix: `floor`, `ceil`, `round`, `trunc` and `div` of fractional
+  expressions, such as `floor((2*x - y)/3)`, could cut off the optimum
+  or make a feasible model infeasible, when an exact bound of the
+  argument was computed with a rounding error (3.9999999999999996
+  instead of 4).
 - Fix: `numberof` with compared expressions such as `max()`, `min()`,
   `abs()` or another `numberof` failed with "Part of expression
   redefinition could be lost" or, with a nested `numberof`, could give a
