@@ -7,11 +7,38 @@
 
 namespace mp {
 
+/// For an integer-valued body: the integer rhs of the strict
+/// comparison  body > c  (\a kind_output 1: floor(c+t) + 1)
+/// or  body < c  (-1: ceil(c-t) - 1), t the integrality tolerance
+/// (cvt:pre:inteps). For integral c: c+1, c-1.
+template <class MC>
+double IntStrictRhs(MC& mc, double c, int kind_output) {
+  const double k = mc.tolerances().SnapToInteger(c);
+  return kind_output > 0 ? std::floor(k) + 1.0 : std::ceil(k) - 1.0;
+}
+
+/// Warn if the gap \a eps (cvt:mip:eps) of a strict comparison of a
+/// continuous expression is not smaller than the range of the
+/// expression (bounds \a bnt): its strict side may then be empty,
+/// e.g., 1e-6*x < 3e-6 for x in [0, 6]
+template <class MC, class BndNType>
+void WarnIfStrictGapCoversRange(MC& mc, const BndNType& bnt, double eps) {
+  if (eps > 0.0 && bnt.ub() - bnt.lb() <= eps)
+    mc.AddWarning("strict_cmp_eps",
+                  "The gap cvt:mip:eps of a strict comparison is not "
+                  "smaller than the range of its expression: the strict "
+                  "side can be empty. Consider a smaller cvt:mip:eps "
+                  "or rescaling the expression");
+}
+
 /// Strict comparison offset added to the rhs of the
 /// output inequality (<= or >=) of an indicator implying
 /// conditional inequality \a cc, or its negation if \a f_neg.
-/// Strict outputs exclude equality by ComparisonEps():
-/// 1 for integer bodies, cvt:mip:eps otherwise.
+/// Strict outputs exclude equality: for continuous bodies by
+/// ComparisonEps() (cvt:mip:eps); for integer bodies the output rhs
+/// is the next integer, also when the rhs is fractional
+/// (cvt:pre:ineqrhs=0): body < c becomes body <= ceil(c-t) - 1,
+/// body > c becomes body >= floor(c+t) + 1, t = cvt:pre:inteps.
 template <class MC, class AlgCon>
 double CondIneqRhsOffset(
     MC& mc, const ConditionalConstraint<AlgCon>& cc, bool f_neg) {
@@ -21,8 +48,14 @@ double CondIneqRhsOffset(
   if (!f_strict_output)
     return 0.0;
   const int kind_output = (kind_input>0) != f_neg ? 1 : -1;
-  return kind_output * mc.ComparisonEps(
-        mc.ComputeBoundsAndType(cc.GetArguments()).get_result_type() );
+  const auto bnt = mc.ComputeBoundsAndType(cc.GetArguments());
+  const auto type = bnt.get_result_type();
+  if (var::INTEGER == type)
+    return IntStrictRhs(mc, cc.GetConstraint().rhs(), kind_output)
+        - cc.GetConstraint().rhs();
+  const double eps = mc.ComparisonEps(type);
+  WarnIfStrictGapCoversRange(mc, bnt, eps);
+  return kind_output * eps;
 }
 
 /// Add (lit) ==> body (cmp) rhs+offset, where (cmp) is <= or >=.

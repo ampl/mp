@@ -1187,6 +1187,20 @@ TEST(CmpTolTest, IntRhsWithinInteps__snappedToInteger) {
   }
 }
 
+/// b==1 ==> y < 3.5, y integer, with cvt:pre:ineqrhs=0 (C1F-04):
+/// y <= 3, not y <= 2 (offset -1 applied to 3.5)
+TEST(CmpTolTest, IntStrictFractionalRhs__nextInteger) {
+  for (auto opt: {"", "cvt:pre:ineqrhs=0"}) {
+    mp::Env e;
+    Disj2IndTester t(e, kAccInd, opt);
+    int b = t.Var(0, 1, INTEGER), y = t.Var(0, 6, INTEGER);
+    t.Add( t.Bin(OR, t.Cmp(NE, b, 1), t.Cmp(LT, y, 3.5)) );
+    t.ConvertModel();
+    ExpectSingleIndicator(t.Backend().GetIndicatorConstraintLinLE(),
+                          b, 1, y, 3);
+  }
+}
+
 /// b==1 ==> x <= 5e-5, x in [0, 1e-4] continuous (T1F-01): kept as
 /// x <= 5e-5, not rewritten as x == 0 by cvt:pre:ineq2bndeq
 /// (cvt:mip:eps is not applied to non-strict comparisons)

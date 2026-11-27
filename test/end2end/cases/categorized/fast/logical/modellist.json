@@ -1692,6 +1692,23 @@
     "objective" : 5
   },
   {
+    "name" : "cmp_tol_int_lt_01 ineqrhs=0",
+    "files" : ["cmp_tol_int_lt_01.mod"],
+    "tags" : ["logical", "integer"],
+    "comment": "x < 3.5 for integer x allows x = 3 also without rounding the right-hand side first (C1F-04)",
+    "options": { "presolve": 0,
+                 "mp_options": "cvt:pre:ineqrhs=0",
+                 "mp2nl_options": "solver_options='cvt:pre:ineqrhs=0'" },
+    "objective" : 3
+  },
+  {
+    "name" : "cmp_tol_int_lt_01",
+    "tags" : ["logical", "integer"],
+    "comment": "x < 3.5 for integer x allows x = 3 (AMPL presolve off: it would round the bound itself)",
+    "options": { "presolve": 0 },
+    "objective" : 3
+  },
+  {
     "name" : "cmp_tol_eq_scaled_01",
     "solvers" : ["highs", "gurobi", "scip", "cplex", "copt", "xpress", "mosek"],
     "tags" : ["logical", "integer"],
@@ -1803,6 +1820,26 @@
     "comment": "Integer x in [0, 1e15]: b <==> x >= 2 is not decided true at x = 0",
     "options": { "presolve": 0 },
     "objective" : -8
+  },
+  {
+    "name" : "cmp_tol_strict_eps_01",
+    "solvers" : ["highs", "gurobi", "scip", "cplex", "copt", "xpress", "mosek"],
+    "tags" : ["logical", "continuous"],
+    "comment": "A strict comparison whose expression range is below cvt:mip:eps: infeasible encoding, warning strict_cmp_eps",
+    "options": { "presolve": 0 },
+    "values": { "solve_result": "infeasible",
+                "if match(solve_message, 'cvt:mip:eps') > 0 then 1": 1 }
+  },
+  {
+    "name" : "cmp_tol_strict_eps_01 eps=1e-7",
+    "files" : ["cmp_tol_strict_eps_01.mod"],
+    "solvers" : ["highs", "gurobi", "scip", "cplex", "copt", "xpress", "mosek"],
+    "tags" : ["logical", "continuous"],
+    "comment": "As cmp_tol_strict_eps_01 with a gap below the range",
+    "options": { "presolve": 0,
+                 "mp_options": "cvt:mip:eps=1e-7",
+                 "mp2nl_options": "solver_options='cvt:mip:eps=1e-7'" },
+    "objective" : 2.9
   },
   {
     "name" : "cmp_tol_strict_false_01",

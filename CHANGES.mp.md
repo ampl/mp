@@ -35,6 +35,13 @@ Summary of recent updates to the AMPL MP Library
 - An equality whose right-hand side differs from a bound of its
   expression only by rounding error, such as `0.3*b == 0.1*3` for a
   binary `b`, holds at that bound.
+- A warning (*strict_cmp_eps*) when the gap *cvt:mip:eps* of a strict
+  comparison is not smaller than the range of its expression, so that
+  its strict side can be empty (for example, `1e-6*x < 3e-6` with `x` in
+  `[0, 6]`).
+- Fix: with *cvt:pre:ineqrhs=0*, a strict comparison of an integer
+  expression with a fractional right-hand side, such as `x < 3.5`,
+  excluded `x = 3`.
 - New option *cvt:uenc:maxdom* (default 10000): largest domain of an
   integer variable for its unary encoding (one binary variable per
   value). Larger domains use reified inequalities for each compared
