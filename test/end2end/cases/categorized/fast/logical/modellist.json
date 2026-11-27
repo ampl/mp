@@ -1722,6 +1722,15 @@
     "objective" : 2
   },
   {
+    "name" : "cmp_tol_uenc_01",
+    "tags" : ["logical", "integer"],
+    "comment": "No unary encoding for a domain of 100001 values (cvt:uenc:maxdom)",
+    "options": { "mp_options": "debug=1",
+                 "mp2nl_options": "solver_options='debug=1'" },
+    "objective" : 0,
+    "values": { "Initial.flat1__A__uenc": 0 }
+  },
+  {
     "name" : "cmp_tol_strict_true_01",
     "tags" : ["logical", "continuous"],
     "comment": "A strict comparison that holds exactly (x > -5e-7 at x >= 0) is decided true, not encoded with the gap cvt:mip:eps",
@@ -1812,5 +1821,20 @@
                  "mp_options": "cvt:pre:inteps=-1",
                  "mp2nl_options": "solver_options='cvt:pre:inteps=-1'" },
     "objective" : 0
+  },
+  {
+    "name" : "alldiff_dom_01",
+    "tags" : ["logical", "integer"],
+    "comment": "alldiff on domains of 2100 values: unary encoding within cvt:uenc:maxdom, fast",
+    "objective" : 120
+  },
+  {
+    "name" : "alldiff_dom_01 maxdom=10000001",
+    "files" : ["alldiff_dom_01.mod"],
+    "tags" : ["logical", "integer"],
+    "comment": "As alldiff_dom_01 with the former limit of the unary encoding",
+    "options": { "mp_options": "cvt:uenc:maxdom=10000001",
+                 "mp2nl_options": "solver_options='cvt:uenc:maxdom=10000001'" },
+    "objective" : 120
   }
 ]

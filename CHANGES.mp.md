@@ -35,6 +35,14 @@ Summary of recent updates to the AMPL MP Library
 - An equality whose right-hand side differs from a bound of its
   expression only by rounding error, such as `0.3*b == 0.1*3` for a
   binary `b`, holds at that bound.
+- New option *cvt:uenc:maxdom* (default 10000): largest domain of an
+  integer variable for its unary encoding (one binary variable per
+  value). Larger domains use reified inequalities for each compared
+  value. Before, domains up to 1e7 values were encoded, which could
+  exhaust memory, for example with `x != 4` for `x` in `0..100000`.
+  *cvt:uenc:maxdom=10000001* restores the previous limit (faster for
+  *alldiff* and similar expressions that compare many values of a
+  larger domain).
 - Fix: `numberof x in (...)` with a variable `x` could give a wrong
   optimum when `x` came after the compared expressions in the NL file
   (for example, with `abs()` elsewhere in the model): preprocessing

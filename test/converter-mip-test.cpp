@@ -1235,6 +1235,21 @@ TEST(CmpTolTest, IntEqualityWithinInteps__snapped) {
   }
 }
 
+/// y != 4 or b, y != 1 or b on a domain of 10001 values (T1F-04):
+/// no unary encoding above cvt:uenc:maxdom (10000)
+TEST(CmpTolTest, UEncMaxDom__noEncodingForLargeDomain) {
+  for (auto opt: {"", "cvt:uenc:maxdom=10001"}) {
+    mp::Env e;
+    Disj2IndTester t(e, kAccInd, opt);
+    int b = t.Var(0, 1, INTEGER), y = t.Var(0, 10000, INTEGER);
+    t.Add( t.Bin(OR, t.Cmp(NE, y, 4), t.Cmp(GE, b, 1)) );
+    t.Add( t.Bin(OR, t.Cmp(NE, y, 1), t.Cmp(GE, b, 1)) );
+    t.ConvertModel();
+    EXPECT_EQ(*opt ? 1 : 0, t.NumUsed<mp::UnaryEncodingConstraint>())
+        << opt;
+  }
+}
+
 /// b==1 ==> not (x > 5e-5), x in [0, 8e-5] continuous (T1F-02, a3):
 /// x <= 5e-5 under the literal, not x != 8e-5 (ineq2bndeq with
 /// cvt:mip:eps, which made the model infeasible)

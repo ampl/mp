@@ -211,6 +211,14 @@ TEST_F(InterfaceTester_MaxConstraint, SharedConstantsNeverRounded) {
   EXPECT_EQ(2.9999995, m.ub(c));
 }
 
+/// cvt:uenc:maxdom: unary encoding only for domains up to 10000 values
+TEST_F(InterfaceTester_MaxConstraint, UEncMaxDomain) {
+  const auto& cvt = GetInterface().GetFlatCvt();
+  EXPECT_TRUE(cvt.IfDomainFitsUEnc(0.0, 9999.0));
+  EXPECT_FALSE(cvt.IfDomainFitsUEnc(0.0, 10000.0));
+  EXPECT_FALSE(cvt.IfDomainFitsUEnc(-5e4, 5e4));
+}
+
 /////////////////////////////// Quadratics //////////////////////////////////
 ///
 /// Probably this tests more the Problem Flattener,

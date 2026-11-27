@@ -219,14 +219,19 @@ public:
       ExcludeUEncApriori(var);
       return false;
     }
-    const auto lb_dbl = this->lb(var);
-    const auto ub_dbl = this->ub(var);
-    bool fMight = (lb_dbl>=std::numeric_limits<int>::min() &&
-                   ub_dbl<=std::numeric_limits<int>::max()) &&
-                  (ub_dbl-lb_dbl <= 10000000);
+    const bool fMight = IfDomainFitsUEnc(this->lb(var), this->ub(var));
     if (!fMight)
       ExcludeUEncApriori(var);
     return fMight;
+  }
+
+  /// Whether an integer domain [lb, ub] is small enough for unary
+  /// encoding: at most cvt:uenc:maxdom values, within the int range.
+  /// Larger domains use reified inequalities for each compared value.
+  bool IfDomainFitsUEnc(double lb, double ub) const {
+    return lb>=std::numeric_limits<int>::min()
+        && ub<=std::numeric_limits<int>::max()
+        && ub-lb+1.0 <= options_.UEncMaxDom_;
   }
 
   /// Mark variable as "apriori no UEnc"
@@ -283,13 +288,19 @@ protected:
   /// Result of IsVarConstCmp(): var, const
   using VarConstCmp = std::pair<int, double>;
 
-  /// Check if \a con is a conditional var==const
-  static std::pair<bool, VarConstCmp>
-  IsVarConstCmp(const CondLinConEQ& con) {
+  /// Check if \a con is a conditional var==const.
+  /// For an integer variable, a constant within cvt:pre:inteps of an
+  /// integer is that integer (as in FixEqualityResult(), which is off
+  /// with cvt:pre:eqresult=0): one flag per integer value.
+  std::pair<bool, VarConstCmp>
+  IsVarConstCmp(const CondLinConEQ& con) const {
     const auto& linEQ = con.GetConstraint();
     if (1==linEQ.size()) {
       assert(1.0==linEQ.coef(0));
-      return { true, { linEQ.var(0), linEQ.rhs() } };
+      const int x = linEQ.var(0);
+      const double c = MPCD( is_var_integer(x) )
+          ? MPCD( tolerances() ).SnapToInteger(linEQ.rhs()) : linEQ.rhs();
+      return { true, { x, c } };
     }
     return { false, {} };
   }
@@ -329,8 +340,10 @@ protected:
     const auto& ck = GET_CONSTRAINT_KEEPER(CondLinConEQ);
     if (!ck.IfConsiderConversion())
       return true;
+    if (!IfDomainFitsUEnc(MPCD(lb(var)), MPCD(ub(var))))
+      return true;                      // final bounds: cvt:uenc:maxdom
     auto lb = int(std::ceil(MPCD(lb(var))));
-    auto ub = int(std::ceil(MPCD(ub(var))));
+    auto ub = int(std::floor(MPCD(ub(var))));
     double dom_rng = ub-lb+1;
     if (options_.NoUEncPosCtxRatio_ * map.size()   // Use UEnc if >
         > dom_rng)
@@ -422,8 +435,8 @@ protected:
     // encoding below and must be fixed here, or they stay free.
     int nOutside=0;
     for (const auto& veq: map) {
-      const double c = veq.first;
-      if (c<lb || c>ub || c!=std::round(c)) {
+      const double c = veq.first;      // integer keys: IsVarConstCmp()
+      if (c<lb || c>ub || !MPCD( tolerances() ).IsNearInteger(c)) {
         ++nOutside;
         this->NarrowVarBounds(
               GET_CONSTRAINT_KEEPER(CondLinConEQ).GetResultVar(veq.second),
@@ -498,6 +511,7 @@ private:
     int IntProdBits_ { 30 };
     double NoUEncPosCtxRatio_ { 0.0 };
     int NoUEncNegCtxMax_ { 1 };
+    double UEncMaxDom_ { 10000 };
   };
   Options options_;
 
@@ -572,6 +586,14 @@ private:
                        "piecewise-linear squares, as for continuous factors. "
                        "Products with a binary factor are always exact.",
                        options_.IntProdBits_, 0, 62);
+    this->GetEnv().AddOption("cvt:uenc:maxdom uenc:maxdom",
+                       "Max number of values ub-lb+1 of an integer "
+                       "variable x for its unary encoding (one binary "
+                       "variable per value), used for comparisons "
+                       "x==const. Larger domains use reified "
+                       "inequalities (indicators or big-M) for each "
+                       "compared value. 0: never. Default 10000.",
+                       options_.UEncMaxDom_, 0.0, 1e100);
     this->GetEnv().AddOption("cvt:uenc:ratio uenc:ratio",
                        "Min ratio (ub-lb+1)/Nvalues to skip unary encoding "
                        "for a variable x, where Nvalues is the number of constants "
