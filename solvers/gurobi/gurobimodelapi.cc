@@ -30,9 +30,12 @@ void GurobiModelAPI::AddVariables(const VarArrayDef& v) {
 }
 void ThrowForUnsupportedObjectives()
 {
+  // Not pre-formatted: ReportError() wraps error messages (tech:msgwidth)
   throw std::runtime_error(
-      format_error("Multiple quadratic objectives are not supported natively by Gurobi; "
-                   "enable multi-objective emulator by setting the option obj:multi=2"));
+      "When several objectives are handled natively, all of them must be "
+      "linear. Use cvt:quadobj=0 and cvt:nlobj=0 to move quadratic and "
+      "nonlinear objective terms into constraints, obj:multi=2 (MP "
+      "emulation), or a single objective.");
 }
 
 void GurobiModelAPI::SetLinearObjective(
@@ -118,8 +121,11 @@ void GurobiModelAPI::SetNLObjective(int i, const NLObjective& nlo) {
                          (double*)frm.data(), (int*)frm.parents()));
   }
   else {
-    MP_RAISE("Multiple non-linear objectives not supported natively. "
-             "Use multi-objective emulator by setting obj:multi=2");
+    MP_RAISE("When several objectives are handled natively, all of them "
+             "must be linear. Use cvt:quadobj=0 and cvt:nlobj=0 "
+             "to move quadratic and nonlinear objective terms into "
+             "constraints, obj:multi=2 (MP emulation), or a single "
+             "objective.");
   }
 }
 #endif

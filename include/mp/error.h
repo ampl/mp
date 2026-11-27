@@ -55,9 +55,10 @@ namespace mp {
 /// Raise error
 #define MP_RAISE(msg) throw mp::Error(msg)
 
-/// Raise with exit code
+/// Raise with a solve result code (see sol::Status),
+/// which the driver reports in the .sol file
 #define MP_RAISE_WITH_CODE(exit_code, msg) \
-  throw mp::Error(msg, exit_code)
+  throw mp::Error(msg, mp::SolveCode(exit_code))
 
 /// Raise infeasibility
 #define MP_INFEAS(msg) \
@@ -65,9 +66,23 @@ namespace mp {
 
 /// Silence unused parameter warnings
 #define MP_UNUSED(x) (void)(x)
+
+/// Solve result code carried by an Error (see sol::Status).
+/// A distinct type, so that an int meant as a message argument
+/// can never be taken for a code.
+struct SolveCode {
+  explicit SolveCode(int v) : value(v) { }
+  int value;
+};
+
 /// A general error.
+///
+/// Its exit code is the solve result code that a driver reports
+/// for it (see sol::Status), or -1 (the default) for an error
+/// without one, which drivers report as a failure (500).
+/// Only Error(msg, SolveCode) sets a code.
 class Error : public fmt::internal::RuntimeError {
-  int exit_code_ = EXIT_FAILURE;
+  int exit_code_ = -1;
  protected:
   Error() {}
 
@@ -81,16 +96,27 @@ class Error : public fmt::internal::RuntimeError {
   }
 
  public:
-  /// Costruct from message formatting arguments?
-  FMT_VARIADIC_(char, , Error, init, fmt::CStringRef)
+  /// Construct from a message; no solve result code (-1)
+  Error(fmt::CStringRef msg) { SetMessage(msg.c_str()); }
 
-  /// Construct from message and optional exit code.
-  /// A single int argument selects this overload, not formatted construction.
-  /// Use Error(fmt::format(format, value)) when the int is a message argument.
-  Error(fmt::CStringRef msg, int c=-1) : exit_code_(c)
+  /// Construct from a message and a solve result code
+  Error(fmt::CStringRef msg, SolveCode code) : exit_code_(code.value)
   { SetMessage(msg.c_str()); }
 
-  /// The exit code
+  /// Deprecated: an int argument here was easily meant as a
+  /// message argument. Use Error(msg, SolveCode(code)).
+  [[deprecated("use mp::Error(msg, mp::SolveCode(code))")]]
+  Error(fmt::CStringRef msg, int code) : exit_code_(code)
+  { SetMessage(msg.c_str()); }
+
+  /// Deprecated: construct from a format string and its arguments.
+  /// Use Error(fmt::format(format_str, args...)).
+  template <typename Arg1, typename... Args>
+  [[deprecated("use mp::Error(fmt::format(...))")]]
+  Error(fmt::CStringRef format_str, const Arg1& arg1, const Args&... args)
+  { SetMessage(fmt::format(format_str, arg1, args...)); }
+
+  /// The solve result code, or -1 if none
   int exit_code() const { return exit_code_; }
 };
 

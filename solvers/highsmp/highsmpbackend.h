@@ -23,6 +23,8 @@ class HighsBackend :
   std::vector<int> iisVars_, iisCons_;
   /// Whether the solve was a feasibility relaxation
   bool feasrelaxDone_ = false;
+  /// The relaxed point violates a non-relaxable element
+  bool feasrelaxViolatesFixed_ = false;
   void DestroyFixedLP();
   /// Copy the user's options to the fixed-LP instance
   void CopyOptionsToFixedLP(void* fixed);
@@ -86,7 +88,7 @@ public:
   ALLOW_STD_FEATURE(MIPSTART, true)
   void AddMIPStart(ArrayRef<double>, ArrayRef<int>) override;
   ALLOW_STD_FEATURE(WARMSTART, true)
-    void AddPrimalDualStart(Solution sol0) override;
+    int AddPrimalDualStart(Solution sol0) override;
   /**
   * Get/Set AMPL var/con statii
   **/
@@ -125,6 +127,17 @@ public:
   **/
   ALLOW_STD_FEATURE(FEAS_RELAX, true)
   void DoHighsFeasRelax();
+  /// Least relaxation cost implied by contradictory column/row bounds
+  double MinFeasRelaxCost(const std::vector<double>& lbpen,
+                          const std::vector<double>& ubpen,
+                          const std::vector<double>& rhspen);
+  /// Fail if HiGHS reports a relaxation cheaper than \a min_cost
+  void CheckFeasRelaxCost(double min_cost);
+  /// Whether the relaxed point violates an element with a negative
+  /// (not relaxable) penalty
+  bool ViolatesNonRelaxable(const std::vector<double>& lbpen,
+                            const std::vector<double>& ubpen,
+                            const std::vector<double>& rhspen);
 
   /**
   * Obtain inf/unbounded rays
@@ -210,7 +223,12 @@ protected:
   /// integer values, solve, unfix. Returns false if no solution resulted.
   bool CompleteStartByFixing(std::vector<double>& x0,
                              const std::vector<int>& s0);
+  /// Pass a starting point; NULL for a vector not provided.
+  /// @return false (with a warning) if HiGHS rejects it.
+  bool PassStart(const double* col_value, const double* row_dual);
 
+  /// Whether the solver has a valid basis of the model
+  bool HasValidBasis();
   ArrayRef<int> VarStatii();
   ArrayRef<int> ConStatii();
   void VarConStatii(ArrayRef<int>, ArrayRef<int>);

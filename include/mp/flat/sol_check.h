@@ -52,6 +52,8 @@ public:
           warn += msgreal;
           warn += "*: Using the solver's aux variable values.\n";
         }
+        if (auto hint = MPCD( GetEnv() ).AuxfilesHint(); hint.size())
+          warn += hint + '\n';
         warn += "Documentation: mp.ampl.com/modeling-tools.html#automatic-solution-check.";
         // Should messages for realistic and idealistic
         // modes be more coordinated?
@@ -121,7 +123,7 @@ public:
       ArrayRef<double> x, std::vector<bool> is_final={},
       bool f_idealistic=true) {
     VarInfoRecomp vir {
-      MPCD( sol_feas_tol() ),
+      MPCD( sol_feas_tol() ), MPCD( sol_log_tol() ),
           f_idealistic,
       {x, recomp_fn, is_final},
       {},              // no raw values
@@ -157,6 +159,7 @@ protected:
                  MPCD( GetModel() ).var_ub_best_vec(),
                  MPCD( sol_feas_tol() ),
                  MPCD( sol_feas_tol_rel() ),
+                 MPCD( sol_log_tol() ),
                  MPCD( sol_round() ),
                  MPCD( sol_prec() ),
                  if_recomp_vals,
@@ -188,11 +191,15 @@ protected:
               {x - MPCD( ub(i) ), MPCD( ub(i) )},
               MPCD( sol_feas_tol() ), MPCD( sol_feas_tol_rel() ),
               MPCD( GetModel() ).var_name(i));
+        // Integrality: |x - round(x)| is a violation if it exceeds
+        // both the absolute tolerance (solvers use absolute
+        // integrality tolerances) and the relative one times
+        // |round(x)|. The relative one (default 0: absolute test only)
+        // can excuse floating-point noise of very large values.
         if (var::INTEGER == MPCD( GetModel() ).var_type_subm(i))
           chk.VarViolIntty().at(aux).CheckViol(
-                { std::fabs(x - std::round(x)),
-                  std::round(x) },
-                MPCD( sol_int_tol() ), INFINITY,
+                { std::fabs(x - std::round(x)), std::round(x) },
+                MPCD( sol_int_tol() ), MPCD( sol_int_tol_rel() ),
                 MPCD( GetModel() ).var_name(i));
       }
     }

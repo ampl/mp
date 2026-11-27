@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <vector>
 #include <climits>
 #include <cfloat>
@@ -87,7 +88,7 @@ void BaronmpBackend::CloseSolver() {
     else
     {
       deinitBaronFile();
-      recrmdir(baronDir);
+      removeBaronDir();
 
     }
   } 
@@ -121,20 +122,46 @@ bool BaronmpBackend::IsMaximize() const {
 }
 
 ArrayRef<double> BaronmpBackend::PrimalSolution() {
-  auto vec = resFileData_.PrimalSolution(IsMaximize());
-  int num_vars = vec.size();
-  std::vector<double> x(num_vars);
-  for (int i = 0; i < num_vars; i++)
-    x[lp()->baronToAMPLIndices[i]] = vec[i];
+  return ToAMPLOrder(resFileData_.PrimalSolution(IsMaximize()));
+}
+
+std::vector<double> BaronmpBackend::ToAMPLOrder(
+    const std::vector<double>& vec) const {
+  const auto& idx = lp()->baronToAMPLIndices;
+  if (vec.size() != idx.size())     // e.g., a truncated result file
+    return {};
+  std::vector<double> x(vec.size());
+  for (size_t i = 0; i < vec.size(); i++)
+    x[idx[i]] = vec[i];
   return x;
 }
 
 pre::ValueMapDbl BaronmpBackend::DualSolution() {
-  return {{ { CG_Linear, DualSolution_LP() } }};
+  return {{ { CG_Algebraic, DualSolution_LP() } }};
 }
 
 ArrayRef<double> BaronmpBackend::DualSolution_LP() {
-  return resFileData_.DualSolution();
+  auto duals = resFileData_.DualSolution();
+  // Constraints without terms are not in BARON's model: duals of zero
+  const auto& skipped = lp()->skippedConsPositions;
+  if (!skipped.empty() && !duals.empty()) {
+    std::vector<double> full;
+    full.reserve(duals.size() + skipped.size());
+    size_t next = 0;                // next BARON equation
+    size_t k = 0;                   // next skipped position (ascending)
+    for (size_t pos = 0; next < duals.size() || pos <= (size_t)skipped.back(); ++pos) {
+      if (k < skipped.size() && (int)pos == skipped[k]) {
+        full.push_back(0.0);
+        ++k;
+      }
+      else if (next < duals.size())
+        full.push_back(duals[next++]);
+      else
+        break;
+    }
+    return full;
+  }
+  return duals;
 }
 
 double BaronmpBackend::ObjectiveValue() const {
@@ -206,7 +233,8 @@ void BaronmpBackend::ReportBARONMPPool() {
   const auto& solutions = resFileData_.PrimalSolutions();
   const auto& objectives = resFileData_.Objectives();
   for (size_t i = 0; i < solutions.size() && i < objectives.size(); ++i)
-    ReportIntermediateSolution({ solutions[i], {}, { objectives[i] } });
+    ReportIntermediateSolution(       // BARON's variable order -> AMPL's
+        { ToAMPLOrder(solutions[i]), {}, { objectives[i] } });
 }
 
 void BaronmpBackend::AddBARONMPMessages() {
@@ -406,9 +434,11 @@ void BaronmpBackend::InitCustomOptions() {
                    } );     
 }
 
-void BaronmpBackend::AddPrimalDualStart(Solution sol0_unpres) {
-  if (IsMIP())
-    return;
+int BaronmpBackend::AddPrimalDualStart(Solution sol0_unpres) {
+  if (sol0_unpres.primal.empty())       // BARON takes primal values only
+    return 0;
+  if (HasUnfixedIntVars())              // AddMIPStart() writes them
+    return 1;
   auto mv = GetValuePresolver().PresolveSolution(
         { sol0_unpres.primal } );
   auto x0 = mv.GetVarValues()();
@@ -417,12 +447,16 @@ void BaronmpBackend::AddPrimalDualStart(Solution sol0_unpres) {
     for(int i=0; i<x0.size(); i++)
     writeBaron("{}: {};\n", lp()->varNames[i], x0[i]);
     writeBaron("}\n");
+    return 1;
   }
+  return 0;
 }
 
 void BaronmpBackend::AddMIPStart(
     ArrayRef<double> x0_unpres, ArrayRef<int> s0_unpres) {
-    if (!IsMIP())
+    // For models with integer variables only (IsMIP() is always false);
+    // AddPrimalDualStart() writes the starting point of continuous models
+    if (!HasUnfixedIntVars())
       return;
     auto mv = GetValuePresolver().PresolveSolution( { x0_unpres } );
     auto ms = GetValuePresolver().PresolveGenericInt( { s0_unpres } );

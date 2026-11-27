@@ -106,7 +106,7 @@ class LSProblemBuilder :
   static ls::lsint ConvertToInt(double value) {
     localsolver::lsint int_value = static_cast<localsolver::lsint>(value);
     if (int_value != value)
-      throw mp::Error("value {} can't be represented as int", value);
+      throw mp::Error(fmt::format("value {} can't be represented as int", value));
     return int_value;
   }
 

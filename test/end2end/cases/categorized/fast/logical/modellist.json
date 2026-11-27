@@ -200,6 +200,11 @@
   },
   {
     "name" : "int_ne_05_ctx_redef",
+    "comment": "mip:round=1: a solver may return x = 5 + 1e-15, then AMPL evaluates x<=5 false",
+    "options": {
+      "mp_options": "mip:round=1",
+      "mp2nl_options": "mip:round=1"
+    },
     "objective" : -19,
     "tags" : ["logical"],
     "values": {
@@ -589,15 +594,16 @@
       "mp_options": "debug=1"
     },
     "tags" : ["logical", "linear", "continuous"],
+    "comment": "Comparisons of continuous expressions cvt:mip:eps/k away from a bound are not rewritten as equalities to the bound (only within cvt:pre:feastol)",
     "objective": -44,
     "values": {
       "Initial.flat0__count": 0,
       "Initial.flat1__A__uenc": 0,
-      "Initial.flat0__condlinlt": 0,
-      "Initial.flat0__condlinle": 0,
+      "Initial.flat0__condlinlt": 2,
+      "Initial.flat0__condlinle": 2,
       "Initial.flat0__condlineq": 2,
-      "Initial.flat0__condlinge": 2,
-      "Initial.flat0__condlingt": 0
+      "Initial.flat0__condlinge": 4,
+      "Initial.flat0__condlingt": 2
     }
   },
   {
@@ -1093,5 +1099,922 @@
     "values": {
       "solve_result_num": 0
     }
+  },
+  {
+    "name" : "funcbnd_exp_01",
+    "solvers" : ["gurobi", "scip", "baronmp"],
+    "tags" : ["logical", "nonlinear", "continuous"],
+    "options": {
+      "mp_options": "acc:indle=0 acc:indge=0 acc:indeq=0 acc:condlinle=0 acc:condlinge=0 acc:condlineq=0"
+    },
+    "comment": "Result bounds from the argument bounds: the big-M of the implication needs them",
+    "objective": -0.6931471806
+  },
+  {
+    "name" : "funcbnd_expa_01",
+    "solvers" : ["gurobi", "baronmp"],
+    "tags" : ["logical", "nonlinear", "continuous"],
+    "options": {
+      "mp_options": "acc:indle=0 acc:indge=0 acc:indeq=0 acc:condlinle=0 acc:condlinge=0 acc:condlineq=0"
+    },
+    "comment": "Result bounds from the argument bounds: the big-M of the implication needs them. Not for SCIP, which approximates a^x piecewise-linearly (1%)",
+    "objective": -2.0
+  },
+  {
+    "name" : "funcbnd_log_01",
+    "solvers" : ["gurobi", "scip", "baronmp"],
+    "tags" : ["logical", "nonlinear", "continuous"],
+    "options": {
+      "mp_options": "acc:indle=0 acc:indge=0 acc:indeq=0 acc:condlinle=0 acc:condlinge=0 acc:condlineq=0"
+    },
+    "comment": "Result bounds from the argument bounds: the big-M of the implication needs them",
+    "objective": -2.7182818285
+  },
+  {
+    "name" : "funcbnd_loga_01",
+    "solvers" : ["gurobi", "scip", "baronmp"],
+    "tags" : ["logical", "nonlinear", "continuous"],
+    "options": {
+      "mp_options": "acc:indle=0 acc:indge=0 acc:indeq=0 acc:condlinle=0 acc:condlinge=0 acc:condlineq=0"
+    },
+    "comment": "Result bounds from the argument bounds: the big-M of the implication needs them",
+    "objective": -3.1622776602
+  },
+  {
+    "name" : "funcbnd_exp_01 funcbndtol=-1",
+    "files" : ["funcbnd_exp_01.mod"],
+    "solvers" : ["gurobi"],
+    "tags" : ["logical", "nonlinear", "continuous"],
+    "options": {
+      "mp_options": "acc:indle=0 acc:indge=0 acc:indeq=0 acc:condlinle=0 acc:condlinge=0 acc:condlineq=0 cvt:pre:funcbndtol=-1"
+    },
+    "comment": "Old behavior: no bounds from the argument, the big-M is refused",
+    "values": {
+      "if solve_result_num >= 500 and solve_result_num < 600 then 1": 1
+    }
+  },
+  {
+    "name" : "funcbnd_log_01 funcbndtol=-1",
+    "files" : ["funcbnd_log_01.mod"],
+    "solvers" : ["gurobi"],
+    "tags" : ["logical", "nonlinear", "continuous"],
+    "options": {
+      "mp_options": "acc:indle=0 acc:indge=0 acc:indeq=0 acc:condlinle=0 acc:condlinge=0 acc:condlineq=0 cvt:pre:funcbndtol=-1"
+    },
+    "comment": "Old behavior: no bounds from the argument, the big-M is refused",
+    "values": {
+      "if solve_result_num >= 500 and solve_result_num < 600 then 1": 1
+    }
+  },
+  {
+    "name" : "funcbnd_log_02_int funcbndtol=0",
+    "files" : ["funcbnd_log_02_int.mod"],
+    "solvers" : ["highs", "copt", "highs_mp2nl", "copt_mp2nl"],
+    "tags" : ["nonlinear"],
+    "options": {
+      "mp_options": "cvt:pre:funcbndtol=0"
+    },
+    "comment": "Piecewise-linear approximation of log over an integer argument: with exact result bounds the last breakpoint x = 5 was lost (x = 5 reported, 0.324 instead of 0.259)",
+    "objective": 0.3062943611
+  },
+  {
+    "name" : "ctx_ite_or_shared_cmp_01",
+    "files" : ["ctx_ite_or_shared_cmp_01.mod"],
+    "tags" : ["logical", "integer"],
+    "comment": "A comparison shared by a root disjunction and an if-then-else condition: both implications are needed",
+    "objective": -6
+  },
+  {
+    "name" : "bounds_contradict_complement_01 presolve 0",
+    "files" : ["bounds_contradict_complement_01.mod"],
+    "tags" : ["logical", "integer"],
+    "solvers_exclude" : ["gecode", "ilogcp"],
+    "options": {
+      "presolve": 0,
+      "mp_options": "cvt:pre:infeasvarbnd=1"
+    },
+    "comment": "Contradictory bounds of an auxiliary variable: infeasible, not an error",
+    "values": {
+      "solve_result": "infeasible"
+    }
+  },
+  {
+    "name" : "int_fixed_fractional_01 presolve 0",
+    "files" : ["int_fixed_fractional_01.mod"],
+    "tags" : ["integer"],
+    "solvers_exclude" : ["gecode", "ilogcp"],
+    "options": {
+      "presolve": 0,
+      "mp_options": "cvt:pre:infeasvarbnd=1"
+    },
+    "comment": "An integer variable fixed at a fractional value: infeasible",
+    "values": {
+      "solve_result": "infeasible"
+    }
+  },
+  {
+    "name" : "abs_fixed_negative_01 presolve 0",
+    "files" : ["abs_fixed_negative_01.mod"],
+    "tags" : ["integer"],
+    "options": {
+      "presolve": 0
+    },
+    "comment": "abs() of a variable fixed at a negative value",
+    "objective": -2
+  },
+  {
+    "name" : "uenc_fixed_var_01 presolve 0",
+    "files" : ["uenc_fixed_var_01.mod"],
+    "tags" : ["logical", "integer"],
+    "options": {
+      "presolve": 0
+    },
+    "comment": "Comparisons of a variable fixed later with constants outside its domain: their flags must be fixed to 0",
+    "values": {
+      "solve_result": "infeasible"
+    }
+  },
+  {
+    "name" : "holes_eq_bound_loop_01",
+    "files" : ["holes_eq_bound_loop_01.mod"],
+    "tags" : ["logical", "integer"],
+    "comment": "Domain hole of a variable: x==ub and x>=ub were rewritten into each other endlessly (stack overflow)",
+    "objective": -37
+  },
+  {
+    "name" : "indicator_contradict_bounds_01",
+    "files" : ["indicator_contradict_bounds_01.mod"],
+    "tags" : ["logical", "integer"],
+    "solvers_exclude" : ["gecode", "ilogcp"],
+    "options": { "mp_options": "cvt:pre:infeasvarbnd=1" },
+    "comment": "Indicator flag with contradictory bounds: infeasible with cvt:pre:infeasvarbnd=1 (by default, 0, Xpress, SCIP and COPT stop with an error)",
+    "values": {
+      "solve_result": "infeasible"
+    }
+  },
+  {
+    "name" : "indicator_contradict_bounds_02",
+    "files" : ["indicator_contradict_bounds_02.mod"],
+    "tags" : ["logical", "integer"],
+    "solvers_exclude" : ["gecode", "ilogcp"],
+    "options": { "mp_options": "cvt:pre:infeasvarbnd=1" },
+    "comment": "Indicator flag with contradictory best-known bounds: infeasible with cvt:pre:infeasvarbnd=1 (by default, 0, Xpress stops with an error)",
+    "values": {
+      "solve_result": "infeasible"
+    }
+  },
+  {
+    "name" : "fixed_indicator_flag_01",
+    "files" : ["fixed_indicator_flag_01.mod"],
+    "tags" : ["logical", "integer"],
+    "comment": "Indicator flag fixed after the indicator was created: folded (cvt:pre:indfixedflag)",
+    "objective": -6
+  },
+  {
+    "name" : "fixed_indicator_flag_01_struct",
+    "files" : ["fixed_indicator_flag_01.mod"],
+    "tags" : ["logical", "integer"],
+    "solvers": ["gurobi"],
+    "comment": "Indicators accepted: the one with the flag's value becomes its equality, the other is dropped",
+    "options": {
+      "mp_options": "debug=1"
+    },
+    "objective": -6,
+    "values": {
+      "Initial.flat1__indeq": 0,
+      "Initial.flat1__lineq": 1,
+      "Initial.flat1__linle": 2
+    }
+  },
+  {
+    "name" : "fixed_indicator_flag_01_linearized",
+    "files" : ["fixed_indicator_flag_01.mod"],
+    "tags" : ["logical", "integer"],
+    "solvers": ["gurobi"],
+    "comment": "Indicators linearized (acc:indeq=0): folded as well, no big-M rows on the constant flag",
+    "options": {
+      "mp_options": "debug=1 acc:indeq=0"
+    },
+    "objective": -6,
+    "values": {
+      "Initial.flat1__indeq": 0,
+      "Initial.flat1__lineq": 1,
+      "Initial.flat1__linle": 2
+    }
+  },
+  {
+    "name" : "fixed_indicator_flag_01_nofold",
+    "files" : ["fixed_indicator_flag_01.mod"],
+    "tags" : ["logical", "integer"],
+    "solvers": ["gurobi"],
+    "comment": "Old behavior (cvt:pre:indfixedflag=0): indicators with a constant flag reach the solver",
+    "options": {
+      "mp_options": "debug=1 cvt:pre:indfixedflag=0"
+    },
+    "objective": -6,
+    "values": {
+      "Initial.flat1__indeq": 2,
+      "Initial.flat1__lineq": 0
+    }
+  },
+  {
+    "name" : "fixed_indicator_flag_01_nofold_linearized",
+    "files" : ["fixed_indicator_flag_01.mod"],
+    "tags" : ["logical", "integer"],
+    "solvers": ["gurobi"],
+    "comment": "Old behavior, linearized: big-M rows on the constant flag",
+    "options": {
+      "mp_options": "debug=1 acc:indeq=0 cvt:pre:indfixedflag=0"
+    },
+    "objective": -6,
+    "values": {
+      "Initial.flat1__indeq": 0,
+      "Initial.flat1__lineq": 0,
+      "Initial.flat1__linle": 4
+    }
+  },
+  {
+    "name" : "fixed_indicator_flag_01_preall0",
+    "files" : ["fixed_indicator_flag_01.mod"],
+    "tags" : ["logical", "integer"],
+    "solvers": ["gurobi"],
+    "comment": "cvt:pre:all=0 switches the folding off together with the other presolve",
+    "options": {
+      "mp_options": "debug=1 cvt:pre:all=0"
+    },
+    "objective": -6,
+    "values": {
+      "Initial.flat1__indeq": 3,
+      "Initial.flat1__lineq": 4
+    }
+  },
+  {
+    "name" : "fixed_indicator_flag_02",
+    "files" : ["fixed_indicator_flag_02.mod"],
+    "tags" : ["logical", "integer"],
+    "comment": "Indicator flag fixed after the indicator was created: folded (cvt:pre:indfixedflag)",
+    "objective": 36
+  },
+  {
+    "name" : "fixed_indicator_flag_03",
+    "files" : ["fixed_indicator_flag_03.mod"],
+    "tags" : ["logical", "integer"],
+    "comment": "Indicator flags fixed after the indicators were created: folded (cvt:pre:indfixedflag)",
+    "objective": -7
+  },
+  {
+    "name" : "inline_lin_nested_not_01",
+    "tags" : ["logical", "integer"],
+    "comment": "Linear functional constraints of equivalences contain those of NOTs: inlined (cvt:pre:unnest bit 32); CPLEX and Xpress through MP2NL failed",
+    "objective": -2
+  },
+  {
+    "name" : "inline_lin_nested_not_01 struct",
+    "files" : ["inline_lin_nested_not_01.mod"],
+    "tags" : ["logical", "integer"],
+    "solvers": ["gurobi", "xpress", "scip"],
+    "comment": "No linear expressions or NL assignments left in the final model",
+    "options": { "mp_options": "debug=1" },
+    "objective": -2,
+    "values": {
+      "Initial.flat1__linfn": 0,
+      "Initial.flat1__nlassigneq": 0
+    }
+  },
+  {
+    "name" : "inline_lin_nested_not_01 unnest=31",
+    "files" : ["inline_lin_nested_not_01.mod"],
+    "tags" : ["logical", "integer"],
+    "solvers": ["gurobi", "xpress", "scip"],
+    "comment": "Old behavior (cvt:pre:unnest=31): nested linear expressions as NL assignments",
+    "options": { "mp_options": "debug=1 cvt:pre:unnest=31" },
+    "objective": -2,
+    "values": {
+      "Initial.flat1__linfn": 4,
+      "Initial.flat1__nlassigneq": 2
+    }
+  },
+  {
+    "name" : "inline_lin_rand_01",
+    "tags" : ["logical", "integer"],
+    "comment": "Generated; equivalences with NOT (cvt:pre:unnest bit 32)",
+    "objective": -11
+  },
+  {
+    "name" : "inline_lin_rand_01 struct",
+    "files" : ["inline_lin_rand_01.mod"],
+    "tags" : ["logical", "integer"],
+    "solvers": ["gurobi", "xpress", "scip"],
+    "options": { "mp_options": "debug=1" },
+    "objective": -11,
+    "values": {
+      "Initial.flat1__linfn": 0,
+      "Initial.flat1__nlassigneq": 0
+    }
+  },
+  {
+    "name" : "inline_lin_rand_02",
+    "tags" : ["logical", "integer", "nonlinear", "trigonometric"],
+    "comment": "Generated; nested NOT in equivalences, sqrt(1 + sin(.)^2) (cvt:pre:unnest bit 32)",
+    "objective": -11.899009165927
+  },
+  {
+    "name" : "inline_lin_cancel_01",
+    "tags" : ["logical", "integer"],
+    "comment": "Inlined nested linear expressions whose terms cancel (cvt:pre:unnest bit 32)",
+    "objective": -2
+  },
+  {
+    "name" : "inline_quad_ind_01",
+    "solvers": ["gurobi", "scip", "xpress"],
+    "tags" : ["continuous", "integer", "binary", "logical", "quadraticnonconvex"],
+    "comment": "Quadratic subexpression in an indicator body next to a linearized NOT (cvt:pre:unnest)",
+    "objective": -3.3333333
+  },
+  {
+    "name" : "inline_quad_ind_01 noindquad",
+    "files" : ["inline_quad_ind_01.mod"],
+    "solvers": ["gurobi"],
+    "tags" : ["continuous", "integer", "binary", "logical", "quadraticnonconvex"],
+    "comment": "Quadratic indicators not accepted: inlining must not cycle with their conversion",
+    "options": { "mp_options": "acc:indquadle=0 acc:indquadeq=0 acc:indquadge=0" },
+    "objective": -3.3333333
+  },
+  {
+    "name" : "inline_quad_ind_01 noquad",
+    "files" : ["inline_quad_ind_01.mod"],
+    "solvers": ["gurobi"],
+    "tags" : ["continuous", "integer", "binary", "logical", "quadraticnonconvex"],
+    "comment": "Quadratic constraints and indicators not accepted: no cycles",
+    "options": { "mp_options": "acc:quadle=0 acc:quadeq=0 acc:quadge=0 acc:indquadle=0 acc:indquadeq=0 acc:indquadge=0" },
+    "objective": -3.3333333
+  },
+  {
+    "name" : "inline_quad_bin_01",
+    "tags" : ["binary", "logical", "prod_with_bin_var"],
+    "comment": "Products of binaries in nested linear expressions and indicators",
+    "objective": -3
+  },
+  {
+    "name" : "inline_quad_bin_01 noquad",
+    "files" : ["inline_quad_bin_01.mod"],
+    "solvers": ["gurobi"],
+    "tags" : ["binary", "logical", "prod_with_bin_var"],
+    "comment": "Quadratic constraints and indicators not accepted: no cycles",
+    "options": { "mp_options": "acc:quadle=0 acc:quadeq=0 acc:quadge=0 acc:indquadle=0 acc:indquadeq=0 acc:indquadge=0" },
+    "objective": -3
+  },
+  {
+    "name" : "int_ne_05_ctx_redef mp2nl sub counters",
+    "files" : ["int_ne_05_ctx_redef.mod"],
+    "solvers": ["mp2nl"],
+    "tags" : ["logical"],
+    "comment": "With debug=1 for both: 'values' check the subsolver's model (reported with prefix sub_), values_per_solver_category MP2NL check MP2NL's own model",
+    "options": { "mp2nl_options": "debug=1 solver_options='debug=1'" },
+    "objective": -19,
+    "values_per_solver_category": {
+      "MP2NL": { "Initial.flat1__lineq": 2, "Initial.flat1__indle": 0 }
+    },
+    "values": {
+      "Initial.flat1__lineq": 5,
+      "Initial.flat1__indle": 2
+    }
+  },
+  {
+    "name" : "roundint_bnd_02",
+    "tags" : ["logical", "integer"],
+    "solvers": ["gurobi", "xpress", "cplex", "highs", "scip", "copt", "mosek", "mp2nl", "gurobi_mp2nl", "xpress_mp2nl", "cplex_mp2nl", "highs_mp2nl", "scip_mp2nl", "copt_mp2nl", "mosek_mp2nl"],
+    "comment": "Rounded large integer bound used as big-M of an implication (cvt:pre:roundintbnd)",
+    "options": { "presolve": 0 },
+    "objective" : 168000007,
+    "values": { "x - 168000000": 7 }
+  },
+  {
+    "name" : "roundint_bnd_02 roundintbnd=-1",
+    "files" : ["roundint_bnd_02.mod"],
+    "tags" : ["logical", "integer"],
+    "solvers": ["gurobi", "xpress", "cplex", "highs", "scip", "copt", "mp2nl", "gurobi_mp2nl", "xpress_mp2nl", "cplex_mp2nl", "highs_mp2nl", "scip_mp2nl", "copt_mp2nl"],
+    "comment": "No rounding of integer bounds (cvt:pre:roundintbnd=-1)",
+    "options": { "presolve": 0, "mp_options": "cvt:pre:roundintbnd=-1" },
+    "objective" : 168000007,
+    "values": { "x - 168000000": 7 }
+  },
+  {
+    "name" : "inline_lin_nested_not_01 unnest=31 agglinfill=-1",
+    "files" : ["inline_lin_nested_not_01.mod"],
+    "tags" : ["logical", "integer"],
+    "solvers": ["gurobi", "xpress", "scip"],
+    "comment": "Old behavior (cvt:pre:unnest=31 cvt:pre:agglinfill=-1): nested linear expressions as NL assignments",
+    "options": { "mp_options": "debug=1 cvt:pre:unnest=31 cvt:pre:agglinfill=-1" },
+    "objective": -2,
+    "values": {
+      "Initial.flat1__linfn": 4,
+      "Initial.flat1__nlassigneq": 2
+    }
+  },
+  {
+    "name" : "inline_lin_nested_not_01 preall0",
+    "files" : ["inline_lin_nested_not_01.mod"],
+    "tags" : ["logical", "integer"],
+    "solvers": ["gurobi", "xpress", "scip"],
+    "comment": "cvt:pre:all=0: no inlining into expressions, cvt:pre:agglinfill without effect",
+    "options": { "mp_options": "debug=1 cvt:pre:all=0" },
+    "objective": -2,
+    "values": {
+      "Initial.flat1__linfn": 4,
+      "Initial.flat1__nlassigneq": 2
+    }
+  },
+  {
+    "name" : "roundint_bnd_03",
+    "tags" : ["logical", "integer"],
+    "solvers": ["gurobi", "xpress", "cplex", "highs", "scip", "copt", "mp2nl", "gurobi_mp2nl", "xpress_mp2nl", "cplex_mp2nl", "highs_mp2nl", "scip_mp2nl", "copt_mp2nl"],
+    "comment": "A fractional data bound of a large integer variable is not rounded to the nearest integer (cvt:pre:roundintbnd): infeasible",
+    "options": { "presolve": 0 },
+    "values": { "solve_result": "infeasible" }
+  },
+  {
+    "name" : "roundint_bnd_04",
+    "tags" : ["logical", "integer"],
+    "solvers": ["gurobi", "xpress", "cplex", "highs", "copt", "mp2nl", "gurobi_mp2nl", "xpress_mp2nl", "cplex_mp2nl", "highs_mp2nl", "copt_mp2nl"],
+    "comment": "A computed bound 2000000000.0000002 of an integer variable rounds to 2000000000 (cvt:pre:roundintbnd); SCIP accepts x = 2e9-50 within its relative feasibility tolerance",
+    "options": { "presolve": 0 },
+    "objective" : 0,
+    "values": { "x - 2000000000": 0, "y": 0 }
+  },
+  {
+    "name" : "eq_contradict_01",
+    "tags" : ["logical", "integer"],
+    "comment": "x == 1 and x == -1: infeasible, not the exception 'vector' from an empty unary encoding",
+    "options": { "presolve": 0 },
+    "values": { "solve_result": "infeasible" }
+  },
+  {
+    "name" : "funcbnd_log_03_zero",
+    "solvers" : ["highs", "gurobi", "scip"],
+    "tags" : ["nonlinear", "continuous"],
+    "comment": "log of an argument fixed at 0: the degenerate result range is not used (HiGHS stopped in Highs_addRows). Known Gurobi 14.0.0 failure: optimal with x = 0, y = 0 (warning log of zero), although even log(0) = -infinity would give y = -5",
+    "values": { "solve_result": "infeasible" }
+  },
+  {
+    "name" : "funcbnd_expa_02_neg",
+    "solvers" : ["highs"],
+    "tags" : ["nonlinear", "integer"],
+    "comment": "(-2)^n: no bounds from the argument (they were contradictory and the model infeasible); the piecewise-linear approximation refuses a base <= 0 with a message",
+    "values": { "solve_result": "failure" }
+  },
+  {
+    "name" : "cmp_bound_fp_01",
+    "tags" : ["logical", "integer"],
+    "solvers_exclude" : ["cpsat"],
+    "comment": "(x+1)/3 >= 2 is not decided false from the computed bound 1.9999999999999998",
+    "objective" : -8,
+    "values": { "x": 4, "y": 0 }
+  },
+  {
+    "name" : "cmp_bound_fp_02",
+    "tags" : ["logical", "integer"],
+    "solvers_exclude" : ["cpsat"],
+    "comment": "As cmp_bound_fp_01 with (x+1)/3 == 2",
+    "objective" : -8,
+    "values": { "x": 4, "y": 0 }
+  },
+  {
+    "name" : "numberof_ref_sort_01",
+    "tags" : ["logical", "integer"],
+    "comment": "cvt:pre:sort must keep the reference variable of numberof first",
+    "objective" : 4,
+    "values": { "r": 4, "x": 4 }
+  },
+  {
+    "name" : "numberof_ref_sort_02",
+    "tags" : ["logical", "integer"],
+    "comment": "As numberof_ref_sort_01; abs() in the objective gives the reference the largest index",
+    "objective" : -1,
+    "values": { "x1": 2 }
+  },
+  {
+    "name" : "numberof_ctx_01",
+    "tags" : ["logical", "integer"],
+    "comment": "The arguments of numberof get the mixed context: inner numberof in both directions",
+    "options": { "presolve": 0 },
+    "objective" : -1,
+    "values": { "y": 0 }
+  },
+  {
+    "name" : "numberof_ctx_02",
+    "tags" : ["logical", "integer"],
+    "comment": "max() as a compared numberof argument: no 'redefinition could be lost' error",
+    "objective" : 3
+  },
+  {
+    "name" : "not_alldiff_fail_01",
+    "solvers" : ["highs", "gurobi", "scip", "cplex", "copt"],
+    "tags" : ["logical", "integer"],
+    "comment": "Negated alldiff is unsupported: every driver reports a failure, not a solved status",
+    "values": { "solve_result": "failure" }
+  },
+  {
+    "name" : "cmp_tol_le_cont_01",
+    "tags" : ["logical", "continuous"],
+    "comment": "x <= 5e-5 near the bound 0 is not rewritten as x == 0 (T1F-01)",
+    "objective" : 0.5,
+    "values": { "x": 5e-5, "y": 0 }
+  },
+  {
+    "name" : "cmp_tol_le_cont_01 feastol=0",
+    "files" : ["cmp_tol_le_cont_01.mod"],
+    "tags" : ["logical", "continuous"],
+    "comment": "As cmp_tol_le_cont_01 with exact comparison decisions",
+    "options": { "mp_options": "cvt:pre:feastol=0",
+                 "mp2nl_options": "solver_options='cvt:pre:feastol=0'" },
+    "objective" : 0.5
+  },
+  {
+    "name" : "cmp_tol_ge_cont_01",
+    "tags" : ["logical", "continuous"],
+    "comment": "x >= 0.99995 near the bound 1 is not rewritten as x == 1 (T1F-01)",
+    "objective" : 0.99995,
+    "values": { "y": 0 }
+  },
+  {
+    "name" : "cmp_tol_neg_scaled_01",
+    "solvers" : ["highs", "gurobi", "scip", "cplex", "copt", "xpress", "mosek"],
+    "tags" : ["logical", "integer"],
+    "comment": "not (1e-5*x > 5e-5) is not rewritten as 1e-5*x == 0 (T1F-01)",
+    "objective" : 5
+  },
+  {
+    "name" : "cmp_tol_int_rhs_01",
+    "tags" : ["logical", "integer"],
+    "comment": "x <= 0.3/0.1 for integer x allows x = 3 (cvt:pre:inteps)",
+    "objective" : 3,
+    "values": { "y": 0 }
+  },
+  {
+    "name" : "cmp_tol_int_rhs_01 exact",
+    "files" : ["cmp_tol_int_rhs_01.mod"],
+    "tags" : ["logical", "integer"],
+    "comment": "As cmp_tol_int_rhs_01 with exact integrality: x <= 2",
+    "options": { "mp_options": "cvt:pre:inteps=-1 cvt:pre:ulps=0",
+                 "mp2nl_options": "solver_options='cvt:pre:inteps=-1 cvt:pre:ulps=0'" },
+    "objective" : 2
+  },
+  {
+    "name" : "cmp_tol_int_rhs_02",
+    "tags" : ["logical", "integer"],
+    "comment": "x <= 3 - 1e-7 for integer x in a disjunction allows x = 3, as the row does (AMPL presolve off: it would round the bound itself)",
+    "options": { "presolve": 0 },
+    "objective" : 3
+  },
+  {
+    "name" : "cmp_tol_int_rhs_02 exact",
+    "files" : ["cmp_tol_int_rhs_02.mod"],
+    "tags" : ["logical", "integer"],
+    "comment": "As cmp_tol_int_rhs_02 with exact integrality: x <= 2",
+    "options": { "presolve": 0,
+                 "mp_options": "cvt:pre:inteps=-1 cvt:pre:ulps=0",
+                 "mp2nl_options": "solver_options='cvt:pre:inteps=-1 cvt:pre:ulps=0'" },
+    "objective" : 2
+  },
+  {
+    "name" : "cmp_tol_int_eq_01",
+    "tags" : ["logical", "integer"],
+    "comment": "x == 0.3/0.1 holds at integer x = 3 (cvt:pre:inteps)",
+    "objective" : -3,
+    "values": { "x": 3, "y": 0 }
+  },
+  {
+    "name" : "cmp_tol_int_eq_01 exact",
+    "files" : ["cmp_tol_int_eq_01.mod"],
+    "tags" : ["logical", "integer"],
+    "comment": "As cmp_tol_int_eq_01 with exact integrality: the equality is false",
+    "options": { "mp_options": "cvt:pre:inteps=-1 cvt:pre:ulps=0",
+                 "mp2nl_options": "solver_options='cvt:pre:inteps=-1 cvt:pre:ulps=0'" },
+    "objective" : 5
+  },
+  {
+    "name" : "cmp_tol_numberof_01",
+    "tags" : ["logical", "integer"],
+    "comment": "numberof 0.3/0.1 in (...) counts integer variables at 3 (cvt:pre:inteps)",
+    "objective" : 6
+  },
+  {
+    "name" : "cmp_tol_numberof_01 exact",
+    "files" : ["cmp_tol_numberof_01.mod"],
+    "solvers" : ["highs", "gurobi", "scip", "cplex", "copt", "xpress", "mosek"],
+    "tags" : ["logical", "integer"],
+    "comment": "As cmp_tol_numberof_01 with exact integrality: infeasible (CP-SAT keeps its own integrality rule for values, 1e-9)",
+    "options": { "mp_options": "cvt:pre:inteps=-1 cvt:pre:ulps=0",
+                 "mp2nl_options": "solver_options='cvt:pre:inteps=-1 cvt:pre:ulps=0'" },
+    "values": { "solve_result": "infeasible" }
+  },
+  {
+    "name" : "cmp_tol_int_lt_01 ineqrhs=0",
+    "files" : ["cmp_tol_int_lt_01.mod"],
+    "tags" : ["logical", "integer"],
+    "comment": "x < 3.5 for integer x allows x = 3 also without rounding the right-hand side first (C1F-04)",
+    "options": { "presolve": 0,
+                 "mp_options": "cvt:pre:ineqrhs=0",
+                 "mp2nl_options": "solver_options='cvt:pre:ineqrhs=0'" },
+    "objective" : 3
+  },
+  {
+    "name" : "cmp_tol_int_lt_01",
+    "tags" : ["logical", "integer"],
+    "comment": "x < 3.5 for integer x allows x = 3 (AMPL presolve off: it would round the bound itself)",
+    "options": { "presolve": 0 },
+    "objective" : 3
+  },
+  {
+    "name" : "cmp_tol_eq_scaled_01",
+    "solvers" : ["highs", "gurobi", "scip", "cplex", "copt", "xpress", "mosek"],
+    "tags" : ["logical", "integer"],
+    "comment": "1e-3*x == 1e-3*(3+1e-7) at the root fixes integer x at 3 (cvt:pre:inteps), no contradictory bounds (AMPL presolve off: it would round the bound itself)",
+    "options": { "presolve": 0 },
+    "objective" : 3
+  },
+  {
+    "name" : "cmp_tol_decide_01",
+    "tags" : ["logical", "continuous"],
+    "comment": "x >= 4 at x <= 3.9999995 is not decided false within cvt:pre:feastol",
+    "objective" : 10
+  },
+  {
+    "name" : "cmp_tol_decide_01 feastol=0",
+    "files" : ["cmp_tol_decide_01.mod"],
+    "tags" : ["logical", "continuous"],
+    "comment": "As cmp_tol_decide_01 with exact decisions: x >= 4 is false",
+    "options": { "mp_options": "cvt:pre:feastol=0",
+                 "mp2nl_options": "solver_options='cvt:pre:feastol=0'" },
+    "objective" : 0
+  },
+  {
+    "name" : "cmp_tol_bin_eq_01",
+    "solvers" : ["highs", "gurobi", "scip", "cplex", "copt", "xpress", "mosek"],
+    "tags" : ["logical", "integer"],
+    "comment": "0.3*b == 0.1*3 holds at b = 1: the rhs differs from the bound 0.3 only by rounding error",
+    "objective" : 2
+  },
+  {
+    "name" : "cmp_tol_uenc_01",
+    "tags" : ["logical", "integer"],
+    "comment": "No unary encoding for a domain of 100001 values (cvt:uenc:maxdom)",
+    "options": { "mp_options": "debug=1",
+                 "mp2nl_options": "solver_options='debug=1'" },
+    "objective" : 0,
+    "values": { "Initial.flat1__A__uenc": 0 }
+  },
+  {
+    "name" : "chk_ctx_count_01",
+    "tags" : ["logical", "integer"],
+    "comment": "sol:chk:mode=64: the recomputed count is compared on the side its context requires, no false violation",
+    "options": { "mp_options": "sol:chk:mode=64 chk:fail",
+                 "mp2nl_options": "solver_options='sol:chk:mode=64 chk:fail'" },
+    "objective" : -4,
+    "values": { "solve_result": "solved" }
+  },
+  {
+    "name" : "chk_ctx_max_01",
+    "tags" : ["logical", "continuous"],
+    "comment": "sol:chk:mode=64: max() below an upper bound is compared on the side its context requires",
+    "options": { "mp_options": "sol:chk:mode=64 chk:fail",
+                 "mp2nl_options": "solver_options='sol:chk:mode=64 chk:fail'" },
+    "objective" : 4,
+    "values": { "solve_result": "solved" }
+  },
+  {
+    "name" : "chk_ctx_max_01 mode=128",
+    "files" : ["chk_ctx_max_01.mod"],
+    "tags" : ["logical", "continuous"],
+    "comment": "As chk_ctx_max_01 with sol:chk:mode=128",
+    "options": { "mp_options": "sol:chk:mode=128 chk:fail",
+                 "mp2nl_options": "solver_options='sol:chk:mode=128 chk:fail'" },
+    "objective" : 4,
+    "values": { "solve_result": "solved" }
+  },
+  {
+    "name" : "chk_logtol_01",
+    "tags" : ["logical", "continuous"],
+    "comment": "The solution check evaluates floor(x) at x = 3 - 5e-8 within sol:chk:logtol (default 1e-6) as 3: no violation",
+    "options": { "presolve": 0,
+                 "mp_options": "chk:fail",
+                 "mp2nl_options": "solver_options='chk:fail'" },
+    "values": { "solve_result_num": 0 }
+  },
+  {
+    "name" : "chk_logtol_01 logtol=0",
+    "files" : ["chk_logtol_01.mod"],
+    "tags" : ["logical", "continuous"],
+    "comment": "As chk_logtol_01 with sol:chk:logtol=0: exact evaluation, floor(x) = 2, reports a violation",
+    "options": { "presolve": 0,
+                 "mp_options": "sol:chk:logtol=0 chk:fail",
+                 "mp2nl_options": "solver_options='sol:chk:logtol=0 chk:fail'" },
+    "values": { "solve_result_num": 150 }
+  },
+  {
+    "name" : "cmp_tol_strict_true_01",
+    "tags" : ["logical", "continuous"],
+    "comment": "A strict comparison that holds exactly (x > -5e-7 at x >= 0) is decided true, not encoded with the gap cvt:mip:eps",
+    "options": { "presolve": 0 },
+    "objective" : 0
+  },
+  {
+    "name" : "cmp_tol_strict_true_01 feastol=0",
+    "files" : ["cmp_tol_strict_true_01.mod"],
+    "tags" : ["logical", "continuous"],
+    "comment": "As cmp_tol_strict_true_01 with exact decisions",
+    "options": { "presolve": 0,
+                 "mp_options": "cvt:pre:feastol=0",
+                 "mp2nl_options": "solver_options='cvt:pre:feastol=0'" },
+    "objective" : 0
+  },
+  {
+    "name" : "cmp_tol_eq_feastol_01",
+    "tags" : ["logical", "continuous"],
+    "comment": "x == 0.9999995 at x <= 1 is kept: an equality rhs moves to a bound only within rounding error",
+    "options": { "presolve": 0 },
+    "objective" : 0
+  },
+  {
+    "name" : "cmp_tol_eq_feastol_01 feastol=0",
+    "files" : ["cmp_tol_eq_feastol_01.mod"],
+    "tags" : ["logical", "continuous"],
+    "comment": "As cmp_tol_eq_feastol_01 with exact decisions",
+    "options": { "presolve": 0,
+                 "mp_options": "cvt:pre:feastol=0",
+                 "mp2nl_options": "solver_options='cvt:pre:feastol=0'" },
+    "objective" : 0
+  },
+  {
+    "name" : "cmp_tol_big_bnd_01",
+    "solvers" : ["gurobi", "scip", "cplex", "copt", "xpress", "mosek"],
+    "tags" : ["logical", "continuous"],
+    "comment": "A large bound (1e20) does not widen the decision margin: x >= 5 is not decided true at x = 3 (HiGHS, without indicators, takes 1e20 as no bound for big-M and asks for bounds, also before)",
+    "options": { "presolve": 0 },
+    "objective" : 3
+  },
+  {
+    "name" : "cmp_tol_big_bnd_01 ulps=0",
+    "files" : ["cmp_tol_big_bnd_01.mod"],
+    "solvers" : ["gurobi", "scip", "cplex", "copt", "xpress", "mosek"],
+    "tags" : ["logical", "continuous"],
+    "comment": "As cmp_tol_big_bnd_01 without the floating-point margin",
+    "options": { "presolve": 0,
+                 "mp_options": "cvt:pre:ulps=0",
+                 "mp2nl_options": "solver_options='cvt:pre:ulps=0'" },
+    "objective" : 3
+  },
+  {
+    "name" : "cmp_tol_big_bnd_02",
+    "tags" : ["logical", "continuous"],
+    "comment": "x in [0, 1e12]: b <==> x >= 0.001 is not decided true at x = 0",
+    "options": { "presolve": 0 },
+    "objective" : -0.999
+  },
+  {
+    "name" : "cmp_tol_big_bnd_03",
+    "tags" : ["logical", "continuous"],
+    "comment": "x + y <= 0.001 with an upper bound 1e12 + 1 is not rewritten as x + y == 0",
+    "options": { "presolve": 0 },
+    "objective" : 1
+  },
+  {
+    "name" : "cmp_tol_big_int_01",
+    "tags" : ["logical", "integer"],
+    "comment": "Integer x in [0, 1e15]: b <==> x >= 2 is not decided true at x = 0",
+    "options": { "presolve": 0 },
+    "objective" : -8
+  },
+  {
+    "name" : "cmp_tol_strict_eps_01",
+    "solvers" : ["highs", "gurobi", "scip", "cplex", "copt", "xpress", "mosek"],
+    "tags" : ["logical", "continuous"],
+    "comment": "A strict comparison whose expression range is below cvt:mip:eps: infeasible encoding, warning strict_cmp_eps",
+    "options": { "presolve": 0 },
+    "values": { "solve_result": "infeasible",
+                "if match(solve_message, 'cvt:mip:eps') > 0 then 1": 1 }
+  },
+  {
+    "name" : "cmp_tol_strict_eps_01 eps=1e-7",
+    "files" : ["cmp_tol_strict_eps_01.mod"],
+    "solvers" : ["highs", "gurobi", "scip", "cplex", "copt", "xpress", "mosek"],
+    "tags" : ["logical", "continuous"],
+    "comment": "As cmp_tol_strict_eps_01 with a gap below the range",
+    "options": { "presolve": 0,
+                 "mp_options": "cvt:mip:eps=1e-7",
+                 "mp2nl_options": "solver_options='cvt:mip:eps=1e-7'" },
+    "objective" : 2.9
+  },
+  {
+    "name" : "cmp_tol_strict_false_01",
+    "tags" : ["logical", "integer"],
+    "comment": "x < 1e-7 for integer x is false within cvt:pre:inteps: infeasible, with the warning strict_cmp_tol",
+    "options": { "presolve": 0 },
+    "values": { "solve_result": "infeasible",
+                "if match(solve_message, 'strict comparison') > 0 then 1": 1 }
+  },
+  {
+    "name" : "cmp_tol_strict_false_01 inteps=-1",
+    "files" : ["cmp_tol_strict_false_01.mod"],
+    "tags" : ["logical", "integer"],
+    "comment": "As cmp_tol_strict_false_01 with exact integrality: x = 0",
+    "options": { "presolve": 0,
+                 "mp_options": "cvt:pre:inteps=-1",
+                 "mp2nl_options": "solver_options='cvt:pre:inteps=-1'" },
+    "objective" : 0
+  },
+  {
+    "name" : "alldiff_dom_01",
+    "tags" : ["logical", "integer"],
+    "comment": "alldiff on domains of 2100 values: unary encoding within cvt:uenc:maxdom, fast",
+    "objective" : 120
+  },
+  {
+    "name" : "alldiff_dom_01 maxdom=10000001",
+    "files" : ["alldiff_dom_01.mod"],
+    "tags" : ["logical", "integer"],
+    "comment": "As alldiff_dom_01 with the former limit of the unary encoding",
+    "options": { "mp_options": "cvt:uenc:maxdom=10000001",
+                 "mp2nl_options": "solver_options='cvt:uenc:maxdom=10000001'" },
+    "objective" : 120
+  },
+  {
+    "name" : "chk_uenc_01 mode=128",
+    "tags" : ["logical", "integer"],
+    "comment": "Check bit 128 with a unary encoding: no false warning for the encoding",
+    "options": { "mp_options": "sol:chk:mode=128 chk:fail",
+                 "mp2nl_options": "solver_options='sol:chk:mode=128 chk:fail'" },
+    "objective" : -6,
+    "values": { "solve_result": "solved" }
+  },
+  {
+    "name" : "chk_uenc_01 mode=4",
+    "files" : ["chk_uenc_01.mod"],
+    "tags" : ["logical", "integer"],
+    "comment": "Check bit 4 with a unary encoding: no false warning",
+    "options": { "mp_options": "sol:chk:mode=4 chk:fail",
+                 "mp2nl_options": "solver_options='sol:chk:mode=4 chk:fail'" },
+    "objective" : -6,
+    "values": { "solve_result": "solved" }
+  },
+  {
+    "name" : "cmp_tol_big_rhs_le_01",
+    "tags" : ["logical", "continuous"],
+    "comment": "x <= U at x <= U = 1e13 is decided true with the floating-point margin of U, which exceeds cvt:pre:feastol (before: left to the solver, b = 0)",
+    "options": { "presolve": 0 },
+    "objective" : 1
+  },
+  {
+    "name" : "cmp_tol_big_rhs_gt_01",
+    "tags" : ["logical", "continuous"],
+    "comment": "x > U at x <= U = 1e13 is decided false (before: left to the solver, b = 1)",
+    "options": { "presolve": 0 },
+    "objective" : 0
+  },
+  {
+    "name" : "cmp_tol_big_rhs_impl_01",
+    "tags" : ["logical", "continuous"],
+    "comment": "y = 0 ==> x > U at x <= U = 1e13: y = 0 is not allowed (before: y = 0)",
+    "options": { "presolve": 0 },
+    "objective" : 1
+  },
+  {
+    "name" : "cmp_tol_far_01",
+    "tags" : ["logical", "continuous"],
+    "comment": "x >= 1000 at x <= 10 is decided false: no conditional comparison is passed",
+    "options": { "presolve": 0,
+                 "mp_options": "debug=1",
+                 "mp2nl_options": "solver_options='debug=1'" },
+    "objective" : 10,
+    "values": { "Initial.flat0__condlinge": 0 }
+  },
+  {
+    "name" : "cmp_tol_far_01 feastol=1e-12",
+    "files" : ["cmp_tol_far_01.mod"],
+    "tags" : ["logical", "continuous"],
+    "comment": "As cmp_tol_far_01 with cvt:pre:feastol below the floating-point margin of 1000: also decided (before: passed to the solver)",
+    "options": { "presolve": 0,
+                 "mp_options": "debug=1 cvt:pre:feastol=1e-12",
+                 "mp2nl_options": "solver_options='debug=1 cvt:pre:feastol=1e-12'" },
+    "objective" : 10,
+    "values": { "Initial.flat0__condlinge": 0 }
+  },
+  {
+    "name" : "cmp_tol_big_coef_01",
+    "solvers" : ["highs", "gurobi", "scip", "cplex", "copt", "xpress", "mosek"],
+    "tags" : ["logical", "integer"],
+    "comment": "An equality with large fractional coefficients missing its right-hand side by far is decided false (before: passed on, Gurobi reported infeasible); CP-SAT rejects the fractional coefficients",
+    "options": { "presolve": 0 },
+    "objective" : -3
+  },
+  {
+    "name" : "cmp_tol_int_equality_bound_01",
+    "solvers" : ["highs", "gurobi"],
+    "tags" : ["logical", "integer"],
+    "comment" : "An exact integer equality keeps its RHS near a body bound",
+    "options" : { "presolve": 0 },
+    "objective" : 1,
+    "values" : { "solve_result_num": 0, "x-k": 0 }
   }
 ]

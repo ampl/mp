@@ -91,7 +91,7 @@ public:
   * set primal/dual initial guesses for continuous case
   **/
   ALLOW_STD_FEATURE( WARMSTART, true )
-  void AddPrimalDualStart(Solution sol0) override;
+  int AddPrimalDualStart(Solution sol0) override;
   /**
   * Specifically, MIP warm start
   **/
@@ -172,6 +172,9 @@ public:
   /// IsQCP()
   bool IsQCP() const override;
 
+  /// Whether the model has nonlinear-expression general constraints
+  bool HasNLGenCons();
+
 
   /////////////////////////////////////////////////////////////////////////////
   //////////////////////////// OPTION ACCESSORS ///////////////////////////////
@@ -211,6 +214,8 @@ protected:
   void OpenGurobi();
   void OpenGurobiModel();
   void CloseGurobi();
+  /// Free the fixed model of mip:basis, if any: model_fixed_ = model()
+  void FreeFixedModel();
 
   void OpenGurobiComputeServer();
   void OpenGurobiCloud();
@@ -220,7 +225,8 @@ protected:
   /// .funcpieces etc.
   /// Override the corresponding Gurobi options.
   void InputGurobiFuncApproxParams();
-  /// Warn if a .funcpiece... suffix is set on nonlinear constraints
+  /// Warn if a function-constraint suffix (.funcpiece*, .funcnonlinear,
+  /// .global) is set on nonlinear constraints, which ignore it
   template <class Values>
   void WarnFuncSuffixOnNLCons(const char* suffix, const Values& values);
   /// .iisforce
@@ -270,6 +276,11 @@ protected:
 
   double ObjectiveValue() const;
   mp::ArrayRef<double> PrimalSolution() override;
+  /// Whether the solved fixed model (mip:basis) gives the reported
+  /// point and objective value: single objective only
+  bool FixedModelReported() const;
+  /// Objective value of the fixed model
+  double FixedModelObjValue(bool* fOk = nullptr) const;
   pre::ValueMapDbl DualSolution() override;
 
   std::vector<double> GurobiDualSolution_LP();

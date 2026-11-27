@@ -1,5 +1,7 @@
 #include <vector>
 #include <climits>
+#include <cstdio>
+#include <cstring>
 #include <cfloat>
 #include <filesystem>
 
@@ -445,9 +447,42 @@ void MP2NLBackend::Solve() {
   }
   if (verbose_mode() && lims.size())
     Print("MP2NL: subsolver options '{}'\n", lims);
+  PrintBannerBeforeSubsolver();
   GetNLSolver().Solve(
       storedOptions_.solver_.c_str(), opts.c_str());
+  NoteSubsolverOutput();
   WindupMP2NLSolve();
+}
+
+/// The subsolver, run by AMPL's rules, prints its banner ("Gurobi
+/// 14.0.0: ") first.  If we printed anything after our banner (as the
+/// options), print our banner again: the line then reads
+/// "MP2NL 0.2: Gurobi 14.0.0: " and our solve message, which starts
+/// with both banners, can ask AMPL to skip them.  A previous pass
+/// (multi-objective emulation) left the line with both banners: end it.
+void MP2NLBackend::PrintBannerBeforeSubsolver() {
+  bool prev_pass = !subsolver_banner_.empty();
+  subsolver_banner_.clear();
+  if (!ampl_flag() || !(prev_pass || output_handler()->has_output))
+    return;
+  auto banner = fmt::format("{}{}: ", prev_pass ? "\n" : "", long_name());
+  std::fputs(banner.c_str(), stdout);
+  std::fflush(stdout);
+  output_handler()->has_output = false;
+}
+
+/// The subsolver's solve message started with backspaces (as many as
+/// its banner's characters) if nothing followed its banner in the
+/// output; otherwise our banner is no longer alone on the line.
+void MP2NLBackend::NoteSubsolverOutput() {
+  if (!ampl_flag())
+    return;
+  int nbs = GetNLSolver().GetSolveMessageNbs();
+  std::string msg = GetNLSolver().GetSolveMessage();
+  if (nbs > 0 && nbs <= (int)msg.size())
+    subsolver_banner_ = msg.substr(0, nbs);
+  else
+    output_handler()->has_output = true;
 }
 
 std::string MP2NLBackend::ForwardedLimits() {
@@ -465,9 +500,9 @@ std::string MP2NLBackend::ForwardedLimits() {
       result += fmt::format("{}={}", kw->*kw_mbr, val);
     } else
       AddWarning(std::string("MP2NL_") + optname,
-                 fmt::format("Option {} is not forwarded to solver '{}':\n"
-                             "  keyword unknown for configuration '{}'.\n"
-                             "  Use the solver's own options.",
+                 fmt::format("Option {} is not forwarded to solver '{}':"
+                             " keyword unknown for configuration '{}'."
+                             " Use the solver's own options.",
                              optname, storedOptions_.solver_,
                              storedOptions_.config_));
   };
@@ -531,9 +566,24 @@ void MP2NLBackend::ReportModelSuffix(
                  2 | modelsuf.flags_, suf_post.GetObjValues()(),
                  modelsuf.table_);
   if (modelsuf.values_[3].size())
-    ReportSuffix(modelsuf.name_,
+    ReportSuffix(ProblemSuffixName(modelsuf.name_),
                  3 | modelsuf.flags_, modelsuf.values_[3],
                  modelsuf.table_);
+}
+
+/// Name for a subsolver's problem suffix: the debug statistics
+/// (debug=1: counters flat0_*, flat1_* and option values option___*)
+/// get prefix sub_, so that they do not overwrite MP2NL's own
+/// with the same names. Applies to an MP2NL subsolver
+/// too (sub_sub_flat1_*).
+std::string MP2NLBackend::ProblemSuffixName(const std::string& name) {
+  auto starts = [&name](const char* pre) {
+    return 0 == name.compare(0, std::strlen(pre), pre);
+  };
+  if (starts("flat0_") || starts("flat1_") || starts("option___")
+      || starts("sub_"))
+    return "sub_" + name;
+  return name;
 }
 
 void MP2NLBackend::ReportMP2NLResults() {
@@ -581,9 +631,9 @@ void MP2NLBackend::FinishOptionParsing() {
 	if (storedOptions_.config_attempted_.size()
 			&& !storedOptions_.config_.size())
 		AddWarning("SolverConfig",
-							 fmt::format("MP2NL: configuration '{}', \n"
-													 "assumed for solver '{}',\n"
-													 "is unknown. Defaults applied\n"
+							 fmt::format("MP2NL: configuration '{}', "
+													 "assumed for solver '{}', "
+													 "is unknown. Defaults applied "
 													 "(use nl:printconfigs and/or nl:config)",
 													 storedOptions_.config_attempted_,
 													 storedOptions_.solver_) );
@@ -849,12 +899,16 @@ void MP2NLBackend::SetBasis(SolutionBasis basis) {
   ConStatii(constt);
 }
 
-void MP2NLBackend::AddPrimalDualStart(Solution sol)
+int MP2NLBackend::AddPrimalDualStart(Solution sol)
 {
   auto mv = GetValuePresolver().PresolveSolution(
         { sol.primal, sol.dual } );
   auto& x0 = mv.GetVarValues()();
-  y0_ = mv.GetConValues()(CG_Algebraic);
+  // Presolve fills a missing vector with zeros: pass only incoming ones.
+  // Missing primal values have zero sparsity flags and are skipped below.
+  y0_.clear();
+  if (sol.dual.size())
+    y0_ = mv.GetConValues()(CG_Algebraic);
   auto ms = GetValuePresolver().PresolveGenericInt(
       { sol.spars_primal } );
   auto& s0 = ms.GetVarValues()();
@@ -865,6 +919,7 @@ void MP2NLBackend::AddPrimalDualStart(Solution sol)
       x0_.push_back( {i, x0[i]} );
     }
   }
+  return (x0_.size() ? 1 : 0) | (y0_.size() ? 2 : 0);
 }
 
 void MP2NLBackend::AddMIPStart(
@@ -940,16 +995,16 @@ void MP2NLBackend::DoWriteProblem(const std::string& name) {
 
 
 // AMPLs
-AMPLS_MP_Solver* Open_MP2NL(CCallbacks cb = {}) {
+AMPLS_MP_Solver* Open_mp2nl(CCallbacks cb = {}) {
   return AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend>{new mp::MP2NLBackend()},
     cb);
 }
 
-void AMPLSClose_MP2NL(AMPLS_MP_Solver* slv) {
+void AMPLSClose_mp2nl(AMPLS_MP_Solver* slv) {
   AMPLS__internal__Close(slv);
 }
 
-void* AMPLSGetModel_MP2NL(AMPLS_MP_Solver* slv) {
+void* AMPLSGetModel_mp2nl(AMPLS_MP_Solver* slv) {
   return
     dynamic_cast<mp::MP2NLBackend*>(AMPLSGetBackend(slv));
 }

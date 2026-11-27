@@ -120,6 +120,13 @@ public:
   /// LinCon(LE/EQ/GE) should have 'Recommended' for all backends
   /// and have an implementation,
   /// or a conversion rule is needed in a derived FlatConverter
+  /// Constraint groups follow Xpress's index spaces: every type that
+  /// creates exactly one Xpress row (linear, quadratic, indicator,
+  /// formula rows of functions, NL constraints/assignments) is in
+  /// CG_Algebraic, in the order of the rows; general constraints
+  /// (XPRSaddgencons) in CG_General, PWL in CG_Piecewiselinear, SOS in
+  /// CG_SOS. Per-row vectors (duals, basis, IIS, starts) then match the
+  /// CG_Algebraic group one to one.
   ACCEPT_CONSTRAINT(LinConLE, Recommended, CG_Algebraic)
   void AddConstraint(const LinConLE& lc);
   ACCEPT_CONSTRAINT(LinConEQ, Recommended, CG_Algebraic)
@@ -141,11 +148,11 @@ public:
   /// auxiliary constraints for logical conditions.
   /// If not handled, the compared expressions need
   /// deducible finite bounds for a big-M redefinition.
-  ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, Recommended, CG_Indicator)
+  ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, Recommended, CG_Algebraic)
   void AddConstraint(const IndicatorConstraintLinLE& mc);
-  ACCEPT_CONSTRAINT(IndicatorConstraintLinEQ, Recommended, CG_Indicator)
+  ACCEPT_CONSTRAINT(IndicatorConstraintLinEQ, Recommended, CG_Algebraic)
   void AddConstraint(const IndicatorConstraintLinEQ& mc);
-  ACCEPT_CONSTRAINT(IndicatorConstraintLinGE, Recommended, CG_Indicator)
+  ACCEPT_CONSTRAINT(IndicatorConstraintLinGE, Recommended, CG_Algebraic)
   void AddConstraint(const IndicatorConstraintLinGE& mc);
 
   /// SOS constraints can be used by AMPL for redefinition of
@@ -177,48 +184,48 @@ public:
 
   #define GLOBAL_LEVEL Recommended // Since v9.5.0
   #define HYPERBOLIC_LEVEL AcceptedButNotRecommended
-  ACCEPT_CONSTRAINT(DivConstraint, GLOBAL_LEVEL, CG_General)
+  ACCEPT_CONSTRAINT(DivConstraint, GLOBAL_LEVEL, CG_Algebraic)
   void AddConstraint(const DivConstraint& cc);
-  ACCEPT_CONSTRAINT(SinConstraint, GLOBAL_LEVEL, CG_General)
+  ACCEPT_CONSTRAINT(SinConstraint, GLOBAL_LEVEL, CG_Algebraic)
   void AddConstraint(const SinConstraint& cc);
-  ACCEPT_CONSTRAINT(CosConstraint, GLOBAL_LEVEL, CG_General)
+  ACCEPT_CONSTRAINT(CosConstraint, GLOBAL_LEVEL, CG_Algebraic)
   void AddConstraint(const CosConstraint& cc); 
-  ACCEPT_CONSTRAINT(TanConstraint, GLOBAL_LEVEL, CG_General)
+  ACCEPT_CONSTRAINT(TanConstraint, GLOBAL_LEVEL, CG_Algebraic)
   void AddConstraint(const TanConstraint& cc);
-  ACCEPT_CONSTRAINT(AsinConstraint, GLOBAL_LEVEL, CG_General)
+  ACCEPT_CONSTRAINT(AsinConstraint, GLOBAL_LEVEL, CG_Algebraic)
   void AddConstraint(const AsinConstraint& cc);
-  ACCEPT_CONSTRAINT(AcosConstraint, GLOBAL_LEVEL, CG_General)
+  ACCEPT_CONSTRAINT(AcosConstraint, GLOBAL_LEVEL, CG_Algebraic)
   void AddConstraint(const AcosConstraint& cc);
-  ACCEPT_CONSTRAINT(AtanConstraint, GLOBAL_LEVEL, CG_General)
+  ACCEPT_CONSTRAINT(AtanConstraint, GLOBAL_LEVEL, CG_Algebraic)
   void AddConstraint(const AtanConstraint& cc);
 
-  ACCEPT_CONSTRAINT(PLConstraint, GLOBAL_LEVEL, CG_General)
+  ACCEPT_CONSTRAINT(PLConstraint, GLOBAL_LEVEL, CG_Piecewiselinear)
   void AddConstraint(const PLConstraint& plc);
 
-  ACCEPT_CONSTRAINT(LogConstraint, GLOBAL_LEVEL, CG_General)
+  ACCEPT_CONSTRAINT(LogConstraint, GLOBAL_LEVEL, CG_Algebraic)
   void AddConstraint(const LogConstraint& cc);
-  ACCEPT_CONSTRAINT(LogAConstraint, GLOBAL_LEVEL, CG_General)
+  ACCEPT_CONSTRAINT(LogAConstraint, GLOBAL_LEVEL, CG_Algebraic)
   void AddConstraint(const LogAConstraint& cc);
 
-  ACCEPT_CONSTRAINT(PowConstExpConstraint, GLOBAL_LEVEL, CG_General)
+  ACCEPT_CONSTRAINT(PowConstExpConstraint, GLOBAL_LEVEL, CG_Algebraic)
     void AddConstraint(const PowConstExpConstraint& cc);
-  ACCEPT_CONSTRAINT(ExpConstraint, GLOBAL_LEVEL, CG_General)
+  ACCEPT_CONSTRAINT(ExpConstraint, GLOBAL_LEVEL, CG_Algebraic)
   void AddConstraint(const ExpConstraint& cc);
-  ACCEPT_CONSTRAINT(ExpAConstraint, GLOBAL_LEVEL, CG_General)
+  ACCEPT_CONSTRAINT(ExpAConstraint, GLOBAL_LEVEL, CG_Algebraic)
   void AddConstraint(const ExpAConstraint& cc);
 
-  ACCEPT_CONSTRAINT(SinhConstraint, HYPERBOLIC_LEVEL, CG_General)
+  ACCEPT_CONSTRAINT(SinhConstraint, HYPERBOLIC_LEVEL, CG_Algebraic)
   void AddConstraint(const SinhConstraint& cc);
-  ACCEPT_CONSTRAINT(CoshConstraint, HYPERBOLIC_LEVEL, CG_General)
+  ACCEPT_CONSTRAINT(CoshConstraint, HYPERBOLIC_LEVEL, CG_Algebraic)
   void AddConstraint(const CoshConstraint& cc);
-  ACCEPT_CONSTRAINT(TanhConstraint, HYPERBOLIC_LEVEL, CG_General)
+  ACCEPT_CONSTRAINT(TanhConstraint, HYPERBOLIC_LEVEL, CG_Algebraic)
   void AddConstraint(const TanhConstraint& cc);
 
-  ACCEPT_CONSTRAINT(AsinhConstraint, HYPERBOLIC_LEVEL, CG_General)
+  ACCEPT_CONSTRAINT(AsinhConstraint, HYPERBOLIC_LEVEL, CG_Algebraic)
   void AddConstraint(const AsinhConstraint& cc);
-  ACCEPT_CONSTRAINT(AcoshConstraint, HYPERBOLIC_LEVEL, CG_General)
+  ACCEPT_CONSTRAINT(AcoshConstraint, HYPERBOLIC_LEVEL, CG_Algebraic)
   void AddConstraint(const AcoshConstraint& cc);
-  ACCEPT_CONSTRAINT(AtanhConstraint, HYPERBOLIC_LEVEL, CG_General)
+  ACCEPT_CONSTRAINT(AtanhConstraint, HYPERBOLIC_LEVEL, CG_Algebraic)
   void AddConstraint(const AtanhConstraint& cc);
 
 
@@ -259,22 +266,22 @@ public:
   /// Can be used to represent empty expression in an NLConstraint.
     Expr GetZeroExpression() { return MakeConstantExpr(0.0); }
 
-  ACCEPT_CONSTRAINT(NLConstraint, Recommended, CG_General)
+  ACCEPT_CONSTRAINT(NLConstraint, Recommended, CG_Algebraic)
     void AddConstraint(const NLConstraint& nl);
     /// NLAssignEQ: algebraic expression expicifier.
     /// Meaning: var == expr.
     /// @note Accessors: GetName(), GetExpression(nle), GetVariable(nle).
-    ACCEPT_CONSTRAINT(NLAssignEQ, Recommended, CG_General)
+    ACCEPT_CONSTRAINT(NLAssignEQ, Recommended, CG_Algebraic)
     void AddConstraint(const NLAssignEQ& nle);
   /// NLAssignLE: algebraic expression expicifier in positive context.
   /// Meaning: var <= expr.
   /// @note Accessors: GetName(), GetExpression(nle), GetVariable(nle).
-  ACCEPT_CONSTRAINT(NLAssignLE, Recommended, CG_General)
+  ACCEPT_CONSTRAINT(NLAssignLE, Recommended, CG_Algebraic)
     void AddConstraint(const NLAssignLE& nle);
   /// NLAssignGE: algebraic expression expicifier in negative context.
   /// Meaning: var >= expr.
   /// @note Accessors: GetName(), GetExpression(nle), GetVariable(nle).
-  ACCEPT_CONSTRAINT(NLAssignGE, Recommended, CG_General)
+  ACCEPT_CONSTRAINT(NLAssignGE, Recommended, CG_Algebraic)
     void AddConstraint(const NLAssignGE& nle);
 
   template <class MPExpr> void 
@@ -384,6 +391,7 @@ public:
 
 
 private:
+  int num_obj_total_ {0};          // all objectives, any type
   std::vector<int> obj_ind_save_, qobj_ind1_save_, qobj_ind2_save_;
 
   std::vector<int> con_formula_rowind_, con_formula_starts_;

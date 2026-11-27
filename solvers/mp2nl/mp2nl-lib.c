@@ -3,7 +3,7 @@
 AMPLS_C_EXPORT AMPLS_MP_Solver* AMPLSOpen_mp2nl(int argc, char** argv)
 {
   CCallbacks cb = { NULL };
-  return Open_MP2NL(cb);
+  return Open_mp2nl(cb);
 }
 
 

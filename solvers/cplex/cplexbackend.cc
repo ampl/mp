@@ -101,6 +101,8 @@ namespace mp {
 
   void CplexBackend::CloseSolver() {
 
+    if (fixed_qcp_model_)
+      CPXfreeprob(env(), &fixed_qcp_model_);
     if (lp() != nullptr) {
       CPLEX_CALL(CPXfreeprob(env(), &lp_ref()));
     }
@@ -136,6 +138,9 @@ namespace mp {
 
 
   bool CplexBackend::IsMIP() const {
+    // By the native problem type alone. The fixed solve of an MIQCP runs
+    // on a copy, so the type of lp() is that of the user's model also after
+    // a report and when the model is retyped between solves (AMPLS).
     auto type = CPXgetprobtype(env(), lp());
     return !((type == CPXPROB_LP) || (type == CPXPROB_QP)
       || (type == CPXPROB_QCP));
@@ -317,7 +322,7 @@ namespace mp {
 
 
   SolutionBasis CplexBackend::GetBasis() {
-    if (fixed_model_failed_) return {};
+    if (fixed_model_failed_ || fixed_qcp_model_) return {};
     bool outputStatus = silenceOutput_;
     setSilenceOutput(!debug_mode());
     std::vector<int> varstt = VarStatii();
@@ -344,13 +349,19 @@ namespace mp {
     VarConStatii(varstt, constt);
   }
 
-  void CplexBackend::AddPrimalDualStart(Solution sol0_unpres) {
+  int CplexBackend::AddPrimalDualStart(Solution sol0_unpres) {
     auto mv = GetValuePresolver().PresolveSolution(
       { sol0_unpres.primal, sol0_unpres.dual });
     auto& x0 = mv.GetVarValues()();
     auto& pi0 = mv.GetConValues()(CG_Linear);
-    CPXcopystart(env(), lp(), nullptr, nullptr, x0.data(), nullptr,
-      nullptr, pi0.data());
+    // Presolve fills a missing vector with zeros: pass only incoming ones
+    const int passed = (sol0_unpres.primal.size() ? 1 : 0)
+        | (sol0_unpres.dual.size() ? 2 : 0);
+    if (CPXcopystart(env(), lp(), nullptr, nullptr,
+          (1 & passed) ? x0.data() : nullptr, nullptr,
+          nullptr, (2 & passed) ? pi0.data() : nullptr))
+      return 0;                            // e.g., not applicable
+    return passed;
   }
 
   void CplexBackend::AddMIPStart(
@@ -379,7 +390,7 @@ namespace mp {
   }
 
 ArrayRef<double> CplexBackend::PrimalSolution() {
-  if (fixed_model_failed_) return mip_result_before_fixed_.primal;
+  if (fixed_model_failed_ || fixed_qcp_model_) return mip_result_before_fixed_.primal;
   // if (!HasSolution())
   //   return std::vector<double>();
   int num_vars = NumVars();
@@ -402,7 +413,8 @@ ArrayRef<double> CplexBackend::DualSolution_LP() {
     std::vector<double> pi(num_cons);
     /* Avoid most error messages on screen */
     CPLEX_CALL(CPXsetintparam(env(), CPXPARAM_ScreenOutput, CPX_OFF));
-    int error = CPXgetpi(env(), lp(), pi.data(), 0, num_cons - 1);
+    auto model = fixed_qcp_model_ ? fixed_qcp_model_ : lp();
+    int error = CPXgetpi(env(), model, pi.data(), 0, num_cons - 1);
     if (error)
       pi.clear();
     return pi;
@@ -412,7 +424,7 @@ ArrayRef<double> CplexBackend::DualSolution_LP() {
 }
 
 double CplexBackend::ObjectiveValue() const {
-  if (fixed_model_failed_) return mip_result_before_fixed_.objective;
+  if (fixed_model_failed_ || fixed_qcp_model_) return mip_result_before_fixed_.objective;
   double objval = -Infinity();
   if(hasSolution_)
     CPLEX_CALL(CPXgetobjval(env(), lp(), &objval));
@@ -464,7 +476,7 @@ void CplexBackend::DoWriteSolution(const std::string& file) {
     return;
   }
   AddWarning("UnknownResultExt",
-             fmt::format("Unknown or non-supported result extension: '{}'.\n"
+             fmt::format("Unknown or non-supported result extension: '{}'. "
                          "Trying to write the file as solution", file));
   CPLEX_CALL(CPXsolwrite(env(), lp(), file.c_str()));
 }
@@ -512,6 +524,9 @@ void CplexBackend::RedirectOutput() {
 void CplexBackend::Solve() {
   have_mip_result_before_fixed_ = false;
   fixed_model_failed_ = false;
+  if (fixed_qcp_model_)
+    CPXfreeprob(env(), &fixed_qcp_model_);
+  RestoreFixedInPlace();
     if (!storedOptions_.tunefileprm.empty())
         DoCPLEXTune();
 
@@ -530,22 +545,22 @@ void CplexBackend::Solve() {
   }
   if (NumObjs() > 1
       || multiobj()==1)                  // User set multiobj=1
-    CPLEX_CALL(CPXmultiobjopt(env(), lp(), NULL));
+    CPLEX_CALL_THROW(CPXmultiobjopt(env(), lp(), NULL));
   else {
     auto type = CPXgetprobtype(env(), lp());
     if ((type == CPXPROB_MIQCP) || (type == CPXPROB_MIQP) || (type == CPXPROB_MILP))
     {
       if (storedOptions_.cpxMethod_ == CPX_ALG_BENDERS)
-        CPLEX_CALL(CPXbendersopt(env(), lp()));
+        CPLEX_CALL_THROW(CPXbendersopt(env(), lp()));
       else if (2 == storedOptions_.populate_)
-        CPLEX_CALL(CPXpopulate(env(), lp()));
+        CPLEX_CALL_THROW(CPXpopulate(env(), lp()));
       else
-        CPLEX_CALL(CPXmipopt(env(), lp()));
+        CPLEX_CALL_THROW(CPXmipopt(env(), lp()));
     }
     else if ((type == CPXPROB_QP) || (type == CPXPROB_QCP))
-      CPLEX_CALL(CPXqpopt(env(), lp()));
+      CPLEX_CALL_THROW(CPXqpopt(env(), lp()));
     else
-      CPLEX_CALL(CPXlpopt(env(), lp()));
+      CPLEX_CALL_THROW(CPXlpopt(env(), lp()));
   }
   if (feasrelax())
   {
@@ -864,8 +879,18 @@ void CplexBackend::WindupCPLEXSolve() {
 }
 
 void CplexBackend::ReportResults() {
-  ReportCPLEXResults();
-  BaseBackend::ReportResults();
+  // AMPLS: the native problem is the user's again after the report,
+  // also when reporting fails (e.g., the solution file cannot be written)
+  try {
+    ReportCPLEXResults();
+    BaseBackend::ReportResults();
+  } catch (...) {
+    try {
+      RestoreFixedInPlace();
+    } catch (...) { }         // keep the report's exception
+    throw;
+  }
+  RestoreFixedInPlace();
 }
 
 void CplexBackend::ReportCPLEXResults() {
@@ -879,9 +904,9 @@ void CplexBackend::ReportCPLEXResults() {
     CPLEX_CALL(CPXmbasewrite(env(), lp(), storedOptions_.endBasis_.c_str()));
  
   if (storedOptions_.bestnode_) {
-    double obj;
-    CPLEX_CALL(CPXgetbestobjval(env(), lp(), &obj));
-    std::vector<double> dbl(1, obj);
+    // The MIP's bound, also after a fixed-model solve (mip:basis), whose
+    // continuous model has none (CPXgetbestobjval failed, obj unset)
+    std::vector<double> dbl(1, BestDualBound());
     ReportSuffix(sufBestNodeObj, dbl);
     ReportSuffix(sufBestNodeProb, dbl);
   }
@@ -986,14 +1011,20 @@ std::pair<int, std::string> CplexBackend::GetSolveResult(int optimstatus) {
           "unbounded problem, no feasible solution returned" };
   case CPX_STAT_OPTIMAL_FACE_UNBOUNDED:
     return { sol::UNBOUNDED_NO_FEAS, "model has an unbounded optimal face" };
-  case CPX_STAT_FEASIBLE:
-  case CPXMIP_FEASIBLE:
   case CPX_STAT_FEASIBLE_RELAXED_INF:
   case CPX_STAT_FEASIBLE_RELAXED_QUAD:
   case CPX_STAT_FEASIBLE_RELAXED_SUM:
   case CPXMIP_FEASIBLE_RELAXED_INF:
   case CPXMIP_FEASIBLE_RELAXED_QUAD:
   case CPXMIP_FEASIBLE_RELAXED_SUM:
+    // FeasOpt modes MIN_* (alg:feasrelax 1-3) only minimize the
+    // relaxation: CPLEX ends with these statuses when the minimal
+    // relaxation is found (modes OPT_* end with *_OPTIMAL_RELAXED_*).
+    if (feasrelax() >= 1 && feasrelax() <= 3)
+      return { sol::SOLVED, "minimal relaxation found" };
+    return { sol::LIMIT_FEAS, "limit, feasible solution" };
+  case CPX_STAT_FEASIBLE:
+  case CPXMIP_FEASIBLE:
     return { sol::LIMIT_FEAS, "limit, feasible solution" };
   case CPX_STAT_CONFLICT_ABORT_DETTIME_LIM:
   case CPX_STAT_CONFLICT_ABORT_TIME_LIM:
@@ -1028,7 +1059,8 @@ void CplexBackend::ComputeIIS() {
   "contradiction", "time limit", "iteration limit", "node limit",
   "objective limit", "memory limit", "user request" };
   
-  int nGroups = NumQPCons() + NumSOSCons() + NumIndicatorCons();
+  int nGroups = NumQPCons() + NumSOSCons() + NumIndicatorCons()
+      + NumPWLCons();
   //if (nGroups > 0) // use ext routines if we have non linear constraints
   if(true)
   {
@@ -1084,6 +1116,11 @@ void CplexBackend::ComputeIIS() {
     for (int i = 0; i < NumSOSCons(); i++) {
       grpInd[j] = i;
       grpType[j++] = CPX_CON_SOS;
+    }
+    // Then all piecewise-linear constraints
+    for (int i = 0; i < NumPWLCons(); i++) {
+      grpInd[j] = i;
+      grpType[j++] = CPX_CON_PWL;
     }
     
     // Calculate information on the above defined groups
@@ -1155,6 +1192,10 @@ void CplexBackend::ComputeIIS() {
       iisRowIndices.push_back(i);
       iisRowValues.push_back(grpStat[j++]);
     }
+    for (int i = 0; i < NumPWLCons(); i++) {
+      iisRowIndices.push_back(i);
+      iisRowValues.push_back(grpStat[j++]);
+    }
   }
   else {
     CPLEX_CALL(CPXrefineconflict(env(), lp(), &nr, &nc));
@@ -1219,7 +1260,8 @@ pre::ValueMapInt CplexBackend::ConsIIS() {
       iis_lincon(NumLinCons(), (int)IISStatus::non),
       iis_qc(NumQPCons(), (int)IISStatus::non),
       iis_indcon(NumIndicatorCons(), (int)IISStatus::non),
-      iis_soscon(NumSOSCons(), (int)IISStatus::non);
+      iis_soscon(NumSOSCons(), (int)IISStatus::non),
+      iis_pwl(NumPWLCons(), (int)IISStatus::non);
 
   // Extended conflicts concatenate type-local indices. Only the linear
   // prefix indexes iis_lincon; other groups have separate index spaces.
@@ -1233,10 +1275,13 @@ pre::ValueMapInt CplexBackend::ConsIIS() {
     iis_indcon[i] = (int)IISCplexToAMPL(iisRowValues[j++]);
   for (int i = 0; iisGrouped_ && i < NumSOSCons(); i++)
     iis_soscon[i] = (int)IISCplexToAMPL(iisRowValues[j++]);
+  for (int i = 0; iisGrouped_ && i < NumPWLCons(); i++)
+    iis_pwl[i] = (int)IISCplexToAMPL(iisRowValues[j++]);
   return { {{ CG_Linear, iis_lincon },
         { CG_Quadratic, iis_qc },
       { CG_SOS, iis_soscon },
-      { CG_General, iis_indcon }} };
+      { CG_Piecewiselinear, iis_pwl },
+      { CG_Indicator, iis_indcon }} };
 }
 
 void CplexBackend::InputExtras() {
@@ -1271,19 +1316,55 @@ void CplexBackend::InputCPLEXExtras() {
                                                    storedOptions_.poolIntensity_);
 }
 
+bool CplexBackend::IsFixedInPlace() const {
+  const int type = CPXgetprobtype(env(), lp());
+  return CPXPROB_FIXEDMILP == type || CPXPROB_FIXEDMIQP == type;
+}
+
+void CplexBackend::RestoreFixedInPlace() {
+  // A report with mip:basis fixed the MILP / MIQP in lp() (AMPLS: the
+  // native problem is solved again). Return to the user's problem type.
+  const int type = CPXgetprobtype(env(), lp());
+  if (CPXPROB_FIXEDMILP == type)
+    CPLEX_CALL(CPXchgprobtype(env(), lp(), CPXPROB_MILP));
+  else if (CPXPROB_FIXEDMIQP == type)
+    CPLEX_CALL(CPXchgprobtype(env(), lp(), CPXPROB_MIQP));
+}
+
 void CplexBackend::ConsiderCplexFixedModel() {
   if (!IsMIP())
     return;
+  if (fixed_qcp_model_)
+    return;                            // already reported for this solve
+  if (IsFixedInPlace())                // the same, MILP / MIQP fixed in lp()
+    return;
+  if (NumObjs() > 1) {
+    // The reported point keeps the values of all objectives; the fixed
+    // problem of a single objective would move it and lose them
+    AddToSolverMessage("mip:basis: no fixed-model solve with several "
+                       "objectives (obj:multi=1).\n");
+    return;
+  }
   MIPResultBeforeFixed result;
   result.primal = PrimalSolution();
   if (result.primal.empty()) {
-    AddToSolverMessage("Fixed MIP for mip:basis skipped: no integer-feasible incumbent.");
+    AddToSolverMessage("Fixed MIP for mip:basis skipped: no integer-feasible incumbent.\n");
     mip_result_before_fixed_ = {};
     mip_result_before_fixed_.objective = ObjectiveValue();
     fixed_model_failed_ = true;
     return;
   }
   result.objective = ObjectiveValue();
+  if (CPXPROB_MIQCP == CPXgetprobtype(env(), lp()) &&
+      NumIndicatorCons() + NumSOSCons() + NumPWLCons() > 0) {
+    // CPLEX's continuous QCP solver ignores these constraints, the fixed
+    // model would not be the model of the MIP
+    AddToSolverMessage("Fixed MIP for mip:basis skipped: indicator, SOS "
+                       "or piecewise-linear constraints in an MIQCP.\n");
+    mip_result_before_fixed_ = std::move(result);
+    fixed_model_failed_ = true;
+    return;
+  }
   result.gap = MIPGap();
   result.absolute_gap = MIPGapAbs();
   result.bound = BestDualBound();
@@ -1292,42 +1373,46 @@ void CplexBackend::ConsiderCplexFixedModel() {
   result.barrier_iterations = BarrierIterations();
   mip_result_before_fixed_ = std::move(result);
   have_mip_result_before_fixed_ = true;
-  // CPXcloneprob copies problem data, not solution data. Save both to
-  // retain the MIP result when the supplementary solve reaches a limit.
+  // An MIQCP can be fixed on the copy using the saved incumbent.
+  // The native fixed MILP/MIQP operation still uses the live incumbent.
+  const bool is_miqcp = CPXPROB_MIQCP == CPXgetprobtype(env(), lp());
+  auto free_copy = [this](CPXLPptr copy) { CPXfreeprob(env(), &copy); };
   int error = 0;
-  CPXLPptr original = CPXcloneprob(env(), lp(), &error);
-  if (!original) {
+  std::unique_ptr<cpxlp, decltype(free_copy)> copy(
+      CPXcloneprob(env(), lp(), &error), free_copy);
+  if (!copy) {
     fixed_model_failed_ = true;
-    AddToSolverMessage(fmt::format("Cannot save MIP before fixed solve (CPLEX error {}).", error));
+    AddToSolverMessage(fmt::format("Cannot save MIP before fixed solve (CPLEX error {}).\n", error));
     return;
   }
   std::string msg;
   try {
-    msg = DoCplexFixedModel();
+    msg = DoCplexFixedModel(is_miqcp ? copy.get() : lp());
   } catch (const std::exception& e) {
     msg = e.what();
   }
   if (!msg.empty()) {
     fixed_model_failed_ = true;
-    AddToSolverMessage(msg + " failed in DoCplexFixedModel().");
-    CPXfreeprob(env(), &lp_ref());
-    lp_ref() = original;
-    copy_common_info_to_other();
-  } else {
-    CPXfreeprob(env(), &original);
-  }
+    AddToSolverMessage(msg + " failed in DoCplexFixedModel().\n");
+    if (!is_miqcp) {
+      CPXfreeprob(env(), &lp_ref());
+      lp_ref() = copy.release();
+      copy_common_info_to_other();
+    }
+  } else if (is_miqcp)
+    fixed_qcp_model_ = copy.release();
 }
 
 
-std::string CplexBackend::DoCplexFixedModel() {
+std::string CplexBackend::DoCplexFixedModel(CPXLPptr model) {
   typedef int (CPXPUBLIC* Optalg)(CPXCENVptr, cpxlp*);
   int status;
   Optalg Contopt;
 
-  original_model_type_ = CPXgetprobtype(env(), lp());
+  const int original_model_type = CPXgetprobtype(env(), model);
   int new_model_type = CPXPROB_FIXEDMILP;
   Contopt = CPXlpopt;
-  switch (original_model_type_) {
+  switch (original_model_type) {
   case CPXPROB_MIQP:
     new_model_type = CPXPROB_FIXEDMIQP;
     Contopt = CPXqpopt;
@@ -1338,13 +1423,13 @@ std::string CplexBackend::DoCplexFixedModel() {
   default:
     new_model_type = CPXPROB_FIXEDMILP;
   }
-  if (new_model_type == original_model_type_) // notably MIQCP
+  if (new_model_type == original_model_type) // notably MIQCP
   {
     // fix variables manually:
-    auto sol = PrimalSolution();
+    const auto& sol = mip_result_before_fixed_.primal;
     std::vector<char> types(NumVars());
-    CPLEX_CALL(CPXgetctype(env(), lp(), types.data(), 0, NumVars()));
-    int nint = CPXgetnumbin(env(), lp()) + CPXgetnumint(env(), lp());
+    CPLEX_CALL(CPXgetctype(env(), model, types.data(), 0, NumVars() - 1)); // end inclusive
+    int nint = CPXgetnumbin(env(), model) + CPXgetnumint(env(), model);
     std::vector<int> indices(nint);
     std::vector<double> bound(nint);
     std::vector<char> type(nint, 'B');
@@ -1356,21 +1441,28 @@ std::string CplexBackend::DoCplexFixedModel() {
         indices[j++] = i;
       }
     }
-    CPLEX_CALL(CPXchgbds(env(), lp(), nint, indices.data(), type.data(), bound.data()));
+    CPLEX_CALL(CPXchgbds(env(), model, nint, indices.data(), type.data(), bound.data()));
+    // With the integers fixed, solve the continuous QCP: CPXlpopt is not
+    // available for MIQCP nor QCP; the barrier gives duals (no basis)
+    CPLEX_CALL(CPXchgprobtype(env(), model, CPXPROB_QCP));
+    Contopt = CPXbaropt;
   }
   else
-    CPLEX_CALL(CPXchgprobtype(env(), lp(), new_model_type));
+    CPLEX_CALL(CPXchgprobtype(env(), model, new_model_type));
   double old_time_limit;
   CPXLONG old_iteration_limit;
   int old_barrier_limit;
-  const int method_param = (CPXPROB_MIQP == original_model_type_)
+  const int method_param = (CPXPROB_MIQP == original_model_type)
       ? CPXPARAM_QPMethod : CPXPARAM_LPMethod;
   int old_method = 0;
   CPLEX_CALL(CPXgetintparam(env(), method_param, &old_method));
   CPLEX_CALL(CPXgetdblparam(env(), CPXPARAM_TimeLimit, &old_time_limit));
   CPLEX_CALL(CPXgetlongparam(env(), CPXPARAM_Simplex_Limits_Iterations, &old_iteration_limit));
   CPLEX_CALL(CPXgetintparam(env(), CPXPARAM_Barrier_Limits_Iteration, &old_barrier_limit));
+  int old_qcp_duals = 0;
+  CPLEX_CALL(CPXgetintparam(env(), CPXPARAM_Preprocessing_QCPDuals, &old_qcp_duals));
   auto restore_limits = [&](void*) {
+    CPXsetintparam(env(), CPXPARAM_Preprocessing_QCPDuals, old_qcp_duals);
     CPXsetintparam(env(), method_param, old_method);
     CPXsetdblparam(env(), CPXPARAM_TimeLimit, old_time_limit);
     CPXsetlongparam(env(), CPXPARAM_Simplex_Limits_Iterations, old_iteration_limit);
@@ -1385,14 +1477,25 @@ std::string CplexBackend::DoCplexFixedModel() {
       fixed_model_iter_limit() < 0 ? INT_MAX : fixed_model_iter_limit()));
   if (storedOptions_.fixedModelMethod_)
     SetSolverOption(method_param, storedOptions_.fixedModelMethod_);
-  CPLEX_CALL(Contopt(env(), lp()));
+  if (CPXbaropt == Contopt)    // the duals of the fixed QCP are reported:
+    CPLEX_CALL(CPXsetintparam(env(),     // with QCPDuals=1 (the default)
+        CPXPARAM_Preprocessing_QCPDuals, 2));  // CPLEX may not compute them
+  CPLEX_CALL(Contopt(env(), model));
 
-  int optimstatus = CPXgetstat(env(), lp());
+  int optimstatus = CPXgetstat(env(), model);
   if (optimstatus != CPX_STAT_OPTIMAL)
     return fmt::format("Fixed model status {}", optimstatus);
-  int cnt = CPXgetitcnt(env(), lp());
-  AddToSolverMessage(fmt::format("Fixed MIP for mip:basis: {} simplex iteration{}",
-    cnt, "s"[cnt == 1.]));
+  if (CPXbaropt == Contopt) {          // the fixed QCP of an MIQCP
+    int cnt = CPXgetbaritcnt(env(), model);
+    AddToSolverMessage(fmt::format(
+        "Fixed MIP for mip:basis: {} barrier iteration{}\n",
+        cnt, 1 == cnt ? "" : "s"));
+    return {};
+  }
+  int cnt = CPXgetitcnt(env(), model);
+  AddToSolverMessage(fmt::format(
+      "Fixed MIP for mip:basis: {} simplex iteration{}\n",
+      cnt, 1 == cnt ? "" : "s"));
   return {};
 }
 
@@ -1422,20 +1525,27 @@ void CplexBackend::DoCplexFeasRelax() {
   }
 
   SetCPLEXParam(CPXPARAM_Feasopt_Mode, reltype);
-  auto mv = GetValuePresolver().PresolveSolution({
-                                              {},
-                                              feasrelax().rhspen()
-    });
-  const auto& rhspen = mv.GetConValues()(CG_Linear);
-  std::vector<double> lbpen = feasrelax().lbpen();
-  if (lbpen.size() && lbpen.size() < (size_t)NumVars())
-    lbpen.resize(NumVars());
-  std::vector<double> ubpen = feasrelax().ubpen();
-  if (ubpen.size() && ubpen.size() < (size_t)NumVars())
-    ubpen.resize(NumVars());
+  /// CPXfeasopt takes preferences: the cost of a violation is the
+  /// violation divided by the preference, and 0 means not relaxable
+  auto pen = FeasrelaxPenaltiesInSolver(
+      NumVars(), CG_Linear, Infinity(), Infinity());
+  for (auto* v: {&pen.lb, &pen.ub, &pen.rhs})
+    for (auto& p: *v)
+      p = FeasoptPreference(p);
   CPLEX_CALL(CPXfeasopt(env(), lp(),
-    (double*)data_or_null(rhspen), (double*)data_or_null(rhspen),
-    (double*)data_or_null(lbpen), (double*)data_or_null(ubpen)));
+    (double*)data_or_null(pen.rhs), (double*)data_or_null(pen.rhs),
+    (double*)data_or_null(pen.lb), (double*)data_or_null(pen.ub)));
+}
+
+/// MP penalty -> CPLEX FeasOpt preference: 1/penalty;
+/// an infinite penalty (not relaxable) gives 0, and a zero
+/// penalty (free violation) a huge preference
+double CplexBackend::FeasoptPreference(double penalty) {
+  if (penalty >= Infinity())
+    return 0.0;
+  if (penalty <= 1.0 / Infinity())
+    return Infinity();
+  return 1.0 / penalty;
 }
 
 
@@ -2019,6 +2129,12 @@ void CplexBackend::setSolutionMethod() {
 void CplexBackend::FinishOptionParsing() {
   // cplexasl-compatible feasopt/feasoptobj -> alg:feasrelax
   if (storedOptions_.feasopt_) {
+    if (storedOptions_.feasopt_ < 0 || storedOptions_.feasopt_ > 2)
+      MP_RAISE(fmt::format("Rejecting alg:feasopt={}: must be 0, 1 or 2",
+                           storedOptions_.feasopt_));
+    if (storedOptions_.feasoptobj_ < 1 || storedOptions_.feasoptobj_ > 3)
+      MP_RAISE(fmt::format("Rejecting alg:feasoptobj={}: must be 1, 2 or 3",
+                           storedOptions_.feasoptobj_));
     static const int mode_by_obj[] = { 0, 1, 3, 2 };  // sum, count, squares
     int mode = mode_by_obj[storedOptions_.feasoptobj_];
     if (2 == storedOptions_.feasopt_)
@@ -2695,7 +2811,9 @@ void CplexBackend::InitCustomOptions() {
   // Solution pool controls
   AddCplexParamOption("sol:poolgap ams_eps poolgap",
     "Relative tolerance for reporting alternate MIP solutions "
-    "(default: 1e75).", CPX_PARAM_SOLNPOOLGAP, 0.0, DBL_MAX);
+    "(default: 1e75). "
+    "With the best objective near 0, use sol:poolgapabs.",
+    CPX_PARAM_SOLNPOOLGAP, 0.0, DBL_MAX);
   AddCplexParamOption("sol:poolgapabs ams_epsabs poolagap poolgapabs",
     "Absolute tolerance for reporting alternate MIP solutions "
     "(default: 1e75).",CPX_PARAM_SOLNPOOLAGAP, 0.0, DBL_MAX);

@@ -1,0 +1,8 @@
+var x{1..3} integer >= -2 <= 2;
+
+maximize o: x[1] + x[2] + 0*x[3];
+
+s.t. c1: atmost 2 {i in 1..3} (x[i] >= 1);
+s.t. c2: not ((x[2] > 1) and (x[3] >= 2));
+s.t. c3: (x[1] >= 0) ==> (x[1] != -1) else (x[1] > 1);
+s.t. c4: (if x[3] > 1 then x[3] else x[2]) != 2;

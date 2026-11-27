@@ -3,7 +3,7 @@
 # infeas_lcon_05.mod
 # Test that AMPL can receive suffixes when all cons logical
 # Test also that AMPL sends suffixes then
-# Modified example from solvers-private/#63
+# Modified from an existing example.
 # -------------------------------------------------------------
 
 set TYPE;

@@ -134,9 +134,9 @@ namespace mp {
 jint MPToJaCoPConverter::CastToInt(double value) const {
   jint int_value = static_cast<jint>(value);
   if (int_value != value)
-    throw Error("value {} can't be represented as int", value);
+    throw Error(fmt::format("value {} can't be represented as int", value));
   if (int_value < min_int_ || int_value > max_int_)
-    throw Error("value {} is out of bounds", value);
+    throw Error(fmt::format("value {} is out of bounds", value));
   return int_value;
 }
 

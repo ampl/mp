@@ -3,7 +3,7 @@
 
 /**
  * Comparisons decided by variable-bound constraints
- * (option cvt:pre:vbnd).
+ * (option cvt:pre:domsync).
  *
  * A pair of variable-bound constraints  x >= L*b,  x <= U*b,
  * with b binary and L > 0, gives  b=0 ==> x <= 0,  b=1 ==> x >= L.

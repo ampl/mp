@@ -124,14 +124,22 @@ public:
   * The specific Backend should
   * presolve the values if needed.
   *
-  * @note Only called when both primal and dual initial guesses
-  *   are provided. Thus, use MIPSTART for primal-only
-  *   starts (MIP, NLP).
+  * @note For models with integer variables, only called when both
+  *   primal and dual initial guesses are provided (use MIPSTART
+  *   for primal-only starts). For continuous models, also called
+  *   with primal or dual values alone (see alg:startpartial);
+  *   the other vector is then empty. Value presolve fills
+  *   an empty vector with zeros: pass to the solver only
+  *   the vectors nonempty before presolve.
+  *
+  * @return bit 1: primal values passed to the solver;
+  *   bit 2: dual values passed. For continuous models, the caller
+  *   warns about incoming values not passed.
   **/
   DEFINE_STD_FEATURE( WARMSTART )
   ALLOW_STD_FEATURE( WARMSTART, false )
-  virtual void AddPrimalDualStart(Solution )
-  { MP_UNSUPPORTED("MIPBackend::AddPrimalDualStart"); }
+  virtual int AddPrimalDualStart(Solution )
+  { MP_UNSUPPORTED("MIPBackend::AddPrimalDualStart"); return 0; }
   /**
   * Primal-only (MIP / NLP) warm start.
   * Provides solution hints (dense vector),
@@ -290,17 +298,13 @@ public:
     sol0.primal = this->InitialValues();
     sol0.spars_primal = this->InitialValuesSparsity();
     sol0.dual = this->InitialDualValues();
-    bool haveInis = sol0.primal.size() && sol0.dual.size();
-    if (haveInis && (
+    if (HavePrimalDualStart(sol0) && (
           2<=warmstart() ||
           (1==warmstart() && !useBasis))) {
-      AddPrimalDualStart(sol0);
+      const int passed = AddPrimalDualStart(sol0);
       if ( 2==warmstart() )  // Why should we submit only the warmstart?
         useBasis = false;
-      if (debug_mode()) {                 // Report received initials
-        ReportSuffix(suf_testvarini, sol0.primal); // Should we check that
-        ReportSuffix(suf_testconini, sol0.dual);   // Impl uses them?
-      }
+      ReportPrimalDualStartUse(sol0, passed);
     }
     if (useBasis) {
       SetBasis(basis);
@@ -309,6 +313,63 @@ public:
         ReportSuffix(suf_testconstatus, basis.constt); // Impl uses them?
       }
     }
+  }
+
+  /// Report the use of the incoming primal-dual start.
+  /// @param passed: result of AddPrimalDualStart() (bits 1, 2).
+  /// Debug suffixes show the values passed to the solver.
+  /// Where partial starts apply (see PartialStartApplies()), warn about
+  /// incoming primal values not passed, and about incoming dual values
+  /// not passed unless primal values were: after a solve, AMPL sends
+  /// both, and drivers taking primal values only would warn on every
+  /// re-solve. Otherwise primal values go to the MIP start.
+  void ReportPrimalDualStartUse(const Solution& sol0, int passed) {
+    const bool fPrimal = sol0.primal.size(), fDual = sol0.dual.size();
+    if (debug_mode()) {
+      if (fPrimal && (1 & passed))
+        ReportSuffix(suf_testvarini, sol0.primal);
+      if (fDual && (2 & passed))
+        ReportSuffix(suf_testconini, sol0.dual);
+    }
+    if (!PartialStartApplies())
+      return;
+    if (fPrimal && !(1 & passed))
+      this->AddWarning("alg:start:primal",
+                       "Incoming primal start values not used: "
+                       "not supported by the driver for this model "
+                       "or without dual values");
+    if (fDual && !(2 & passed) && !(1 & passed))
+      this->AddWarning("alg:start:dual",
+                       "Incoming dual start values not used: "
+                       "not supported by the driver for this model "
+                       "or without primal values");
+  }
+
+  /// Whether the incoming initial values make a primal-dual start.
+  /// Where partial starts apply (see PartialStartApplies()), primal
+  /// or dual values alone suffice, as allowed by alg:startpartial;
+  /// otherwise both are needed (primal values go to the MIP start,
+  /// see InputMIPStart()).
+  /// AddPrimalDualStart() receives the vectors as they came: an empty one
+  /// is filled with zeros by value presolve, so implementations
+  /// should pass to the solver only vectors nonempty before presolve.
+  bool HavePrimalDualStart(const Solution& sol0) const {
+    const bool fPrimal = sol0.primal.size(), fDual = sol0.dual.size();
+    if (fPrimal && fDual)
+      return true;
+    const int partial =
+        PartialStartApplies() ? GetMIPOptions().startpartial_ : 0;
+    return (fPrimal && (1 & partial)) || (fDual && (2 & partial));
+  }
+
+  /// Whether primal or dual values alone can make a primal-dual start:
+  /// for models without unfixed integer variables (after reformulation),
+  /// and for drivers without MIP starts (e.g., MINLP in Knitro).
+  /// Not IsMIP(): a solver may classify a continuous model with
+  /// general constraints as MIP (Gurobi 13 with nonlinear functions).
+  bool PartialStartApplies() const {
+    return !BackendWithModelManager::HasUnfixedIntVars()
+        || !IMPL_HAS_STD_FEATURE( MIPSTART );
   }
 
   virtual void InputMIPStart() {
@@ -479,6 +540,7 @@ private:
     int lazy_user_cuts_ = 3;
     int basis_=3;
     int warmstart_=3;
+    int startpartial_=3;
     int importPriorities_=1;
     int rays_=3;
     int exportIIS_=0;
@@ -719,7 +781,7 @@ protected:
   };
 
   const mp::OptionValueInfo values_warmstart_[4] = {
-      {     "0", "No", 0 },
+      {     "0", "No (an incoming LP basis is still used, see alg:basis)", 0 },
       {     "1", "Yes (for LP: if there is no incoming alg:basis)", 1},
       {     "2", "Yes (for LP: omitting the incoming alg:basis, if any)", 2},
       {     "3", "Yes (for LP: together with the incoming alg:basis, if any; default).", 3}
@@ -762,6 +824,24 @@ protected:
                       "in a warmstart:\n "
                       "\n.. value-table::",
                       GetMIPOptions().warmstart_, values_warmstart_);
+
+    if (IMPL_HAS_STD_FEATURE( WARMSTART ))
+      AddStoredOption("alg:startpartial startpartial",
+                      "For continuous models (no unfixed integer "
+                      "variables, also after reformulation), and for solvers "
+                      "without MIP starts, whether to use incoming "
+                      "primal or dual values (see alg:start) when the "
+                      "other ones are not provided: sum of\n"
+                      "\n"
+                      "|  1 - Primal values without dual values\n"
+                      "|  2 - Dual values without primal values\n"
+                      "\n"
+                      "Default = 3 (both). With 0, primal and dual values "
+                      "are only used together (the behavior of earlier "
+                      "versions). A solver or algorithm may ignore an "
+                      "incomplete start. With alg:start=2, the incoming "
+                      "basis is not used also with an incomplete start.",
+                      GetMIPOptions().startpartial_);
 
     if (IMPL_HAS_STD_FEATURE( VAR_PRIORITIES ))
       AddStoredOption("mip:priorities priorities",

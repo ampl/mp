@@ -524,8 +524,8 @@ static void NLW2_log_warning_C_Default(
 }
 /// Override this to your error handler.
 /// Not using exceptions by default.
-/// Only called with wrong output format string
-/// (internal error.)
+/// Called with a wrong output format string (internal error)
+/// and when the temporary directory cannot be created.
 static void NLW2_myexit_C_Default(
     void* p_api_data, const char* msg) {
   using namespace std;

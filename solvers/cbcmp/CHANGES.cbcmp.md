@@ -2,6 +2,11 @@ Summary of recent updates to CBCMP for AMPL
 ===========================================
 
 
+## unreleased
+- Fix: a partial MIP start (initial values for some variables only)
+  assigned the values to the wrong variables.
+
+
 ## 20261029
 - SOS1/SOS2 constraints, including those from
   piecewise-linear expressions, are linearized by

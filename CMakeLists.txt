@@ -349,14 +349,15 @@ add_to_folder(${MP_FOLDER_PREFIX}util gen-expr-info)
 
 # HEADER LISTS
 add_prefix(MP_HEADERS include/mp/
-  ampls-c-api.h ampls-cpp-api.h arrayref.h basic-expr-visitor.h
+  ampls-c-api.h ampls-ccallbacks.h ampls-cpp-api.h
+  arrayref.h basic-expr-visitor.h
   backend-app.h backend-base.h backend-mip.h backend-std.h
   backend-plateau-state.h
   backend-to-model-api.h backend-with-mm.h backend-with-valcvt.h
   backend-slvoptmap.h
   common.h converter-base.h
   easy-modeler.h
-  env.h error.h expr.h expr-visitor.h
+  env.h error.h expr.h expr-linear.h expr-visitor.h
   model-mgr-base.h model-mgr-with-pb.h
   model-mgr-with-std-pb.h model-mgr-with-std-pb.hpp
   nl-header-c.h nl-header.h nl.h nl-reader.h
@@ -378,24 +379,26 @@ add_prefix(MP_FLAT_HEADERS include/mp/flat/
   constr_2_expr.h
   constr_base.h constr_eval.h constr_keeper.h constr_hash.h
   constr_std.h constr_static.h constr_functional.h
-  constr_algebraic.h constr_general.h
+  constr_algebraic.h constr_general.h constr_nonlinear.h
   constr_prepro.h constr_prop_down.h
   context.h
   converter_info.h
   converter.h converter_model.h converter_model_base.h
   converter_multiobj.h
   convert_functional.h
-  eexpr.h expr_algebraic.h expr_alg_inline.h
+  eexpr.h eexpr_hashed.h expr_algebraic.h expr_alg_inline.h
   expr_affine.h expr_quadratic.h
   bucketaccum.h bucketaccum.hpp
   expr_bounds.h
   item_keeper.h item_namer.h
   model_api_base.h model_api_connect.h
   model_info.h model_info.hpp
+  num_tolerances.h
   obj_std.h preprocess.h prepro_prod.h
   problem_flattener_base.h problem_flattener.h
   qp2passes.h qp2passes.hpp
-  sol_check.h sol_check_data.h)
+  sol_check.h sol_check_data.h
+  var_bnd_impl.h)
 
 add_prefix(MP_FLAT_REDEF_HEADERS include/mp/flat/redef/
   encodings.h redef_base.h)
@@ -411,16 +414,17 @@ add_prefix(MP_FLAT_REDEF_SDP_HEADERS include/mp/flat/redef/SDP/
 
 add_prefix(MP_FLAT_REDEF_MIP_HEADERS include/mp/flat/redef/MIP/
   converter_mip.h redefs_mip_std.h abs.h alldiff.h
-  cond_eq.h cond_ineq.h complement.h count.h
-  div.h
+  cond_eq.h cond_ineq.h cond_literal.h complement.h count.h
+  disj2ind.h div.h
   ifthenelse.h impl.h
   indicator_eq.h indicator_le.h indicator_ge.h
-  indicator_quad.h
+  indicator_quad.h indicator_fixed_flag.h
+  int_div.h
   lin_approx.h core/lin_approx_core.h
   logical_and.h logical_or.h logical_not.h
   min_max.h mul.h numberof_const.h numberof_var.h
   piecewise_linear.h
-  power.h sos2.h)
+  power.h rounding.h sos2.h)
 
 add_prefix(MP_FLAT_NL_EXPR_HEADERS include/mp/flat/nl_expr/
   model_api_base.h constr_nl.h)
@@ -550,7 +554,7 @@ option(BUILD_XPRESS_OPTION_PARSER
 if (BUILD_XPRESS_OPTION_PARSER OR XPRESS_PARAMS_XML_DIR)
   add_executable(parse-xpress-options
     src/parse_xpress_options.cc
-    src/wrap_tinyxml2.cc
+    src/wrap_tinyxml2.cc src/wrap_xml.h
     src/utils_string.cc
     ${PROJECT_SOURCE_DIR}/thirdparty/tinyxml2/tinyxml2.cpp)
   target_include_directories(parse-xpress-options PUBLIC

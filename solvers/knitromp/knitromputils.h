@@ -174,7 +174,7 @@ namespace mp {
             return p;
         }
 
-        static void ExpressionData::FormatExpression(fmt::MemoryWriter& w, const ExpressionData& expr,
+        static void FormatExpression(fmt::MemoryWriter& w, const ExpressionData& expr,
             std::function<void(int, fmt::MemoryWriter& w)> getVarName);
         std::vector<int> linearIndices() const { return linearIndices_; }
         std::vector<double> linearCoeffs() const { return linearCoeffs_; }

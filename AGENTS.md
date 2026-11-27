@@ -31,6 +31,7 @@
 - Preserve unrelated local changes and generated artifacts. Follow existing conventions and keep changes scoped to the task.
 - Consider model semantics, numerical behavior, solver capabilities, options, suffixes, and result mapping when changing solver interfaces or transformations.
 - Use this repository's build and test configuration. Run relevant unit, regression, and end-to-end checks for the affected behavior; a consuming project's build does not establish that component tests passed.
+- Run the `fast` end-to-end test set (`test/end2end/cases/categorized/fast`) with a 5-second per-instance limit; `test/end2end/run.py` applies it by default to a `fast` folder, and `--timeout` overrides it. Keep every case in `fast` solvable within that limit; report a case that exceeds it as a timeout, not as a wrong result. Use longer limits only for other test sets.
 - Add regression coverage for substantive correctness changes when practical. Do not assume that all solver SDKs or licenses are available.
 - Report what changed, what was checked, and any validation limitations.
 - Keep credentials, confidential models, and private consumer details out of documentation and test fixtures.

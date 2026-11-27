@@ -118,9 +118,8 @@ ArrayRef<double> CuoptmpBackend::PrimalSolution() {
   // User decides on it using solve_result.
   ProblemData* problem_data = lp();
   cuopt_int_t status = cuOptGetPrimalSolution(problem_data->solution, x.data());
-  if (status != CUOPT_SUCCESS) {
-    x.clear();
-  }
+  if (status != CUOPT_SUCCESS)
+    return {};                         // no solution available
 
   for (int j = 0; j < num_vars; j++) {
     if (problem_data->variable_types[j] == CUOPT_INTEGER) {

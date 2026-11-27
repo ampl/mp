@@ -69,11 +69,14 @@ public:
   ALLOW_STD_FEATURE(BASIS, true)
   SolutionBasis GetBasis() override;
   void SetBasis(SolutionBasis) override;
+  /// Whether the solution is an infeasibility or ill-posedness
+  /// certificate (it has no basis)
+  bool IfSolutionIsCertificate() const;
 
   // LP hotstart
   // Set primal/dual initial guesses for continuous case
   ALLOW_STD_FEATURE(WARMSTART, true)
-  void AddPrimalDualStart(Solution) override;
+  int AddPrimalDualStart(Solution) override;
 
   // MIP hotstart
   ALLOW_STD_FEATURE( MIPSTART, true )

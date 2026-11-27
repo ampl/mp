@@ -213,7 +213,7 @@ bounds describes the convex hull of "off, or on and paying :math:`f`"
 - **With MP's semicontinuous declaration** ``var X in {0} union interval[lo, hi]``
   there is no :math:`z` in the model. Gate the intercepts with a threshold
   inside the gap :math:`(0, lo)`; MP decides the comparison with the binary it
-  creates for the declaration (option *cvt:pre:vbnd*, see
+  creates for the declaration (option *cvt:pre:domsync*, see
   :ref:`conditional-operators`), so the result is the same perspective:
 
   .. code-block:: ampl

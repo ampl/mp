@@ -88,7 +88,7 @@ class MPToGecodeConverter : public ExprVisitor<MPToGecodeConverter, LinExpr> {
   static int CastToInt(double value) {
     int int_value = static_cast<int>(value);
     if (int_value != value)
-      throw Error("value {} can't be represented as int", value);
+      throw Error(fmt::format("value {} can't be represented as int", value));
     return int_value;
   }
 
@@ -308,6 +308,7 @@ class GecodeSolver : public SolverImpl<Problem> {
   Gecode::Search::Options options_;
   double time_limit_;  // Time limit in seconds.
   unsigned long node_limit_;
+  int mip_round_ = 0;     // hidden mip:round: CP variables are integral
   unsigned long fail_limit_;
   unsigned solution_limit_;
 

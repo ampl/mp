@@ -473,7 +473,7 @@ typename BasicSuffixSet<Alloc>::SuffixImpl *BasicSuffixSet<Alloc>::DoAdd(
   std::pair<typename Set::iterator, bool> result =
       set_.insert(Suffix::Impl(name, kind));
   if (!result.second)
-    throw Error("duplicate suffix '{}'", name);
+    throw Error(fmt::format("duplicate suffix '{}'", name));
   Suffix::Impl *impl = const_cast<SuffixImpl*>(&*result.first);
   /// Set name to empty string so that it is not deleted if new throws.
   std::size_t size = name.size();

@@ -7,7 +7,7 @@
 #include "mp/ampls-c-api.h"
 
 
-DECLARE_SOLVER_API_FUNCTIONS(MP2NL)
+DECLARE_SOLVER_API_FUNCTIONS(mp2nl)
 
 
  #endif // MP2NL

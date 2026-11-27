@@ -159,6 +159,8 @@ protected:
                       GetModel().num_cons()
                       + GetModel().num_objs());
       }
+      GetEnv().set_ampl_names_read(
+            npv.number_read()+npc.number_read() > 0);
       if (WantNames()>=2
           || npv.number_read()+npc.number_read()) {
 				bool var_names_empty = false;
@@ -368,6 +370,10 @@ protected:
       std::function<sol::Status(void)> get_stt, std::function<Solution(void)> get_sol)
       override
   { return GetCvt().PrepareSolveIteration(get_stt, get_sol); }
+
+  /// Start a run of solve iterations
+  void StartSolveIterations() override
+  { GetCvt().StartSolveIterations(); }
 
   /// Is/was MultiObj Emulator used?
   bool IsMOEmulationOn() const override

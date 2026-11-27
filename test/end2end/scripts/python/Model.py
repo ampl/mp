@@ -187,6 +187,13 @@ class Model(object):
                     values[name] = val
         return values
 
+    def getCategoryValueNames(self, category=None):
+        """Entities given in 'values_per_solver_category'[category]"""
+        if category is None:
+            return set()
+        return set(self._description.get(
+            "values_per_solver_category", {}).get(category.value, {}))
+
     def hasExpectedOutput(self):
         return (self._description is not None) and \
               ("output" in self._description)

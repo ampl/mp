@@ -287,8 +287,8 @@ void ASLProblem::Solve(fmt::StringRef solver_name,
   command.write("{} {} -AMPL", solver_name, temp.stub());
   int exit_code = std::system(command.c_str());
   if (exit_code != 0) {
-    throw Error(
-        "Error running solver {}, exit code = {}", solver_name, exit_code);
+    throw Error(fmt::format(
+        "Error running solver {}, exit code = {}", solver_name, exit_code));
   }
   sol.Read(temp.stub(), num_vars() + (pc ? pc->num_vars() : 0),
       num_algebraic_cons() + (pc ? pc->num_cons() : 0));

@@ -631,6 +631,69 @@
     }
   },
   {
+    "name" : "multiobj_QP_01 multiobj=1 native handling needs linear objectives",
+    "files" : ["multiobj_QP_01.mod"],
+    "tags" : ["quadratic", "continuous", "multiobj"],
+    "solvers" : ["gurobi", "cplex", "xpress", "copt"],
+    "comment" : "Solver-native multi-objective optimization takes linear objectives only: the driver stops with a message instead of dropping the quadratic objective",
+    "options": { "mp_options": "multiobj=1" },
+    "values": {
+      "if solve_result_num >= 500 and solve_result_num < 600 then 1": 1,
+      "solve_message": {
+        "contains": "must be linear"
+      }
+    }
+  },
+  {
+    "name" : "multiobj_QP_02 multiobj=1 equal priorities, native handling needs linear objectives",
+    "files" : ["multiobj_QP_02.mod"],
+    "tags" : ["quadratic", "continuous", "multiobj"],
+    "solvers" : ["gurobi", "cplex", "xpress", "copt"],
+    "options": { "mp_options": "multiobj=1" },
+    "values": {
+      "if solve_result_num >= 500 and solve_result_num < 600 then 1": 1,
+      "solve_message": {
+        "contains": "must be linear"
+      }
+    }
+  },
+  {
+    "name" : "multiobj_QP_02 multiobj=1 cvt:quadobj=0 cvt:nlobj=0 move the quadratic objective to a constraint, native handling works",
+    "files" : ["multiobj_QP_02.mod"],
+    "tags" : ["quadratic", "continuous", "multiobj"],
+    "solvers" : ["gurobi", "xpress", "copt"],
+    "comment" : "The remedy named in the error message of the previous case: with cvt:quadobj=0 and cvt:nlobj=0 (Gurobi 14 takes a quadratic objective as nonlinear) both objectives are linear, so the solver-native multi-objective optimization is used (not CPLEX: its native multi-objective optimization does not take a quadratic constraint)",
+    "options": { "mp_options": "multiobj=1 cvt:quadobj=0 cvt:nlobj=0" },
+    "values": {
+      "if solve_result_num < 100 then 1": 1
+    }
+  },
+  {
+    "name" : "multiobj_NL_01 multiobj=2 negative weight, nonlinear objective",
+    "files" : ["multiobj_NL_01.mod"],
+    "tags" : ["nonlinear", "multiobj"],
+    "options": { "mp_options": "multiobj=2" },
+    "values": {
+      "x": 2,
+      "y": 0,
+      "f1": 7.38905609893065,
+      "f2": 2
+    }
+  },
+  {
+    "name" : "multiobj_QP_02 multiobj=2 emulation blends them",
+    "files" : ["multiobj_QP_02.mod"],
+    "tags" : ["quadratic", "continuous", "multiobj"],
+    "solvers" : ["gurobi", "cplex", "xpress", "copt", "mosek", "highs", "baronmp"],
+    "comment" : "Excludes SCIP and GCG, which solve the convex QP only to about 1e-4",
+    "options": { "mp_options": "multiobj=2" },
+    "values": {
+      "x": 0.75,
+      "y": 1,
+      "Obj1QP": -3.375
+    }
+  },
+  {
     "name" : "multiobj_abstol_MIP inherit global sollimit into pass env",
     "files" : ["multiobj_abstol_MIP.mod"],
     "tags" : ["linear", "integer", "multiobj"],

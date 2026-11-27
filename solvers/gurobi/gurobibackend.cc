@@ -54,12 +54,16 @@ std::string GurobiBackend::GetSolverVersion() {
   return fmt::format("{}.{}.{}", a, b, c);
 }
 
+void GurobiBackend::FreeFixedModel() {
+  if (model_fixed_ && model_fixed_ != model())
+    GRBfreemodel(model_fixed_);
+  model_fixed_ = model();
+}
+
 void GurobiBackend::CloseGurobi() {
   /* Free the fixed model */
-  if (has_model() && model() != model_fixed_) {
-    assert(model_fixed_);
-    GRBfreemodel(model_fixed_);
-  }
+  if (has_model())
+    FreeFixedModel();
   model_fixed_ = nullptr;
 
   /* Free model */
@@ -285,8 +289,24 @@ bool GurobiBackend::IsQCP() const {
 
 
 mp::ArrayRef<double> GurobiBackend::PrimalSolution() {
+  // After a successful fixed-model solve (mip:basis), its point, which
+  // agrees with the basis and duals read from it, and its objective value
   return
-    GrbGetDblAttrArray(GRB_DBL_ATTR_X, NumVars());
+    GrbGetDblAttrArray(FixedModelReported() ? model_fixed_ : model(),
+                       GRB_DBL_ATTR_X, NumVars());
+}
+
+bool GurobiBackend::FixedModelReported() const {
+  // No fixed model is solved with several objectives
+  return model_fixed_ && model_fixed_ != model();
+}
+
+double GurobiBackend::FixedModelObjValue(bool* fOk) const {
+  double v = 0.0;
+  const int e = GRBgetdblattr(model_fixed_, GRB_DBL_ATTR_OBJVAL, &v);
+  if (fOk)
+    *fOk = !e;
+  return v;
 }
 
 pre::ValueMapDbl GurobiBackend::DualSolution() {
@@ -306,6 +326,8 @@ std::vector<double> GurobiBackend::GurobiDualSolution_QCP() {
 }
 
 double GurobiBackend::ObjectiveValue() const {
+  if (FixedModelReported())     // that of the reported point
+    return FixedModelObjValue();
   return GrbGetDblAttr(GRB_DBL_ATTR_OBJVAL);
 }
 
@@ -317,7 +339,9 @@ ArrayRef<double> GurobiBackend::GetObjectiveValues() {
                            std::numeric_limits<double>::quiet_NaN());
   bool fOk = true;
   if (NumObjs() == 1)
-    objs[0] = GrbGetDblAttr(GRB_DBL_ATTR_OBJVAL, &fOk); // failsafe
+    objs[0] = FixedModelReported()        // that of the reported point
+        ? FixedModelObjValue(&fOk)
+        : GrbGetDblAttr(GRB_DBL_ATTR_OBJVAL, &fOk); // failsafe
   else {
     GRBenv* mdlenv = GRBgetenv(model());
     int objnumber = GrbGetIntParam(GRB_INT_PAR_OBJNUMBER);
@@ -507,13 +531,21 @@ void GurobiBackend::ConStatii(ArrayRef<int> cst) {
   GrbSetIntAttrArray(GRB_INT_ATTR_CBASIS, stt);
 }
 
-void GurobiBackend::AddPrimalDualStart(Solution sol0_unpres) {
+int GurobiBackend::AddPrimalDualStart(Solution sol0_unpres) {
   auto mv = GetValuePresolver().PresolveSolution(
         { sol0_unpres.primal, sol0_unpres.dual } );
-  auto& x0 = mv.GetVarValues()();
-  auto& pi0 = mv.GetConValues()(CG_Linear);
-  GrbSetDblAttrArray(GRB_DBL_ATTR_PSTART, x0);
-  GrbSetDblAttrArray(GRB_DBL_ATTR_DSTART, pi0);
+  // Presolve fills a missing vector with zeros: pass only incoming ones.
+  // Gurobi would treat zero DStart as part of a complete start.
+  int passed = 0;
+  if (sol0_unpres.primal.size()) {
+    GrbSetDblAttrArray(GRB_DBL_ATTR_PSTART, mv.GetVarValues()());
+    passed |= 1;
+  }
+  if (sol0_unpres.dual.size()) {
+    GrbSetDblAttrArray(GRB_DBL_ATTR_DSTART, mv.GetConValues()(CG_Linear));
+    passed |= 2;
+  }
+  return passed;
 }
 
 void GurobiBackend::AddMIPStart(
@@ -705,6 +737,10 @@ pre::ValueMapInt GurobiBackend::ConsIIS() {
 #ifdef MP_GRB_NLCON_LIST      // Gurobi 14: separate NL constraints
   std::vector<int> iis_nlcon =
       GrbGetIntAttrArray(GRB_INT_ATTR_IIS_NLCONSTR, NumNLCons());
+  if (NumNLCons() && iis_nlcon.empty())     // the query failed
+    AddWarning("IIS_NLCONSTR",
+               "Gurobi did not report the IIS membership of the "
+               "nonlinear constraints; their .iis values are not set");
   ConvertIIS2AMPL(iis_nlcon);
   result(CG_Nonlinear) = std::move(iis_nlcon);
 #endif
@@ -934,7 +970,8 @@ void GurobiBackend::DoWriteProblem(const std::string& name) {
   ExportFile(model(), name);
 }
 void GurobiBackend::DoWriteSolution(const std::string& name) {
-  ExportFile(model(), name);
+  // The reported point: that of the fixed model (mip:basis), if used
+  ExportFile(FixedModelReported() ? model_fixed_ : model(), name);
 }
 void GurobiBackend::ExportFile(GRBmodel* lp, const std::string &file) {
   GRB_CALL( GRBwrite(lp, file.c_str()) );
@@ -948,7 +985,11 @@ void GurobiBackend::InputExtras() {
 void GurobiBackend::InputGurobiExtras() {
   if (need_multiple_solutions())
     GrbSetIntParam(GRB_INT_PAR_POOLSEARCHMODE, storedOptions_.nPoolMode_);
-  if (need_ray_primal() || need_ray_dual())
+  // Rays are returned for continuous models only. On a MIP
+  // (integer variables, SOS or general constraints) InfUnbdInfo=1
+  // is useless, and Gurobi 13-14 can then return a wrong
+  // "optimal" solution (root relaxation unbounded)
+  if ((need_ray_primal() || need_ray_dual()) && !IsMIP())
     GrbSetIntParam(GRB_INT_PAR_INFUNBDINFO, 1);
   InputGurobiFuncApproxParams();
   InputGurobiIISForceParams();
@@ -966,7 +1007,7 @@ void GurobiBackend::WarnFuncSuffixOnNLCons(
 #ifdef MP_GRB_NLCON_LIST
   for (auto v: nl_cons_values) {
     if (v != 0.0) {
-      AddWarning(std::string("FUNCPIECE_SUFFIX_NL_") + suffix,
+      AddWarning(std::string("FUNC_SUFFIX_NL_") + suffix,
         fmt::format("Suffix .{} is ignored for nonlinear constraints "
                     "(Gurobi 14); use acc:_expr=0 to pass them as "
                     "function constraints.", suffix));
@@ -1016,9 +1057,11 @@ void GurobiBackend::InputGurobiFuncApproxParams() {
   std::vector<int> suf_global;
   if (auto mv0 = ReadModelSuffixInt({ "funcnonlinear", suf_mask })) {
     auto mv = GetValuePresolver().PresolveGenericInt(mv0);
+    WarnFuncSuffixOnNLCons("funcnonlinear", mv.GetConValues()(CG_Nonlinear));
     suf_global = mv.GetConValues()(CG_General);
   } else if (auto mv0 = ReadModelSuffixInt({ "global", suf_mask })) {
     auto mv = GetValuePresolver().PresolveGenericInt(mv0);
+    WarnFuncSuffixOnNLCons("global", mv.GetConValues()(CG_Nonlinear));
     suf_global = mv.GetConValues()(CG_General);
   }
   if (suf_global.size()) {
@@ -1203,6 +1246,7 @@ int __stdcall GurobiBackend::DoPlateauCallback(
 
 ///////////////////////////////////// SOLVE /////////////////////////////////////////
 void GurobiBackend::Solve() {
+  FreeFixedModel();          // that of a previous solve (AMPLS)
   PrepareGurobiSolve();
   int status = GRBoptimize(model());
   if (GRB_ERROR_Q_NOT_PSD == status) {
@@ -1331,13 +1375,55 @@ void GurobiBackend::ReportGurobiPool() {
   }
 }
 
+/// Whether the model has a nonlinear-expression general constraint
+/// (GRB_GENCONSTR_NL, Gurobi 12+): such a model is an NLP once its
+/// integers are fixed, and Gurobi has no duals for it. Function constraints
+/// (exp, log, ...) of older versions are not counted: their fixed model
+/// was a plain LP.
+bool GurobiBackend::HasNLGenCons() {
+#ifdef GRB_GENCONSTR_NL
+  int n = 0;
+  if (GRBgetintattr(model(), GRB_INT_ATTR_NUMGENCONSTRS, &n))
+    return false;
+  for (int i = 0; i < n; ++i) {
+    int type = -1;
+    if (!GRBgetintattrelement(model(), GRB_INT_ATTR_GENCONSTRTYPE, i, &type)
+        && GRB_GENCONSTR_NL == type)
+      return true;
+  }
+#endif  // GRB_GENCONSTR_NL
+  return false;
+}
+
 void GurobiBackend::ConsiderGurobiFixedModel() {
+  FreeFixedModel();          // that of an earlier report of this solve
   if (!IsMIP())
     return;
   if (IsQCP()) {
     int i=0;
     if (GRBgetintparam(env(), GRB_INT_PAR_QCPDUAL, &i) || i == 0)
       return;
+  }
+  {
+    // With nonlinear constraints (attribute IsNLP, Gurobi 13.9+, or NL
+    // general constraints), the fixed model is an NLP: Gurobi has no duals
+    // nor basis for it ("Pi" is for convex continuous models), so a
+    // supplementary solve would give zeros
+    int is_nlp = 0;
+    if ((!GRBgetintattr(model(), "IsNLP", &is_nlp) && is_nlp)
+        || HasNLGenCons()) {
+      AddToSolverMessage("mip:basis: no fixed-model solve for a model "
+                         "with nonlinear constraints (Gurobi gives no "
+                         "duals for them).\n");
+      return;
+    }
+  }
+  if (NumObjs() > 1) {
+    // The reported point is the MIP's (it keeps the values of all
+    // objectives); the fixed model's basis and duals would not match it
+    AddToSolverMessage("mip:basis: no fixed-model solve with several "
+                       "objectives (obj:multi=1).\n");
+    return;
   }
   if (GRBmodel* mdl = GRBfixedmodel(model()))
     model_fixed_ = mdl;
@@ -1408,7 +1494,7 @@ std::string GurobiBackend::DoGurobiFixedModel() {
     if (f)
       AddToSolverMessage( fmt::format(
             "Fixed MIP for mip:basis: {} simplex iteration{}\n",
-            f, "s"[f == 1.]) );
+            f, 1. == f ? "" : "s") );
   }
   return {};
 }
@@ -1421,22 +1507,14 @@ void GurobiBackend::DoGurobiFeasRelax() {
     minrel = 1;
     feasrelax().flag_orig_obj_available();
   }
-  /// Gurobi 9.5 only relaxes linear constraints
-  auto mv = GetValuePresolver().PresolveSolution({
-                                              {},
-                                              feasrelax().rhspen()
-                                            });
-  const auto& rhspen = mv.GetConValues()(CG_Linear);
-  std::vector<double> lbpen = feasrelax().lbpen();
-  if (lbpen.size() && lbpen.size()<(size_t)NumVars())
-    lbpen.resize(NumVars());
-  std::vector<double> ubpen = feasrelax().ubpen();
-  if (ubpen.size() && ubpen.size()<(size_t)NumVars())
-    ubpen.resize(NumVars());
+  /// Gurobi 9.5 only relaxes linear constraints.
+  /// GRB_INFINITY: not relaxable
+  auto pen = FeasrelaxPenaltiesInSolver(
+      NumVars(), CG_Linear, GRB_INFINITY, GRB_INFINITY);
   GRB_CALL( GRBfeasrelax(model(), reltype, minrel,
-                         (double*)data_or_null( lbpen ),
-                         (double*)data_or_null( ubpen ),
-                         (double*)data_or_null( rhspen ),
+                         (double*)data_or_null( pen.lb ),
+                         (double*)data_or_null( pen.ub ),
+                         (double*)data_or_null( pen.rhs ),
                          &feasrelax().orig_obj_value()) );
 }
 
@@ -2688,8 +2766,11 @@ void GurobiBackend::InitCustomOptions() {
             &GurobiBackend::GrbSetObjDblParam);
 
 
-  AddSolverOption("pre:aggfill aggfill", "Amount of fill allowed during aggregation in presolve"
-    "(default -1).", GRB_INT_PAR_AGGFILL, -1, GRB_MAXINT);
+  AddSolverOption("pre:aggfill aggfill",
+    "Amount of fill allowed during aggregation in Gurobi's presolve "
+    "(default -1: automatic). For MP's own limits on inlining shared "
+    "subexpressions see cvt:pre:agglinfill and cvt:pre:aggquadfill.",
+    GRB_INT_PAR_AGGFILL, -1, GRB_MAXINT);
 
 
   AddSolverOption("pre:aggregate aggregate",
@@ -2893,7 +2974,8 @@ void GurobiBackend::InitCustomOptions() {
   /// Rely on MP's built-in options solutionstub or countsolutions
   AddSolverOption("sol:poolgap ams_eps poolgap",
       "Relative tolerance for reporting alternate MIP solutions "
-      "		(default: Infinity, no limit).",
+      "		(default: Infinity, no limit). "
+      "With the best objective near 0, use sol:poolgapabs.",
       GRB_DBL_PAR_POOLGAP, 0.0, DBL_MAX);
   AddSolverOption("sol:poolgapabs ams_epsabs poolgapabs",
       "Absolute tolerance for reporting alternate MIP solutions "

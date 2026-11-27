@@ -432,8 +432,11 @@ class BasicRandomAffineExprExtractor: public RandomConstExprExtractor<Impl> {
 
   double DoAddTerm(Expr coef, Expr var) {
     int var_index = Cast<Reference>(var).index();
+    // Visit the coefficient with this object: Visit() dispatches to Impl
+    // anyway, and a sliced copy (Base(*this)) is not an Impl (undefined
+    // behavior when Impl's members are used)
     temp_coefs_[this->sp_.core_var_index(var_index)] +=
-        coef_ * Base(*this).Visit(coef);
+        coef_ * this->Visit(coef);
     MP_DISPATCH(OnVar(var_index));
     return 0;
   }

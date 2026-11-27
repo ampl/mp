@@ -129,13 +129,15 @@ template <class VarVec>
 class VarInfoImpl {
 public:
   /// Constructor
-  VarInfoImpl(double ft, bool recomp_vals,
+  /// @param ft: sol:chk:feastol (violations)
+  /// @param lt: sol:chk:logtol (truth values in logical expressions)
+  VarInfoImpl(double ft, double lt, bool recomp_vals,
               VarVec x,
               ArrayRef<double> x_raw,
               ArrayRef<var::Type> type,
               ArrayRef<double> lb, ArrayRef<double> ub,
               int sol_rnd, int sol_prec)
-      : feastol_(ft), recomp_vals_(recomp_vals),
+      : feastol_(ft), logtol_(lt), recomp_vals_(recomp_vals),
       x_(std::move(x)), x_raw_(x_raw),
       type_(type), lb_(lb), ub_(ub) {
     assert((int)x_.size()>=(int)type_.size());  // feasrelax can add more
@@ -192,6 +194,9 @@ public:
 
   /// Feasibility tolerance
   double feastol() const { return feastol_; }
+  /// Tolerance of truth values in logical expressions (sol:chk:logtol):
+  /// non-strict comparisons, integrality in floor/ceil/round, numberof
+  double logtol() const { return logtol_; }
   /// Using recomputed auxiliary vars?
   bool recomp_vals() const { return recomp_vals_; }
   /// Using idealistic checking of solution
@@ -229,6 +234,7 @@ protected:
 
 private:
   double feastol_;
+  double logtol_;
   bool recomp_vals_;   // variables are recomputed
 
   VarVec x_;   // can be rounded, recomputed, etc.
@@ -265,10 +271,10 @@ struct SolCheck {
            ArrayRef<double> x_raw,
            ArrayRef<var::Type> vtype,
            ArrayRef<double> lb,  ArrayRef<double> ub,
-           double feastol, double feastolrel,
+           double feastol, double feastolrel, double logtol,
            int sol_rnd, int sol_prec,
            bool recomp_vals, int chk_mode)
-      : x_(feastol, recomp_vals,
+      : x_(feastol, logtol, recomp_vals,
            x, x_raw, vtype, lb, ub, sol_rnd, sol_prec),
       obj_(obj),
       feastol_(feastol), feastolrel_(feastolrel),

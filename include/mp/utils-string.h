@@ -48,6 +48,13 @@ bool begins_with(std::string_view fullString, std::string_view start);
 bool ends_with(std::string_view fullString, std::string_view ending);
 
 
+/// Wrap the lines of a message (warnings, errors) at \a width
+/// characters: a long line is broken at the last space that fits;
+/// its continuation lines keep the line's indentation. Explicit line
+/// breaks are kept; so are lines with two spaces inside (tables), and
+/// words longer than \a width (paths, URLs) are not split.
+std::string WrapLines(std::string_view text, std::size_t width = 60);
+
 /// Split string
 template <class Str>
 inline

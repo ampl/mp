@@ -46,6 +46,15 @@ namespace mp {
 
 struct NLHeader;
 
+/// Quote \a arg for a command line run by std::system():
+/// in double quotes on Windows (cmd.exe), in single quotes
+/// elsewhere (sh).
+///
+/// @return the quoted argument, or an empty string if \a arg
+///   cannot be quoted (on Windows, when it contains a double
+///   quote, which no file name can).
+std::string QuoteCommandArg(const std::string& arg);
+
 /**
   \rst
   Class `~mp::NLSolver`.
@@ -130,7 +139,9 @@ public:
 
 
   /// Get error message.
-  /// Nonempty iff error occurred.
+  /// Nonempty if an error occurred; after a successful Solve(),
+  /// a note (e.g., the solver's nonzero exit code after writing
+  /// a solution). Cleared by the next Solve().
   const char* GetErrorMessage() const { return err_msg_.c_str(); }
 
   /// Get model load result code.
@@ -198,7 +209,10 @@ public:
 
   /// Solve after loading model.
   ///
-  /// @param solver: solver executable, such as "gurobi".
+  /// @param solver: solver executable, such as "gurobi";
+  ///   passed to the command line as given, so a path with
+  ///   spaces must come quoted. On Windows, ".exe" is appended
+  ///   if missing (before a closing quote).
   /// @param solver_opts: string of solver options,
   ///   such as "outlev=1 writeprob=model.lp".
   ///
@@ -206,7 +220,7 @@ public:
   bool Solve(const std::string& solver,
              const std::string& solver_opts);
 
-  /// Read solution after Solve()
+  /// Read solution after a successful Solve().
   /// when the NL file was written from NLModel.
   ///
   /// @return NLSolution object
@@ -230,6 +244,8 @@ public:
 
 protected:
   void InitAutoStub();
+  /// Forget the directory name and report the error via myexit()
+  void FailAutoStub(const std::string& msg);
   void DestroyAutoStub();
   mp::NLUtils& Utils() const { return *p_ut_; }
 

@@ -241,8 +241,14 @@ def write_table(data):
             lines.append("      " + ",".join(
                 '"' + c.replace('"', '""') + '"' for c in row))
         lines.append("")
+    text = "\n".join(lines)
+    old = None
+    if os.path.exists(TABLE):
+        with open(TABLE) as f:
+            old = f.read()
     with open(TABLE, "w") as f:
-        f.write("\n".join(lines))
+        f.write(text)
+    return None if old is None else text != old   # None: a new file
 
 
 def main():
@@ -255,8 +261,21 @@ def main():
         "--solvers",
         help="comma-separated driver names to update (default: all in DRIVERS); "
              "the others keep their saved data. Example: --solvers gurobi,cpsat")
+    parser.add_argument(
+        "--summary", metavar="FILE",
+        help="write which drivers updated the tables to FILE "
+             "(the documentation build shows it with --show-summary at the end)")
+    parser.add_argument(
+        "--show-summary", metavar="FILE",
+        help="only print FILE written by --summary")
     args = parser.parse_args()
+    if args.show_summary:
+        show_summary(args.show_summary)
+        return
+    if args.summary and os.path.exists(args.summary):
+        os.remove(args.summary)   # no stale summary if this run fails
     selected = args.solvers.split(",") if args.solvers else list(DRIVERS)
+    updated = []                  # "<driver>: <where from> (<date>)"
 
     data = {}
     if os.path.exists(DATA):
@@ -279,6 +298,7 @@ def main():
                 data[s] = entry
                 changed = True
                 print(f"{s}: updated from source ({date})")
+                updated.append(f"{s}: source code ({date})")
             continue
         if not exe:
             print(f"{s}: not on PATH, kept")
@@ -298,6 +318,7 @@ def main():
             data[s] = {"date": date, "banner": banner, "cons": cons}
             changed = True
             print(f"{s}: updated from {exe} ({date})")
+            updated.append(f"{s}: {exe} ({date})")
     if changed:
         with open(DATA, "w") as f:
             json.dump({s: data[s] for s in DRIVERS if s in data}, f, indent=1,
@@ -307,8 +328,45 @@ def main():
         missing = sorted(set(data[s]["cons"]) - known)
         if missing:
             print(f"{s}: not in GROUPS, not shown: {', '.join(missing)}")
-    if data:
-        write_table(data)
+    table_changed = write_table(data) if data else False
+    if args.summary:
+        write_summary(args.summary, updated, table_changed)
+
+
+def write_summary(path, updated, table_changed):
+    """Which drivers updated the tables: shown at the end of a doc build."""
+    tables = os.path.normpath(os.path.join(TABLES, "acceptance.*"))
+    if not updated and table_changed is None:
+        text = f"Acceptance table {os.path.normpath(TABLE)} written.\n"
+    elif not updated and table_changed:
+        text = (f"Acceptance table {os.path.normpath(TABLE)} REWRITTEN "
+                "(its layout in acceptanceTable.py changed); driver data "
+                "unchanged.\n")
+    elif updated:
+        text = (f"Acceptance tables {tables} UPDATED with the drivers found "
+                "on PATH (not necessarily those of this build):\n"
+                + "".join(f"  {u}\n" for u in updated))
+    else:
+        text = (f"Acceptance tables {tables} unchanged: no driver on PATH "
+                "gave newer or different data.\n")
+    with open(path, "w") as f:
+        f.write(text)
+
+
+def show_summary(path):
+    if os.path.exists(path):
+        with open(path) as f:
+            print(f.read(), end="")
+
+
+def summary_path(argv):
+    """The --summary FILE of the command line, if any (for errors)."""
+    for i, a in enumerate(argv):
+        if a == "--summary" and i + 1 < len(argv):
+            return argv[i + 1]
+        if a.startswith("--summary="):
+            return a.split("=", 1)[1]
+    return None
 
 
 if __name__ == "__main__":
@@ -316,3 +374,7 @@ if __name__ == "__main__":
         main()
     except Exception as e:  # never fail a documentation build
         print(f"acceptanceTable.py: {e}", file=sys.stderr)
+        path = summary_path(sys.argv[1:])
+        if path:          # say so at the end of the build too
+            with open(path, "w") as f:
+                f.write(f"Acceptance tables NOT refreshed: {e}\n")

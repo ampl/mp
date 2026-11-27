@@ -92,7 +92,7 @@ public:
   * set primal/dual initial guesses for continuous case
   **/
   ALLOW_STD_FEATURE(WARMSTART, true)
-  void AddPrimalDualStart(Solution sol0) override;
+  int AddPrimalDualStart(Solution sol0) override;
   /**
   * Specifically, MIP warm start
   **/
@@ -113,7 +113,11 @@ public:
   ALLOW_STD_FEATURE(FIX_MODEL, true)
   bool FixedModelReady() const override { return !fixed_model_failed_; }
   void ConsiderCplexFixedModel();
-  std::string DoCplexFixedModel();
+  /// Whether lp() is a MILP / MIQP fixed in place by ConsiderCplexFixedModel()
+  bool IsFixedInPlace() const;
+  /// Return such an lp() to its MILP / MIQP type, before a new solve
+  void RestoreFixedInPlace();
+  std::string DoCplexFixedModel(CPXLPptr model);
   /**
   * Report sensitivity analysis suffixes (postsolved)
   **/
@@ -135,6 +139,8 @@ public:
 
   ALLOW_STD_FEATURE(FEAS_RELAX, true);
   void DoCplexFeasRelax();
+  /// MP feasrelax penalty -> CPLEX FeasOpt preference
+  static double FeasoptPreference(double penalty);
 
   /////////////////////////// Model attributes /////////////////////////
   bool IsMIP() const override;
@@ -287,7 +293,6 @@ private:
   bool HasSolution();
   void ReadBendersSuffix();
   void setSolutionMethod();
-  int original_model_type_ = -1;
   struct MIPResultBeforeFixed {
     std::vector<double> primal;
     double objective = 0, gap = 0, absolute_gap = 0, bound = 0;
@@ -296,6 +301,7 @@ private:
   MIPResultBeforeFixed mip_result_before_fixed_;
   bool have_mip_result_before_fixed_ = false;
   bool fixed_model_failed_ = false;
+  CPXLPptr fixed_qcp_model_ = nullptr; // duals from the QCP, primal from the MIP
   
   typedef struct
     CutInfo {

@@ -16,6 +16,7 @@
 # pragma warning(pop)
 #endif
 
+#include <atomic>
 #include <string>
 #include <list>
 #include <variant>
@@ -93,7 +94,7 @@ public:
   void SetBasis(SolutionBasis) override;
 
   ALLOW_STD_FEATURE(WARMSTART, true)
-  void AddPrimalDualStart(Solution sol0) override;
+  int AddPrimalDualStart(Solution sol0) override;
   /**
   * MIP warm start
   **/
@@ -238,7 +239,20 @@ protected:
   void DoXPRESSTune();
 
   void ConsiderXpressFixedModel();
-  std::string DoXpressFixedModel();
+  /// Copy of the problem for the fixed solve: fixing the integer
+  /// columns of lp() itself would change the user's problem
+  /// load_incumbent: for XPRSfixmipentities(), which needs one
+  void CopyFixedModel(bool load_incumbent);
+  /// Whether the integer columns have equal bounds in the copy
+  bool IntegersAreFixedInCopy();
+  void ClearFixedModel();
+  /// Keep what the reports need of the solved fixed copy (FixedResult)
+  void TakeFixedResult();
+  /// Free the copy after the report: the results stay in fixed_result_
+  void FreeFixedCopy();
+  std::string DoXpressFixedModel(bool nonlinear);
+  /// Fixed model of a nonlinear MIP: XPRSoptimize; "" on success.
+  std::string SolveFixedNonlinear();
 
   std::vector<double> getPoolSolution(int i);
   double getPoolObjective(int i);
@@ -266,6 +280,23 @@ protected:
   std::vector<int> VarStatii(ArrayRef<int>);
   std::vector<int> ConStatii(ArrayRef<int>);
 
+  /// Whether a CG_Algebraic vector of size n matches the Xpress rows.
+  /// The model API puts every row-creating constraint in CG_Algebraic;
+  /// a mismatch (a constraint type creating no or several rows) would
+  /// misplace row values: warn, and the caller does not pass them.
+  bool RowVectorMatches(size_t n, const char* what) {
+    if ((int)n == NumLinCons())
+      return true;
+    AddWarning("XpressRowMap", fmt::format(
+                 "{} not passed: {} algebraic constraints but {} "
+                 "Xpress rows", what, n, NumLinCons()));
+    return false;
+  }
+  /// Whether Xpress identified an IIS
+  bool IfIISAvailable();
+  /// XPRSiisfirst() failed (its error is reported)
+  bool iis_search_failed_ = false;
+
   ArrayRef<int> VarsIIS();
   pre::ValueMapInt ConsIIS();
 
@@ -287,7 +318,54 @@ private:
   int global_flag_ {1};
   XPRSprob model_fixed_ = nullptr;
   bool fixed_model_failed_ = false;
+  /// A nonlinear MIP's fixed model was solved as an NLP (mip:basis): only its
+  /// duals are reported, the MIP's solution and objective stay
+  bool fixed_nlp_used_ = false, fixed_nlp_has_duals_ = false;
+  /// The fixed LP (mip:basis, linear MIP) was solved on the copy
+  /// model_fixed_: the reported solution, objective, basis and duals,
+  /// and the solution files, come from the copy
+  bool fixed_lp_used_ = false;
+  /// The fixed model was tried for this solve (a repeated report of the
+  /// same solve does not solve it again)
+  bool fixed_done_ = false;
+  /// What the reports read of the solved fixed copy, kept when the copy
+  /// is freed after the first report: values, duals, raw basis
+  struct FixedResult {
+    bool valid = false;
+    int opttype = XPRS_OPTIMIZETYPE_NONE;
+    std::vector<double> x, pi;
+    double obj = 0.0;
+    bool has_obj = false;
+    std::vector<int> colstat, rowstat;
+  } fixed_result_;
+  /// The fixed copy, while it exists (not lp())
+  bool FixedCopyAlive() const { return model_fixed_ && model_fixed_ != lp(); }
+  /// The problem a Ctrl-C interrupts besides lp(): the copy during the
+  /// fixed solve
+  std::atomic<XPRSprob> interrupt_also_ {nullptr};
+  /// Calls of InterruptAll() under way: the copy is destroyed only when
+  /// none is (Windows: the handler runs in another thread). Lock-free,
+  /// as InterruptAll() runs in a signal handler on POSIX.
+  std::atomic<int> interrupts_running_ {0};
+  /// A Ctrl-C came since the handler was set
+  std::atomic<bool> interrupted_ {false};
+  /// A Solve() ran since the handler was set (multi-objective passes)
+  bool solve_started_ = false;
+  /// The last Solve() did not start Xpress: a Ctrl-C came before the first
+  bool solve_skipped_ = false;
+  static_assert(ATOMIC_BOOL_LOCK_FREE == 2 && ATOMIC_INT_LOCK_FREE == 2
+                && ATOMIC_POINTER_LOCK_FREE == 2,
+                "InterruptAll() runs in a signal handler: lock-free atomics");
+  /// Stop forwarding Ctrl-C to the copy; wait for a running forward
+  void StopInterruptingCopy();
+  /// No fixed solve after a Ctrl-C: report the MIP's results
+  void SkipInterruptedFixedSolve();
+public:
+  /// Interrupt lp() and the fixed solve, if running
+  void InterruptAll();
+private:
   std::vector<double> mip_primal_before_fixed_, mip_objectives_before_fixed_;
+  double mip_bound_before_fixed_ = 0;
   /// Pool's best solution after enumeration (sol:poolmode)
   std::vector<double> pool_best_x_;
   double pool_best_obj_ = 0.0;
@@ -314,6 +392,8 @@ private:
     std::string logFile_;
     std::string readBasis_;
     std::list<std::string> nativeOptions_;   // "NAME=value" entries
+    int fixedNlpSolver_ = XPRS_NLPSOLVER_LOCAL;        // mip:basis:nlpsolver
+    int fixedLocalSolver_ = -2;     // mip:basis:localsolver, -2: as alg:localsolver
   };
   
   bool msgCallbackSet_ = false;

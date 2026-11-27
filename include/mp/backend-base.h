@@ -107,6 +107,10 @@ public:
   /// this should write .sol file with the solve_result and msg.
   virtual void ReportError(int solve_result, fmt::CStringRef msg) = 0;
 
+  /// The solve result code of the last solve
+  /// (sol::NOT_SET before a solve or for a backend without one)
+  virtual int GetSolveResultNum() const { return sol::NOT_SET; }
+
 
 protected:
   /// 0-terminated list of custom options

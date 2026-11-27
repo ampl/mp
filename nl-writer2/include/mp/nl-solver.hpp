@@ -28,8 +28,12 @@ namespace mp {
 
 template <class NLFeeder>
 bool NLSolver::LoadModel(NLFeeder& nlf) {
-  if (GetFileStub().empty())
+  if (GetFileStub().empty()) {
     InitAutoStub();
+    if (GetFileStub().empty())    // myexit() returned: write nothing
+      return (err_msg_ = "NLSolver: could not create a temporary "
+                         "directory for the NL file.", false);
+  }
   auto result = mp::WriteNLFile(GetFileStub(), nlf, Utils());
   if (NLW2_WriteNL_OK != result.first)
     return (err_msg_ = "WriteNL error: " + result.second, false);

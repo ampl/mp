@@ -1,6 +1,7 @@
 #include <cmath>
 #include <limits>
 #include <stdexcept>
+#include <tuple>
 
 #include "cpsatmodelapi.h"
 
@@ -56,12 +57,17 @@ std::vector<CpsatModelAPI::IntVar> CpsatModelAPI::Vars(
   return r;
 }
 
-CpsatModelAPI::Domain CpsatModelAPI::MakeDomain(double lb, double ub) {
-  const auto kMin = std::numeric_limits<int64_t>::min();
-  const auto kMax = std::numeric_limits<int64_t>::max();
-  const int64_t l = (lb <= -1e18) ? kMin : (int64_t)std::ceil(lb - 1e-9);
-  const int64_t u = (ub >= 1e18) ? kMax : (int64_t)std::floor(ub + 1e-9);
-  return Domain(l, u);
+CpsatModelAPI::Domain CpsatModelAPI::MakeDomain(
+    double lb, double ub) const {
+  if (std::isnan(lb) || std::isnan(ub))
+    throw std::runtime_error("CP-SAT: a constraint bound is not a number");
+  // The expression is integer-valued, so rounding a fractional bound
+  // inward keeps the row's solutions; a near-integer bound (within
+  // cvt:pre:inteps, as in MIP drivers) is that integer.
+  // Bounds beyond int64 are clamped: Domain(l, u) is empty when l > u.
+  const double t = data()->inteps;
+  return Domain(ClampToInt64(RoundBoundInward(lb, true, t)),
+                ClampToInt64(RoundBoundInward(ub, false, t)));
 }
 
 bool CpsatModelAPI::IsFixedTo(int var, int64_t value) const {
@@ -86,20 +92,53 @@ void CpsatModelAPI::AddAnd(int r, const std::vector<BoolVar>& lits) {
 
 //////////////////////////// variables, objective ////////////////////////////
 
+void CpsatModelAPI::RecordVarBoundSet(const VarArrayDef& v, int i) {
+  const bool lb_inf = !std::isfinite(v.plb()[i]);
+  const bool ub_inf = !std::isfinite(v.pub()[i]);
+  if (!lb_inf && !ub_inf)
+    return;
+  const char* name = v.pnames() ? v.pnames()[i] : nullptr;
+  data()->varbound_set.push_back({ (int)data()->vars.size(),
+                                   name ? name : "", lb_inf, ub_inf });
+}
+
 void CpsatModelAPI::AddVariables(const VarArrayDef& v) {
   auto* d = data();
   d->vars.reserve(d->vars.size() + v.size());
   for (int i = 0; i < (int)v.size(); ++i) {
     // MP represents constants as fixed (continuous) variables;
     // those are fine if the value is integer
-    const bool fixed_int = v.plb()[i] == v.pub()[i] &&
-        IsIntegerValue(v.plb()[i]);
-    if (v.ptype()[i] != var::Type::INTEGER && !fixed_int)
+    const bool fixed = v.plb()[i] == v.pub()[i];
+    const bool fixed_int = fixed && IsIntegerValue(v.plb()[i]);
+    // Contradictory bounds (lb>ub) make the model infeasible, whatever
+    // the type: do not complain about the type
+    const bool contradictory = v.plb()[i] > v.pub()[i];
+    d->var_const.push_back(NAN);
+    if (fixed && !fixed_int && v.ptype()[i] != var::Type::INTEGER) {
+      d->var_const.back() = v.plb()[i];  // see Var(); a placeholder at 0
+      d->var_lb.push_back(0);
+      d->var_ub.push_back(0);
+      d->vars.push_back(d->builder.NewIntVar(Domain(0, 0)));
+      continue;
+    }
+    if (v.ptype()[i] != var::Type::INTEGER && !fixed_int && !contradictory)
       throw std::runtime_error(fmt::format(
           "CP-SAT supports integer variables only; "
           "variable {} is continuous", d->vars.size()));
-    const auto lb = LowerBoundToInt64(v.plb()[i]);
-    const auto ub = UpperBoundToInt64(v.pub()[i]);
+    int64_t lb, ub;
+    if (fixed_int)       // a constant is data: keep it, do not cap it
+      lb = ub = ToInt64(v.plb()[i], "fixed values");
+    else {
+      std::tie(lb, ub) = VarDomainToInt64(v.plb()[i], v.pub()[i]);
+      RecordVarBoundSet(v, i);
+    }
+    if (lb > ub) {
+      // An empty domain (also: an integer variable fixed at a fractional
+      // value) is rejected by CP-SAT as an invalid model, not reported
+      // as infeasible. Keep a valid domain and state the infeasibility.
+      d->builder.AddLinearConstraint(sat::LinearExpr(int64_t{0}), Domain(1, 1));
+      lb = ub;
+    }
     d->var_lb.push_back(lb);
     d->var_ub.push_back(ub);
     d->vars.push_back(d->builder.NewIntVar(Domain(lb, ub)));
@@ -113,21 +152,35 @@ void CpsatModelAPI::SetLinearObjective(int iobj, const LinearObjective& lo) {
   const auto n = (size_t)lo.num_terms();
   const auto coefs = lo.coefs();
   const auto vars = lo.vars();
-  bool all_int = true;
-  for (size_t j = 0; j < n; ++j)
-    if (!IsIntegerValue(coefs[j]))
+  // Variables fixed at non-integer values (constants) go to the offset
+  std::vector<double> cs;
+  std::vector<int> vs;
+  double offset = 0.0;
+  for (size_t j = 0; j < n; ++j) {
+    const double c = data()->var_const.at(vars[j]);
+    if (std::isnan(c)) {
+      cs.push_back(coefs[j]);
+      vs.push_back(vars[j]);
+    } else
+      offset += coefs[j] * c;
+  }
+  bool all_int = IsIntegerValue(offset);
+  for (double c: cs)
+    if (!IsIntegerValue(c))
       all_int = false;
   const bool maximize = (lo.obj_sense() == obj::Type::MAX);
   if (all_int) {
-    auto e = BuildLinExpr(n,
-        [&](size_t j) { return coefs[j]; },
-        [&](size_t j) { return vars[j]; },
+    auto e = BuildLinExpr(cs.size(),
+        [&](size_t j) { return cs[j]; },
+        [&](size_t j) { return vs[j]; },
         [this](int v) { return Var(v); });
+    e += sat::LinearExpr(ToInt64(offset, "objective constant"));
     if (maximize) b.Maximize(e); else b.Minimize(e);
   } else {                                   // floating-point objective
     sat::DoubleLinearExpr e;
-    for (size_t j = 0; j < n; ++j)
-      e.AddTerm(Var(vars[j]), coefs[j]);
+    for (size_t j = 0; j < cs.size(); ++j)
+      e.AddTerm(Var(vs[j]), cs[j]);
+    e += offset;
     if (maximize) b.Maximize(e); else b.Minimize(e);
   }
 }
@@ -216,7 +269,7 @@ void CpsatModelAPI::AddConstraint(const PowConstExpConstraint& pc) {
   if (!IsIntegerValue(e) || e < 0.0)
     throw std::runtime_error(fmt::format(
         "CP-SAT: only powers with integer exponents >= 0 are "
-        "supported, got exponent {}", e));
+        "supported, got exponent {:.17g}", e));
   const auto r = Var(pc.GetResultVar());
   const auto x = Var(pc.GetArguments().at(0));
   const auto k = (size_t)std::llround(e);
@@ -314,9 +367,8 @@ void CpsatModelAPI::AddConstraint(const CountConstraint& cc) {
 void CpsatModelAPI::AddConstraint(const NumberofConstConstraint& nc) {
   auto& b = data()->builder;
 
-  constexpr double feasTol = 1e-6;
   const double kd = nc.GetParameters().at(0);
-  if (!IsInteger(kd, feasTol)) {                     // never equal
+  if (!IsInteger(kd, BoundTolerance(kd, data()->inteps))) {  // never equal
     b.AddEquality(Var(nc.GetResultVar()), 0);
     return;
   }

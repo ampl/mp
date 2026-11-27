@@ -29,6 +29,247 @@ TEST_F(InterfaceTester_MaxConstraint, MaximumConstraintIsPassedToBackend) {
   ASSERT_HAS_CONSTRAINT( GetBackend(), mp::MaxConstraint(3, args) );
 }
 
+/// A repeated solve (e.g., a second AMPLSSolve()) starts the solve
+/// iterations again; before, the second run did not solve at all.
+TEST_F(InterfaceTester_MaxConstraint, RepeatedSolveRunsAgain) {
+  GetInterface().AddVars(1, 0.0, 1.0);
+  GetInterface().ConvertModel();
+  auto stt = []() { return mp::sol::SOLVED; };
+  auto sol = []() { return mp::Solution{}; };
+  auto& itf = GetInterface();
+  itf.StartSolveIterations();
+  EXPECT_TRUE(itf.PrepareSolveIteration(stt, sol));
+  EXPECT_FALSE(itf.PrepareSolveIteration(stt, sol));
+  itf.StartSolveIterations();                  // the second solve
+  EXPECT_TRUE(itf.PrepareSolveIteration(stt, sol));
+  EXPECT_FALSE(itf.PrepareSolveIteration(stt, sol));
+}
+
+
+/// Bounds of integer variables are rounded inwards within
+/// max(cvt:pre:inteps, cvt:pre:ulps ulp(b)): rounding errors of computed
+/// bounds are removed, real fractional parts are kept.
+TEST_F(InterfaceTester_MaxConstraint, RoundIntBoundUsesUlpTolerance) {
+  auto& m = GetInterface().GetFlatCvt().GetModel();
+  const int v = m.AddVar__basic(-1e10, 1e10, mp::var::INTEGER);
+  const double b = 16800000.7 / 0.1;           // 168000006.99999997
+  EXPECT_EQ(168000007.0, m.RoundIntBound(v, b, true));
+  EXPECT_EQ(168000007.0, m.RoundIntBound(v, -(-b), false));
+  EXPECT_EQ(-168000007.0, m.RoundIntBound(v, -b, false));
+  // 1e9 + 5e-5 is far above rounding error: lb 1e9+1, ub 1e9
+  EXPECT_EQ(1e9 + 1.0, m.RoundIntBound(v, 1e9 + 5e-5, true));
+  EXPECT_EQ(1e9, m.RoundIntBound(v, 1e9 + 5e-5, false));
+  EXPECT_EQ(600000000.0, m.RoundIntBound(v, 599999999.5, true));
+  EXPECT_EQ(599999999.0, m.RoundIntBound(v, 599999999.5, false));
+  // Small values: the absolute tolerance (cvt:pre:inteps, default 1e-6)
+  EXPECT_EQ(3.0, m.RoundIntBound(v, 3.0 + 1e-10, false));
+  EXPECT_EQ(3.0, m.RoundIntBound(v, 3.0 - 1e-10, true));
+  EXPECT_EQ(3.0, m.RoundIntBound(v, 3.0 + 5e-7, true));
+  EXPECT_EQ(3.0, m.RoundIntBound(v, 3.0 - 5e-7, false));
+  EXPECT_EQ(4.0, m.RoundIntBound(v, 3.0 + 1e-5, true));
+  EXPECT_EQ(2.0, m.RoundIntBound(v, 3.0 - 1e-5, false));
+  // An exact integer is returned as is, also where the tolerance (0.5)
+  // is below the spacing of doubles: 2^52 + 1 -/+ 0.5 is not
+  // representable and would be rounded to the even neighbour
+  const double big = 4503599627370497.0;       // 2^52 + 1
+  EXPECT_EQ(big, m.RoundIntBound(v, big, true));
+  EXPECT_EQ(big, m.RoundIntBound(v, big, false));
+  EXPECT_EQ(-big, m.RoundIntBound(v, -big, true));
+  EXPECT_EQ(-big, m.RoundIntBound(v, -big, false));
+}
+
+
+/// Result bounds of floor/ceil/round/trunc: a fractional argument
+/// bound is moved outward by the floating-point margin
+/// (cvt:pre:ulps ulp), so that a rounding error in it does not
+/// cut off a solution; never by a feasibility tolerance.
+TEST_F(InterfaceTester_MaxConstraint, RoundBoundOutwardToleratesRoundingError) {
+  const auto& cvt = GetInterface().GetFlatCvt();
+  auto floor = [](double v) { return std::floor(v); };
+  auto ceil = [](double v) { return std::ceil(v); };
+  auto round = [](double v) { return std::nearbyint(v); };
+  const double ub4 = (2.0/3.0)*5 + (1.0/3.0)*2;   // 3.9999999999999996
+  ASSERT_LT(ub4, 4.0);
+  EXPECT_EQ(4.0, cvt.RoundBoundOutward(ub4, 1, floor));
+  const double lbm2 = std::nextafter(-2.0, 0.0);  // -1.9999999999999998
+  ASSERT_GT(lbm2, -2.0);
+  EXPECT_EQ(-2.0, cvt.RoundBoundOutward(lbm2, -1, ceil));
+  EXPECT_EQ(4.0, cvt.RoundBoundOutward(3.4999999999999996, 1, round));
+  // Exact integers are kept; real fractional parts still round
+  EXPECT_EQ(3.0, cvt.RoundBoundOutward(3.0, -1, floor));
+  EXPECT_EQ(3.0, cvt.RoundBoundOutward(3.0, 1, ceil));
+  EXPECT_EQ(2.0, cvt.RoundBoundOutward(2.5, -1, floor));
+  EXPECT_EQ(2.0, cvt.RoundBoundOutward(2.5, 1, floor));
+  EXPECT_EQ(3.0, cvt.RoundBoundOutward(2.5, -1, ceil));
+  // Data within cvt:pre:feastol of an integer: floor(x) at
+  // x <= 3.9999995 is at most 3
+  EXPECT_EQ(3.0, cvt.RoundBoundOutward(3.9999995, 1, floor));
+  EXPECT_EQ(1.0, cvt.RoundBoundOutward(0.0000005, -1, ceil));
+}
+
+/// Decision margin d = max(cvt:pre:feastol, cvt:pre:ulps ulp):
+/// a comparison is decided false from body bounds only if they miss
+/// the right-hand side by more than d (one ulp is not enough)
+TEST_F(InterfaceTester_MaxConstraint, DecisionMarginCoversRoundingError) {
+  const auto& cvt = GetInterface().GetFlatCvt();
+  const double ub = std::nextafter(2.0, 0.0);  // (5+1)/3 computed in steps
+  EXPECT_FALSE(ub < 2.0 - cvt.DecisionMargin(2.0));
+  EXPECT_TRUE(1.9 < 2.0 - cvt.DecisionMargin(2.0));
+  EXPECT_EQ(1e-6, cvt.DecisionMargin(2.0));          // cvt:pre:feastol
+  mp::NumericTolerances exact;                       // feastol=0
+  exact.Set(-1.0, 16, 0.0);
+  EXPECT_LT(2.0 - exact.DecisionMargin(2.0), ub);    // ub not below c-d
+  EXPECT_LT(exact.DecisionMargin(2.0), 1e-13);
+  exact.Set(-1.0, 0, 0.0);                           // cvt:pre:all=0
+  EXPECT_EQ(0.0, exact.DecisionMargin(2.0));
+}
+
+/// Decisions of inequalities from body bounds [L, U]: non-strict ones
+/// hold up to d; strict ones are FALSE as negations of the opposite
+/// non-strict ones with the same d, but TRUE only exactly (margin m);
+/// otherwise undecided (0)
+TEST_F(InterfaceTester_MaxConstraint, DecideByBoundsSymmetric) {
+  using Cvt = std::decay_t<decltype(GetInterface().GetFlatCvt())>;
+  const double d = 1e-6, m = 1e-15;
+  // body >= 4 at body in [0, 3.9999995] (h1): undecided
+  EXPECT_EQ(0, Cvt::DecideByBounds<1>(0.0, 3.9999995, 4.0, d, m));
+  EXPECT_EQ(-1, Cvt::DecideByBounds<1>(0.0, 3.9999995, 4.0, m, m));
+  EXPECT_EQ(-1, Cvt::DecideByBounds<1>(0.0, 3.99, 4.0, d, m));
+  EXPECT_EQ(1, Cvt::DecideByBounds<1>(3.9999995, 5.0, 4.0, d, m));
+  // x > -5e-7 at x >= 0 holds exactly: TRUE (V1O-02)
+  EXPECT_EQ(1, Cvt::DecideByBounds<2>(0.0, 1.0, -5e-7, d, m));
+  EXPECT_EQ(1, Cvt::DecideByBounds<-2>(0.0, 1.0, 1.0000005, d, m));
+  // ... but not within d only: undecided
+  EXPECT_EQ(0, Cvt::DecideByBounds<2>(0.0, 1.0, 0.0, d, m));
+  // body <= c and body > c are never both TRUE; le TRUE <=> gt FALSE
+  for (double c: {2.9999995, 3.0, 3.0000005, 3.1, 2.9, -5e-7})
+    for (double U: {3.0, 2.0, 4.0}) {
+      const int le = Cvt::DecideByBounds<-1>(0.0, U, c, d, m);
+      const int gt = Cvt::DecideByBounds<2>(0.0, U, c, d, m);
+      EXPECT_EQ(le > 0, gt < 0) << "c=" << c << " U=" << U;
+      EXPECT_FALSE(le > 0 && gt > 0) << "c=" << c << " U=" << U;
+      EXPECT_TRUE(gt <= 0 || le <= 0);
+    }
+  // body >= c and body < c likewise
+  for (double c: {2.9999995, 3.0, 3.0000005, 3.1, 2.9})
+    for (double L: {3.0, 2.0, 4.0}) {
+      const int ge = Cvt::DecideByBounds<1>(L, 6.0, c, d, m);
+      const int lt = Cvt::DecideByBounds<-2>(L, 6.0, c, d, m);
+      EXPECT_EQ(ge > 0, lt < 0) << "c=" << c << " L=" << L;
+      EXPECT_FALSE(ge > 0 && lt > 0) << "c=" << c << " L=" << L;
+    }
+  // x > 6 at x <= 6: false (C1F-08)
+  EXPECT_EQ(-1, Cvt::DecideByBounds<2>(0.0, 6.0, 6.0, d, m));
+}
+
+/// The floating-point margin comes from the compared constant only
+/// (V1F-01); where it exceeds cvt:pre:feastol, it is the decision
+/// margin, as with cvt:pre:feastol=0 (W1F-01, W1F-07)
+TEST_F(InterfaceTester_MaxConstraint, DecisionMarginFromConstant) {
+  mp::NumericTolerances t;                       // 1e-6, 16 ulp
+  EXPECT_EQ(1e-6, t.DecisionMargin(0.001));
+  EXPECT_EQ(1e-6, t.DecisionMargin(5.0));
+  EXPECT_EQ(t.FPMargin(1e12), t.DecisionMargin(1e12));  // 16 ulp, 2e-3
+  EXPECT_GT(t.DecisionMargin(1e12), 1e-6);
+  t.Set(-1.0, 16, 0.0);                          // feastol=0: exact
+  EXPECT_EQ(t.FPMargin(1e12), t.DecisionMargin(1e12));  // ... up to m
+  EXPECT_LT(t.DecisionMargin(1e12), 3e-3);
+}
+
+/// A margin m above cvt:pre:feastol decides with d = m: x >= 1000 at
+/// x <= 10 with cvt:pre:feastol=1e-12 (m = 1.8e-12) is false, and
+/// x <= U at x <= U = 1e13 is true (W1F-01, W1F-07)
+TEST_F(InterfaceTester_MaxConstraint, DecisionMarginAboveFeastol) {
+  using Cvt = std::decay_t<decltype(GetInterface().GetFlatCvt())>;
+  mp::NumericTolerances t;
+  t.Set(1e-6, 16, 1e-12);                        // cvt:pre:feastol=1e-12
+  const double m = t.FPMargin(1000.0);
+  ASSERT_GT(m, 1e-12);
+  EXPECT_EQ(m, t.DecisionMargin(1000.0));
+  EXPECT_EQ(-1, Cvt::DecideByBounds<1>(
+              0.0, 10.0, 1000.0, t.DecisionMargin(1000.0), m));
+  mp::NumericTolerances t0;                      // defaults
+  const double U = 1e13, d = t0.DecisionMargin(U), mU = t0.FPMargin(U);
+  EXPECT_EQ(mU, d);
+  EXPECT_EQ(1, Cvt::DecideByBounds<-1>(0.0, U, U, d, mU));    // x <= U
+  EXPECT_EQ(-1, Cvt::DecideByBounds<2>(0.0, U, U, d, mU));    // x > U
+}
+
+/// Integrality with cvt:pre:inteps, and exact with inteps < 0 and
+/// cvt:pre:ulps = 0 (cvt:pre:all=0)
+TEST_F(InterfaceTester_MaxConstraint, NumericTolerancesIntegrality) {
+  mp::NumericTolerances t;                       // defaults 1e-6, 16
+  EXPECT_EQ(3.0, t.SnapToInteger(0.3/0.1));      // 2.9999999999999996
+  EXPECT_EQ(3.0, t.SnapToInteger(3.0000005));
+  EXPECT_EQ(3.00001, t.SnapToInteger(3.00001));
+  EXPECT_FALSE(t.IsNearInteger(2.5));
+  t.Set(0.7, 16, 1e-6);                          // capped below 0.5
+  EXPECT_FALSE(t.IsNearInteger(2.5));
+  t.Set(-1.0, 16, 0.0);                          // exact up to 16 ulp
+  EXPECT_EQ(3.0, t.SnapToInteger(0.3/0.1));
+  EXPECT_EQ(3.0000005, t.SnapToInteger(3.0000005));
+  t.Set(-1.0, 0, 0.0);                           // exact
+  EXPECT_EQ(0.3/0.1, t.SnapToInteger(0.3/0.1));
+  EXPECT_FALSE(t.CanRoundToInteger());
+}
+
+/// Shared constants (MakeFixedVar()) are continuous: never rounded,
+/// also when equal to a fractional value near an integer
+TEST_F(InterfaceTester_MaxConstraint, SharedConstantsNeverRounded) {
+  auto& cvt = GetInterface().GetFlatCvt();
+  const int c = int( cvt.MakeFixedVar(2.9999995) );
+  auto& m = cvt.GetModel();
+  EXPECT_EQ(mp::var::CONTINUOUS, m.var_type(c));
+  EXPECT_FALSE(m.is_var_implied_int(c));
+  EXPECT_EQ(2.9999995, m.RoundIntBound(c, 2.9999995, true));
+  m.set_lb(c, 2.9999995);
+  m.set_ub(c, 2.9999995);
+  EXPECT_EQ(2.9999995, m.lb(c));
+  EXPECT_EQ(2.9999995, m.ub(c));
+}
+
+/// cvt:uenc:maxdom: unary encoding only for domains up to 10000 values
+TEST_F(InterfaceTester_MaxConstraint, UEncMaxDomain) {
+  const auto& cvt = GetInterface().GetFlatCvt();
+  EXPECT_TRUE(cvt.IfDomainFitsUEnc(0.0, 9999.0));
+  EXPECT_FALSE(cvt.IfDomainFitsUEnc(0.0, 10000.0));
+  EXPECT_FALSE(cvt.IfDomainFitsUEnc(-5e4, 5e4));
+}
+
+/// sol:chk:mode bits 32..512: a functional result is compared with its
+/// recomputed value on the side its context requires
+TEST(SolCheckTest, ContextSignedDifference) {
+  using mp::Context;
+  // count required >= 2 (positive context): solver's 2, true 3: fine
+  EXPECT_LT(mp::ContextSignedDifference(2.0 - 3.0, Context::CTX_POS), 0.0);
+  EXPECT_GT(mp::ContextSignedDifference(3.0 - 2.0, Context::CTX_POS), 0.0);
+  // max used below an upper bound (negative context): solver's 1, true 0
+  EXPECT_LT(mp::ContextSignedDifference(1.0 - 0.0, Context::CTX_NEG), 0.0);
+  EXPECT_EQ(1.0, mp::ContextSignedDifference(-1.0, Context::CTX_MIX));
+}
+
+
+/// The check of a conditional comparison with the solver's values:
+/// its truth within sol:chk:logtol; a differing result is a violation
+/// of 1. With recomputed values and for strict kinds: exact (V1F-10)
+TEST(SolCheckTest, ConditionalTruthWithinLogTol) {
+  const std::vector<mp::var::Type> types(2, mp::var::CONTINUOUS);
+  const std::vector<double> lb{0.0, 0.0}, ub{1.0, 1.0};
+  auto viol = [&](auto&& con, double lt, bool recomp) {
+    mp::VarInfoStatic x(1e-6, lt, recomp, {1e-4 - 1e-7, 1.0}, {},
+                        types, lb, ub, 100, 100);
+    return con.ComputeViolation(x).viol_;
+  };
+  mp::CondLinConGE ge { 1, { { {1.0}, {0} }, 1e-4 } };   // b <==> x >= c
+  ge.SetContext(mp::Context::CTX_POS);
+  EXPECT_EQ(0.0, viol(ge, 1e-5, false));      // holds within logtol
+  EXPECT_EQ(1.0, viol(ge, 0.0, false));       // exactly false, b = 1
+  EXPECT_GT(1e-6, viol(ge, 1e-5, true));      // recomputed: exact gap
+  mp::CondLinConGT gt { 1, { { {1.0}, {0} }, 1e-4 - 2e-7 } };
+  gt.SetContext(mp::Context::CTX_POS);
+  EXPECT_EQ(0.0, viol(gt, 0.0, false));       // strict: exact, holds
+}
+
 
 /////////////////////////////// Quadratics //////////////////////////////////
 ///
@@ -162,5 +403,41 @@ TEST_F(InterfaceTester_QuadraticConstraint, QP2Pass1) {
   }
 }
 
+
+/// Backend accepting a^x natively
+using InterfaceTester_ExpAConstraint =
+             InterfaceTesterWithBackendAcceptingConstraints<mp::ExpAConstraint>;
+
+/// 1^x is the constant 1. As a^x with a = 1, its piecewise-linear
+/// approximation would divide by log(a) = 0. 2^x stays a^x.
+TEST_F(InterfaceTester_ExpAConstraint, PowOfBase1IsConstant) {
+  auto modeler = mp::MakeEasyModeler(GetModel());
+  auto x = modeler.AddVars(2, -2.0, 3.0);
+  modeler.AddAlgCon(-INFINITY, x[0] + (1.0 ^ x[1]), 5.0);
+  modeler.AddAlgCon(-INFINITY, x[0] + (2.0 ^ x[1]), 9.0);
+  GetInterface().ConvertModel();
+  const auto& expa = GetBackend().GetCons(
+      mp::ExpAConstraint(mp::ExpAConstraint::Arguments{ 0 },
+                         mp::ExpAConstraint::Parameters{ 2.0 }));
+  ASSERT_EQ(1u, expa.size());
+  EXPECT_EQ(2.0, expa[0].GetParameters()[0]);
+}
+
+/// The same through VisitPow(): a base that is a constant only after
+/// conversion (x0 - x0 + 1).
+TEST_F(InterfaceTester_ExpAConstraint, PowOfConvertedBase1IsConstant) {
+  auto modeler = mp::MakeEasyModeler(GetModel());
+  auto x = modeler.AddVars(2, -2.0, 3.0);
+  modeler.AddAlgCon(-INFINITY,
+                    x[0] + ((x[0] - x[0] + 1.0) ^ (x[1]*x[1])), 5.0);
+  modeler.AddAlgCon(-INFINITY,
+                    x[0] + ((x[0] - x[0] + 2.0) ^ (x[1]*x[1])), 9.0);
+  GetInterface().ConvertModel();
+  const auto& expa = GetBackend().GetCons(
+      mp::ExpAConstraint(mp::ExpAConstraint::Arguments{ 0 },
+                         mp::ExpAConstraint::Parameters{ 2.0 }));
+  ASSERT_EQ(1u, expa.size());
+  EXPECT_EQ(2.0, expa[0].GetParameters()[0]);
+}
 
 } // namespace

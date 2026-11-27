@@ -253,19 +253,12 @@ void CoptBackend::DoCOPTFeasRelax() {
   if (feasrelax_copt_mode_ % 2)
     feasrelax().flag_orig_obj_available();
   SetSolverOption(COPT_INTPARAM_FEASRELAXMODE, feasrelax_copt_mode_);
-  /// only relax linear constraints
-  auto mv = GetValuePresolver().PresolveSolution({
-                                              {},
-                                              feasrelax().rhspen()
-    });
-  frx_rhspen_ = mv.GetConValues()(CG_Linear);
-  /// Account for new variables (TODO: proper presolve)
-  frx_lbpen_ = feasrelax().lbpen();
-  if (frx_lbpen_.size() && frx_lbpen_.size() < (size_t)NumVars())
-    frx_lbpen_.resize(NumVars());
-  frx_ubpen_ = feasrelax().ubpen();
-  if (frx_ubpen_.size() && frx_ubpen_.size() < (size_t)NumVars())
-    frx_ubpen_.resize(NumVars());
+  /// only relax linear constraints; COPT_INFINITY: not relaxable
+  auto pen = FeasrelaxPenaltiesInSolver(
+      NumVars(), CG_Linear, COPT_INFINITY, COPT_INFINITY);
+  frx_rhspen_ = std::move(pen.rhs);
+  frx_lbpen_ = std::move(pen.lb);
+  frx_ubpen_ = std::move(pen.ub);
 
   /// NULL penalties mean "no relaxation of these bounds",
   /// COPT_INFINITY entries block individual bounds, as in MP.
@@ -711,8 +704,12 @@ double CoptBackend::getPoolObjective(int i)
 bool CoptBackend::IsWithinPoolGap(double obj, double best) const {
   double worsening = (obj - best)
       * (getIntAttr(COPT_INTATTR_OBJSENSE) == COPT_MAXIMIZE ? -1 : 1);
-  return worsening <= storedOptions_.poolGapAbs_
-      && worsening <= storedOptions_.poolGap_ * std::fabs(best);
+  // The default gaps (1e100) mean no limit; the relative one
+  // must not become 0 when the best objective is 0
+  return (storedOptions_.poolGapAbs_ >= 1e100
+          || worsening <= storedOptions_.poolGapAbs_)
+      && (storedOptions_.poolGap_ >= 1e100
+          || worsening <= storedOptions_.poolGap_ * std::fabs(best));
 }
 
 /// Report the pool solutions found during the search, best first,
@@ -759,8 +756,14 @@ std::pair<int, std::string> CoptBackend::GetSolveResult() {
   namespace sol = mp::sol;
 
   if (feasrelax_solved_) {       // COPT_FeasRelax() does not set the status attributes
-    if (getIntAttr(COPT_INTATTR_HASFEASRELAXSOL))
+    if (getIntAttr(COPT_INTATTR_HASFEASRELAXSOL)) {
+      // Modes optimizing the original objective (alg:feasrelax 4-6):
+      // an unbounded second phase leaves an infinite objective
+      if (std::fabs(getDblAttr(COPT_DBLATTR_FEASRELAXOBJ)) >= COPT_INFINITY)
+        return { sol::UNBOUNDED_FEAS,
+              "feasibility relaxation unbounded (original objective)" };
       return { sol::SOLVED, "feasibility relaxation solved" };
+    }
     return { sol::FAILURE, "feasibility relaxation failed" };
   }
 
@@ -1172,7 +1175,8 @@ void CoptBackend::InitCustomOptions() {
   AddStoredOption("sol:poolgap ams_eps poolgap",
     "Relative tolerance for reporting alternate MIP solutions "
     "(default: no limit): a solution is reported if its objective "
-    "is within poolgap * |best objective| of the best one.",
+    "is within poolgap * |best objective| of the best one. "
+    "With the best objective near 0, use sol:poolgapabs.",
     storedOptions_.poolGap_);
 
   AddStoredOption("sol:poolgapabs ams_epsabs poolgapabs",
@@ -1789,9 +1793,19 @@ ArrayRef<double> CoptBackend::DRay() {
 }
 
 
-void CoptBackend::AddPrimalDualStart(Solution sol0_unpres) {
-  if (IsMIP())
-    return;
+int CoptBackend::AddPrimalDualStart(Solution sol0_unpres) {
+  // Primal values for a model COPT solves as MIP, or for its nonlinear
+  // solver, are passed by AddMIPStart() (COPT_AddMipStart(),
+  // COPT_SetNLPrimalStart())
+  const int viaMIPStart =
+      sol0_unpres.primal.size() && (HasMIPItems() || HasNLExpressions())
+      ? 1 : 0;
+  if (HasMIPItems())
+    return viaMIPStart;
+  // COPT_SetLpSolution() rejects missing vectors, and presolve would
+  // fill a missing one with zeros
+  if (sol0_unpres.primal.empty() || sol0_unpres.dual.empty())
+    return viaMIPStart;
   auto mv = GetValuePresolver().PresolveSolution(
     { sol0_unpres.primal, sol0_unpres.dual });
   int nvars = NumVars();
@@ -1806,6 +1820,23 @@ void CoptBackend::AddPrimalDualStart(Solution sol0_unpres) {
                                 ne.data(),
                                 pi0.data(),
                                 nv.data()));
+  return 3;
+}
+
+bool CoptBackend::HasMIPItems() const {
+  return getIntAttr(COPT_INTATTR_INTS) > 0
+      || getIntAttr(COPT_INTATTR_BINS) > 0
+      || getIntAttr(COPT_INTATTR_SOSS) > 0
+      || getIntAttr(COPT_INTATTR_INDICATORS) > 0;
+}
+
+bool CoptBackend::HasNLExpressions() const {
+#ifdef COPT_INTATTR_NLELEMS
+  return getIntAttr(COPT_INTATTR_NLELEMS) > 0
+      || getIntAttr(COPT_INTATTR_NLCONSTRS) > 0;
+#else
+  return false;
+#endif
 }
 
 void CoptBackend::AddMIPStart(

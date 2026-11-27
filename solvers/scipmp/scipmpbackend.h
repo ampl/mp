@@ -83,7 +83,7 @@ public:
   * set primal/dual initial guesses for continuous case
   **/
   ALLOW_STD_FEATURE( WARMSTART, true )
-  void AddPrimalDualStart(Solution sol) override;
+  int AddPrimalDualStart(Solution sol) override;
   /**
   * MIP warm start
   **/
@@ -164,6 +164,8 @@ protected:
   /// sol:poolmode > 0: enumerate the feasible solutions of a
   /// pure-integer model with SCIP's solution counting, on a copy
   void EnumerateSolutions();
+  void AddBestSolutionToCounted();
+  void SortCountedSolutions();
   bool AllVarsInteger() const;
 
   std::vector<double> getPoolSolution(int i);

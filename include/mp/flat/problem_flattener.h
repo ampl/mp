@@ -189,6 +189,10 @@ public:
       override
   { return GetFlatCvt().PrepareNextSolveIteration(get_stt, get_sol); }
 
+  /// Start a run of solve iterations
+  void StartSolveIterations() override
+  { GetFlatCvt().StartSolveIterations(); }
+
   /// Is/was MultiObj Emulator used?
   bool IsMOEmulationOn() const override
   { return GetFlatCvt().IsMOActive(); }
@@ -407,6 +411,8 @@ protected:
     auto emptylinker = GetFlatCvt().MakeEmptyLinker(src_rng);
     auto vnr = GetFlatCvt().AddVars(lbs, ubs, types);
     GetCopyLink().AddEntry({ src_rng, vnr });
+    if (GetEnv().ampl_names_read())     // for messages before name presolve
+      GetFlatCvt().SetOrigVarNamesForMessages(GetModel().var_names());
     // Append "_flatvNN" for any other variables,
     // in particular the new variables during flattening
     GetFlatCvt().GetVarValueNode().SetNameChunk("flatv");
@@ -491,7 +497,7 @@ protected:
 
   /// Convert an algebraic constraint
   /// Pass two-term linear constraints to the FlatConverter,
-  /// which records variable-bound implications (cvt:pre:vbnd).
+  /// which records variable-bound implications (cvt:pre:domsync).
   /// Done before flattening, as comparisons can be flattened
   /// earlier than such rows (e.g., in objectives).
   void ScanVarBoundRows() {
@@ -507,7 +513,7 @@ protected:
   }
 
   /// Pass root disjunctions  x <= a || x >= b  on one variable
-  /// to the FlatConverter as domain holes (cvt:pre:vbnd bit 2)
+  /// to the FlatConverter as domain holes (cvt:pre:domsync bit 2)
   void ScanDomainHoles() {
     for (int i = 0; i < GetModel().num_logical_cons(); ++i) {
       auto e = GetModel().logical_con(i).expr();
@@ -563,13 +569,28 @@ protected:
     } catch (const Error& err) {
       MP_RAISE_WITH_CODE(
           err.exit_code(), fmt::format(
-              "Algebraic constraint _scon[{}]:\n  {}",
-              i+1, err.what()));
+              "Algebraic constraint {}:\n  {}{}",
+              AlgConRefForMessage(i), err.what(), NamesHintLine()));
     } catch (const std::exception& exc) {
       MP_RAISE(fmt::format(
-          "Error flattening algebraic constraint _scon[{}]:\n  {}",
-          i+1, exc.what()));
+          "Error flattening algebraic constraint {}:\n  {}{}",
+          AlgConRefForMessage(i), exc.what(), NamesHintLine()));
     }
+  }
+
+  /// "_scon[i+1]" for messages, with the AMPL name
+  /// if AMPL passed names
+  std::string AlgConRefForMessage(int i) {
+    auto ref = fmt::format("_scon[{}]", i+1);
+    if (GetEnv().ampl_names_read())
+      ref += fmt::format(" ({})", GetModel().con_name(i));
+    return ref;
+  }
+
+  /// "\n  " + AuxfilesHint(), or "" if AMPL passed names
+  std::string NamesHintLine() const {
+    auto hint = GetEnv().AuxfilesHint();
+    return hint.empty() ? hint : "\n  " + hint;
   }
 
   /// Algebraic constraint flattening preparation info
@@ -1352,7 +1373,7 @@ public:          // need to be public due to CRTP
               PowConstExpConstraint::Parameters{ er.constant_term() } ) );
     }
     else if (el.is_constant())
-      return VisitPowConstBase(e);
+      return VisitPowConstBase(el.constant_term(), std::move(er));
     else
       return AssignResult2Args(
           PowConstraint(
@@ -1372,10 +1393,23 @@ public:          // need to be public due to CRTP
     return VisitFunctionalExpression<ExpConstraint>({ e.arg() });
   }
 
+  /// Kind POW_CONST_BASE: a numeric constant to the power of an expression
   EExpr VisitPowConstBase(BinaryExpr e) {
+    return VisitPowConstBase(Cast<NumericConstant>(e.lhs()).value(),
+                             Convert2EExpr(e.rhs()));
+  }
+
+  /// a^x with constant base \a a (also from VisitPow(), where the left
+  /// operand need not be a numeric constant node). 1^x is 1: as a^x it would
+  /// divide by log(a) = 0 in the PL approximation.
+  /// \a x is the converted exponent (VisitPow() has converted it
+  /// already; converting it again was redundant work).
+  EExpr VisitPowConstBase(double a, EExpr x) {
+    if (1.0 == a)
+      return EExpr::Constant{ 1.0 };
     return AssignResult2Args( ExpAConstraint(
-      ExpAConstraint::Arguments{ Convert2Var(e.rhs()) },
-      ExpAConstraint::Parameters{ Cast<NumericConstant>(e.lhs()).value() } ) );
+      ExpAConstraint::Arguments{ Convert2Var(std::move(x)) },
+      ExpAConstraint::Parameters{ a } ) );
   }
 
   EExpr VisitLog(UnaryExpr e) {
@@ -1852,7 +1886,8 @@ private:
                              "by substitution into linear, quadratic, and polynomial "
                              "expressions:\n"
                              "\n.. value-table::\n"
-                             "\nSee also cvt:pre:unnest, as well as AMPL options linelim and substout.",
+                             "\nSee also cvt:pre:unnest, cvt:pre:agglinfill, cvt:pre:aggquadfill, "
+                             "cvt:expr:nlassign, as well as AMPL options linelim and substout.",
                              dvelim_, values_dvelim);
     GetEnv().AddStoredOption("cvt:pow2_as_qp pow2_as_qp pow2asqp",
                              "0/1*: whenever both quadratics and ^2 are accepted, "

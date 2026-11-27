@@ -220,9 +220,11 @@ public:
       prepro.set_result_var(argvar);
       return;
     } else if (ub<=0.0 && !MPCD( IfPreproBoundsOnly() )) {
-      auto res = MPD( AssignResult2Args(   // create newvar = -argvar
+      // The result can be a constant (argvar fixed at a negative value):
+      // then it needs a fixed variable, get_var() of a constant is garbage
+      auto res = MPD( AssignResultVar2Args(  // create newvar = -argvar
             LinearFunctionalConstraint({ {{-1.0}, {argvar}}, 0.0 })) );
-      prepro.set_result_var(res.get_var());
+      prepro.set_result_var(res);
       return;
     }
     prepro.narrow_result_bounds(0.0, std::max(-lb, ub));
@@ -242,7 +244,12 @@ public:
     if (0!=MPD( IfPreproEqResBounds() ))
       if (FixEqualityResult(c, prepro))
         return;
-    PreprocessEqVarConst__unifyCoef(c);
+    if (PreprocessEqVarConst__unifyCoef(c)
+        && 0!=MPD( IfPreproEqResBounds() )
+        && !SnapIntegerEqualityRhs(c.GetConstraint())) {
+      prepro.narrow_result_bounds(0.0, 0.0);  // int var == fraction
+      return;
+    }
     if (0!=MPD( IfPreproEqBinVar() ))
       if (ReuseEqualityBinaryVar(c, prepro))
         return;
@@ -274,33 +281,81 @@ public:
         return;
   }
 
-  /// Try and fix conditional equality result
+  /// Try and fix conditional equality result.
+  /// An integer-valued body is compared with the integer within
+  /// cvt:pre:inteps of the rhs, which is set as the rhs;
+  /// without one, the equality is false.
+  /// Otherwise, the equality is decided only if the body's bounds
+  /// lie within, or miss the rhs by more than, the decision margin
+  /// (DecisionMargin()).
   /// @return true if success
   template <class PreprocessInfo, class CondAlgCon>
   bool FixEqualityResult(
       CondAlgCon& c, PreprocessInfo& prepro) {
-    const auto& con = c.GetConstraint();
+    auto& con = c.GetConstraint();
     const auto& body = con.GetBody();
-    const auto rhs = con.rhs();
     auto bndsNType = MPD( ComputeBoundsAndType(body) );
-    if (bndsNType.lb() > rhs || bndsNType.ub() < rhs) {
+    if (var::INTEGER==bndsNType.type_ && !SnapIntegerEqualityRhs(con)) {
       prepro.narrow_result_bounds(0.0, 0.0);
       return true;
     }
-    if (bndsNType.lb()==rhs && bndsNType.ub()==rhs) {
-      prepro.narrow_result_bounds(1.0, 1.0);
+    const auto rhs = con.rhs();
+    if (const int res = DecideEqualityByBounds(
+          bndsNType.lb(), bndsNType.ub(), rhs,
+          DecisionMargin(rhs, bndsNType))) {
+      const double val = res > 0 ? 1.0 : 0.0;   // FIX: TRUE / FALSE
+      prepro.narrow_result_bounds(val, val);
       return true;
     }
-    if (var::INTEGER==bndsNType.type_ &&
-        !is_integer(con.rhs())) {
-      prepro.narrow_result_bounds(0.0, 0.0);
-      return true;
-    }
+    if (var::INTEGER!=bndsNType.type_)
+      SnapEqualityRhsToBound(con, bndsNType);
     return false;
   }
 
-  /// Normalize conditional equality coef * var == const
-  static void PreprocessEqVarConst__unifyCoef(CondLinConEQ& c) {
+  /// Decide  body == rhs  from body bounds [L, U] with decision
+  /// margin \a d: FALSE if they miss the rhs by more than d,
+  /// TRUE if both lie within d of it.
+  /// @return 1: true, -1: false, 0: undecided
+  static int DecideEqualityByBounds(
+      double L, double U, double rhs, double d) {
+    if (L > rhs + d || U < rhs - d)
+      return -1;
+    return (L >= rhs - d && U <= rhs + d) ? 1 : 0;
+  }
+
+  /// An equality's rhs within the floating-point margin
+  /// (cvt:pre:ulps ulp of the rhs) of a bound of the body becomes
+  /// that bound: 0.3*b == 0.1*3 (0.30000000000000004) at b <= 1 is
+  /// 0.3*b == 0.3. Otherwise the rhs is out of reach by a rounding
+  /// error, and the reformulation gets a big-M of 5.6e-17.
+  /// Not by cvt:pre:feastol: x == 0.9999995 at x <= 1 stays.
+  template <class AlgCon, class BndNType>
+  void SnapEqualityRhsToBound(AlgCon& con, const BndNType& bnt) const {
+    const double m = MPCD( tolerances() ).FPMargin(con.rhs());
+    for (double b: {bnt.ub(), bnt.lb()})
+      if (std::fabs(con.rhs() - b) <= m && con.rhs() != b) {
+        con.set_rhs(b);
+        return;
+      }
+  }
+
+  /// For an integer-valued body of equality \a con:
+  /// set the rhs to the integer within cvt:pre:inteps of it.
+  /// @return false if there is none (the equality is false)
+  template <class AlgCon>
+  bool SnapIntegerEqualityRhs(AlgCon& con) const {
+    const double r = MPCD( tolerances() ).SnapToInteger(con.rhs());
+    if (!is_integer(r))
+      return false;
+    if (r != con.rhs())
+      con.set_rhs(r);
+    return true;
+  }
+
+  /// Normalize conditional equality coef * var == const.
+  /// @return true if the coefficient was changed
+  ///   and the body is an integer variable
+  bool PreprocessEqVarConst__unifyCoef(CondLinConEQ& c) const {
     auto& con = c.GetConstraint();
     auto& body = con.GetBody();
     if (1==body.size()) {
@@ -309,8 +364,10 @@ public:
         assert(0.0!=std::fabs(coef));
         con.set_rhs(con.rhs() / coef);
         body.set_coef(0, 1.0);
+        return MPCD( is_var_integer(body.var(0)) );
       }
     }
+    return false;
   }
 
   /// Simplify conditional equality bin_var==0/1
@@ -352,29 +409,34 @@ public:
     auto& algc = cc.GetArguments();
     auto bnt = MPD(
         ComputeBoundsAndType(algc.GetBody()) );
+    const double rhs0 = algc.rhs();          // as in the model
     PreprocessRoundRHS(algc, bnt);
     auto rhs = algc.rhs();
-    if (IfPreprocessDecidable<kind>(prepro, bnt, rhs))
+    const auto d = DecisionMargin(rhs, bnt);
+    if (IfPreprocessDecidable<kind>(prepro, bnt, rhs, d, rhs0))
       return;
     if (IfPreprocessNormalize(cc, prepro))
       return;
     if (IfPreprocessVarBnd<kind>(algc.GetBody(), rhs, prepro)
         || IfPreprocessHole<kind>(algc.GetBody(), rhs, prepro))
       return;
-    if (IfPreprocess2BndEq(cc, prepro, bnt))
+    if (IfPreprocess2BndEq(cc, prepro, bnt, d))
       return;
     IfPreprocess2Related(cc, prepro, bnt);
   }
 
   /// Comparison  a*x (kind) rhs  inside a domain hole of x
-  /// (cvt:pre:vbnd bit 2, see var_bnd_impl.h):
+  /// (cvt:pre:domsync bit 2, see var_bnd_impl.h):
   /// reuse the comparison x >= b or its negation.
   /// @return true if rewritten
   template <int kind, class Body, class PreprocessInfo>
   bool IfPreprocessHole(
       const Body& body, double rhs, PreprocessInfo& prepro) {
     if constexpr (std::is_same_v<Body, LinTerms>) {
-      if (1 != body.size() || !MPCD( IfPreproHoles() )
+      // Equality at a bound is left to the other rewrites: the result
+      // x >= b is rewritten back to x == ub by IfPreprocess2BndEq(),
+      // which would recurse endlessly.
+      if (0 == kind || 1 != body.size() || !MPCD( IfPreproHoles() )
           || MPCD( IfPreproBoundsOnly() ))
         return false;
       const int x = body.var(0);
@@ -391,7 +453,7 @@ public:
   }
 
   /// Comparison  a*x (kind) rhs  decided by variable-bound
-  /// constraints on x (cvt:pre:vbnd, see var_bnd_impl.h):
+  /// constraints on x (cvt:pre:domsync, see var_bnd_impl.h):
   /// reuse the binary or its negation.
   /// @return true if decided
   template <int kind, class Body, class PreprocessInfo>
@@ -437,7 +499,9 @@ public:
     return false;
   }
 
-  /// See if need to round the RHS
+  /// Integer rhs for an integer-valued body (cvt:pre:ineqrhs):
+  /// the integer within cvt:pre:inteps of the rhs,
+  /// otherwise the integer on the side the comparison allows.
   template <class Body, int kind, class BndNType>
   void PreprocessRoundRHS(
       AlgebraicConstraint< Body, AlgConRhs<kind> >& algc,
@@ -446,7 +510,10 @@ public:
     if (MPCD( IfPreproIneqRHS() )
         && var::INTEGER == bnt.get_result_type()
         && std::floor(rhs) != std::ceil(rhs)) {  // rhs not int
-      if (1==kind)  // algc is >=
+      const double k = MPCD( tolerances() ).SnapToInteger(rhs);
+      if (k != rhs)  // within inteps: x <= 0.3/0.1 is x <= 3
+        algc.set_rhs( k );
+      else if (1==kind)  // algc is >=
         algc.set_rhs( std::ceil(rhs) );
       else if (-1==kind)
         algc.set_rhs( std::floor(rhs) );
@@ -460,27 +527,99 @@ public:
   }
 
   /// Decidable inequality?
+  /// Decided only if the body's bounds lie on one side of the rhs,
+  /// beyond the decision margin \a d (see DecideByBounds()).
+  /// \a rhs0 is the rhs before rounding for an integer body.
   template <int kind, class PreprocessInfo, class BndNType>
-  bool IfPreprocessDecidable(
-      PreprocessInfo& prepro, const BndNType& bnt, double rhs) {
+  bool IfPreprocessDecidable(PreprocessInfo& prepro, const BndNType& bnt,
+                             double rhs, double d, double rhs0) {
     if (MPCD( IfPreproIneqResBounds() )) {
-      if ((1==kind && bnt.lb()>=rhs)
-          || (-1==kind && bnt.ub()<=rhs)
-          || (2==kind && bnt.lb()>rhs)
-          || (-2==kind && bnt.ub()<rhs)) {
-        prepro.narrow_result_bounds(1.0, 1.0);   // FIX: TRUE
+      const int res = DecideByBounds<kind>(
+            bnt.lb(), bnt.ub(), rhs, d, FPMargin(rhs));
+      if (res) {
+        if (res < 0)
+          WarnIfStrictFalseOnlyWithinTol<kind>(bnt, rhs0);
+        const double val = res > 0 ? 1.0 : 0.0;   // FIX: TRUE / FALSE
+        prepro.narrow_result_bounds(val, val);
         return true;
-      } else {
-        if ((1==kind && bnt.ub()<rhs)
-            || (-1==kind && bnt.lb()>rhs)
-            || (2==kind && bnt.ub()<=rhs)
-            || (-2==kind && bnt.lb()>=rhs)) {
-          prepro.narrow_result_bounds(0.0, 0.0);   // FIX: FALSE
-          return true;
-        }
       }
     }
     return false;
+  }
+
+  /// Decide the inequality  body (kind) rhs  from body bounds [L, U].
+  /// A non-strict comparison holds up to the decision margin \a d
+  /// (body >= c: TRUE if L >= c-d, FALSE if U < c-d).
+  /// A strict one is FALSE as the negation of the opposite non-strict
+  /// one (body > c: FALSE if U <= c+d), but TRUE only exactly, up to
+  /// the floating-point margin \a m (body > c: TRUE if L > c+m):
+  /// an undecided strict comparison gets the gap cvt:mip:eps.
+  /// FALSE is tested first.
+  /// @return 1: true, -1: false, 0: undecided
+  template <int kind>
+  static int DecideByBounds(
+      double L, double U, double rhs, double d, double m) {
+    static_assert(kind && kind*kind <= 4, "inequality kind expected");
+    bool is_true {}, is_false {};
+    if constexpr (1==kind) {          // >=
+      is_true = L >= rhs - d;
+      is_false = U < rhs - d;
+    } else if constexpr (-1==kind) {  // <=
+      is_true = U <= rhs + d;
+      is_false = L > rhs + d;
+    } else if constexpr (2==kind) {   // >
+      is_false = U <= rhs + d;
+      is_true = L > rhs + m;
+    } else {                          // <
+      is_false = L >= rhs - d;
+      is_true = U < rhs - m;
+    }
+    return is_false ? -1 : (is_true ? 1 : 0);
+  }
+
+  /// Warn if a strict comparison is decided false only within the
+  /// tolerances (cvt:pre:feastol, cvt:pre:inteps): exactly, with the
+  /// rhs \a rhs0 of the model, it could hold (x < 1e-7 at x >= 0)
+  template <int kind, class BndNType>
+  void WarnIfStrictFalseOnlyWithinTol(const BndNType& bnt, double rhs0) {
+    if constexpr (4==kind*kind) {
+      if (MPCD( IfPreproBoundsOnly() ))   // a query, no model change
+        return;
+      const double m = FPMargin(rhs0);
+      if (DecideByBounds<kind>(bnt.lb(), bnt.ub(), rhs0, m, m) >= 0)
+        MPD( AddWarning("strict_cmp_tol",
+                        "A strict comparison was decided false because "
+                        "its right-hand side is within cvt:pre:feastol "
+                        "(or, for integer expressions, cvt:pre:inteps) "
+                        "of a bound of its expression") );
+    }
+  }
+
+  /// Margin d = max(cvt:pre:feastol, cvt:pre:ulps ulp(rhs)) by which
+  /// computed body bounds may cross the rhs of a comparison without
+  /// deciding it. Bounds are computed in floating point: (5+1)/3 can
+  /// give 1.9999999999999998 < 2 (NumericTolerances::DecisionMargin()).
+  /// Undecided comparisons are left to the solver's tolerances.
+  double DecisionMargin(double rhs) const {
+    return MPCD( tolerances() ).DecisionMargin(rhs);
+  }
+
+  /// Decision margin for  body (cmp) rhs  with body bounds \a bnt.
+  /// An integer-valued body with an integral rhs has integral bounds
+  /// and no rounding error to absorb: d = cvt:pre:feastol, also at
+  /// magnitudes where the floating-point margin exceeds it. A margin
+  /// of 1 or more (|rhs| from about 2.8e14 at 16 ulp) would decide
+  /// x >= c TRUE at x >= c-1. Otherwise DecisionMargin(rhs).
+  template <class BndNType>
+  double DecisionMargin(double rhs, const BndNType& bnt) const {
+    if (var::INTEGER == bnt.get_result_type() && is_integer(rhs))
+      return MPCD( tolerances() ).cmp_tol();
+    return DecisionMargin(rhs);
+  }
+
+  /// Floating-point margin of a compared constant (cvt:pre:ulps ulp)
+  double FPMargin(double rhs) const {
+    return MPCD( tolerances() ).FPMargin(rhs);
   }
 
   /// See if we can reuse "==LB/UB"
@@ -490,7 +629,7 @@ public:
   bool IfPreprocess2BndEq(
       ConditionalConstraint<
           AlgebraicConstraint< Body, AlgConRhs<kind> > >& cc,
-      PreprocessInfo& prepro, const BndNType& bnt) {
+      PreprocessInfo& prepro, const BndNType& bnt, double d) {
     if (MPCD( IfPreproIneq2BndEq() ) && !MPCD( IfPreproBoundsOnly() )) {
       auto& algc = cc.GetArguments();
       auto convert = [&](double rhseq, bool fNegate=false) {
@@ -509,7 +648,14 @@ public:
         return true;             // for convenience
       };
       auto rhs = algc.rhs();     // Is this ok for floats?
-      auto cmpEps = MPCD( ComparisonEps( bnt ) );
+      // Continuous bodies: only within the decision margin d of
+      // a bound; cvt:mip:eps would change the comparison
+      // (x <= 5e-5 at x in [0, 1e-4] is not x == 0, and
+      // not (x > 5e-5) is not x != 1e-4). Strict comparisons within d
+      // of a bound are decided by IfPreprocessDecidable() already.
+      // Integer bodies: the step 1 (exact).
+      const bool f_cont = var::INTEGER != bnt.get_result_type();
+      const auto cmpEps = f_cont ? d : MPCD( ComparisonEps( bnt ) );
       if (1==kind && rhs>bnt.ub()-cmpEps)  // expr >= rhs > ub-eps
         return convert(bnt.ub());               // replace as expr==ub
       if (2==kind && rhs>=bnt.ub()-cmpEps) // expr > rhs >= ub-eps
@@ -518,6 +664,12 @@ public:
         return convert(bnt.lb());
       if (-2==kind && rhs<=bnt.lb()+cmpEps)// expr < rhs <= lb+eps
         return convert(bnt.lb());
+      // The negations below (expr >= lb+1 is expr != lb) hold for
+      // the integer step, and for strict comparisons within d of a
+      // bound (x > 0 at x >= 0 is x != 0); a non-strict comparison
+      // of a continuous body there is true within d instead
+      if (f_cont && 1==kind*kind)
+        return false;
       if (1==kind && rhs<=bnt.lb()+cmpEps) // expr >= rhs <= lb+eps
         return convert(bnt.lb(), true);         // replace as expr!=lb
       if (2==kind && rhs<bnt.lb()+cmpEps)  // expr > rhs < lb+eps
@@ -602,7 +754,7 @@ public:
     if (cc.GetConstraint().empty()) {
 #ifndef NDEBUG
       MPD(AddWarning("empty_cmp",
-                     "Empty comparison in a logical constraint\n  of type '"
+                     "Empty comparison in a logical constraint of type '"
                      + std::string(cc.GetTypeName()) + "'"));
 #endif
       auto res = ComputeValue(cc, std::vector<double>{});
@@ -685,10 +837,12 @@ public:
   std::pair<int, int> count_fixed_01(const Vec& vec) const {
     std::pair<int, int> result {0, 0};
     for (auto x: vec) {
-      assert(MPCD( is_binary_var(x) ));
+      // Contradictory bounds (lb > ub) are passed on with a warning
+      // when cvt:pre:infeasvarbnd=0; such an argument counts once
+      assert(MPCD( is_binary_var(x) ) || MPCD( lb(x) ) > MPCD( ub(x) ));
       if (MPCD( ub(x) ) <= 0.0)
         ++ result.first;
-      if (MPCD( lb(x) ) >= 1.0)
+      else if (MPCD( lb(x) ) >= 1.0)
         ++ result.second;
     }
     assert(result.first + result.second <= (int)vec.size());
@@ -746,8 +900,9 @@ public:
   template <class PreprocessInfo>
   void PreprocessConstraint(
       NumberofVarConstraint& con, PreprocessInfo& prepro) {
-    if (MPCD( IfPreproSortUnify() ))
-      Sort(con.GetArguments());
+    auto& args = con.GetArguments();
+    if (MPCD( IfPreproSortUnify() ) && args.size() > 2)
+      std::sort(args.begin() + 1, args.end());  // keep the ref var first
     prepro.narrow_result_bounds(0.0,     // size()-1: 1st arg is the ref var
                                 (double)con.GetArguments().size()-1);
     prepro.set_result_type( var::INTEGER );
@@ -776,6 +931,20 @@ public:
     }
   }
 
+  /// Warn if the domain [\a ly, \a uy] of a divisor in \a op
+  /// contains 0: the divisor is then treated as nonzero in the whole
+  /// model, also where the division is not evaluated.
+  void WarnDivisorDomainContains0(double ly, double uy, const char* op) {
+    if (ly <= 0.0 && uy >= 0.0 && ly < uy)
+      MPD( AddWarning("divisor_domain_0", fmt::format(
+        "The domain [{}, {}] of a divisor in '{}' contains 0. "
+        "The divisor is treated as nonzero in the whole model, also "
+        "where the division is not evaluated (for example, in an "
+        "if-then-else branch not taken), which can cut off solutions. "
+        "Bound the divisor away from 0 if this is not intended.",
+        ly, uy, op)) );
+  }
+
   /// Preprocess Div
   template <class PreprocessInfo>
   void PreprocessConstraint(
@@ -783,6 +952,7 @@ public:
     auto& m = MPD( GetModel() );
     auto v1 = c.GetArguments()[0], v2 = c.GetArguments()[1];
     const auto l1=m.lb(v1), u1=m.ub(v1), l2=m.lb(v2), u2=m.ub(v2);
+    WarnDivisorDomainContains0(l2, u2, "/");
 		if (l1 > MPD( PracticallyMinusInf() ) &&
 				u1 < MPD( PracticallyInf() ) &&
 				l2 > MPD( PracticallyMinusInf() ) &&
@@ -861,8 +1031,24 @@ public:
       prepro.set_result_var(x);
       return;
     }
-    prepro.narrow_result_bounds( rnd(MPCD( lb(x) )), rnd(MPCD( ub(x) )) );
+    prepro.narrow_result_bounds( RoundBoundOutward(MPCD( lb(x) ), -1, rnd),
+                                 RoundBoundOutward(MPCD( ub(x) ), 1, rnd) );
     prepro.set_result_type( var::INTEGER );
+  }
+
+  /// Bound rnd(b) of a monotone rounding function's result,
+  /// where b is a bound of its argument (dir=-1: lower, +1: upper).
+  /// A computed bound can miss the exact one by a rounding error,
+  /// e.g., (2/3)*5 + (1/3)*2 = 3.9999999999999996, so a fractional b
+  /// is first moved outward by cvt:pre:ulps ulp(b), never by a
+  /// feasibility tolerance: floor(x) at x <= 3.9999995 is at most 3.
+  /// The result bound can be weaker, but never cuts off a solution.
+  /// An integral b is taken as exact.
+  template <class RoundFn>
+  double RoundBoundOutward(double b, int dir, RoundFn rnd) const {
+    if (!std::isfinite(b) || b == std::floor(b))
+      return rnd(b);
+    return rnd(b + dir * MPCD( tolerances() ).FPMargin(b));
   }
 
   /// Preprocess x div y = trunc(x/y)
@@ -874,6 +1060,7 @@ public:
         ly=MPCD( lb(y) ), uy=MPCD( ub(y) );
     if (0.0==ly && 0.0==uy)
       MP_RAISE("Division by 0 in 'div'");
+    WarnDivisorDomainContains0(ly, uy, "div");
     if (1.0==ly && 1.0==uy && MPCD( is_var_integer(x) )) {
       prepro.set_result_var(x);
       return;
@@ -890,7 +1077,9 @@ public:
           l0 = std::min(l0, x1 / y1);
           u0 = std::max(u0, x1 / y1);
         }
-      prepro.narrow_result_bounds( std::trunc(l0), std::trunc(u0) );
+      auto trunc = [](double v) { return std::trunc(v); };
+      prepro.narrow_result_bounds( RoundBoundOutward(l0, -1, trunc),
+                                   RoundBoundOutward(u0, 1, trunc) );
     } else if (IsIntegerValued(y)) {          // |y| >= 1
       const auto m = std::max(std::fabs(lx), std::fabs(ux));
       prepro.narrow_result_bounds( -m, m );
@@ -907,6 +1096,7 @@ public:
         ly=MPCD( lb(y) ), uy=MPCD( ub(y) );
     if (0.0==ly && 0.0==uy)
       MP_RAISE("Division by 0 in 'mod'");
+    WarnDivisorDomainContains0(ly, uy, "mod");
     const bool f_int = IsIntegerValued(x) && IsIntegerValued(y);
     auto b = std::max(std::fabs(lx), std::fabs(ux));
     if (IsFiniteRange(ly, uy))
@@ -955,38 +1145,92 @@ public:
   }
 
   ////////////////////// NONLINEAR FUNCTIONS //////////////////////
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      ExpConstraint& , PreprocessInfo& prepro) {
-    prepro.narrow_result_bounds(0.0, MPD( Infty() ));
+  /// Result range of a monotone function f over the argument bounds
+  /// [lb, ub], widened by the relative margin cvt:pre:funcbndtol.
+  /// Infinite ends stay infinite.
+  /// @return {lb, ub}, or {-Infty, Infty} if f is undefined (NaN),
+  ///   if the range is degenerate (both ends at the same infinity,
+  ///   e.g., log over [0, 0]: the solver finds such a model infeasible),
+  ///   or if the margin is negative (the old behavior, no such bounds)
+  template <class F>
+  std::pair<double, double> MonotoneRange(F f, double lb, double ub) {
+    const double tol = MPCD( FuncBoundTol() );
+    const double r0 = f(lb), r1 = f(ub);
+    const double rl = std::min(r0, r1), ru = std::max(r0, r1);
+    if (tol < 0.0 || std::isnan(r0) || std::isnan(r1)
+        || ru == -INFINITY || rl == INFINITY)
+      return { MPD( MinusInfty() ), MPD( Infty() ) };
+    const auto widen = [tol](double r, double dir) {  // 0*inf is NaN
+      return (0.0 == tol || std::isinf(r)) ? r : r + dir * tol * std::fabs(r);
+    };
+    return { widen(rl, -1.0), widen(ru, 1.0) };
   }
 
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      ExpAConstraint& , PreprocessInfo& prepro) {
-    prepro.narrow_result_bounds(0.0, MPD( Infty() ));
+  /// Bounds of the argument; the lower bound of a logarithm's argument
+  /// is at least 0
+  std::pair<double, double> LogArgBounds(int x) {
+    return { std::max(0.0, MPD( lb(x) )), MPD( ub(x) ) };
   }
 
+  /// Bound the result of exp(x): positive, and by the argument's bounds
   template <class PreprocessInfo>
   void PreprocessConstraint(
-      LogConstraint& c, PreprocessInfo& ) {
-    auto x = c.GetArguments()[0];  // if no positive lb,
+      ExpConstraint& c, PreprocessInfo& prepro) {
+    const auto x = c.GetArguments()[0];
+    const auto r = MonotoneRange(
+        [](double v) { return std::exp(v); }, MPD( lb(x) ), MPD( ub(x) ));
+    prepro.narrow_result_bounds(std::max(0.0, r.first), r.second);
+  }
+
+  /// Bound the result of a^x, a>0: positive, and by the argument's
+  /// bounds. Not for a<=0: a^x is then not monotone (e.g., (-2)^x
+  /// at integer x) and not always positive.
+  template <class PreprocessInfo>
+  void PreprocessConstraint(
+      ExpAConstraint& c, PreprocessInfo& prepro) {
+    const auto x = c.GetArguments()[0];
+    const double a = c.GetParameters()[0];
+    if (!(a > 0.0))
+      return;
+    const auto r = MonotoneRange(
+        [a](double v) { return std::pow(a, v); }, MPD( lb(x) ), MPD( ub(x) ));
+    prepro.narrow_result_bounds(std::max(0.0, r.first), r.second);
+  }
+
+  /// Narrow the argument of a logarithm to nonnegative (see
+  /// cvt:pre:boundlogarg), and bound the result by the argument's bounds
+  template <class PreprocessInfo>
+  void PreprocessConstraint(
+      LogConstraint& c, PreprocessInfo& prepro) {
+    const auto x = c.GetArguments()[0];  // if no positive lb,
     if (MPCD( IfBoundLogArg() )) {
       MPD( NarrowVarBounds(x, 0.0, MPD( Infty() )) );
     } else {
       MPD( NarrowVarBestBounds(x, 0.0, MPD( Infty() )) );
     }
+    const auto xb = LogArgBounds(x);
+    const auto r = MonotoneRange(
+        [](double v) { return std::log(v); }, xb.first, xb.second);
+    prepro.narrow_result_bounds(r.first, r.second);
   }
 
+  /// As for Log, with base a>0
   template <class PreprocessInfo>
   void PreprocessConstraint(
-      LogAConstraint& c, PreprocessInfo& ) {
+      LogAConstraint& c, PreprocessInfo& prepro) {
+    const auto x = c.GetArguments()[0];
     if (MPCD( IfBoundLogArg() ))
-      MPD( NarrowVarBounds(
-          c.GetArguments()[0], 0.0, MPD( Infty() )) );
+      MPD( NarrowVarBounds(x, 0.0, MPD( Infty() )) );
     else
-      MPD( NarrowVarBestBounds(
-          c.GetArguments()[0], 0.0, MPD( Infty() )) );
+      MPD( NarrowVarBestBounds(x, 0.0, MPD( Infty() )) );
+    const auto xb = LogArgBounds(x);
+    const double a = c.GetParameters()[0];
+    if (!(a > 0.0) || 1.0 == a)          // no logarithm to such a base
+      return;
+    const double la = std::log(a);
+    const auto r = MonotoneRange(
+        [la](double v) { return std::log(v) / la; }, xb.first, xb.second);
+    prepro.narrow_result_bounds(r.first, r.second);
   }
 
   template <class PreprocessInfo>

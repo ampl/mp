@@ -2,7 +2,10 @@ Summary of recent updates to GCG for AMPL
 =========================================
 
 
-## Unreleased
+## unreleased
+- Fix: the *.block* suffix on variables put each variable one block too
+  high, and crashed when only variables had *.block*; the *.linking*
+  suffix was ignored.
 - Builds of GCG without OpenMP (e.g., on Windows) no longer stop
   at startup with "Unknown GCG/SCIP parameter
   'pricing/masterpricer/nthreads'"; *tech:threads* is available

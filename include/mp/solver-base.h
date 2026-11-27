@@ -227,6 +227,15 @@ public:
     objno_ = value;
   }
 
+  int GetMsgWidth(const SolverOption&) const { return msg_width_; }
+  void SetMsgWidth(const SolverOption& opt, int value)  {
+    if (value < 0)
+      throw InvalidOptionValue(opt, value);
+    msg_width_ = value;
+  }
+  /// Width at which warnings and error messages are wrapped, 0: none
+  int msg_width() const { return msg_width_; }
+
   int GetTiming(const SolverOption&) const { return timing_; }
   void SetTiming(const SolverOption& opt, int value)  {
     if ((value < 0)||(value>2))
@@ -249,6 +258,24 @@ public:
   /// Returns the long solver name.
   /// This name is used in startup "banner".
   const char *long_name() const { return long_name_.c_str(); }
+
+  /// Whether AMPL passed variable or constraint names
+  /// (.col / .row files, AMPL option auxfiles).
+  bool ampl_names_read() const { return ampl_names_read_; }
+  void set_ampl_names_read(bool f) { ampl_names_read_ = f; }
+
+  /// For messages showing variable or constraint names:
+  /// how to get AMPL names, if AMPL did not pass them; else "".
+  std::string AuxfilesHint() const {
+    return ampl_names_read_ ? std::string()
+        : std::string("For AMPL names in messages, use option ")
+          + name() + "_auxfiles rc;";
+  }
+
+  /// Text that a subprocess printed after this solver's banner and that
+  /// is still alone at the end of the output line; the solve message
+  /// repeats it after the banner.  MP2NL: the subsolver's banner.
+  virtual std::string PendingOutputInSolveMessage() const { return {}; }
 
   /// Returns the executable path.
   const char *exe_path() const { return exe_path_.c_str(); }
@@ -522,8 +549,9 @@ public:
   /// Get warnings map
   WarningsMap& GetWarningsMap() const { return warnings_; }
 
-  /// Stringify a WarningsMap entry
-  static std::string ToString(const WarningsMap::value_type& wrn);
+  /// Stringify a WarningsMap entry, wrapped at \a width (0: no wrapping)
+  static std::string ToString(const WarningsMap::value_type& wrn,
+                              int width = 60);
 
   /// Set constraint list header (printed at the start of -c)
   void SetConstraintListHeader(std::string clh)
@@ -608,6 +636,7 @@ protected:
 private:
   std::string name_;
   std::string long_name_;
+  bool ampl_names_read_ {false};
   std::string exe_path_;
   std::string version_;
   std::string stub_;
@@ -642,6 +671,7 @@ private:
   bool report_uncertain_sol_ {true};
 
   int timing_ {0};
+  int msg_width_ {60};
   int solution_stats_{0};
   Stats stats_;
 

@@ -2,6 +2,49 @@ Summary of recent updates to CPLEX for AMPL
 ==============================================
 
 
+## unreleased
+
+- With `mip:basis`, reporting duals of the fixed problem preserves the
+  original problem for subsequent AMPLS solves and reports. Before, a
+  MIP without quadratic constraints was left as its fixed problem: a
+  repeated report returned the solution of the continuous relaxation,
+  and changes of the native problem before the next solve failed.
+- Fix: with `mip:basis` and several objectives (*obj:multi=1*), the
+  reported point came from the fixed problem of a single objective and
+  could lose the values of the others; the fixed problem is no longer
+  solved then, with a message.
+- Fix: *alg:feasrelax* penalties (*.lbpen*, *.ubpen*, *.rhspen*,
+  *alg:lbpen* etc.) acted inversely: a larger penalty made a violation
+  cheaper, a negative one (not relaxable) made it free, and 0 (free)
+  forbade relaxation. They now act as documented, as with the other
+  solvers. Models tuned to the previous behavior need their penalties
+  revised: a larger value now makes a violation more expensive.
+- Fix: *alg:feasoptobj* outside 1..3 crashed the driver; such values of
+  *alg:feasopt* and *alg:feasoptobj* are now rejected.
+- Fix: *mip:bestnode* had a garbage value with *mip:basis=1*.
+- Fix: a failure of CPLEX's optimizer (e.g., error 5002 for a nonconvex
+  quadratic constraint) gave an unknown result (-1); it is now reported
+  as a failure (500) with CPLEX's message.
+- Fix: *alg:feasrelax* 1-3 (minimize the relaxation only) reported
+  "limit, feasible solution" (solve result 400) when the minimal
+  relaxation was found; now "minimal relaxation found" (solved).
+- Fix: indicator constraints with an equality were passed to CPLEX with an
+  invalid sense, which CPLEX 22.2 mishandled (wrong results or violated
+  indicators). Note: CPLEX 22.2 can still return a suboptimal solution with
+  native equality indicators; *acc:indeq=0* avoids them.
+- Several objectives with *obj:multi=1* (native multi-objective optimization)
+  where one is quadratic: the solve ended with "unknown solution status";
+  the driver now stops with a message to use *obj:multi=2* (MP emulation).
+- Fix: *.iis* of indicator constraints was assigned to piecewise-linear
+  constraints when both were present (with *option pl_linearize 0*);
+  piecewise-linear constraints now take part in the conflict search.
+- Fix: *mip:basis* on a quadratically constrained MIP reported no duals
+  (the fixed model failed); it now solves the fixed QCP with the
+  barrier and reports duals (no basis). With indicator, SOS or
+  piecewise-linear constraints in such a model the fixed solve is
+  skipped with a message (CPLEX's QCP solver would ignore them).
+
+
 ## 20261029
 - Correct *.iis* values for models mixing linear, quadratic,
   indicator, and SOS constraints.

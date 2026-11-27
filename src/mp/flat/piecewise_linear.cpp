@@ -339,8 +339,13 @@ template <class FuncCon>
 void BasicPLApproximator<FuncCon>::ConsiderIntegrality() {
   /// Simple case when N breakpoints >= N integer points
   if (laPrm_.is_x_int && !laPrm_.fUsePeriod) {
-    auto x0=std::ceil(laPrm_.grDomOut.lbx);
-    auto xN=std::floor(laPrm_.grDomOut.ubx);
+    // The domain may come from clipping by function values, e.g.,
+    // exp(log(5)) = 4.999...: round with a tolerance, so that an
+    // integer bound is not lost (the solver would extrapolate there)
+    const auto tol = [](double v) { return 1e-9 * std::max(1.0, std::fabs(v)); };
+    const auto lbx = laPrm_.grDomOut.lbx, ubx = laPrm_.grDomOut.ubx;
+    auto x0=std::ceil(lbx - tol(lbx));
+    auto xN=std::floor(ubx + tol(ubx));
     auto N = int(xN - x0 + 1);
     if (N <= laPrm_.plPoints.size()) {
       laPrm_.plPoints.clear();
@@ -475,13 +480,15 @@ double BasicPLApproximator<FuncCon>::maxErrorRelAbove1(
       points.push_back( { eval(xMidDn), y0 + (xMidDn-x0) * slope } );
     }
   }
-  if (f0<1.0 && f1>1.0) {
+  // Where f crosses 1 or -1 (increasing or decreasing, e.g. a^x, a < 1),
+  // the error switches between absolute and relative
+  if ((f0<1.0 && f1>1.0) || (f0>1.0 && f1<1.0)) {
     auto x_preim_1 = inverse_with_check(1.0);
     MP_ASSERT_ALWAYS(x0<x_preim_1 && x1>x_preim_1,
                      "PLApprox maxErrRel(): preim(1.0) outside");
     points.push_back( { 1.0, y0 + (x_preim_1-x0) * slope } );
   }
-  if (f0<-1.0 && f1>-1.0) {
+  if ((f0<-1.0 && f1>-1.0) || (f0>-1.0 && f1<-1.0)) {
     auto x_preim_1 = inverse_with_check(-1.0);
     MP_ASSERT_ALWAYS(x0<x_preim_1 && x1>x_preim_1,
                      "PLApprox maxErrRel(): preim(-1.0) outside");
@@ -572,7 +579,15 @@ class PLApproximator<ExpAConstraint> :
 public:
   PLApproximator(const ExpAConstraint& con, PLApproxParams& p) :
     BasicPLApproximator<ExpAConstraint>(con, p),
-    A_(GetConParams()[0]), logA_(std::log(A_)) { }
+    A_(GetConParams()[0]), logA_(std::log(A_)) {
+    // a = 1 is constant (the flattener replaces 1^x by 1): log(a) = 0
+    // would be divided by. 0 < a < 1 is decreasing: the slopes and
+    // log(a) are negative, inverse_1st() is defined.
+    MP_ASSERT_ALWAYS(A_ > 0.0 && A_ != 1.0, fmt::format(
+        "a^x with base a = {} (a <= 0 or a = 1) cannot be approximated "
+        "piecewise-linearly (a <= 0: it is not monotone or not real); "
+        "use a solver that accepts it natively", A_));
+  }
   FuncGraphDomain GetFuncGraphDomain() const override
   { return { -1e100, 1e100, 1e-100, 1e100 }; }
   bool IsMonotone() const override { return true; }
@@ -601,7 +616,11 @@ class PLApproximator<LogAConstraint> :
 public:
   PLApproximator(const LogAConstraint& con, PLApproxParams& p) :
     BasicPLApproximator<LogAConstraint>(con, p),
-    A_(GetConParams()[0]), logA_(std::log(A_)) { }
+    A_(GetConParams()[0]), logA_(std::log(A_)) {
+    MP_ASSERT_ALWAYS(A_ > 0.0 && A_ != 1.0, fmt::format(
+        "log with base a = {} (a <= 0 or a = 1) cannot be "
+        "approximated piecewise-linearly", A_));
+  }
   FuncGraphDomain GetFuncGraphDomain() const override
   { return { 1e-6, 1e100, -1e100, 1e100 }; }
   bool IsMonotone() const override { return true; }

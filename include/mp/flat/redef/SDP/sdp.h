@@ -108,10 +108,11 @@ protected:
   void RegisterScalarElement(int sdp_i, int v, int row, int col) {
     MP_ASSERT_ALWAYS(this->MC().is_free(v),
                      fmt::format(
-                         "Variable _svar[{}] is bounded\nand cannot be in an SDP matrix.\n"
+                         "Variable {} is bounded\nand cannot be in an SDP matrix.\n"
                          "To bound an element of an SDP matrix,\n"
-                         "equate it to a (bounded) scalar variable\nor any expression",
-                         v+1));
+                         "equate it to a (bounded) scalar variable\nor any expression{}",
+                         this->MC().ItemRefForMessage("_svar", v),
+                         this->MC().NamesHintLine()));
     MP_ASSERT_ALWAYS(!this->MC().HasInitExpression(v),
                      fmt::format(
                          "Element [{}, {}] of SDP matrix {}\nis an expression.\n"
@@ -120,12 +121,14 @@ protected:
     auto sdpvi = this->MC().GetSDPVarInfo(v);
     MP_ASSERT_ALWAYS(sdpvi.sdp_var_index_ != sdp_i,
                      fmt::format(
-                         "Variable _svar[{}] is used repeatedly\nin the same SDP matrix",
-                         v+1));
+                         "Variable {} is used repeatedly\nin the same SDP matrix{}",
+                         this->MC().ItemRefForMessage("_svar", v),
+                         this->MC().NamesHintLine()));
     MP_ASSERT_ALWAYS(sdpvi.sdp_var_index_ < 0,
                      fmt::format(
-                         "Variable _svar[{}] is used in\nmultiple SDP matrices",
-                         v+1));
+                         "Variable {} is used in\nmultiple SDP matrices{}",
+                         this->MC().ItemRefForMessage("_svar", v),
+                         this->MC().NamesHintLine()));
     this->MC().SetSDPVarInfo(v, {sdp_i, row, col});
     // @todo add links for scalar<->sdp variable values
     // just before scalar->scalar

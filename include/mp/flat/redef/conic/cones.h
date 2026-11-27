@@ -120,11 +120,12 @@ protected:
       int z = (int)MC().AddVar(0.0, MC().Infty());
       int z1 = (int)MC().MakeFixedVar(1.0);
       // Add cone
+      // The cone is sum_i (c_i x_i)^2 <= 2 (c_0 z) (c_1 z1), i.e.,
+      // sum_i q_i x_i^2 <= z with c_i = sqrt(q_i), where q_i = |coef|
+      // (their signs were checked above): coefficients enter squared.
       std::vector<double> c = {{1.0, 0.5}};
-      c.insert(c.end(), qp.coefs().begin(), qp.coefs().end());
-      if (objsns > 0)       // negate coefs if maximizing
-        for (size_t i=2; i<c.size(); ++i)
-          c[i] = -c[i];
+      for (auto q: qp.coefs())
+        c.push_back(std::sqrt(std::fabs(q)));
       std::vector<int> x = {{z, z1}};
       x.insert(x.end(), qp.vars1().begin(), qp.vars1().end());
       MC().AddConstraint(
@@ -176,13 +177,13 @@ protected:
           ) {
         MC().AddWarning("Mix QC+cones",
                         "Not all quadratic constraints could "
-                        "be recognized\nas quadratic cones; "
-                        "or, the objective\nis quadratic and cones are present;\n"
-                        "additionally, further conversion back to QC\n"
-                        "not desired (option cvt:socp2qc) or other cone types present;\n"
-                        "solver might not accept the model.\n"
-                        "Try to express all cones in standard forms,\n"
-                        "not in the objective.\n"
+                        "be recognized as quadratic cones; "
+                        "or, the objective is quadratic and cones are present; "
+                        "additionally, further conversion back to QC "
+                        "not desired (option cvt:socp2qc) or other cone types present; "
+                        "solver might not accept the model. "
+                        "Try to express all cones in standard forms, "
+                        "not in the objective. "
                         "See mp.ampl.com/modeling-expressions.html#conic-optimization.");
       }
     }
@@ -800,8 +801,8 @@ protected:
           } else if (auto pConLin = MC().template
                      GetInitExpressionOfType<LinearFunctionalConstraint>(y0)) {
             const auto& ae = pConLin->GetAffineExpr();
-            if (0.0 == std::fabs(ae.constant_term() &&
-                                 1==ae.GetBody().size())) {
+            if (0.0 == ae.constant_term() &&
+                1==ae.GetBody().size()) {
               const auto& body = ae.GetBody();  // tested by expcones_06.mod
               if (y == body.var(0)) {           // v2 = z / (c1*y)
                 result.coefs_ = {b, b/body.coef(0)};

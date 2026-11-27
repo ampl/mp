@@ -409,14 +409,17 @@ class AMPLRunner(object):
             self._assertAndRecord(expsol, self.stats["objective"],
                                   "objective")
         if model.hasExpectedValues():
-            for name, ev in model.getExpectedValues(
-                    self._solver.getCategory()).items():
+            category = self._solver.getCategory()
+            catnames = model.getCategoryValueNames(category)
+            for name, ev in model.getExpectedValues(category).items():
                 self.stats["eval_done"] = True
                 try:
                     if name.startswith("option "):
                         val = self._ampl.option[name[7:]]
-                    else:
+                    elif name in catnames:           # as given per category
                         val = self._ampl.getValue(name)
+                    else:
+                        val = self._getMappedValue(name)
                     self._assertAndRecord(ev, val,
                         "value of entity '{}'".format(name))
                 except:
@@ -432,6 +435,18 @@ class AMPLRunner(object):
                     self.stats.setdefault("eval_fail_msg", []).append( \
                     "string  '" + str(oitem) + \
                     "'  is not found in the output")
+
+    def _getMappedValue(self, name):
+        """Value of a case's 'values' entity: under MP2NL with an MP
+        subsolver, the subsolver's statistics (prefix sub_) if it reported
+        them, else MP2NL's own (a suffix is reported only if nonzero)"""
+        mapped = self._solver.mapExpectedValueName(name)
+        if mapped != name:
+            try:
+                return self._ampl.getValue(mapped)
+            except Exception:
+                pass
+        return self._ampl.getValue(name)
 
     def _assertAndRecord(self, expval, val, msg):
         if isinstance(expval, dict):

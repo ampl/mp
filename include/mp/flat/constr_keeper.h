@@ -151,6 +151,12 @@ public:
                        "AMPL customer support.");
       static_cast<Converter&>(cvt).PropagateResult(
             GetConstraint(i), lb, ub, ctx);
+    } catch (const Error& err) {      // keep the exit code, e.g., 200 (MP_INFEAS)
+      MP_RAISE_WITH_CODE(err.exit_code(), Converter::GetTypeName() +
+               std::string(": propagating result for constraint ") +
+               std::to_string(i) + "\nof type '" +
+               Constraint::GetTypeName() +
+               "':\n" + err.what());
     } catch (const std::exception& exc) {
       MP_RAISE(Converter::GetTypeName() +
                std::string(": propagating result for constraint ") +
@@ -190,6 +196,9 @@ public:
     try {
       const bool any_revived = ConvertRevived();
       return ConvertAllFrom(i_cvt_last_) || any_revived;
+    } catch (const Error& err) {      // keep the exit code
+      MP_RAISE_WITH_CODE(err.exit_code(), Converter::GetTypeName()
+                         + std::string(": ") + err.what());
     } catch (const std::exception& exc) {
       MP_RAISE(Converter::GetTypeName() + std::string(": ")
                              + exc.what());
@@ -306,6 +315,12 @@ public:
         || !GetConverter().IfWantNLOutput()) {
       try {
         AddAllUnbridged(be, vnam);
+      } catch (const Error& err) {    // keep the exit code
+        MP_RAISE_WITH_CODE(err.exit_code(),
+                 std::string("Adding constraint of type '") +
+                 Constraint::GetTypeName() + "' to " +
+                 Backend::GetTypeName() + std::string(": ") +
+                 err.what());
       } catch (const std::exception& exc) {
         MP_RAISE(std::string("Adding constraint of type '") +
                  Constraint::GetTypeName() + "' to " +
@@ -529,6 +544,25 @@ protected:
   }
 
 public:
+  /// Convert the items behind the conversion cursor which
+  /// need conversion only now (Converter::IfNeedsConversion()),
+  /// e.g., an indicator whose binary was fixed after the
+  /// main loop had passed it. Respects IfKeepUnconverted().
+  /// @return whether any converted
+  bool ConvertNeededBehindCursor() {
+    if (CvtMode::Skip == GetConversionMode())
+      return false;
+    bool any = false;
+    for (int i=0; i<=i_cvt_last_; ++i)
+      if (!cons_[i].IsRedundant()
+          && !GetConverter().IfKeepUnconverted(cons_[i].GetCon(), i)
+          && GetConverter().IfNeedsConversion(cons_[i].GetCon(), i)) {
+        ConvertConstraintStd(cons_[i], i);
+        any = true;
+      }
+    return any;
+  }
+
   /// Convert the items delayed in the main conversion loop,
   /// without delaying them again.
   /// @return whether there were any

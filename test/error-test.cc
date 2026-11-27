@@ -22,6 +22,7 @@
 
 #include <gtest/gtest.h>
 #include "mp/error.h"
+#include "mp/nl-reader.h"
 
 namespace {
 
@@ -33,7 +34,7 @@ TEST(ErrorTest, Error) {
 TEST(ErrorTest, ThrowError) {
   mp::Error error("");
   try {
-    throw mp::Error("test {} message", "error");
+    throw mp::Error(fmt::format("test {} message", "error"));
   } catch (const mp::Error &e) {
     error = e;
   }
@@ -54,14 +55,51 @@ TEST(ErrorTest, UnwindsLocalObjects) {
   }
 }
 
-TEST(ErrorTest, IntegerMessageArgumentAndExplicitExitCode) {
+TEST(ErrorTest, SolveCode) {
   mp::Error formatted(fmt::format("answer {}", 42));
   EXPECT_STREQ("answer 42", formatted.what());
-  mp::Error coded("literal {}", 200);
+  EXPECT_EQ(-1, formatted.exit_code());
+  mp::Error coded(fmt::format("answer {}", 42), mp::SolveCode(200));
+  EXPECT_STREQ("answer 42", coded.what());
+  EXPECT_EQ(200, coded.exit_code());
+  try {
+    MP_INFEAS("test");
+  } catch (const mp::Error& e) {
+    EXPECT_EQ(200, e.exit_code());
+  }
+}
+
+// An error without a solve result code must not get one:
+// drivers write a code >= 0 to the .sol file as is
+// (1 would read as "solved").
+TEST(ErrorTest, NoCodeByDefault) {
+  EXPECT_EQ(-1, mp::Error("plain").exit_code());
+  EXPECT_EQ(-1, mp::UnsupportedError("feature {}", 1).exit_code());
+  EXPECT_EQ(-1, mp::MakeUnsupportedError("feature {}", 1).exit_code());
+  EXPECT_EQ(-1, mp::OptionError("option").exit_code());
+  EXPECT_EQ(-1, mp::ReadError("f.nl", 1, 2, "bad {}", 3).exit_code());
+  EXPECT_EQ(-1, mp::BinaryReadError("f.nl", 4, "bad").exit_code());
+}
+
+// The deprecated constructors keep their behavior.
+#if defined(__GNUC__) || defined(__clang__)
+# pragma GCC diagnostic push
+# pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#elif defined(_MSC_VER)
+# pragma warning(push)
+# pragma warning(disable: 4996)
+#endif
+TEST(ErrorTest, DeprecatedConstructors) {
+  mp::Error formatted("test {} message", "error");
+  EXPECT_STREQ("test error message", formatted.what());
+  EXPECT_EQ(-1, formatted.exit_code());
+  mp::Error coded("literal {}", 200);    // the int is the code
   EXPECT_STREQ("literal {}", coded.what());
   EXPECT_EQ(200, coded.exit_code());
-  mp::Error both(fmt::format("answer {}", 42), 200);
-  EXPECT_STREQ("answer 42", both.what());
-  EXPECT_EQ(200, both.exit_code());
 }
+#if defined(__GNUC__) || defined(__clang__)
+# pragma GCC diagnostic pop
+#elif defined(_MSC_VER)
+# pragma warning(pop)
+#endif
 }

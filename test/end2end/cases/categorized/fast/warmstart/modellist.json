@@ -5,7 +5,16 @@
     "options": { "mp_options": "warmstart=2 debug=1" },
     "values": {
       "Buy['BEEF'].test_ini_pri": -10,
-      "Buy['MTL'].test_ini_pri": 50,
+      "Buy['MTL'].test_ini_pri": 50
+    }
+  },
+  {
+    "name": "warmstart_01 warmstart=2 dual values",
+    "tags": [ "linear", "warmstart"],
+    "comment": "Drivers passing dual start values to the solver",
+    "solvers": [ "gurobi", "copt", "cplex", "xpress", "mosek", "highs", "cbc", "mp2nl" ],
+    "options": { "mp_options": "warmstart=2 debug=1" },
+    "values": {
       "Diet_Min['A'].test_ini_dua": 20
     }
   },
@@ -112,5 +121,209 @@
     "solvers": [ "cpsat" ],
     "options": { "cpsat_options": "alg:start=0 params='fix_variables_to_their_hinted_value:true'" },
     "objective": 62
+  },
+  {
+    "name": "warmstart_ind_01 primal-dual start with indicators",
+    "tags": [ "logical", "warmstart" ],
+    "comment": "Primal and dual initial values, no statuses: drivers that keep indicators as solver rows must still pass one dual per solver row",
+    "options": { "mp_options": "warmstart=1" },
+    "objective": 1500
+  },
+  {
+    "name": "pstart_nl_01 primal start only",
+    "tags": [ "nonlinear", "trigonometric", "continuous", "warmstart" ],
+    "comment": "Primal initial values without dual values reach the driver; solvers keeping the model continuous",
+    "solvers": [ "gurobi", "scip", "xpress", "knitromp", "mp2nl" ],
+    "options": { "mp_options": "debug=1" },
+    "values": {
+      "x.test_ini_pri": 2.1,
+      "y.test_ini_pri": -1.5
+    }
+  },
+  {
+    "name": "pstart_nl_01 alg:startpartial=0",
+    "tags": [ "nonlinear", "trigonometric", "continuous", "warmstart" ],
+    "comment": "Negative control: the old behavior needs dual values too. The option goes to the tested driver only: an MP subsolver of MP2NL would also read mp_options",
+    "solvers": [ "gurobi", "scip", "xpress", "knitromp", "mp2nl" ],
+    "options": {
+      "mp_options": "debug=1",
+      "ANYSOLVER_options": "alg:startpartial=0"
+    },
+    "values": {
+      "x.test_ini_pri": 0
+    }
+  },
+  {
+    "name": "pstart_nl_01 NL barrier Gurobi",
+    "tags": [ "nonlinear", "trigonometric", "continuous", "warmstart" ],
+    "comment": "Gurobi's NL barrier loads the primal start (PStart). The local minimum reached depends on the version (13.0.3: -2.2512669, 14.0.0: -1.9194447), but differs from the cold start",
+    "solvers": [ "gurobi" ],
+    "options": { "gurobi_options": "alg:optimalitytarget=1 outlev=1" },
+    "output": [ "Loaded warm-start solution" ],
+    "values": {
+      "if solve_result_num < 200 then 1 else 0": 1,
+      "if abs(f + 2.0839839) > 1e-4 then 1 else 0": 1
+    }
+  },
+  {
+    "name": "pstart_nl_01 NL barrier alg:start=0 Gurobi",
+    "tags": [ "nonlinear", "trigonometric", "continuous", "warmstart" ],
+    "comment": "Negative control: Gurobi's default start leads to this local minimum (13.0.3 and 14.0.0)",
+    "solvers": [ "gurobi" ],
+    "options": { "gurobi_options": "alg:optimalitytarget=1 alg:start=0" },
+    "objective": -2.0839839
+  },
+  {
+    "name": "pstart_nl_02 no constraints NL barrier Gurobi",
+    "tags": [ "nonlinear", "trigonometric", "continuous", "warmstart" ],
+    "comment": "Without constraints AMPL cannot send dual values; the primal start leads to this local minimum (13.0.3 and 14.0.0)",
+    "solvers": [ "gurobi" ],
+    "options": { "gurobi_options": "alg:optimalitytarget=1 outlev=1" },
+    "output": [ "Loaded warm-start solution" ],
+    "objective": -2.2512669
+  },
+  {
+    "name": "pstart_nl_02 no constraints alg:startpartial=0 Gurobi",
+    "tags": [ "nonlinear", "trigonometric", "continuous", "warmstart" ],
+    "comment": "Negative control: the old behavior ignores the primal start without dual values. Gurobi's default start depends on the version and on how the driver passes the model (-2.0839839 or -1.5986054 seen), so check that the result differs from the warm-start one",
+    "solvers": [ "gurobi" ],
+    "options": { "gurobi_options": "alg:optimalitytarget=1 alg:startpartial=0" },
+    "values": {
+      "if solve_result_num < 200 then 1 else 0": 1,
+      "if abs(f + 2.2512669) > 1e-4 then 1 else 0": 1
+    }
+  },
+  {
+    "name": "pstart_lp_01 primal start only",
+    "tags": [ "linear", "continuous", "warmstart" ],
+    "comment": "Primal initial values without dual values are passed to the solver",
+    "solvers": [ "gurobi", "cplex", "xpress", "mosek", "highs", "cbc", "scip", "baronmp", "knitromp", "mp2nl" ],
+    "options": { "mp_options": "debug=1" },
+    "objective": 17,
+    "values": {
+      "x[2].test_ini_pri": 4,
+      "x[4].test_ini_pri": 8
+    }
+  },
+  {
+    "name": "pstart_lp_01 primal start only COPT",
+    "tags": [ "linear", "continuous", "warmstart" ],
+    "comment": "COPT takes an LP start only with primal and dual values: a warning",
+    "solvers": [ "copt" ],
+    "options": { "mp_options": "debug=1" },
+    "objective": 17,
+    "values": {
+      "x[2].test_ini_pri": 0
+    },
+    "output": [ "Incoming primal start values not used" ]
+  },
+  {
+    "name": "pstart_lp_01 alg:startpartial=0",
+    "tags": [ "linear", "continuous", "warmstart" ],
+    "comment": "Negative control: the old behavior needs dual values too",
+    "options": {
+      "mp_options": "debug=1",
+      "ANYSOLVER_options": "alg:startpartial=0"
+    },
+    "objective": 17,
+    "values": {
+      "x[2].test_ini_pri": 0
+    }
+  },
+  {
+    "name": "pstart_lp_01 primal simplex Gurobi",
+    "tags": [ "linear", "continuous", "warmstart" ],
+    "comment": "Gurobi's primal simplex uses the primal start alone (PStart, no DStart)",
+    "solvers": [ "gurobi" ],
+    "options": { "gurobi_options": "alg:basis=0 alg:method=0 outlev=1" },
+    "objective": 17,
+    "output": [ "LP warm-start: use start vectors" ]
+  },
+  {
+    "name": "dstart_lp_01 dual start only",
+    "tags": [ "linear", "continuous", "warmstart" ],
+    "comment": "Dual initial values without primal values are passed to the solver",
+    "solvers": [ "gurobi", "cplex", "xpress", "mosek", "highs", "cbc", "mp2nl" ],
+    "options": { "mp_options": "debug=1" },
+    "objective": 17,
+    "values": {
+      "demand.test_ini_dua": 1.5,
+      "mix.test_ini_dua": 1
+    }
+  },
+  {
+    "name": "dstart_lp_01 dual start only not passed",
+    "tags": [ "linear", "continuous", "warmstart" ],
+    "comment": "Drivers not passing dual values alone: a warning",
+    "solvers": [ "copt", "scip", "baronmp", "knitromp" ],
+    "options": { "mp_options": "debug=1" },
+    "objective": 17,
+    "values": {
+      "demand.test_ini_dua": 0
+    },
+    "output": [ "Incoming dual start values not used" ]
+  },
+  {
+    "name": "dstart_lp_01 alg:startpartial=0",
+    "tags": [ "linear", "continuous", "warmstart" ],
+    "comment": "Negative control: the old behavior needs primal values too",
+    "options": {
+      "mp_options": "debug=1",
+      "ANYSOLVER_options": "alg:startpartial=0"
+    },
+    "objective": 17,
+    "values": {
+      "demand.test_ini_dua": 0
+    }
+  },
+  {
+    "name": "dstart_lp_01 dual simplex Gurobi",
+    "tags": [ "linear", "continuous", "warmstart" ],
+    "comment": "Gurobi's dual simplex uses the dual start alone (DStart, no PStart)",
+    "solvers": [ "gurobi" ],
+    "options": { "gurobi_options": "alg:basis=0 alg:method=1 outlev=1" },
+    "objective": 17,
+    "output": [ "LP warm-start: use start vectors" ]
+  },
+  {
+    "name": "mipstart_fixed_01 presolve=0",
+    "files": [ "mipstart_fixed_01.mod" ],
+    "tags": [ "integer", "mipstart" ],
+    "comment": "All integer variables fixed: no unfixed integer variables, primal start only; CP-SAT must not get duplicate hints",
+    "options": { "presolve": "0" },
+    "objective": 5
+  },
+  {
+    "name": "mipstart_fixed_01 presolve=0 no warning",
+    "files": [ "mipstart_fixed_01.mod" ],
+    "tags": [ "integer", "mipstart", "warmstart" ],
+    "comment": "The primal values reach the solver (as an LP or a MIP start): no warning. Not COPT: MP passes the fixed integer variables as continuous, COPT solves an LP and takes an LP start only with dual values (see pstart_lp_01 primal start only COPT)",
+    "solvers": [ "gurobi", "xpress", "cplex", "mosek", "highs", "scip", "baronmp", "mp2nl" ],
+    "options": { "presolve": "0" },
+    "objective": 5,
+    "values": {
+      "if match(solve_message, 'alg:start:primal') > 0 then 1 else 0": 0
+    }
+  },
+  {
+    "name": "pstart_sos_01 primal start, native SOS",
+    "files": [ "pstart_sos_01.mod" ],
+    "tags": [ "linear", "continuous", "sos", "warmstart" ],
+    "comment": "No integer variables, but a MIP for solvers with native SOS: the primal values go to the MIP start, no warning",
+    "solvers": [ "gurobi", "xpress", "cplex", "copt", "scip", "cbc" ],
+    "objective": 30,
+    "values": {
+      "if match(solve_message, 'alg:start:primal') > 0 then 1 else 0": 0
+    }
+  },
+  {
+    "name": "resolve_lp_01 re-solve without warnings",
+    "files": [ "resolve_lp_01.run" ],
+    "tags": [ "linear", "continuous", "warmstart" ],
+    "comment": "The second solve gets primal and dual values: no warning, also from drivers that pass primal values only",
+    "objective": 17,
+    "values": {
+      "if match(solve_message, 'alg:start') > 0 then 1 else 0": 0
+    }
   }
 ]

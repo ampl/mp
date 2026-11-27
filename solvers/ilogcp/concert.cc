@@ -42,15 +42,15 @@ template <typename T>
 inline T ConvertTo(double value) {
   T int_value = static_cast<T>(value);
   if (int_value != value)
-    throw Error("value {} can't be represented as int", value);
+    throw Error(fmt::format("value {} can't be represented as int", value));
   return int_value;
 }
 
 NumericExpr GetArg(mp::CallExpr e, int index) {
   NumericExpr result = mp::Cast<NumericExpr>(e.arg(index));
   if (!result) {
-    throw Error("{}: argument {} is not numeric",
-        e.function().name(), index + 1);
+    throw Error(fmt::format("{}: argument {} is not numeric",
+        e.function().name(), index + 1));
   }
   return result;
 }
@@ -187,12 +187,12 @@ IloExpr MPToConcertConverter::VisitCall(CallExpr e) {
   int num_args = e.num_args();
   if (std::strcmp(function_name, "element") == 0) {
     if (num_args < 2)
-      throw Error("{}: too few arguments", function_name);
+      throw Error(fmt::format("{}: too few arguments", function_name));
     if (NumericConstant num = Cast<NumericConstant>(e.arg(num_args - 1))) {
       // Index is constant - return the argument at specified index.
       int index = ConvertTo<int>(num.value());
       if (index < 0 || index >= num_args - 1)
-        throw Error("{}: index {} is out of bounds", function_name, index);
+        throw Error(fmt::format("{}: index {} is out of bounds", function_name, index));
       return Visit(GetArg(e, index));
     }
     IloIntVar index_var = ConvertArg(e, num_args - 1, num_args - 2);
@@ -284,7 +284,7 @@ bool MPToConcertConverter::ConvertGlobalConstraint(
     return false;
   int num_args = expr.num_args();
   if (num_args < 1)
-    throw Error("{}: too few arguments", function_name);
+    throw Error(fmt::format("{}: too few arguments", function_name));
   int arity = 0;
   for (; arity < num_args && !Cast<NumericConstant>(expr.arg(arity)); ++arity)
     ;  // Count variables.
@@ -293,16 +293,16 @@ bool MPToConcertConverter::ConvertGlobalConstraint(
     vars[i] = ConvertArg(expr, i);
   IloIntTupleSet set(env_, arity);
   if (num_args % arity != 0) {
-    throw Error("{}: the number of arguments {} is not a multiple of arity {}",
-        function_name, num_args, arity);
+    throw Error(fmt::format("{}: the number of arguments {} is not a multiple of arity {}",
+        function_name, num_args, arity));
   }
   for (int i = arity; i < num_args; i += arity) {
     IloIntArray tuple(env_, arity);
     for (int j = 0; j < arity; ++j) {
       NumericConstant num = Cast<NumericConstant>(expr.arg(i + j));
       if (!num) {
-        throw Error("{}: argument {} is not constant",
-            function_name, (i + j + 1));
+        throw Error(fmt::format("{}: argument {} is not constant",
+            function_name, (i + j + 1)));
       }
       tuple[j] = ConvertTo<IloInt>(num.value());
     }

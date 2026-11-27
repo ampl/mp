@@ -3,10 +3,264 @@ Summary of recent updates to the AMPL MP Library
 
 ## Unreleased
 
+- New option *cvt:pre:inteps* (synonyms *pre:inteps*, *roundintbnd*):
+  integrality tolerance, default 1e-6. A value within it of an integer
+  is taken as that integer for bounds of integer variables (otherwise
+  they are rounded inwards), right-hand sides of comparisons of
+  integer-valued expressions, compared constants and *numberof*
+  values, also in logical expressions. Fix: such comparisons could give
+  a wrong optimum, depending on how they were written: `x <= 0.3/0.1`
+  (2.9999999999999996) allowed integer `x = 3` as a constraint, but not
+  inside a disjunction; `x == 0.3/0.1` was false. Negative: exact.
+  Values from 0.5 are rejected.
+- Comparisons inside logical expressions are decided by the converter
+  from the bounds of their expressions with option *cvt:pre:feastol*
+  (absolute, in the units of the expression) and a margin for rounding
+  errors of the compared constant (new option *cvt:pre:ulps*, default
+  16 units in the last place; 0: none), which replaces the tolerance
+  where it is larger (large constants; from about 1e14 it exceeds 1
+  for continuous expressions). A non-strict comparison holds
+  within the tolerance: `x >= 4` with `x <= 3.9999995` is no longer
+  decided false, and `(x + 1)/3 >= 2 ==> y >= 3` at `x <= 5` is no
+  longer decided false by a rounding error (which made the returned
+  solution violate the model). A strict comparison is decided true only
+  if it holds exactly, and false as the negation of the non-strict one:
+  `x < 1e-7` for integer `x >= 0` is false, with a warning.
+  *cvt:pre:feastol=0* gives exact decisions; *cvt:pre:feastol=0
+  cvt:pre:inteps=-1 cvt:pre:ulps=0* the previous results.
+  *cvt:pre:all=0* also disables all rounding and tolerances.
+- Fix: a non-strict comparison of a continuous expression close to its
+  bound, for example `x <= 5e-5 or y >= 1` with `x` in `[0, 1e-4]`,
+  was replaced by equality to the bound (`x == 0`), which cut off
+  solutions or made the model infeasible; and `not (1e-5*x > 5e-5)`
+  could make a model infeasible.
+- An equality whose right-hand side differs from a bound of its
+  expression only by rounding error, such as `0.3*b == 0.1*3` for a
+  binary `b`, holds at that bound.
+- A warning (*strict_cmp_eps*) when the gap *cvt:mip:eps* of a strict
+  comparison is not smaller than the range of its expression, so that
+  its strict side can be empty (for example, `1e-6*x < 3e-6` with `x` in
+  `[0, 6]`).
+- Fix: with *cvt:pre:ineqrhs=0*, a strict comparison of an integer
+  expression with a fractional right-hand side, such as `x < 3.5`,
+  excluded `x = 3`.
+- New option *cvt:uenc:maxdom* (default 10000): largest domain of an
+  integer variable for its unary encoding (one binary variable per
+  value). Larger domains use reified inequalities for each compared
+  value. Before, domains up to 1e7 values were encoded, which could
+  exhaust memory, for example with `x != 4` for `x` in `0..100000`.
+  *cvt:uenc:maxdom=10000001* restores the previous limit (faster for
+  *alldiff* and similar expressions that compare many values of a
+  larger domain).
+- Fix: *sol:chk:mode* bits 64 and 128 reported false violations of
+  expressions such as `count` or `max` whose solver value lies on the
+  side allowed by their use (for example, a count required to be at
+  least 2), and bits 4 and 128 of unary encodings.
+- New option *sol:chk:logtol* (synonym *chk:logtol*), default 1e-5:
+  tolerance of truth values inside logical expressions in the solution
+  check (non-strict comparisons, integrality in `floor`, `ceil`,
+  `round`, *numberof*), separate from *sol:chk:feastol*, which measures
+  violations. 0: exact evaluation, as in AMPL.
+- Fix: `numberof x in (...)` with a variable `x` could give a wrong
+  optimum when `x` came after the compared expressions in the NL file
+  (for example, with `abs()` elsewhere in the model): preprocessing
+  (*cvt:pre:sort*) reordered `x` with the compared values.
+- Fix: `floor`, `ceil`, `round`, `trunc` and `div` of fractional
+  expressions, such as `floor((2*x - y)/3)`, could cut off the optimum
+  or make a feasible model infeasible, when an exact bound of the
+  argument was computed with a rounding error (3.9999999999999996
+  instead of 4).
+- Fix: `numberof` with compared expressions such as `max()`, `min()`,
+  `abs()` or another `numberof` failed with "Part of expression
+  redefinition could be lost" or, with a nested `numberof`, could give a
+  wrong optimum.
+- Starting points for continuous models (no unfixed integer variables,
+  also after reformulation), and for solvers without MIP starts: incoming
+  primal values (for example, from `let x := ...` or `var x := ...`)
+  are now passed to the solver without dual values, and dual values
+  without primal values. Previously a starting point was passed only
+  when AMPL sent both, so some drivers ignored a primal start alone,
+  for example for nonlinear barrier algorithms. Primal or dual values are passed only
+  if AMPL sent them; a variable without an initial value gets 0, moved
+  into its bounds. A warning reports incoming primal values that the
+  driver does not pass for the model (for example, COPT takes an LP
+  start only with both primal and dual values), and incoming dual values
+  when no primal values are passed either. New option
+  *alg:startpartial* (default 3); *alg:startpartial=0* restores the
+  previous behavior. A solver or algorithm may still ignore an
+  incomplete start. With *alg:start=2*, the incoming basis is not used
+  also with an incomplete start.
+- Clarified: *alg:start=0* does not disable an incoming LP basis; use
+  *alg:basis=0* for that.
+- Fix: the solver's name and version, for example "COPT 9.0.0: ", appeared
+  twice at the start of the solve message wherever the output is not a
+  terminal (notebooks, IDEs, logs, captured output). When AMPL runs the
+  solver, drivers now ask AMPL to skip the repeated name in the solve
+  message, as the ASL-based drivers do; the output in a terminal and AMPL's
+  `solve_message` are unchanged. Run by another program with `-AMPL` (for
+  example, Pyomo), drivers no longer print backspaces, and the message in
+  the solution file has none.
+- Fix: some errors, for example reading a corrupt NL file, were reported
+  with solve result 1 (`solved`), so that AMPL kept the previous values of
+  the variables as if they were a solution. Such errors are now reported as
+  `failure` (500). The AMPLS C API functions now return an error's solve
+  result code whenever it is above 99 (for example, 150 for a failed
+  solution check with *chk:fail*), not only codes 200..599.
+- AMPLS C API: new `AMPLSGetSolveResult()` gives the solve result code
+  (AMPL's `solve_result_num`) of the last solve, or of the last failed
+  call. The return value of `AMPLSSolve()` and the other calls is 0 on
+  success, whatever the solve result.
+- Fix: the solution check missed fractional values of integer variables
+  unless they were below 0.5 in absolute value (for example, 10.5 passed).
+  Now such values are reported ("variable integrality", or "aux var
+  integrality" for variables added by reformulations). The default of
+  *sol:chk:inttol* is raised from 1e-5 to 1e-4; the new *sol:chk:inttolrel*
+  (default 0, off) adds a relative tolerance for very large values. If the
+  solver runs with a larger integrality tolerance, raise *sol:chk:inttol*;
+  *sol:chk:inttol=0.5* turns the integrality check off.
+- Messages that refer to variables or constraints (solution check
+  warnings, contradictory bounds, errors in constraints, SDP matrix
+  errors) suggest `option <solver>_auxfiles rc;` when AMPL did not pass
+  names; when it did, the AMPL name is shown next to `_svar[i]` or
+  `_scon[i]`. Warnings about contradictory bounds of a variable are now
+  titled "Contradictory variable bounds" and, for bounds deduced by the
+  conversion, "Contradictory deduced bounds" (were "_svar bounds" and
+  "_svar best-known bounds").
+- Fix: when a model was solved repeatedly through the AMPLS API, the solve
+  message of each report repeated the notes of the earlier solves.
+- Option `cvt:pre:vbnd` is now called `cvt:pre:domsync` (synonym
+  `domsync`); `cvt:pre:vbnd` and `vbnd` remain accepted.
+- `1^x` in an NL file not written by AMPL (AMPL simplifies it) is taken as
+  the constant 1, instead of an exponential with base 1, which the
+  piecewise-linear approximation could not handle.
+- Fixed false infeasibility when linearizing a product with a bounded integer
+  factor whose original NL bounds are fractional.
+- Preserve exact integer bounds during rounding, including large bounds that
+  enforce one side of a complementarity constraint.
+- Fixed `div`, `mod`, `floor`, `ceil`, `round` and `trunc`:
+  - the bounds of their results that follow from the bounds of the
+    arguments are now passed to the solver also when *cvt:pre:boundsbest*
+    is off (MP2NL's default). Without them, a solver behind MP2NL that
+    linearizes logical expressions stopped with "Set bounds on variables
+    participating in logical expressions", and SCIP could report a wrong
+    optimum;
+  - `x div y` with a variable divisor whose `abs(y)` also appears in the
+    model stopped with "Part of expression redefinition could be lost".
+- Contradictory equalities of an integer variable (`x == 1 and x == -1`)
+  stopped with the error "vector"; the model is now reported infeasible.
+- Fixed *alg:feasrelax* with Gurobi, CPLEX, COPT and HiGHS: constraints and
+  variables that the conversion adds (for example, for `abs()`, `max()` or
+  logical expressions) could be relaxed at no cost, so a reported "solved"
+  relaxation could violate the original constraints. They are no longer
+  relaxed. Limitations: logical constraints are in general not relaxed
+  (their linearization consists of added constraints, and solvers do not
+  relax native ones); and the converter deduces variable bounds from the
+  constraints, which are not relaxed: they can simplify other constraints
+  away, and contradictory deduced bounds are passed to the solver
+  (*cvt:pre:infeasvarbnd=0*), so a relaxation can be costlier than needed
+  or still violate a constraint. AMPL's presolve also turns constraints of
+  one variable into bounds; use `option presolve 0;` to relax them as
+  constraints.
+- New warning when the domain of a divisor of `/`, `div` or `mod`
+  contains 0: the divisor is treated as nonzero in the whole model, also
+  where the division is not evaluated (for example, in an if-then-else
+  branch not taken).
+- Warnings and error messages are wrapped at 60 characters (tables and
+  explicit line breaks are kept). New option *tech:msgwidth* sets the
+  width; 0 restores the previous, unwrapped output.
+
+- Fixed wrong results of the conversion of logical constructs (all solvers):
+  - a comparison shared by a disjunction and an if-then-else condition lost
+    one of its two implications when the if-then-else result was bounded by a
+    strict comparison (`<`, `>`);
+  - an integer variable fixed at a fractional value (`2*x == 1`) was made
+    continuous and the model reported optimal;
+  - `abs()` of a variable fixed at a negative value made `abs(x) > c` infeasible;
+  - comparisons `x == c` for constants outside the domain of a variable that was
+    fixed later were left free in the unary encoding, so infeasible models
+    were reported optimal;
+  - contradictory bounds of an auxiliary variable stopped the conversion with
+    an error instead of reporting infeasibility;
+  - a domain hole of a variable (from `not (x != 0 and x != 3)`) made the
+    rewriting of `x == ub` and `x >= ub` recurse endlessly (stack overflow).
+
+- Option `cvt:pre:infeasvarbnd`: with 1, the converter declares the model
+  infeasible when the bounds of a variable, also best-known bounds deduced
+  by the converter, become contradictory. Default 0 (as before): a warning
+  is given and the bounds are passed on to the solver; Xpress, SCIP and
+  COPT then stop with an error if such a variable is an indicator binary
+  ("not a binary variable"). MP2NL uses default 1, because several NL
+  subsolvers stop with an error on such bounds.
+- The bounds of integer and implied-integer variables are rounded inwards;
+  a bound within the integrality tolerance *cvt:pre:inteps* (see above)
+  of an integer is that integer.
+- An indicator constraint whose flag became fixed only after the indicator
+  was created (for example, `if x <= 1 then ...` with `x <= 1` implied by
+  another constraint) made Xpress and SCIP stop with an error ("not a binary
+  variable"). Such indicators are now replaced by their implied constraint,
+  or dropped: option `cvt:pre:indfixedflag` (default 1; 0 restores the old
+  behavior; off with `cvt:pre:all=0`).
+- Linear (and quadratic) subexpressions are now also inlined into the
+  expressions defining other variables, for example the linearization of
+  `not` inside an equivalence. With NL output (MP2NL, `acc:_expr=1`), such
+  linear terms were written as nonlinear expressions; CPLEX and Xpress
+  through MP2NL then rejected the model ("not convex quadratic"), and
+  nonlinear solvers received linear parts as nonlinear. New bit 32 of
+  option `cvt:pre:unnest` (default now 63).
+- The inlining of shared subexpressions is limited by the fill it can cause
+  (upper bound (u-1)(k-1)-2 for k terms and u uses): options
+  `cvt:pre:agglinfill` (default 10) and `cvt:pre:aggquadfill` (quadratic terms
+  only, default -1: no limit). A linear subexpression not inlined stays a
+  variable with its linear definition and the bounds implied by it.
+  `cvt:pre:unnest=31 cvt:pre:agglinfill=-1` restores the old behavior.
+- Fixed a wrong result with expressions passed to the solver (e.g., Gurobi 14,
+  `acc:_expr=1`): a function result relaxed to one inequality by context
+  (e.g., `v <= exp(.)` inside `log(1 + v^2)`) lost its implied bounds
+  (`v >= 0`), on which the context relied. They are now passed to the solver.
+
+- Fixed wrong results of the multi-objective emulator with nonlinear
+  objectives (for example `exp(x)`) when the first objective has a negative
+  `.objweight`: the pass objective's nonlinear part was relaxed in the wrong
+  direction, so a solver could report an unbounded or a wrong optimal
+  solution. Solvers that take nonlinear objectives natively were affected
+  with `cvt:nlobj=0` or when the objective was reformulated.
+- Fixed a wrong objective in models with a convex quadratic objective whose
+  squared terms have a coefficient other than 1 (for example `maximize
+  3*x - 0.8*x^2`) when the model also has quadratic constraints recognized
+  as second-order cones: the objective's cone used the coefficient instead of
+  its square root, so the objective term was off (0.8 became 0.64).
+  Observed with BARON through MP.
+- Fixed second-order cones whose first variable is fixed by its bounds,
+  for solvers that receive the cone as a quadratic constraint (for example
+  Gurobi, Xpress, CPLEX, BARON): `sqrt(x^2 + y^2) <= t` with `t` fixed at 3
+  became `x^2 + y^2 <= 3` instead of `<= 9`. A negative fixed value keeps
+  the constraint infeasible.
 - Fixed a regression in 20261029: with variable names passed to the solver
   (for example `option highs_auxfiles rc;`), HiGHS failed some logical
   models with "Error -1 for call ... Highs_passColName". Columns that MP
   adds for constant values now get generated names (`_svar<n>_`).
+- Result bounds of `exp`, `a^x`, `log` and `log10`/`log_a` now follow
+  from the bounds of their argument (they were only `>= 0` for the
+  exponentials and unbounded for the logarithms). Logical and indicator
+  constraints that contain such a function with a bounded argument, for
+  example `b == 0 ==> exp(x) <= 2` with `x <= 5`, no longer stop with
+  "Set bounds on variables participating in logical expressions" when the
+  solver needs big-M (`acc:ind...=0`, or no native indicators). New option
+  *cvt:pre:funcbndtol* (default 1e-12) is the relative margin added to the
+  computed bounds against rounding; a negative value restores the previous
+  behavior.
+- Fixed a regression in 20261029: a second `AMPLSSolve()` on the same model
+  (AMPLS C API) returned without solving. It now solves again; with
+  emulated multiple objectives it reports that a repeated solve is not
+  supported.
+- AMPLS C API: `AMPLSSolve()` now returns 0 on success; on failure, a
+  nonzero solve result code or -1, as `AMPLSLoadNLModel()` does. An
+  error during the solve (for example, a failing solver call or the
+  repeated solve above) no longer escapes from `AMPLSSolve()` as a C++
+  exception, which could terminate the calling program. Its message is
+  among `AMPLSGetMessages()`. After a failed solve, report the error with
+  `AMPLSReportError()` if needed, not with `AMPLSReportResults()`, which
+  would report the previous solve. Existing callers keep working.
 
 ## 20261029
 

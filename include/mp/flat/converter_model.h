@@ -14,6 +14,7 @@
 #include "mp/flat/constr_keeper.h"
 #include "mp/flat/converter_model_base.h"
 #include "mp/flat/model_info.h"
+#include "mp/flat/num_tolerances.h"
 
 namespace mp {
 
@@ -262,9 +263,39 @@ public:
     return type;
   }
 
+  /// Tolerances of numeric decisions (cvt:pre:inteps, cvt:pre:ulps,
+  /// comparison tolerance), set by the converter after option parsing
+  const NumericTolerances& tolerances() const { return tolerances_; }
+  /// Tolerances of numeric decisions, to set
+  NumericTolerances& tolerances() { return tolerances_; }
+
+  /// A bound of an integer or implied-integer variable rounded inwards
+  /// (lb up, ub down, finite values only): a bound within the
+  /// integrality tolerance max(cvt:pre:inteps, cvt:pre:ulps ulp(b))
+  /// of an integer is that integer, otherwise it is rounded inwards.
+  /// A computed bound like 16800000.7/0.1 = 168000006.99999997
+  /// (1 ulp off) rounds to 168000007, while a bound 1e9 + 5e-5
+  /// or a fractional data bound like 599999999.5 is rounded inwards.
+  /// No rounding with cvt:pre:inteps < 0 and cvt:pre:ulps = 0.
+  /// Continuous variables, among them the shared constants
+  /// (FlatConverter::MakeFixedVar()), are never rounded.
+  double RoundIntBound(int v, double b, bool is_lb) const {
+    if (tolerances_.CanRoundToInteger() && std::isfinite(b)
+        && std::trunc(b) != b
+        && (var::INTEGER == var_type_[v] || is_var_implied_int(v))) {
+      const double tol = tolerances_.IntTol(b);
+      return is_lb ? std::ceil(b - tol) : std::floor(b + tol);
+    }
+    return b;
+  }
+
+  /// The spacing of doubles at |b|: the size of a rounding error
+  static double Ulp(double b) { return NumericTolerances::Ulp(b); }
+
   /// Improve lb, incl. best-known
   void set_lb(int v, double l) {
     assert(0<=v && v<num_vars());
+    l = RoundIntBound(v, l, true);
     if (var_lb_[v]<l)
       var_lb_[v] = l;
     set_best_lb(v, l);
@@ -273,6 +304,7 @@ public:
   /// Improve ub, incl. best-known
   void set_ub(int v, double u) {
     assert(0<=v && v<num_vars());
+    u = RoundIntBound(v, u, false);
     if (var_ub_[v]>u)
       var_ub_[v] = u;
     set_best_ub(v, u);
@@ -281,6 +313,7 @@ public:
   /// Improve best-known lb
   void set_best_lb(int v, double l) {
     assert(0<=v && v<num_vars());
+    l = RoundIntBound(v, l, true);
     if (var_lb_best_[v]<l)
       var_lb_best_[v] = l;
   }
@@ -288,6 +321,7 @@ public:
   /// Improve best-known ub
   void set_best_ub(int v, double u) {
     assert(0<=v && v<num_vars());
+    u = RoundIntBound(v, u, false);
     if (var_ub_best_[v]>u)
       var_ub_best_[v] = u;
   }
@@ -662,8 +696,18 @@ public:
     // Make fixed vars continuous
     if (if_make_fixed_vars_continuous())
       for (auto i=var_lb_subm_.size(); i--; ) {
-        if (var_lb_subm_[i] >= var_ub_subm_[i])
+        if (var_lb_subm_[i] >= var_ub_subm_[i]) {
+          // An integer variable fixed at a fractional value (2*x==1)
+          // is infeasible: it must stay integer, or the solver
+          // would "solve" the model with x=0.5
+          const auto v = var_lb_subm_[i];
+          if (var_lb_subm_[i] > var_ub_subm_[i])
+            continue;     // contradictory bounds: infeasible, keep the type
+          if (var::INTEGER == var_type_subm_[i]
+              && !tolerances_.IsNearInteger(v))   // cvt:pre:inteps
+            continue;
           var_type_subm_[i] = var::CONTINUOUS;   // avoid MIP classification
+        }
       }
   }
 
@@ -775,6 +819,8 @@ private:
   mutable bool model_nl_ {false}, model_nl_known_ {false};
   /// Submit implied-integer auxiliaries as integer?
   int if_submit_aux_int_ {0};
+  /// Tolerances of numeric decisions (cvt:pre:inteps etc.)
+  NumericTolerances tolerances_;
   /// Set a per-variable flag, growing the vector on demand
   static void SetVarFlag(std::vector<bool>& flags, int v) {
     assert(v>=0);

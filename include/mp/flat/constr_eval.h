@@ -90,13 +90,13 @@ double ComputeValue(const MulConstraint& con, const VarVec& x) {
   return x[con.GetArguments()[0]] * x[con.GetArguments()[1]];
 }
 
-/// \a v snapped to the nearest integer if within the feasibility
-/// tolerance: the rounding functions jump at integers, and solver
+/// \a v snapped to the nearest integer if within sol:chk:logtol:
+/// the rounding functions jump at integers, and solver
 /// values such as 2.9999999 should evaluate as at 3.
 template <class VarInfo>
 double SnapToInteger(double v, const VarInfo& x) {
   const auto r = std::round(v);
-  return std::fabs(v - r) <= x.feastol() ? r : v;
+  return std::fabs(v - r) <= x.logtol() ? r : v;
 }
 
 /// Compute result of the floor constraint.
@@ -112,13 +112,13 @@ double ComputeValue(const CeilConstraint& con, const VarInfo& x) {
 }
 
 /// Compute result of the round constraint: ties to even, as AMPL.
-/// Values within the feasibility tolerance of a tie count as the tie.
+/// Values within sol:chk:logtol of a tie count as the tie.
 template <class VarInfo>
 double ComputeValue(const RoundConstraint& con, const VarInfo& x) {
   const auto v = x[con.GetArguments()[0]];
   const auto v2 = std::round(2.0 * v);             // nearest half-integer
   return std::nearbyint(
-        std::fabs(2.0*v - v2) <= 2.0*x.feastol() ? v2 / 2.0 : v);
+        std::fabs(2.0*v - v2) <= 2.0*x.logtol() ? v2 / 2.0 : v);
 }
 
 /// Compute result of the int div constraint: trunc(x / y)
@@ -179,7 +179,7 @@ double ComputeValue(const NumberofConstConstraint& con, const VarInfo& x) {
   for (auto v: con.GetArguments()) {
     if ((x.is_var_int(v)
          && std::round(x[v]) == k)
-        || std::fabs(x[v] - k) <= x.feastol())
+        || std::fabs(x[v] - k) <= x.logtol())
       ++result;
   }
   return result;
@@ -195,7 +195,7 @@ double ComputeValue(const NumberofVarConstraint& con, const VarVec& x) {
     auto v = args[i];
     if ((x.is_var_int(v)
          && std::round(x[v]) == k)
-        || std::fabs(x[v] - k) <= x.feastol())
+        || std::fabs(x[v] - k) <= x.logtol())
       ++result;
   }
   return result;
@@ -364,7 +364,7 @@ struct HasIdealisticFlag<VarVec, std::void_t<
 
 /// Compute result of a conditional constraint.
 /// For the solver's (realistic) values, a non-strict comparison
-/// holds within the feasibility tolerance; otherwise, and for
+/// holds within sol:chk:logtol; otherwise, and for
 /// strict comparisons, exactly (a tolerance would accept
 /// x < c at x == c, see ifthen_var_01 with cmp:eps=0).
 /// This is not used to compute violation.
@@ -375,7 +375,7 @@ double ComputeValue(
   if constexpr (HasIdealisticFlag<VarVec>::value && !f_strict)
     if (!x.idealistic())
       return con.GetConstraint().ComputeViolation(x, false).viol_
-          <= x.feastol();
+          <= x.logtol();
   return con.GetConstraint().ComputeViolation(x, true).viol_ <= 0.0;
 }
 
@@ -439,12 +439,13 @@ Violation ComputeViolation(       // where ax, by >= 0
   return {1000.0, 1.0};
 }
 
-/// Compute violation of the ExponentialCone constraint.
-template <class VarVec>        // ax >= by exp(cz / (by))
-Violation ComputeViolation(       // where ax, by >= 0
-    const UnaryEncodingConstraint& con, const VarVec& x) {
-  // TODO
-  return {1000.0, 1.0};
+/// Violation of the UnaryEncodingConstraint: none. It only links
+/// the comparisons x==const of a variable with their unary encoding;
+/// the encoding's own rows are checked themselves.
+template <class VarVec>
+Violation ComputeViolation(
+    const UnaryEncodingConstraint& , const VarVec& ) {
+  return {0.0, 0.0};
 }
 
 

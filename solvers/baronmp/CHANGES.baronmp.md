@@ -1,6 +1,17 @@
 Summary of recent updates to BARONMP for AMPL
 =============================================
 
+## unreleased
+- The incoming primal starting point is now passed to BARON also
+  without dual values (continuous models; new option
+  *alg:startpartial=0* restores the previous behavior), and for models
+  with integer variables, where it was not passed at all.
+- Fix: solution pool solutions (*numsol*) were reported with the
+  variables in BARON's order instead of AMPL's.
+- Fix: with *alg:wantdual=1*, the dual values were always zero: the
+  constraint prices were not read from BARON's result file.
+
+
 ## 20261029
 - New options for documented BARON settings: *alg:feastol*
   (AbsConFeasTol), *mip:intfeastol* (AbsIntFeasTol), *alg:boxtol*,

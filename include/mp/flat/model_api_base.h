@@ -156,6 +156,12 @@ public:
   /// Retrieve FlatModelInfo*
   const FlatModelInfo* GetFlatModelInfo() const { return pfmi_; }
 
+  /// Integrality tolerance of the converter (cvt:pre:inteps,
+  /// negative: exact), passed before the model.
+  /// For APIs that round bounds of integer-valued rows themselves
+  /// (CP-SAT); others ignore it.
+  void SetIntegralityTolerance(double ) { }
+
   /// Chance to prepare problem update,
   /// e.g., allocate storage
   void InitProblemModificationPhase(const FlatModelInfo*) {  }
@@ -203,11 +209,24 @@ public:
   /// @note Option *cvt:expr:nlreif*.
   static int NLReifLevelDefault() { return 1; }
 
+  /// Default of option *cvt:pre:infeasvarbnd*: whether the
+  /// converter declares the model infeasible when the bounds
+  /// of a variable become contradictory (lower > upper).
+  /// 0: contradictory bounds are passed on to the solver.
+  static int DeclareInfeasVarBndDefault() { return 0; }
+
   /// Default of option *cvt:pre:auxint*: whether auxiliary
   /// variables with implied integrality (if-then-else, count, ...)
   /// are submitted as integer. 1 for solvers without continuous
   /// variables.
   static int AuxIntDefault() { return 0; }
+
+  /// Default of option *cvt:pre:continuous_fixed_vars*: whether
+  /// fixed variables (and constants, represented as fixed variables)
+  /// are submitted as continuous, to avoid fake MIPs. 0 for solvers
+  /// without continuous variables, e.g., CP solvers: all variables
+  /// that were integer stay integer.
+  static int FixedVarsContinuousDefault() { return 1; }
 
   /// Default of option *cvt:multoutcard*: up to which (estimated)
   /// number of quadratic terms a product of two sums is multiplied

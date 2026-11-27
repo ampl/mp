@@ -241,14 +241,24 @@ bool CpsatBackend::HasSolution() const {
          st == sat::CpSolverStatus::FEASIBLE;
 }
 
+/// Primal values of the CP-SAT solution \a r: the integer values, except
+/// for variables fixed at a non-integer value (MP's constants), whose
+/// placeholder in the CP-SAT model is 0: their constant. For the final
+/// solution and for each solution of the pool.
+static std::vector<double> PrimalValues(
+    const CpsatData& d, const sat::CpSolverResponse& r) {
+  std::vector<double> x(d.vars.size());
+  for (size_t i = 0; i < x.size(); ++i)
+    x[i] = std::isnan(d.var_const[i])
+        ? (double)sat::SolutionIntegerValue(r, d.vars[i])
+        : d.var_const[i];                 // a non-integer constant
+  return x;
+}
+
 ArrayRef<double> CpsatBackend::PrimalSolution() {
   std::vector<double> x;
-  if (!HasSolution())
-    return x;
-  const auto* d = data();
-  x.resize(d->vars.size());
-  for (size_t i = 0; i < x.size(); ++i)
-    x[i] = (double)sat::SolutionIntegerValue(d->response, d->vars[i]);
+  if (HasSolution())
+    x = PrimalValues(*data(), data()->response);
   return x;
 }
 
@@ -308,6 +318,9 @@ void CpsatBackend::AddMIPStart(ArrayRef<double> x0_unpres,
   const auto x0 = mv.GetVarValues()();
   const auto s0 = ms.GetVarValues()();
   auto* d = data();
+  // Do not add hints twice if AddMIPStart() is called again:
+  // CP-SAT rejects duplicate hints
+  d->builder.ClearHints();
   const auto n = std::min( { x0.size(), s0.size(), d->vars.size() } );
   for (size_t i = 0; i < n; ++i) {
     if (!s0[i])
@@ -340,10 +353,7 @@ void CpsatBackend::Solve() {
   if (need_multiple_solutions()) {
     model.Add(sat::NewFeasibleSolutionObserver(
         [this, d](const sat::CpSolverResponse& r) {
-      std::vector<double> x(d->vars.size());
-      for (size_t i = 0; i < x.size(); ++i)
-        x[i] = (double)sat::SolutionIntegerValue(r, d->vars[i]);
-      pool_.emplace_back(std::move(x), r.objective_value());
+      pool_.emplace_back(PrimalValues(*d, r), r.objective_value());
     }));
   }
 
@@ -377,8 +387,53 @@ void CpsatBackend::ReportResults() {
   BaseBackend::ReportResults();
 }
 
+std::string CpsatBackend::VarBoundExamples(bool at_bound, int& count) const {
+  const auto* d = data();
+  const bool has_sol = at_bound && HasSolution();
+  std::string ex;
+  count = 0;
+  for (const auto& s: d->varbound_set) {
+    const auto x = has_sol
+        ? sat::SolutionIntegerValue(d->response, d->vars[s.var]) : 0;
+    const std::string name = s.name.empty()
+        ? fmt::format("_svar[{}]", s.var + 1) : s.name;   // as MP names
+    for (int up = 0; up < 2; ++up) {
+      const bool set = up ? s.ub : s.lb;
+      const int64_t b = up ? d->var_ub[s.var] : d->var_lb[s.var];
+      if (!set || (at_bound && (!has_sol || x != b)))
+        continue;
+      if (++count <= 3)
+        ex += fmt::format("{}{} {} {}", count > 1 ? ", " : "", name,
+                          at_bound ? "=" : (up ? "<=" : ">="), b);
+    }
+  }
+  if (count > 3)
+    ex += ", ...";
+  return ex;
+}
+
+void CpsatBackend::WarnVarBounds() {
+  int n = 0;
+  const auto set = VarBoundExamples(false, n);
+  if (!n)
+    return;
+  AddWarning("VARBOUND", fmt::format(
+      "CP-SAT needs finite variable bounds: cvt:mip_max_bound={} replaced "
+      "{} infinite bound(s): {}. An infinite bound opposite a finite one "
+      "beyond cvt:mip_max_bound is set cvt:mip_max_bound beyond it. Recommended: "
+      "give every variable finite bounds in the model.",
+      data()->var_bound, n, set));
+  const auto at = VarBoundExamples(true, n);
+  if (n)
+    AddWarning("VARBOUND_ACTIVE", fmt::format(
+        "{} variable value(s) at a bound set by cvt:mip_max_bound: {}. The "
+        "result may depend on cvt:mip_max_bound (the model may be unbounded); "
+        "give finite bounds or increase cvt:mip_max_bound.", n, at));
+}
+
 void CpsatBackend::ReportCpsatResults() {
   SetStatus( GetSolveResult() );
+  WarnVarBounds();
   AddCpsatMessages();
   if (need_multiple_solutions())
     ReportCpsatPool();
@@ -500,10 +555,16 @@ void CpsatBackend::InitCustomOptions() {
       "``params='linearization_level: 2 symmetry_level: 3'``.",
       storedOptions_.params_);
 
-  AddStoredOption("tech:varbound varbound",
-      "Magnitude used for infinite variable bounds, which CP-SAT cannot "
-      "handle (default 1e12). Larger values may cause integer overflow "
-      "in the CP-SAT model.",
+  AddStoredOption("cvt:mip_max_bound tech:varbound varbound",
+      "Magnitude M used for infinite variable bounds, which CP-SAT cannot "
+      "handle (default 1e12): -M for an infinite lower bound, "
+      "+M for an infinite upper bound (or M beyond the other "
+      "bound, when that bound lies beyond M), with a warning; "
+      "another warning lists solution values at such bounds. Give every "
+      "variable finite bounds in the model. Finite bounds are "
+      "passed as given. CP-SAT rejects a model where a constraint or the "
+      "objective could overflow 64-bit integers for values within the "
+      "bounds; a smaller M may avoid that.",
       storedOptions_.varbound_, 1.0, 1e18);
 
   AddSolverOption("tech:threads threads",

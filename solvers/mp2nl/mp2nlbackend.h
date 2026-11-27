@@ -72,7 +72,7 @@ public:
   * set primal/dual initial guesses for continuous case
   **/
   ALLOW_STD_FEATURE( WARMSTART, true )
-  void AddPrimalDualStart(Solution sol) override;
+  int AddPrimalDualStart(Solution sol) override;
   /**
   * MIP warm start
   **/
@@ -161,6 +161,8 @@ protected:
 
   void ReportSuffixes() override;
   void ReportModelSuffix(const MP2NLModelSuffix& modelsuf);
+  /// Name for a subsolver's problem suffix (counters get sub_)
+  static std::string ProblemSuffixName(const std::string& name);
   void ReportMP2NLPool();
 
   std::vector<double> getPoolSolution(int i);
@@ -173,6 +175,14 @@ protected:
 
   std::pair<int, std::string> GetSolveResult() override;
   void AddMP2NLMessages();
+
+  /// The subsolver's banner, if it is still alone after ours
+  std::string PendingOutputInSolveMessage() const override
+  { return subsolver_banner_; }
+  /// Before the subsolver prints its banner
+  void PrintBannerBeforeSubsolver();
+  /// After the subsolver: what it left on the output line
+  void NoteSubsolverOutput();
 
   ArrayRef<int> VarStatii();
   ArrayRef<int> ConStatii();
@@ -215,6 +225,8 @@ private:
     double mipgapabs_ = -1.0;
   };
   Options storedOptions_;
+  /// The subsolver's banner while nothing follows it in the output
+  std::string subsolver_banner_;
 	static ConfigMap config_map_;
 	static LimitKeywordMap limit_kw_map_;
 

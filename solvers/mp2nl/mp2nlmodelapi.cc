@@ -1,4 +1,5 @@
 #include <cstring>
+#include <stdexcept>
 #include <unordered_map>
 
 #include "mp2nlmodelapi.h"
@@ -512,8 +513,9 @@ void MP2NLModelAPI::MarkNLVars(
   if (expr.IsEmptyExpr()) {
     // nothing
   } else {
+    // kind: 0 algebraic con, 1 logical con, 2 objective
     std::vector<bool>& var_nl_flags
-        = kind ? is_var_nlo_ : is_var_nlc_;
+        = (2==kind) ? is_var_nlo_ : is_var_nlc_;
     if (expr.IsVariable()) {         // we still count it as non-linear
       var_nl_flags.at(expr.GetVarIndex()) = true;
     } else {
@@ -525,9 +527,9 @@ void MP2NLModelAPI::MarkNLVars(
     if (0==kind) {
       is_alg_con_nl_.at(i_item) = true;   // nonlinear cons
       ++mark_data_.nnlc_;
-    } else {
-      ++mark_data_.nnlo_;
-    }
+    } else if (2==kind) {
+      ++mark_data_.nnlo_;                 // nonlinear objs
+    }                                     // logical cons: only var flags
   }
 }
 
@@ -1487,6 +1489,26 @@ void MP2NLModelAPI::FeedColNames(ColNameWriter& wrt) {
 }
 
 
+/// Thrown by MP2NLUtils::myexit(): only this error becomes a solve
+/// failure in Solve(); other exceptions keep their usual handling
+/// (BackendApp reports them with their own exit code)
+class NLSolverExit : public std::runtime_error {
+public:
+  using std::runtime_error::runtime_error;
+};
+
+/// NLUtils for MP2NL: errors that NLSolver reports via myexit()
+/// (such as an unusable temporary directory) are thrown,
+/// so that Solve() can turn them into a solve failure
+/// with a message, and a solution file is still written.
+class MP2NLUtils : public mp::NLUtils {
+public:
+  /// Throw instead of exiting
+  void myexit(const std::string& msg) override
+  { throw NLSolverExit(msg); }
+};
+
+
 /// Implement NLSolverIntf
 class MP2NLSolverImpl
     : public MP2NLSolverIntf,
@@ -1498,8 +1520,49 @@ public:
   /// Solve
   void Solve(const char* solver, const char* sopts) override {
     if_solve_attempted_ = true;
+    ResetSolution();       // result of a previous solve must not survive
     nlsol_.SetFileStub(mapi_.GetFileStub());
-    if_solve_ok_ = nlsol_.Solve(mapi_, *this, solver, sopts);
+    thrown_msg_.clear();
+    try {
+      if_solve_ok_ = nlsol_.Solve(mapi_, *this, solver, sopts);
+      if (if_solve_ok_ && *nlsol_.GetErrorMessage())   // e.g., exit code
+        mapi_.GetEnv().AddWarning(                    // after a solution
+            "MP2NL_subsolver_exit_code", nlsol_.GetErrorMessage());
+    } catch (const NLSolverExit& e) {
+      if_solve_ok_ = false;
+      thrown_msg_ = e.what();
+    }
+    DropStaleSolution();
+  }
+
+  /// Forget the result code, message, and the "received" flags of
+  /// a previous solve. The primal and dual values are kept here:
+  /// NLSolver::Solve() writes them as the initial guess of the next
+  /// pass (warm start) before calling the subsolver.
+  void ResetSolution() {
+    sresult_ = -1;
+    objno_used_ = -1;
+    nbs_ = 0;
+    solve_message_.clear();
+    got_primal_ = got_dual_ = got_options_ = got_suffix_ = false;
+  }
+
+  /// After the solve: whatever the subsolver did not return (failure,
+  /// or no such section in its .sol) must not be left from a previous
+  /// solve, it would be reported as a part of this one.
+  void DropStaleSolution() {
+    if (!got_primal_)
+      GetX().clear();
+    if (!got_dual_)
+      GetY().clear();
+    if (!got_options_ && !got_suffix_)
+      ClearSuffixes();
+  }
+
+  /// Forget the suffixes of a previous solution
+  void ClearSuffixes() {
+    suf_map_.clear();
+    if_suf_data_registered_ = false;
   }
 
   /// AMPL solve result code
@@ -1513,7 +1576,8 @@ public:
     if (if_solve_ok_)
       solve_message_final_ = solve_message_;
     else {
-      solve_message_final_ = nlsol_.GetErrorMessage();
+      solve_message_final_ = thrown_msg_.size()
+          ? thrown_msg_ : nlsol_.GetErrorMessage();
       if (solve_message_.size()) {
         solve_message_final_ +=
             "\nOriginal solve message: ";
@@ -1600,8 +1664,8 @@ public:
    * @return non-zero to stop solution input.
    */
   int OnAMPLOptions(const AMPLOptions& ) {
-    suf_map_.clear();              // clear for new solution
-    if_suf_data_registered_ = false;
+    got_options_ = true;
+    ClearSuffixes();               // clear for new solution
     return 0;
   }
 
@@ -1617,6 +1681,7 @@ public:
    */
   template <class VecReader>
   void OnDualSolution(VecReader& rd) {
+    got_dual_ = true;
     auto& duals_ = GetY();
     duals_.clear();
     if (int nac_sol = rd.Size()) {
@@ -1630,12 +1695,17 @@ public:
             "MP2NL_subsolver_solution_fewer_alg_cons",
             "The subsolver reported fewer duals than algebraic constraints");
       }
-      duals_.resize(nac_sol);
+      // Indexed by the original constraint index (the NL order is
+      // permuted), so size by the constraint count, not by nac_sol
+      duals_.assign(n_alg_cons, 0.0);
       int j=0;
       for ( ; rd.Size(); ++j ) {
-        int j0 = mapi_.GetOldAlgConIndex(j);
-        assert(j0>=0 && j0 < n_alg_cons);
-        duals_[j0] = rd.ReadNext();
+        double y = rd.ReadNext();
+        if (j < n_alg_cons) {          // extra duals are dropped
+          int j0 = mapi_.GetOldAlgConIndex(j);
+          assert(j0>=0 && j0 < n_alg_cons);
+          duals_[j0] = y;
+        }
       }
     }
   }
@@ -1646,6 +1716,7 @@ public:
    */
   template <class VecReader>
   void OnPrimalSolution(VecReader& rd) {
+    got_primal_ = true;
     auto& primals_ = GetX();
     primals_.clear();
     if (int nv_sol = rd.Size()) {
@@ -1662,9 +1733,12 @@ public:
       primals_.resize(n_vars);
       int j=0;
       for ( ; rd.Size(); ++j ) {
-        int j0 = mapi_.GetOldVarIndex(j);
-        assert(j0>=0 && j0 < n_vars);
-        primals_[j0] = rd.ReadNext();
+        double x = rd.ReadNext();
+        if (j < n_vars) {            // extra values are dropped
+          int j0 = mapi_.GetOldVarIndex(j);
+          assert(j0>=0 && j0 < n_vars);
+          primals_[j0] = x;
+        }
       }
     }
   }
@@ -1725,6 +1799,11 @@ public:
 protected:
   template <class SuffixReader>
   void OnSuffix(SuffixReader& sr) {
+    if (!got_suffix_) {            // first suffix of this .sol
+      got_suffix_ = true;
+      if (!got_options_)           // .sol without an Options section:
+        ClearSuffixes();           // not cleared by OnAMPLOptions()
+    }
     if (!if_suf_data_registered_) {
       if_suf_data_registered_ = true;
       RegisterSuffixData();
@@ -1779,9 +1858,11 @@ protected:
 private:
   MP2NLModelAPI& mapi_;
 
-  mp::NLUtils utils_;
+  MP2NLUtils utils_;
 
   mp::NLSolver nlsol_ { &utils_ };
+
+  std::string thrown_msg_;      // error thrown by NLSolver, if any
 
   bool if_suf_data_registered_ {};
   std::array<int, 4> nitems_ {};
@@ -1790,6 +1871,8 @@ private:
   std::unordered_map<std::string, MP2NLModelSuffix> suf_map_;
 
   /// Solution
+  bool got_primal_ {}, got_dual_ {}, got_options_ {},   // in this solve's .sol
+    got_suffix_ {};
   bool if_solve_attempted_ {};
   bool if_solve_ok_ {};     // return NLSolver's error message if not
   std::string solve_message_;

@@ -2,7 +2,7 @@ import sys
 import math
 from pathlib import PurePath
 import subprocess
-import re 
+import re
 
 from Model import Model, ModelTags
 from SolverCategory import SolverCategory
@@ -106,6 +106,14 @@ class Solver(object):
             self._stats["eval_done"] = True
             self._assertAndRecord(expsol, self._stats["objective"],
                                   "objective")
+        # Run on an NL file: of the expected values, only the solve
+        # result code can be read here (the .sol file's 'objno' line)
+        expsrn = model.getExpectedValues(self.getCategory()).get(
+            "solve_result_num") if model.hasExpectedValues() else None
+        if expsrn is not None:
+            self._stats["eval_done"] = True
+            self._assertAndRecord(expsrn, self._getSolveResultNum(model),
+                                  "solve_result_num")
         if model.hasExpectedOutput():
             self._getSolution(model)
             output += self._stats["outmsg"]
@@ -116,6 +124,19 @@ class Solver(object):
                    self._stats.setdefault("eval_fail_msg", []).append( \
                     "string  '" + str(oitem) + \
                     "'  is not found in the output")
+
+    @staticmethod
+    def _getSolveResultNum(model: Model):
+        """Solve result code of the .sol file ('objno <i> <code>'),
+        or None without a file or such a line"""
+        sol = model.getSolFilePath()
+        if not sol.exists():
+            return None
+        for line in reversed(sol.read_text().splitlines()):
+            words = line.split()
+            if len(words) == 3 and words[0] == "objno":
+                return int(words[2])
+        return None
 
     @staticmethod
     def _getSolMessage(model: Model) -> str:
@@ -189,6 +210,17 @@ class Solver(object):
 
     def getCategory(self):
         return self.CATEGORY
+
+    def mapExpectedValueName(self, name: str) -> str:
+        """Entity name to check for a case's 'values' entry \a name.
+        Identity; see MP2NLSolver."""
+        return name
+
+    @staticmethod
+    def toSubsolverStats(name: str) -> str:
+        """Debug statistics of the model (Initial.flat0_*, flat1_*,
+        option___*) as reported by MP2NL for its subsolver (prefix sub_)"""
+        return re.sub(r"\bInitial\.(flat[01]_|option___)", r"Initial.sub_\1", name)
 
     def checkCategory(self):
         """Warning if the constraints the driver accepts natively
@@ -1454,6 +1486,7 @@ class CbcMPSolver(MPDirectSolver):
         stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
                  ModelTags.sos,
 
+                 ModelTags.warmstart,
                  ModelTags.writelp,
 
                  }
@@ -1461,6 +1494,12 @@ class CbcMPSolver(MPDirectSolver):
 
 class MP2NLSolver(MPDirectSolver):
             CATEGORY = SolverCategory.MP2NL
+
+            def mapExpectedValueName(self, name: str) -> str:
+                """The subsolver is an MP driver: a case's 'values'
+                describe its model (values_per_solver_category MP2NL:
+                MP2NL's own)"""
+                return self.toSubsolverStats(name)
 
             def _getAMPLOptionsName(self):
                 return "mp2nl"
@@ -1509,6 +1548,186 @@ class MP2NLSolver(MPDirectSolver):
 
                          }
                 super().__init__(exeName, timeout, nthreads, otherOptions, stags)
+
+class MP2NLOverMPSolver(MPDirectSolver):
+    """An MP driver run through MP2NL as its subsolver (mp2nl solver=<sub>).
+       MP2NL reformulates for the subsolver and returns its solution, duals,
+       statuses and IIS. The subsolver's own options (iis:find, mip:basis,
+       ...) reach it through MP2NL's 'solver_options'. The options of a case
+       are split by the option lists of the two drivers ('<driver> -='): an
+       option only MP2NL knows goes to MP2NL, one only the subsolver knows
+       goes to the subsolver, one both know (reformulation, multi-objective,
+       ...) goes to both; the case's own 'mp2nl_options' go to MP2NL.
+       Not covered: input suffixes that MP2NL does not forward to the
+       subsolver (.iisforce, .funcpieces, ...) and statistics suffixes."""
+
+    def mapExpectedValueName(self, name: str) -> str:
+        """A case's 'values' describe the MP driver's model, which MP2NL
+        reports with prefix sub_ (values_per_solver_category MP2NL:
+        MP2NL's own). Used by the runner where it supports it."""
+        return re.sub(r"\bInitial\.(flat[01]_|option___)", r"Initial.sub_\1", name)
+    CATEGORY = SolverCategory.MP2NL
+    _option_names = {}              # executable -> names and synonyms
+
+    def __init__(self, mp2nlExe, base, sub, otherOptions=None):
+        """base: the Solver instance of the subsolver MP driver (its tags
+           and option spellings are used); sub: its executable name"""
+        self._base = base
+        self._sub = sub
+        stags = set(base.getSupportedTags())     # no 'mp2nl' tag: cases for MP2NL
+        stags.discard(ModelTags.mp2nl)           # itself are run by 'mp2nl'
+        super().__init__(mp2nlExe, None, None, otherOptions, stags)
+
+    def _getAMPLOptionsName(self):
+        return "mp2nl"
+
+    def _get_timing_options(self):
+        return ""
+
+    def _setTimeLimit(self, seconds):
+        return self._base._setTimeLimit(seconds)
+
+    def _setNThreads(self, threads):
+        return self._base._setNThreads(threads)
+
+    def _setLPMethod(self, method):
+        return self._base._setLPMethod(method)
+
+    def _setExportLP(self, name):
+        return self._base._setExportLP(name)
+
+    def setLogFile(self, name):
+        return None             # not an option of MP2NL; the runner keeps the output
+
+    def mapCaseOptionName(self, name: str) -> str:
+        # All case options are handled in _optionLists()
+        if name.endswith("_options"):
+            return "mp2nl_ignored_options"
+        return name
+
+    @staticmethod
+    def _namesOf(exe: str) -> set:
+        """Names and synonyms of the options a driver lists with '-='"""
+        if exe not in MP2NLOverMPSolver._option_names:
+            names = set()
+            out = subprocess.run([exe, "-="], capture_output=True, text=True,
+                                 timeout=60).stdout
+            for line in out.splitlines():
+                m = re.match(r"^([A-Za-z_][\w:]*)(?:\s*\(([^)]*)\))?\s*$", line)
+                if m:                       # 'name (syn1, syn2)', at column 0
+                    names.add(m.group(1))
+                    names.update(s.strip() for s in (m.group(2) or "").split(",") if s.strip())
+            if not names:
+                raise RuntimeError(f"No options listed by '{exe} -='")
+            MP2NLOverMPSolver._option_names[exe] = names
+        return MP2NLOverMPSolver._option_names[exe]
+
+    @staticmethod
+    def _tokens(text: str) -> list:
+        """Blank-separated tokens; a quoted part ('...' or "...") may contain
+           blanks and stays in the token with its quotes, also after '='"""
+        out, cur, quote = [], "", ""
+        for ch in text:
+            if quote:
+                cur += ch
+                if ch == quote:
+                    quote = ""
+            elif ch in "'\"":
+                quote = ch
+                cur += ch
+            elif ch.isspace():
+                if cur:
+                    out.append(cur)
+                    cur = ""
+            else:
+                cur += ch
+        if cur:
+            out.append(cur)
+        return out
+
+    @staticmethod
+    def _isOptionValue(tok: str) -> bool:
+        """A token that can only be the value of a preceding 'name' item"""
+        if tok[:1] in "'\"":
+            return True
+        try:
+            float(tok)
+            return True
+        except ValueError:
+            return False
+
+    def _items(self, text: str) -> list:
+        """Options of the text: 'name=value', 'name value' (a number or a
+           quoted value after a bare name) or a bare flag"""
+        items = []
+        for tok in self._tokens(text):
+            last = items[-1] if items else None
+            if (last is not None and "=" not in last and " " not in last
+                    and self._isOptionValue(tok)):
+                items[-1] = last + " " + tok
+            else:
+                items.append(tok)
+        return items
+
+    def _optionLists(self, model) -> tuple:
+        """(options for MP2NL, options for the subsolver) for a case"""
+        native = []
+        if self._timeout:
+            native.append(self._setTimeLimit(self._timeout))
+        if self._nthreads:
+            native.append(self._setNThreads(self._nthreads))
+        if self._lpmethod:
+            native.append(self._setLPMethod(self._lpmethod))
+        if self._otherOptions:
+            native.append(self._otherOptions)
+        if self._exportLP:
+            native.append(self._setExportLP(self.getExportLPFileName(model.getFilePath())))
+        own = []
+        if model.hasOptions():
+            opts = model.getOptions()
+            native += [opts.get("mp_options", ""),
+                       opts.get(f"{self._base._getAMPLOptionsName()}_options",
+                                opts.get("ANYSOLVER_options", ""))]
+            own += self._items(opts.get("mp2nl_options", ""))
+        known_mp2nl = self._namesOf(self.getExecutable())
+        known_sub = self._namesOf(self._base.getExecutable())
+        sub = []
+        for it in self._items(" ".join(n for n in native if n)):
+            name = re.split(r"[=\s]", it, 1)[0]
+            if name in known_mp2nl:
+                own.append(it)
+            if name in known_sub or name not in known_mp2nl:
+                sub.append(it)          # known to the subsolver, or to nobody
+        return own, sub
+
+    def _optionString(self, own: list, sub: list) -> str:
+        # The subsolver by its path: MP2NL starts it with the shell, which
+        # would otherwise find another driver of this name on PATH (a path
+        # with blanks does not work: MP2NL does not quote it for the shell)
+        value = " ".join([f'solver="{self._base.getExecutable()}"'] + own)
+        if sub:
+            text = " ".join(sub)
+            if "'" in text and '"' in text:
+                raise ValueError(f"Options with both kinds of quotes: {text}")
+            q = '"' if "'" in text else "'"
+            value += f" solver_options={q}{text}{q}"
+        return value
+
+    def getAMPLOptions(self, model) -> tuple:
+        return ("mp2nl_options", self._optionString(*self._optionLists(model)))
+
+    def _doRun(self, model: Model, logFile: str):
+        """An NL file case: MP2NL run directly with the same options"""
+        args = [self._exePath, model.getFilePath(), "-AMPL",
+                self._optionString(*self._optionLists(model))] + self._getNLRunArgs()
+        try:
+            return self._runProcess(args, timeout=self._timeout, logFile=logFile)
+        except subprocess.TimeoutExpired:
+            return "subprocess timeout expired"
+        except subprocess.CalledProcessError as e:
+            print(str(e))
+            return str(e)
+
 
 class BaronMPSolver(MPDirectSolver):
     CATEGORY = SolverCategory.MILP
@@ -1637,6 +1856,7 @@ class KnitroMPSolver(MPDirectSolver):
                  ModelTags.socp,      ## MP transforms cones to quadratics
                  ModelTags.socp_hard_to_recognize,
 
+                 ModelTags.warmstart,
                  ModelTags.writelp,
 
                  }

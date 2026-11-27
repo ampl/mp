@@ -3,6 +3,46 @@ Summary of recent updates to Xpress for AMPL
 
 
 ## unreleased
+- With `mip:basis`, the fixed problem is solved on a copy, for MIPs and
+  MINLPs alike: after the report, the original problem keeps its integer
+  variables and bounds, so a subsequent AMPLS solve or model change works
+  on the user's problem. Before, a linear MIP was left with its integer
+  variables fixed, and a repeated solve returned the old point.
+  The results of the fixed problem are kept and the copy is freed after
+  the first report of a solve, also when that report fails: a repeated
+  report (AMPLS) gives the same values, but cannot write the solution
+  and basis files of the fixed problem (*tech:writesolution*) and says
+  so. A Ctrl-C stops the fixed solve too; after a Ctrl-C during
+  the MIP solve, while the copy is made or during the fixed solve, the
+  MIP's results are reported with the message "Fixed MIP for mip:basis
+  skipped: the solve was interrupted."
+- Fix: a Ctrl-C while the model was read and converted, before the
+  solve started, was lost: the solve ran to the end. Now no solve is
+  started, and the result is "interrupted before the solve" (solve
+  result 471).
+- Fix: with `mip:basis` and several objectives (*obj:multi=1*), the
+  reported point came from the fixed problem of a single objective and
+  could lose the values of the others (with the objective values of the
+  MIP's point); the fixed problem is no longer solved then, with a
+  message, and no duals or basis statuses are reported (as without
+  *mip:basis*). On a MIP without an incumbent, the message now says
+  that the fixed solve was skipped, instead of reporting it as failed.
+- Several objectives with *obj:multi=1* (native multi-objective optimization)
+  where one is quadratic: the driver now stops with a message to use
+  *obj:multi=2* (MP emulation) or to move quadratic and nonlinear objective
+  terms into constraints with *cvt:quadobj=0* and *cvt:nlobj=0*, instead
+  of the Optimizer's error ?1138.
+- Xpress 10 supported.
+- The solve message of a MINLP no longer says "no duals" or "with
+  duals": its duals come only from the fixed model (*mip:basis*), whose
+  line reports them.
+- Fix: with the legacy solution pool (*sol:poolapi=0*, also all
+  Xpress 9 versions), a best objective value of 0 reported only the
+  solutions with that value, as if *sol:poolgap* were 0.
+- Fix: *iis:find* on a model for which Xpress identifies no IIS (e.g.,
+  a variable with contradictory bounds) failed with "?721 No IIS has been
+  identified yet"; now all *.iis* values are *non* and warning IIS_NONE
+  is given.
 - Xpress 10.0 (Optimizer 48.01.01) and 9.9.1 (47.01.02) supported, as
   well as 9.8.
 - Xpress 10: solution pool (*sol:stub*, *sol:count*) with the built-in
@@ -25,6 +65,20 @@ Summary of recent updates to Xpress for AMPL
   failed without Xpress presolve ("?942 ... non-binary variable");
   such arguments are now passed as binary variables. Option
   *alg:logfixedbin=0* restores the previous (continuous) type.
+- Fix: duals, basis statuses (*sstatus*, in and out) and IIS membership
+  of the algebraic constraints were assigned to the wrong constraints
+  on models with indicator constraints, and also with function or
+  nonlinear constraints; a primal-dual warm start (initial primal and
+  dual values without statuses) could crash the driver on models with
+  indicator constraints. IIS membership of piecewise-linear constraints
+  is now reported.
+- Fix: after a nonlinear (local or global) solve, basis statuses were
+  reported as *low* for every variable and constraint; no basis is
+  reported now. *mip:basis* on a nonlinear MIP failed (the fixed model
+  was solved as an LP); the fixed model is now solved as a nonlinear
+  problem, by default with a local solver, which gives duals but no
+  basis. New options *mip:basis:nlpsolver* (local, global, or as in the
+  main solve) and *mip:basis:localsolver* select how.
 
 
 ## 20261029

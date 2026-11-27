@@ -108,7 +108,7 @@ inline std::size_t ConvertFileToMmapSize(fmt::LongLong file_size,
   // Check if file size fits in size_t.
   std::size_t size = static_cast<std::size_t>(unsigned_file_size);
   if (size != unsigned_file_size)
-    throw Error("file {} is too big", filename);
+    throw Error(fmt::format("file {} is too big", filename));
   return size;
 }
 }  // namespace internal

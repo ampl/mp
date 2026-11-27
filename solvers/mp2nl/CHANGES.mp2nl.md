@@ -2,6 +2,59 @@ Summary of recent updates to MP2NL for AMPL
 ==========================================
 
 
+## unreleased
+
+- Contradictory variable bounds (lower > upper), also bounds deduced by
+  the converter, now make MP2NL report the model infeasible (option
+  `cvt:pre:infeasvarbnd`, default 1 in MP2NL). Before, they were passed on
+  to the subsolver, and CONOPT, LINDO Global and Xpress (ASL driver)
+  stopped with an error instead of reporting infeasibility. Set
+  `cvt:pre:infeasvarbnd=0` to have the subsolver relax the model or
+  compute an IIS.
+- The result line now starts with MP2NL's name and then the subsolver's,
+  for example "MP2NL 0.2: Gurobi 14.0.0: optimal solution", each once.
+  Before, the subsolver's name was printed before MP2NL's, so that the line
+  read "Gurobi 14.0.0: MP2NL 0.2: Gurobi 14.0.0: optimal solution" (with
+  ASL-based subsolvers; with MP-based ones, wherever the output is not a
+  terminal).
+- The debug statistics returned by the subsolver (problem suffixes
+  `flat0_*`, `flat1_*` and `option___*` with `debug=1`) are now reported
+  with prefix `sub_`, for example `sub_flat1__lineq`. Before, they
+  overwrote MP2NL's own statistics of the same names.
+- Fix: a solution file left by an earlier solve (a reused `nl:stub`, or the
+  previous pass of a multi-objective emulation) was read as the result of a
+  solve in which the subsolver wrote no solution. Such a solve now fails with
+  a message. If the old file cannot be removed, the driver reports an error
+  before launching the subsolver.
+- Fix: a solution written by the subsolver before it exited with a nonzero
+  code was discarded; it is kept now, and the exit code is reported in a
+  warning.
+- Fix: subsolver options (`solver_options`) were interpreted by the shell:
+  characters such as `;` or `$` acted as commands and quoted values were
+  split. Each option is now passed as one argument; quotes group words.
+  An unclosed quote is an error.
+- Fix: the solution values, duals and suffixes of a previous pass were
+  reported after a pass that failed or returned no such data.
+- Fix: logical constraints were counted as nonlinear objectives in the NL
+  header.
+- Fix: NL files written through the NLModel API for quadratic objectives with
+  one or two terms were invalid, and nonlinear variables were miscounted
+  (CONOPT returned a wrong optimum).
+- When the temporary directory cannot be used (missing, or on Windows
+  a path close to the 248-character limit for directories), MP2NL stops
+  with an error message instead of terminating abnormally:
+  the failure and its message are reported to AMPL in the solution file.
+- The NL file stub is quoted on the solver command line, so temporary
+  directories with spaces or other shell characters in their path work.
+  Exception on Windows: '%' is still expanded by the command interpreter,
+  so a path containing a variable reference such as `%OS%` fails.
+- Library API: the close and model functions are now *AMPLSClose_mp2nl*
+  and *AMPLSGetModel_mp2nl*, lower case like *AMPLSOpen_mp2nl* and the
+  other MP libraries (were *AMPLSClose_MP2NL*, *AMPLSGetModel_MP2NL*).
+- Fix: a subsolver solution with fewer duals than algebraic
+  constraints could corrupt memory.
+
+
 ## 20261029
 - Version 0.2.
 - Native NL complementarity remains the default (*acc:nlcompl=2*),

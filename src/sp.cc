@@ -197,8 +197,8 @@ void SPAdapter::GetRealizations(int con_index, CallExpr random,
                            var_index, con_index, rv.num_elements()));
   int &core_var_index = var_orig2core_[var_index];
   if (core_var_index != 0) {
-    throw Error("{}: variable {} used in multiple random vectors",
-                lcon_name(con_index), var_index);
+    throw Error(fmt::format("{}: variable {} used in multiple random vectors",
+                lcon_name(con_index), var_index));
   }
   // Mark variable as random.
   core_var_index = -static_cast<int>(random_vars_.size());
@@ -215,8 +215,8 @@ void SPAdapter::GetRealizations(int con_index, CallExpr random,
   if (rv.num_realizations() == 0) {
     rv.set_num_realizations(num_realizations);
   } else if (rv.num_realizations() != num_realizations) {
-    throw Error("{}: inconsistent number of realizations",
-                lcon_name(con_index));
+    throw Error(fmt::format("{}: inconsistent number of realizations",
+                lcon_name(con_index)));
   }
 }
 
@@ -245,14 +245,14 @@ void SPAdapter::GetRandomVectors(const Problem &p) {
       if (!constant) break;
       double prob = constant.value();
       if (prob < 0 || prob > 1)
-        throw Error("{}: invalid probability {}", lcon_name(con_index), prob);
+        throw Error(fmt::format("{}: invalid probability {}", lcon_name(con_index), prob));
       rv.AddProbability(prob);
     }
     // Get realizations.
     while (arg_index < num_args) {
       auto arg = call.arg(arg_index);
       if (arg.kind() != expr::VARIABLE)
-        throw Error("{}: expected variable or constant", lcon_name(con_index));
+        throw Error(fmt::format("{}: expected variable or constant", lcon_name(con_index)));
       GetRealizations(con_index, call, arg_index);
     }
   }

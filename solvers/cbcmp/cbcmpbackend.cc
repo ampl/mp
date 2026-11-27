@@ -1153,14 +1153,24 @@ void CbcmpBackend::SetBasis(SolutionBasis basis) {
   lp()->solver_->setBasisStatus(varstt.data(), constt.data());
 }
 
-void CbcmpBackend::AddPrimalDualStart(Solution sol0_unpres) {
-  if (IsMIP()) return;
+int CbcmpBackend::AddPrimalDualStart(Solution sol0_unpres) {
+  if (IsMIP())       // primal values are passed by AddMIPStart()
+    return sol0_unpres.primal.size() ? 1 : 0;
   auto mv = GetValuePresolver().PresolveSolution(
     { sol0_unpres.primal, sol0_unpres.dual });
   auto x0 = mv.GetVarValues()();
   auto pi0 = mv.GetConValues()(CG_Linear);
-  lp()->solver_->setColSolution(x0.data());
-  lp()->solver_->setRowPrice(pi0.data());
+  // Presolve fills a missing vector with zeros: pass only incoming ones
+  int passed = 0;
+  if (sol0_unpres.primal.size()) {
+    lp()->solver_->setColSolution(x0.data());
+    passed |= 1;
+  }
+  if (sol0_unpres.dual.size()) {
+    lp()->solver_->setRowPrice(pi0.data());
+    passed |= 2;
+  }
+  return passed;
 }
 
 
@@ -1181,7 +1191,7 @@ void CbcmpBackend::AddMIPStart(ArrayRef<double> x0_unpres,
       val.push_back(x0[i]);
     }
   }
-  Cbc_setMIPStartI(lp(), val.size(), idx.data(), x0.data());
+  Cbc_setMIPStartI(lp(), val.size(), idx.data(), val.data());   // sparse pairs
 }
 
 

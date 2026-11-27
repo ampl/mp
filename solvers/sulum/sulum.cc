@@ -52,7 +52,7 @@ const OptionInfo<SlmParamDb> DBL_OPTION_INFO[] = {
 inline void Check(SlmReturn ret) {
   if (ret != SlmRetOk) {
     // TODO: get error message
-    throw mp::Error("Sulum error {}", ret);
+    throw mp::Error(fmt::format("Sulum error {}", ret));
   }
 }
 

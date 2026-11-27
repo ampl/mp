@@ -599,6 +599,55 @@ To find these expressions in the original model, use
 the :ref:`Reformulation explorer <reformulation-graph>`.
 
 
+.. _integrality-check:
+
+Integrality of variables
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A value of an integer variable is reported if its distance
+from the nearest integer exceeds the absolute tolerance
+``sol:chk:inttol`` (default :math:`10^{-4}`) and, if the relative
+tolerance ``sol:chk:inttolrel`` is set (default 0, off), also that
+tolerance times the absolute value of the integer.
+A relative tolerance such as :math:`10^{-14}` excuses floating-point
+rounding errors of very large values: from about :math:`3 \cdot 10^{11}`,
+errors of a few units in the last digit can exceed :math:`10^{-4}`.
+Solvers' own default integrality tolerances are :math:`10^{-5}`
+or smaller; if the solver is run with a larger one
+(solver option *inttol* or similar), set ``sol:chk:inttol`` accordingly.
+``sol:chk:inttol=0.5`` turns the integrality check off.
+
+For example, a solver returned integer variables ``q[3]=10.5`` and
+``q[4]=8.4`` as an optimal solution:
+
+.. code-block:: ampl
+
+    WARNING:  "Tolerance violations"
+      Type                         MaxAbs [Name]   MaxRel [Name]
+    * variable integrality         5E-01 [q[3]]    5E-02 [q[4]]
+    *: Using the solver's aux variable values.
+    Documentation:
+    mp.ampl.com/modeling-tools.html#automatic-solution-check.
+
+The line shows the largest absolute deviation (0.5, for ``q[3]``)
+and the largest deviation relative to the integer the value
+rounds to (0.4/8, for ``q[4]``); the two can name different
+variables. Names are shown only if AMPL passes them to the solver
+(``option <solver>_auxfiles rc;``); otherwise the warning suggests
+that option. With ``sol:chk:fail``, the
+solve is reported as failed (``solve_result_num`` 150, "solved?").
+
+The line "aux var integrality" refers to an integer variable added
+by a reformulation, for example a binary variable of a big-M
+constraint or of a piecewise-linear approximation; its name is
+internal, see the :ref:`Reformulation explorer <reformulation-graph>`.
+Such a fractional value can make the solver's solution satisfy
+the reformulation but not the original constraint.
+The check uses the values returned by the solver (after
+``sol:chk:round`` and ``sol:chk:prec``, if set),
+before any rounding by *mip:round*.
+
+
 .. _realistic-viols:
 
 "Realistic" solution check

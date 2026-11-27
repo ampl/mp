@@ -3,7 +3,10 @@
 
 namespace mp {
 
-void CplexModelAPI::InitProblemModificationPhase(const FlatModelInfo*) { }
+void CplexModelAPI::InitProblemModificationPhase(const FlatModelInfo* fi) {
+  const auto oi = fi->GetObjInfo();
+  num_obj_total_ = oi[0] + oi[1] + oi[2];
+}
 
 void CplexModelAPI::AddVariables(const VarArrayDef& v) {
   int nint = 0;
@@ -65,6 +68,12 @@ void CplexModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
   }
 }
 void CplexModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective& qo) {
+  // CPLEX's native multi-objective optimization takes linear objectives
+  // only; with a quadratic one the solve fails with an obscure status.
+  if (num_obj_total_ > 1)
+    throw std::runtime_error(
+        "When several objectives are handled natively, all of them must be "
+        "linear. Use obj:multi=2 (MP emulation) or a single objective.");
   if (1 > iobj) {
     SetLinearObjective(iobj, qo);
     
@@ -180,7 +189,7 @@ void CplexModelAPI::AddConstraint(const IndicatorConstraintLinLE &ic)  {
   addindic(ic, 'L');
 }
 void CplexModelAPI::AddConstraint(const IndicatorConstraintLinEQ &ic)  {
-  addindic(ic, 'F');
+  addindic(ic, 'E');   // CPLEX senses are 'L', 'E', 'G'
 }
 void CplexModelAPI::AddConstraint(const IndicatorConstraintLinGE &ic)  {
   addindic(ic, 'G');

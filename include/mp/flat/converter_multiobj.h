@@ -75,6 +75,10 @@ public:
            || MOManagerStatus::FINISHED==status_;
   }
 
+  /// Have all emulated multiobjective passes been run?
+  bool IsMOFinished() const
+  { return MOManagerStatus::FINISHED==status_; }
+
   /// Prepare next multiobj iteration?
   /// @note Call this before a MO iteration.
   /// @return true iff the model is ready for the next iteration.
@@ -378,7 +382,11 @@ protected:
       passes_reverse_.at(i0_vec.front()) = i_pass;
       obj_new_.push_back(obj_orig_1st);
       obj_new_.back().set_sense(obj_orig.front().obj_sense());  // "Legacy" obj:multi:weight
-      obj_new_.back().set_sense_true(obj_orig.front().obj_sense_true());
+      // The pass is solved in its sense; its coefficients already carry the
+      // (signed) legacy weights. The first objective's own sense_true was
+      // flipped by a negative weight and must not be copied, or the
+      // expression contexts (relaxation direction) point the wrong way.
+      obj_new_.back().set_sense_true(obj_new_.back().obj_sense());
       obj_new_.back().GetLinTerms() *= objwgt_1st;   // Use weight
       obj_new_.back().GetQPTerms() *= objwgt_1st;
       obj_new_tola_.push_back(objtola.at(i0_vec.front()));

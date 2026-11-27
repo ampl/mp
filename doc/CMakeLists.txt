@@ -95,20 +95,28 @@ set(mp_docs ${mp_docs} ${mp_docs_models} ${DOC_BASEDIR}/index.rst
   ${DOC_BASEDIR}/tables/acceptance.json ${DOC_BASEDIR}/tables/acceptance.rst
   ${ACCEPTANCE_SCRIPT})
 # Refresh the acceptance tables (modeling-tools.rst) from the drivers on PATH;
-# without solvers (e.g., in CI) the script keeps the saved data.
+# without solvers (e.g., in CI) the script keeps the saved data. Which
+# drivers updated them is printed last, after the Sphinx output.
 set(ACCEPTANCE_COMMAND "")
+set(ACCEPTANCE_SUMMARY_COMMAND "")
 if (SPHINX_PYTHON)
-  set(ACCEPTANCE_COMMAND COMMAND ${SPHINX_PYTHON} ${ACCEPTANCE_SCRIPT})
+  set(ACCEPTANCE_SUMMARY ${CMAKE_CURRENT_BINARY_DIR}/acceptance-summary.txt)
+  set(ACCEPTANCE_COMMAND COMMAND ${SPHINX_PYTHON} ${ACCEPTANCE_SCRIPT}
+    --summary ${ACCEPTANCE_SUMMARY})
+  set(ACCEPTANCE_SUMMARY_COMMAND COMMAND ${SPHINX_PYTHON} ${ACCEPTANCE_SCRIPT}
+    --show-summary ${ACCEPTANCE_SUMMARY})
 endif ()
 add_custom_command(OUTPUT ${SPHINX_INDEX_FILE}
                   ${ACCEPTANCE_COMMAND}
                   COMMAND
                   ${SPHINX_EXECUTABLE} -b html
                   ${DOC_BASEDIR} ${DOC_OUTPUTDIR}
+                  ${ACCEPTANCE_SUMMARY_COMMAND}
                   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                   DEPENDS ${mp_docs} ${doc_deps}
                   MAIN_DEPENDENCY ${DOC_BASEDIR}/conf.py
-                  COMMENT "Generating documentation with Sphinx")
+                  COMMENT "Generating documentation with Sphinx"
+                  VERBATIM)
 
 # Named target so we can run the job easily
 add_custom_target(mp-doc ALL DEPENDS ${SPHINX_INDEX_FILE}

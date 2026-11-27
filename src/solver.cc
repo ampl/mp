@@ -184,7 +184,7 @@ void RSTFormatter::HandleText(const char *text, std::size_t size) {
 
 void RSTFormatter::HandleDirective(const char *type) {
   if (std::strcmp(type, "value-table") != 0)
-    throw mp::Error("unknown directive {}", type);
+    throw mp::Error(fmt::format("unknown directive {}", type));
   if (values_.size() == 0)
     throw mp::Error("no values to format");
   std::size_t max_len = 0;
@@ -819,6 +819,11 @@ void BasicSolver::InitMetaInfoAndOptions(
       &Solver::GetSolutionStats, &Solver::SetSolutionStats, values_techstats_);
 
 
+  AddIntOption("tech:msgwidth msgwidth",
+    "Width at which warnings and error messages are wrapped "
+    "(default 60); 0: no wrapping.",
+    &Solver::GetMsgWidth, &Solver::SetMsgWidth);
+
   AddIntOption("tech:timing timing tech:report_times report_times",
     "0*/1/2: Whether to print and return timings for the run, all times are wall "
     "times. If set to 1, return the solution times in the problem suffixes "
@@ -970,7 +975,7 @@ std::string BasicSolver::GetWarnings() const {
   if (GetWarningsMap().size()) {
     std::string wrn = "------------ WARNINGS ------------\n";
     for (const auto& e: GetWarningsMap())
-      wrn += ToString(e) + '\n';
+      wrn += ToString(e, msg_width()) + '\n';
     return wrn;
   }
   return "";
@@ -983,15 +988,17 @@ void BasicSolver::PrintWarnings() {
 }
 
 std::string BasicSolver::ToString(
-    const WarningsMap::value_type& wrn) {
+    const WarningsMap::value_type& wrn, int width) {
   assert(wrn.second.first);
-  if (wrn.second.first>1)      // several warnings if thsi kind
-    return fmt::format(
-          "WARNING.  {} case(s) of \"{}\". One of them:\n  {}",
-          wrn.second.first, wrn.first, wrn.second.second);
-  return fmt::format(
-        "WARNING:  \"{}\"\n  {}",
-        wrn.first, wrn.second.second);
+  const auto header = wrn.second.first>1   // several warnings of this kind
+      ? fmt::format(
+          "WARNING.  {} case(s) of \"{}\". One of them:",
+          wrn.second.first, wrn.first)
+      : fmt::format("WARNING:  \"{}\"", wrn.first);
+  // Only the text is wrapped: the header's double space would make
+  // WrapLines() keep it as a laid-out line anyway.
+  const auto text = "  " + wrn.second.second;
+  return header + '\n' + (width > 0 ? WrapLines(text, width) : text);
 }
 
 #ifdef MP_DATE
@@ -1436,7 +1443,24 @@ typedef struct AMPLS_MP__internal_T {
   std::vector<AMPLSOption> options_;
   std::vector<AMPLS_C_Option> options_c_;
   std::string optionvalue_;
+  /// Outcome of the last AMPLS call (see AMPLSGetSolveResult()):
+  /// 0 on success, otherwise the solve result code of its error
+  int call_result_ = 0;
 } AMPLS_MP__internal;
+
+void AMPLS__internal__SetCallResult(AMPLS_MP_Solver* slv, int code) {
+  if (slv && slv->internal_info_)
+    ((AMPLS_MP__internal*)(slv->internal_info_))->call_result_ = code;
+}
+
+int AMPLSGetSolveResult(AMPLS_MP_Solver* slv) {
+  auto ii = (AMPLS_MP__internal*)(slv->internal_info_);
+  if (!ii)
+    return mp::sol::FAILURE;       // the instance was not opened
+  if (ii->call_result_)
+    return ii->call_result_;
+  return ii->p_be_ ? ii->p_be_->GetSolveResultNum() : mp::sol::FAILURE;
+}
 
 
 AMPLS_MP_Solver* AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend> p_be,
@@ -1453,7 +1477,7 @@ AMPLS_MP_Solver* AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend> p_be,
     be->Init(argv);
     be->set_wantsol(1);       // user can still modify by 'wantsol=...'
     return 0;
-  } );
+  }, false );
   return slv;
 }
 
@@ -1468,9 +1492,13 @@ void AMPLSReadExtras(AMPLS_MP_Solver* slv) {
   be->InputExtras();
 }
 
-void AMPLSSolve(AMPLS_MP_Solver* slv) {
-  auto be = AMPLSGetBackend(slv);
-  be->RunSolveIterations();      // as RunFromNLFile(), e.g., MO emulation
+int AMPLSSolve(AMPLS_MP_Solver* slv) {
+  // No exception may leave this C function (e.g., a solver call failing,
+  // or a repeated solve with emulated multiple objectives)
+  return AMPLS__internal__TryCatchWrapper( slv, [=]() {
+    auto be = AMPLSGetBackend(slv);
+    be->RunSolveIterations();    // as RunFromNLFile(), e.g., MO emulation
+  } );
 }
 mp::BasicBackend* AMPLSGetBackend(AMPLS_MP_Solver* slv) {
   assert(slv->internal_info_);
@@ -1511,7 +1539,7 @@ int AMPLSReportError(AMPLS_MP_Solver* slv, int solve_result, const char* msg) {
     be->set_ampl_flag();         // write the .sol file; otherwise exits
     be->ReportError(solve_result,
                     std::string(be->long_name()) + ": " + msg);
-  } );
+  }, false );
 }
 
 void AMPLSAddMessage(AMPLS_MP_Solver* slv, const char* msg) {
@@ -1532,7 +1560,7 @@ const char* const * AMPLSGetMessages(AMPLS_MP_Solver* slv) {
 
   /// Add Backend warnings
   for (const auto& wrn: be->GetWarningsMap())
-    msg_wrn.push_back(mp::BasicSolver::ToString(wrn) + '\n');
+    msg_wrn.push_back(mp::BasicSolver::ToString(wrn, be->msg_width()) + '\n');
 
   /// Add Backend warnings
   for (const auto& wrn: msg_wrn)

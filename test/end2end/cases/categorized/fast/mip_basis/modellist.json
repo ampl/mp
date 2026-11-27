@@ -597,5 +597,153 @@
       "if (y.sstatus != 'bas') then 1 else 0": 1,
       "solve_result_num": 0
     }
+  },
+  {
+    "name": "fixed_sos2_pl",
+    "files": ["fixed_sos2_pl.mod"],
+    "tags": ["linear", "integer", "logical", "sos", "fixmodel"],
+    "comment": "SOS2 from AMPL's PL linearization; the fixed model must not return the relaxation's point (-3.3 at x = 2, obj = 2.7)",
+    "objective": 0,
+    "options": {
+      "pl_linearize": 1,
+      "mp_options": "mip:basis=1"
+    },
+    "values": {
+      "obj": 0,
+      "solve_result_num": 0
+    }
+  },
+  {
+    "name": "fixed_sos2_pl cplexasl",
+    "files": ["fixed_sos2_pl.mod"],
+    "tags": ["linear", "integer", "sos"],
+    "comment": "cplexasl (indicator constraints only): the fixed LP for duals (mipbasis) drops the SOS; the MIP solution is returned without duals",
+    "solvers": ["cplexasl"],
+    "objective": 0,
+    "options": {
+      "pl_linearize": 1,
+      "cplex_options": "mipbasis=1"
+    },
+    "values": {
+      "obj": 0,
+      "if solve_result = 'solved' then 1 else 0": 1,
+      "if match(solve_message, 'violated SOS') > 0 then 1 else 0": 1
+    }
+  },
+  {
+    "name": "fixed_miqcp_cplex",
+    "tags": ["integer", "continuous", "quadratic", "fixmodel"],
+    "solvers": ["cplex"],
+    "comment": "MIQCP with mip:basis=1: the dual of the linear row is that of the fixed continuous problem (1; 0 if no duals are returned)",
+    "options": { "presolve": 0, "mp_options": "mip:basis=1" },
+    "objective": 5.414213562373095,
+    "values": {
+      "solve_result": "solved",
+      "b": 1,
+      "x": 1.414213562373095,
+      "y": 1.585786437626905,
+      "Lin.dual": { "min": 0.999, "max": 1.001 },
+      "if match(solve_message, 'Fixed MIP for mip:basis:') > 0 then 1 else 0": 1,
+      "if match(solve_message, 'failed') > 0 then 1 else 0": 0,
+      "max(0, x*x-1-b)": { "max": 1e-6 }
+    }
+  },
+  {
+    "name": "fixed_milp_cplex",
+    "tags": ["integer", "continuous", "linear", "fixmodel"],
+    "solvers": ["cplex"],
+    "comment": "Linear MIP with mip:basis=1 (also used by the AMPLS repeated-solve test): the dual of Lin is that of the fixed LP, 1",
+    "options": { "presolve": 0, "mp_options": "mip:basis=1" },
+    "objective": 6,
+    "values": {
+      "solve_result": "solved",
+      "b": 1,
+      "x": 2,
+      "y": 1,
+      "Lin.dual": { "min": 0.999, "max": 1.001 },
+      "if match(solve_message, 'Fixed MIP for mip:basis:') > 0 then 1 else 0": 1
+    }
+  },
+  {
+    "name": "fixed_mip_consistent",
+    "files": ["fixed_mip_consistent.mod"],
+    "tags": ["linear", "integer", "fixmodel"],
+    "comment": "Primal values, basis and duals all of the fixed problem",
+    "objective": 3.25,
+    "options": { "mp_options": "mip:basis=1" },
+    "values": {
+      "card {i in I: u[i].sstatus = 'none'}": 0,
+      "if abs(dem.dual - 0.01) <= 1e-6 then 1 else 0": 1,
+      "card {i in I: (u[i].sstatus = 'upp' and u[i] < u[i].ub - 1e-6) or (u[i].sstatus = 'low' and u[i] > u[i].lb + 1e-6)}": 0,
+      "card {i in I: abs(link[i].dual) > 1e-6 and abs(link[i].slack) > 1e-6}": 0,
+      "card {i in I: abs(cap[i].dual) > 1e-6 and abs(cap[i].slack) > 1e-6}": 0
+    }
+  },
+  {
+    "name": "fixed_mip_early_stop gurobi",
+    "files": ["fixed_mip_early_stop.mod"],
+    "tags": ["linear", "integer", "fixmodel"],
+    "comment": "Reported objective value is that of the reported (fixed LP) point: no solution-check warning",
+    "solvers": ["gurobi"],
+    "options": { "gurobi_options": "mip:basis=1 lim:sol=1 presolve=0" },
+    "values": {
+      "if match(solve_message, 'Tolerance violations') > 0 then 1 else 0": 0
+    }
+  },
+  {
+    "name": "fixed_mip_limit xpress",
+    "files": ["fixed_mip_limit.mod"],
+    "tags": ["linear", "integer", "fixmodel"],
+    "comment": "MIP stopped at its first solution: the fixed LP still runs and gives a basis (its copy refused the incumbent, ?902)",
+    "solvers": ["xpress"],
+    "options": { "xpress_options": "mip:basis=1 lim:mipsol=1" },
+    "values": {
+      "if match(solve_message, 'failed') > 0 then 1 else 0": 0,
+      "card({j in 1..n: x[j].sstatus == 'none'})": 0
+    }
+  },
+  {
+    "name": "fixed_mip_multiobj",
+    "files": ["fixed_mip_multiobj.mod"],
+    "tags": ["linear", "integer", "fixmodel", "multiobj"],
+    "comment": "With two objectives no fixed model is solved (its basis would not match); the point keeps the second objective's optimum",
+    "solvers": ["gurobi", "xpress", "cplex"],
+    "objective": 3,
+    "options": { "ANYSOLVER_options": "mip:basis=1 obj:multi=1" },
+    "values": {
+      "o2": 10,
+      "if match(solve_message, 'Tolerance violations') > 0 then 1 else 0": 0,
+      "if match(solve_message, 'no fixed-model solve with several') > 0 then 1 else 0": 1,
+      "sum {i in 1..3} if x[i].sstatus = 'upp' and x[i] < 10 - 1e-6 then 1 else 0": 0,
+      "sum {i in 1..3} if x[i].sstatus = 'none' then 1 else 0": 3
+    }
+  },
+  {
+    "name": "fixed_mip_multiobj_tol",
+    "files": ["fixed_mip_multiobj_tol.mod"],
+    "tags": ["linear", "integer", "fixmodel", "multiobj"],
+    "comment": "o1 may lose up to 5 for o2: the reported point keeps both objective values (no fixed solve)",
+    "solvers": ["gurobi", "xpress", "cplex"],
+    "options": { "ANYSOLVER_options": "mip:basis=1 obj:multi=1" },
+    "values": {
+      "o2": 3,
+      "if o1 >= 5.9 then 1 else 0": 1,
+      "sum {i in 1..2} if x[i].sstatus = 'none' then 1 else 0": 2,
+      "if match(solve_message, 'Tolerance violations') > 0 then 1 else 0": 0,
+      "if match(solve_message, 'no fixed-model solve with several') > 0 then 1 else 0": 1
+    }
+  },
+  {
+    "name": "fixed_mip_infeasible",
+    "files": ["fixed_mip_infeasible.mod"],
+    "tags": ["linear", "integer", "fixmodel"],
+    "comment": "No incumbent: the fixed solve is skipped with a message, not reported as failed",
+    "solvers": ["xpress", "cplex"],
+    "options": { "presolve": "0", "ANYSOLVER_options": "mip:basis=1" },
+    "values": {
+      "solve_result": "infeasible",
+      "if match(solve_message, 'skipped: no integer-feasible incumbent') > 0 then 1 else 0": 1,
+      "if match(solve_message, 'failed') > 0 then 1 else 0": 0
+    }
   }
 ]
