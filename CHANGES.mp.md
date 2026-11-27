@@ -41,7 +41,7 @@ Summary of recent updates to the AMPL MP Library
   with solve result 1 (`solved`), so that AMPL kept the previous values of
   the variables as if they were a solution. Such errors are now reported as
   `failure` (500). The AMPLS C API functions now return an error's solve
-  result code whenever it is nonzero (for example, 150 for a failed
+  result code whenever it is above 99 (for example, 150 for a failed
   solution check with *chk:fail*), not only codes 200..599.
 - AMPLS C API: new `AMPLSGetSolveResult()` gives the solve result code
   (AMPL's `solve_result_num`) of the last solve, or of the last failed

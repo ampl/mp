@@ -1589,5 +1589,12 @@
     "tags" : ["logical", "integer"],
     "comment": "max() as a compared numberof argument: no 'redefinition could be lost' error",
     "objective" : 3
+  },
+  {
+    "name" : "not_alldiff_fail_01",
+    "solvers" : ["highs", "gurobi", "scip", "cplex", "copt"],
+    "tags" : ["logical", "integer"],
+    "comment": "Negated alldiff is unsupported: every driver reports a failure, not a solved status",
+    "values": { "solve_result": "failure" }
   }
 ]

@@ -42,10 +42,11 @@ void AMPLS__internal__SetCallResult(AMPLS_MP_Solver* slv, int code);
 /// Can be used from C++ functions returning \a int for C API.
 /// With \a record, the outcome is kept for AMPLSGetSolveResult().
 /// @return 0 if success; on failure, the solve result code of an
-///   mp::Error if it has a nonzero one (e.g., 200 when the converter
-///   proved the model infeasible), so that the caller can report it
-///   as the solve result; otherwise -1 (an error without a code,
-///   another exception, or code 0, which would mean success)
+///   mp::Error if it has one above the solved range 0-99 (e.g., 200
+///   when the converter proved the model infeasible), so that the
+///   caller can report it as the solve result; otherwise -1 (an error
+///   without a code, another exception, or a code that would mean
+///   success)
 template <class Fn> inline
 int AMPLS__internal__TryCatchWrapper(
     AMPLS_MP_Solver* slv, Fn fn, bool record=true) {
@@ -55,7 +56,7 @@ int AMPLS__internal__TryCatchWrapper(
   } catch (const mp::Error& err) {
     AMPLSAddMessage(slv, err.what());
     const int code = err.exit_code();
-    result = code > 0 ? code : -1;
+    result = code > mp::sol::SOLVED_LAST ? code : -1;  // never "solved"
   } catch (const std::exception& exc) {
     AMPLSAddMessage(slv, exc.what());
     result = -1;

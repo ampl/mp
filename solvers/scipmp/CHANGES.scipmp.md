@@ -3,6 +3,11 @@ Summary of recent updates to SCIP for AMPL
 
 
 ## unreleased
+- Fix: a model the driver cannot convert, for example with the
+  unsupported `not alldiff(...)`, was reported with solve result 1
+  (`solved`), so that AMPL kept the previous variable values as if they
+  were a solution. It is now reported as `failure` (500), as in the other
+  drivers.
 - Fix: *mip:basis* could report a basis that did not belong to the
   reported solution of the fixed problem (variables at their upper bound
   with status *low*).

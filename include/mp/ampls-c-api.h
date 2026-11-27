@@ -46,7 +46,9 @@ typedef struct AMPLS_MP_Solver_T {
    *   the model infeasible, 150 for a solution check failed with
    *   chk:fail. Such a code describes the failed call; no solution
    *   comes with it.
-   * - -1: failure without a solve result code (report it as 500).
+   * - -1: failure without a solve result code, or with a code
+   *   in the solved range 0-99, which no error can mean
+   *   (report it as 500).
    * The error message is among AMPLSGetMessages().
    */
 

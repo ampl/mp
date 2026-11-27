@@ -87,8 +87,11 @@ int BackendApp::Run(char **argv) {
     // For mp::Error, which can be thrown by Abort() or MP_RAISE,
     // we try to print the result into .sol file,
     // if the solution handler is available.
+    // An error never reports a solved status (0-99). Code 1 can come
+    // from an older MP copy linked into a solver library (SCIP's NL
+    // reader), whose Error constructors default to EXIT_FAILURE.
     GetBackend().ReportError(
-          er.exit_code()>=0 ? er.exit_code() : sol::FAILURE,
+          er.exit_code()>sol::SOLVED_LAST ? er.exit_code() : sol::FAILURE,
           std::string(GetBackend().long_name()) + ": "
           + er.what());
   } catch (const std::exception& ex) {
