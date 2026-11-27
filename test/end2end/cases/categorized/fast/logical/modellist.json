@@ -1692,6 +1692,22 @@
     "objective" : 5
   },
   {
+    "name" : "cmp_tol_numberof_01",
+    "tags" : ["logical", "integer"],
+    "comment": "numberof 0.3/0.1 in (...) counts integer variables at 3 (cvt:pre:inteps)",
+    "objective" : 6
+  },
+  {
+    "name" : "cmp_tol_numberof_01 exact",
+    "files" : ["cmp_tol_numberof_01.mod"],
+    "solvers" : ["highs", "gurobi", "scip", "cplex", "copt", "xpress", "mosek"],
+    "tags" : ["logical", "integer"],
+    "comment": "As cmp_tol_numberof_01 with exact integrality: infeasible (CP-SAT keeps its own integrality rule for values, 1e-9)",
+    "options": { "mp_options": "cvt:pre:inteps=-1 cvt:pre:ulps=0",
+                 "mp2nl_options": "solver_options='cvt:pre:inteps=-1 cvt:pre:ulps=0'" },
+    "values": { "solve_result": "infeasible" }
+  },
+  {
     "name" : "cmp_tol_int_lt_01 ineqrhs=0",
     "files" : ["cmp_tol_int_lt_01.mod"],
     "tags" : ["logical", "integer"],

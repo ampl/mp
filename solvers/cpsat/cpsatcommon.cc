@@ -25,8 +25,9 @@ CpsatCommon::VarDomainToInt64(double lb, double ub) const {
         "range CP-SAT can represent (+-{:g})", NumVars(), lb, ub, kMax));
   const double vb = data()->var_bound;
   const bool lb_inf = !std::isfinite(lb), ub_inf = !std::isfinite(ub);
-  double l = lb_inf ? -vb : RoundBoundInward(lb, true);
-  double u = ub_inf ? vb : RoundBoundInward(ub, false);
+  const double t = data()->inteps;
+  double l = lb_inf ? -vb : RoundBoundInward(lb, true, t);
+  double u = ub_inf ? vb : RoundBoundInward(ub, false, t);
   if (lb_inf && !ub_inf && u <= -vb)   // keep the width var_bound
     l = u - vb;
   if (ub_inf && !lb_inf && l >= vb)

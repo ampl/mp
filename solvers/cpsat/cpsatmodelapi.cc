@@ -57,14 +57,17 @@ std::vector<CpsatModelAPI::IntVar> CpsatModelAPI::Vars(
   return r;
 }
 
-CpsatModelAPI::Domain CpsatModelAPI::MakeDomain(double lb, double ub) {
+CpsatModelAPI::Domain CpsatModelAPI::MakeDomain(
+    double lb, double ub) const {
   if (std::isnan(lb) || std::isnan(ub))
     throw std::runtime_error("CP-SAT: a constraint bound is not a number");
   // The expression is integer-valued, so rounding a fractional bound
-  // inward keeps the row's solutions; a near-integer bound is that integer.
+  // inward keeps the row's solutions; a near-integer bound (within
+  // cvt:pre:inteps, as in MIP drivers) is that integer.
   // Bounds beyond int64 are clamped: Domain(l, u) is empty when l > u.
-  return Domain(ClampToInt64(RoundBoundInward(lb, true)),
-                ClampToInt64(RoundBoundInward(ub, false)));
+  const double t = data()->inteps;
+  return Domain(ClampToInt64(RoundBoundInward(lb, true, t)),
+                ClampToInt64(RoundBoundInward(ub, false, t)));
 }
 
 bool CpsatModelAPI::IsFixedTo(int var, int64_t value) const {
@@ -364,9 +367,8 @@ void CpsatModelAPI::AddConstraint(const CountConstraint& cc) {
 void CpsatModelAPI::AddConstraint(const NumberofConstConstraint& nc) {
   auto& b = data()->builder;
 
-  constexpr double feasTol = 1e-6;
   const double kd = nc.GetParameters().at(0);
-  if (!IsInteger(kd, feasTol)) {                     // never equal
+  if (!IsInteger(kd, BoundTolerance(kd, data()->inteps))) {  // never equal
     b.AddEquality(Var(nc.GetResultVar()), 0);
     return;
   }

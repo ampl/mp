@@ -2,6 +2,11 @@ Summary of recent updates to CP-SAT for AMPL
 ============================================
 
 ## unreleased
+- Bounds of integer-valued rows and of integer variables, and
+  *numberof* values, within the converter's integrality tolerance
+  *cvt:pre:inteps* (default 1e-6) of an integer are taken as that
+  integer, as in the MIP drivers: `x <= 3 - 1e-7` allows `x = 3`.
+  Coefficients and constants keep the rule below.
 - Option *tech:varbound* is now called *cvt:mip_max_bound*;
   *tech:varbound* and *varbound* remain accepted.
 - Linear constraint coefficients must be integer: a fractional coefficient

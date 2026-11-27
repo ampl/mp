@@ -44,6 +44,10 @@ public:
   /// of two auxiliary variables (cvt:multoutcard)
   static double MultOutCardDefault() { return 1.0; }
 
+  /// The converter's integrality tolerance (cvt:pre:inteps):
+  /// row and variable bounds, numberof values
+  void SetIntegralityTolerance(double t) { data()->inteps = t; }
+
   /// Called before problem input.
   void InitProblemModificationPhase(const FlatModelInfo*);
   /// After
@@ -134,7 +138,7 @@ private:
   BoolVar Lit(int i) const;
   std::vector<IntVar> Vars(const std::vector<int>& idx) const;
   /// Domain from bounds for an integer-valued linear expression
-  static Domain MakeDomain(double lb, double ub);
+  Domain MakeDomain(double lb, double ub) const;
   bool IsFixedTo(int var, int64_t value) const;
   /// The divisor y, or a copy with 0 removed from its domain
   /// (CP-SAT requires that for division)

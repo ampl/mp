@@ -12,6 +12,7 @@
 #include <stdexcept>
 
 #include "mp/backend-to-model-api.h"
+#include "mp/flat/num_tolerances.h"
 
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -75,12 +76,23 @@ inline int64_t ToInt64(double v, const char* what) {
   return static_cast<int64_t>(r);
 }
 
+/// Tolerance for taking a bound \a b of an integer-valued quantity
+/// as the nearest integer: IntegerTolerance(b), or the converter's
+/// integrality tolerance \a inteps (cvt:pre:inteps) if larger,
+/// below 0.5. Negative \a inteps: IntegerTolerance(b) only.
+inline double BoundTolerance(double b, double inteps) {
+  const double t = IntegerTolerance(b);
+  return inteps > t ? std::min(inteps, NumericTolerances::MaxIntEps()) : t;
+}
+
 /// Round a bound of an integer-valued quantity to an integer value:
-/// to the nearest one if within the tolerance, otherwise inward
+/// to the nearest one if within BoundTolerance(), otherwise inward
 /// (a lower bound up, an upper bound down). Infinite bounds are kept.
 /// @param is_lower: whether \a b is a lower bound.
-inline double RoundBoundInward(double b, bool is_lower) {
-  if (IsIntegerValue(b))
+/// @param inteps: cvt:pre:inteps, negative: not used.
+inline double RoundBoundInward(double b, bool is_lower,
+                               double inteps = -1.0) {
+  if (std::isfinite(b) && IsInteger(b, BoundTolerance(b, inteps)))
     return std::round(b);
   return is_lower ? std::ceil(b) : std::floor(b);
 }
@@ -123,6 +135,9 @@ struct CpsatData {
   operations_research::sat::SatParameters params;
   /// Replaces infinite variable bounds (cvt:mip_max_bound)
   double var_bound = kCpsatDefaultVarBound;
+  /// Integrality tolerance of the converter (cvt:pre:inteps) for
+  /// row and variable bounds and numberof values; negative: not used
+  double inteps = -1.0;
   /// A variable with an infinite bound replaced by cvt:mip_max_bound
   struct VarBoundSet {
     int var;               ///< index of the variable
@@ -172,7 +187,8 @@ protected:
   int NumObjs() const { return 1; }
 
   /// The CP-SAT domain [lb, ub] of a variable with bounds \a lb, \a ub.
-  /// Finite bounds are kept, rounded inward (lb up, ub down); an infinite
+  /// Finite bounds are kept, rounded inward (lb up, ub down; within
+  /// cvt:pre:inteps to the nearest integer, RoundBoundInward()); an infinite
   /// bound becomes -+var_bound, or var_bound beyond the other bound when
   /// that bound lies beyond var_bound itself. The result is clamped to
   /// +-kCpsatMaxVarBound, the domain limit of CP-SAT.
