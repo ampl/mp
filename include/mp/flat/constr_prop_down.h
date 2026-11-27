@@ -205,8 +205,10 @@ public:
     if ( !(MPCD( IfPropCtxCountNumberof() ) & 2) )
       ctx = Context::CTX_MIX;                     // #267
     con.AddContext(ctx);
+    // The arguments are compared for equality: either direction
+    // of their value can change the result
     MPD( PropagateResult2Vars(con.GetArguments(), MPD( MinusInfty() ), MPD( Infty() ),
-                         ctx) );
+                         Context::CTX_MIX) );
   }
 
   void PropagateResult(NumberofVarConstraint& con, double lb, double ub, Context ctx) {
@@ -214,8 +216,10 @@ public:
     if ( !(MPCD( IfPropCtxCountNumberof() ) & 4) )
       ctx = Context::CTX_MIX;                     // #267
     con.AddContext(ctx);
+    // The arguments are compared for equality: either direction
+    // of their value can change the result
     MPD( PropagateResult2Vars(con.GetArguments(), MPD( MinusInfty() ), MPD( Infty() ),
-                         ctx) );
+                         Context::CTX_MIX) );
   }
 
   void PropagateResult(CountConstraint& con, double lb, double ub, Context ctx) {

@@ -7,6 +7,10 @@ Summary of recent updates to the AMPL MP Library
   optimum when `x` came after the compared expressions in the NL file
   (for example, with `abs()` elsewhere in the model): preprocessing
   (*cvt:pre:sort*) reordered `x` with the compared values.
+- Fix: `numberof` with compared expressions such as `max()`, `min()`,
+  `abs()` or another `numberof` failed with "Part of expression
+  redefinition could be lost" or, with a nested `numberof`, could give a
+  wrong optimum.
 - Starting points for continuous models (no unfixed integer variables,
   also after reformulation), and for solvers without MIP starts: incoming
   primal values (for example, from `let x := ...` or `var x := ...`)

@@ -1575,5 +1575,19 @@
     "comment": "As numberof_ref_sort_01; abs() in the objective gives the reference the largest index",
     "objective" : -1,
     "values": { "x1": 2 }
+  },
+  {
+    "name" : "numberof_ctx_01",
+    "tags" : ["logical", "integer"],
+    "comment": "The arguments of numberof get the mixed context: inner numberof in both directions",
+    "options": { "presolve": 0 },
+    "objective" : -1,
+    "values": { "y": 0 }
+  },
+  {
+    "name" : "numberof_ctx_02",
+    "tags" : ["logical", "integer"],
+    "comment": "max() as a compared numberof argument: no 'redefinition could be lost' error",
+    "objective" : 3
   }
 ]
