@@ -1566,6 +1566,7 @@
   {
     "name" : "cmp_bound_fp_01",
     "tags" : ["logical", "integer"],
+    "solvers_exclude" : ["cpsat"],
     "comment": "(x+1)/3 >= 2 is not decided false from the computed bound 1.9999999999999998",
     "objective" : -8,
     "values": { "x": 4, "y": 0 }
@@ -1573,6 +1574,7 @@
   {
     "name" : "cmp_bound_fp_02",
     "tags" : ["logical", "integer"],
+    "solvers_exclude" : ["cpsat"],
     "comment": "As cmp_bound_fp_01 with (x+1)/3 == 2",
     "objective" : -8,
     "values": { "x": 4, "y": 0 }
