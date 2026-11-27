@@ -219,6 +219,41 @@ TEST_F(InterfaceTester_MaxConstraint, UEncMaxDomain) {
   EXPECT_FALSE(cvt.IfDomainFitsUEnc(-5e4, 5e4));
 }
 
+/// sol:chk:mode bits 32..512: a functional result is compared with its
+/// recomputed value on the side its context requires
+TEST(SolCheckTest, ContextSignedDifference) {
+  using mp::Context;
+  // count required >= 2 (positive context): solver's 2, true 3: fine
+  EXPECT_LT(mp::ContextSignedDifference(2.0 - 3.0, Context::CTX_POS), 0.0);
+  EXPECT_GT(mp::ContextSignedDifference(3.0 - 2.0, Context::CTX_POS), 0.0);
+  // max used below an upper bound (negative context): solver's 1, true 0
+  EXPECT_LT(mp::ContextSignedDifference(1.0 - 0.0, Context::CTX_NEG), 0.0);
+  EXPECT_EQ(1.0, mp::ContextSignedDifference(-1.0, Context::CTX_MIX));
+}
+
+
+/// The check of a conditional comparison with the solver's values:
+/// its truth within sol:chk:logtol; a differing result is a violation
+/// of 1. With recomputed values and for strict kinds: exact (V1F-10)
+TEST(SolCheckTest, ConditionalTruthWithinLogTol) {
+  const std::vector<mp::var::Type> types(2, mp::var::CONTINUOUS);
+  const std::vector<double> lb{0.0, 0.0}, ub{1.0, 1.0};
+  auto viol = [&](auto&& con, double lt, bool recomp) {
+    mp::VarInfoStatic x(1e-6, lt, recomp, {1e-4 - 1e-7, 1.0}, {},
+                        types, lb, ub, 100, 100);
+    return con.ComputeViolation(x).viol_;
+  };
+  mp::CondLinConGE ge { 1, { { {1.0}, {0} }, 1e-4 } };   // b <==> x >= c
+  ge.SetContext(mp::Context::CTX_POS);
+  EXPECT_EQ(0.0, viol(ge, 1e-5, false));      // holds within logtol
+  EXPECT_EQ(1.0, viol(ge, 0.0, false));       // exactly false, b = 1
+  EXPECT_GT(1e-6, viol(ge, 1e-5, true));      // recomputed: exact gap
+  mp::CondLinConGT gt { 1, { { {1.0}, {0} }, 1e-4 - 2e-7 } };
+  gt.SetContext(mp::Context::CTX_POS);
+  EXPECT_EQ(0.0, viol(gt, 0.0, false));       // strict: exact, holds
+}
+
+
 /////////////////////////////// Quadratics //////////////////////////////////
 ///
 /// Probably this tests more the Problem Flattener,

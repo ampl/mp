@@ -1764,6 +1764,53 @@
     "values": { "Initial.flat1__A__uenc": 0 }
   },
   {
+    "name" : "chk_ctx_count_01",
+    "tags" : ["logical", "integer"],
+    "comment": "sol:chk:mode=64: the recomputed count is compared on the side its context requires, no false violation",
+    "options": { "mp_options": "sol:chk:mode=64 chk:fail",
+                 "mp2nl_options": "solver_options='sol:chk:mode=64 chk:fail'" },
+    "objective" : -4,
+    "values": { "solve_result": "solved" }
+  },
+  {
+    "name" : "chk_ctx_max_01",
+    "tags" : ["logical", "continuous"],
+    "comment": "sol:chk:mode=64: max() below an upper bound is compared on the side its context requires",
+    "options": { "mp_options": "sol:chk:mode=64 chk:fail",
+                 "mp2nl_options": "solver_options='sol:chk:mode=64 chk:fail'" },
+    "objective" : 4,
+    "values": { "solve_result": "solved" }
+  },
+  {
+    "name" : "chk_ctx_max_01 mode=128",
+    "files" : ["chk_ctx_max_01.mod"],
+    "tags" : ["logical", "continuous"],
+    "comment": "As chk_ctx_max_01 with sol:chk:mode=128",
+    "options": { "mp_options": "sol:chk:mode=128 chk:fail",
+                 "mp2nl_options": "solver_options='sol:chk:mode=128 chk:fail'" },
+    "objective" : 4,
+    "values": { "solve_result": "solved" }
+  },
+  {
+    "name" : "chk_logtol_01",
+    "tags" : ["logical", "continuous"],
+    "comment": "The solution check evaluates floor(x) at x = 3 - 5e-8 within sol:chk:logtol (default 1e-6) as 3: no violation",
+    "options": { "presolve": 0,
+                 "mp_options": "chk:fail",
+                 "mp2nl_options": "solver_options='chk:fail'" },
+    "values": { "solve_result_num": 0 }
+  },
+  {
+    "name" : "chk_logtol_01 logtol=0",
+    "files" : ["chk_logtol_01.mod"],
+    "tags" : ["logical", "continuous"],
+    "comment": "As chk_logtol_01 with sol:chk:logtol=0: exact evaluation, floor(x) = 2, reports a violation",
+    "options": { "presolve": 0,
+                 "mp_options": "sol:chk:logtol=0 chk:fail",
+                 "mp2nl_options": "solver_options='sol:chk:logtol=0 chk:fail'" },
+    "values": { "solve_result_num": 150 }
+  },
+  {
     "name" : "cmp_tol_strict_true_01",
     "tags" : ["logical", "continuous"],
     "comment": "A strict comparison that holds exactly (x > -5e-7 at x >= 0) is decided true, not encoded with the gap cvt:mip:eps",
@@ -1889,5 +1936,24 @@
     "options": { "mp_options": "cvt:uenc:maxdom=10000001",
                  "mp2nl_options": "solver_options='cvt:uenc:maxdom=10000001'" },
     "objective" : 120
+  },
+  {
+    "name" : "chk_uenc_01 mode=128",
+    "tags" : ["logical", "integer"],
+    "comment": "Check bit 128 with a unary encoding: no false warning for the encoding",
+    "options": { "mp_options": "sol:chk:mode=128 chk:fail",
+                 "mp2nl_options": "solver_options='sol:chk:mode=128 chk:fail'" },
+    "objective" : -6,
+    "values": { "solve_result": "solved" }
+  },
+  {
+    "name" : "chk_uenc_01 mode=4",
+    "files" : ["chk_uenc_01.mod"],
+    "tags" : ["logical", "integer"],
+    "comment": "Check bit 4 with a unary encoding: no false warning",
+    "options": { "mp_options": "sol:chk:mode=4 chk:fail",
+                 "mp2nl_options": "solver_options='sol:chk:mode=4 chk:fail'" },
+    "objective" : -6,
+    "values": { "solve_result": "solved" }
   }
 ]

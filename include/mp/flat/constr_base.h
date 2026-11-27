@@ -413,6 +413,22 @@ double ComputeValue(const Con& , const VarVec& ) {
   return 0.0;
 }
 
+/// Violation of a functional constraint's result, given
+/// \a d = (solver's value) - (recomputed true value), as in
+/// the check with solver's values: in positive context the result
+/// only needs to be at most its true value, so only d > 0 counts;
+/// in negative context only d < 0. Mixed or unknown context: |d|.
+inline double ContextSignedDifference(double d, Context ctx) {
+  switch (ctx.GetValue()) {
+  case Context::CTX_POS:
+    return d;
+  case Context::CTX_NEG:
+    return -d;
+  default:
+    return std::fabs(d);
+  }
+}
+
 /// Compute violation of functional constraint.
 /// Can only be used for proper functional constraints,
 /// should be redefined for cones.
@@ -435,9 +451,13 @@ Violation ComputeViolation(
       return {INFINITY, 0.0};
     }
   }
-  return                              // recomputed var minus solver's
-  { std::fabs(x[resvar] - x.raw(resvar))
-        + std::max(0.0, x.bounds_viol(resvar)), x[resvar]};
+  // Recomputed values (sol:chk:mode bits 32..512): x[resvar] is the
+  // true value, x.raw(resvar) the solver's. As above, only the side
+  // required by the context counts: in positive context, the solver's
+  // value may be below the true one (e.g., a count required >= 2).
+  return { ContextSignedDifference(x.raw(resvar) - x[resvar],
+                                   c.GetContext())
+           + std::max(0.0, x.bounds_viol(resvar)), x[resvar] };
 }
 
 
@@ -533,27 +553,40 @@ public:
   /// return the exact gap, despite this is a logical constraint.
   /// If the subconstr holds but should not,
   /// return the opposite gap. Similar to Indicator.
+  /// With the solver's values (not recomputed), the truth of a
+  /// non-strict comparison is decided within sol:chk:logtol,
+  /// and a result that differs from it is a violation of 1
+  /// (strict comparisons: exact, as they are encoded with
+  /// the gap cvt:mip:eps; recomputed values: exact).
   template <class VarVec>
   Violation ComputeViolation(const VarVec& x) {
     auto viol = GetConstraint().ComputeViolation(x);
-    bool ccon_valid = viol.viol_<=0.0;
-    bool has_arg = x[GetResultVar()] >= 0.5;
+    constexpr int kind = Con::kind();
+    const bool f_logtol = 1==kind*kind && !x.recomp_vals();
+    const bool ccon_valid =
+        viol.viol_ <= (f_logtol ? x.logtol() : 0.0);
+    const bool has_arg = x[GetResultVar()] >= 0.5;
+    double v_wrong {};             // violation if the result is wrong
     switch (this->GetContext().GetValue()) {
     case Context::CTX_MIX:    // Viol is non-positive if holds
       if (has_arg == ccon_valid)
         return {0.0, 0.0};
-      return {std::fabs(viol.viol_), viol.valX_};
+      v_wrong = std::fabs(viol.viol_);
+      break;
     case Context::CTX_POS:
       if (has_arg <= ccon_valid)
         return {0.0, 0.0};
-      return {viol.viol_, viol.valX_};
+      v_wrong = viol.viol_;
+      break;
     case Context::CTX_NEG:
       if (has_arg >= ccon_valid)
         return {0.0, 0.0};
-      return {-viol.viol_, viol.valX_};
+      v_wrong = -viol.viol_;
+      break;
     default:
       return {INFINITY, 0.0};
     }
+    return {f_logtol ? 1.0 : v_wrong, viol.valX_};
   }
 };
 

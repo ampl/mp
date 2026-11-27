@@ -1953,6 +1953,7 @@ private:
     bool solcheckfail_ = false;
     double solfeastol_ = 1e-6;
     double solfeastolrel_ = 1e-6;
+    double sollogtol_ = 1e-5;
     double solinttol_ = 1e-4;
     double solinttolrel_ = 0.0;
     int sol_round_ = 100;
@@ -2018,6 +2019,7 @@ public:             // public for CRTP
   bool sol_check_fail() const { return options_.solcheckfail_; }
   double sol_feas_tol() const { return options_.solfeastol_; }
   double sol_feas_tol_rel() const { return options_.solfeastolrel_; }
+  double sol_log_tol() const { return options_.sollogtol_; }
   double sol_int_tol() const { return options_.solinttol_; }
   double sol_int_tol_rel() const { return options_.solinttolrel_; }
   int sol_round() const { return options_.sol_round_; }
@@ -2499,7 +2501,7 @@ private:
         "Absolute tolerance to check objective values', variable "
         "and constraint bounds' violations. "
                        "Only triggers if also sol:chk:feastolrel is violated. "
-                       "See also pre:feastol. "
+                       "See also pre:feastol, sol:chk:logtol. "
                        "Default 1e-6.",
         options_.solfeastol_, 0.0, 1e100);
     GetEnv().AddOption("sol:chk:feastolrel sol:chk:epsrel chk:epsrel chk:feastolrel",
@@ -2509,6 +2511,16 @@ private:
                        "See also pre:feastol. "
                        "Default 1e-6.",
         options_.solfeastolrel_, 0.0, 1e100);
+    GetEnv().AddOption("sol:chk:logtol chk:logtol",
+        "Absolute tolerance of truth values inside logical expressions "
+        "in the solution check: comparisons (x >= 1e-4 holds "
+        "at x = 1e-4 - 1e-7; non-strict comparisons only; strict ones "
+        "are evaluated exactly, see cvt:mip:eps), integrality in "
+        "floor/ceil/round, numberof. A comparison whose truth "
+        "differs from its result in the solution is reported. "
+        "0: exact evaluation, as in AMPL. Violations are measured "
+        "with sol:chk:feastol. Default 1e-5.",
+        options_.sollogtol_, 0.0, 1e100);
     GetEnv().AddOption("sol:chk:inttol sol:chk:inteps sol:inteps chk:inttol",
         "Absolute solution checking tolerance for variables' "
         "integrality: a value is reported if its distance from "

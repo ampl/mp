@@ -50,6 +50,15 @@ Summary of recent updates to the AMPL MP Library
   *cvt:uenc:maxdom=10000001* restores the previous limit (faster for
   *alldiff* and similar expressions that compare many values of a
   larger domain).
+- Fix: *sol:chk:mode* bits 64 and 128 reported false violations of
+  expressions such as `count` or `max` whose solver value lies on the
+  side allowed by their use (for example, a count required to be at
+  least 2), and bits 4 and 128 of unary encodings.
+- New option *sol:chk:logtol* (synonym *chk:logtol*), default 1e-5:
+  tolerance of truth values inside logical expressions in the solution
+  check (non-strict comparisons, integrality in `floor`, `ceil`,
+  `round`, *numberof*), separate from *sol:chk:feastol*, which measures
+  violations. 0: exact evaluation, as in AMPL.
 - Fix: `numberof x in (...)` with a variable `x` could give a wrong
   optimum when `x` came after the compared expressions in the NL file
   (for example, with `abs()` elsewhere in the model): preprocessing

@@ -123,7 +123,7 @@ public:
       ArrayRef<double> x, std::vector<bool> is_final={},
       bool f_idealistic=true) {
     VarInfoRecomp vir {
-      MPCD( sol_feas_tol() ),
+      MPCD( sol_feas_tol() ), MPCD( sol_log_tol() ),
           f_idealistic,
       {x, recomp_fn, is_final},
       {},              // no raw values
@@ -159,6 +159,7 @@ protected:
                  MPCD( GetModel() ).var_ub_best_vec(),
                  MPCD( sol_feas_tol() ),
                  MPCD( sol_feas_tol_rel() ),
+                 MPCD( sol_log_tol() ),
                  MPCD( sol_round() ),
                  MPCD( sol_prec() ),
                  if_recomp_vals,
