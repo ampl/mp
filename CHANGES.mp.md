@@ -4,12 +4,37 @@ Summary of recent updates to the AMPL MP Library
 ## Unreleased
 
 - New option *cvt:pre:inteps* (synonyms *pre:inteps*, *roundintbnd*):
-  integrality tolerance, default 1e-6. A bound of an integer variable
-  within it of an integer is taken as that integer (otherwise it is
-  rounded inwards). The tolerance used is at least the margin for
-  rounding errors, new option *cvt:pre:ulps* (default 16 units in the
-  last place of the bound). Negative: exact up to that margin. Values
-  from 0.5 are rejected. *cvt:pre:all=0* disables all rounding.
+  integrality tolerance, default 1e-6. A value within it of an integer
+  is taken as that integer for bounds of integer variables (otherwise
+  they are rounded inwards), right-hand sides of comparisons of
+  integer-valued expressions, compared constants and *numberof*
+  values, also in logical expressions. Fix: such comparisons could give
+  a wrong optimum, depending on how they were written: `x <= 0.3/0.1`
+  (2.9999999999999996) allowed integer `x = 3` as a constraint, but not
+  inside a disjunction; `x == 0.3/0.1` was false. Negative: exact.
+  Values from 0.5 are rejected.
+- Comparisons inside logical expressions are decided by the converter
+  from the bounds of their expressions with option *cvt:pre:feastol*
+  (absolute, in the units of the expression) and a margin for rounding
+  errors of the compared constant (new option *cvt:pre:ulps*, default
+  16 units in the last place; 0: none). A non-strict comparison holds
+  within the tolerance: `x >= 4` with `x <= 3.9999995` is no longer
+  decided false, and `(x + 1)/3 >= 2 ==> y >= 3` at `x <= 5` is no
+  longer decided false by a rounding error (which made the returned
+  solution violate the model). A strict comparison is decided true only
+  if it holds exactly, and false as the negation of the non-strict one:
+  `x < 1e-7` for integer `x >= 0` is false, with a warning.
+  *cvt:pre:feastol=0* gives exact decisions; *cvt:pre:feastol=0
+  cvt:pre:inteps=-1 cvt:pre:ulps=0* the previous results.
+  *cvt:pre:all=0* also disables all rounding and tolerances.
+- Fix: a non-strict comparison of a continuous expression close to its
+  bound, for example `x <= 5e-5 or y >= 1` with `x` in `[0, 1e-4]`,
+  was replaced by equality to the bound (`x == 0`), which cut off
+  solutions or made the model infeasible; and `not (1e-5*x > 5e-5)`
+  could make a model infeasible.
+- An equality whose right-hand side differs from a bound of its
+  expression only by rounding error, such as `0.3*b == 0.1*3` for a
+  binary `b`, holds at that bound.
 - Fix: `numberof x in (...)` with a variable `x` could give a wrong
   optimum when `x` came after the compared expressions in the NL file
   (for example, with `abs()` elsewhere in the model): preprocessing

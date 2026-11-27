@@ -594,15 +594,16 @@
       "mp_options": "debug=1"
     },
     "tags" : ["logical", "linear", "continuous"],
+    "comment": "Comparisons of continuous expressions cvt:mip:eps/k away from a bound are not rewritten as equalities to the bound (only within cvt:pre:feastol)",
     "objective": -44,
     "values": {
       "Initial.flat0__count": 0,
       "Initial.flat1__A__uenc": 0,
-      "Initial.flat0__condlinlt": 0,
-      "Initial.flat0__condlinle": 0,
+      "Initial.flat0__condlinlt": 2,
+      "Initial.flat0__condlinle": 2,
       "Initial.flat0__condlineq": 2,
-      "Initial.flat0__condlinge": 2,
-      "Initial.flat0__condlingt": 0
+      "Initial.flat0__condlinge": 4,
+      "Initial.flat0__condlingt": 2
     }
   },
   {
@@ -1563,6 +1564,20 @@
     "values": { "solve_result": "failure" }
   },
   {
+    "name" : "cmp_bound_fp_01",
+    "tags" : ["logical", "integer"],
+    "comment": "(x+1)/3 >= 2 is not decided false from the computed bound 1.9999999999999998",
+    "objective" : -8,
+    "values": { "x": 4, "y": 0 }
+  },
+  {
+    "name" : "cmp_bound_fp_02",
+    "tags" : ["logical", "integer"],
+    "comment": "As cmp_bound_fp_01 with (x+1)/3 == 2",
+    "objective" : -8,
+    "values": { "x": 4, "y": 0 }
+  },
+  {
     "name" : "numberof_ref_sort_01",
     "tags" : ["logical", "integer"],
     "comment": "cvt:pre:sort must keep the reference variable of numberof first",
@@ -1596,5 +1611,206 @@
     "tags" : ["logical", "integer"],
     "comment": "Negated alldiff is unsupported: every driver reports a failure, not a solved status",
     "values": { "solve_result": "failure" }
+  },
+  {
+    "name" : "cmp_tol_le_cont_01",
+    "tags" : ["logical", "continuous"],
+    "comment": "x <= 5e-5 near the bound 0 is not rewritten as x == 0 (T1F-01)",
+    "objective" : 0.5,
+    "values": { "x": 5e-5, "y": 0 }
+  },
+  {
+    "name" : "cmp_tol_le_cont_01 feastol=0",
+    "files" : ["cmp_tol_le_cont_01.mod"],
+    "tags" : ["logical", "continuous"],
+    "comment": "As cmp_tol_le_cont_01 with exact comparison decisions",
+    "options": { "mp_options": "cvt:pre:feastol=0",
+                 "mp2nl_options": "solver_options='cvt:pre:feastol=0'" },
+    "objective" : 0.5
+  },
+  {
+    "name" : "cmp_tol_ge_cont_01",
+    "tags" : ["logical", "continuous"],
+    "comment": "x >= 0.99995 near the bound 1 is not rewritten as x == 1 (T1F-01)",
+    "objective" : 0.99995,
+    "values": { "y": 0 }
+  },
+  {
+    "name" : "cmp_tol_neg_scaled_01",
+    "solvers" : ["highs", "gurobi", "scip", "cplex", "copt", "xpress", "mosek"],
+    "tags" : ["logical", "integer"],
+    "comment": "not (1e-5*x > 5e-5) is not rewritten as 1e-5*x == 0 (T1F-01)",
+    "objective" : 5
+  },
+  {
+    "name" : "cmp_tol_int_rhs_01",
+    "tags" : ["logical", "integer"],
+    "comment": "x <= 0.3/0.1 for integer x allows x = 3 (cvt:pre:inteps)",
+    "objective" : 3,
+    "values": { "y": 0 }
+  },
+  {
+    "name" : "cmp_tol_int_rhs_01 exact",
+    "files" : ["cmp_tol_int_rhs_01.mod"],
+    "tags" : ["logical", "integer"],
+    "comment": "As cmp_tol_int_rhs_01 with exact integrality: x <= 2",
+    "options": { "mp_options": "cvt:pre:inteps=-1 cvt:pre:ulps=0",
+                 "mp2nl_options": "solver_options='cvt:pre:inteps=-1 cvt:pre:ulps=0'" },
+    "objective" : 2
+  },
+  {
+    "name" : "cmp_tol_int_rhs_02",
+    "tags" : ["logical", "integer"],
+    "comment": "x <= 3 - 1e-7 for integer x in a disjunction allows x = 3, as the row does (AMPL presolve off: it would round the bound itself)",
+    "options": { "presolve": 0 },
+    "objective" : 3
+  },
+  {
+    "name" : "cmp_tol_int_rhs_02 exact",
+    "files" : ["cmp_tol_int_rhs_02.mod"],
+    "tags" : ["logical", "integer"],
+    "comment": "As cmp_tol_int_rhs_02 with exact integrality: x <= 2",
+    "options": { "presolve": 0,
+                 "mp_options": "cvt:pre:inteps=-1 cvt:pre:ulps=0",
+                 "mp2nl_options": "solver_options='cvt:pre:inteps=-1 cvt:pre:ulps=0'" },
+    "objective" : 2
+  },
+  {
+    "name" : "cmp_tol_int_eq_01",
+    "tags" : ["logical", "integer"],
+    "comment": "x == 0.3/0.1 holds at integer x = 3 (cvt:pre:inteps)",
+    "objective" : -3,
+    "values": { "x": 3, "y": 0 }
+  },
+  {
+    "name" : "cmp_tol_int_eq_01 exact",
+    "files" : ["cmp_tol_int_eq_01.mod"],
+    "tags" : ["logical", "integer"],
+    "comment": "As cmp_tol_int_eq_01 with exact integrality: the equality is false",
+    "options": { "mp_options": "cvt:pre:inteps=-1 cvt:pre:ulps=0",
+                 "mp2nl_options": "solver_options='cvt:pre:inteps=-1 cvt:pre:ulps=0'" },
+    "objective" : 5
+  },
+  {
+    "name" : "cmp_tol_eq_scaled_01",
+    "solvers" : ["highs", "gurobi", "scip", "cplex", "copt", "xpress", "mosek"],
+    "tags" : ["logical", "integer"],
+    "comment": "1e-3*x == 1e-3*(3+1e-7) at the root fixes integer x at 3 (cvt:pre:inteps), no contradictory bounds (AMPL presolve off: it would round the bound itself)",
+    "options": { "presolve": 0 },
+    "objective" : 3
+  },
+  {
+    "name" : "cmp_tol_decide_01",
+    "tags" : ["logical", "continuous"],
+    "comment": "x >= 4 at x <= 3.9999995 is not decided false within cvt:pre:feastol",
+    "objective" : 10
+  },
+  {
+    "name" : "cmp_tol_decide_01 feastol=0",
+    "files" : ["cmp_tol_decide_01.mod"],
+    "tags" : ["logical", "continuous"],
+    "comment": "As cmp_tol_decide_01 with exact decisions: x >= 4 is false",
+    "options": { "mp_options": "cvt:pre:feastol=0",
+                 "mp2nl_options": "solver_options='cvt:pre:feastol=0'" },
+    "objective" : 0
+  },
+  {
+    "name" : "cmp_tol_bin_eq_01",
+    "solvers" : ["highs", "gurobi", "scip", "cplex", "copt", "xpress", "mosek"],
+    "tags" : ["logical", "integer"],
+    "comment": "0.3*b == 0.1*3 holds at b = 1: the rhs differs from the bound 0.3 only by rounding error",
+    "objective" : 2
+  },
+  {
+    "name" : "cmp_tol_strict_true_01",
+    "tags" : ["logical", "continuous"],
+    "comment": "A strict comparison that holds exactly (x > -5e-7 at x >= 0) is decided true, not encoded with the gap cvt:mip:eps",
+    "options": { "presolve": 0 },
+    "objective" : 0
+  },
+  {
+    "name" : "cmp_tol_strict_true_01 feastol=0",
+    "files" : ["cmp_tol_strict_true_01.mod"],
+    "tags" : ["logical", "continuous"],
+    "comment": "As cmp_tol_strict_true_01 with exact decisions",
+    "options": { "presolve": 0,
+                 "mp_options": "cvt:pre:feastol=0",
+                 "mp2nl_options": "solver_options='cvt:pre:feastol=0'" },
+    "objective" : 0
+  },
+  {
+    "name" : "cmp_tol_eq_feastol_01",
+    "tags" : ["logical", "continuous"],
+    "comment": "x == 0.9999995 at x <= 1 is kept: an equality rhs moves to a bound only within rounding error",
+    "options": { "presolve": 0 },
+    "objective" : 0
+  },
+  {
+    "name" : "cmp_tol_eq_feastol_01 feastol=0",
+    "files" : ["cmp_tol_eq_feastol_01.mod"],
+    "tags" : ["logical", "continuous"],
+    "comment": "As cmp_tol_eq_feastol_01 with exact decisions",
+    "options": { "presolve": 0,
+                 "mp_options": "cvt:pre:feastol=0",
+                 "mp2nl_options": "solver_options='cvt:pre:feastol=0'" },
+    "objective" : 0
+  },
+  {
+    "name" : "cmp_tol_big_bnd_01",
+    "solvers" : ["gurobi", "scip", "cplex", "copt", "xpress", "mosek"],
+    "tags" : ["logical", "continuous"],
+    "comment": "A large bound (1e20) does not widen the decision margin: x >= 5 is not decided true at x = 3 (HiGHS, without indicators, takes 1e20 as no bound for big-M and asks for bounds, also before)",
+    "options": { "presolve": 0 },
+    "objective" : 3
+  },
+  {
+    "name" : "cmp_tol_big_bnd_01 ulps=0",
+    "files" : ["cmp_tol_big_bnd_01.mod"],
+    "solvers" : ["gurobi", "scip", "cplex", "copt", "xpress", "mosek"],
+    "tags" : ["logical", "continuous"],
+    "comment": "As cmp_tol_big_bnd_01 without the floating-point margin",
+    "options": { "presolve": 0,
+                 "mp_options": "cvt:pre:ulps=0",
+                 "mp2nl_options": "solver_options='cvt:pre:ulps=0'" },
+    "objective" : 3
+  },
+  {
+    "name" : "cmp_tol_big_bnd_02",
+    "tags" : ["logical", "continuous"],
+    "comment": "x in [0, 1e12]: b <==> x >= 0.001 is not decided true at x = 0",
+    "options": { "presolve": 0 },
+    "objective" : -0.999
+  },
+  {
+    "name" : "cmp_tol_big_bnd_03",
+    "tags" : ["logical", "continuous"],
+    "comment": "x + y <= 0.001 with an upper bound 1e12 + 1 is not rewritten as x + y == 0",
+    "options": { "presolve": 0 },
+    "objective" : 1
+  },
+  {
+    "name" : "cmp_tol_big_int_01",
+    "tags" : ["logical", "integer"],
+    "comment": "Integer x in [0, 1e15]: b <==> x >= 2 is not decided true at x = 0",
+    "options": { "presolve": 0 },
+    "objective" : -8
+  },
+  {
+    "name" : "cmp_tol_strict_false_01",
+    "tags" : ["logical", "integer"],
+    "comment": "x < 1e-7 for integer x is false within cvt:pre:inteps: infeasible, with the warning strict_cmp_tol",
+    "options": { "presolve": 0 },
+    "values": { "solve_result": "infeasible",
+                "if match(solve_message, 'strict comparison') > 0 then 1": 1 }
+  },
+  {
+    "name" : "cmp_tol_strict_false_01 inteps=-1",
+    "files" : ["cmp_tol_strict_false_01.mod"],
+    "tags" : ["logical", "integer"],
+    "comment": "As cmp_tol_strict_false_01 with exact integrality: x = 0",
+    "options": { "presolve": 0,
+                 "mp_options": "cvt:pre:inteps=-1",
+                 "mp2nl_options": "solver_options='cvt:pre:inteps=-1'" },
+    "objective" : 0
   }
 ]

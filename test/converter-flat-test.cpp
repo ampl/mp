@@ -79,6 +79,64 @@ TEST_F(InterfaceTester_MaxConstraint, RoundIntBoundUsesUlpTolerance) {
 }
 
 
+/// Decision margin d = max(cvt:pre:feastol, cvt:pre:ulps ulp):
+/// a comparison is decided false from body bounds only if they miss
+/// the right-hand side by more than d (one ulp is not enough)
+TEST_F(InterfaceTester_MaxConstraint, DecisionMarginCoversRoundingError) {
+  const auto& cvt = GetInterface().GetFlatCvt();
+  const double ub = std::nextafter(2.0, 0.0);  // (5+1)/3 computed in steps
+  EXPECT_FALSE(ub < 2.0 - cvt.DecisionMargin(2.0));
+  EXPECT_TRUE(1.9 < 2.0 - cvt.DecisionMargin(2.0));
+  EXPECT_EQ(1e-6, cvt.DecisionMargin(2.0));          // cvt:pre:feastol
+  mp::NumericTolerances exact;                       // feastol=0
+  exact.Set(-1.0, 16, 0.0);
+  EXPECT_LT(2.0 - exact.DecisionMargin(2.0), ub);    // ub not below c-d
+  EXPECT_LT(exact.DecisionMargin(2.0), 1e-13);
+  exact.Set(-1.0, 0, 0.0);                           // cvt:pre:all=0
+  EXPECT_EQ(0.0, exact.DecisionMargin(2.0));
+}
+
+/// Decisions of inequalities from body bounds [L, U]: non-strict ones
+/// hold up to d; strict ones are FALSE as negations of the opposite
+/// non-strict ones with the same d, but TRUE only exactly (margin m);
+/// otherwise undecided (0)
+TEST_F(InterfaceTester_MaxConstraint, DecideByBoundsSymmetric) {
+  using Cvt = std::decay_t<decltype(GetInterface().GetFlatCvt())>;
+  const double d = 1e-6, m = 1e-15;
+  // body >= 4 at body in [0, 3.9999995] (h1): undecided
+  EXPECT_EQ(0, Cvt::DecideByBounds<1>(0.0, 3.9999995, 4.0, d, m));
+  EXPECT_EQ(-1, Cvt::DecideByBounds<1>(0.0, 3.9999995, 4.0, m, m));
+  EXPECT_EQ(-1, Cvt::DecideByBounds<1>(0.0, 3.99, 4.0, d, m));
+  EXPECT_EQ(1, Cvt::DecideByBounds<1>(3.9999995, 5.0, 4.0, d, m));
+  // x > -5e-7 at x >= 0 holds exactly: TRUE (V1O-02)
+  EXPECT_EQ(1, Cvt::DecideByBounds<2>(0.0, 1.0, -5e-7, d, m));
+  EXPECT_EQ(1, Cvt::DecideByBounds<-2>(0.0, 1.0, 1.0000005, d, m));
+  // ... but not within d only: undecided
+  EXPECT_EQ(0, Cvt::DecideByBounds<2>(0.0, 1.0, 0.0, d, m));
+  // body <= c and body > c are never both TRUE; le TRUE <=> gt FALSE
+  for (double c: {2.9999995, 3.0, 3.0000005, 3.1, 2.9, -5e-7})
+    for (double U: {3.0, 2.0, 4.0}) {
+      const int le = Cvt::DecideByBounds<-1>(0.0, U, c, d, m);
+      const int gt = Cvt::DecideByBounds<2>(0.0, U, c, d, m);
+      EXPECT_EQ(le > 0, gt < 0) << "c=" << c << " U=" << U;
+      EXPECT_FALSE(le > 0 && gt > 0) << "c=" << c << " U=" << U;
+      EXPECT_TRUE(gt <= 0 || le <= 0);
+    }
+  // body >= c and body < c likewise
+  for (double c: {2.9999995, 3.0, 3.0000005, 3.1, 2.9})
+    for (double L: {3.0, 2.0, 4.0}) {
+      const int ge = Cvt::DecideByBounds<1>(L, 6.0, c, d, m);
+      const int lt = Cvt::DecideByBounds<-2>(L, 6.0, c, d, m);
+      EXPECT_EQ(ge > 0, lt < 0) << "c=" << c << " L=" << L;
+      EXPECT_FALSE(ge > 0 && lt > 0) << "c=" << c << " L=" << L;
+    }
+  // x > 6 at x <= 6: false (C1F-08)
+  EXPECT_EQ(-1, Cvt::DecideByBounds<2>(0.0, 6.0, 6.0, d, m));
+  // negative margin: never decided
+  EXPECT_EQ(0, Cvt::DecideByBounds<1>(5.0, 6.0, 2.0, -1.0, m));
+  EXPECT_EQ(0, Cvt::DecideEqualityByBounds(5.0, 6.0, 2.0, -1.0));
+}
+
 /// The floating-point margin comes from the compared constant only
 /// (V1F-01); a margin above a positive cvt:pre:feastol means
 /// "do not decide"

@@ -1173,6 +1173,143 @@ TEST(NLOutputTest, QuadCon__passquadcon0__linearized) {
 
 //////// Tolerances of comparisons (cvt:pre:inteps, cvt:pre:ulps) ////////
 
+/// b==1 ==> y <= 2.9999999, y integer: the rhs within cvt:pre:inteps
+/// of 3 is 3 (before: 2); with cvt:pre:all=0 exact (2)
+TEST(CmpTolTest, IntRhsWithinInteps__snappedToInteger) {
+  for (auto opt: {"", "cvt:pre:inteps=-1 cvt:pre:ulps=0"}) {
+    mp::Env e;
+    Disj2IndTester t(e, kAccInd, opt);
+    int b = t.Var(0, 1, INTEGER), y = t.Var(0, 6, INTEGER);
+    AddImplLE(t, b, y, 3 - 1e-7);
+    t.ConvertModel();
+    ExpectSingleIndicator(t.Backend().GetIndicatorConstraintLinLE(),
+                          b, 1, y, *opt ? 2 : 3);
+  }
+}
+
+/// b==1 ==> x <= 5e-5, x in [0, 1e-4] continuous (T1F-01): kept as
+/// x <= 5e-5, not rewritten as x == 0 by cvt:pre:ineq2bndeq
+/// (cvt:mip:eps is not applied to non-strict comparisons)
+TEST(CmpTolTest, NonStrictNearBound__notEqualityToBound) {
+  mp::Env e;
+  Disj2IndTester t(e, kAccInd);
+  int b = t.Var(0, 1, INTEGER), x = t.Var(0, 1e-4);
+  AddImplLE(t, b, x, 5e-5);
+  t.ConvertModel();
+  ExpectSingleIndicator(t.Backend().GetIndicatorConstraintLinLE(),
+                        b, 1, x, 5e-5);
+  EXPECT_EQ(0u, t.Backend().GetIndicatorConstraintLinEQ().size());
+}
+
+/// b==1 ==> x >= 4 at x <= 3.9999995: not decided false within
+/// cvt:pre:feastol (the indicator stays, as x == ub);
+/// with cvt:pre:feastol=0 decided false: b fixed to 0
+TEST(CmpTolTest, DecisionWithinFeastol__undecided) {
+  for (auto opt: {"", "cvt:pre:feastol=0"}) {
+    mp::Env e;
+    Disj2IndTester t(e, kAccInd, opt);
+    int b = t.Var(0, 1, INTEGER), x = t.Var(0, 3.9999995);
+    t.Add( t.Bin(OR, t.Cmp(NE, b, 1), t.Cmp(GE, x, 4)) );
+    t.ConvertModel();
+    EXPECT_EQ(*opt ? 0 : 1, t.Backend().NumIndicators()) << opt;
+    if (*opt)
+      EXPECT_EQ(0.0, t.Backend().ub(b));
+  }
+}
+
+/// b==1 ==> y == 3.0000001, y integer: the integer within
+/// cvt:pre:inteps (y == 3); exact with cvt:pre:inteps=-1 cvt:pre:ulps=0:
+/// false, b fixed to 0
+TEST(CmpTolTest, IntEqualityWithinInteps__snapped) {
+  for (auto opt: {"", "cvt:pre:inteps=-1 cvt:pre:ulps=0"}) {
+    mp::Env e;
+    Disj2IndTester t(e, kAccInd, opt);
+    int b = t.Var(0, 1, INTEGER), y = t.Var(0, 6, INTEGER);
+    t.Add( t.Bin(OR, t.Cmp(NE, b, 1), t.Cmp(EQ, y, 3.0000001)) );
+    t.ConvertModel();
+    if (*opt)
+      EXPECT_EQ(0.0, t.Backend().ub(b));
+    else
+      ExpectSingleIndicator(t.Backend().GetIndicatorConstraintLinEQ(),
+                            b, 1, y, 3);
+  }
+}
+
+/// b==1 ==> not (x > 5e-5), x in [0, 8e-5] continuous (T1F-02, a3):
+/// x <= 5e-5 under the literal, not x != 8e-5 (ineq2bndeq with
+/// cvt:mip:eps, which made the model infeasible)
+TEST(CmpTolTest, NegatedStrictNearBound__notDisequalityToBound) {
+  mp::Env e;
+  Disj2IndTester t(e, kAccInd);
+  int b = t.Var(0, 1, INTEGER), x = t.Var(0, 8e-5);
+  auto& m = t.GetModel();
+  t.Add( t.Bin(OR, t.Cmp(NE, b, 1), m.MakeNot(t.Cmp(mp::expr::GT, x, 5e-5))) );
+  t.ConvertModel();
+  int n_le_5e5 = 0;
+  for (const auto& ind: t.Backend().GetIndicatorConstraintLinLE())
+    n_le_5e5 += (1u == ind.get_constraint().size()
+                 && x == ind.get_constraint().var(0)
+                 && 5e-5 == ind.get_constraint().rhs());
+  EXPECT_EQ(1, n_le_5e5);
+  EXPECT_EQ(0u, t.Backend().GetIndicatorConstraintLinEQ().size());
+}
+
+/// b==1 ==> x == 0.1*3 (0.30000000000000004), x in [0, 0.3]
+/// continuous: the rhs within the floating-point margin (cvt:pre:ulps)
+/// of the bound 0.3 is that bound (no big-M of 5.6e-17)
+TEST(CmpTolTest, EqualityNearBound__rhsSnappedToBound) {
+  mp::Env e;
+  Disj2IndTester t(e, kAccInd);
+  int b = t.Var(0, 1, INTEGER), x = t.Var(0, 0.3);
+  t.Add( t.Bin(OR, t.Cmp(NE, b, 1), t.Cmp(EQ, x, 0.1*3)) );
+  t.ConvertModel();
+  const auto& inds = t.Backend().GetIndicatorConstraintLinEQ();
+  ASSERT_EQ(1u, inds.size());
+  EXPECT_EQ(0.3, inds[0].get_constraint().rhs());
+}
+
+/// b==1 ==> x == 0.9999995, x in [0, 1]: within cvt:pre:feastol of the
+/// bound 1, but not within the floating-point margin: kept (V1O-03)
+TEST(CmpTolTest, EqualityWithinFeastolOfBound__notSnapped) {
+  mp::Env e;
+  Disj2IndTester t(e, kAccInd);
+  int b = t.Var(0, 1, INTEGER), x = t.Var(0, 1);
+  t.Add( t.Bin(OR, t.Cmp(NE, b, 1), t.Cmp(EQ, x, 0.9999995)) );
+  t.ConvertModel();
+  const auto& inds = t.Backend().GetIndicatorConstraintLinEQ();
+  ASSERT_EQ(1u, inds.size());
+  EXPECT_EQ(0.9999995, inds[0].get_constraint().rhs());
+}
+
+/// b==1 ==> x > -5e-7, x >= 0: holds exactly, decided TRUE
+/// (no indicator with the gap cvt:mip:eps; V1O-02), also with
+/// cvt:pre:feastol=0
+TEST(CmpTolTest, StrictExactlyTrue__decidedTrue) {
+  for (auto opt: {"", "cvt:pre:feastol=0"}) {
+    mp::Env e;
+    Disj2IndTester t(e, kAccInd, opt);
+    int b = t.Var(0, 1, INTEGER), x = t.Var(0, 1);
+    t.Add( t.Bin(OR, t.Cmp(NE, b, 1), t.Cmp(mp::expr::GT, x, -5e-7)) );
+    t.ConvertModel();
+    EXPECT_EQ(0, t.Backend().NumIndicators()) << opt;
+    EXPECT_EQ(0, t.Backend().NumLinCons()) << opt;
+  }
+}
+
+/// b==1 ==> x >= 0.001, x in [0, 1e12]: the large upper bound does not
+/// widen the decision margin (V1F-01): not decided TRUE
+TEST(CmpTolTest, LargeBound__marginFromConstant) {
+  for (auto opt: {"", "cvt:pre:ulps=0"}) {
+    mp::Env e;
+    Disj2IndTester t(e, kAccInd, opt);
+    int b = t.Var(0, 1, INTEGER), x = t.Var(0, 1e12);
+    t.Add( t.Bin(OR, t.Cmp(NE, b, 1), t.Cmp(GE, x, 0.001)) );
+    t.ConvertModel();
+    ExpectSingleIndicator(t.Backend().GetIndicatorConstraintLinGE(),
+                          b, 1, x, 0.001);
+  }
+}
+
 /// cvt:pre:all=0: exact tolerances, no rounding (V1O-08)
 TEST(CmpTolTest, PreAll0__exactTolerances) {
   mp::Env e;
@@ -1194,4 +1331,18 @@ TEST(CmpTolTest, IntEpsHalf__rejected) {
                mp::OptionError);
   mp::Env e2;
   EXPECT_NO_THROW(Disj2IndTester(e2, kAccInd, "cvt:pre:inteps=0.4"));
+}
+
+/// b==1 ==> y < 600000000 for integer y >= 600000000: decided false
+/// (b = 0), although the floating-point margin of 6e8 (1.9e-6)
+/// exceeds cvt:pre:feastol: integer bounds and rhs are exact
+TEST(CmpTolTest, LargeIntegerExact__decided) {
+  mp::Env e;
+  Disj2IndTester t(e, kAccInd);
+  int b = t.Var(0, 1, INTEGER);
+  int y = t.Var(600000000, 600000050, INTEGER);
+  t.Add( t.Bin(OR, t.Cmp(NE, b, 1), t.Cmp(LT, y, 600000000)) );
+  t.ConvertModel();
+  EXPECT_EQ(0.0, t.Backend().ub(b));
+  EXPECT_EQ(0, t.Backend().NumIndicators());
 }

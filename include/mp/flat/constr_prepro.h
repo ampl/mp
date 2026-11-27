@@ -244,7 +244,12 @@ public:
     if (0!=MPD( IfPreproEqResBounds() ))
       if (FixEqualityResult(c, prepro))
         return;
-    PreprocessEqVarConst__unifyCoef(c);
+    if (PreprocessEqVarConst__unifyCoef(c)
+        && 0!=MPD( IfPreproEqResBounds() )
+        && !SnapIntegerEqualityRhs(c.GetConstraint())) {
+      prepro.narrow_result_bounds(0.0, 0.0);  // int var == fraction
+      return;
+    }
     if (0!=MPD( IfPreproEqBinVar() ))
       if (ReuseEqualityBinaryVar(c, prepro))
         return;
@@ -276,33 +281,82 @@ public:
         return;
   }
 
-  /// Try and fix conditional equality result
+  /// Try and fix conditional equality result.
+  /// An integer-valued body is compared with the integer within
+  /// cvt:pre:inteps of the rhs, which is set as the rhs;
+  /// without one, the equality is false.
+  /// Otherwise, the equality is decided only if the body's bounds
+  /// lie within, or miss the rhs by more than, the decision margin
+  /// (DecisionMargin(); not decided if that is negative).
   /// @return true if success
   template <class PreprocessInfo, class CondAlgCon>
   bool FixEqualityResult(
       CondAlgCon& c, PreprocessInfo& prepro) {
-    const auto& con = c.GetConstraint();
+    auto& con = c.GetConstraint();
     const auto& body = con.GetBody();
-    const auto rhs = con.rhs();
     auto bndsNType = MPD( ComputeBoundsAndType(body) );
-    if (bndsNType.lb() > rhs || bndsNType.ub() < rhs) {
+    if (var::INTEGER==bndsNType.type_ && !SnapIntegerEqualityRhs(con)) {
       prepro.narrow_result_bounds(0.0, 0.0);
       return true;
     }
-    if (bndsNType.lb()==rhs && bndsNType.ub()==rhs) {
-      prepro.narrow_result_bounds(1.0, 1.0);
+    const auto rhs = con.rhs();
+    if (const int res = DecideEqualityByBounds(
+          bndsNType.lb(), bndsNType.ub(), rhs,
+          DecisionMargin(rhs, bndsNType))) {
+      const double val = res > 0 ? 1.0 : 0.0;   // FIX: TRUE / FALSE
+      prepro.narrow_result_bounds(val, val);
       return true;
     }
-    if (var::INTEGER==bndsNType.type_ &&
-        !is_integer(con.rhs())) {
-      prepro.narrow_result_bounds(0.0, 0.0);
-      return true;
-    }
+    SnapEqualityRhsToBound(con, bndsNType);
     return false;
   }
 
-  /// Normalize conditional equality coef * var == const
-  static void PreprocessEqVarConst__unifyCoef(CondLinConEQ& c) {
+  /// Decide  body == rhs  from body bounds [L, U] with decision
+  /// margin \a d: FALSE if they miss the rhs by more than d,
+  /// TRUE if both lie within d of it.
+  /// @return 1: true, -1: false, 0: undecided (also if d < 0)
+  static int DecideEqualityByBounds(
+      double L, double U, double rhs, double d) {
+    if (d < 0.0)
+      return 0;
+    if (L > rhs + d || U < rhs - d)
+      return -1;
+    return (L >= rhs - d && U <= rhs + d) ? 1 : 0;
+  }
+
+  /// An equality's rhs within the floating-point margin
+  /// (cvt:pre:ulps ulp of the rhs) of a bound of the body becomes
+  /// that bound: 0.3*b == 0.1*3 (0.30000000000000004) at b <= 1 is
+  /// 0.3*b == 0.3. Otherwise the rhs is out of reach by a rounding
+  /// error, and the reformulation gets a big-M of 5.6e-17.
+  /// Not by cvt:pre:feastol: x == 0.9999995 at x <= 1 stays.
+  template <class AlgCon, class BndNType>
+  void SnapEqualityRhsToBound(AlgCon& con, const BndNType& bnt) const {
+    const double m = MPCD( tolerances() ).FPMargin(con.rhs());
+    for (double b: {bnt.ub(), bnt.lb()})
+      if (std::fabs(con.rhs() - b) <= m && con.rhs() != b) {
+        con.set_rhs(b);
+        return;
+      }
+  }
+
+  /// For an integer-valued body of equality \a con:
+  /// set the rhs to the integer within cvt:pre:inteps of it.
+  /// @return false if there is none (the equality is false)
+  template <class AlgCon>
+  bool SnapIntegerEqualityRhs(AlgCon& con) const {
+    const double r = MPCD( tolerances() ).SnapToInteger(con.rhs());
+    if (!is_integer(r))
+      return false;
+    if (r != con.rhs())
+      con.set_rhs(r);
+    return true;
+  }
+
+  /// Normalize conditional equality coef * var == const.
+  /// @return true if the coefficient was changed
+  ///   and the body is an integer variable
+  bool PreprocessEqVarConst__unifyCoef(CondLinConEQ& c) const {
     auto& con = c.GetConstraint();
     auto& body = con.GetBody();
     if (1==body.size()) {
@@ -311,8 +365,10 @@ public:
         assert(0.0!=std::fabs(coef));
         con.set_rhs(con.rhs() / coef);
         body.set_coef(0, 1.0);
+        return MPCD( is_var_integer(body.var(0)) );
       }
     }
+    return false;
   }
 
   /// Simplify conditional equality bin_var==0/1
@@ -354,16 +410,18 @@ public:
     auto& algc = cc.GetArguments();
     auto bnt = MPD(
         ComputeBoundsAndType(algc.GetBody()) );
+    const double rhs0 = algc.rhs();          // as in the model
     PreprocessRoundRHS(algc, bnt);
     auto rhs = algc.rhs();
-    if (IfPreprocessDecidable<kind>(prepro, bnt, rhs))
+    const auto d = DecisionMargin(rhs, bnt);
+    if (IfPreprocessDecidable<kind>(prepro, bnt, rhs, d, rhs0))
       return;
     if (IfPreprocessNormalize(cc, prepro))
       return;
     if (IfPreprocessVarBnd<kind>(algc.GetBody(), rhs, prepro)
         || IfPreprocessHole<kind>(algc.GetBody(), rhs, prepro))
       return;
-    if (IfPreprocess2BndEq(cc, prepro, bnt))
+    if (IfPreprocess2BndEq(cc, prepro, bnt, d))
       return;
     IfPreprocess2Related(cc, prepro, bnt);
   }
@@ -442,7 +500,9 @@ public:
     return false;
   }
 
-  /// See if need to round the RHS
+  /// Integer rhs for an integer-valued body (cvt:pre:ineqrhs):
+  /// the integer within cvt:pre:inteps of the rhs,
+  /// otherwise the integer on the side the comparison allows.
   template <class Body, int kind, class BndNType>
   void PreprocessRoundRHS(
       AlgebraicConstraint< Body, AlgConRhs<kind> >& algc,
@@ -451,7 +511,10 @@ public:
     if (MPCD( IfPreproIneqRHS() )
         && var::INTEGER == bnt.get_result_type()
         && std::floor(rhs) != std::ceil(rhs)) {  // rhs not int
-      if (1==kind)  // algc is >=
+      const double k = MPCD( tolerances() ).SnapToInteger(rhs);
+      if (k != rhs)  // within inteps: x <= 0.3/0.1 is x <= 3
+        algc.set_rhs( k );
+      else if (1==kind)  // algc is >=
         algc.set_rhs( std::ceil(rhs) );
       else if (-1==kind)
         algc.set_rhs( std::floor(rhs) );
@@ -465,27 +528,102 @@ public:
   }
 
   /// Decidable inequality?
+  /// Decided only if the body's bounds lie on one side of the rhs,
+  /// beyond the decision margin \a d (see DecideByBounds()).
+  /// \a rhs0 is the rhs before rounding for an integer body.
   template <int kind, class PreprocessInfo, class BndNType>
-  bool IfPreprocessDecidable(
-      PreprocessInfo& prepro, const BndNType& bnt, double rhs) {
+  bool IfPreprocessDecidable(PreprocessInfo& prepro, const BndNType& bnt,
+                             double rhs, double d, double rhs0) {
     if (MPCD( IfPreproIneqResBounds() )) {
-      if ((1==kind && bnt.lb()>=rhs)
-          || (-1==kind && bnt.ub()<=rhs)
-          || (2==kind && bnt.lb()>rhs)
-          || (-2==kind && bnt.ub()<rhs)) {
-        prepro.narrow_result_bounds(1.0, 1.0);   // FIX: TRUE
+      const int res = DecideByBounds<kind>(
+            bnt.lb(), bnt.ub(), rhs, d, FPMargin(rhs));
+      if (res) {
+        if (res < 0)
+          WarnIfStrictFalseOnlyWithinTol<kind>(bnt, rhs0);
+        const double val = res > 0 ? 1.0 : 0.0;   // FIX: TRUE / FALSE
+        prepro.narrow_result_bounds(val, val);
         return true;
-      } else {
-        if ((1==kind && bnt.ub()<rhs)
-            || (-1==kind && bnt.lb()>rhs)
-            || (2==kind && bnt.ub()<=rhs)
-            || (-2==kind && bnt.lb()>=rhs)) {
-          prepro.narrow_result_bounds(0.0, 0.0);   // FIX: FALSE
-          return true;
-        }
       }
     }
     return false;
+  }
+
+  /// Decide the inequality  body (kind) rhs  from body bounds [L, U].
+  /// A non-strict comparison holds up to the decision margin \a d
+  /// (body >= c: TRUE if L >= c-d, FALSE if U < c-d).
+  /// A strict one is FALSE as the negation of the opposite non-strict
+  /// one (body > c: FALSE if U <= c+d), but TRUE only exactly, up to
+  /// the floating-point margin \a m (body > c: TRUE if L > c+m):
+  /// an undecided strict comparison gets the gap cvt:mip:eps.
+  /// FALSE is tested first.
+  /// @return 1: true, -1: false, 0: undecided (also if d < 0)
+  template <int kind>
+  static int DecideByBounds(
+      double L, double U, double rhs, double d, double m) {
+    static_assert(kind && kind*kind <= 4, "inequality kind expected");
+    if (d < 0.0)
+      return 0;
+    bool is_true {}, is_false {};
+    if constexpr (1==kind) {          // >=
+      is_true = L >= rhs - d;
+      is_false = U < rhs - d;
+    } else if constexpr (-1==kind) {  // <=
+      is_true = U <= rhs + d;
+      is_false = L > rhs + d;
+    } else if constexpr (2==kind) {   // >
+      is_false = U <= rhs + d;
+      is_true = L > rhs + m;
+    } else {                          // <
+      is_false = L >= rhs - d;
+      is_true = U < rhs - m;
+    }
+    return is_false ? -1 : (is_true ? 1 : 0);
+  }
+
+  /// Warn if a strict comparison is decided false only within the
+  /// tolerances (cvt:pre:feastol, cvt:pre:inteps): exactly, with the
+  /// rhs \a rhs0 of the model, it could hold (x < 1e-7 at x >= 0)
+  template <int kind, class BndNType>
+  void WarnIfStrictFalseOnlyWithinTol(const BndNType& bnt, double rhs0) {
+    if constexpr (4==kind*kind) {
+      if (MPCD( IfPreproBoundsOnly() ))   // a query, no model change
+        return;
+      const double m = FPMargin(rhs0);
+      if (DecideByBounds<kind>(bnt.lb(), bnt.ub(), rhs0, m, m) >= 0)
+        MPD( AddWarning("strict_cmp_tol",
+                        "A strict comparison was decided false because "
+                        "its right-hand side is within cvt:pre:feastol "
+                        "(or, for integer expressions, cvt:pre:inteps) "
+                        "of a bound of its expression") );
+    }
+  }
+
+  /// Margin d = max(cvt:pre:feastol, cvt:pre:ulps ulp(rhs)) by which
+  /// computed body bounds may cross the rhs of a comparison without
+  /// deciding it. Bounds are computed in floating point: (5+1)/3 can
+  /// give 1.9999999999999998 < 2. Negative: do not decide
+  /// (NumericTolerances::DecisionMargin()).
+  /// Undecided comparisons are left to the solver's tolerances.
+  double DecisionMargin(double rhs) const {
+    return MPCD( tolerances() ).DecisionMargin(rhs);
+  }
+
+  /// Decision margin for  body (cmp) rhs  with body bounds \a bnt.
+  /// An integer-valued body with an integral rhs has integral bounds
+  /// and no rounding error to absorb: d = cvt:pre:feastol, also at
+  /// magnitudes where the floating-point margin exceeds it
+  /// (x >= 600000000 at x >= 600000000 is TRUE). Otherwise
+  /// DecisionMargin(rhs).
+  template <class BndNType>
+  double DecisionMargin(double rhs, const BndNType& bnt) const {
+    if (var::INTEGER == bnt.get_result_type() && is_integer(rhs))
+      return MPCD( tolerances() ).cmp_tol();
+    return DecisionMargin(rhs);
+  }
+
+  /// Floating-point margin of a compared constant (cvt:pre:ulps ulp)
+  double FPMargin(double rhs) const {
+    return MPCD( tolerances() ).FPMargin(rhs);
   }
 
   /// See if we can reuse "==LB/UB"
@@ -495,7 +633,7 @@ public:
   bool IfPreprocess2BndEq(
       ConditionalConstraint<
           AlgebraicConstraint< Body, AlgConRhs<kind> > >& cc,
-      PreprocessInfo& prepro, const BndNType& bnt) {
+      PreprocessInfo& prepro, const BndNType& bnt, double d) {
     if (MPCD( IfPreproIneq2BndEq() ) && !MPCD( IfPreproBoundsOnly() )) {
       auto& algc = cc.GetArguments();
       auto convert = [&](double rhseq, bool fNegate=false) {
@@ -514,7 +652,16 @@ public:
         return true;             // for convenience
       };
       auto rhs = algc.rhs();     // Is this ok for floats?
-      auto cmpEps = MPCD( ComparisonEps( bnt ) );
+      // Continuous bodies: only within the decision margin d of
+      // a bound; cvt:mip:eps would change the comparison
+      // (x <= 5e-5 at x in [0, 1e-4] is not x == 0, and
+      // not (x > 5e-5) is not x != 1e-4). Strict comparisons within d
+      // of a bound are decided by IfPreprocessDecidable() already.
+      // Integer bodies: the step 1 (exact).
+      const bool f_cont = var::INTEGER != bnt.get_result_type();
+      if (f_cont && d < 0.0)              // not to be decided
+        return false;
+      const auto cmpEps = f_cont ? d : MPCD( ComparisonEps( bnt ) );
       if (1==kind && rhs>bnt.ub()-cmpEps)  // expr >= rhs > ub-eps
         return convert(bnt.ub());               // replace as expr==ub
       if (2==kind && rhs>=bnt.ub()-cmpEps) // expr > rhs >= ub-eps
@@ -523,6 +670,12 @@ public:
         return convert(bnt.lb());
       if (-2==kind && rhs<=bnt.lb()+cmpEps)// expr < rhs <= lb+eps
         return convert(bnt.lb());
+      // The negations below (expr >= lb+1 is expr != lb) hold for
+      // the integer step, and for strict comparisons within d of a
+      // bound (x > 0 at x >= 0 is x != 0); a non-strict comparison
+      // of a continuous body there is true within d instead
+      if (f_cont && 1==kind*kind)
+        return false;
       if (1==kind && rhs<=bnt.lb()+cmpEps) // expr >= rhs <= lb+eps
         return convert(bnt.lb(), true);         // replace as expr!=lb
       if (2==kind && rhs<bnt.lb()+cmpEps)  // expr > rhs < lb+eps
