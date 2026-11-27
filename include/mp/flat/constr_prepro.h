@@ -753,8 +753,9 @@ public:
   template <class PreprocessInfo>
   void PreprocessConstraint(
       NumberofVarConstraint& con, PreprocessInfo& prepro) {
-    if (MPCD( IfPreproSortUnify() ))
-      Sort(con.GetArguments());
+    auto& args = con.GetArguments();
+    if (MPCD( IfPreproSortUnify() ) && args.size() > 2)
+      std::sort(args.begin() + 1, args.end());  // keep the ref var first
     prepro.narrow_result_bounds(0.0,     // size()-1: 1st arg is the ref var
                                 (double)con.GetArguments().size()-1);
     prepro.set_result_type( var::INTEGER );

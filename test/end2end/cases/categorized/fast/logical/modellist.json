@@ -1561,5 +1561,19 @@
     "tags" : ["nonlinear", "integer"],
     "comment": "(-2)^n: no bounds from the argument (they were contradictory and the model infeasible); the piecewise-linear approximation refuses a base <= 0 with a message",
     "values": { "solve_result": "failure" }
+  },
+  {
+    "name" : "numberof_ref_sort_01",
+    "tags" : ["logical", "integer"],
+    "comment": "cvt:pre:sort must keep the reference variable of numberof first",
+    "objective" : 4,
+    "values": { "r": 4, "x": 4 }
+  },
+  {
+    "name" : "numberof_ref_sort_02",
+    "tags" : ["logical", "integer"],
+    "comment": "As numberof_ref_sort_01; abs() in the objective gives the reference the largest index",
+    "objective" : -1,
+    "values": { "x1": 2 }
   }
 ]
